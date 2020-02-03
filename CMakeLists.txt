@@ -10,6 +10,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
 project(O2Physics
@@ -45,4 +46,7 @@ include(O2PhysicsAddExecutable)
 include(O2PhysicsAddWorkflow)
 
 # Main targets of the project in various subdirectories. Order matters.
-add_subdirectory(Examples)
+add_subdirectory(Core)
+#add_subdirectory(Tools)
+add_subdirectory(Tasks)
+add_subdirectory(Tutorials)
