@@ -65,8 +65,8 @@ add_subdirectory(Examples)
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-#add_subdirectory(Core)
+add_subdirectory(Core)
 #add_subdirectory(Tools)
-#add_subdirectory(Tasks)
+add_subdirectory(Tasks)
 add_subdirectory(Tutorials)
 >>>>>>> Analysis: update directory structure (#2868)
