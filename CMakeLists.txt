@@ -66,7 +66,7 @@ add_subdirectory(Examples)
 # submit itself to any jurisdiction.
 
 add_subdirectory(Core)
-#add_subdirectory(Tools)
+add_subdirectory(DataModel)
 add_subdirectory(Tasks)
 add_subdirectory(Tutorials)
 >>>>>>> Analysis: update directory structure (#2868)
