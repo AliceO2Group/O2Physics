@@ -47,6 +47,6 @@ include(O2PhysicsAddWorkflow)
 
 # Main targets of the project in various subdirectories. Order matters.
 add_subdirectory(Core)
-#add_subdirectory(Tools)
+add_subdirectory(DataModel)
 add_subdirectory(Tasks)
 add_subdirectory(Tutorials)
