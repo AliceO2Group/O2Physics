@@ -12,12 +12,6 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class StepTHn + ;
-#pragma link C++ class StepTHnT < TArrayF> + ;
-#pragma link C++ class StepTHnT < TArrayD> + ;
-#pragma link C++ typedef StepTHnF;
-#pragma link C++ typedef StepTHnD;
-
 #pragma link C++ class CorrelationContainer + ;
 #pragma link C++ class TrackSelection + ;
 #pragma link C++ class TriggerAliases + ;
@@ -26,5 +20,3 @@
 #pragma link C++ class HistogramManager + ;
 #pragma link C++ class AnalysisCut + ;
 #pragma link C++ class AnalysisCompositeCut + ;
-
-// #pragma link C++ class JetFinder+;
