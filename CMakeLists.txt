@@ -52,4 +52,10 @@ include(O2PhysicsAddExecutable)
 include(O2PhysicsAddWorkflow)
 
 # Main targets of the project in various subdirectories. Order matters.
-add_subdirectory(Examples)
+add_subdirectory(Core)
+add_subdirectory(DataModel)
+add_subdirectory(Tasks)
+add_subdirectory(Tutorials)
+add_subdirectory(PWGDQ)
+add_subdirectory(ALICE3)
+add_subdirectory(EventFiltering)
