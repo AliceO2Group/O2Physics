@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
@@ -10,7 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
 project(O2Physics
