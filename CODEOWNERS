@@ -1,0 +1,12 @@
+# Codeowners for ALICE O2.
+#
+# Map top directories only for now.
+# Add the lower lever directories where appropriate.
+# Order is important; the last matching pattern takes the most
+# precedence.
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence.
+# **DO NOT USE** @AliceO2Group/core for anything else. 
+* @AliceO2Group/core
+
