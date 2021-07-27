@@ -19,8 +19,8 @@
 /// \author
 /// \since
 
-#include <Framework/runDataProcessing.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,7 +30,7 @@ struct RootHistograms {
 
   // normal creation of a histogram
   TH1F* phiHA = new TH1F("phiA", "phiA", 100, 0., 2. * M_PI);
-  TH1F* etaHA = new TH1F("etaA", "etaA", 102, -2.01, 2.01);
+  TH1F *etaHA = new TH1F("etaA", "etaA", 102, -2.01, 2.01);
 
   void process(aod::Tracks const& tracks)
   {
@@ -60,7 +60,7 @@ struct OutputObjSet {
   // incomplete definition of an OutputObj
   OutputObj<TH1F> trZ{"trZ", OutputObjHandlingPolicy::QAObject};
 
-  Filter ptfilter = aod::track::pt > 0.5f;
+  Filter ptfilter = aod::track::pt > 0.6f;
 
   void init(InitContext const&)
   {
