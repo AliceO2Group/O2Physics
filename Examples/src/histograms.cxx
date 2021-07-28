@@ -60,7 +60,7 @@ struct OutputObjSet {
   // incomplete definition of an OutputObj
   OutputObj<TH1F> trZ{"trZ", OutputObjHandlingPolicy::QAObject};
 
-  Filter ptfilter = aod::track::pt > 0.6f;
+  Filter ptfilter = aod::track::pt > 0.55f;
 
   void init(InitContext const&)
   {
