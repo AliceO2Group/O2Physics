@@ -3,7 +3,7 @@ name: Check PR with clang-format
 on: [pull_request_target]
 
 jobs:
-  build:
+  clang-format:
     # We need at least 20.04 to install clang-format-11.
     runs-on: ubuntu-20.04
 
