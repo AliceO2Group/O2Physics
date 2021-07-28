@@ -34,7 +34,10 @@ struct RootHistograms {
 
   void process(aod::Tracks const& tracks)
   {
-    for (auto& track : tracks) {
+    for (auto& track :
+tracks)
+
+    {
       phiHA->Fill(track.phi());
       etaHA->Fill(track.eta());
     }
