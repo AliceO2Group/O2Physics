@@ -8,6 +8,6 @@
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence.
 # **DO NOT USE** @AliceO2Group/core for anything else. 
-* @AliceO2Group/core
+* @AliceO2Group/core @jgrosseo
 PWGHF @ginnocen
 PWGLF @akalweit
