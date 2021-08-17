@@ -9,3 +9,5 @@
 # the repo. Unless a later match takes precedence.
 # **DO NOT USE** @AliceO2Group/core for anything else. 
 * @AliceO2Group/core @jgrosseo @iarsene
+/Tasks/ALICE3  @ginnocen @vkucera
+/Tasks/PWGHF  @ginnocen @vkucera
