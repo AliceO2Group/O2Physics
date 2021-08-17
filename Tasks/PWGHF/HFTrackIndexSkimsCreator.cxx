@@ -1199,9 +1199,9 @@ struct HfTrackIndexSkimsCreatorCascades {
   //  Configurable<double> ptminbach{"ptminbach", -1., "min. track pT bachelor"};
 
   // v0 cuts
-  Configurable<double> cosPAV0{"cosPAV0", .995, "CosPA V0"};                  // as in the task that create the V0s
-  Configurable<double> dcaXYNegToPV{"dcaXYNegToPV", .1, "DCA_XY Neg To PV"};  // check: in HF Run 2, it was 0 at filtering
-  Configurable<double> dcaXYPosToPV{"dcaXYPosToPV", .1, "DCA_XY Pos To PV"};  // check: in HF Run 2, it was 0 at filtering
+  Configurable<double> cosPAV0{"cosPAV0", .995, "CosPA V0"};                 // as in the task that create the V0s
+  Configurable<double> dcaXYNegToPV{"dcaXYNegToPV", .1, "DCA_XY Neg To PV"}; // check: in HF Run 2, it was 0 at filtering
+  Configurable<double> dcaXYPosToPV{"dcaXYPosToPV", .1, "DCA_XY Pos To PV"}; // check: in HF Run 2, it was 0 at filtering
   Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
 
   // cascade cuts
