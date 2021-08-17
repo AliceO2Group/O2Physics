@@ -16,8 +16,8 @@ include(O2PhysicsNameTarget)
 #
 # o2physics_add_library(baseTargetName SOURCES c1.cxx c2.cxx .....) defines a new
 # target of type "library" composed of the given sources. It also defines an
-# alias named O2::baseTargetName. The generated library will be called
-# libO2[baseTargetName].(dylib|so|.a) (for exact naming see the o2physics_name_target
+# alias named O2Physics::baseTargetName. The generated library will be called
+# libO2Physics[baseTargetName].(dylib|so|.a) (for exact naming see the o2physics_name_target
 # function).
 #
 # The library will be static or shared depending on the BUILD_SHARED_LIBS option
@@ -72,17 +72,17 @@ function(o2physics_add_library baseTargetName)
   o2physics_name_target(${baseTargetName} NAME targetName)
   set(target ${targetName})
 
-  # define the target and its O2:: alias
+  # define the target and its O2Physics:: alias
   add_library(${target} ${A_SOURCES})
-  add_library(O2::${baseTargetName} ALIAS ${target})
+  add_library(O2Physics::${baseTargetName} ALIAS ${target})
 
-  # set the export name so that packages using O2 can reference the target as
-  # O2::${baseTargetName} as well (assuming the export is installed with
-  # namespace O2::)
+  # set the export name so that packages using O2Physics can reference the target as
+  # O2Physics::${baseTargetName} as well (assuming the export is installed with
+  # namespace O2Physics::)
   set_property(TARGET ${target} PROPERTY EXPORT_NAME ${baseTargetName})
 
-  # output name of the lib will be libO2[baseTargetName].(so|dylib|a)
-  set_property(TARGET ${target} PROPERTY OUTPUT_NAME O2${baseTargetName})
+  # output name of the lib will be libO2Physics[baseTargetName].(so|dylib|a)
+  set_property(TARGET ${target} PROPERTY OUTPUT_NAME O2Physics${baseTargetName})
 
   if(A_TARGETVARNAME)
     set(${A_TARGETVARNAME} ${target} PARENT_SCOPE)

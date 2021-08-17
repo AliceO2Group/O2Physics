@@ -9,14 +9,14 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_dpl_workflow(qa-event-track
+o2physics_add_dpl_workflow(qa-event-track
                     SOURCES qaEventTrack.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(qa-efficiency
+o2physics_add_dpl_workflow(qa-efficiency
                     SOURCES qaEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 

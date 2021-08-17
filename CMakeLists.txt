@@ -50,6 +50,9 @@ include(dependencies/CMakeLists.txt)
 include(O2PhysicsNameTarget)
 include(O2PhysicsAddExecutable)
 include(O2PhysicsAddWorkflow)
+include(O2PhysicsAddLibrary)
+include(O2PhysicsAddHeaderOnlyLibrary)
+include(O2PhysicsTargetRootDictionary)
 
 # Main targets of the project in various subdirectories. Order matters.
 add_subdirectory(Core)
