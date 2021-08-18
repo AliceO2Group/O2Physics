@@ -11,6 +11,5 @@
 
 o2physics_add_dpl_workflow(histograms
                            SOURCES src/histograms.cxx
-                           JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework
                            COMPONENT_NAME AnalysisTutorial)
