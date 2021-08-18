@@ -67,7 +67,7 @@ function(o2physics_add_executable baseTargetName)
     string(TOLOWER ${A_COMPONENT_NAME} component)
     set(comp -${component})
   endif()
-  set(exeName o2physics${exeType}${comp}-${baseTargetName})
+  set(exeName o2${exeType}${comp}-${baseTargetName})
 
   if(A_IS_TEST)
     set(isTest "IS_TEST")
