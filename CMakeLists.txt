@@ -38,6 +38,7 @@ endif()
 
 # Dependencies
 find_package(O2 CONFIG REQUIRED)
+find_package(ONNXRuntime::ONNXRuntime CONFIG REQUIRED)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
