@@ -26,22 +26,39 @@ namespace o2::aod
 {
 namespace alice3rich
 {
-DECLARE_SOA_INDEX_COLUMN(Track, track);                      //!
-DECLARE_SOA_COLUMN(RICHSignal, richSignal, float);           //!
-DECLARE_SOA_COLUMN(RICHSignalError, richSignalError, float); //!
-DECLARE_SOA_COLUMN(RICHDeltaEl, richDeltaEl, float);         //!
-DECLARE_SOA_COLUMN(RICHDeltaMu, richDeltaMu, float);         //!
-DECLARE_SOA_COLUMN(RICHDeltaPi, richDeltaPi, float);         //!
-DECLARE_SOA_COLUMN(RICHDeltaKa, richDeltaKa, float);         //!
-DECLARE_SOA_COLUMN(RICHDeltaPr, richDeltaPr, float);         //!
-DECLARE_SOA_COLUMN(RICHNsigmaEl, richNsigmaEl, float);       //!
-DECLARE_SOA_COLUMN(RICHNsigmaMu, richNsigmaMu, float);       //!
-DECLARE_SOA_COLUMN(RICHNsigmaPi, richNsigmaPi, float);       //!
-DECLARE_SOA_COLUMN(RICHNsigmaKa, richNsigmaKa, float);       //!
-DECLARE_SOA_COLUMN(RICHNsigmaPr, richNsigmaPr, float);       //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);                      //! Index to travel from track to RICH
+DECLARE_SOA_COLUMN(RICHSignal, richSignal, float);           //! Signal in RICH
+DECLARE_SOA_COLUMN(RICHSignalError, richSignalError, float); //! Error on the RICH signal
+DECLARE_SOA_COLUMN(RICHDeltaEl, richDeltaEl, float);         //! signal - exp. signal for electrons
+DECLARE_SOA_COLUMN(RICHDeltaMu, richDeltaMu, float);         //! signal - exp. signal for muons
+DECLARE_SOA_COLUMN(RICHDeltaPi, richDeltaPi, float);         //! signal - exp. signal for pions
+DECLARE_SOA_COLUMN(RICHDeltaKa, richDeltaKa, float);         //! signal - exp. signal for kaons
+DECLARE_SOA_COLUMN(RICHDeltaPr, richDeltaPr, float);         //! signal - exp. signal for protons
+DECLARE_SOA_COLUMN(RICHNsigmaEl, richNsigmaEl, float);       //! nsigma separation for electrons
+DECLARE_SOA_COLUMN(RICHNsigmaMu, richNsigmaMu, float);       //! nsigma separation for muons
+DECLARE_SOA_COLUMN(RICHNsigmaPi, richNsigmaPi, float);       //! nsigma separation for pions
+DECLARE_SOA_COLUMN(RICHNsigmaKa, richNsigmaKa, float);       //! nsigma separation for kaons
+DECLARE_SOA_COLUMN(RICHNsigmaPr, richNsigmaPr, float);       //! nsigma separation for protons
 } // namespace alice3rich
 
-DECLARE_SOA_TABLE(RICHs, "AOD", "RICH", //!
+namespace alice3frich
+{
+DECLARE_SOA_INDEX_COLUMN(Track, track);                        //! Index to travel from track to FRICH
+DECLARE_SOA_COLUMN(FRICHSignal, frichSignal, float);           //! Signal in RICH
+DECLARE_SOA_COLUMN(FRICHSignalError, frichSignalError, float); //! Error on the RICH signal
+DECLARE_SOA_COLUMN(FRICHDeltaEl, frichDeltaEl, float);         //! signal - exp. signal for electrons
+DECLARE_SOA_COLUMN(FRICHDeltaMu, frichDeltaMu, float);         //! signal - exp. signal for muons
+DECLARE_SOA_COLUMN(FRICHDeltaPi, frichDeltaPi, float);         //! signal - exp. signal for pions
+DECLARE_SOA_COLUMN(FRICHDeltaKa, frichDeltaKa, float);         //! signal - exp. signal for kaons
+DECLARE_SOA_COLUMN(FRICHDeltaPr, frichDeltaPr, float);         //! signal - exp. signal for protons
+DECLARE_SOA_COLUMN(FRICHNsigmaEl, frichNsigmaEl, float);       //! nsigma separation for electrons
+DECLARE_SOA_COLUMN(FRICHNsigmaMu, frichNsigmaMu, float);       //! nsigma separation for muons
+DECLARE_SOA_COLUMN(FRICHNsigmaPi, frichNsigmaPi, float);       //! nsigma separation for pions
+DECLARE_SOA_COLUMN(FRICHNsigmaKa, frichNsigmaKa, float);       //! nsigma separation for kaons
+DECLARE_SOA_COLUMN(FRICHNsigmaPr, frichNsigmaPr, float);       //! nsigma separation for protons
+} // namespace alice3frich
+
+DECLARE_SOA_TABLE(RICHs, "AOD", "RICH", //! Table for the ALICE3 RICH detector
                   o2::soa::Index<>,
                   alice3rich::TrackId,
                   alice3rich::RICHSignal,
@@ -56,8 +73,25 @@ DECLARE_SOA_TABLE(RICHs, "AOD", "RICH", //!
                   alice3rich::RICHNsigmaPi,
                   alice3rich::RICHNsigmaKa,
                   alice3rich::RICHNsigmaPr);
-
 using RICH = RICHs::iterator;
+
+DECLARE_SOA_TABLE(FRICHs, "AOD", "FRICH", //! Table for the ALICE3 Forward RICH detector
+                  o2::soa::Index<>,
+                  alice3frich::TrackId,
+                  alice3frich::FRICHSignal,
+                  alice3frich::FRICHSignalError,
+                  alice3frich::FRICHDeltaEl,
+                  alice3frich::FRICHDeltaMu,
+                  alice3frich::FRICHDeltaPi,
+                  alice3frich::FRICHDeltaKa,
+                  alice3frich::FRICHDeltaPr,
+                  alice3frich::FRICHNsigmaEl,
+                  alice3frich::FRICHNsigmaMu,
+                  alice3frich::FRICHNsigmaPi,
+                  alice3frich::FRICHNsigmaKa,
+                  alice3frich::FRICHNsigmaPr);
+
+using FRICH = FRICHs::iterator;
 
 } // namespace o2::aod
 

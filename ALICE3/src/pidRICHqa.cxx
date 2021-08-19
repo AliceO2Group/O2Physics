@@ -39,13 +39,30 @@ namespace indices
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_INDEX_COLUMN(RICH, rich);
+DECLARE_SOA_INDEX_COLUMN(FRICH, frich);
 } // namespace indices
 
 DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
+DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::TrackId, indices::FRICHId);
+DECLARE_SOA_INDEX_TABLE_USER(BothRICHTracksIndex, Tracks, "FRICHTRK", indices::TrackId, indices::RICHId, indices::FRICHId);
 } // namespace o2::aod
 
-struct richIndexBuilder {
+struct richIndexBuilder { // Builder of the RICH-track index linkage
   Builds<o2::aod::RICHTracksIndex> ind;
+  void init(o2::framework::InitContext&)
+  {
+  }
+};
+
+struct frichIndexBuilder { // Builder of the FRICH-track index linkage
+  Builds<o2::aod::FRICHTracksIndex> ind;
+  void init(o2::framework::InitContext&)
+  {
+  }
+};
+
+struct bothrichIndexBuilder { // Builder of the RICH and FRICH track index linkage
+  Builds<o2::aod::BothRICHTracksIndex> ind;
   void init(o2::framework::InitContext&)
   {
   }
@@ -104,56 +121,62 @@ struct richPidQaMc {
   static constexpr std::string_view hnsigmaMCsec[Np] = {"nsigmaMCsec/El", "nsigmaMCsec/Mu", "nsigmaMCsec/Pi", "nsigmaMCsec/Ka", "nsigmaMCsec/Pr"};
   static constexpr std::string_view hnsigmaMCprm[Np] = {"nsigmaMCprm/El", "nsigmaMCprm/Mu", "nsigmaMCprm/Pi", "nsigmaMCprm/Ka", "nsigmaMCprm/Pr"};
 
+  static constexpr std::string_view hfrichnsigma[Np] = {"fRICH/nsigma/El", "fRICH/nsigma/Mu", "fRICH/nsigma/Pi", "fRICH/nsigma/Ka", "fRICH/nsigma/Pr"};
+  static constexpr std::string_view hfrichnsigmaprm[Np] = {"fRICH/nsigmaprm/El", "fRICH/nsigmaprm/Mu", "fRICH/nsigmaprm/Pi", "fRICH/nsigmaprm/Ka", "fRICH/nsigmaprm/Pr"};
+  static constexpr std::string_view hfrichnsigmasec[Np] = {"fRICH/nsigmasec/El", "fRICH/nsigmasec/Mu", "fRICH/nsigmasec/Pi", "fRICH/nsigmasec/Ka", "fRICH/nsigmasec/Pr"};
+
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p"};
   static constexpr int PDGs[Np] = {11, 13, 211, 321, 2212};
   template <uint8_t i>
   void addParticleHistos()
   {
-    AxisSpec momAxis{nBinsP, minP, maxP};
-    AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma};
+    const AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
 
-    const char* ns = Form("N_{#sigma}^{RICH}(%s)", pT[pid_type]);
-    const char* pt = "#it{p}_{T} (GeV/#it{c})";
-    const char* tit = Form("%s", pT[i]);
+    TString tit = Form("%s", pT[i]);
     if (useTOF) {
       tit = Form("TOF Selected %s", pT[i]);
     }
     // NSigma
-    histos.add(hnsigmaMC[i].data(), Form("True %s;%s;%s", tit, pt, ns), HistType::kTH2F, {momAxis, nsigmaAxis});
+    histos.add(hnsigmaMC[i].data(), "True " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
     makelogaxis(histos.get<TH2>(HIST(hnsigmaMC[i])));
-    histos.add(hnsigmaMCprm[i].data(), Form("True Primary %s;%s;%s", tit, pt, ns), HistType::kTH2F, {momAxis, nsigmaAxis});
+    histos.add(hnsigmaMCprm[i].data(), "True Primary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
     makelogaxis(histos.get<TH2>(HIST(hnsigmaMCprm[i])));
-    histos.add(hnsigmaMCsec[i].data(), Form("True Secondary %s;%s;%s", tit, pt, ns), HistType::kTH2F, {momAxis, nsigmaAxis});
+    histos.add(hnsigmaMCsec[i].data(), "True Secondary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
     makelogaxis(histos.get<TH2>(HIST(hnsigmaMCsec[i])));
   }
   void init(o2::framework::InitContext&)
   {
-    AxisSpec momAxis{nBinsP, minP, maxP};
-    AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma};
-    AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta};
+    const AxisSpec momAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    const AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec sigAxis{1000, 0, 0.3, "Cherenkov angle (rad)"};
+    const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
+    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("#Delta(%s) (rad)", pT[pid_type])};
 
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
-    histos.add("p/Unselected", "Unselected;#it{p} (GeV/#it{c})", kTH1F, {momAxis});
-    histos.add("p/Prim", "Primaries;#it{p} (GeV/#it{c})", kTH1F, {momAxis});
-    histos.add("p/Sec", "Secondaries;#it{p} (GeV/#it{c})", kTH1F, {momAxis});
-    histos.add("pt/Unselected", "Unselected;#it{p} (GeV/#it{c})", kTH1F, {momAxis});
-    histos.add("qa/signal", ";Cherenkov angle (rad)", kTH1F, {{100, 0, 1}});
-    histos.add("qa/eta", ";#it{#eta}", kTH1F, {{100, -2, 2}});
-    histos.add("qa/signalerror", ";Cherenkov angle (rad)", kTH1F, {{100, 0, 1}});
-    histos.add("qa/signalvsP", ";#it{p} (GeV/#it{c});Cherenkov angle (rad)", kTH2F, {momAxis, {1000, 0, 0.3}});
+    histos.add("p/Unselected", "Unselected", kTH1F, {momAxis});
+    histos.add("p/Prim", "Primaries", kTH1F, {momAxis});
+    histos.add("p/Sec", "Secondaries", kTH1F, {momAxis});
+    histos.add("pt/Unselected", "Unselected", kTH1F, {momAxis});
+    histos.add("qa/signal", "", kTH1F, {sigAxis});
+    histos.add("qa/eta", ";#it{#eta}", kTH1F, {{100, -4, 4}});
+    histos.add("qa/signalerror", ";Cherenkov angle error (rad)", kTH1F, {{100, 0, 1}});
+    histos.add("qa/signalvsP", "", kTH2F, {momAxis, sigAxis});
     makelogaxis(histos.get<TH2>(HIST("qa/signalvsP")));
-    histos.add("qa/signalvsPPrim", ";#it{p} (GeV/#it{c});Cherenkov angle (rad)", kTH2F, {momAxis, {1000, 0, 0.3}});
+    histos.add("qa/signalvsPPrim", "", kTH2F, {momAxis, sigAxis});
     makelogaxis(histos.get<TH2>(HIST("qa/signalvsPPrim")));
-    histos.add("qa/signalvsPSec", ";#it{p} (GeV/#it{c});Cherenkov angle (rad)", kTH2F, {momAxis, {1000, 0, 0.3}});
+    histos.add("qa/signalvsPSec", "", kTH2F, {momAxis, sigAxis});
     makelogaxis(histos.get<TH2>(HIST("qa/signalvsPSec")));
-    histos.add(hdelta[pid_type].data(), Form(";#it{p} (GeV/#it{c});#Delta(%s) (rad)", pT[pid_type]), kTH2F, {momAxis, deltaAxis});
+    histos.add(hdelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
     makelogaxis(histos.get<TH2>(HIST(hdelta[pid_type])));
-    histos.add(hnsigma[pid_type].data(), Form(";#it{p}_{T} (GeV/#it{c});N_{#sigma}^{RICH}(%s)", pT[pid_type]), HistType::kTH2F, {momAxis, nsigmaAxis});
+    histos.add(hnsigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
     makelogaxis(histos.get<TH2>(HIST(hnsigma[pid_type])));
-    histos.add(hnsigmaprm[pid_type].data(), Form("Primary;#it{p}_{T} (GeV/#it{c});N_{#sigma}^{RICH}(%s)", pT[pid_type]), HistType::kTH2F, {momAxis, nsigmaAxis});
+    histos.add(hnsigmaprm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
     makelogaxis(histos.get<TH2>(HIST(hnsigmaprm[pid_type])));
-    histos.add(hnsigmasec[pid_type].data(), Form("Secondary;#it{p}_{T} (GeV/#it{c});N_{#sigma}^{RICH}(%s)", pT[pid_type]), HistType::kTH2F, {momAxis, nsigmaAxis});
+    histos.add(hnsigmasec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
     makelogaxis(histos.get<TH2>(HIST(hnsigmasec[pid_type])));
+    histos.add(hfrichnsigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    makelogaxis(histos.get<TH2>(HIST(hfrichnsigma[pid_type])));
     addParticleHistos<0>();
     addParticleHistos<1>();
     addParticleHistos<2>();
@@ -178,16 +201,22 @@ struct richPidQaMc {
   using Trks = soa::Join<aod::Tracks, aod::RICHTracksIndex, aod::TracksExtra,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  void process(const Trks& tracks,
+  using TrksfRICH = soa::Join<aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
+  using TrksbothRICH = soa::Join<aod::Tracks, aod::BothRICHTracksIndex, aod::TracksExtra>;
+  void process(const aod::McParticles& mcParticles,
+               const Trks& tracks,
+               const TrksfRICH& tracksfrich,
+               const TrksbothRICH& tracksbothrich,
                const aod::McTrackLabels& labels,
                const aod::RICHs&,
-               const aod::McParticles& mcParticles,
+               const aod::FRICHs&,
                const aod::Collisions& colls)
   {
     for (const auto& col : colls) {
       histos.fill(HIST("event/vertexz"), col.posZ());
     }
-    for (const auto& track : tracks) {
+
+    for (const auto& track : tracks) { // Barrel RICH
       if (!track.has_rich()) {
         continue;
       }
@@ -264,12 +293,67 @@ struct richPidQaMc {
       fillNsigma<3>(track, mcParticle, mcParticles, nsigma);
       fillNsigma<4>(track, mcParticle, mcParticles, nsigma);
     }
+
+    for (const auto& track : tracksfrich) { // Forward RICH
+      if (!track.has_frich()) {
+        continue;
+      }
+      if (track.length() < minLength) {
+        continue;
+      }
+      if (track.length() > maxLength) {
+        continue;
+      }
+      if (track.eta() > maxEta || track.eta() < minEta) {
+        continue;
+      }
+      const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
+      if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
+        continue;
+      }
+
+      float delta = -999.f;
+      float nsigma = -999.f;
+      if constexpr (pid_type == 0) {
+        delta = track.frich().frichDeltaEl();
+        nsigma = track.frich().frichNsigmaEl();
+      } else if constexpr (pid_type == 1) {
+        delta = track.frich().frichDeltaMu();
+        nsigma = track.frich().frichNsigmaMu();
+      } else if constexpr (pid_type == 2) {
+        delta = track.frich().frichDeltaPi();
+        nsigma = track.frich().frichNsigmaPi();
+      } else if constexpr (pid_type == 3) {
+        delta = track.frich().frichDeltaKa();
+        nsigma = track.frich().frichNsigmaKa();
+      } else if constexpr (pid_type == 4) {
+        delta = track.frich().frichDeltaPr();
+        nsigma = track.frich().frichNsigmaPr();
+      }
+      histos.fill(HIST(hfrichnsigma[pid_type]), track.pt(), nsigma);
+      if (MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
+        histos.fill(HIST(hfrichnsigmaprm[pid_type]), track.pt(), nsigma);
+      } else {
+        histos.fill(HIST(hfrichnsigmasec[pid_type]), track.pt(), nsigma);
+      }
+    }
+
+    for (const auto& track : tracksbothrich) { // Barrel and Forward RICH
+      if (!track.has_frich()) {
+        continue;
+      }
+      if (!track.has_rich()) {
+        continue;
+      }
+    }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<richIndexBuilder>(cfg)};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<richIndexBuilder>(cfg),
+                               adaptAnalysisTask<frichIndexBuilder>(cfg),
+                               adaptAnalysisTask<bothrichIndexBuilder>(cfg)};
   if (cfg.options().get<int>("qa-el")) {
     workflow.push_back(adaptAnalysisTask<richPidQaMc<PID::Electron>>(cfg, TaskName{"pidRICH-qa-El"}));
   }
