@@ -50,3 +50,8 @@ o2physics_add_dpl_workflow(alice3-pid-tof
                     SOURCES src/alice3-pidTOF.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::ALICE3Analysis
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-cdeuteron
+                    SOURCES src/alice3-cdeuteron.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::ALICE3Analysis O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)

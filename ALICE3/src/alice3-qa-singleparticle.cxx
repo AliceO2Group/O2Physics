@@ -83,6 +83,12 @@ struct Alice3SingleParticle {
     histos.add("particle/Px", "Particle Px " + tit, kTH1D, {axisPx});
     histos.add("particle/Py", "Particle Py " + tit, kTH1D, {axisPy});
     histos.add("particle/Pz", "Particle Pz " + tit, kTH1D, {axisPz});
+    if (!IsStable) {
+      histos.add("particle/daughters/PDGs", "Daughters Prod. Vertex X " + tit, kTH1D, {{100, 0.f, 100.f}});
+      histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + tit, kTH1D, {axisProdx});
+      histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + tit, kTH1D, {axisPrody});
+      histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + tit, kTH1D, {axisProdz});
+    }
 
     histos.add("track/PDGs", "Track PDGs;PDG Code", kTH1D, {{100, 0.f, 100.f}});
     histos.add("track/tofPDGs", "Track wTOF PDGs;PDG Code", kTH1D, {{100, 0.f, 100.f}});
@@ -124,6 +130,13 @@ struct Alice3SingleParticle {
       histos.fill(HIST("particle/prodVx"), mcParticle.vx());
       histos.fill(HIST("particle/prodVy"), mcParticle.vy());
       histos.fill(HIST("particle/prodVz"), mcParticle.vz());
+      if (!IsStable && mcParticle.has_daughter0()) {
+        histos.get<TH1>(HIST("particle/daughters/PDGs"))->Fill(Form("%i", mcParticle.daughter0_as<aod::McParticles>().pdgCode()), 1.f);
+        histos.fill(HIST("particle/daughters/prodVx"), mcParticle.daughter0_as<aod::McParticles>().vx());
+        histos.fill(HIST("particle/daughters/prodVy"), mcParticle.daughter0_as<aod::McParticles>().vy());
+        histos.fill(HIST("particle/daughters/prodVz"), mcParticle.daughter0_as<aod::McParticles>().vz());
+      }
+
       histos.fill(HIST("particle/prodRadius"), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
       histos.fill(HIST("particle/prodVxVsPt"), mcParticle.pt(), mcParticle.vx());
       histos.fill(HIST("particle/prodVyVsPt"), mcParticle.pt(), mcParticle.vy());
