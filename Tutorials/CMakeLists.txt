@@ -21,10 +21,6 @@ o2physics_add_dpl_workflow(histogram-track-selection
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(track-collection-iteration
-                  SOURCES src/trackCollectionIteration.cxx
-                  COMPONENT_NAME AnalysisTutorial)
-
 o2physics_add_dpl_workflow(track-iteration
                   SOURCES src/trackIteration.cxx
                   COMPONENT_NAME AnalysisTutorial)
@@ -73,16 +69,6 @@ o2physics_add_dpl_workflow(partitions
                   PUBLIC_LINK_LIBRARIES O2::Framework
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(aodwriter
-                  SOURCES src/aodwriter.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework
-                  COMPONENT_NAME AnalysisTutorial)
-
-o2physics_add_dpl_workflow(aodreader
-                  SOURCES src/aodreader.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework
-                  COMPONENT_NAME AnalysisTutorial)
-
 o2physics_add_dpl_workflow(tableio-write
                   SOURCES src/tableIOout.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework
@@ -90,11 +76,6 @@ o2physics_add_dpl_workflow(tableio-write
 
 o2physics_add_dpl_workflow(tableio-read
                   SOURCES src/tableIOin.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework
-                  COMPONENT_NAME AnalysisTutorial)
-
-o2physics_add_dpl_workflow(outputs
-                  SOURCES src/outputs.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework
                   COMPONENT_NAME AnalysisTutorial)
 
