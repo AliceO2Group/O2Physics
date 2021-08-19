@@ -44,51 +44,60 @@ struct Alice3LutMaker {
   static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030};
   static_assert(particle < nSpecies && "Maximum of particles reached");
   static constexpr int pdg = PDGs[particle];
+  Configurable<bool> addQA{"add-qa", false, "Flag to use add QA plots to show the covariance matrix elements"};
   Configurable<bool> selPrim{"sel-prim", false, "If true selects primaries, if not select all particles"};
+
+  Configurable<int> nchBins{"nch-bins", 20, "Number of multiplicity bins"};
+  Configurable<float> nchMin{"nch-min", 0.5f, "Lower limit in multiplicity"};
+  Configurable<float> nchMax{"nch-max", 3.5f, "Upper limit in multiplicity"};
+  Configurable<int> nchLog{"nch-log", 1, "Flag to use a logarithmic multiplicity axis, in this case the Nch limits are the expontents"};
+
   Configurable<int> etaBins{"eta-bins", 80, "Number of eta bins"};
   Configurable<float> etaMin{"eta-min", -4.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 4.f, "Upper limit in eta"};
+
   Configurable<int> ptBins{"pt-bins", 200, "Number of pT bins"};
   Configurable<float> ptMin{"pt-min", -2.f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 2.f, "Upper limit in pT"};
-  Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
-  Configurable<int> addQA{"add-qa", 0, "Flag to use add QA plots to show the covariance matrix elements"};
+  Configurable<int> ptLog{"pt-log", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
     const TString commonTitle = Form(" PDG %i", pdg);
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} GeV/#it{c}"};
-    if (logPt) {
-      const double min = axisPt.binEdges[0];
-      const double width = (axisPt.binEdges[1] - axisPt.binEdges[0]) / axisPt.nBins.value();
-      axisPt.binEdges.clear();
-      axisPt.binEdges.resize(0);
-      for (int i = 0; i < axisPt.nBins.value() + 1; i++) {
-        axisPt.binEdges.push_back(std::pow(10., min + i * width));
-      }
-      axisPt.nBins = std::nullopt;
+    if (ptLog) {
+      axisPt.makeLogaritmic();
+    }
+    AxisSpec axisNch{nchBins, nchMin, nchMax, "N_{Ch}"};
+    if (nchLog) {
+      axisNch.makeLogaritmic();
     }
     const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
-    const AxisSpec axiscYY{100, -10, 10, "cYY"};
-    const AxisSpec axiscZY{100, -10, 10, "cZY"};
-    const AxisSpec axiscZZ{100, -10, 10, "cZZ"};
-    const AxisSpec axiscSnpY{100, -10, 10, "cSnpY"};
-    const AxisSpec axiscSnpZ{100, -10, 10, "cSnpZ"};
-    const AxisSpec axiscSnpSnp{100, -10, 10, "cSnpSnp"};
-    const AxisSpec axiscTglY{100, -10, 10, "cTglY"};
-    const AxisSpec axiscTglZ{100, -10, 10, "cTglZ"};
-    const AxisSpec axiscTglSnp{100, -10, 10, "cTglSnp"};
-    const AxisSpec axiscTglTgl{100, -10, 10, "cTglTgl"};
-    const AxisSpec axisc1PtY{100, -10, 10, "c1PtY"};
-    const AxisSpec axisc1PtZ{100, -10, 10, "c1PtZ"};
-    const AxisSpec axisc1PtSnp{100, -10, 10, "c1PtSnp"};
-    const AxisSpec axisc1PtTgl{100, -10, 10, "c1PtTgl"};
-    const AxisSpec axisc1Pt21Pt2{100, -10, 10, "c1Pt21Pt2"};
 
-    histos.add("multiplicity", "Track multiplicity;Tracks per event;Events", kTH1F, {{100, 0, 2000}});
+    // Track quantities
+    histos.add("multiplicity", "Track multiplicity;Tracks per event;Events", kTH1F, {axisNch});
     histos.add("pt", "pt" + commonTitle, kTH1F, {axisPt});
     histos.add("eta", "eta" + commonTitle, kTH1F, {axisEta});
+
+    // Track covariance matrix quantities
+    histos.add("CovMat_sigmaY", "sigmaY" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_sigmaZ", "sigmaZ" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_sigmaSnp", "sigmaSnp" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_sigmaTgl", "sigmaTgl" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_sigma1Pt", "sigma1Pt" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rhoZY", "rhoZY" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rhoSnpY", "rhoSnpY" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rhoSnpZ", "rhoSnpZ" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rhoTglY", "rhoTglY" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rhoTglZ", "rhoTglZ" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rhoTglSnp", "rhoTglSnp" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rho1PtY", "rho1PtY" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rho1PtZ", "rho1PtZ" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rho1PtSnp", "rho1PtSnp" + commonTitle, kTProfile2D, {axisPt, axisEta});
+    histos.add("CovMat_rho1PtTgl", "rho1PtTgl" + commonTitle, kTProfile2D, {axisPt, axisEta});
+
     histos.add("CovMat_cYY", "cYY" + commonTitle, kTProfile2D, {axisPt, axisEta});
     histos.add("CovMat_cZY", "cZY" + commonTitle, kTProfile2D, {axisPt, axisEta});
     histos.add("CovMat_cZZ", "cZZ" + commonTitle, kTProfile2D, {axisPt, axisEta});
@@ -106,27 +115,78 @@ struct Alice3LutMaker {
     histos.add("CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTProfile2D, {axisPt, axisEta});
 
     histos.add("Efficiency", "Efficiency" + commonTitle, kTProfile2D, {axisPt, axisEta});
-    if (addQA) {
-      histos.add("QA/CovMat_cYY", "cYY" + commonTitle, kTH3F, {axisPt, axisEta, axiscYY});
-      histos.add("QA/CovMat_cZY", "cZY" + commonTitle, kTH3F, {axisPt, axisEta, axiscZY});
-      histos.add("QA/CovMat_cZZ", "cZZ" + commonTitle, kTH3F, {axisPt, axisEta, axiscZZ});
-      histos.add("QA/CovMat_cSnpY", "cSnpY" + commonTitle, kTH3F, {axisPt, axisEta, axiscSnpY});
-      histos.add("QA/CovMat_cSnpZ", "cSnpZ" + commonTitle, kTH3F, {axisPt, axisEta, axiscSnpZ});
-      histos.add("QA/CovMat_cSnpSnp", "cSnpSnp" + commonTitle, kTH3F, {axisPt, axisEta, axiscSnpSnp});
-      histos.add("QA/CovMat_cTglY", "cTglY" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglY});
-      histos.add("QA/CovMat_cTglZ", "cTglZ" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglZ});
-      histos.add("QA/CovMat_cTglSnp", "cTglSnp" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglSnp});
-      histos.add("QA/CovMat_cTglTgl", "cTglTgl" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglTgl});
-      histos.add("QA/CovMat_c1PtY", "c1PtY" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtY});
-      histos.add("QA/CovMat_c1PtZ", "c1PtZ" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtZ});
-      histos.add("QA/CovMat_c1PtSnp", "c1PtSnp" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtSnp});
-      histos.add("QA/CovMat_c1PtTgl", "c1PtTgl" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtTgl});
-      histos.add("QA/CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTH3F, {axisPt, axisEta, axisc1Pt21Pt2});
+
+    if (!addQA) { // Only if QA histograms are enabled
+      return;
     }
+
+    const AxisSpec axissigmaY{300, 0.0, 0.04, "sigmaY"};
+    const AxisSpec axissigmaZ{300, 0.0, 0.07, "sigmaZ"};
+    const AxisSpec axissigmaSnp{300, 0.0, 0.09, "sigmaSnp"};
+    const AxisSpec axissigmaTgl{300, 0.0, 0.15, "sigmaTgl"};
+    const AxisSpec axissigma1Pt{300, 0.0, 5, "sigma1Pt"};
+    const AxisSpec axisrhoZY{300, -18.0, 18.0, "rhoZY"};
+    const AxisSpec axisrhoSnpY{300, -300.0, 0.0, "rhoSnpY"};
+    const AxisSpec axisrhoSnpZ{300, -10.0, 10.0, "rhoSnpZ"};
+    const AxisSpec axisrhoTglY{300, -20.0, 20.0, "rhoTglY"};
+    const AxisSpec axisrhoTglZ{300, -300.0, 0.0, "rhoTglZ"};
+    const AxisSpec axisrhoTglSnp{300, -15.0, 15.0, "rhoTglSnp"};
+    const AxisSpec axisrho1PtY{321, -250.0, 250.0, "rho1PtY"};
+    const AxisSpec axisrho1PtZ{300, -90.0, 90.0, "rho1PtZ"};
+    const AxisSpec axisrho1PtSnp{375, -300.0, 300.0, "rho1PtSnp"};
+    const AxisSpec axisrho1PtTgl{300, -90.0, 90.0, "rho1PtTgl"};
+
+    histos.add("QA/CovMat_sigmaY", "sigmaY" + commonTitle, kTH3F, {axisPt, axisEta, axissigmaY});
+    histos.add("QA/CovMat_sigmaZ", "sigmaZ" + commonTitle, kTH3F, {axisPt, axisEta, axissigmaZ});
+    histos.add("QA/CovMat_sigmaSnp", "sigmaSnp" + commonTitle, kTH3F, {axisPt, axisEta, axissigmaSnp});
+    histos.add("QA/CovMat_sigmaTgl", "sigmaTgl" + commonTitle, kTH3F, {axisPt, axisEta, axissigmaTgl});
+    histos.add("QA/CovMat_sigma1Pt", "sigma1Pt" + commonTitle, kTH3F, {axisPt, axisEta, axissigma1Pt});
+    histos.add("QA/CovMat_rhoZY", "rhoZY" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoZY});
+    histos.add("QA/CovMat_rhoSnpY", "rhoSnpY" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoSnpY});
+    histos.add("QA/CovMat_rhoSnpZ", "rhoSnpZ" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoSnpZ});
+    histos.add("QA/CovMat_rhoTglY", "rhoTglY" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoTglY});
+    histos.add("QA/CovMat_rhoTglZ", "rhoTglZ" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoTglZ});
+    histos.add("QA/CovMat_rhoTglSnp", "rhoTglSnp" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoTglSnp});
+    histos.add("QA/CovMat_rho1PtY", "rho1PtY" + commonTitle, kTH3F, {axisPt, axisEta, axisrho1PtY});
+    histos.add("QA/CovMat_rho1PtZ", "rho1PtZ" + commonTitle, kTH3F, {axisPt, axisEta, axisrho1PtZ});
+    histos.add("QA/CovMat_rho1PtSnp", "rho1PtSnp" + commonTitle, kTH3F, {axisPt, axisEta, axisrho1PtSnp});
+    histos.add("QA/CovMat_rho1PtTgl", "rho1PtTgl" + commonTitle, kTH3F, {axisPt, axisEta, axisrho1PtTgl});
+
+    const AxisSpec axiscYY{300, 0.0, 0.0009, "cYY"};
+    const AxisSpec axiscZY{300, -6e-08, 6e-08, "cZY"};
+    const AxisSpec axiscZZ{300, 0.0, 0.003, "cZZ"};
+    const AxisSpec axiscSnpY{300, -0.0021, 0.0, "cSnpY"};
+    const AxisSpec axiscSnpZ{300, -8e-08, 8e-08, "cSnpZ"};
+    const AxisSpec axiscSnpSnp{300, 0.0, 0.0025, "cSnpSnp"};
+    const AxisSpec axiscTglY{300, -2e-07, 2e-07, "cTglY"};
+    const AxisSpec axiscTglZ{300, -0.004, 0.0, "cTglZ"};
+    const AxisSpec axiscTglSnp{300, -3.5e-05, 3.5e-05, "cTglSnp"};
+    const AxisSpec axiscTglTgl{300, 0.0, 0.008, "cTglTgl"};
+    const AxisSpec axisc1PtY{300, -0.004, 0.004, "c1PtY"};
+    const AxisSpec axisc1PtZ{300, -0.03, 0.03, "c1PtZ"};
+    const AxisSpec axisc1PtSnp{300, -0.015, 0.015, "c1PtSnp"};
+    const AxisSpec axisc1PtTgl{300, -0.06, 0.06, "c1PtTgl"};
+    const AxisSpec axisc1Pt21Pt2{300, 0.0, 10, "c1Pt21Pt2"};
+
+    histos.add("QA/CovMat_cYY", "cYY" + commonTitle, kTH3F, {axisPt, axisEta, axiscYY});
+    histos.add("QA/CovMat_cZY", "cZY" + commonTitle, kTH3F, {axisPt, axisEta, axiscZY});
+    histos.add("QA/CovMat_cZZ", "cZZ" + commonTitle, kTH3F, {axisPt, axisEta, axiscZZ});
+    histos.add("QA/CovMat_cSnpY", "cSnpY" + commonTitle, kTH3F, {axisPt, axisEta, axiscSnpY});
+    histos.add("QA/CovMat_cSnpZ", "cSnpZ" + commonTitle, kTH3F, {axisPt, axisEta, axiscSnpZ});
+    histos.add("QA/CovMat_cSnpSnp", "cSnpSnp" + commonTitle, kTH3F, {axisPt, axisEta, axiscSnpSnp});
+    histos.add("QA/CovMat_cTglY", "cTglY" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglY});
+    histos.add("QA/CovMat_cTglZ", "cTglZ" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglZ});
+    histos.add("QA/CovMat_cTglSnp", "cTglSnp" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglSnp});
+    histos.add("QA/CovMat_cTglTgl", "cTglTgl" + commonTitle, kTH3F, {axisPt, axisEta, axiscTglTgl});
+    histos.add("QA/CovMat_c1PtY", "c1PtY" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtY});
+    histos.add("QA/CovMat_c1PtZ", "c1PtZ" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtZ});
+    histos.add("QA/CovMat_c1PtSnp", "c1PtSnp" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtSnp});
+    histos.add("QA/CovMat_c1PtTgl", "c1PtTgl" + commonTitle, kTH3F, {axisPt, axisEta, axisc1PtTgl});
+    histos.add("QA/CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTH3F, {axisPt, axisEta, axisc1Pt21Pt2});
   }
 
   void process(const soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels>& tracks,
-               const aod::McParticles& mcParticles)
+               const aod::McParticles& mcParticles, const o2::aod::McCollisions&)
   {
     std::vector<int64_t> recoTracks(tracks.size());
     int ntrks = 0;
@@ -144,6 +204,23 @@ struct Alice3LutMaker {
 
       histos.fill(HIST("pt"), mcParticle.pt());
       histos.fill(HIST("eta"), mcParticle.eta());
+
+      histos.fill(HIST("CovMat_sigmaY"), mcParticle.pt(), mcParticle.eta(), track.sigmaY());
+      histos.fill(HIST("CovMat_sigmaZ"), mcParticle.pt(), mcParticle.eta(), track.sigmaZ());
+      histos.fill(HIST("CovMat_sigmaSnp"), mcParticle.pt(), mcParticle.eta(), track.sigmaSnp());
+      histos.fill(HIST("CovMat_sigmaTgl"), mcParticle.pt(), mcParticle.eta(), track.sigmaTgl());
+      histos.fill(HIST("CovMat_sigma1Pt"), mcParticle.pt(), mcParticle.eta(), track.sigma1Pt());
+      histos.fill(HIST("CovMat_rhoZY"), mcParticle.pt(), mcParticle.eta(), track.rhoZY());
+      histos.fill(HIST("CovMat_rhoSnpY"), mcParticle.pt(), mcParticle.eta(), track.rhoSnpY());
+      histos.fill(HIST("CovMat_rhoSnpZ"), mcParticle.pt(), mcParticle.eta(), track.rhoSnpZ());
+      histos.fill(HIST("CovMat_rhoTglY"), mcParticle.pt(), mcParticle.eta(), track.rhoTglY());
+      histos.fill(HIST("CovMat_rhoTglZ"), mcParticle.pt(), mcParticle.eta(), track.rhoTglZ());
+      histos.fill(HIST("CovMat_rhoTglSnp"), mcParticle.pt(), mcParticle.eta(), track.rhoTglSnp());
+      histos.fill(HIST("CovMat_rho1PtY"), mcParticle.pt(), mcParticle.eta(), track.rho1PtY());
+      histos.fill(HIST("CovMat_rho1PtZ"), mcParticle.pt(), mcParticle.eta(), track.rho1PtZ());
+      histos.fill(HIST("CovMat_rho1PtSnp"), mcParticle.pt(), mcParticle.eta(), track.rho1PtSnp());
+      histos.fill(HIST("CovMat_rho1PtTgl"), mcParticle.pt(), mcParticle.eta(), track.rho1PtTgl());
+
       histos.fill(HIST("CovMat_cYY"), mcParticle.pt(), mcParticle.eta(), track.cYY());
       histos.fill(HIST("CovMat_cZY"), mcParticle.pt(), mcParticle.eta(), track.cZY());
       histos.fill(HIST("CovMat_cZZ"), mcParticle.pt(), mcParticle.eta(), track.cZZ());
@@ -159,23 +236,42 @@ struct Alice3LutMaker {
       histos.fill(HIST("CovMat_c1PtSnp"), mcParticle.pt(), mcParticle.eta(), track.c1PtSnp());
       histos.fill(HIST("CovMat_c1PtTgl"), mcParticle.pt(), mcParticle.eta(), track.c1PtTgl());
       histos.fill(HIST("CovMat_c1Pt21Pt2"), mcParticle.pt(), mcParticle.eta(), track.c1Pt21Pt2());
-      if (addQA) {
-        histos.fill(HIST("QA/CovMat_cYY"), mcParticle.pt(), mcParticle.eta(), track.cYY());
-        histos.fill(HIST("QA/CovMat_cZY"), mcParticle.pt(), mcParticle.eta(), track.cZY());
-        histos.fill(HIST("QA/CovMat_cZZ"), mcParticle.pt(), mcParticle.eta(), track.cZZ());
-        histos.fill(HIST("QA/CovMat_cSnpY"), mcParticle.pt(), mcParticle.eta(), track.cSnpY());
-        histos.fill(HIST("QA/CovMat_cSnpZ"), mcParticle.pt(), mcParticle.eta(), track.cSnpZ());
-        histos.fill(HIST("QA/CovMat_cSnpSnp"), mcParticle.pt(), mcParticle.eta(), track.cSnpSnp());
-        histos.fill(HIST("QA/CovMat_cTglY"), mcParticle.pt(), mcParticle.eta(), track.cTglY());
-        histos.fill(HIST("QA/CovMat_cTglZ"), mcParticle.pt(), mcParticle.eta(), track.cTglZ());
-        histos.fill(HIST("QA/CovMat_cTglSnp"), mcParticle.pt(), mcParticle.eta(), track.cTglSnp());
-        histos.fill(HIST("QA/CovMat_cTglTgl"), mcParticle.pt(), mcParticle.eta(), track.cTglTgl());
-        histos.fill(HIST("QA/CovMat_c1PtY"), mcParticle.pt(), mcParticle.eta(), track.c1PtY());
-        histos.fill(HIST("QA/CovMat_c1PtZ"), mcParticle.pt(), mcParticle.eta(), track.c1PtZ());
-        histos.fill(HIST("QA/CovMat_c1PtSnp"), mcParticle.pt(), mcParticle.eta(), track.c1PtSnp());
-        histos.fill(HIST("QA/CovMat_c1PtTgl"), mcParticle.pt(), mcParticle.eta(), track.c1PtTgl());
-        histos.fill(HIST("QA/CovMat_c1Pt21Pt2"), mcParticle.pt(), mcParticle.eta(), track.c1Pt21Pt2());
+
+      if (!addQA) { // Only if QA histograms are enabled
+        continue;
       }
+
+      histos.fill(HIST("QA/CovMat_sigmaY"), mcParticle.pt(), mcParticle.eta(), track.sigmaY());
+      histos.fill(HIST("QA/CovMat_sigmaZ"), mcParticle.pt(), mcParticle.eta(), track.sigmaZ());
+      histos.fill(HIST("QA/CovMat_sigmaSnp"), mcParticle.pt(), mcParticle.eta(), track.sigmaSnp());
+      histos.fill(HIST("QA/CovMat_sigmaTgl"), mcParticle.pt(), mcParticle.eta(), track.sigmaTgl());
+      histos.fill(HIST("QA/CovMat_sigma1Pt"), mcParticle.pt(), mcParticle.eta(), track.sigma1Pt());
+      histos.fill(HIST("QA/CovMat_rhoZY"), mcParticle.pt(), mcParticle.eta(), track.rhoZY());
+      histos.fill(HIST("QA/CovMat_rhoSnpY"), mcParticle.pt(), mcParticle.eta(), track.rhoSnpY());
+      histos.fill(HIST("QA/CovMat_rhoSnpZ"), mcParticle.pt(), mcParticle.eta(), track.rhoSnpZ());
+      histos.fill(HIST("QA/CovMat_rhoTglY"), mcParticle.pt(), mcParticle.eta(), track.rhoTglY());
+      histos.fill(HIST("QA/CovMat_rhoTglZ"), mcParticle.pt(), mcParticle.eta(), track.rhoTglZ());
+      histos.fill(HIST("QA/CovMat_rhoTglSnp"), mcParticle.pt(), mcParticle.eta(), track.rhoTglSnp());
+      histos.fill(HIST("QA/CovMat_rho1PtY"), mcParticle.pt(), mcParticle.eta(), track.rho1PtY());
+      histos.fill(HIST("QA/CovMat_rho1PtZ"), mcParticle.pt(), mcParticle.eta(), track.rho1PtZ());
+      histos.fill(HIST("QA/CovMat_rho1PtSnp"), mcParticle.pt(), mcParticle.eta(), track.rho1PtSnp());
+      histos.fill(HIST("QA/CovMat_rho1PtTgl"), mcParticle.pt(), mcParticle.eta(), track.rho1PtTgl());
+
+      histos.fill(HIST("QA/CovMat_cYY"), mcParticle.pt(), mcParticle.eta(), track.cYY());
+      histos.fill(HIST("QA/CovMat_cZY"), mcParticle.pt(), mcParticle.eta(), track.cZY());
+      histos.fill(HIST("QA/CovMat_cZZ"), mcParticle.pt(), mcParticle.eta(), track.cZZ());
+      histos.fill(HIST("QA/CovMat_cSnpY"), mcParticle.pt(), mcParticle.eta(), track.cSnpY());
+      histos.fill(HIST("QA/CovMat_cSnpZ"), mcParticle.pt(), mcParticle.eta(), track.cSnpZ());
+      histos.fill(HIST("QA/CovMat_cSnpSnp"), mcParticle.pt(), mcParticle.eta(), track.cSnpSnp());
+      histos.fill(HIST("QA/CovMat_cTglY"), mcParticle.pt(), mcParticle.eta(), track.cTglY());
+      histos.fill(HIST("QA/CovMat_cTglZ"), mcParticle.pt(), mcParticle.eta(), track.cTglZ());
+      histos.fill(HIST("QA/CovMat_cTglSnp"), mcParticle.pt(), mcParticle.eta(), track.cTglSnp());
+      histos.fill(HIST("QA/CovMat_cTglTgl"), mcParticle.pt(), mcParticle.eta(), track.cTglTgl());
+      histos.fill(HIST("QA/CovMat_c1PtY"), mcParticle.pt(), mcParticle.eta(), track.c1PtY());
+      histos.fill(HIST("QA/CovMat_c1PtZ"), mcParticle.pt(), mcParticle.eta(), track.c1PtZ());
+      histos.fill(HIST("QA/CovMat_c1PtSnp"), mcParticle.pt(), mcParticle.eta(), track.c1PtSnp());
+      histos.fill(HIST("QA/CovMat_c1PtTgl"), mcParticle.pt(), mcParticle.eta(), track.c1PtTgl());
+      histos.fill(HIST("QA/CovMat_c1Pt21Pt2"), mcParticle.pt(), mcParticle.eta(), track.c1Pt21Pt2());
     }
     histos.fill(HIST("multiplicity"), ntrks);
 
