@@ -44,6 +44,12 @@ feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 include(O2PhysicsDefineOptions)
 o2physics_define_options()
 
+include(O2PhysicsDefineOutputPaths)
+o2physics_define_output_paths()
+
+include(O2PhysicsDefineRPATH)
+o2physics_define_rpath()
+
 # External dependencies
 include(dependencies/CMakeLists.txt)
 
