@@ -32,7 +32,7 @@ using namespace o2::framework::expressions; //FIXME not sure if this is needed
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
