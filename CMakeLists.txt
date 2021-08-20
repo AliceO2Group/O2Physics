@@ -22,12 +22,13 @@ set_property(GLOBAL PROPERTY REPORT_UNDEFINED_PROPERTIES)
 include(GNUInstallDirs)
 
 cmake_host_system_information(RESULT _totalmem QUERY TOTAL_PHYSICAL_MEMORY)
-math(EXPR _total_analysis_jobs "(${_totalmem}-4096)/10240")
+math(EXPR _total_analysis_jobs "(${_totalmem}-4096)/4096")
 if(_total_analysis_jobs LESS_EQUAL 0)
   set(_total_analysis_jobs 1)
 endif()
 set(ANALYSIS_COMPILE_POOL ${_total_analysis_jobs} CACHE STRING "How many parallel analysis compilation jobs")
 set_property(GLOBAL PROPERTY JOB_POOLS analysis=${ANALYSIS_COMPILE_POOL})
+message(STATUS "Limiting workflow compilations in parallel to: ${ANALYSIS_COMPILE_POOL}")
 
 # C++ standard
 if(NOT DEFINED CMAKE_CXX_STANDARD)
@@ -37,11 +38,18 @@ endif()
 
 # Dependencies
 find_package(O2 CONFIG REQUIRED)
+find_package(ONNXRuntime::ONNXRuntime CONFIG REQUIRED)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
 include(O2PhysicsDefineOptions)
 o2physics_define_options()
+
+include(O2PhysicsDefineOutputPaths)
+o2physics_define_output_paths()
+
+include(O2PhysicsDefineRPATH)
+o2physics_define_rpath()
 
 # External dependencies
 include(dependencies/CMakeLists.txt)
@@ -50,6 +58,9 @@ include(dependencies/CMakeLists.txt)
 include(O2PhysicsNameTarget)
 include(O2PhysicsAddExecutable)
 include(O2PhysicsAddWorkflow)
+include(O2PhysicsAddLibrary)
+include(O2PhysicsAddHeaderOnlyLibrary)
+include(O2PhysicsTargetRootDictionary)
 
 # Main targets of the project in various subdirectories. Order matters.
 add_subdirectory(Core)

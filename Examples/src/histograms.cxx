@@ -30,7 +30,7 @@ struct RootHistograms {
 
   // normal creation of a histogram
   TH1F* phiHA = new TH1F("phiA", "phiA", 100, 0., 2. * M_PI);
-  TH1F *etaHA = new TH1F("etaA", "etaA", 102, -2.01, 2.01);
+  TH1F* etaHA = new TH1F("etaA", "etaA", 102, -2.01, 2.01);
 
   void process(aod::Tracks const& tracks)
   {

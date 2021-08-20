@@ -9,16 +9,16 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_library(PWGDQCore
+o2physics_add_library(PWGDQCore
                SOURCES  src/VarManager.cxx
                         src/HistogramManager.cxx
                         src/AnalysisCut.cxx
                         src/AnalysisCompositeCut.cxx
                         src/MCProng.cxx
                         src/MCSignal.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::DetectorsVertexing)
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing)
 
-o2_target_root_dictionary(PWGDQCore
+o2physics_target_root_dictionary(PWGDQCore
                           HEADERS  include/PWGDQCore/AnalysisCut.h 
                           include/PWGDQCore/AnalysisCompositeCut.h 
                           include/PWGDQCore/VarManager.h 

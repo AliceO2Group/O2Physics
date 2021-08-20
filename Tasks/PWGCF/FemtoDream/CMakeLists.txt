@@ -9,24 +9,24 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_dpl_workflow(femtodream-producer
+o2physics_add_dpl_workflow(femtodream-producer
           SOURCES femtoDreamProducerTask.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::AnalysisDataModel
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
           COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(femtodream-pair-track-track
+o2physics_add_dpl_workflow(femtodream-pair-track-track
           SOURCES femtoDreamPairTaskTrackTrack.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::AnalysisDataModel
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
           COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(femtodream-hash
+o2physics_add_dpl_workflow(femtodream-hash
           SOURCES femtoDreamHashTask.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::AnalysisDataModel
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
           COMPONENT_NAME Analysis)
 
 
-o2_add_executable(femtodream-cutculator
+o2physics_add_executable(femtodream-cutculator
           SOURCES femtoDreamCutCulator.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::AnalysisDataModel
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
           COMPONENT_NAME Analysis)
 

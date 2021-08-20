@@ -32,9 +32,9 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 struct pidTOFTaskBeta {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = aod::Collision;
+  using Colls = aod::Collisions;
   Produces<aod::pidTOFbeta> tablePIDBeta;
-  tof::Beta<Coll, Trks::iterator, PID::Electron> responseElectron;
+  tof::Beta<Colls::iterator, Trks::iterator, PID::Electron> responseElectron;
   Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
 
   void init(o2::framework::InitContext&)
@@ -42,15 +42,15 @@ struct pidTOFTaskBeta {
     responseElectron.mExpectedResolution = expreso.value;
   }
 
-  void process(Coll const& collision, Trks const& tracks)
+  void process(Trks const& tracks, Colls const&)
   {
     tablePIDBeta.reserve(tracks.size());
     for (auto const& trk : tracks) {
-      tablePIDBeta(responseElectron.GetBeta(collision, trk),
-                   responseElectron.GetExpectedSigma(collision, trk),
-                   responseElectron.GetExpectedSignal(collision, trk),
-                   responseElectron.GetExpectedSigma(collision, trk),
-                   responseElectron.GetSeparation(collision, trk));
+      tablePIDBeta(responseElectron.GetBeta(trk.collision(), trk),
+                   responseElectron.GetExpectedSigma(trk.collision(), trk),
+                   responseElectron.GetExpectedSignal(trk.collision(), trk),
+                   responseElectron.GetExpectedSigma(trk.collision(), trk),
+                   responseElectron.GetSeparation(trk.collision(), trk));
     }
   }
 };
@@ -92,15 +92,12 @@ struct tofPidQaBeta {
     }
 
     // Event properties
-    histos.add("event/vertexz", "", HistType::kTH1F, {vtxZAxis});
-    histos.add("event/colltime", "", HistType::kTH1F, {colTimeAxis});
     histos.add("event/tofsignal", "", HistType::kTH2F, {pAxis, tofAxis});
     histos.add("event/tofbeta", "", HistType::kTH2F, {pAxis, betaAxis});
     histos.add("event/eta", "", HistType::kTH1F, {etaAxis});
     histos.add("event/length", "", HistType::kTH1F, {lAxis});
     histos.add("event/pt", "", HistType::kTH1F, {ptAxis});
     histos.add("event/p", "", HistType::kTH1F, {pAxis});
-    histos.add("event/ptreso", "", HistType::kTH2F, {pAxis, ptResoAxis});
   }
 
   template <uint8_t i, typename T>
@@ -110,22 +107,24 @@ struct tofPidQaBeta {
     histos.fill(HIST(hexpected_diff[i]), t.p(), exp_diff);
     histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
   }
-
-  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTOFbeta, aod::TrackSelection>::iterator const& track)
+  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTOFbeta, aod::TrackSelection> const& tracks,
+               aod::Collisions const&)
   {
-    //
-    if (!track.hasTOF()) { // Skipping tracks without TOF
-      return;
+    for (auto const& track : tracks) {
+
+      if (!track.hasTOF()) { // Skipping tracks without TOF
+        continue;
+      }
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      histos.fill(HIST("event/tofbeta"), track.p(), track.beta());
+      histos.fill(HIST("event/length"), track.length());
+      histos.fill(HIST("event/eta"), track.eta());
+      histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
+      histos.fill(HIST("event/pt"), track.pt());
+      histos.fill(HIST("event/p"), track.p());
     }
-    if (!track.isGlobalTrack()) {
-      return;
-    }
-    histos.fill(HIST("event/tofbeta"), track.p(), track.beta());
-    histos.fill(HIST("event/length"), track.length());
-    histos.fill(HIST("event/eta"), track.eta());
-    histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
-    histos.fill(HIST("event/pt"), track.pt());
-    histos.fill(HIST("event/p"), track.p());
   }
 };
 

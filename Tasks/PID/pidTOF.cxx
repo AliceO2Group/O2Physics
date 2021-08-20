@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 struct tofPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-  using Coll = aod::Collisions;
+  using Colls = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFEl> tablePIDEl;
   Produces<o2::aod::pidTOFMu> tablePIDMu;
@@ -125,8 +125,8 @@ struct tofPid {
   }
 
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = tof::ExpTimes<Coll::iterator, Trks::iterator, pid>;
-  void process(Coll const& collisions, Trks const& tracks)
+  using ResponseImplementation = tof::ExpTimes<Colls::iterator, Trks::iterator, pid>;
+  void process(Trks const& tracks, Colls const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
