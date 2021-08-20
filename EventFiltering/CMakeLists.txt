@@ -20,9 +20,9 @@ o2physics_add_dpl_workflow(nuclei-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(CutHolder
-                           SOURCES PWGUD/cutHolder.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore)
+o2physics_add_library(CutHolder
+                      SOURCES PWGUD/cutHolder.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(CutHolder
                                  HEADERS PWGUD/cutHolder.h
