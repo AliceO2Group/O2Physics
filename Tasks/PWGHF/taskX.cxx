@@ -229,7 +229,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<TaskX>(cfgc, TaskName{"hf-task-x"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
+  //const bool doMC = cfgc.options().get<bool>("doMC");
+  const bool doMC = true;
   if (doMC) {
     workflow.push_back(adaptAnalysisTask<TaskXMC>(cfgc, TaskName{"hf-task-x-mc"}));
   }

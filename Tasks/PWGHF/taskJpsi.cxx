@@ -260,7 +260,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<TaskJpsi>(cfgc, TaskName{"hf-task-jpsi"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
+  //const bool doMC = cfgc.options().get<bool>("doMC");
+  const bool doMC = true;
   if (doMC) {
     workflow.push_back(adaptAnalysisTask<TaskJpsiMC>(cfgc, TaskName{"hf-task-jpsi-mc"}));
   }
