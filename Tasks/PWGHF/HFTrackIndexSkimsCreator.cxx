@@ -749,7 +749,6 @@ struct HfTrackIndexSkimsCreator {
     SelectedTracks const& tracks)
   {
 
-    LOGF(INFO, "Building candidates for collision ID: %d", collision.globalIndex());
     //can be added to run over limited collisions per file - for tesing purposes
     /*
     if (nCollsMax > -1){
