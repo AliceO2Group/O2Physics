@@ -203,8 +203,8 @@ struct QaTrackingKine {
     }
   }
 
-  void process(const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McParticles& mcParticles)
+  void process(const o2::aod::McParticles& mcParticles,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks)
   {
     for (const auto& t : tracks) {
       const auto particle = t.mcParticle();
@@ -375,11 +375,11 @@ struct QaTrackingResolution {
     histos.add("impactParameter/impactParameterErrorZVsPhi", commonTitle + ";" + phiRec + ";" + impZErr, kTH2D, {phiAxis, impactParZErrorAxis});
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& collision,
+  void process(const o2::aod::McParticles& mcParticles,
+               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collision,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McParticles& mcParticles, const o2::aod::McCollisions& mcCollisions)
+               const o2::aod::McCollisions& mcCollisions)
   {
-    const VertexBase primaryVertex = getPrimaryVertex(collision);
     DCA dca;
     // FIXME: get this from CCDB
     constexpr float magneticField{5.0};      // in kG
@@ -415,7 +415,7 @@ struct QaTrackingResolution {
 
       histos.fill(HIST("phi/phiDiffRecGen"), track.phi() - particle.phi());
 
-      if (getTrackParCov(track).propagateToDCA(primaryVertex, magneticField, &dca, 100.)) { // Check that the propagation is successfull
+      if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) { // Check that the propagation is successfull
         impactParameterRPhi = toMicrometers * dca.getY();
         impactParameterRPhiError = toMicrometers * sqrt(dca.getSigmaY2());
         impactParameterZ = toMicrometers * dca.getZ();
