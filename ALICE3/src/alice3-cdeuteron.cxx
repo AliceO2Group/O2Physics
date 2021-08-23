@@ -36,6 +36,7 @@ struct Alice3CDeuteron {
   Configurable<float> minPionPt{"minPionPt", -100, "Minimum pT of the kaon daughter"};
   Configurable<float> minVtxContrib{"minVtxContrib", 3, "Minimum number of contributors to the primary vertex"};
   Configurable<float> minDca{"minDca", -100, "Minimum track DCA to the primary vertex"};
+  Configurable<float> minDcaDeuteron{"minDcaDeuteron", -100, "Minimum DCA of the Deuteron to the primary vertex"};
   Configurable<float> minDcaPion{"minDcaPion", -100, "Minimum DCA of the pion to the primary vertex"};
   Configurable<float> maxDca{"maxDca", 100, "Maximum track DCA to the primary vertex"};
   Configurable<float> minCpa{"minCpa", 0, "Minimum CPA"};
@@ -63,7 +64,10 @@ struct Alice3CDeuteron {
     const AxisSpec axisDcaXYProd{5000, -5e-6, 5e-6, "DCA_{xy} product"};
     const AxisSpec axisDcaZ{5000, -0.05, 0.05, "DCA_{z}"};
     const AxisSpec axisDcaZProd{5000, -5e-6, 5e-6, "DCA_{z} product"};
+    const AxisSpec axisEta{100, -4, 4, "#it{#eta}"};
+    const AxisSpec axisY{100, -4, 4, "#it{y}"};
     const AxisSpec axisPt{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisP{100, 0, 10, "#it{p} (GeV/#it{c})"};
     const AxisSpec axisVtxX{100, -0.1, 0.1, "Vtx_{X}"};
     const AxisSpec axisVtxY{100, -0.1, 0.1, "Vtx_{Y}"};
     const AxisSpec axisVtxZ{100, -0.1, 0.1, "Vtx_{Z}"};
@@ -73,38 +77,43 @@ struct Alice3CDeuteron {
                              minDca.value, maxDca.value);
 
     histos.add("event/candcuts", "cuts", kTH1D, {{10, 0, 10}});
-    auto hcut = histos.get<TH1>(HIST("event/candcuts"));
-    hcut->GetXaxis()->SetBinLabel(1, "magField");
-    hcut->GetXaxis()->SetBinLabel(2, "minRadius");
-    hcut->GetXaxis()->SetBinLabel(3, "maxRadius");
-    hcut->GetXaxis()->SetBinLabel(4, "minMomPt");
-    hcut->GetXaxis()->SetBinLabel(5, "minKaonPt");
-    hcut->GetXaxis()->SetBinLabel(6, "minPionPt");
-    hcut->GetXaxis()->SetBinLabel(7, "minVtxContrib");
-    hcut->GetXaxis()->SetBinLabel(8, "minDca");
-    hcut->GetXaxis()->SetBinLabel(9, "maxDca");
+    auto h = histos.get<TH1>(HIST("event/candcuts"));
+    h->GetXaxis()->SetBinLabel(1, "magField");
+    h->GetXaxis()->SetBinLabel(2, "minRadius");
+    h->GetXaxis()->SetBinLabel(3, "maxRadius");
+    h->GetXaxis()->SetBinLabel(4, "minMomPt");
+    h->GetXaxis()->SetBinLabel(5, "minKaonPt");
+    h->GetXaxis()->SetBinLabel(6, "minPionPt");
+    h->GetXaxis()->SetBinLabel(7, "minVtxContrib");
+    h->GetXaxis()->SetBinLabel(8, "minDca");
+    h->GetXaxis()->SetBinLabel(9, "maxDca");
 
     histos.add("event/cuts", "cuts", kTH1D, {{10, 0, 10}});
-    hcut = histos.get<TH1>(HIST("event/cuts"));
-    hcut->GetXaxis()->SetBinLabel(1, "magField");
-    hcut->GetXaxis()->SetBinLabel(2, "minRadius");
-    hcut->GetXaxis()->SetBinLabel(3, "maxRadius");
-    hcut->GetXaxis()->SetBinLabel(4, "minMomPt");
-    hcut->GetXaxis()->SetBinLabel(5, "minKaonPt");
-    hcut->GetXaxis()->SetBinLabel(6, "minPionPt");
-    hcut->GetXaxis()->SetBinLabel(7, "minVtxContrib");
-    hcut->GetXaxis()->SetBinLabel(8, "minDca");
-    hcut->GetXaxis()->SetBinLabel(9, "maxDca");
+    h = histos.get<TH1>(HIST("event/cuts"));
+    h->GetXaxis()->SetBinLabel(1, "magField");
+    h->GetXaxis()->SetBinLabel(2, "minRadius");
+    h->GetXaxis()->SetBinLabel(3, "maxRadius");
+    h->GetXaxis()->SetBinLabel(4, "minMomPt");
+    h->GetXaxis()->SetBinLabel(5, "minKaonPt");
+    h->GetXaxis()->SetBinLabel(6, "minPionPt");
+    h->GetXaxis()->SetBinLabel(7, "minVtxContrib");
+    h->GetXaxis()->SetBinLabel(8, "minDca");
+    h->GetXaxis()->SetBinLabel(9, "maxDca");
 
-    hcut->SetBinContent(1, magField);
-    hcut->SetBinContent(2, minRadius);
-    hcut->SetBinContent(3, maxRadius);
-    hcut->SetBinContent(4, minMomPt);
-    hcut->SetBinContent(5, minKaonPt);
-    hcut->SetBinContent(6, minPionPt);
-    hcut->SetBinContent(7, minVtxContrib);
-    hcut->SetBinContent(8, minDca);
-    hcut->SetBinContent(9, maxDca);
+    h->SetBinContent(1, magField);
+    h->SetBinContent(2, minRadius);
+    h->SetBinContent(3, maxRadius);
+    h->SetBinContent(4, minMomPt);
+    h->SetBinContent(5, minKaonPt);
+    h->SetBinContent(6, minPionPt);
+    h->SetBinContent(7, minVtxContrib);
+    h->SetBinContent(8, minDca);
+    h->SetBinContent(9, maxDca);
+
+    histos.add("cdeuteron/eta", "eta", kTH1D, {axisEta});
+    histos.add("cdeuteron/y", "y", kTH1D, {axisY});
+    histos.add("cdeuteron/pt", "pt", kTH1D, {axisPt});
+    histos.add("cdeuteron/p", "p", kTH1D, {axisP});
 
     histos.add("event/vtxX", "vtxX", kTH1D, {axisVtxX});
     histos.add("event/vtxY", "vtxY", kTH1D, {axisVtxY});
@@ -112,12 +121,14 @@ struct Alice3CDeuteron {
     histos.add("event/mcvtxX", "mcvtxX", kTH1D, {axisVtxX});
     histos.add("event/mcvtxY", "mcvtxY", kTH1D, {axisVtxY});
     histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxZ});
+    histos.add("event/track1dcaxy", "track1dcaxy Deuteron", kTH1D, {axisDcaXY});
+    histos.add("event/track1dcaz", "track1dcaz Deuteron", kTH1D, {axisDcaZ});
     histos.add("event/candperdeuteron", "candperdeuteron", kTH1D, {{1000, 0, 10000}});
-    histos.add("event/particles", "particles", kTH1D, {{3, 0.5, 3.5}});
-    hcut = histos.get<TH1>(HIST("event/particles"));
-    hcut->GetXaxis()->SetBinLabel(1, "d");
-    hcut->GetXaxis()->SetBinLabel(2, "K");
-    hcut->GetXaxis()->SetBinLabel(3, "#pi");
+    histos.add("event/trackspdg", "trackspdg", kTH1D, {{3, 0.5, 3.5}});
+    h = histos.get<TH1>(HIST("event/trackspdg"));
+    h->GetXaxis()->SetBinLabel(1, "d");
+    h->GetXaxis()->SetBinLabel(2, "K");
+    h->GetXaxis()->SetBinLabel(3, "#pi");
     histos.add("event/multiplicity", "multiplicity", kTH1D, {{1000, 0, 10000}});
 
 #define MakeHistos(tag)                                                                        \
@@ -145,7 +156,7 @@ struct Alice3CDeuteron {
   histos.add(tag "/pt2", "pt2 Kaon" + tit, kTH1D, {axisPt});                                   \
   histos.add(tag "/pt3", "pt3 Pion" + tit, kTH1D, {axisPt});                                   \
   histos.add(tag "/ptmom", "ptmom" + tit, kTH1D, {axisPt});                                    \
-  histos.add(tag "/pmom", "pmom" + tit, kTH1D, {axisPt});
+  histos.add(tag "/pmom", "pmom" + tit, kTH1D, {axisP});
 
     MakeHistos("sig");
     MakeHistos("bkg");
@@ -163,6 +174,15 @@ struct Alice3CDeuteron {
                const aod::McParticles& mcParticles)
   {
 
+    for (auto i : mcParticles) {
+      if (i.pdgCode() != 12345) {
+        continue;
+      }
+      histos.fill(HIST("cdeuteron/eta"), i.eta());
+      histos.fill(HIST("cdeuteron/y"), i.y());
+      histos.fill(HIST("cdeuteron/pt"), i.pt());
+      histos.fill(HIST("cdeuteron/p"), i.p());
+    }
     histos.fill(HIST("event/vtxX"), coll.posX());
     histos.fill(HIST("event/vtxY"), coll.posY());
     histos.fill(HIST("event/vtxZ"), coll.posZ());
@@ -181,11 +201,11 @@ struct Alice3CDeuteron {
     int ntrks = 0;
     for (const auto& t : tracks) {
       if (t.mcParticle().pdgCode() == 1000010020) {
-        histos.fill(HIST("event/particles"), 1);
+        histos.fill(HIST("event/trackspdg"), 1);
       } else if (t.mcParticle().pdgCode() == -321) {
-        histos.fill(HIST("event/particles"), 2);
+        histos.fill(HIST("event/trackspdg"), 2);
       } else if (t.mcParticle().pdgCode() == 211) {
-        histos.fill(HIST("event/particles"), 3);
+        histos.fill(HIST("event/trackspdg"), 3);
       }
       ntrks++;
     }
@@ -204,6 +224,8 @@ struct Alice3CDeuteron {
                                                    magField * 10.f, &dca1, 100.)) {
         continue;
       }
+      histos.fill(HIST("event/track1dcaxy"), dca1[0]);
+      histos.fill(HIST("event/track1dcaz"), dca1[1]);
 
       for (const auto& track2 : tracks) {
         const auto index2 = track2.globalIndex();
@@ -233,6 +255,9 @@ struct Alice3CDeuteron {
           }
           bool iscut = false;
           if (abs(dca1[0]) < minDca || abs(dca1[1]) < minDca) {
+            iscut = true;
+          }
+          if (abs(dca1[0]) < minDcaDeuteron || abs(dca1[1]) < minDcaDeuteron) {
             iscut = true;
           }
           if (abs(dca1[0]) > maxDca || abs(dca1[1]) > maxDca) {
