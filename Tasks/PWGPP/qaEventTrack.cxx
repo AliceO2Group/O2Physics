@@ -203,8 +203,8 @@ struct QaTrackingKine {
     }
   }
 
-  void process(const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McParticles& mcParticles)
+  void process(const o2::aod::McParticles& mcParticles,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks)
   {
     for (const auto& t : tracks) {
       const auto particle = t.mcParticle();
@@ -375,9 +375,10 @@ struct QaTrackingResolution {
     histos.add("impactParameter/impactParameterErrorZVsPhi", commonTitle + ";" + phiRec + ";" + impZErr, kTH2D, {phiAxis, impactParZErrorAxis});
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& collision,
+  void process(const o2::aod::McParticles& mcParticles,
+               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& collision,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McParticles& mcParticles, const o2::aod::McCollisions& mcCollisions)
+               const o2::aod::McCollisions& mcCollisions)
   {
     const VertexBase primaryVertex = getPrimaryVertex(collision);
     DCA dca;
