@@ -187,10 +187,10 @@ struct QaTrackingEfficiency {
     }
   }
 
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
+  void process(const o2::aod::McParticles& mcParticles,
+               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles)
+               const o2::aod::McCollisions&)
   {
 
     std::vector<int64_t> recoEvt(collisions.size());
