@@ -640,6 +640,7 @@ auto InvMassXToJpsiPiPi(const T& candidate)
 
 // 3-prong decay candidate table
 DECLARE_SOA_TABLE(HfCandProng3Base, "AOD", "HFCANDP3BASE", //!
+                  o2::soa::Index<>,
                   // general columns
                   HFCAND_COLUMNS,
                   // 3-prong specific columns
