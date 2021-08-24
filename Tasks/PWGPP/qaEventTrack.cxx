@@ -14,12 +14,24 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "AnalysisCore/trackUtilities.h"
 #include "AnalysisCore/MC.h"
 #include "AnalysisDataModel/TrackSelectionTables.h"
+
+using namespace o2::framework;
+
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  std::vector<ConfigParamSpec> options{
+    {"global", VariantType::Int, 1, {"Run QA of global observable"}},
+    {"kine", VariantType::Int, 1, {"Run QA of kinematic observable"}},
+    {"reso", VariantType::Int, 1, {"Run QA of resolution observable"}}};
+  std::swap(workflowOptions, options);
+}
+
+#include "Framework/runDataProcessing.h"
 
 using namespace o2::framework;
 using namespace o2::dataformats;
@@ -161,45 +173,41 @@ struct QaTrackingKine {
   HistogramRegistry histos{"HistogramsKineQA"};
   void init(InitContext&)
   {
-    AxisSpec ptAxis{ptBins, ptMin, ptMax};
-    AxisSpec etaAxis{etaBins, etaMin, etaMax};
-    AxisSpec phiAxis{phiBins, phiMin, phiMax};
+    const AxisSpec ptAxis{ptBins, ptMin, ptMax, "#it{p}_{T} [GeV/#it{c}]"};
+    const AxisSpec etaAxis{etaBins, etaMin, etaMax, "#it{#eta}"};
+    const AxisSpec phiAxis{phiBins, phiMin, phiMax, "#it{#varphi} [rad]"};
 
     TString commonTitle = "";
     if (pdgCodeSel != 0) {
       commonTitle += Form("PDG %i", pdgCodeSel.value);
     }
 
-    const TString pt = "#it{p}_{T} [GeV/#it{c}]";
-    const TString eta = "#it{#eta}";
-    const TString phi = "#it{#varphi} [rad]";
-
-    histos.add("tracking/pt", commonTitle + ";" + pt, kTH1D, {ptAxis});
-    histos.add("tracking/eta", commonTitle + ";" + eta, kTH1D, {etaAxis});
-    histos.add("tracking/phi", commonTitle + ";" + phi, kTH1D, {phiAxis});
+    histos.add("tracking/pt", commonTitle, kTH1D, {ptAxis});
+    histos.add("tracking/eta", commonTitle, kTH1D, {etaAxis});
+    histos.add("tracking/phi", commonTitle, kTH1D, {phiAxis});
 
     if (checkPrimaries) {
-      histos.add("trackingPrm/pt", commonTitle + " Primary;" + pt, kTH1D, {ptAxis});
-      histos.add("trackingPrm/eta", commonTitle + " Primary;" + eta, kTH1D, {etaAxis});
-      histos.add("trackingPrm/phi", commonTitle + " Primary;" + phi, kTH1D, {phiAxis});
+      histos.add("trackingPrm/pt", commonTitle + " Primary", kTH1D, {ptAxis});
+      histos.add("trackingPrm/eta", commonTitle + " Primary", kTH1D, {etaAxis});
+      histos.add("trackingPrm/phi", commonTitle + " Primary", kTH1D, {phiAxis});
 
-      histos.add("trackingSec/pt", commonTitle + " Secondary;" + pt, kTH1D, {ptAxis});
-      histos.add("trackingSec/eta", commonTitle + " Secondary;" + eta, kTH1D, {etaAxis});
-      histos.add("trackingSec/phi", commonTitle + " Secondary;" + phi, kTH1D, {phiAxis});
+      histos.add("trackingSec/pt", commonTitle + " Secondary", kTH1D, {ptAxis});
+      histos.add("trackingSec/eta", commonTitle + " Secondary", kTH1D, {etaAxis});
+      histos.add("trackingSec/phi", commonTitle + " Secondary", kTH1D, {phiAxis});
     }
 
-    histos.add("particle/pt", commonTitle + ";" + pt, kTH1D, {ptAxis});
-    histos.add("particle/eta", commonTitle + ";" + eta, kTH1D, {etaAxis});
-    histos.add("particle/phi", commonTitle + ";" + phi, kTH1D, {phiAxis});
+    histos.add("particle/pt", commonTitle, kTH1D, {ptAxis});
+    histos.add("particle/eta", commonTitle, kTH1D, {etaAxis});
+    histos.add("particle/phi", commonTitle, kTH1D, {phiAxis});
 
     if (checkPrimaries) {
-      histos.add("particlePrm/pt", commonTitle + " Primary;" + pt, kTH1D, {ptAxis});
-      histos.add("particlePrm/eta", commonTitle + " Primary;" + eta, kTH1D, {etaAxis});
-      histos.add("particlePrm/phi", commonTitle + " Primary;" + phi, kTH1D, {phiAxis});
+      histos.add("particlePrm/pt", commonTitle + " Primary", kTH1D, {ptAxis});
+      histos.add("particlePrm/eta", commonTitle + " Primary", kTH1D, {etaAxis});
+      histos.add("particlePrm/phi", commonTitle + " Primary", kTH1D, {phiAxis});
 
-      histos.add("particleSec/pt", commonTitle + " Secondary;" + pt, kTH1D, {ptAxis});
-      histos.add("particleSec/eta", commonTitle + " Secondary;" + eta, kTH1D, {etaAxis});
-      histos.add("particleSec/phi", commonTitle + " Secondary;" + phi, kTH1D, {phiAxis});
+      histos.add("particleSec/pt", commonTitle + " Secondary", kTH1D, {ptAxis});
+      histos.add("particleSec/eta", commonTitle + " Secondary", kTH1D, {etaAxis});
+      histos.add("particleSec/phi", commonTitle + " Secondary", kTH1D, {phiAxis});
     }
   }
 
@@ -258,8 +266,8 @@ struct QaTrackingKine {
 /// Task to evaluate the tracking resolution (Pt, Eta, Phi and impact parameter)
 struct QaTrackingResolution {
 
-  Configurable<int> useOnlyPhysicsPrimary{"useOnlyPhysicsPrimary", 1,
-                                          "Whether to use only physical primary particles for the resolution."};
+  Configurable<int> checkPrimaries{"checkPrimaries", 1,
+                                   "Whether to use only physical primary particles for the resolution."};
 
   Configurable<int> pdgCodeSel{"pdgCodeSel", 0, "PDG code of the particle to select in absolute value, 0 selects every particle"};
 
@@ -318,7 +326,7 @@ struct QaTrackingResolution {
     if (pdgCodeSel != 0) {
       commonTitle += Form("PDG %i", pdgCodeSel.value);
     }
-    if (useOnlyPhysicsPrimary == 1) {
+    if (checkPrimaries == 1) {
       commonTitle += " Primary";
     }
     const TString pt = "#it{p}_{T} [GeV/#it{c}]";
@@ -376,9 +384,8 @@ struct QaTrackingResolution {
   }
 
   void process(const o2::aod::McParticles& mcParticles,
-               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collision,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions)
+               const o2::aod::Collisions& collision,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks)
   {
     DCA dca;
     // FIXME: get this from CCDB
@@ -395,7 +402,7 @@ struct QaTrackingResolution {
       if (pdgCodeSel != 0 && particle.pdgCode() != pdgCodeSel) {
         continue;
       }
-      if (useOnlyPhysicsPrimary && !MC::isPhysicalPrimary(particle)) {
+      if (checkPrimaries && !MC::isPhysicalPrimary(particle)) {
         continue;
       }
       const double deltaPt = track.pt() - particle.pt();
@@ -414,7 +421,6 @@ struct QaTrackingResolution {
       histos.fill(HIST("eta/etaDiffRecGenVsEtaRec"), deltaEta, track.eta());
 
       histos.fill(HIST("phi/phiDiffRecGen"), track.phi() - particle.phi());
-
       if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) { // Check that the propagation is successfull
         impactParameterRPhi = toMicrometers * dca.getY();
         impactParameterRPhiError = toMicrometers * sqrt(dca.getSigmaY2());
@@ -443,7 +449,15 @@ struct QaTrackingResolution {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<QaGlobalObservables>(cfgc),
-                      adaptAnalysisTask<QaTrackingKine>(cfgc),
-                      adaptAnalysisTask<QaTrackingResolution>(cfgc)};
+  WorkflowSpec w;
+  if (cfgc.options().get<int>("global")) {
+    w.push_back(adaptAnalysisTask<QaGlobalObservables>(cfgc));
+  }
+  if (cfgc.options().get<int>("kine")) {
+    w.push_back(adaptAnalysisTask<QaTrackingKine>(cfgc));
+  }
+  if (cfgc.options().get<int>("reso")) {
+    w.push_back(adaptAnalysisTask<QaTrackingResolution>(cfgc));
+  }
+  return w;
 }
