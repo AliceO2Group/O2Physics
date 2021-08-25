@@ -604,12 +604,12 @@ struct HfTrackIndexSkimsCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3>
-  void is3ProngPreselected(const T1& hfTracks, T2& cutStatus, T3& whichHypo, int& isSelected)
+  void is3ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T1 const& hfTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
     auto arrMom = array{
-      array{hfTracks[0].px(), hfTracks[0].py(), hfTracks[0].pz()},
-      array{hfTracks[1].px(), hfTracks[1].py(), hfTracks[1].pz()},
-      array{hfTracks[2].px(), hfTracks[2].py(), hfTracks[2].pz()}};
+      array{hfTrack0.px(), hfTrack0.py(), hfTrack0.pz()},
+      array{hfTrack1.px(), hfTrack1.py(), hfTrack1.pz()},
+      array{hfTrack2.px(), hfTrack2.py(), hfTrack2.pz()}};
 
     auto pT = RecoDecay::Pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
 
@@ -934,7 +934,7 @@ struct HfTrackIndexSkimsCreator {
             }
 
             // 3-prong preselections
-            is3ProngPreselected(array{trackPos1, trackNeg1, trackPos2}, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            is3ProngPreselected(trackPos1, trackNeg1, trackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
             if (!debug && isSelected3ProngCand == 0) {
               continue;
             }
@@ -1044,7 +1044,7 @@ struct HfTrackIndexSkimsCreator {
             }
 
             //3-prong preselections
-            is3ProngPreselected(array{trackNeg1, trackPos1, trackNeg2}, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+            is3ProngPreselected(trackNeg1, trackPos1, trackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
             if (!debug && isSelected3ProngCand == 0) {
               continue;
             }
