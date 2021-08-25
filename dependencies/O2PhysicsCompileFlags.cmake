@@ -25,7 +25,7 @@ MARK_AS_ADVANCED(
 #Check the compiler and set the compile and link flags
 IF (NOT CMAKE_BUILD_TYPE)
   Message(STATUS "Set BuildType to DEBUG")
-  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
 ENDIF (NOT CMAKE_BUILD_TYPE)
 
 IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
