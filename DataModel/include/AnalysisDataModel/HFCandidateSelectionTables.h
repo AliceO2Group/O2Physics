@@ -76,6 +76,13 @@ DECLARE_SOA_COLUMN(IsSelLcK0sP, isSelLcK0sP, int);
 DECLARE_SOA_TABLE(HFSelLcK0sPCandidate, "AOD", "HFSELLCK0SPCAND", //!
                   hf_selcandidate_lc_k0sp::IsSelLcK0sP);
 
+namespace hf_selcandidate_bplus
+{
+DECLARE_SOA_COLUMN(IsSelBPlusToD0Pi, isSelBPlusToD0Pi, int); //!
+} // namespace hf_selcandidate_bplus
+DECLARE_SOA_TABLE(HFSelBPlusToD0PiCandidate, "AOD", "HFSELBPLUSCAND", //!
+                  hf_selcandidate_bplus::IsSelBPlusToD0Pi);
+
 namespace hf_selcandidate_x
 {
 DECLARE_SOA_COLUMN(IsSelXToJpsiPiPi, isSelXToJpsiPiPi, int); //!

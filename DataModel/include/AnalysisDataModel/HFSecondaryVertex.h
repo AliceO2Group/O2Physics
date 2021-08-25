@@ -486,6 +486,97 @@ DECLARE_SOA_TABLE(HfCandCascadeMCRec, "AOD", "HFCANDCASCMCREC", //!
 DECLARE_SOA_TABLE(HfCandCascadeMCGen, "AOD", "HFCANDCASCMCGEN", //!
                   hf_cand_casc::FlagMCMatchGen);
 
+// specific BPlus candidate properties
+namespace hf_cand_bplus
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // D0 index
+// MC matching result:
+DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); // generator level
+
+enum DecayType { BPlusToD0Pi = 0 };
+
+// B± → D0bar(D0) π±
+
+template <typename T>
+auto CtBPlus(const T& candidate)
+{
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kBPlus));
+}
+
+template <typename T>
+auto YBPlus(const T& candidate)
+{
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kBPlus));
+}
+
+template <typename T>
+auto EBPlus(const T& candidate)
+{
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kBPlus));
+}
+
+template <typename T>
+auto InvMassBPlus(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kD0), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+template <typename T>
+auto CosThetaStarBPlus(const T& candidate)
+{
+  return candidate.cosThetaStar(array{RecoDecay::getMassPDG(pdg::Code::kD0), RecoDecay::getMassPDG(kPiPlus)}, RecoDecay::getMassPDG(pdg::Code::kBPlus), 1);
+}
+} // namespace hf_cand_bplus
+
+// declare dedicated BPlus decay candidate table
+DECLARE_SOA_TABLE(HfCandBPlusBase, "AOD", "HFCANDBPLUSBASE",
+                  // general columns
+                  HFCAND_COLUMNS,
+                  // 2-prong specific columns
+                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
+                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand_bplus::Index0Id, hf_track_index::Index1Id,
+                  hf_track_index::HFflag,
+                  /* dynamic columns */
+                  hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand_prong2::CosThetaStar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  /* dynamic columns that use candidate momentum components */
+                  hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::P<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::P2<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::PVector<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::CPA<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::CPAXY<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::Ct<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::ImpactParameterXY<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand_prong2::MaxNormalisedDeltaIP<collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ErrorDecayLengthXY, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_cand::Eta<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::Phi<hf_cand_prong2::Px, hf_cand_prong2::Py>,
+                  hf_cand::Y<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::E<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand::E2<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>);
+
+// extended table with expression columns that can be used as arguments of dynamic columns
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBPlusExt, HfCandBPlusBase, "HFCANDBPLUSEXT",
+                                hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz);
+
+using HfCandBPlus = HfCandBPlusExt;
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfCandBPMCRec, "AOD", "HFCANDBPMCREC",
+                  hf_cand_bplus::FlagMCMatchRec);
+
+// table with results of generator level MC matching
+DECLARE_SOA_TABLE(HfCandBPMCGen, "AOD", "HFCANDBPMCGEN",
+                  hf_cand_bplus::FlagMCMatchGen);
+
 // specific 3-prong decay properties
 namespace hf_cand_prong3
 {
