@@ -913,6 +913,9 @@ struct HfTrackIndexSkimsCreator {
             continue;
           }
 
+          if (tracks.size() < 2) {
+            continue;
+          }
           // second loop over positive tracks
           //for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
           for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracks.end(); ++trackPos2) {
