@@ -11,34 +11,34 @@
 
 
 if(FastJet_FOUND)
-o2_add_dpl_workflow(jet-finder
+o2physics_add_dpl_workflow(jet-finder
                     SOURCES jetfinder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisJets O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisJets O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(jet-finder-hf
+o2physics_add_dpl_workflow(jet-finder-hf
                     SOURCES jetfinderhf.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisJets O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisJets O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(jet-finder-hadron-recoil
+o2physics_add_dpl_workflow(jet-finder-hadron-recoil
                     SOURCES jetfinderhadronrecoil.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisJets O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisJets O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(jet-substructure
+o2physics_add_dpl_workflow(jet-substructure
                     SOURCES jetsubstructure.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisJets O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisJets O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(jet-skimmer
+o2physics_add_dpl_workflow(jet-skimmer
                     SOURCES jetskimming.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisJets O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisJets O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(jet-matching
+o2physics_add_dpl_workflow(jet-matching
                     SOURCES jetmatching.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisJets O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisJets O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 endif()
 

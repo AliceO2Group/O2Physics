@@ -9,30 +9,30 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_library(AnalysisCore
+o2physics_add_library(AnalysisCore
                SOURCES  src/CorrelationContainer.cxx
                         src/TrackSelection.cxx
                         src/TriggerAliases.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel)
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel)
 
-o2_target_root_dictionary(AnalysisCore
+o2physics_target_root_dictionary(AnalysisCore
               HEADERS include/AnalysisCore/CorrelationContainer.h
                       include/AnalysisCore/TrackSelection.h
                       include/AnalysisCore/TrackSelectionDefaults.h
                       include/AnalysisCore/TriggerAliases.h
               LINKDEF src/AnalysisCoreLinkDef.h)
 
-o2_add_executable(merger
+o2physics_add_executable(merger
               COMPONENT_NAME aod
               SOURCES src/AODMerger.cxx
               PUBLIC_LINK_LIBRARIES ROOT::Hist ROOT::Core ROOT::Net)
 
 if(FastJet_FOUND)
-o2_add_library(AnalysisJets
+o2physics_add_library(AnalysisJets
                SOURCES  src/JetFinder.cxx
-               PUBLIC_LINK_LIBRARIES O2::AnalysisCore FastJet::FastJet FastJet::Contrib)
+               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib)
 
-o2_target_root_dictionary(AnalysisJets
+o2physics_target_root_dictionary(AnalysisJets
               HEADERS include/AnalysisCore/JetFinder.h
                       include/AnalysisCore/JetUtilities.h
               LINKDEF src/AnalysisJetsLinkDef.h)

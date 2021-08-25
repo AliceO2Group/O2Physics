@@ -50,7 +50,7 @@ struct Alice3PidIndexBuilder {
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec isAlice3{"isAlice3", VariantType::Bool, false, {"Switch between ALICE 2 and ALICE 3 detector setup"}};
+  ConfigParamSpec isAlice3{"isAlice3", VariantType::Bool, true, {"Switch between ALICE 2 and ALICE 3 detector setup"}};
   workflowOptions.push_back(isAlice3);
 }
 

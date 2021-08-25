@@ -9,99 +9,99 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_dpl_workflow(mc-spectra-efficiency
+o2physics_add_dpl_workflow(mc-spectra-efficiency
                     SOURCES mcspectraefficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(spectra-tof
+o2physics_add_dpl_workflow(spectra-tof
                     SOURCES spectraTOF.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(spectra-tof-tiny
+o2physics_add_dpl_workflow(spectra-tof-tiny
                     SOURCES spectraTOFtiny.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(spectra-tpc
+o2physics_add_dpl_workflow(spectra-tpc
                     SOURCES spectraTPC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(spectra-tpc-pikapr
+o2physics_add_dpl_workflow(spectra-tpc-pikapr
                     SOURCES spectraTPCPiKaPr.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(spectra-tpc-tiny
+o2physics_add_dpl_workflow(spectra-tpc-tiny
                     SOURCES spectraTPCtiny.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(spectra-tpc-tiny-pikapr
+o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
                     SOURCES spectraTPCtinyPiKaPr.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(nuclei-spectra
+o2physics_add_dpl_workflow(nuclei-spectra
                     SOURCES NucleiSpectraTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(nuclei-efficiency
+o2physics_add_dpl_workflow(nuclei-efficiency
                     SOURCES NucleiSpectraEfficiency.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(nuclei-efficiencylight
+o2physics_add_dpl_workflow(nuclei-efficiencylight
                     SOURCES NucleiSpectraEfficiencyLight.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(lambdakzerobuilder
+o2physics_add_dpl_workflow(lambdakzerobuilder
                     SOURCES lambdakzerobuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsVertexing O2::AnalysisTasksUtils
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing O2::AnalysisTasksUtils
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(lambdakzeroanalysis
+o2physics_add_dpl_workflow(lambdakzeroanalysis
                     SOURCES lambdakzeroanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(lambdakzerofinder
+o2physics_add_dpl_workflow(lambdakzerofinder
                     SOURCES lambdakzerofinder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(cascadebuilder
+o2physics_add_dpl_workflow(cascadebuilder
                     SOURCES cascadebuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(cascadeanalysis
+o2physics_add_dpl_workflow(cascadeanalysis
                     SOURCES cascadeanalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(cascadefinder
+o2physics_add_dpl_workflow(cascadefinder
                     SOURCES cascadefinder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsVertexing
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(raacharged
+o2physics_add_dpl_workflow(raacharged
                     SOURCES raacharged.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(id-raa
+o2physics_add_dpl_workflow(id-raa
                     SOURCES identifiedraa.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(track-checks
+o2physics_add_dpl_workflow(track-checks
                     SOURCES trackchecks.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel O2::AnalysisCore O2::DetectorsBase
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
 

@@ -27,7 +27,7 @@ using namespace o2::aod::hf_cand_prong2;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -128,7 +128,7 @@ struct HFCandidateCreatorCascade {
       // reconstruct the cascade secondary vertex
       if (df.process(trackV0, trackParCovBach) == 0) {
         MY_DEBUG_MSG(isLc, LOG(INFO) << "Vertexing failed for Lc candidate");
-        //	if (isLc) {
+        //  if (isLc) {
         // LOG(INFO) << "Vertexing failed for Lc with proton " << indexBach << " trackV0DaughPos " << indexV0DaughPos << " trackV0DaughNeg " << indexV0DaughNeg;
         //}
         continue;

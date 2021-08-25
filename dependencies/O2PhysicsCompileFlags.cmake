@@ -25,7 +25,7 @@ MARK_AS_ADVANCED(
 #Check the compiler and set the compile and link flags
 IF (NOT CMAKE_BUILD_TYPE)
   Message(STATUS "Set BuildType to DEBUG")
-  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
 ENDIF (NOT CMAKE_BUILD_TYPE)
 
 IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
@@ -40,7 +40,6 @@ ELSE()
 ENDIF()
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_Fortran_FLAGS_RELEASE "-O2")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}" CACHE STRING "bla")
 set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "-O2 -g")
 # make sure Debug build not optimized (does not seem to work without CACHE + FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0" CACHE STRING "Debug mode build flags" FORCE)

@@ -11,36 +11,36 @@
 
 add_subdirectory(FemtoDream)
 
-o2_add_library(PWGCFCore
+o2physics_add_library(PWGCFCore
                SOURCES  AnalysisConfigurableCuts.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisDataModel)
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel)
 
-o2_target_root_dictionary(PWGCFCore
+o2physics_target_root_dictionary(PWGCFCore
               HEADERS AnalysisConfigurableCuts.h
               LINKDEF PWGCFCoreLinkDef.h)
 
-o2_add_dpl_workflow(dptdptcorrelations
+o2physics_add_dpl_workflow(dptdptcorrelations
                     SOURCES dptdptcorrelations.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::AnalysisDataModel O2::PWGCFCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(dptdptcorrelations-simchl
+o2physics_add_dpl_workflow(dptdptcorrelations-simchl
                     SOURCES dptdptcorrelations-simchl.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore O2::AnalysisDataModel O2::PWGCFCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(correlations
+o2physics_add_dpl_workflow(correlations
                     SOURCES correlations.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(filter-cf
+o2physics_add_dpl_workflow(filter-cf
                     SOURCES filterCF.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2_add_dpl_workflow(correlations-filtered
+o2physics_add_dpl_workflow(correlations-filtered
                     SOURCES correlationsFiltered.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

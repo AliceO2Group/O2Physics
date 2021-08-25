@@ -48,7 +48,7 @@ DECLARE_SOA_TABLE(HFSelLcCandidate, "AOD", "HFSELLCCAND", //!
 
 namespace hf_selcandidate_jpsi
 {
-DECLARE_SOA_COLUMN(IsSelJpsiToEE, isSelJpsiToEE, int); //!
+DECLARE_SOA_COLUMN(IsSelJpsiToEE, isSelJpsiToEE, int);               //!
 DECLARE_SOA_COLUMN(IsSelJpsiToMuMu, isSelJpsiToMuMu, int);           //!
 DECLARE_SOA_COLUMN(IsSelJpsiToEETopol, isSelJpsiToEETopol, int);     //!
 DECLARE_SOA_COLUMN(IsSelJpsiToEETpc, isSelJpsiToEETpc, int);         //!
@@ -100,5 +100,12 @@ DECLARE_SOA_COLUMN(IsSelXicToPiKP, isSelXicToPiKP, int); //!
 } // namespace hf_selcandidate_xic
 DECLARE_SOA_TABLE(HFSelXicToPKPiCandidate, "AOD", "HFSELXICCAND", //!
                   hf_selcandidate_xic::IsSelXicToPKPi, hf_selcandidate_xic::IsSelXicToPiKP);
+
+namespace hf_selcandidate_xicc
+{
+DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
+} // namespace hf_selcandidate_xicc
+DECLARE_SOA_TABLE(HFSelXiccToPKPiPiCandidate, "AOD", "HFSELXICCCAND", //!
+                  hf_selcandidate_xicc::IsSelXiccToPKPiPi);
 } // namespace o2::aod
 #endif // O2_ANALYSIS_HFCANDIDATESELECTIONTABLES_H_
