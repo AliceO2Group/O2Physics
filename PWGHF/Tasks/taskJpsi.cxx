@@ -47,6 +47,10 @@ struct TaskJpsi {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
+  Configurable<int> noPid{"noPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> tofPid{"tofPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> richPid{"richPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> combPid{"combPid", 0, "Pid Flag for Jpsi"};
 
   void init(o2::framework::InitContext&)
   {
@@ -84,7 +88,16 @@ struct TaskJpsi {
             continue;
           }
         } else {
-          if (candidate.isSelJpsiToEETopol() <= 0) {
+          if (nopid && candidate.isSelJpsiToEETopol() <= 0) {
+            continue;
+          }
+          if (tofPid && candidate.isSelJpsiToEETof() <= 0) {
+            continue;
+          }
+          if (richPid && candidate.isSelJpsiToEERich() <= 0) {
+            continue;
+          }
+          if (combPid && candidate.isSelJpsiToEETofRich() <= 0) {
             continue;
           }
         }
@@ -134,6 +147,10 @@ struct TaskJpsiMC {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
+  Configurable<int> noPid{"noPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> tofPid{"tofPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> richPid{"richPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> comPid{"combPid", 0, "Pid Flag for Jpsi"};
 
   void init(o2::framework::InitContext&)
   {
@@ -188,7 +205,16 @@ struct TaskJpsiMC {
             continue;
           }
         } else {
-          if (candidate.isSelJpsiToEETopol() <= 0) {
+          if (nopid && candidate.isSelJpsiToEETopol() <= 0) {
+            continue;
+          }
+          if (tofPid && candidate.isSelJpsiToEETof() <= 0) {
+            continue;
+          }
+          if (richPid && candidate.isSelJpsiToEERich() <= 0) {
+            continue;
+          }
+          if (combPid && candidate.isSelJpsiToEETofRich() <= 0) {
             continue;
           }
         }
