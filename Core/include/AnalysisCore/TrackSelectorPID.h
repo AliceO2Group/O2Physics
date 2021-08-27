@@ -409,7 +409,7 @@ class TrackSelectorPID
   {
     int statusTPC = getStatusTrackPIDTPC(track);
     int statusTOF = getStatusTrackPIDTOF(track);
-   
+
     if (statusTPC == Status::PIDAccepted || statusTOF == Status::PIDAccepted) {
       return Status::PIDAccepted; // what if we have Accepted for one and Rejected for the other?
     }
@@ -442,35 +442,24 @@ class TrackSelectorPID
     auto p = track.p();
 
     // TOF
-    if (useTOF && hasTOF && (p < 0.6))
-      {
-      if (p > 0.4 && hasRICH)
-	{
-        if ((std::abs(nSigmaTOFEl) < mNSigmaTOFMax) && (std::abs(nSigmaRICHEl) < mNSigmaRICHMax))
-	  {
-	    isSelTOF = true; // is selected as electron by TOF and RICH
-	  }
-	}
-      else if (p <= 0.4)
-	{
-	  if (std::abs(nSigmaTOFEl) < mNSigmaTOFMax)
-	    {
-	    isSelTOF = true; // is selected as electron by TOF
-	    }
-	}
-      else
-	{
-	  isSelTOF = false; // This is rejecting all the heavier particles which do not have a RICH signal in the p area of 0.4-0.6 GeV/c
-	}
-      if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax)
-	{
-	  isSelTOF = false; // is selected as pion by TOF
-	}
+    if (useTOF && hasTOF && (p < 0.6)) {
+      if (p > 0.4 && hasRICH) {
+        if ((std::abs(nSigmaTOFEl) < mNSigmaTOFMax) && (std::abs(nSigmaRICHEl) < mNSigmaRICHMax)) {
+          isSelTOF = true; // is selected as electron by TOF and RICH
+        }
+      } else if (p <= 0.4) {
+        if (std::abs(nSigmaTOFEl) < mNSigmaTOFMax) {
+          isSelTOF = true; // is selected as electron by TOF
+        }
+      } else {
+        isSelTOF = false; // This is rejecting all the heavier particles which do not have a RICH signal in the p area of 0.4-0.6 GeV/c
       }
-    else
-      {
+      if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax) {
+        isSelTOF = false; // is selected as pion by TOF
+      }
+    } else {
       isSelTOF = false;
-      }
+    }
 
     // RICH
     if (useRICH && hasRICH) {
@@ -493,13 +482,13 @@ class TrackSelectorPID
   {
     bool hasRICH = track.richId() > -1;
     //bool hasTOF = track.tofId() > -1;
-     bool hasTOF = isValidTrackPIDTOF(track);
-    
-     auto nSigmaTOFEl = track.tofNSigmaEl();
-     auto nSigmaTOFPi = track.tofNSigmaPi();
-     auto nSigmaTOFKa = track.tofNSigmaKa();
-    
-     /*auto nSigmaTOFEl = hasTOF ? track.tof().tofNsigmaEl() : -1000.;
+    bool hasTOF = isValidTrackPIDTOF(track);
+
+    auto nSigmaTOFEl = track.tofNSigmaEl();
+    auto nSigmaTOFPi = track.tofNSigmaPi();
+    auto nSigmaTOFKa = track.tofNSigmaKa();
+
+    /*auto nSigmaTOFEl = hasTOF ? track.tof().tofNsigmaEl() : -1000.;
     auto nSigmaTOFPi = hasTOF ? track.tof().richNsigmaPi() : -1000.;
     auto nSigmaTOFKa = hasTOF ? track.tof().richNsigmaKa() : -1000.;
      */
@@ -508,117 +497,86 @@ class TrackSelectorPID
     auto nSigmaRICHKa = hasRICH ? track.rich().richNsigmaKa() : -1000.;
 
     auto p = track.p();
-    bool ispionselected=false;
-      
-    if(!hasTOF){return ispionselected;}
+    bool ispionselected = false;
 
-    if(usedetector==0)
-      {
-	if(std::abs(nSigmaTOFPi)<mNSigmaTOFMax)
-	  {
-	    ispionselected=true;
-	  }
-	else
-	  {
-	    ispionselected=false;
-	  }
+    if (!hasTOF) {
+      return ispionselected;
+    }
+
+    if (usedetector == 0) {
+      if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax) {
+        ispionselected = true;
+      } else {
+        ispionselected = false;
+      }
+    }
+
+    if (usedetector == 1 && hasRICH) {
+      if (std::abs(nSigmaRICHPi) < mNSigmaRICHMax) {
+        ispionselected = true;
+      } else {
+        ispionselected = false;
+      }
+    }
+
+    if (usedetector == 2) {
+      if (p < 0.6) {
+        if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax) {
+          ispionselected = true;
+        }
       }
 
-    if(usedetector==1 && hasRICH)
-      {
-	if(std::abs(nSigmaRICHPi)<mNSigmaRICHMax)
-	  {
-	    ispionselected=true;
-	  }
-	else
-	  {
-	    ispionselected=false;
-	  }
+      if (p >= 0.6 && hasRICH) {
+        if (std::sqrt(nSigmaTOFPi * nSigmaTOFPi + nSigmaRICHPi * nSigmaRICHPi) < mNSigmaRICHMaxCondTOF) {
+          ispionselected = true;
+        }
+      }
+    }
+
+    if (usedetector == 3) {
+      if (p < 0.4) {
+        if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax) {
+          ispionselected = true;
+        }
+      }
+      if (p >= 0.4 && p < 0.6) {
+        if (hasRICH) {
+          if ((std::abs(nSigmaTOFPi) < mNSigmaTOFMax) && (std::abs(nSigmaRICHEl) > mNSigmaRICHMax)) {
+            ispionselected = true;
+          }
+        } else {
+          if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax) {
+            ispionselected = true;
+          }
+        }
       }
 
-
-
-    if(usedetector==2)
-      {
-	if(p<0.6)
-	  {
-	    if(std::abs(nSigmaTOFPi)<mNSigmaTOFMax)
-	      {
-		ispionselected=true;
-	      }
-	  }
-
-	if(p>=0.6 && hasRICH)
-	  {
-	    if (std::sqrt(nSigmaTOFPi*nSigmaTOFPi+nSigmaRICHPi*nSigmaRICHPi) < mNSigmaRICHMaxCondTOF)
-	      {
-		ispionselected=true;
-	      }
-	  }
+      if (p >= 0.6 && p < 6.0 && hasRICH) {
+        if (std::sqrt(nSigmaTOFPi * nSigmaTOFPi + nSigmaRICHPi * nSigmaRICHPi) < mNSigmaRICHMaxCondTOF) {
+          ispionselected = true;
+        }
       }
-    
-    if(usedetector==3)
-      {
-	if(p<0.4)
-	  {
-	    if(std::abs(nSigmaTOFPi)<mNSigmaTOFMax)
-	      {
-		ispionselected=true;
-	      }
-	  }
-	if(p>=0.4 && p<0.6)
-	  {
-	    if(hasRICH)
-	      {
-	    if ((std::abs(nSigmaTOFPi) < mNSigmaTOFMax) && (std::abs(nSigmaRICHEl) > mNSigmaRICHMax))
-	      {
-		ispionselected=true;
-	      }
-	      }
-	    else
-	      {
-	    if (std::abs(nSigmaTOFPi) < mNSigmaTOFMax)
-	      {
-		ispionselected=true;
-	      }
 
-	      }
+      if (p >= 6.0 && hasRICH) {
+        if (p < 10.0 && (std::sqrt(nSigmaTOFPi * nSigmaTOFPi + nSigmaRICHPi * nSigmaRICHPi) < mNSigmaRICHMaxCondTOF) && (std::sqrt(nSigmaTOFKa * nSigmaTOFKa + nSigmaRICHKa * nSigmaRICHKa) > mNSigmaRICHMaxCondTOF)) {
+          ispionselected = true;
+        }
 
-	  }
-
-	if(p>=0.6 && p<6.0 && hasRICH)
-	  {
-	    if (std::sqrt(nSigmaTOFPi*nSigmaTOFPi+nSigmaRICHPi*nSigmaRICHPi) < mNSigmaRICHMaxCondTOF)
-	      {
-		ispionselected=true;
-	      }
-	  }
-
-	if(p>=6.0 && hasRICH)
-	  {
-	    if (p<10.0 && (std::sqrt(nSigmaTOFPi*nSigmaTOFPi+nSigmaRICHPi*nSigmaRICHPi) < mNSigmaRICHMaxCondTOF) && (std::sqrt(nSigmaTOFKa*nSigmaTOFKa+nSigmaRICHKa*nSigmaRICHKa) > mNSigmaRICHMaxCondTOF))
-	      {
-		ispionselected=true;
-	      }
-
-	    if (p>=10.0 && std::sqrt(nSigmaTOFPi*nSigmaTOFPi+nSigmaRICHPi*nSigmaRICHPi) < mNSigmaRICHMaxCondTOF)
-	      {
-		ispionselected=true;
-	      }
-	    
-	  }
+        if (p >= 10.0 && std::sqrt(nSigmaTOFPi * nSigmaTOFPi + nSigmaRICHPi * nSigmaRICHPi) < mNSigmaRICHMaxCondTOF) {
+          ispionselected = true;
+        }
       }
+    }
     return ispionselected;
   }
 
-
   ////////////////////////////////new sourav: is kaon/////////////////////////////////
   template <typename T>
-  bool isKaon(const T& track, int usedetector=0)
+  bool isKaon(const T& track, int usedetector = 0)
   {
     bool hasRICH = track.richId() > -1;
     bool hasTOF = isValidTrackPIDTOF(track);
-    
+
     auto nSigmaTOFEl = track.tofNSigmaEl();
     auto nSigmaTOFPi = track.tofNSigmaPi();
     auto nSigmaTOFKa = track.tofNSigmaKa();
@@ -627,109 +585,81 @@ class TrackSelectorPID
     auto nSigmaRICHPi = hasRICH ? track.rich().richNsigmaPi() : -1000.;
     auto nSigmaRICHKa = hasRICH ? track.rich().richNsigmaKa() : -1000.;
     auto p = track.p();
-    bool iskaonselected=false;
-   
-    if(!hasTOF){return iskaonselected;}
+    bool iskaonselected = false;
 
-    if(usedetector==0)
-      {
-	if(std::abs(nSigmaTOFKa)<mNSigmaTOFMax)
-	  {
-	    iskaonselected=true;
-	  }
-	else
-	  {
-	    iskaonselected=false;
-	  }
+    if (!hasTOF) {
+      return iskaonselected;
+    }
+
+    if (usedetector == 0) {
+      if (std::abs(nSigmaTOFKa) < mNSigmaTOFMax) {
+        iskaonselected = true;
+      } else {
+        iskaonselected = false;
+      }
+    }
+
+    if (usedetector == 1) {
+      if (std::abs(nSigmaRICHKa) < mNSigmaRICHMax && hasRICH) {
+        iskaonselected = true;
+      } else {
+        iskaonselected = false;
+      }
+    }
+
+    if (usedetector == 2) {
+      if (p < 2.0) {
+        if (std::abs(nSigmaTOFKa) < mNSigmaTOFMax) {
+          iskaonselected = true;
+        }
       }
 
-    if(usedetector==1)
-      {
-	if(std::abs(nSigmaRICHKa)<mNSigmaRICHMax && hasRICH)
-	  {
-	    iskaonselected=true;
-	  }
-	else
-	  {
-	    iskaonselected=false;
-	  }
+      if (p >= 2.0 && hasRICH) {
+        if (std::sqrt(nSigmaTOFKa * nSigmaTOFKa + nSigmaRICHKa * nSigmaRICHKa) < mNSigmaRICHMaxCondTOF) {
+          iskaonselected = true;
+        }
+      }
+    }
+
+    if (usedetector == 3) {
+      if (p < 1.4) {
+        if (std::abs(nSigmaTOFKa) < mNSigmaTOFMax) {
+          iskaonselected = true;
+        }
+      }
+      if (p >= 1.4 && p < 2.0) {
+        if (hasRICH) {
+          if ((std::abs(nSigmaTOFKa) < mNSigmaTOFMax) && (std::abs(nSigmaRICHPi) > mNSigmaRICHMax)) {
+            iskaonselected = true;
+          }
+        }
+
+        else {
+          if (std::abs(nSigmaTOFKa) < mNSigmaTOFMax) {
+            iskaonselected = true;
+          }
+        }
       }
 
-    if(usedetector==2)
-      {
-	if(p<2.0)
-	  {
-	    if(std::abs(nSigmaTOFKa)<mNSigmaTOFMax)
-	      {
-		iskaonselected=true;
-	      }
-	  }
-
-	if(p>=2.0 && hasRICH)
-	  {
-	    if (std::sqrt(nSigmaTOFKa*nSigmaTOFKa+nSigmaRICHKa*nSigmaRICHKa) < mNSigmaRICHMaxCondTOF)
-	      {
-		iskaonselected=true;
-	      }
-	  }
+      if (p >= 2.0 && p < 6.0 && hasRICH) {
+        if (std::sqrt(nSigmaTOFKa * nSigmaTOFKa + nSigmaRICHKa * nSigmaRICHKa) < mNSigmaRICHMaxCondTOF) {
+          iskaonselected = true;
+        }
       }
 
+      if (p >= 6.0 && hasRICH) {
+        if (p < 10.0 && (std::sqrt(nSigmaTOFKa * nSigmaTOFPi + nSigmaRICHKa * nSigmaRICHKa) < mNSigmaRICHMaxCondTOF) && (std::sqrt(nSigmaTOFPi * nSigmaTOFPi + nSigmaRICHPi * nSigmaRICHPi) > mNSigmaRICHMaxCondTOF)) {
+          iskaonselected = true;
+        }
 
-    if(usedetector==3)
-      {
-	if(p<1.4)
-	  {
-	    if(std::abs(nSigmaTOFKa)<mNSigmaTOFMax)
-	      {
-		iskaonselected=true;
-	      }
-	  }
-	if(p>=1.4 && p<2.0)
-	  {
-	    if(hasRICH)
-	      {
-	    if ((std::abs(nSigmaTOFKa) < mNSigmaTOFMax) && (std::abs(nSigmaRICHPi) > mNSigmaRICHMax))
-	      {
-		iskaonselected=true;
-	      }
-	      }
-
-	    else
-	      {
-	    if (std::abs(nSigmaTOFKa) < mNSigmaTOFMax)
-	      {
-		iskaonselected=true;
-	      }
-	      }
-	  }
-	
-	if(p>=2.0 && p<6.0 && hasRICH)
-	  {
-	    if (std::sqrt(nSigmaTOFKa*nSigmaTOFKa+nSigmaRICHKa*nSigmaRICHKa) < mNSigmaRICHMaxCondTOF)
-	      {
-		iskaonselected=true;
-	      }
-	  }
-	
-	if(p>=6.0 && hasRICH)
-	  {
-	    if (p<10.0 && (std::sqrt(nSigmaTOFKa*nSigmaTOFPi+nSigmaRICHKa*nSigmaRICHKa) < mNSigmaRICHMaxCondTOF) && (std::sqrt(nSigmaTOFPi*nSigmaTOFPi+nSigmaRICHPi*nSigmaRICHPi) > mNSigmaRICHMaxCondTOF))
-	      {
-		iskaonselected=true;
-	      }
-
-	    if (p>=10.0 && std::sqrt(nSigmaTOFKa*nSigmaTOFKa+nSigmaRICHKa*nSigmaRICHKa) < mNSigmaRICHMaxCondTOF)
-	      {
-		iskaonselected=true;
-	      }
-	    
-	  }
+        if (p >= 10.0 && std::sqrt(nSigmaTOFKa * nSigmaTOFKa + nSigmaRICHKa * nSigmaRICHKa) < mNSigmaRICHMaxCondTOF) {
+          iskaonselected = true;
+        }
       }
+    }
     return iskaonselected;
   }
 
-
-  
  private:
   uint mPdg = kPiPlus; ///< PDG code of the expected particle
 

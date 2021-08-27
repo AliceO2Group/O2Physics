@@ -256,9 +256,9 @@ struct HFD0CandidateSelectorALICE3 {
 	
 	if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK))
 	  {
-	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-	    continue;
+    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+    continue;
 	  }
 	statusHFFlag=1;
 	auto trackPos = candidate.index0_as<TracksPID>(); // positive daughter
@@ -267,9 +267,9 @@ struct HFD0CandidateSelectorALICE3 {
 	// conjugate-independent topological selection
 	if (!selectionTopol(candidate))
 	  {
-	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	   
-	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-	    continue;
+    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+    continue;
 	}
 	statusTopol = 1;
       // conjugate-dependent topological selection for D0
@@ -278,9 +278,9 @@ struct HFD0CandidateSelectorALICE3 {
 	
 	if (!topolD0 && !topolD0bar)
 	  {
-	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	    
-	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-	    continue;
+    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+    continue;
 	  }
 	statusCand=1;
 	
@@ -294,9 +294,9 @@ struct HFD0CandidateSelectorALICE3 {
 	  }
 	if (pidD0 == -1 && pidD0bar == -1)
 	  {
-	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	 
-	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-	    continue;
+    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+    continue;
 	  }
 	if(pidD0==1 && topolD0)statusD0 = 1;
 	if(pidD0bar==1 && topolD0bar)statusD0bar = 1;
@@ -310,8 +310,7 @@ struct HFD0CandidateSelectorALICE3 {
 	    nsigmapionrich = hasRICHP ? trackPos.rich().richNsigmaPi() : -1000.;
 	    nsigmakaonrich = hasRICHN ? trackNeg.rich().richNsigmaKa() : -1000.;
 	    }*/
-	hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-
+  hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
       }
   }
 };
