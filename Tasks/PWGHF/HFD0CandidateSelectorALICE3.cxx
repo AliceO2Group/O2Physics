@@ -53,7 +53,7 @@ struct Alice3PidIndexBuilder {
 
 /// Struct for applying D0 selection cuts
 struct HFD0CandidateSelectorALICE3 {
-  Produces<aod::HFSelD0Candidate> hfSelD0Candidate;
+  Produces<aod::HFSelD0CandidateALICE3> hfSelD0CandidateALICE3;
   Configurable<int> d_usedetector{"d_usedetector", 0, "Use of PID detector"};
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> d_pTCandMax{"d_pTCandMax", 50., "Upper bound of candidate pT"};
@@ -256,8 +256,8 @@ struct HFD0CandidateSelectorALICE3 {
 	
 	if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK))
 	  {
-	    hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-	    //hfSelD0Candidate(statusD0, statusD0bar);
+	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
 	    continue;
 	  }
 	statusHFFlag=1;
@@ -267,8 +267,8 @@ struct HFD0CandidateSelectorALICE3 {
 	// conjugate-independent topological selection
 	if (!selectionTopol(candidate))
 	  {
-	    hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	   
-	    //hfSelD0Candidate(statusD0, statusD0bar);
+	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	   
+	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
 	    continue;
 	}
 	statusTopol = 1;
@@ -278,8 +278,8 @@ struct HFD0CandidateSelectorALICE3 {
 	
 	if (!topolD0 && !topolD0bar)
 	  {
-	    hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	    
-	    //hfSelD0Candidate(statusD0, statusD0bar);
+	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	    
+	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
 	    continue;
 	  }
 	statusCand=1;
@@ -294,8 +294,8 @@ struct HFD0CandidateSelectorALICE3 {
 	  }
 	if (pidD0 == -1 && pidD0bar == -1)
 	  {
-	    hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	 
-	    //hfSelD0Candidate(statusD0, statusD0bar);
+	    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);	 
+	    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
 	    continue;
 	  }
 	if(pidD0==1 && topolD0)statusD0 = 1;
@@ -310,7 +310,7 @@ struct HFD0CandidateSelectorALICE3 {
 	    nsigmapionrich = hasRICHP ? trackPos.rich().richNsigmaPi() : -1000.;
 	    nsigmakaonrich = hasRICHN ? trackNeg.rich().richNsigmaKa() : -1000.;
 	    }*/
-	hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+	hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
 
       }
   }

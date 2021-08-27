@@ -151,7 +151,7 @@ struct TaskD0MCALICE3 {
      {"hpair_deltaeta_deltaphi", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
      {"hpair_deltaeta_deltaphi_signalsignal", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
      {"hpair_deltaeta_deltaphi_backgroundbackground", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
-     {"hpair_deltaeta_deltaphi_signalbackground", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, -5.0, 0.0}}}},
+     {"hpair_deltaeta_deltaphi_signalbackground", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
      
      {"hInvMassvsPtSIGD0_cand", "2-prong candidates_sig (topol);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
      {"hInvMassvsPtBKGD0_cand", "2-prong candidates_bkg (topol);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},

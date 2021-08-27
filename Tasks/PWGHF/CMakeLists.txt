@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(hf-d0-candidate-selector
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hf-d0-candidate-selectorALICE3
+                    SOURCES HFD0CandidateSelectorALICE3.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing O2::ALICE3Analysis
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hf-dplus-topikpi-candidate-selector
                     SOURCES HFDplusToPiKPiCandidateSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
@@ -96,6 +101,11 @@ o2physics_add_dpl_workflow(hf-x-tojpsipipi-candidate-selector
 
 o2physics_add_dpl_workflow(hf-task-d0
                     SOURCES taskD0.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hf-task-d0ALICE3
+                    SOURCES taskD0ALICE3.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 

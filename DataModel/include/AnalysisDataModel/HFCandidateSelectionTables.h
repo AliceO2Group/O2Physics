@@ -30,7 +30,20 @@ DECLARE_SOA_TABLE(HFSelD0Candidate, "AOD", "HFSELD0CAND", //!
                   hf_selcandidate_d0::IsRecoTopol,
                   hf_selcandidate_d0::IsRecoCand,
                   hf_selcandidate_d0::IsRecoPID);
-
+namespace hf_selcandidate_d0ALICE3
+{
+  DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);       //!                          
+  DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //!                          
+  DECLARE_SOA_COLUMN(IsSelHFFlag, isSelHFFlag, int);       //!                  
+  DECLARE_SOA_COLUMN(IsSelTopol, isSelTopol, int); //!                          
+  DECLARE_SOA_COLUMN(IsSelCand, isSelCand, int); //!    
+} // namespace hf_selcandidate_d0
+DECLARE_SOA_TABLE(HFSelD0CandidateALICE3, "AOD", "HFSELD0CAND", //!
+		  hf_selcandidate_d0ALICE3::IsSelD0,
+		  hf_selcandidate_d0ALICE3::IsSelD0bar,
+		  hf_selcandidate_d0ALICE3::IsSelHFFlag,
+		  hf_selcandidate_d0ALICE3::IsSelTopol,
+		  hf_selcandidate_d0ALICE3::IsSelCand);
 namespace hf_selcandidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
