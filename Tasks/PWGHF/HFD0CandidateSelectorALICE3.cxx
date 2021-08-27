@@ -276,16 +276,6 @@ struct HFD0CandidateSelectorALICE3 {
         statusD0 = 1;
       if (pidD0bar == 1 && topolD0bar)
         statusD0bar = 1;
-      /*if(statusD0==1)
-	  {
-	    bool hasRICHP = trackPos.richId() > -1;
-	    bool hasRICHN = trackNeg.richId() > -1;
-	    
-	    nsigmapiontof = trackPos.tofNSigmaPi();
-	    nsigmakaontof = trackNeg.tofNSigmaKa();
-	    nsigmapionrich = hasRICHP ? trackPos.rich().richNsigmaPi() : -1000.;
-	    nsigmakaonrich = hasRICHN ? trackNeg.rich().richNsigmaKa() : -1000.;
-	    }*/
       hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
     }
   }

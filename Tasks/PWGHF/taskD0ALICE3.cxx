@@ -140,31 +140,18 @@ struct TaskD0MCALICE3 {
      {"hPtvsYGen", "2-prong candidates (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{500, 0., 50.}, {100, -2., 2.}}}},
      {"hPtvsYGenPrompt", "2-prong candidates (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{500, 0., 50.}, {100, -2., 2.}}}},
      {"hPtvsYGenNonPrompt", "2-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{500, 0., 50.}, {100, -2., 2.}}}},
-     /*
-       {"hnsigmatofpion", "TOF pion;n#sigma; #it{p}_{T}", {HistType::kTH2F, {{100, -5.0, 5.0}, {500, 0., 50.}}}},
-       {"hnsigmatofkaon", "TOF kaon;n#sigma; #it{p}_{T}", {HistType::kTH2F, {{100, -5.0, 5.0}, {500, 0., 50.}}}},
-       
-       {"hnsigmarichpion", "RICH pion;n#sigma; #it{p}_{T}", {HistType::kTH2F, {{100, -5.0, 5.0}, {500, 0., 50.}}}},
-       {"hnsigmarichkaon", "RICH kaon;n#sigma; #it{p}_{T}", {HistType::kTH2F, {{100, -5.0, 5.0}, {500, 0., 50.}}}},
-     */
-
      {"hpair_deltaeta_deltaphi", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
      {"hpair_deltaeta_deltaphi_signalsignal", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
      {"hpair_deltaeta_deltaphi_backgroundbackground", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
      {"hpair_deltaeta_deltaphi_signalbackground", "Pair #delta #eta - #delta #phi;#it{#eta}; #it{#phi}", {HistType::kTH2F, {{100, -5.0, 5.0}, {100, 0.0, 5.0}}}},
-
      {"hInvMassvsPtSIGD0_cand", "2-prong candidates_sig (topol);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
      {"hInvMassvsPtBKGD0_cand", "2-prong candidates_bkg (topol);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
-
      {"hInvMassvsPtD0_RecoPIDMatch", "2-prong candidates (RecoD0PID - MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
      {"hInvMassvsPtD0bar_RecoPIDMatch", "2-prong candidates (RecoD0barPID - MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
-
      {"hInvMassvsPtBKGD0_RecoPIDMatch", "2-prong candidates (RecoBKGD0PID - MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
      {"hInvMassvsPtBKGD0bar_RecoPIDMatch", "2-prong candidates (RecoBKGD0barPID - MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
-
      {"hInvMassvsPtD0refl_RecoPID", "2-prong candidates (RecoD0reflPID - MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
      {"hInvMassvsPtD0barrefl_RecoPID", "2-prong candidates (RecoD0barreflPID - MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
-
      {"hInvMassvsPtD0_RecoPID", "2-prong candidates (RecoD0PID - No MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}},
      {"hInvMassvsPtD0bar_RecoPID", "2-prong candidates (RecoD0barPID - No MC index matched);#it{m}_{inv}^{rec.}; #it{p}_{T}", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {500, 0., 50.}}}}}};
 
