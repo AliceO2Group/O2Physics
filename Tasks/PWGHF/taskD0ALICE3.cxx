@@ -174,213 +174,167 @@ struct TaskD0MCALICE3 {
   Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  
+
   //  Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0ALICE3::isSelHFFlag >= d_selectionHFFlag);
-  
+
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3, aod::HfCandProng2MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
 
-    for (auto& candidate1 : candidates)
-      {
+    for (auto& candidate1 : candidates) {
 
-	for (auto& candidate2 : candidates)
-	  {
-	    auto ptd0=candidate1.pt();
-	    auto ptd0bar=candidate2.pt();
-	    
-	    auto etad0=candidate1.eta();
-	    auto etad0bar=candidate2.eta();
-	    
-	    auto phid0=candidate1.phi();
-	    auto phid0bar=candidate2.phi();
+      for (auto& candidate2 : candidates) {
+        auto ptd0 = candidate1.pt();
+        auto ptd0bar = candidate2.pt();
 
-	    auto deltaeta=etad0-etad0bar;
-	    auto deltaphi=TMath::Abs(phid0-phid0bar);
-	    if (deltaphi > TMath::Pi()) deltaphi = 2. * TMath::Pi() - deltaphi;
-	    if(ptd0>3.0 && ptd0<10.0 && ptd0bar>3.0 && ptd0bar<10.0 && InvMassD0(candidate1) > 1.75 && InvMassD0(candidate1) < 2.0 && InvMassD0bar(candidate2) > 1.75 && InvMassD0bar(candidate2) < 2.0)
-	      {
-		if (candidate1.isSelD0() >= d_selectionFlagD0 && candidate2.isSelD0bar() >= d_selectionFlagD0bar)
-		  {
-		    registry.fill(HIST("hpair_deltaeta_deltaphi"), deltaeta,deltaphi);
-		    if((candidate1.flagMCMatchRec() == (1 << DecayType::D0ToPiK))&&(candidate2.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)))
-		      {
-			registry.fill(HIST("hpair_deltaeta_deltaphi_signalsignal"), deltaeta,deltaphi);
-		      }
-		    if((candidate1.flagMCMatchRec() != (1 << DecayType::D0ToPiK))&&(candidate2.flagMCMatchRec() != (-1 << DecayType::D0ToPiK)))
-		      {
-			registry.fill(HIST("hpair_deltaeta_deltaphi_backgroundbackground"), deltaeta,deltaphi);
-		      }
-		    if(((candidate1.flagMCMatchRec() == (1 << DecayType::D0ToPiK))&&(candidate2.flagMCMatchRec() != (-1 << DecayType::D0ToPiK)))||((candidate1.flagMCMatchRec() != (1 << DecayType::D0ToPiK))&&(candidate2.flagMCMatchRec() == (-1 << DecayType::D0ToPiK))))
-		      {
-			registry.fill(HIST("hpair_deltaeta_deltaphi_signalbackground"), deltaeta,deltaphi);
-		      }
-		   		    
-		  }
-		
-	      }
+        auto etad0 = candidate1.eta();
+        auto etad0bar = candidate2.eta();
 
-	  }
+        auto phid0 = candidate1.phi();
+        auto phid0bar = candidate2.phi();
+
+        auto deltaeta = etad0 - etad0bar;
+        auto deltaphi = TMath::Abs(phid0 - phid0bar);
+        if (deltaphi > TMath::Pi())
+          deltaphi = 2. * TMath::Pi() - deltaphi;
+        if (ptd0 > 3.0 && ptd0 < 10.0 && ptd0bar > 3.0 && ptd0bar < 10.0 && InvMassD0(candidate1) > 1.75 && InvMassD0(candidate1) < 2.0 && InvMassD0bar(candidate2) > 1.75 && InvMassD0bar(candidate2) < 2.0) {
+          if (candidate1.isSelD0() >= d_selectionFlagD0 && candidate2.isSelD0bar() >= d_selectionFlagD0bar) {
+            registry.fill(HIST("hpair_deltaeta_deltaphi"), deltaeta, deltaphi);
+            if ((candidate1.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) && (candidate2.flagMCMatchRec() == (-1 << DecayType::D0ToPiK))) {
+              registry.fill(HIST("hpair_deltaeta_deltaphi_signalsignal"), deltaeta, deltaphi);
+            }
+            if ((candidate1.flagMCMatchRec() != (1 << DecayType::D0ToPiK)) && (candidate2.flagMCMatchRec() != (-1 << DecayType::D0ToPiK))) {
+              registry.fill(HIST("hpair_deltaeta_deltaphi_backgroundbackground"), deltaeta, deltaphi);
+            }
+            if (((candidate1.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) && (candidate2.flagMCMatchRec() != (-1 << DecayType::D0ToPiK))) || ((candidate1.flagMCMatchRec() != (1 << DecayType::D0ToPiK)) && (candidate2.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)))) {
+              registry.fill(HIST("hpair_deltaeta_deltaphi_signalbackground"), deltaeta, deltaphi);
+            }
+          }
+        }
       }
+    }
 
+    for (auto& candidate : candidates) {
+      auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>>(), pdg::Code::kD0, true);
+      auto particleMother = particlesMC.iteratorAt(indexMother);
+      auto ptGenlevel = particleMother.pt();
+      auto yGenlevel = particleMother.y();
+      auto ptRec = candidate.pt();
 
-    for (auto& candidate : candidates)
-      {
-	auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng2MCGen>>(), pdg::Code::kD0, true);
-	auto particleMother = particlesMC.iteratorAt(indexMother);
-	auto ptGenlevel=particleMother.pt();
-	auto yGenlevel = particleMother.y();  
-	auto ptRec = candidate.pt();
-
-
-	if (cutYCandMax >= 0. && std::abs(yGenlevel) > cutYCandMax)
-	{
+      if (cutYCandMax >= 0. && std::abs(yGenlevel) > cutYCandMax) {
         continue;
-	}
+      }
       ////////////////Fill invmass for significance study////////////////////////
 
+      if (candidate.isSelD0() >= d_selectionFlagD0) {
+        registry.fill(HIST("hInvMassvsPtD0_RecoPID"), InvMassD0(candidate), candidate.pt());
+      }
+      if (candidate.isSelD0bar() >= d_selectionFlagD0bar) {
+        registry.fill(HIST("hInvMassvsPtD0bar_RecoPID"), InvMassD0bar(candidate), candidate.pt());
+      }
 
-      if (candidate.isSelD0() >= d_selectionFlagD0)
-	{
-	  registry.fill(HIST("hInvMassvsPtD0_RecoPID"), InvMassD0(candidate), candidate.pt());
-	}
-      if (candidate.isSelD0bar() >= d_selectionFlagD0bar)
-	{
-	  registry.fill(HIST("hInvMassvsPtD0bar_RecoPID"), InvMassD0bar(candidate), candidate.pt());
-	}
-      
-      if (candidate.isSelD0() >= d_selectionFlagD0 && (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtD0_RecoPIDMatch"), InvMassD0(candidate), candidate.pt());
-	  /*  registry.fill(HIST("hnsigmatofpion"), candidate.ispiontofnsigma(), candidate.pt());
+      if (candidate.isSelD0() >= d_selectionFlagD0 && (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtD0_RecoPIDMatch"), InvMassD0(candidate), candidate.pt());
+        /*  registry.fill(HIST("hnsigmatofpion"), candidate.ispiontofnsigma(), candidate.pt());
 	  registry.fill(HIST("hnsigmatofkaon"), candidate.iskaontofnsigma(), candidate.pt());
 	  registry.fill(HIST("hnsigmarichpion"), candidate.ispionrichnsigma(), candidate.pt());
 	  registry.fill(HIST("hnsigmarichkaon"), candidate.iskaonrichnsigma(), candidate.pt());*/
-	}
-      if (candidate.isSelD0() >= d_selectionFlagD0 && (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtBKGD0_RecoPIDMatch"), InvMassD0(candidate), candidate.pt());
-	}
+      }
+      if (candidate.isSelD0() >= d_selectionFlagD0 && (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtBKGD0_RecoPIDMatch"), InvMassD0(candidate), candidate.pt());
+      }
       //////////////No PID///////////
-      if (candidate.isSelCand() >= d_selectionCand && (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtSIGD0_cand"), InvMassD0(candidate), candidate.pt());
-	}
+      if (candidate.isSelCand() >= d_selectionCand && (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtSIGD0_cand"), InvMassD0(candidate), candidate.pt());
+      }
 
-      if (candidate.isSelCand() >= d_selectionCand && (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtBKGD0_cand"), InvMassD0(candidate), candidate.pt());
-	}      
+      if (candidate.isSelCand() >= d_selectionCand && (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtBKGD0_cand"), InvMassD0(candidate), candidate.pt());
+      }
       /////////////////
-      if (candidate.isSelD0() >= d_selectionFlagD0 && (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtD0refl_RecoPID"), InvMassD0(candidate), candidate.pt());
-	}
+      if (candidate.isSelD0() >= d_selectionFlagD0 && (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtD0refl_RecoPID"), InvMassD0(candidate), candidate.pt());
+      }
 
-      
-      if (candidate.isSelD0bar() >= d_selectionFlagD0bar && (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtD0bar_RecoPIDMatch"), InvMassD0bar(candidate), candidate.pt());
-	}
-      if (candidate.isSelD0bar() >= d_selectionFlagD0bar && (candidate.flagMCMatchRec() != (-1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtBKGD0bar_RecoPIDMatch"), InvMassD0bar(candidate), candidate.pt());
-	}
-      if (candidate.isSelD0bar() >= d_selectionFlagD0bar && (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)))
-	{
-	  registry.fill(HIST("hInvMassvsPtD0barrefl_RecoPID"), InvMassD0bar(candidate), candidate.pt());
-	}
-      
+      if (candidate.isSelD0bar() >= d_selectionFlagD0bar && (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtD0bar_RecoPIDMatch"), InvMassD0bar(candidate), candidate.pt());
+      }
+      if (candidate.isSelD0bar() >= d_selectionFlagD0bar && (candidate.flagMCMatchRec() != (-1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtBKGD0bar_RecoPIDMatch"), InvMassD0bar(candidate), candidate.pt());
+      }
+      if (candidate.isSelD0bar() >= d_selectionFlagD0bar && (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK))) {
+        registry.fill(HIST("hInvMassvsPtD0barrefl_RecoPID"), InvMassD0bar(candidate), candidate.pt());
+      }
+
       /////////////////////////////////////////////////////////////////////////////
-	if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK))
-	{
+      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
-	}
+      }
 
-      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::D0ToPiK)
-	{
+      if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
 
+        registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
+        registry.fill(HIST("hPtRecSig"), ptRec);               // rec. level pT
 
+        if (candidate.isSelHFFlag() >= d_selectionHFFlag) {
+          registry.fill(HIST("hPtvsYRecSig_RecoHFFlag"), ptGenlevel, yGenlevel);
+        }
+        if (candidate.isSelTopol() >= d_selectionTopol) {
+          registry.fill(HIST("hPtvsYRecSig_RecoTopol"), ptGenlevel, yGenlevel);
+        }
+        if (candidate.isSelCand() >= d_selectionCand) {
+          registry.fill(HIST("hPtvsYRecSig_RecoCand"), ptGenlevel, yGenlevel);
+        }
+        if (candidate.isSelD0() >= d_selectionFlagD0 || candidate.isSelD0bar() >= d_selectionFlagD0bar) {
+          registry.fill(HIST("hPtvsYRecSig_RecoPID"), ptGenlevel, yGenlevel);
+          registry.fill(HIST("hrecostatus"), candidate.isSelD0bar() + 2.0 * candidate.isSelD0());
+        }
 
-	  registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
-	  registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
+        if (candidate.originMCRec() == OriginType::Prompt) {
+          registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
+          if (candidate.isSelHFFlag() >= d_selectionHFFlag) {
+            registry.fill(HIST("hPtvsYRecSigPrompt_RecoHFFlag"), ptGenlevel, yGenlevel);
+          }
+          if (candidate.isSelTopol() >= d_selectionTopol) {
+            registry.fill(HIST("hPtvsYRecSigPrompt_RecoTopol"), ptGenlevel, yGenlevel);
+          }
+          if (candidate.isSelCand() >= d_selectionCand) {
+            registry.fill(HIST("hPtvsYRecSigPrompt_RecoCand"), ptGenlevel, yGenlevel);
+          }
+          if (candidate.isSelD0() >= d_selectionFlagD0 || candidate.isSelD0bar() >= d_selectionFlagD0bar) {
+            registry.fill(HIST("hPtvsYRecSigPrompt_RecoPID"), ptGenlevel, yGenlevel);
+          }
 
-	  if (candidate.isSelHFFlag() >= d_selectionHFFlag)
-	    {
-	      registry.fill(HIST("hPtvsYRecSig_RecoHFFlag"), ptGenlevel, yGenlevel);
-	    }
-	  if (candidate.isSelTopol() >= d_selectionTopol)
-	    {
-	      registry.fill(HIST("hPtvsYRecSig_RecoTopol"), ptGenlevel, yGenlevel);
-	    }
-	  if (candidate.isSelCand() >= d_selectionCand)
-	    {
-	      registry.fill(HIST("hPtvsYRecSig_RecoCand"), ptGenlevel, yGenlevel);
-	    }
-	  if (candidate.isSelD0() >= d_selectionFlagD0 || candidate.isSelD0bar() >= d_selectionFlagD0bar)
-	    {
-	      registry.fill(HIST("hPtvsYRecSig_RecoPID"), ptGenlevel, yGenlevel);
-	      registry.fill(HIST("hrecostatus"), candidate.isSelD0bar()+2.0*candidate.isSelD0());
-	    }
-	  
-	  
-	  if (candidate.originMCRec() == OriginType::Prompt)
-	    {
-	      registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-	      if (candidate.isSelHFFlag() >= d_selectionHFFlag)
-		{
-		  registry.fill(HIST("hPtvsYRecSigPrompt_RecoHFFlag"), ptGenlevel, yGenlevel);
-		}
-	      if (candidate.isSelTopol() >= d_selectionTopol)
-		{
-		  registry.fill(HIST("hPtvsYRecSigPrompt_RecoTopol"), ptGenlevel, yGenlevel);
-		}
-	      if (candidate.isSelCand() >= d_selectionCand)
-		{
-		  registry.fill(HIST("hPtvsYRecSigPrompt_RecoCand"), ptGenlevel, yGenlevel);
-		}
-	      if (candidate.isSelD0() >= d_selectionFlagD0 || candidate.isSelD0bar() >= d_selectionFlagD0bar)
-		{
-		  registry.fill(HIST("hPtvsYRecSigPrompt_RecoPID"), ptGenlevel, yGenlevel);
-		}
-	      
-	    }
-	  
-	  else
-	    {
-	      registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
-	      if (candidate.isSelHFFlag() >= d_selectionHFFlag)
-		{
-		  registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoHFFlag"), ptGenlevel, yGenlevel);
-		}
-	      if (candidate.isSelTopol() >= d_selectionTopol)
-		{
-		  registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoTopol"), ptGenlevel, yGenlevel);
-		}
-	      if (candidate.isSelCand() >= d_selectionCand)
-		{
-		  registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoCand"), ptGenlevel, yGenlevel);
-		}
-	      if (candidate.isSelD0() >= d_selectionFlagD0 || candidate.isSelD0bar() >= d_selectionFlagD0bar)
-		{
-		  registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoPID"), ptGenlevel, yGenlevel);
-		  }
-	    }
-	  
-	  registry.fill(HIST("hCPARecSig"), candidate.cpa());
-	  registry.fill(HIST("hEtaRecSig"), candidate.eta());
-	}
-      else
-	{
+        }
+
+        else {
+          registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
+          if (candidate.isSelHFFlag() >= d_selectionHFFlag) {
+            registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoHFFlag"), ptGenlevel, yGenlevel);
+          }
+          if (candidate.isSelTopol() >= d_selectionTopol) {
+            registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoTopol"), ptGenlevel, yGenlevel);
+          }
+          if (candidate.isSelCand() >= d_selectionCand) {
+            registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoCand"), ptGenlevel, yGenlevel);
+          }
+          if (candidate.isSelD0() >= d_selectionFlagD0 || candidate.isSelD0bar() >= d_selectionFlagD0bar) {
+            registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoPID"), ptGenlevel, yGenlevel);
+          }
+        }
+
+        registry.fill(HIST("hCPARecSig"), candidate.cpa());
+        registry.fill(HIST("hEtaRecSig"), candidate.eta());
+      } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
-	}
       }
+    }
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
@@ -389,22 +343,20 @@ struct TaskD0MCALICE3 {
           continue;
         }
         auto ptGen = particle.pt();
-	auto yGen = particle.y();
+        auto yGen = particle.y();
         registry.fill(HIST("hPtGen"), ptGen);
-	registry.fill(HIST("hPtvsYGen"), ptGen, yGen);
-	
-	if (particle.originMCGen() == OriginType::Prompt)
-	  {
-	    registry.fill(HIST("hPtGenPrompt"), ptGen);
-	    registry.fill(HIST("hPtvsYGenPrompt"), ptGen, yGen);
-	  }
+        registry.fill(HIST("hPtvsYGen"), ptGen, yGen);
 
-	else
-	  {
-	    registry.fill(HIST("hPtGenNonPrompt"), ptGen);
-	    registry.fill(HIST("hPtvsYGenNonPrompt"), ptGen, yGen);
-	  }
-	
+        if (particle.originMCGen() == OriginType::Prompt) {
+          registry.fill(HIST("hPtGenPrompt"), ptGen);
+          registry.fill(HIST("hPtvsYGenPrompt"), ptGen, yGen);
+        }
+
+        else {
+          registry.fill(HIST("hPtGenNonPrompt"), ptGen);
+          registry.fill(HIST("hPtvsYGenNonPrompt"), ptGen, yGen);
+        }
+
         registry.fill(HIST("hEtaGen"), particle.eta());
       }
     }

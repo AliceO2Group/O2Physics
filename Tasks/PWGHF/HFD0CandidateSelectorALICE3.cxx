@@ -29,7 +29,6 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_d0_topik;
 
-
 namespace o2::aod
 {
 namespace hf_track_index_alice3_pid
@@ -38,7 +37,7 @@ DECLARE_SOA_INDEX_COLUMN(Track, track); //!
 DECLARE_SOA_INDEX_COLUMN(RICH, rich);
 } // namespace hf_track_index_alice3_pid
 
-  DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID",//!
+DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
                              hf_track_index_alice3_pid::TrackId,
                              hf_track_index_alice3_pid::RICHId);
 } // namespace o2::aod
@@ -47,9 +46,6 @@ struct Alice3PidIndexBuilder {
   Builds<o2::aod::HfTrackIndexALICE3PID> index;
   void init(o2::framework::InitContext&) {}
 };
-
-
-
 
 /// Struct for applying D0 selection cuts
 struct HFD0CandidateSelectorALICE3 {
@@ -133,21 +129,18 @@ struct HFD0CandidateSelectorALICE3 {
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
 
-    if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5)
-      {
+    if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
       return false;
-      }
-    
+    }
+
     double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, 0.06);
-    if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut)
-      {
-	return false;
-      }
-    
-    if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0)
-      {
-	//return false; // add back when getter fixed
-      }
+    if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
+      return false;
+    }
+
+    if (candidate.decayLengthNormalised() * candidate.decayLengthNormalised() < 1.0) {
+      //return false; // add back when getter fixed
+    }
     return true;
   }
 
@@ -168,52 +161,41 @@ struct HFD0CandidateSelectorALICE3 {
     }
 
     // invariant-mass cut
-    if (trackPion.sign() > 0)
-      {
-	if (std::abs(InvMassD0(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m"))
-	  {
+    if (trackPion.sign() > 0) {
+      if (std::abs(InvMassD0(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
         return false;
-	  }
       }
-    else
-      {
-	if (std::abs(InvMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
-	  return false;
-	}
+    } else {
+      if (std::abs(InvMassD0bar(candidate) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "m")) {
+        return false;
       }
+    }
 
     // cut on daughter pT
-    if (trackPion.pt() < cuts->get(pTBin, "pT Pi") || trackKaon.pt() < cuts->get(pTBin, "pT K"))
-      {
-	return false;
-      }
+    if (trackPion.pt() < cuts->get(pTBin, "pT Pi") || trackKaon.pt() < cuts->get(pTBin, "pT K")) {
+      return false;
+    }
 
     // eta cut on daughter
-    if (std::abs(trackPion.eta()) > 1.44 || std::abs(trackKaon.eta()) > 1.44)
-      {
-	return false;
-      }
+    if (std::abs(trackPion.eta()) > 1.44 || std::abs(trackKaon.eta()) > 1.44) {
+      return false;
+    }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K"))
-      {
-	return false;
-      }
+    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K")) {
+      return false;
+    }
 
     // cut on cos(theta*)
-    if (trackPion.sign() > 0)
-      {
-	if (std::abs(CosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
-	  return false;
-	}
+    if (trackPion.sign() > 0) {
+      if (std::abs(CosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
+        return false;
       }
-    else
-      {
-	if (std::abs(CosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*"))
-	  {
-	    return false;
-	  }
+    } else {
+      if (std::abs(CosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
+        return false;
       }
+    }
 
     return true;
   }
@@ -227,80 +209,74 @@ struct HFD0CandidateSelectorALICE3 {
     selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorPion.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
     selectorPion.setRangePtRICH(d_pidRICHMinpT, d_pidRICHMaxpT);
-    
+
     selectorPion.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorPion.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
     selectorPion.setRangeNSigmaRICH(-d_nSigmaRICH, d_nSigmaRICH);
-    
+
     selectorPion.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
     selectorPion.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
-    
+
     TrackSelectorPID selectorKaon(selectorPion);
-    
-    
+
     // looping over 2-prong candidates
-    for (auto& candidate : candidates)
-      {
-	int statusD0 = 0;
-	int statusD0bar = 0;
-	int statusHFFlag = 0;
-	int statusTopol = 0;
-	int statusCand = 0;
-	/*	float nsigmapiontof = -500.0;
+    for (auto& candidate : candidates) {
+      int statusD0 = 0;
+      int statusD0bar = 0;
+      int statusHFFlag = 0;
+      int statusTopol = 0;
+      int statusCand = 0;
+      /*	float nsigmapiontof = -500.0;
 	float nsigmakaontof = -500.0;
 	float nsigmapionrich = -500.0;
 	float nsigmakaonrich = -500.0;
 	*/
-	int pidD0 = -1;
-	int pidD0bar = -1;
-	
-	if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK))
-	  {
-    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-    continue;
-	  }
-	statusHFFlag=1;
-	auto trackPos = candidate.index0_as<TracksPID>(); // positive daughter
-	auto trackNeg = candidate.index1_as<TracksPID>(); // negative daughter
-	//std::out<<trackPos.tofNSigmaPi()<<"\n";
-	// conjugate-independent topological selection
-	if (!selectionTopol(candidate))
-	  {
-    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-    continue;
-	}
-	statusTopol = 1;
+      int pidD0 = -1;
+      int pidD0bar = -1;
+
+      if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
+        hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+        //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+        continue;
+      }
+      statusHFFlag = 1;
+      auto trackPos = candidate.index0_as<TracksPID>(); // positive daughter
+      auto trackNeg = candidate.index1_as<TracksPID>(); // negative daughter
+      //std::out<<trackPos.tofNSigmaPi()<<"\n";
+      // conjugate-independent topological selection
+      if (!selectionTopol(candidate)) {
+        hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+        //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+        continue;
+      }
+      statusTopol = 1;
       // conjugate-dependent topological selection for D0
-	bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
-	bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
-	
-	if (!topolD0 && !topolD0bar)
-	  {
-    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-    continue;
-	  }
-	statusCand=1;
-	
-	if(selectorPion.isPion(trackPos,d_usedetector) && selectorKaon.isKaon(trackNeg,d_usedetector))
-	  {
-	    pidD0 = 1;
-	  }
-	if(selectorPion.isPion(trackNeg,d_usedetector) && selectorKaon.isKaon(trackPos,d_usedetector))
-	  {
-	    pidD0bar = 1;
-	  }
-	if (pidD0 == -1 && pidD0bar == -1)
-	  {
-    hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-    //hfSelD0CandidateALICE3(statusD0, statusD0bar);
-    continue;
-	  }
-	if(pidD0==1 && topolD0)statusD0 = 1;
-	if(pidD0bar==1 && topolD0bar)statusD0bar = 1;
-	/*if(statusD0==1)
+      bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
+      bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
+
+      if (!topolD0 && !topolD0bar) {
+        hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+        //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+        continue;
+      }
+      statusCand = 1;
+
+      if (selectorPion.isPion(trackPos, d_usedetector) && selectorKaon.isKaon(trackNeg, d_usedetector)) {
+        pidD0 = 1;
+      }
+      if (selectorPion.isPion(trackNeg, d_usedetector) && selectorKaon.isKaon(trackPos, d_usedetector)) {
+        pidD0bar = 1;
+      }
+      if (pidD0 == -1 && pidD0bar == -1) {
+        hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+        //hfSelD0CandidateALICE3(statusD0, statusD0bar);
+        continue;
+      }
+      if (pidD0 == 1 && topolD0)
+        statusD0 = 1;
+      if (pidD0bar == 1 && topolD0bar)
+        statusD0bar = 1;
+      /*if(statusD0==1)
 	  {
 	    bool hasRICHP = trackPos.richId() > -1;
 	    bool hasRICHN = trackNeg.richId() > -1;
@@ -310,8 +286,8 @@ struct HFD0CandidateSelectorALICE3 {
 	    nsigmapionrich = hasRICHP ? trackPos.rich().richNsigmaPi() : -1000.;
 	    nsigmakaonrich = hasRICHN ? trackNeg.rich().richNsigmaKa() : -1000.;
 	    }*/
-  hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
-      }
+      hfSelD0CandidateALICE3(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand);
+    }
   }
 };
 
