@@ -160,6 +160,7 @@ struct HFCandidateCreator3ProngMC {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
+    int8_t swapping = 0;
     int8_t channel = 0;
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
@@ -172,6 +173,7 @@ struct HFCandidateCreator3ProngMC {
       //Printf("New rec. candidate");
       flag = 0;
       origin = 0;
+      swapping = 0;
       channel = 0;
       arrDaughIndex.clear();
       auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(), candidate.index1_as<aod::BigTracksMC>(), candidate.index2_as<aod::BigTracksMC>()};
@@ -191,17 +193,18 @@ struct HFCandidateCreator3ProngMC {
           flag = sign * (1 << DecayType::LcToPKPi);
 
           //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           RecoDecay::getDaughters(particlesMC, particlesMC.iteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = particlesMC.iteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
-            if (arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) {
+            if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) or (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
               channel = 1;
-            } else if (arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) {
+            } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) or (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
               channel = 2;
-            } else if (arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) {
+            } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) or (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
               channel = 3;
             }
           }
@@ -223,7 +226,7 @@ struct HFCandidateCreator3ProngMC {
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
-      rowMCMatchRec(flag, origin, channel);
+      rowMCMatchRec(flag, origin, swapping, channel);
     }
 
     // Match generated particles.
@@ -253,11 +256,11 @@ struct HFCandidateCreator3ProngMC {
               auto daughJ = particlesMC.iteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
-            if (arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) {
+            if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) or (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
               channel = 1;
-            } else if (arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) {
+            } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) or (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
               channel = 2;
-            } else if (arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) {
+            } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) or (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
               channel = 3;
             }
           }
