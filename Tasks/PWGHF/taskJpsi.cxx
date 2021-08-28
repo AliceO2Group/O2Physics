@@ -249,8 +249,8 @@ struct TaskJpsiMC {
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta());
         registry.fill(HIST("hYGen"), RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())), particle.pt());
-        registry.fill(HIST("hPtGenProng0"), particle.daughter0_as<McParticlesHf>().pt(), particle.pt());
-        registry.fill(HIST("hPtGenProng1"), particle.daughter1_as<McParticlesHf>().pt(), particle.pt());
+        //registry.fill(HIST("hPtGenProng0"), particle.daughter0_as<McParticlesHf>().pt(), particle.pt());
+        //registry.fill(HIST("hPtGenProng1"), particle.daughter1_as<McParticlesHf>().pt(), particle.pt());
       }
     }
   }
