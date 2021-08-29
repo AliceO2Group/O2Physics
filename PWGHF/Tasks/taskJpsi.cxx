@@ -47,10 +47,10 @@ struct TaskJpsi {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
-  Configurable<int> noPid{"noPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> tofPid{"tofPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> richPid{"richPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> combPid{"combPid", 0, "Pid Flag for Jpsi"};
+  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select tof PID for Jpsi"};
+  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select rich PID for Jpsi"};
+  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select tof and rich PID for Jpsi"};
+  Configurable<bool> usingMid{"usingMid", false, "select MID PID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -87,17 +87,20 @@ struct TaskJpsi {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
+          if (selectedMid && candidate.isSelJpsiToMuMuMid() <= 0) {
+            continue;
+          }
         } else {
-          if (noPid && candidate.isSelJpsiToEETopol() <= 0) {
+          if (candidate.isSelJpsiToEETopol() <= 0) {
             continue;
           }
-          if (tofPid && candidate.isSelJpsiToEETof() <= 0) {
+          if (selectedTofPid && candidate.isSelJpsiToEETof() <= 0) {
             continue;
           }
-          if (richPid && candidate.isSelJpsiToEERich() <= 0) {
+          if (selectedRichPid && candidate.isSelJpsiToEERich() <= 0) {
             continue;
           }
-          if (combPid && candidate.isSelJpsiToEETofRich() <= 0) {
+          if (selectedCombPid && candidate.isSelJpsiToEETofRich() <= 0) {
             continue;
           }
         }
@@ -147,10 +150,10 @@ struct TaskJpsiMC {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
-  Configurable<int> noPid{"noPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> tofPid{"tofPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> richPid{"richPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> combPid{"combPid", 0, "Pid Flag for Jpsi"};
+  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select tof PID for Jpsi"};
+  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select rich PID for Jpsi"};
+  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select tof and rich PID for Jpsi"};
+  Configurable<bool> usingMid{"usingMid", false, "select MID PID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -204,17 +207,20 @@ struct TaskJpsiMC {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
+          if (selectedMid && candidate.isSelJpsiToMuMuMid() <= 0) {
+            continue;
+          }
         } else {
-          if (noPid && candidate.isSelJpsiToEETopol() <= 0) {
+          if (candidate.isSelJpsiToEETopol() <= 0) {
             continue;
           }
-          if (tofPid && candidate.isSelJpsiToEETof() <= 0) {
+          if (selectedTofPid && candidate.isSelJpsiToEETof() <= 0) {
             continue;
           }
-          if (richPid && candidate.isSelJpsiToEERich() <= 0) {
+          if (selectedRichPid && candidate.isSelJpsiToEERich() <= 0) {
             continue;
           }
-          if (combPid && candidate.isSelJpsiToEETofRich() <= 0) {
+          if (selectedCombPid && candidate.isSelJpsiToEETofRich() <= 0) {
             continue;
           }
         }
