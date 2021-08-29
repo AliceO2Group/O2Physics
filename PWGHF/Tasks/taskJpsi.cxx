@@ -88,7 +88,7 @@ struct TaskJpsi {
             continue;
           }
         } else {
-          if (nopid && candidate.isSelJpsiToEETopol() <= 0) {
+          if (noPid && candidate.isSelJpsiToEETopol() <= 0) {
             continue;
           }
           if (tofPid && candidate.isSelJpsiToEETof() <= 0) {
@@ -150,7 +150,7 @@ struct TaskJpsiMC {
   Configurable<int> noPid{"noPid", 0, "Pid Flag for Jpsi"};
   Configurable<int> tofPid{"tofPid", 0, "Pid Flag for Jpsi"};
   Configurable<int> richPid{"richPid", 0, "Pid Flag for Jpsi"};
-  Configurable<int> comPid{"combPid", 0, "Pid Flag for Jpsi"};
+  Configurable<int> combPid{"combPid", 0, "Pid Flag for Jpsi"};
 
   void init(o2::framework::InitContext&)
   {
@@ -205,7 +205,7 @@ struct TaskJpsiMC {
             continue;
           }
         } else {
-          if (nopid && candidate.isSelJpsiToEETopol() <= 0) {
+          if (noPid && candidate.isSelJpsiToEETopol() <= 0) {
             continue;
           }
           if (tofPid && candidate.isSelJpsiToEETof() <= 0) {
