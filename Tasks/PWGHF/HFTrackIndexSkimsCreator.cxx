@@ -612,6 +612,19 @@ struct HfTrackIndexSkimsCreator {
       array{hfTrack2.px(), hfTrack2.py(), hfTrack2.pz()}};
 
     auto pT = RecoDecay::Pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
+    /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+    static std::vector<int> massMinIndex;
+    static std::vector<int> massMaxIndex;
+    static auto cacheIndices = [](std::array<LabeledArray<double>, n3ProngDecays>& cut3Prong, std::vector<int>& mins, std::vector<int>& maxs) {
+      mins.resize(cut3Prong.size());
+      maxs.resize(cut3Prong.size());
+      for (size_t i = 0; i < cut3Prong.size(); ++i) {
+        mins[i] = cut3Prong[i].colmap.find("massMin")->second;
+        maxs[i] = cut3Prong[i].colmap.find("massMax")->second;
+      }
+      return true;
+    };
+    static bool initIndex = cacheIndices(cut3Prong, massMinIndex, massMaxIndex);
 
     for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
 
@@ -629,13 +642,13 @@ struct HfTrackIndexSkimsCreator {
       // invariant mass
       double massHypos[2];
       whichHypo[iDecay3P] = 3;
-      if ((debug || TESTBIT(isSelected, iDecay3P)) && cut3Prong[iDecay3P].get(pTBin, "massMin") >= 0. && cut3Prong[iDecay3P].get(pTBin, "massMax") > 0.) { //no need to check isSelected but to avoid mistakes
+      if ((debug || TESTBIT(isSelected, iDecay3P)) && cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) >= 0. && cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P]) > 0.) { //no need to check isSelected but to avoid mistakes
         massHypos[0] = RecoDecay::M(arrMom, arrMass3Prong[iDecay3P][0]);
         massHypos[1] = RecoDecay::M(arrMom, arrMass3Prong[iDecay3P][1]);
-        if (massHypos[0] < cut3Prong[iDecay3P].get(pTBin, "massMin") || massHypos[0] >= cut3Prong[iDecay3P].get(pTBin, "massMax")) {
+        if (massHypos[0] < cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) || massHypos[0] >= cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P])) {
           whichHypo[iDecay3P] -= 1;
         }
-        if (massHypos[1] < cut3Prong[iDecay3P].get(pTBin, "massMin") || massHypos[1] >= cut3Prong[iDecay3P].get(pTBin, "massMax")) {
+        if (massHypos[1] < cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) || massHypos[1] >= cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P])) {
           whichHypo[iDecay3P] -= 2;
         }
         if (whichHypo[iDecay3P] == 0) {
