@@ -50,7 +50,7 @@ struct TaskJpsi {
   Configurable<bool> selectedTofPid{"selectedTofPid", false, "select tof PID for Jpsi"};
   Configurable<bool> selectedRichPid{"selectedRichPid", false, "select rich PID for Jpsi"};
   Configurable<bool> selectedCombPid{"selectedCombPid", false, "select tof and rich PID for Jpsi"};
-  Configurable<bool> usingMid{"usingMid", false, "select MID PID for Jpsi to mu+mu-"};
+  Configurable<bool> selectedMid{"selectedMid", false, "select MID PID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -153,7 +153,7 @@ struct TaskJpsiMC {
   Configurable<bool> selectedTofPid{"selectedTofPid", false, "select tof PID for Jpsi"};
   Configurable<bool> selectedRichPid{"selectedRichPid", false, "select rich PID for Jpsi"};
   Configurable<bool> selectedCombPid{"selectedCombPid", false, "select tof and rich PID for Jpsi"};
-  Configurable<bool> usingMid{"usingMid", false, "select MID PID for Jpsi to mu+mu-"};
+  Configurable<bool> selectedMid{"selectedMid", false, "select MID PID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
