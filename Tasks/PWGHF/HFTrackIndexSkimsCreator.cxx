@@ -827,7 +827,7 @@ struct HfTrackIndexSkimsCreator {
     auto nCand3 = rowTrackIndexProng3.lastIndex();
 
     // if there isn't at least a positive and a negative track, continue immediately
-    if(tracksPos.size() < 1 || tracksNeg.size() < 1) {
+    if (tracksPos.size() < 1 || tracksNeg.size() < 1) {
       return;
     }
 
