@@ -539,16 +539,17 @@ struct HfTrackIndexSkimsCreator {
   }
 
   /// Method to perform selections for 2-prong candidates before vertex reconstruction
-  /// \param hfTracks is the array of 2 tracks
-  /// \param massHypos is a 2D array containing the mass hypotheses for the 2-prong channels
+  /// \param hfTrack0 is the first daughter track
+  /// \param hfTrack1 is the second daughter track
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
+  /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3>
-  void is2ProngPreselected(const T1& hfTracks, T2& cutStatus, T3& whichHypo, int& isSelected)
+  void is2ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
     auto arrMom = array{
-      array{hfTracks[0].px(), hfTracks[0].py(), hfTracks[0].pz()},
-      array{hfTracks[1].px(), hfTracks[1].py(), hfTracks[1].pz()}};
+      array{hfTrack0.px(), hfTrack0.py(), hfTrack0.pz()},
+      array{hfTrack1.px(), hfTrack1.py(), hfTrack1.pz()}};
 
     auto pT = RecoDecay::Pt(arrMom[0], arrMom[1]) + pTTolerance; // add tolerance because of no reco decay vertex
 
@@ -565,16 +566,33 @@ struct HfTrackIndexSkimsCreator {
         continue;
       }
 
+      /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+      static std::vector<int> massMinIndex;
+      static std::vector<int> massMaxIndex;
+      static auto cacheIndices = [](std::array<LabeledArray<double>, n2ProngDecays>& cut2Prong, std::vector<int>& mins, std::vector<int>& maxs) {
+        mins.resize(cut2Prong.size());
+        maxs.resize(cut2Prong.size());
+        for (size_t i = 0; i < cut2Prong.size(); ++i) {
+          mins[i] = cut2Prong[i].colmap.find("massMin")->second;
+          maxs[i] = cut2Prong[i].colmap.find("massMax")->second;
+        }
+        return true;
+      };
+      static bool initIndex = cacheIndices(cut2Prong, massMinIndex, massMaxIndex);
+
       // invariant mass
       double massHypos[2];
       whichHypo[iDecay2P] = 3;
-      if ((debug || TESTBIT(isSelected, iDecay2P)) && cut2Prong[iDecay2P].get(pTBin, "massMin") >= 0. && cut2Prong[iDecay2P].get(pTBin, "massMax") > 0.) {
-        massHypos[0] = RecoDecay::M(arrMom, arrMass2Prong[iDecay2P][0]);
-        massHypos[1] = RecoDecay::M(arrMom, arrMass2Prong[iDecay2P][1]);
-        if (massHypos[0] < cut2Prong[iDecay2P].get(pTBin, "massMin") || massHypos[0] >= cut2Prong[iDecay2P].get(pTBin, "massMax")) {
+      double min2 = pow(cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]), 2);
+      double max2 = pow(cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P]), 2);
+
+      if ((debug || TESTBIT(isSelected, iDecay2P)) && cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]) >= 0. && cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P]) > 0.) {
+        massHypos[0] = RecoDecay::M2(arrMom, arrMass2Prong[iDecay2P][0]);
+        massHypos[1] = RecoDecay::M2(arrMom, arrMass2Prong[iDecay2P][1]);
+        if (massHypos[0] < min2 || massHypos[0] >= max2) {
           whichHypo[iDecay2P] -= 1;
         }
-        if (massHypos[1] < cut2Prong[iDecay2P].get(pTBin, "massMin") || massHypos[1] >= cut2Prong[iDecay2P].get(pTBin, "massMax")) {
+        if (massHypos[1] < min2 || massHypos[1] >= max2) {
           whichHypo[iDecay2P] -= 2;
         }
         if (whichHypo[iDecay2P] == 0) {
@@ -587,7 +605,7 @@ struct HfTrackIndexSkimsCreator {
 
       // imp. par. product cut
       if (debug || TESTBIT(isSelected, iDecay2P)) {
-        auto impParProduct = hfTracks[0].dcaPrim0() * hfTracks[1].dcaPrim0();
+        auto impParProduct = hfTrack0.dcaPrim0() * hfTrack1.dcaPrim0();
         if (impParProduct > cut2Prong[iDecay2P].get(pTBin, "d0d0")) {
           CLRBIT(isSelected, iDecay2P);
           if (debug) {
@@ -599,9 +617,11 @@ struct HfTrackIndexSkimsCreator {
   }
 
   /// Method to perform selections for 3-prong candidates before vertex reconstruction
-  /// \param hfTracks is the array of 3 tracks
-  /// \param massHypos is a 2D array containing the mass hypotheses for the 3-prong channels
+  /// \param hfTrack0 is the first daughter track
+  /// \param hfTrack1 is the second daughter track
+  /// \param hfTrack2 is the third daughter track
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
+  /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3>
   void is3ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T1 const& hfTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
@@ -753,9 +773,8 @@ struct HfTrackIndexSkimsCreator {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
   using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::HFSelTrack>>;
 
-  // FIXME
-  //Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
-  //Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
+  Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
+  Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
@@ -813,12 +832,13 @@ struct HfTrackIndexSkimsCreator {
     auto nCand2 = rowTrackIndexProng2.lastIndex();
     auto nCand3 = rowTrackIndexProng3.lastIndex();
 
+    // if there isn't at least a positive and a negative track, continue immediately
+    if (tracksPos.size() < 1 || tracksNeg.size() < 1) {
+      return;
+    }
+
     // first loop over positive tracks
-    //for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
-    for (auto trackPos1 = tracks.begin(); trackPos1 != tracks.end(); ++trackPos1) {
-      if (trackPos1.signed1Pt() < 0) {
-        continue;
-      }
+    for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
       bool sel2ProngStatusPos = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand2Prong);
       bool sel3ProngStatusPos1 = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand3Prong);
       if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
@@ -828,11 +848,7 @@ struct HfTrackIndexSkimsCreator {
       auto trackParVarPos1 = getTrackParCov(trackPos1);
 
       // first loop over negative tracks
-      //for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
-      for (auto trackNeg1 = tracks.begin(); trackNeg1 != tracks.end(); ++trackNeg1) {
-        if (trackNeg1.signed1Pt() > 0) {
-          continue;
-        }
+      for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
         bool sel2ProngStatusNeg = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand2Prong);
         bool sel3ProngStatusNeg1 = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand3Prong);
         if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
@@ -855,7 +871,7 @@ struct HfTrackIndexSkimsCreator {
         if (sel2ProngStatusPos && sel2ProngStatusNeg) {
 
           // 2-prong preselections
-          is2ProngPreselected(array{trackPos1, trackNeg1}, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand);
+          is2ProngPreselected(trackPos1, trackNeg1, cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand);
 
           // secondary vertex reconstruction and further 2-prong selections
           if (isSelected2ProngCand > 0 && df2.process(trackParVarPos1, trackParVarNeg1) > 0) { //should it be this or > 0 or are they equivalent
@@ -929,15 +945,11 @@ struct HfTrackIndexSkimsCreator {
             continue;
           }
 
-          if (tracks.size() < 2) {
-            continue;
-          }
+          // if (tracks.size() < 2) {
+          //   continue;
+          // }
           // second loop over positive tracks
-          //for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
-          for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracks.end(); ++trackPos2) {
-            if (trackPos2.signed1Pt() < 0) {
-              continue;
-            }
+          for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
             if (!TESTBIT(trackPos2.isSelProng(), CandidateType::Cand3Prong)) {
               continue;
             }
@@ -1043,11 +1055,7 @@ struct HfTrackIndexSkimsCreator {
           }
 
           // second loop over negative tracks
-          //for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
-          for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracks.end(); ++trackNeg2) {
-            if (trackNeg2.signed1Pt() > 0) {
-              continue;
-            }
+          for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
             if (!TESTBIT(trackNeg2.isSelProng(), CandidateType::Cand3Prong)) {
               continue;
             }
