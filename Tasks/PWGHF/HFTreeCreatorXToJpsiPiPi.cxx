@@ -14,7 +14,7 @@
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
 ///
-/// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
+/// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN (based on O2Physics/Tasks/PWGHF/HFTreeCreatorLcToPKPi.cxx)
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -105,7 +105,7 @@ DECLARE_SOA_TABLE(HfCandXFullParticles, "AOD", "HFCANDXFullP",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct CandidateTreeWriter {
+struct HFTreeCreatorXToJpsiPiPi {
   Produces<o2::aod::HfCandXFull> rowCandidateFull;
   Produces<o2::aod::HfCandXFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXFullParticles> rowCandidateFullParticles;
