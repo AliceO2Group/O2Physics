@@ -541,8 +541,8 @@ struct HfTrackIndexSkimsCreator {
   /// Method to perform selections for 2-prong candidates before vertex reconstruction
   /// \param hfTrack0 is the first daughter track
   /// \param hfTrack1 is the second daughter track
-  /// \param massHypos is a 2D array containing the mass hypotheses for the 2-prong channels
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
+  /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3>
   void is2ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T2& cutStatus, T3& whichHypo, int& isSelected)
@@ -583,13 +583,16 @@ struct HfTrackIndexSkimsCreator {
       // invariant mass
       double massHypos[2];
       whichHypo[iDecay2P] = 3;
+      double min2 = pow(cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]), 2);
+      double max2 = pow(cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P]), 2);
+
       if ((debug || TESTBIT(isSelected, iDecay2P)) && cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]) >= 0. && cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P]) > 0.) {
-        massHypos[0] = RecoDecay::M(arrMom, arrMass2Prong[iDecay2P][0]);
-        massHypos[1] = RecoDecay::M(arrMom, arrMass2Prong[iDecay2P][1]);
-        if (massHypos[0] < cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]) || massHypos[0] >= cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P])) {
+        massHypos[0] = RecoDecay::M2(arrMom, arrMass2Prong[iDecay2P][0]);
+        massHypos[1] = RecoDecay::M2(arrMom, arrMass2Prong[iDecay2P][1]);
+        if (massHypos[0] < min2 || massHypos[0] >= max2) {
           whichHypo[iDecay2P] -= 1;
         }
-        if (massHypos[1] < cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]) || massHypos[1] >= cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P])) {
+        if (massHypos[1] < min2 || massHypos[1] >= max2) {
           whichHypo[iDecay2P] -= 2;
         }
         if (whichHypo[iDecay2P] == 0) {
@@ -617,8 +620,8 @@ struct HfTrackIndexSkimsCreator {
   /// \param hfTrack0 is the first daughter track
   /// \param hfTrack1 is the second daughter track
   /// \param hfTrack2 is the third daughter track
-  /// \param massHypos is a 2D array containing the mass hypotheses for the 3-prong channels
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
+  /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3>
   void is3ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T1 const& hfTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
