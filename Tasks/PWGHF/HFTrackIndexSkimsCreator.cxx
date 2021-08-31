@@ -642,13 +642,16 @@ struct HfTrackIndexSkimsCreator {
       // invariant mass
       double massHypos[2];
       whichHypo[iDecay3P] = 3;
+      double min2 = pow(cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]), 2);
+      double max2 = pow(cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P]), 2);
+
       if ((debug || TESTBIT(isSelected, iDecay3P)) && cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) >= 0. && cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P]) > 0.) { //no need to check isSelected but to avoid mistakes
-        massHypos[0] = RecoDecay::M(arrMom, arrMass3Prong[iDecay3P][0]);
-        massHypos[1] = RecoDecay::M(arrMom, arrMass3Prong[iDecay3P][1]);
-        if (massHypos[0] < cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) || massHypos[0] >= cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P])) {
+        massHypos[0] = RecoDecay::M2(arrMom, arrMass3Prong[iDecay3P][0]);
+        massHypos[1] = RecoDecay::M2(arrMom, arrMass3Prong[iDecay3P][1]);
+        if (massHypos[0] < min2 || massHypos[0] >= max2) {
           whichHypo[iDecay3P] -= 1;
         }
-        if (massHypos[1] < cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) || massHypos[1] >= cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P])) {
+        if (massHypos[1] < min2 || massHypos[1] >= max2) {
           whichHypo[iDecay3P] -= 2;
         }
         if (whichHypo[iDecay3P] == 0) {
