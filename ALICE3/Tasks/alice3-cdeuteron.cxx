@@ -21,6 +21,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/RecoDecay.h"
 #include "DetectorsVertexing/DCAFitterN.h"
+#include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
 
 using namespace o2;
@@ -40,6 +41,10 @@ struct Alice3CDeuteron {
   Configurable<float> minDcaPion{"minDcaPion", -100, "Minimum DCA of the pion to the primary vertex"};
   Configurable<float> maxDca{"maxDca", 100, "Maximum track DCA to the primary vertex"};
   Configurable<float> minCpa{"minCpa", 0, "Minimum CPA"};
+  Configurable<int> usePdg{"usePdg", 1, "Flag to use the PDG instead of the TOF/RICH PID"};
+  Configurable<float> maxNsigmaDe{"maxNsigmaDe", 3.f, "Maximum Nsigma for deuteron"};
+  Configurable<float> maxNsigmaKa{"maxNsigmaKa", 3.f, "Maximum Nsigma for kaon"};
+  Configurable<float> maxNsigmaPi{"maxNsigmaPi", 3.f, "Maximum Nsigma for pion"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::vertexing::DCAFitterN<3> fitter;
 
@@ -72,6 +77,9 @@ struct Alice3CDeuteron {
     const AxisSpec axisVtxY{100, -0.1, 0.1, "Vtx_{Y}"};
     const AxisSpec axisVtxZ{100, -0.1, 0.1, "Vtx_{Z}"};
     const AxisSpec axisCPA{4000, -1.1, 1.1, "CPA"};
+    const AxisSpec axisNSigmaDe{1000, -10, 10, "N_{#sigma}^{TOF}(d)"};
+    const AxisSpec axisNSigmaKa{1000, -10, 10, "N_{#sigma}^{TOF}(k)"};
+    const AxisSpec axisNSigmaPi{1000, -10, 10, "N_{#sigma}^{TOF}(#pi)"};
     const TString tit = Form(" [%.6f, %.6f] R [%.6f, %.6f] DCA ",
                              minRadius.value, maxRadius.value,
                              minDca.value, maxDca.value);
@@ -121,6 +129,12 @@ struct Alice3CDeuteron {
     histos.add("event/mcvtxX", "mcvtxX", kTH1D, {axisVtxX});
     histos.add("event/mcvtxY", "mcvtxY", kTH1D, {axisVtxY});
     histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxZ});
+    histos.add("event/nsigmaDe", "nsigmaDe", kTH2D, {axisPt, axisNSigmaDe});
+    histos.add("event/nsigmaKa", "nsigmaKa", kTH2D, {axisPt, axisNSigmaKa});
+    histos.add("event/nsigmaPi", "nsigmaPi", kTH2D, {axisPt, axisNSigmaPi});
+    histos.add("event/nsigmaDecut", "nsigmaDecut", kTH2D, {axisPt, axisNSigmaDe});
+    histos.add("event/nsigmaKacut", "nsigmaKacut", kTH2D, {axisPt, axisNSigmaKa});
+    histos.add("event/nsigmaPicut", "nsigmaPicut", kTH2D, {axisPt, axisNSigmaPi});
     histos.add("event/track1dcaxy", "track1dcaxy Deuteron", kTH1D, {axisDcaXY});
     histos.add("event/track1dcaz", "track1dcaz Deuteron", kTH1D, {axisDcaZ});
     histos.add("event/candperdeuteron", "candperdeuteron", kTH1D, {{1000, 0, 10000}});
@@ -170,11 +184,12 @@ struct Alice3CDeuteron {
 
   void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
                const o2::aod::McCollisions& Mccoll,
-               const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov>& tracks,
+               const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov,
+                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullDe>& tracks,
                const aod::McParticles& mcParticles)
   {
-
-    for (auto i : mcParticles) {
+    const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, coll.mcCollision().globalIndex());
+    for (const auto& i : particlesInCollision) {
       if (i.pdgCode() != 12345) {
         continue;
       }
@@ -217,9 +232,15 @@ struct Alice3CDeuteron {
     for (const auto& track1 : tracks) {
       const auto index1 = track1.globalIndex();
       int ncand = 0;
-      if (track1.mcParticle().pdgCode() != 1000010020) {
+      histos.fill(HIST("event/nsigmaDe"), track1.pt(), track1.tofNSigmaDe());
+      if (usePdg) {
+        if (track1.mcParticle().pdgCode() != 1000010020) {
+          continue;
+        }
+      } else if (abs(track1.tofNSigmaDe()) > maxNsigmaDe || track1.sign() < 0.f) {
         continue;
       }
+      histos.fill(HIST("event/nsigmaDecut"), track1.pt(), track1.tofNSigmaDe());
       if (!getTrackPar(track1).propagateParamToDCA(collPos,
                                                    magField * 10.f, &dca1, 100.)) {
         continue;
@@ -232,10 +253,15 @@ struct Alice3CDeuteron {
         if (index1 == index2) {
           continue;
         }
-        if (track2.mcParticle().pdgCode() != -321) {
+        histos.fill(HIST("event/nsigmaKa"), track2.pt(), track2.tofNSigmaKa());
+        if (usePdg) {
+          if (track2.mcParticle().pdgCode() != -321) {
+            continue;
+          }
+        } else if (abs(track2.tofNSigmaKa()) > maxNsigmaKa || track2.sign() > 0.f) {
           continue;
         }
-
+        histos.fill(HIST("event/nsigmaKacut"), track2.pt(), track2.tofNSigmaKa());
         if (!getTrackPar(track2).propagateParamToDCA(collPos,
                                                      magField * 10.f, &dca2, 100.)) {
           continue;
@@ -250,9 +276,15 @@ struct Alice3CDeuteron {
           if (index1 == index3) {
             continue;
           }
-          if (track3.mcParticle().pdgCode() != 211) {
+          histos.fill(HIST("event/nsigmaPi"), track3.pt(), track3.tofNSigmaPi());
+          if (usePdg) {
+            if (track3.mcParticle().pdgCode() != 211) {
+              continue;
+            }
+          } else if (abs(track3.tofNSigmaPi()) > maxNsigmaPi || track3.sign() < 0.f) {
             continue;
           }
+          histos.fill(HIST("event/nsigmaPicut"), track3.pt(), track3.tofNSigmaPi());
           bool iscut = false;
           if (abs(dca1[0]) < minDca || abs(dca1[1]) < minDca) {
             iscut = true;
