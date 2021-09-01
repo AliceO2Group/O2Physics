@@ -14,7 +14,7 @@
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
 ///
-/// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 /// \note based on O2Physics/Tasks/PWGHF/HFTreeCreatorLcToPKPi.cxx
 
 #include "Framework/runDataProcessing.h"
@@ -196,6 +196,6 @@ struct HfTreeCreatorXTojpsipipi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<CandidateTreeWriter>(cfgc, TaskName{"hf-tree-creator-x-tojpsipipi"}));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorXTojpsipipi>(cfgc));
   return workflow;
 }
