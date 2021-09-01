@@ -40,6 +40,7 @@ struct Alice3CDeuteron {
   Configurable<float> minDcaPion{"minDcaPion", -100, "Minimum DCA of the pion to the primary vertex"};
   Configurable<float> maxDca{"maxDca", 100, "Maximum track DCA to the primary vertex"};
   Configurable<float> minCpa{"minCpa", 0, "Minimum CPA"};
+  Configurable<int> usePdg{"usePdg", 1, "Flag to use the PDG instead of the TOF/RICH PID"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::vertexing::DCAFitterN<3> fitter;
 
@@ -173,8 +174,8 @@ struct Alice3CDeuteron {
                const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov>& tracks,
                const aod::McParticles& mcParticles)
   {
-
-    for (auto i : mcParticles) {
+    const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, coll.mcCollision().globalIndex());
+    for (const auto& i : particlesInCollision) {
       if (i.pdgCode() != 12345) {
         continue;
       }
