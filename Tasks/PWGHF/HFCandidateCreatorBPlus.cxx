@@ -37,7 +37,7 @@ using namespace o2::aod::hf_cand_bplus;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -53,13 +53,13 @@ struct HfCandidateCreatorBplus {
   Configurable<double> maxdzini{"maxdzini", 999, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minparamchange{"minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minrelchi2change{"minrelchi2change", 0.9, "stop iterations if chi2/chi2old > this"};
-  Configurable<bool> UseAbsDCA{"UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> useabsdca{"useabsdca", true, "use absolute DCAs"};
 
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1F> hNevents{TH1F("hNevents", "Number of events;Nevents;entries", 1, 0., 1)};
-  OutputObj<TH1F> hD0Rapidity{TH1F("hD0Rapidity", "D0 candidates;#it{y};entries", 100, -2, 2)};
-  OutputObj<TH1F> hPiEta{TH1F("hPiEta", "Pion track;#it{#eta};entries", 400, 2, 2)};
+  OutputObj<TH1F> hNEvents{TH1F("hNEvents", "Number of events;Nevents;entries", 1, 0., 1)};
+  OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
+  OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, 2, 2)};
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -69,9 +69,11 @@ struct HfCandidateCreatorBplus {
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
 
   void process(aod::Collision const& collisions,
-               soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates, aod::BigTracks const& tracks)
+               soa::Filtered<soa::Join<aod::HfCandProng2,
+                                       aod::HFSelD0Candidate>> const& candidates,
+               aod::BigTracks const& tracks)
   {
-    hNevents->Fill(0);
+    hNEvents->Fill(0);
 
     //Initialise fitter for B vertex
     o2::vertexing::DCAFitterN<2> bfitter;
@@ -80,7 +82,7 @@ struct HfCandidateCreatorBplus {
     bfitter.setMaxR(maxr);
     bfitter.setMinParamChange(minparamchange);
     bfitter.setMinRelChi2Change(minrelchi2change);
-    bfitter.setUseAbsDCA(UseAbsDCA);
+    bfitter.setUseAbsDCA(useabsdca);
 
     //Initial fitter to redo D-vertex to get extrapolated daughter tracks
     o2::vertexing::DCAFitterN<2> df;
@@ -89,7 +91,7 @@ struct HfCandidateCreatorBplus {
     df.setMaxR(maxr);
     df.setMinParamChange(minparamchange);
     df.setMinRelChi2Change(minrelchi2change);
-    df.setUseAbsDCA(UseAbsDCA);
+    df.setUseAbsDCA(useabsdca);
 
     // loop over pairs of track indices
     for (auto& candidate : candidates) {
@@ -100,7 +102,7 @@ struct HfCandidateCreatorBplus {
         continue;
       }
 
-      hD0Rapidity->Fill(YD0(candidate));
+      hRapidityD0->Fill(YD0(candidate));
 
       const std::array<float, 3> vertexD0 = {candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex()};
       const std::array<float, 3> momentumD0 = {candidate.px(), candidate.py(), candidate.pz()};
@@ -139,7 +141,7 @@ struct HfCandidateCreatorBplus {
           continue;
         }
 
-        hPiEta->Fill(track.eta());
+        hEtaPi->Fill(track.eta());
 
         if (candidate.index0Id() == track.globalIndex() || candidate.index1Id() == track.globalIndex()) {
           continue; //daughter track id and bachelor track id not the same

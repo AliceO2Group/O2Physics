@@ -72,7 +72,7 @@ struct HfTaskBplus {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBPlus);
 
-  void process(soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> const& candidates, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>, aod::BigTracksPID const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> const& candidates, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>, aod::BigTracks)
   {
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
@@ -82,8 +82,8 @@ struct HfTaskBplus {
         continue;
       }
 
-      auto D0cand = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>();
-      auto pion = candidate.index1_as<aod::BigTracksPID>();
+      auto candD0 = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>();
+      auto candPi = candidate.index1_as<aod::BigTracks>();
 
       registry.fill(HIST("hMass"), InvMassBPlus(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -101,10 +101,10 @@ struct HfTaskBplus {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-      if (pion.sign() > 0) {
-        registry.fill(HIST("hInvMassD0"), InvMassD0bar(D0cand), candidate.pt());
+      if (candPi.sign() > 0) {
+        registry.fill(HIST("hInvMassD0"), InvMassD0bar(candD0), candidate.pt());
       } else {
-        registry.fill(HIST("hInvMassD0"), InvMassD0(D0cand), candidate.pt());
+        registry.fill(HIST("hInvMassD0"), InvMassD0(candD0), candidate.pt());
       }
     } // candidate loop
   }   // process
@@ -127,12 +127,12 @@ struct HfTaskBplusMc {
   {
     registry.add("hEtaGen", "MC particles (matched);candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hYGen", "MC particles (matched);candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenProng0", "MC particles (matched);prong 0 #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenProng1", "MC particles (matched);prong 1 #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYGenProng0", "MC particles (matched);prong 0 #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYGenProng1", "MC particles (matched);prong 1 #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaGenProng0", "MC particles (matched);prong 0 #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaGenProng1", "MC particles (matched);prong 1 #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng0Gen", "MC particles (matched);prong 0 #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng1Gen", "MC particles (matched);prong 1 #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYProng0Gen", "MC particles (matched);prong 0 #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYProng1Gen", "MC particles (matched);prong 1 #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaProng0Gen", "MC particles (matched);prong 0 #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaProng1Gen", "MC particles (matched);prong 1 #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPARecSig", "B+ candidates (matched);candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPARecBg", "B+ candidates (unmatched);candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPAxyRecSig", "B+ candidates (matched);candidate CPAxy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -158,8 +158,8 @@ struct HfTaskBplusMc {
     registry.add("hDecLengthXYRecSig", "B+ candidates (matched);candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthRecBg", "B+ candidates (unmatched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXYRecBg", "B+ candidates (unmatched);candidate decay length xy(cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthRecD0Sig", "B+ candidates (matched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthRecD0Bg", "B+ candidates (unmatched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthD0RecSig", "B+ candidates (matched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthD0RecBg", "B+ candidates (unmatched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthNormRecSig", "B+ candidates (matched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthNormRecBg", "B+ candidates (unmatched);candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpParProdBPlusRecSig", "B+ candidates (matched);candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -200,7 +200,7 @@ struct HfTaskBplusMc {
         registry.fill(HIST("hImpParProdBPlusRecSig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), candidate.pt());
         registry.fill(HIST("hCPARecSigD0"), candD0.cpa(), candidate.pt());
-        registry.fill(HIST("hDecLengthRecD0Sig"), candD0.decayLength(), candidate.pt());
+        registry.fill(HIST("hDecLengthD0RecSig"), candD0.decayLength(), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
@@ -217,7 +217,7 @@ struct HfTaskBplusMc {
         registry.fill(HIST("hImpParProdBPlusRecBg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), candidate.pt());
         registry.fill(HIST("hCPARecBgD0"), candD0.cpa(), candidate.pt());
-        registry.fill(HIST("hDecLengthRecD0Bg"), candD0.decayLength(), candidate.pt());
+        registry.fill(HIST("hDecLengthD0RecBg"), candD0.decayLength(), candidate.pt());
       }
     } // rec
 
@@ -239,12 +239,12 @@ struct HfTaskBplusMc {
           yProngs[counter] = RecoDecay::Y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
         }
 
-        registry.fill(HIST("hPtGenProng0"), ptProngs[0], particle.pt());
-        registry.fill(HIST("hPtGenProng1"), ptProngs[1], particle.pt());
-        registry.fill(HIST("hYGenProng0"), yProngs[0], particle.pt());
-        registry.fill(HIST("hYGenProng1"), yProngs[1], particle.pt());
-        registry.fill(HIST("hEtaGenProng0"), etaProngs[0], particle.pt());
-        registry.fill(HIST("hEtaGenProng1"), etaProngs[1], particle.pt());
+        registry.fill(HIST("hPtProng0Gen"), ptProngs[0], particle.pt());
+        registry.fill(HIST("hPtProng1Gen"), ptProngs[1], particle.pt());
+        registry.fill(HIST("hYProng0Gen"), yProngs[0], particle.pt());
+        registry.fill(HIST("hYProng1Gen"), yProngs[1], particle.pt());
+        registry.fill(HIST("hEtaProng0Gen"), etaProngs[0], particle.pt());
+        registry.fill(HIST("hEtaProng1Gen"), etaProngs[1], particle.pt());
 
         //  if (cutYCandMax >= 0. && (std::abs(yProngs[0]) > cutYCandMax || std::abs(yProngs[1]) > cutYCandMax))
         //    continue;
