@@ -49,14 +49,14 @@ struct QaGlobalObservables {
   Configurable<float> numberOfTracksMax{"numberOfTracksMax", 2000, "Upper limit in the Number of Tracks plot"};
 
   Configurable<int> vertexPositionBins{"vertexPositionBins", 100, "Number of bins for the Vertex Position"};
-  Configurable<float> vetexPositionZMin{"vetexPositionZMin", -20.f, "Lower limit in the Vertex Position Z"};
-  Configurable<float> vetexPositionZMax{"vetexPositionZMax", 20.f, "Upper limit in the Vertex Position Z"};
-  Configurable<float> vetexPositionXYMin{"vetexPositionXYMin", -0.01f, "Lower limit in the Vertex Position XY"};
-  Configurable<float> vetexPositionXYMax{"vetexPositionXYMax", 0.01f, "Upper limit in the Vertex Position XY"};
+  Configurable<float> vertexPositionZMin{"vertexPositionZMin", -20.f, "Lower limit in the Vertex Position Z"};
+  Configurable<float> vertexPositionZMax{"vertexPositionZMax", 20.f, "Upper limit in the Vertex Position Z"};
+  Configurable<float> vertexPositionXYMin{"vertexPositionXYMin", -0.01f, "Lower limit in the Vertex Position XY"};
+  Configurable<float> vertexPositionXYMax{"vertexPositionXYMax", 0.01f, "Upper limit in the Vertex Position XY"};
 
   Configurable<int> vertexPositionDeltaBins{"vertexPositionDeltaBins", 100, "Number of bins for the histograms of the difference between reconstructed and generated vertex positions"};
-  Configurable<float> vetexPositionXYDeltaPtRange{"vetexPositionXYDeltaPtRange", 0.5, "Range of the resolution of the vertex position plot in X and Y"};
-  Configurable<float> vetexPositionZDeltaPtRange{"vetexPositionZDeltaPtRange", 0.5, "Range of the resolution of the vertex position plot in Z"};
+  Configurable<float> vertexPositionXYDeltaPtRange{"vertexPositionXYDeltaPtRange", 0.5, "Range of the resolution of the vertex position plot in X and Y"};
+  Configurable<float> vertexPositionZDeltaPtRange{"vertexPositionZDeltaPtRange", 0.5, "Range of the resolution of the vertex position plot in Z"};
 
   Configurable<int> numbersOfContributorsToPVBins{"numbersOfContributorsToPVBins", 200, "Number bins for the number of contributors to the primary vertex"};
   Configurable<float> numbersOfContributorsToPVMax{"numbersOfContributorsToPVMax", 200, "Maximum value for the Number of contributors to the primary vertex"};
@@ -69,26 +69,30 @@ struct QaGlobalObservables {
   void init(InitContext&)
   {
 
-    AxisSpec numberOfTrackAxis{numberOfTracksBins, numberOfTracksMin, numberOfTracksMax};
-    AxisSpec collisionXYAxis{vertexPositionBins, vetexPositionXYMin, vetexPositionXYMax};
-    AxisSpec collisionZAxis{vertexPositionBins, vetexPositionZMin, vetexPositionZMax};
-    AxisSpec numberOfContributorsAxis{numbersOfContributorsToPVBins, 0, numbersOfContributorsToPVMax};
-    AxisSpec vertexCovarianceMatrixAxis{vertexCovarianceMatrixBins, vertexCovarianceMatrixMin, vertexCovarianceMatrixMax};
-    AxisSpec collisionXYDeltaAxis{vertexPositionDeltaBins, -vetexPositionXYDeltaPtRange, vetexPositionXYDeltaPtRange};
-    AxisSpec collisionZDeltaAxis{vertexPositionDeltaBins, -vetexPositionZDeltaPtRange, vetexPositionZDeltaPtRange};
+    const AxisSpec numberOfTrackAxis{numberOfTracksBins, numberOfTracksMin, numberOfTracksMax, "Track Multiplicity"};
+    const AxisSpec collisionXAxis{vertexPositionBins, vertexPositionXYMin, vertexPositionXYMax, "X [cm]"};
+    const AxisSpec collisionYAxis{vertexPositionBins, vertexPositionXYMin, vertexPositionXYMax, "Y [cm]"};
+    const AxisSpec collisionZAxis{vertexPositionBins, vertexPositionZMin, vertexPositionZMax, "Z [cm]"};
+    const AxisSpec numberOfContributorsAxis{numbersOfContributorsToPVBins, 0, numbersOfContributorsToPVMax, "Number Of contributors to the PV"};
+    const AxisSpec vertexCovarianceMatrixAxis{vertexCovarianceMatrixBins, vertexCovarianceMatrixMin, vertexCovarianceMatrixMax};
+    const AxisSpec collisionXYDeltaAxis{vertexPositionDeltaBins, -vertexPositionXYDeltaPtRange, vertexPositionXYDeltaPtRange};
+    const AxisSpec collisionZDeltaAxis{vertexPositionDeltaBins, -vertexPositionZDeltaPtRange, vertexPositionZDeltaPtRange};
 
     // Global
     histograms.add("eventCount", ";Selected Events", kTH1D, {{2, 0, 2}});
 
     // Collision
-    histograms.add("collision/X", ";X [cm]", kTH1D, {collisionXYAxis});
-    histograms.add("collision/Y", ";Y [cm]", kTH1D, {collisionXYAxis});
-    histograms.add("collision/Z", ";Z [cm]", kTH1D, {collisionZAxis});
-    histograms.add("collision/XvsNContrib", ";X [cm];Number Of contributors to the PV", kTH2D, {collisionXYAxis, numberOfContributorsAxis});
-    histograms.add("collision/YvsNContrib", ";Y [cm];Number Of contributors to the PV", kTH2D, {collisionXYAxis, numberOfContributorsAxis});
-    histograms.add("collision/ZvsNContrib", ";Z [cm];Number Of contributors to the PV", kTH2D, {collisionZAxis, numberOfContributorsAxis});
-    histograms.add("collision/numberOfContributors", ";Number Of contributors to the PV", kTH1D, {numberOfContributorsAxis});
-    histograms.add("collision/numberOfContributorsVsMult", ";Number Of contributors to the PV;Track Multiplicity", kTH2D, {numberOfContributorsAxis, numberOfTrackAxis});
+    histograms.add("collision/Eff", "", kTH1D, {{2, 0.5, 2.5}});
+    histograms.get<TH1>(HIST("collision/Eff"))->GetXaxis()->SetBinLabel(1, "Coll. Read");
+    histograms.get<TH1>(HIST("collision/Eff"))->GetXaxis()->SetBinLabel(2, "Coll. Reco");
+    histograms.add("collision/X", "", kTH1D, {collisionXAxis});
+    histograms.add("collision/Y", "", kTH1D, {collisionYAxis});
+    histograms.add("collision/Z", "", kTH1D, {collisionZAxis});
+    histograms.add("collision/XvsNContrib", "", kTH2D, {collisionXAxis, numberOfContributorsAxis});
+    histograms.add("collision/YvsNContrib", "", kTH2D, {collisionYAxis, numberOfContributorsAxis});
+    histograms.add("collision/ZvsNContrib", "", kTH2D, {collisionZAxis, numberOfContributorsAxis});
+    histograms.add("collision/numberOfContributors", "", kTH1D, {numberOfContributorsAxis});
+    histograms.add("collision/numberOfContributorsVsMult", "", kTH2D, {numberOfContributorsAxis, numberOfTrackAxis});
     histograms.add("collision/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 10}});
 
     // Covariance
@@ -99,17 +103,22 @@ struct QaGlobalObservables {
     histograms.add("covariance/yz", ";Cov_{yz} [cm^{2}]", kTH1D, {vertexCovarianceMatrixAxis});
     histograms.add("covariance/zz", ";Cov_{zz} [cm^{2}]", kTH1D, {vertexCovarianceMatrixAxis});
     // Multiplicity
-    histograms.add("multiplicity/numberOfTracks", ";Track Multiplicity", kTH1D, {numberOfTrackAxis});
+    histograms.add("multiplicity/numberOfTracks", "", kTH1D, {numberOfTrackAxis});
     // Resolution
-    histograms.add("resolution/X", ";X_{Rec} - X_{Gen} [cm];Track Multiplicity", kTH2D, {collisionXYDeltaAxis, numberOfContributorsAxis});
-    histograms.add("resolution/Y", ";Y_{Rec} - Y_{Gen} [cm];Track Multiplicity", kTH2D, {collisionXYDeltaAxis, numberOfContributorsAxis});
-    histograms.add("resolution/Z", ";Z_{Rec} - Z_{Gen} [cm];Track Multiplicity", kTH2D, {collisionZDeltaAxis, numberOfContributorsAxis});
+    histograms.add("resolution/X", ";X_{Rec} - X_{Gen} [cm]", kTH2D, {collisionXYDeltaAxis, numberOfContributorsAxis});
+    histograms.add("resolution/Y", ";Y_{Rec} - Y_{Gen} [cm]", kTH2D, {collisionXYDeltaAxis, numberOfContributorsAxis});
+    histograms.add("resolution/Z", ";Z_{Rec} - Z_{Gen} [cm]", kTH2D, {collisionZDeltaAxis, numberOfContributorsAxis});
   }
 
   void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& collision,
                const o2::aod::McCollisions&,
                const o2::aod::Tracks& tracks)
   {
+    histograms.fill(HIST("collision/Eff"), 1);
+    if (collision.numContrib() > 0) {
+      histograms.fill(HIST("collision/Eff"), 2);
+    }
+
     if (collision.numContrib() < numberOfContributorsMin) {
       return;
     }
@@ -306,21 +315,26 @@ struct QaTrackingResolution {
   {
     // Histogram axis definitions
 
-    AxisSpec ptAxis{ptBins, ptMin, ptMax};
-    AxisSpec deltaPtAxis{deltaPtBins, deltaPtMin, deltaPtMax};
-    AxisSpec deltaPtRelativeAxis{deltaPtBins, deltaPtMin, deltaPtMax};
+    const AxisSpec ptAxis{ptBins, ptMin, ptMax, "#it{p}_{T} [GeV/#it{c}]"};
+    const AxisSpec ptGenAxis{ptBins, ptMin, ptMax, "#it{p}_{T}_{Gen} [GeV/#it{c}]"};
+    const AxisSpec ptRecAxis{ptBins, ptMin, ptMax, "#it{p}_{T}_{Rec} [GeV/#it{c}]"};
+    const AxisSpec deltaPtAxis{deltaPtBins, deltaPtMin, deltaPtMax, "#it{p}_{T}_{Rec} - #it{p}_{T}_{Gen} [GeV/#it{c}]"};
+    const AxisSpec deltaPtRelativeAxis{deltaPtBins, deltaPtMin, deltaPtMax, "(#it{p}_{T}_{Rec} - #it{p}_{T}_{Gen})/(#it{p}_{T}_{Gen})"};
 
-    AxisSpec etaAxis{etaBins, etaMin, etaMax};
-    AxisSpec deltaEtaAxis{deltaEtaBins, deltaEtaMin, deltaEtaMax};
+    const AxisSpec etaAxis{etaBins, etaMin, etaMax, "#it{#eta}"};
+    const AxisSpec etaGenAxis{etaBins, etaMin, etaMax, "#it{#eta}_{Gen}"};
+    const AxisSpec etaRecAxis{etaBins, etaMin, etaMax, "#it{#eta}_{Rec}"};
+    const AxisSpec deltaEtaAxis{deltaEtaBins, deltaEtaMin, deltaEtaMax, "#it{#eta}_{Rec} - #it{#eta}_{Gen}"};
 
-    AxisSpec phiAxis{phiBins, phiMin, phiMax};
-    AxisSpec deltaPhiAxis{deltaPhiBins, deltaPhiMin, deltaPhiMax};
+    const AxisSpec phiAxis{phiBins, phiMin, phiMax, "#it{#varphi} [rad]"};
+    const AxisSpec phiRecAxis{phiBins, phiMin, phiMax, "#it{#varphi}_{Rec} [rad]"};
+    const AxisSpec deltaPhiAxis{deltaPhiBins, deltaPhiMin, deltaPhiMax, "#it{#varphi}_{Gen} - #it{#varphi}_{Rec} [rad]"};
 
-    AxisSpec impactParRPhiAxis{impactParameterBins, impactParameterMin, impactParameterMax};
-    AxisSpec impactParRPhiErrorAxis{impactParameterBins, impactParameterResoMin, impactParameterResoMax};
+    const AxisSpec impactParRPhiAxis{impactParameterBins, impactParameterMin, impactParameterMax, "Impact Parameter r#it{#varphi} [#mum]"};
+    const AxisSpec impactParRPhiErrorAxis{impactParameterBins, impactParameterResoMin, impactParameterResoMax, "Impact Parameter Error r#it{#varphi} [#mum]"};
 
-    AxisSpec impactParZAxis{impactParameterBins, impactParameterMin, impactParameterMax};
-    AxisSpec impactParZErrorAxis{impactParameterBins, impactParameterResoMin, impactParameterResoMax};
+    const AxisSpec impactParZAxis{impactParameterBins, impactParameterMin, impactParameterMax, "Impact Parameter Z [#mum]"};
+    const AxisSpec impactParZErrorAxis{impactParameterBins, impactParameterResoMin, impactParameterResoMax, "Impact Parameter Error Z [#mum]"};
 
     TString commonTitle = "";
     if (pdgCodeSel != 0) {
@@ -329,58 +343,39 @@ struct QaTrackingResolution {
     if (checkPrimaries == 1) {
       commonTitle += " Primary";
     }
-    const TString pt = "#it{p}_{T} [GeV/#it{c}]";
-    const TString eta = "#it{#eta}";
-    const TString phi = "#it{#varphi} [rad]";
-
-    const TString ptRec = "#it{p}_{T}_{Rec} [GeV/#it{c}]";
-    const TString etaRec = "#it{#eta}_{Rec}";
-    const TString phiRec = "#it{#varphi}_{Rec} [rad]";
-
-    const TString ptGen = "#it{p}_{T}_{Gen} [GeV/#it{c}]";
-    const TString etaGen = "#it{#eta}_{Gen}";
-
-    const TString ptDelta = "#it{p}_{T}_{Rec} - #it{p}_{T}_{Gen} [GeV/#it{c}]";
-    const TString ptReso = "(#it{p}_{T}_{Rec} - #it{p}_{T}_{Gen})/(#it{p}_{T}_{Gen})";
-    const TString etaDelta = "#it{#eta}_{Rec} - #it{#eta}_{Gen}";
 
     // Eta
-    histos.add("eta/etaDiffRecGen", commonTitle + ";" + etaDelta, kTH1D, {deltaEtaAxis});
-    histos.add("eta/etaDiffRecGenVsEtaGen", commonTitle + ";" + etaDelta + ";" + etaGen, kTH2D, {deltaEtaAxis, etaAxis});
-    histos.add("eta/etaDiffRecGenVsEtaRec", commonTitle + ";" + etaDelta + ";" + etaRec, kTH2D, {deltaEtaAxis, etaAxis});
+    histos.add("eta/etaDiffRecGen", commonTitle, kTH1D, {deltaEtaAxis});
+    histos.add("eta/etaDiffRecGenVsEtaGen", commonTitle, kTH2D, {deltaEtaAxis, etaGenAxis});
+    histos.add("eta/etaDiffRecGenVsEtaRec", commonTitle, kTH2D, {deltaEtaAxis, etaRecAxis});
 
     // Phi
-    histos.add("phi/phiDiffRecGen", commonTitle + ";#it{#varphi}_{Gen} - #it{#varphi}_{Rec} [rad]", kTH1D, {deltaPhiAxis});
+    histos.add("phi/phiDiffRecGen", commonTitle, kTH1D, {deltaPhiAxis});
 
     // Pt
-    histos.add("pt/ptDiffRecGen", commonTitle + ";" + ptDelta, kTH1D, {deltaPtAxis});
-    histos.add("pt/ptResolution", commonTitle + ";" + ptReso, kTH1D, {deltaPtRelativeAxis});
-    histos.add("pt/ptResolutionVsPt", commonTitle + ";" + ptRec + ";" + ptReso, kTH2D, {ptAxis, deltaPtRelativeAxis});
-    histos.add("pt/ptResolutionVsEta", commonTitle + ";" + eta + ";" + ptReso, kTH2D, {etaAxis, deltaPtRelativeAxis});
-    histos.add("pt/ptResolutionVsPhi", commonTitle + ";" + phi + ";" + ptReso, kTH2D, {phiAxis, deltaPtRelativeAxis});
+    histos.add("pt/ptDiffRecGen", commonTitle, kTH1D, {deltaPtAxis});
+    histos.add("pt/ptResolution", commonTitle, kTH1D, {deltaPtRelativeAxis});
+    histos.add("pt/ptResolutionVsPt", commonTitle, kTH2D, {ptRecAxis, deltaPtRelativeAxis});
+    histos.add("pt/ptResolutionVsEta", commonTitle, kTH2D, {etaAxis, deltaPtRelativeAxis});
+    histos.add("pt/ptResolutionVsPhi", commonTitle, kTH2D, {phiAxis, deltaPtRelativeAxis});
 
     // Impact parameters
-    const TString impRPhi = "Impact Parameter r#it{#varphi} [#mum]";
-    const TString impRPhiErr = "Impact Parameter Error r#it{#varphi} [#mum]";
 
-    histos.add("impactParameter/impactParameterRPhiVsPt", commonTitle + ";" + ptRec + ";" + impRPhi, kTH2D, {ptAxis, impactParRPhiAxis});
-    histos.add("impactParameter/impactParameterRPhiVsEta", commonTitle + ";" + etaRec + ";" + impRPhi, kTH2D, {etaAxis, impactParRPhiAxis});
-    histos.add("impactParameter/impactParameterRPhiVsPhi", commonTitle + ";" + phiRec + ";" + impRPhi, kTH2D, {phiAxis, impactParRPhiAxis});
+    histos.add("impactParameter/impactParameterRPhiVsPt", commonTitle, kTH2D, {ptRecAxis, impactParRPhiAxis});
+    histos.add("impactParameter/impactParameterRPhiVsEta", commonTitle, kTH2D, {etaRecAxis, impactParRPhiAxis});
+    histos.add("impactParameter/impactParameterRPhiVsPhi", commonTitle, kTH2D, {phiRecAxis, impactParRPhiAxis});
 
-    histos.add("impactParameter/impactParameterErrorRPhiVsPt", commonTitle + ";" + ptRec + ";" + impRPhiErr, kTH2D, {ptAxis, impactParRPhiErrorAxis});
-    histos.add("impactParameter/impactParameterErrorRPhiVsEta", commonTitle + ";" + etaRec + ";" + impRPhiErr, kTH2D, {etaAxis, impactParRPhiErrorAxis});
-    histos.add("impactParameter/impactParameterErrorRPhiVsPhi", commonTitle + ";" + phiRec + ";" + impRPhiErr, kTH2D, {phiAxis, impactParRPhiErrorAxis});
+    histos.add("impactParameter/impactParameterErrorRPhiVsPt", commonTitle, kTH2D, {ptRecAxis, impactParRPhiErrorAxis});
+    histos.add("impactParameter/impactParameterErrorRPhiVsEta", commonTitle, kTH2D, {etaRecAxis, impactParRPhiErrorAxis});
+    histos.add("impactParameter/impactParameterErrorRPhiVsPhi", commonTitle, kTH2D, {phiRecAxis, impactParRPhiErrorAxis});
 
-    const TString impZ = "Impact Parameter Z [#mum]";
-    const TString impZErr = "Impact Parameter Error Z [#mum]";
+    histos.add("impactParameter/impactParameterZVsPt", commonTitle, kTH2D, {ptRecAxis, impactParZAxis});
+    histos.add("impactParameter/impactParameterZVsEta", commonTitle, kTH2D, {etaRecAxis, impactParZAxis});
+    histos.add("impactParameter/impactParameterZVsPhi", commonTitle, kTH2D, {phiRecAxis, impactParZAxis});
 
-    histos.add("impactParameter/impactParameterZVsPt", commonTitle + ";" + ptRec + ";" + impZ, kTH2D, {ptAxis, impactParZAxis});
-    histos.add("impactParameter/impactParameterZVsEta", commonTitle + ";" + etaRec + ";" + impZ, kTH2D, {etaAxis, impactParZAxis});
-    histos.add("impactParameter/impactParameterZVsPhi", commonTitle + ";" + phiRec + ";" + impZ, kTH2D, {phiAxis, impactParZAxis});
-
-    histos.add("impactParameter/impactParameterErrorZVsPt", commonTitle + ";" + ptRec + ";" + impZErr, kTH2D, {ptAxis, impactParZErrorAxis});
-    histos.add("impactParameter/impactParameterErrorZVsEta", commonTitle + ";" + etaRec + ";" + impZErr, kTH2D, {etaAxis, impactParZErrorAxis});
-    histos.add("impactParameter/impactParameterErrorZVsPhi", commonTitle + ";" + phiRec + ";" + impZErr, kTH2D, {phiAxis, impactParZErrorAxis});
+    histos.add("impactParameter/impactParameterErrorZVsPt", commonTitle, kTH2D, {ptRecAxis, impactParZErrorAxis});
+    histos.add("impactParameter/impactParameterErrorZVsEta", commonTitle, kTH2D, {etaRecAxis, impactParZErrorAxis});
+    histos.add("impactParameter/impactParameterErrorZVsPhi", commonTitle, kTH2D, {phiRecAxis, impactParZErrorAxis});
   }
 
   void process(const o2::aod::McParticles& mcParticles,
