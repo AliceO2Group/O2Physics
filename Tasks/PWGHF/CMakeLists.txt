@@ -39,6 +39,11 @@ o2physics_add_dpl_workflow(hf-candidate-creator-3prong
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hf-candidate-creator-bplus
+                    SOURCES HFCandidateCreatorBPlus.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hf-candidate-creator-xicc
                     SOURCES HFCandidateCreatorXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
@@ -92,6 +97,11 @@ o2physics_add_dpl_workflow(hf-xicc-topkpipi-candidate-selector
 o2physics_add_dpl_workflow(hf-lc-tok0sp-candidate-selector
                     SOURCES HFLcK0sPCandidateSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing O2::AnalysisTasksUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hf-bplus-tod0pi-candidate-selector
+                    SOURCES HFBPlusToD0PiCandidateSelector.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-x-tojpsipipi-candidate-selector
