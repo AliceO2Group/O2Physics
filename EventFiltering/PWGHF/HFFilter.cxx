@@ -22,8 +22,8 @@
 
 #include "../filterTables.h"
 
-#include "AnalysisDataModel/HFSecondaryVertex.h"
-#include "AnalysisDataModel/HFCandidateSelectionTables.h"
+#include "PWGHF/DataModel/HFSecondaryVertex.h"
+#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 #include <cmath>
 #include <string>

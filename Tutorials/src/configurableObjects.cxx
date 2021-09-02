@@ -16,7 +16,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Analysis/configurableCut.h"
+#include "configurableCut.h"
 
 #include <sstream>
 

@@ -13,7 +13,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "AnalysisDataModel/TrackSelectionTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "filterTables.h"
 
