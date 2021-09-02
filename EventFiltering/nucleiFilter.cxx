@@ -15,10 +15,10 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "AnalysisDataModel/PID/PIDResponse.h"
-#include "AnalysisDataModel/TrackSelectionTables.h"
+#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "AnalysisDataModel/EventSelection.h"
+#include "Common/DataModel/EventSelection.h"
 #include "filterTables.h"
 
 #include "Framework/HistogramRegistry.h"

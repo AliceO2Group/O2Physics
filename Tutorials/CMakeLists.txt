@@ -9,16 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# FIXME Is this one supposed to be a header only library (in which case the .h
-# to be installed should be in include/TestWorkflows) or not a library at all ?
-# o2physics_add_library(TestWorkflows SOURCES src/dummy.cxx
-#
-# set(HEADERS src/o2_sim_its_ALP3.h src/o2_sim_tpc.h )
-#
+add_subdirectory(Skimming)
 
 o2physics_add_dpl_workflow(histogram-track-selection
                     SOURCES src/histogramTrackSelection.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisDataModel O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(track-iteration
@@ -81,27 +76,27 @@ o2physics_add_dpl_workflow(tableio-read
 
 o2physics_add_dpl_workflow(jet-analysis
                   SOURCES src/jetAnalysis.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(tracks-combinations
                   SOURCES src/tracksCombinations.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(event-mixing
                   SOURCES src/eventMixing.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(mc-histograms
                   SOURCES src/mcHistograms.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisDataModel O2Physics::AnalysisCore
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(ccdbaccess
                   SOURCES src/ccdbaccess.cxx
-                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::CCDB O2::Framework O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::CCDB O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(weak-decay-iteration
@@ -124,7 +119,7 @@ o2physics_add_dpl_workflow(zdc-vzero-iteration
 
 o2physics_add_dpl_workflow(histogram-registry
                   SOURCES src/histogramRegistry.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_library(ConfigurableCut
@@ -132,7 +127,7 @@ o2physics_add_library(ConfigurableCut
                PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(ConfigurableCut
-                          HEADERS include/Analysis/configurableCut.h
+                          HEADERS include/configurableCut.h
                           LINKDEF src/ConfigurableCutLinkDef.h)
 
 o2physics_add_dpl_workflow(configurable-objects
@@ -142,45 +137,45 @@ o2physics_add_dpl_workflow(configurable-objects
 
 o2physics_add_dpl_workflow(muon-iteration
                   SOURCES src/muonIteration.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(schema-evolution
                   SOURCES src/schemaEvolution.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(efficiency-per-run
                   SOURCES src/efficiencyPerRun.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(efficiency-global
                   SOURCES src/efficiencyGlobal.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(compatible-bcs
                   SOURCES src/compatibleBCs.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(multiplicity-event-track-selection
                   SOURCES src/multiplicityEventTrackSelection.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(multiprocess-example
                   SOURCES src/multiProcess.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(conditional-expressions
                   SOURCES src/conditionalExpressions.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(using-pdg
                   SOURCES src/usingPDGService.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisDataModel
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
