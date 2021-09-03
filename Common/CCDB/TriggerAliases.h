@@ -44,8 +44,8 @@ static const char* aliasLabels[kNaliases] = {
   "kCUP8",
   "kCUP9",
   "kMUP10",
-  "kALL",
-  "kMUP11"};
+  "kMUP11",
+  "kALL"};
 
 class TriggerAliases
 {
@@ -56,15 +56,15 @@ class TriggerAliases
   void AddAlias(uint32_t aliasId, std::string classNames) { mAliasToClassNames[aliasId] = classNames; }
   void AddClassIdToAlias(uint32_t aliasId, int classId);
   const std::map<uint32_t, std::string>& GetAliasToClassNamesMap() const { return mAliasToClassNames; }
-  const std::map<uint32_t, uint64_t>& GetAliasToTriggerMaskMap() const { return mAliasToTriggerMask; }
-  const std::map<uint32_t, uint64_t>& GetAliasToTriggerMaskNext50Map() const { return mAliasToTriggerMaskNext50; }
+  const std::map<uint32_t, ULong64_t>& GetAliasToTriggerMaskMap() const { return mAliasToTriggerMask; }
+  const std::map<uint32_t, ULong64_t>& GetAliasToTriggerMaskNext50Map() const { return mAliasToTriggerMaskNext50; }
   void Print();
 
  private:
   std::map<uint32_t, std::string> mAliasToClassNames;
-  std::map<uint32_t, uint64_t> mAliasToTriggerMask;
-  std::map<uint32_t, uint64_t> mAliasToTriggerMaskNext50;
-  ClassDefNV(TriggerAliases, 2)
+  std::map<uint32_t, ULong64_t> mAliasToTriggerMask;
+  std::map<uint32_t, ULong64_t> mAliasToTriggerMaskNext50;
+  ClassDefNV(TriggerAliases, 3)
 };
 
 #endif
