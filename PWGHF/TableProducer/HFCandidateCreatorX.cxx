@@ -135,9 +135,9 @@ struct HFCandidateCreatorX {
         if (trackPos.globalIndex() == index0Jpsi) {
           continue;
         }
-	 if (trackPos.pt() < minPionPtCut) {
+        if (trackPos.pt() < minPionPtCut) {
           continue;
-	 }
+        }
 
         // loop over pi- candidates
         for (auto& trackNeg : tracks) {
@@ -147,9 +147,9 @@ struct HFCandidateCreatorX {
           if (trackNeg.globalIndex() == index1Jpsi) {
             continue;
           }
-	   if (trackNeg.pt() < minPionPtCut) {
+          if (trackNeg.pt() < minPionPtCut) {
             continue;
-	   }
+          }
 
           auto trackParVarPos = getTrackParCov(trackPos);
           auto trackParVarNeg = getTrackParCov(trackNeg);
