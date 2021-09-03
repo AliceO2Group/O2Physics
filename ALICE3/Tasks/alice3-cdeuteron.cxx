@@ -89,18 +89,6 @@ struct Alice3CDeuteron {
     h->GetXaxis()->SetBinLabel(8, "minDca");
     h->GetXaxis()->SetBinLabel(9, "maxDca");
 
-    histos.add("event/cuts", "cuts", kTH1D, {{10, 0, 10}});
-    h = histos.get<TH1>(HIST("event/cuts"));
-    h->GetXaxis()->SetBinLabel(1, "magField");
-    h->GetXaxis()->SetBinLabel(2, "minRadius");
-    h->GetXaxis()->SetBinLabel(3, "maxRadius");
-    h->GetXaxis()->SetBinLabel(4, "minMomPt");
-    h->GetXaxis()->SetBinLabel(5, "minKaonPt");
-    h->GetXaxis()->SetBinLabel(6, "minPionPt");
-    h->GetXaxis()->SetBinLabel(7, "minVtxContrib");
-    h->GetXaxis()->SetBinLabel(8, "minDca");
-    h->GetXaxis()->SetBinLabel(9, "maxDca");
-
     h->SetBinContent(1, magField);
     h->SetBinContent(2, minRadius);
     h->SetBinContent(3, maxRadius);
