@@ -45,8 +45,7 @@ static const char* aliasLabels[kNaliases] = {
   "kCUP9",
   "kMUP10",
   "kMUP11",
-  "kALL"
-};
+  "kALL"};
 
 class TriggerAliases
 {
