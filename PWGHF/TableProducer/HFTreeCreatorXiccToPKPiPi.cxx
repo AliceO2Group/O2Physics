@@ -36,7 +36,7 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float); 
+DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float);
