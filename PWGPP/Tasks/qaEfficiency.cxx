@@ -121,6 +121,7 @@ struct QaTrackingEfficiency {
                                 selPrim.value);
     const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
 
+    histos.add("mutiplicity", "Multiplicity", kTH1D, {{1000, 0, 1000}});
     const AxisSpec axisSel{9, 0.5, 9.5, "Selection"};
     histos.add("eventSelection", "Event Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
@@ -129,22 +130,20 @@ struct QaTrackingEfficiency {
 
     histos.add("trackSelection", "Track Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Reco.");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(6, "Passed Prim.");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(7, Form("Passed PDG %i", pdg));
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(8, "Passed Fake");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(5, "Passed Prim.");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(6, Form("Passed PDG %i", pdg));
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(7, "Passed Fake");
 
     histos.add("partSelection", "Particle Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(1, "Particles read");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Reco.");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, "Passed Prim.");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7, Form("Passed PDG %i", pdg));
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(5, "Passed Prim.");
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, Form("Passed PDG %i", pdg));
 
     histos.add("pt/num", "Numerator " + tagPt, kTH1D, {axisPt});
     histos.add("pt/den", "Denominator " + tagPt, kTH1D, {axisPt});
@@ -192,119 +191,121 @@ struct QaTrackingEfficiency {
                const o2::soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions&)
   {
-
-    std::vector<int64_t> recoEvt(collisions.size());
-    int nevts = 0;
     for (const auto& collision : collisions) {
+      LOG(info) << "Looking at collision '" << collision.globalIndex() << "/" << collision.size() << "' with MC collision index " << collision.mcCollision().globalIndex();
       histos.fill(HIST("eventSelection"), 1);
       if (collision.numContrib() < nMinNumberOfContributors) {
         continue;
       }
       histos.fill(HIST("eventSelection"), 2);
       const auto mcCollision = collision.mcCollision();
-      if ((mcCollision.posZ() < vertexZMin || mcCollision.posZ() > vertexZMax)) {
+      if ((mcCollision.posZ() < vertexZMin) || (mcCollision.posZ() > vertexZMax)) {
         continue;
       }
       histos.fill(HIST("eventSelection"), 3);
-      recoEvt[nevts++] = mcCollision.globalIndex();
-    }
-    recoEvt.resize(nevts);
 
-    auto rejectParticle = [&](const auto& p, auto h) {
-      histos.fill(h, 1);
-      const auto evtReconstructed = std::find(recoEvt.begin(), recoEvt.end(), p.mcCollision().globalIndex()) != recoEvt.end();
-      if (!evtReconstructed) { // Check that the event is reconstructed
-        return true;
-      }
-
-      histos.fill(h, 2);
-      if ((p.pt() < ptMin || p.pt() > ptMax)) { // Check pt
-        return true;
-      }
-      histos.fill(h, 3);
-      if ((p.eta() < etaMin || p.eta() > etaMax)) { // Check eta
-        return true;
-      }
-      histos.fill(h, 4);
-      if ((p.phi() < phiMin || p.phi() > phiMax)) { // Check phi
-        return true;
-      }
-      histos.fill(h, 5);
-      if ((selPrim == 1) && (!MC::isPhysicalPrimary(p))) { // Requiring is physical primary
-        return true;
-      }
-      histos.fill(h, 6);
-
-      // Selecting PDG code
-      switch ((int)pdgSign) {
-        case 0:
-          if (abs(p.pdgCode()) != pdg) {
-            return true;
-          }
-          break;
-        case 1:
-          if (p.pdgCode() != pdg) {
-            return true;
-          }
-          break;
-        case -1:
-          if (p.pdgCode() != -pdg) {
-            return true;
-          }
-          break;
-        default:
-          LOG(FATAL) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
-          break;
-      }
-      histos.fill(h, 7);
-
-      return false;
-    };
-
-    std::vector<int64_t> recoTracks(tracks.size());
-    int ntrks = 0;
-    for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
-      if (rejectParticle(mcParticle, HIST("trackSelection"))) {
-        continue;
-      }
-
-      if (noFakes) { // Selecting tracks with no fake hits
-        bool hasFake = false;
-        for (int i = 0; i < 10; i++) { // From ITS to TPC
-          if (track.mcMask() & 1 << i) {
-            hasFake = true;
-            break;
-          }
+      auto rejectParticle = [&](const auto& p, auto h) {
+        histos.fill(h, 1);
+        if ((p.pt() < ptMin || p.pt() > ptMax)) { // Check pt
+          return true;
         }
-        if (hasFake) {
+        histos.fill(h, 2);
+        if ((p.eta() < etaMin || p.eta() > etaMax)) { // Check eta
+          return true;
+        }
+        histos.fill(h, 3);
+        if ((p.phi() < phiMin || p.phi() > phiMax)) { // Check phi
+          return true;
+        }
+        histos.fill(h, 4);
+        if ((selPrim == 1) && (!MC::isPhysicalPrimary(mcParticles.iteratorAt(p.globalIndex())))) { // Requiring is physical primary
+          return true;
+        }
+        histos.fill(h, 5);
+
+        // Selecting PDG code
+        switch ((int)pdgSign) {
+          case 0:
+            if (abs(p.pdgCode()) != pdg) {
+              return true;
+            }
+            break;
+          case 1:
+            if (p.pdgCode() != pdg) {
+              return true;
+            }
+            break;
+          case -1:
+            if (p.pdgCode() != -pdg) {
+              return true;
+            }
+            break;
+          default:
+            LOG(FATAL) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
+            break;
+        }
+        histos.fill(h, 6);
+
+        return false;
+      };
+
+      const auto tracksInCollision = tracks.sliceBy(o2::aod::track::collisionId, collision.globalIndex());
+      const auto particlesInCollision = mcParticles.sliceBy(o2::aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      LOG(info) << "It has '" << tracksInCollision.size() << "/" << tracks.size() << "' tracks and '" << particlesInCollision.size() << "/" << mcParticles.size() << "' particles";
+
+      int ntrks = 0;
+      std::vector<int64_t> recoTracks(tracksInCollision.size());
+      for (const auto& track : tracksInCollision) { // Loop on tracks
+        const auto mcParticle = track.mcParticle();
+        LOG(info) << "Looking at track '" << track.globalIndex() << "' with collision index " << track.collision().globalIndex() << " with particle index " << mcParticle.globalIndex() << " with MC collision index " << track.collision().mcCollision().globalIndex();
+        if (rejectParticle(mcParticle, HIST("trackSelection"))) {
           continue;
         }
-      }
 
-      histos.fill(HIST("trackSelection"), 8);
-      histos.fill(HIST("pt/num"), mcParticle.pt());
-      histos.fill(HIST("eta/num"), mcParticle.eta());
-      histos.fill(HIST("phi/num"), mcParticle.phi());
-      recoTracks[ntrks++] = mcParticle.globalIndex();
-    }
+        if (noFakes) { // Selecting tracks with no fake hits
+          bool hasFake = false;
+          for (int i = 0; i < 10; i++) { // From ITS to TPC
+            if (track.mcMask() & 1 << i) {
+              hasFake = true;
+              break;
+            }
+          }
+          if (hasFake) {
+            continue;
+          }
+        }
 
-    for (const auto& mcParticle : mcParticles) {
-      if (rejectParticle(mcParticle, HIST("partSelection"))) {
-        continue;
+        histos.fill(HIST("trackSelection"), 7);
+        histos.fill(HIST("pt/num"), mcParticle.pt());
+        histos.fill(HIST("eta/num"), mcParticle.eta());
+        histos.fill(HIST("phi/num"), mcParticle.phi());
+        if (makeEff) {
+          recoTracks[ntrks++] = mcParticle.globalIndex();
+        }
       }
+      float dNdEta = 0;
+      for (const auto& mcParticle : particlesInCollision) { // Loop on particles
+        LOG(info) << "Looking at particle '" << mcParticle.globalIndex() << "' with MC collision index " << mcParticle.mcCollision().globalIndex();
+        if (TMath::Abs(mcParticle.eta()) <= 2.f && mcParticle.has_daughter0() < 0 && mcParticle.has_daughter1() < 0) {
+          dNdEta += 1.f;
+        }
+        if (rejectParticle(mcParticle, HIST("partSelection"))) {
+          continue;
+        }
 
-      if (makeEff) {
-        const auto particleReconstructed = std::find(recoTracks.begin(), recoTracks.end(), mcParticle.globalIndex()) != recoTracks.end();
-        static_cast<TEfficiency*>(list->At(0))->Fill(particleReconstructed, mcParticle.pt());
-        static_cast<TEfficiency*>(list->At(1))->Fill(particleReconstructed, mcParticle.p());
-        static_cast<TEfficiency*>(list->At(2))->Fill(particleReconstructed, mcParticle.eta());
-        static_cast<TEfficiency*>(list->At(3))->Fill(particleReconstructed, mcParticle.phi());
-        static_cast<TEfficiency*>(list->At(4))->Fill(particleReconstructed, mcParticle.pt(), mcParticle.eta());
+        if (makeEff) {
+          const auto particleReconstructed = std::find(recoTracks.begin(), recoTracks.end(), mcParticle.globalIndex()) != recoTracks.end();
+          static_cast<TEfficiency*>(list->At(0))->Fill(particleReconstructed, mcParticle.pt());
+          static_cast<TEfficiency*>(list->At(1))->Fill(particleReconstructed, mcParticle.p());
+          static_cast<TEfficiency*>(list->At(2))->Fill(particleReconstructed, mcParticle.eta());
+          static_cast<TEfficiency*>(list->At(3))->Fill(particleReconstructed, mcParticle.phi());
+          static_cast<TEfficiency*>(list->At(4))->Fill(particleReconstructed, mcParticle.pt(), mcParticle.eta());
+        }
+        histos.fill(HIST("pt/den"), mcParticle.pt());
+        histos.fill(HIST("eta/den"), mcParticle.eta());
+        histos.fill(HIST("phi/den"), mcParticle.phi());
       }
-      histos.fill(HIST("pt/den"), mcParticle.pt());
-      histos.fill(HIST("eta/den"), mcParticle.eta());
-      histos.fill(HIST("phi/den"), mcParticle.phi());
+      histos.fill(HIST("mutiplicity"), dNdEta * 0.5f / 2.f);
     }
   }
 };
