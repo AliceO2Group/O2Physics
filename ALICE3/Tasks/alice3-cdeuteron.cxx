@@ -56,7 +56,7 @@ struct Alice3CDeuteron {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
 
-    const AxisSpec axisInvMass{100, 2.5, 4, "Inv. Mass_{c-d}"};
+    const AxisSpec axisInvMass{1000, 2.5, 4, "Inv. Mass_{c-d}"};
     const AxisSpec axisDecayRadius{2000, 0, 0.1, "Decay radius"};
     const AxisSpec axisDecayRadiusReso{2000, -0.01, 0.01, "Decay radius resolution"};
     const AxisSpec axisPionProdRadiusXY{2000, 0, 0.01, "Pion production radius in xy"};
@@ -125,11 +125,13 @@ struct Alice3CDeuteron {
     histos.add("event/track1dcaxy", "track1dcaxy Deuteron", kTH1D, {axisDcaXY});
     histos.add("event/track1dcaz", "track1dcaz Deuteron", kTH1D, {axisDcaZ});
     histos.add("event/candperdeuteron", "candperdeuteron", kTH1D, {{1000, 0, 10000}});
-    histos.add("event/trackspdg", "trackspdg", kTH1D, {{3, 0.5, 3.5}});
+    histos.add("event/particlespdg", "particlespdg", kTH1D, {{100, 0, 100}});
+    histos.add("event/trackspdg", "trackspdg", kTH1D, {{4, 0.5, 4.5}});
     h = histos.get<TH1>(HIST("event/trackspdg"));
     h->GetXaxis()->SetBinLabel(1, "d");
     h->GetXaxis()->SetBinLabel(2, "K");
     h->GetXaxis()->SetBinLabel(3, "#pi");
+    h->GetXaxis()->SetBinLabel(4, "Rest");
     histos.add("event/multiplicity", "multiplicity", kTH1D, {{1000, 0, 10000}});
 
 #define MakeHistos(tag)                                                                        \
@@ -176,6 +178,7 @@ struct Alice3CDeuteron {
   {
     const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, coll.mcCollision().globalIndex());
     for (const auto& i : particlesInCollision) {
+      histos.get<TH1>(HIST("event/particlespdg"))->Fill(Form("%i", i.pdgCode()), 1);
       if (i.pdgCode() != 12345) {
         continue;
       }
@@ -207,6 +210,8 @@ struct Alice3CDeuteron {
         histos.fill(HIST("event/trackspdg"), 2);
       } else if (t.mcParticle().pdgCode() == 211) {
         histos.fill(HIST("event/trackspdg"), 3);
+      } else {
+        histos.fill(HIST("event/trackspdg"), 4);
       }
       ntrks++;
     }
