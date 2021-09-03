@@ -33,12 +33,19 @@ using namespace o2::framework::expressions;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   ConfigParamSpec jetData = {
-    "jet-input-data",
+    "jetInputData",
     VariantType::String,
     "",
-    {"Jet data type. Options include Data, MCParticleLevel, MCDetectorLevel, and HybridIntermediate."},
+    {"Jet input data type. Options include Data, MCParticleLevel, MCDetectorLevel, and HybridIntermediate."},
   };
   workflowOptions.push_back(jetData);
+  ConfigParamSpec jetType = {
+    "jetType",
+    VariantType::Int,
+    1,
+    {"Type of jet. Options include full = 0, charged = 1, neutral = 2."},
+  };
+  workflowOptions.push_back(jetType);
 }
 
 #include "Framework/runDataProcessing.h"
@@ -67,7 +74,10 @@ struct JetFinderTask {
   Configurable<bool> DoConstSub{"DoConstSub", false, "do constituent subtraction"};
   Configurable<float> jetPtMin{"jetPtMin", 10.0, "minimum jet pT"};
   Configurable<std::vector<double>> jetR{"jetR", {0.4}, "jet resolution parameters"};
-  Configurable<int> jetType{"jetType", 0, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
+  // FIXME: This should be named jetType. However, as of Aug 2021, it doesn't appear possible
+  //        to set both global and task level options. This should be resolved when workflow
+  //        level customization is available
+  Configurable<int> jetType2{"jetType2", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
   Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::isGlobalTrack == (uint8_t) true) && (aod::track::pt > trackPtCut);
@@ -75,6 +85,8 @@ struct JetFinderTask {
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;
   JetFinder jetFinder; //should be a configurable but for now this cant be changed on hyperloop
+  // FIXME: Once configurables support enum, ideally we can
+  JetType_t _jetType;
 
   void init(InitContext const&)
   {
@@ -93,19 +105,20 @@ struct JetFinderTask {
       jetFinder.setBkgSubMode(JetFinder::BkgSubMode::constSub);
     }
     jetFinder.jetPtMin = jetPtMin;
-    // Start with the first jet R
-    //jetFinder.jetR = jetR[0];
   }
 
   template <typename T>
   bool processInit(T const& collision)
   {
+    // FIXME: Reenable event selection when working (disabled Aug 2021)
+    /*
     if (!collision.alias()[kINT7]) {
       return false; //remove hard code
     }
     if (!collision.sel7()) {
       return false; //remove hard code
     }
+    */
 
     jets.clear();
     inputParticles.clear();
@@ -114,8 +127,10 @@ struct JetFinderTask {
   }
 
   template <typename T>
-  void processImpl(T const& collision)
+  void processImplementation(T const& collision)
   {
+    LOG(DEBUG) << "Process Implementation";
+    // NOTE: Can't just iterate directly - we have to cast first
     auto jetRValues = static_cast<std::vector<double>>(jetR);
     for (auto R : jetRValues) {
       // Update jet finder R and find jets
@@ -154,7 +169,7 @@ struct JetFinderTask {
     // Setup
     // As of June 2021, I don't think enums are supported as configurables, so we have to handle the conversion here.
     // TODO: Double cast is to work around conversion failure.
-    auto _jetType = static_cast<JetType_t>(static_cast<int>(jetType));
+    _jetType = static_cast<JetType_t>(static_cast<int>(jetType2));
 
     // Initialziation and event selection
     // TODO: MC event selection?
@@ -185,25 +200,26 @@ struct JetFinderTask {
       inputParticles.back().set_user_index(particle.globalIndex());
     }
 
-    processImpl(collision);
+    processImplementation(collision);
   }
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevel, "Particle level jet finding", false);
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                   soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks,
-                   aod::EMCALClusters const& clusters)
+  template <typename T, typename U>
+  void processData(T const& collision, U const& tracks, aod::EMCALClusters const* clusters = nullptr)
   {
+    LOG(DEBUG) << "Process data!";
     // Setup
     // As of June 2021, I don't think enums are supported as configurables, so we have to handle the conversion here.
     // FIXME: Double cast is to work around conversion failure.
-    auto _jetType = static_cast<JetType_t>(static_cast<int>(jetType));
+    _jetType = static_cast<JetType_t>(static_cast<int>(jetType2));
 
     // Initialziation and event selection
     bool accepted = processInit(collision);
     if (!accepted) {
       return;
     }
+    LOG(DEBUG) << "Accepted event!";
 
     if (_jetType == JetType_t::full || _jetType == JetType_t::charged) {
       for (auto& track : tracks) {
@@ -212,25 +228,46 @@ struct JetFinderTask {
       }
     }
     if (_jetType == JetType_t::full || _jetType == JetType_t::neutral) {
-      for (auto& cluster : clusters) {
-        // The right thing to do here would be to fully calculate the momentum correcting for the vertex position.
-        // However, it's not clear that this functionality exists yet (21 June 2021)
-        double pt = cluster.energy() / std::cosh(cluster.eta());
-        inputParticles.emplace_back(
-          fastjet::PseudoJet(
-            pt * std::cos(cluster.phi()),
-            pt * std::sin(cluster.phi()),
-            pt * std::sinh(cluster.eta()),
-            cluster.energy()));
-        // Clusters are denoted with negative indices.
-        inputParticles.back().set_user_index(-1 * cluster.globalIndex());
+      if (clusters) {
+        for (auto& cluster : *clusters) {
+          // The right thing to do here would be to fully calculate the momentum correcting for the vertex position.
+          // However, it's not clear that this functionality exists yet (21 June 2021)
+          double pt = cluster.energy() / std::cosh(cluster.eta());
+          inputParticles.emplace_back(
+            fastjet::PseudoJet(
+              pt * std::cos(cluster.phi()),
+              pt * std::sin(cluster.phi()),
+              pt * std::sinh(cluster.eta()),
+              cluster.energy()));
+          // Clusters are denoted with negative indices.
+          inputParticles.back().set_user_index(-1 * cluster.globalIndex());
+        }
+      } else {
+        throw std::runtime_error("Requested clusters, but they're not available!");
       }
     }
 
-    processImpl(collision);
+    processImplementation(collision);
   }
 
-  PROCESS_SWITCH(JetFinderTask, processData, "Data jet finding", true);
+  void processDataCharged(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+                          soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+  {
+    LOG(DEBUG) << "Process data charged!";
+    processData(collision, tracks);
+  }
+
+  PROCESS_SWITCH(JetFinderTask, processDataCharged, "Data jet finding for charged jets", true);
+
+  void processDataFull(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+                       soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks,
+                       aod::EMCALClusters const& clusters)
+  {
+    LOG(DEBUG) << "Process data full!";
+    processData(collision, tracks, &clusters);
+  }
+
+  PROCESS_SWITCH(JetFinderTask, processDataFull, "Data jet finding for full and neutral jets", false);
 };
 
 using JetFinderData = JetFinderTask<o2::aod::Jets, o2::aod::JetTrackConstituents, o2::aod::JetClusterConstituents, o2::aod::JetConstituentsSub>;
@@ -247,7 +284,11 @@ enum class JetInputData_t {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto jetInputData = cfgc.options().get<std::string>("jet-input-data");
+  // Determine the jet input data types.
+  // NOTE: It's possible to create multiple jet finders by passing multiple jet input data types in the string.
+  //       Each type is separated by a comma.
+  // FIXME: String validation and normalization. There's too much room for error with the strings. (Is there a better way to do this?)
+  auto jetInputData = cfgc.options().get<std::string>("jetInputData");
   const std::map<std::string, JetInputData_t> jetInputDataTypes = {
     {"Data", JetInputData_t::Data},
     {"MCParticleLevel", JetInputData_t::MCParticleLevel},
@@ -255,39 +296,58 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     {"HybridIntermediate", JetInputData_t::HybridIntermediate},
     {"", JetInputData_t::Data}, // Default to data
   };
-  // TODO: Is there a better way to do this?
-  // TODO: String validation and normalization. There's too much room for error with enumerations.
-  auto jetMatching = cfgc.options().get<std::string>("jet-input-data");
   // Tokenize using stringstream
-  std::vector<std::string> matchingOptions;
+  std::vector<std::string> jetInputDataOptions;
   std::stringstream ss;
-  ss << jetMatching;
+  ss << jetInputData;
   while (ss.good()) {
     std::string substring;
     getline(ss, substring, ',');
-    matchingOptions.push_back(substring);
+    jetInputDataOptions.push_back(substring);
   }
+  // Jet type
+  auto jetType = static_cast<JetType_t>(cfgc.options().get<int>("jetType"));
   std::vector<o2::framework::DataProcessorSpec> tasks;
-  for (auto opt : matchingOptions) {
+  for (auto opt : jetInputDataOptions) {
     auto jetData = jetInputDataTypes.at(opt);
     switch (jetData) {
       case JetInputData_t::MCParticleLevel:
+        // We don't need a switch on jet type here because the arguments for particle level jets are the same
+        // for charged and full jets
         tasks.emplace_back(
           adaptAnalysisTask<JetFinderMCParticleLevel>(cfgc,
-                                                      SetDefaultProcesses{{{"processParticleLevel", true}, {"processData", false}}}, TaskName{"jet-finder-MC"}));
+                                                      SetDefaultProcesses{{{"processParticleLevel", true}, {"processDataCharged", false}, {"processDataFull", false}}}, TaskName{"jet-finder-MC"}));
         break;
       case JetInputData_t::MCDetectorLevel:
-        tasks.emplace_back(
-          adaptAnalysisTask<JetFinderMCDetectorLevel>(cfgc, TaskName{"jet-finder-MC-detector-level"}));
+        if (jetType == JetType_t::full || jetType == JetType_t::neutral) {
+          tasks.emplace_back(
+            adaptAnalysisTask<JetFinderMCDetectorLevel>(cfgc,
+                                                        SetDefaultProcesses{{{"processParticleLevel", false}, {"processDataCharged", false}, {"processDataFull", true}}}, TaskName{"jet-finder-MC-detector-level"}));
+        } else {
+          tasks.emplace_back(
+            adaptAnalysisTask<JetFinderMCDetectorLevel>(cfgc, TaskName{"jet-finder-MC-detector-level"}));
+        }
         break;
       case JetInputData_t::HybridIntermediate:
-        tasks.emplace_back(
-          adaptAnalysisTask<JetFinderHybridIntermediate>(cfgc, TaskName{"jet-finder-hybrid-intermedaite"}));
+        if (jetType == JetType_t::full || jetType == JetType_t::neutral) {
+          tasks.emplace_back(
+            adaptAnalysisTask<JetFinderHybridIntermediate>(cfgc,
+                                                           SetDefaultProcesses{{{"processParticleLevel", false}, {"processDataCharged", false}, {"processDataFull", true}}}, TaskName{"jet-finder-hybrid-intermedaite"}));
+        } else {
+          tasks.emplace_back(
+            adaptAnalysisTask<JetFinderHybridIntermediate>(cfgc, TaskName{"jet-finder-hybrid-intermedaite"}));
+        }
         break;
-      case JetInputData_t::Data: // intentionally fall through to the default which is outside of the switch.
+      case JetInputData_t::Data: // Intentionally fall through to the default for data.
       default:
-        tasks.emplace_back(
-          adaptAnalysisTask<JetFinderData>(cfgc, TaskName{"jet-finder-data"}));
+        if (jetType == JetType_t::full || jetType == JetType_t::neutral) {
+          tasks.emplace_back(
+            adaptAnalysisTask<JetFinderData>(cfgc,
+                                             SetDefaultProcesses{{{"processParticleLevel", false}, {"processDataCharged", false}, {"processDataFull", true}}}, TaskName{"jet-finder-data"}));
+        } else {
+          tasks.emplace_back(
+            adaptAnalysisTask<JetFinderData>(cfgc, TaskName{"jet-finder-data"}));
+        }
         break;
     }
   }
