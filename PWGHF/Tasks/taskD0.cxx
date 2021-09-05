@@ -229,29 +229,29 @@ struct TaskD0MC {
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
       if (candidate.isSelD0() >= d_selectionFlagD0) {
-	registry.fill(HIST("hMass_SigBkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
-	if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hMass_SigD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
-	}
-	if (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hMass_BkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
-	}
-	if (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hMass_ReflBkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
-	}
+        registry.fill(HIST("hMass_SigBkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
+        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMass_SigD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
+        }
+        if (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMass_BkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
+        }
+        if (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMass_ReflBkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
+        }
       }
       if (candidate.isSelD0bar() >= d_selectionFlagD0) {
-	registry.fill(HIST("hMass_SigBkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-	if (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hMass_SigD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-	}
-	if (candidate.flagMCMatchRec() != (-1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hMass_BkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-	}
-	if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hMass_ReflBkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-	}
-      }     
+        registry.fill(HIST("hMass_SigBkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
+        if (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMass_SigD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
+        }
+        if (candidate.flagMCMatchRec() != (-1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMass_BkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
+        }
+        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMass_ReflBkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
+        }
+      }
     }
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
