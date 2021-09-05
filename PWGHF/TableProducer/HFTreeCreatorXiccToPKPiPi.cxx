@@ -15,7 +15,7 @@
 ///        In this file are defined and filled the output tables
 /// \note Extended from HFTreeCreatorD0ToKPi, HFTreeCreatorLcToPKPi, HFTreeCreatorXToJpsiPiPi
 ///
-/// \author Jinjoo Seo <jin.joo.seo@cern.ch>, CERN
+/// \author Jinjoo Seo <jin.joo.seo@cern.ch>, Inha University
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -28,8 +28,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_xicc;
 
 namespace o2::aod
@@ -198,7 +196,7 @@ struct HFTreeCreatorXiccToPKPiPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << XiccToXicPi) {
+      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XiccToXicPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
@@ -214,6 +212,6 @@ struct HFTreeCreatorXiccToPKPiPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HFTreeCreatorXiccToPKPiPi>(cfgc, TaskName{"hf-tree-creator-xicc-topkpipi"}));
+  workflow.push_back(adaptAnalysisTask<HFTreeCreatorXiccToPKPiPi>(cfgc));
   return workflow;
 }
