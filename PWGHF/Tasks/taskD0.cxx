@@ -139,14 +139,14 @@ struct TaskD0MC {
      {"hPtvsYGen", "2-prong candidates (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
      {"hPtvsYGenPrompt", "2-prong candidates (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
      {"hPtvsYGenNonPrompt", "2-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
-     {"hMass_SigD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_BkgD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_ReflBkgD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_SigBkgD0", "2-prong candidates (unmatched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_SigD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_BkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_ReflBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
-     {"hMass_SigBkgD0bar", "2-prong candidates (unmatched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}}}};
+     {"hMassSigD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassBkgD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassReflBkgD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassSigBkgD0", "2-prong candidates (unmatched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassSigD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassReflBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassSigBkgD0bar", "2-prong candidates (unmatched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}}}};
 
   Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -228,28 +228,30 @@ struct TaskD0MC {
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
+      auto massD0 = InvMassD0(candidate);
+      auto massD0bar = InvMassD0bar(candidate);
+      auto candidatept = candidate.pt();
+      auto candidaterapidity = YD0(candidate);
       if (candidate.isSelD0() >= d_selectionFlagD0) {
-        registry.fill(HIST("hMass_SigBkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
+        registry.fill(HIST("hMassSigBkgD0"), massD0, candidatept, candidaterapidity);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMass_SigD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
-        }
-        if (candidate.flagMCMatchRec() != (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMass_BkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
-        }
-        if (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMass_ReflBkgD0"), InvMassD0(candidate), candidate.pt(), YD0(candidate));
+          registry.fill(HIST("hMassSigD0"), massD0, candidatept, candidaterapidity);
+        } else {
+          registry.fill(HIST("hMassBkgD0"), massD0, candidatept, candidaterapidity);
+          if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+            registry.fill(HIST("hMassReflBkgD0"), massD0, candidatept, candidaterapidity);
+          }
         }
       }
       if (candidate.isSelD0bar() >= d_selectionFlagD0) {
-        registry.fill(HIST("hMass_SigBkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-        if (candidate.flagMCMatchRec() == (-1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMass_SigD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-        }
-        if (candidate.flagMCMatchRec() != (-1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMass_BkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
-        }
-        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMass_ReflBkgD0bar"), InvMassD0bar(candidate), candidate.pt(), YD0(candidate));
+        registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, candidatept, candidaterapidity);
+        if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMassSigD0bar"), massD0bar, candidatept, candidaterapidity);
+        } else {
+          registry.fill(HIST("hMassBkgD0bar"), massD0bar, candidatept, candidaterapidity);
+          if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+            registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, candidatept, candidaterapidity);
+          }
         }
       }
     }
