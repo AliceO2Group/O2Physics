@@ -61,8 +61,8 @@ struct NucleiSpectraTask {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> nsigmacutLow{"nsigmacutLow", -10.0, "Value of the Nsigma cut"};
-  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +10.0, "Value of the Nsigma cut"};
+  Configurable<float> nsigmacutLow{"nsigmacutLow", -5.0, "Value of the Nsigma cut"};
+  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +5.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
@@ -109,10 +109,10 @@ struct NucleiSpectraTask {
         //
         // store tracks for invariant mass calculation
         //
-        if (track.sign() < 0) {
+        if (track.sign() < 0 && track.pt() * 2.0 > 3.2) {
           negTracks.push_back(lorentzVector);
         }
-        if (track.sign() > 0) {
+        if (track.sign() > 0 && track.pt() * 2.0 > 3.2) {
           posTracks.push_back(lorentzVector);
         }
         //
