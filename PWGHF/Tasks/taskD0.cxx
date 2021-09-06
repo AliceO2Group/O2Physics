@@ -138,7 +138,15 @@ struct TaskD0MC {
      {"hPtvsYRecSigNonPrompt_RecoHFFlag", "2-prong candidates (RecoHFFlag - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
      {"hPtvsYGen", "2-prong candidates (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
      {"hPtvsYGenPrompt", "2-prong candidates (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
-     {"hPtvsYGenNonPrompt", "2-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}}}};
+     {"hPtvsYGenNonPrompt", "2-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
+     {"hMassSigD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassBkgD0", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassReflBkgD0", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassSigBkgD0", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassSigD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassBkgD0bar", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassReflBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}},
+     {"hMassSigBkgD0bar", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {500, 0., 50.}, {500, -5., 5.}}}}}};
 
   Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -219,6 +227,32 @@ struct TaskD0MC {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
+      }
+      auto massD0 = InvMassD0(candidate);
+      auto massD0bar = InvMassD0bar(candidate);
+      auto ptCandidate = candidate.pt();
+      auto rapidityCandidate = YD0(candidate);
+      if (candidate.isSelD0() >= d_selectionFlagD0) {
+        registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
+        if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
+        } else {
+          registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
+          if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+            registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
+          }
+        }
+      }
+      if (candidate.isSelD0bar() >= d_selectionFlagD0) {
+        registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+        if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+        } else {
+          registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+          if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+            registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+          }
+        }
       }
     }
     // MC gen.
