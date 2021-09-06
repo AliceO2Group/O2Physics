@@ -124,6 +124,7 @@ o2physics_add_dpl_workflow(histogram-registry
 
 o2physics_add_library(ConfigurableCut
                SOURCES  src/configurableCut.cxx
+               PUBLIC_INCLUDE_DIRECTORIES include
                PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(ConfigurableCut

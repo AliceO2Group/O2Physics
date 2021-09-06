@@ -120,12 +120,10 @@ function(o2physics_add_library baseTargetName)
       target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${adir}>)
     endforeach()
   else()
-    # use sane default (if it exists)
-    if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include)
-      target_include_directories(
-        ${target}
-        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-    endif()
+    # default
+    target_include_directories(
+      ${target}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
   endif()
 
   # set the private include directories if available
