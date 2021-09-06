@@ -230,27 +230,27 @@ struct TaskD0MC {
       }
       auto massD0 = InvMassD0(candidate);
       auto massD0bar = InvMassD0bar(candidate);
-      auto candidatept = candidate.pt();
-      auto candidaterapidity = YD0(candidate);
+      auto ptCandidate = candidate.pt();
+      auto rapidityCandidate = YD0(candidate);
       if (candidate.isSelD0() >= d_selectionFlagD0) {
-        registry.fill(HIST("hMassSigBkgD0"), massD0, candidatept, candidaterapidity);
+        registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0"), massD0, candidatept, candidaterapidity);
+          registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0"), massD0, candidatept, candidaterapidity);
+          registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
           if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
-            registry.fill(HIST("hMassReflBkgD0"), massD0, candidatept, candidaterapidity);
+            registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
           }
         }
       }
       if (candidate.isSelD0bar() >= d_selectionFlagD0) {
-        registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, candidatept, candidaterapidity);
+        registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0bar"), massD0bar, candidatept, candidaterapidity);
+          registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0bar"), massD0bar, candidatept, candidaterapidity);
+          registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-            registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, candidatept, candidaterapidity);
+            registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           }
         }
       }
