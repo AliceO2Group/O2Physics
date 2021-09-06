@@ -773,8 +773,9 @@ struct HfTrackIndexSkimsCreator {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
   using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::HFSelTrack>>;
 
-  Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
-  Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
+  // FIXME
+  //Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
+  //Partition<SelectedTracks> tracksNeg = aod::track::signed1Pt < 0.f;
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
@@ -833,12 +834,16 @@ struct HfTrackIndexSkimsCreator {
     auto nCand3 = rowTrackIndexProng3.lastIndex();
 
     // if there isn't at least a positive and a negative track, continue immediately
-    if (tracksPos.size() < 1 || tracksNeg.size() < 1) {
-      return;
-    }
+    //if (tracksPos.size() < 1 || tracksNeg.size() < 1) {
+    //  return;
+    //}
 
     // first loop over positive tracks
-    for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
+    //for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
+    for (auto trackPos1 = tracks.begin(); trackPos1 != tracks.end(); ++trackPos1) {
+      if (trackPos1.signed1Pt() < 0) {
+        continue;
+      }
       bool sel2ProngStatusPos = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand2Prong);
       bool sel3ProngStatusPos1 = TESTBIT(trackPos1.isSelProng(), CandidateType::Cand3Prong);
       if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
@@ -848,7 +853,11 @@ struct HfTrackIndexSkimsCreator {
       auto trackParVarPos1 = getTrackParCov(trackPos1);
 
       // first loop over negative tracks
-      for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
+      //for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
+      for (auto trackNeg1 = tracks.begin(); trackNeg1 != tracks.end(); ++trackNeg1) {
+        if (trackNeg1.signed1Pt() > 0) {
+          continue;
+        }
         bool sel2ProngStatusNeg = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand2Prong);
         bool sel3ProngStatusNeg1 = TESTBIT(trackNeg1.isSelProng(), CandidateType::Cand3Prong);
         if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
@@ -945,11 +954,15 @@ struct HfTrackIndexSkimsCreator {
             continue;
           }
 
-          // if (tracks.size() < 2) {
-          //   continue;
-          // }
+          if (tracks.size() < 2) {
+            continue;
+          }
           // second loop over positive tracks
-          for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
+          //for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
+          for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracks.end(); ++trackPos2) {
+            if (trackPos2.signed1Pt() < 0) {
+              continue;
+            }
             if (!TESTBIT(trackPos2.isSelProng(), CandidateType::Cand3Prong)) {
               continue;
             }
@@ -1055,7 +1068,11 @@ struct HfTrackIndexSkimsCreator {
           }
 
           // second loop over negative tracks
-          for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
+          //for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
+          for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracks.end(); ++trackNeg2) {
+            if (trackNeg2.signed1Pt() > 0) {
+              continue;
+            }
             if (!TESTBIT(trackNeg2.isSelProng(), CandidateType::Cand3Prong)) {
               continue;
             }
