@@ -17,8 +17,9 @@ include(O2PhysicsNameTarget)
 # o2physics_add_library(baseTargetName SOURCES c1.cxx c2.cxx .....) defines a new
 # target of type "library" composed of the given sources. It also defines an
 # alias named O2Physics::baseTargetName. The generated library will be called
-# libO2Physics[baseTargetName].(dylib|so|.a) (for exact naming see the o2physics_name_target
-# function).
+# libO2Physics[baseTargetName].(dylib|so|.a) (for exact naming see the 
+# o2physics_name_target function). For each source c1.cxx a header c1.h is installed
+# if it exists in the same directory.
 #
 # The library will be static or shared depending on the BUILD_SHARED_LIBS option
 # (which is normally ON for O2 project)
@@ -32,10 +33,15 @@ include(O2PhysicsNameTarget)
 #   to use the fully qualified target name (i.e. including the namespace part)
 #   even for internal (O2) targets.
 #
+# * INSTALL_HEADERS (not needed in most cases): the list of additional headers 
+#   which should be installed with the library. Not needed for each source
+#   c1.cxx where the header c1.h is found in the same folder. Those are installed
+#   automatically.
+#
 # * PUBLIC_INCLUDE_DIRECTORIES (not needed in most cases) : the list of include
 #   directories where to find the include files needed to compile this library
 #   and that will be needed as well by the consumers of that library. By default
-#   the include subdirectory of the current source directory is taken into
+#   the current source directory is taken into
 #   account, which should cover most of the use cases. Use this parameter only
 #   for special cases then. Note that if you do specify this parameter it
 #   replaces the default, it does not add to them.
@@ -61,7 +67,7 @@ function(o2physics_add_library baseTargetName)
     A
     ""
     "TARGETVARNAME"
-    "SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PUBLIC_LINK_LIBRARIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_LINK_LIBRARIES"
+    "SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PUBLIC_LINK_LIBRARIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_LINK_LIBRARIES;INSTALL_HEADERS"
     )
 
   if(A_UNPARSED_ARGUMENTS)
@@ -120,12 +126,10 @@ function(o2physics_add_library baseTargetName)
       target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${adir}>)
     endforeach()
   else()
-    # use sane default (if it exists)
-    if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include)
-      target_include_directories(
-        ${target}
-        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-    endif()
+    # default
+    target_include_directories(
+      ${target}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>)
   endif()
 
   # set the private include directories if available
@@ -151,31 +155,33 @@ function(o2physics_add_library baseTargetName)
     endif()
   endif()
 
-  if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/include/${baseTargetName})
+  # The INCLUDES DESTINATION adds ${CMAKE_INSTALL_INCLUDEDIR} to the
+  # INTERFACE_INCLUDE_DIRECTORIES property
+  #
+  # The EXPORT must come first in the list of parameters
+  #
+  install(TARGETS ${target}
+          EXPORT O2Targets
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-    # The INCLUDES DESTINATION adds ${CMAKE_INSTALL_INCLUDEDIR} to the
-    # INTERFACE_INCLUDE_DIRECTORIES property
-    #
-    # The EXPORT must come first in the list of parameters
-    #
-    install(TARGETS ${target}
-            EXPORT O2Targets
-            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  # Install header for each source (if exists) 
+  if(A_SOURCES)
+    foreach(d IN LISTS A_SOURCES)
+      # Replace .cxx -> .h
+      string(REGEX REPLACE "[.]cxx$" ".h" OUTPUT_HEADER ${d})
+      get_filename_component(OUTPUT_HEADER_ABS ${OUTPUT_HEADER} ABSOLUTE)
+      if(EXISTS ${OUTPUT_HEADER_ABS})
+        install(FILES ${OUTPUT_HEADER}
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+      endif()
+    endforeach()
+  endif()
 
-    # install all the includes found in
-    # ${CMAKE_CURRENT_LIST_DIR}/include/${baseTargetName} as those are public
-    # headers
-    install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include/${baseTargetName}
+  # install additional headers
+  if(A_INSTALL_HEADERS)
+    install(FILES ${CMAKE_CURRENT_LIST_DIR}/${A_INSTALL_HEADERS}
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-  else()
-
-    # The EXPORT must come first in the list of parameters
-    #
-    install(TARGETS ${target}
-            EXPORT O2Targets
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
   endif()
 
 endfunction()
