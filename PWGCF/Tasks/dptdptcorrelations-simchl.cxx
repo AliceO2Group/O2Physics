@@ -1502,7 +1502,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     for (auto& part : mcParticles) {
       auto pdgpart = fPDG->GetParticle(part.pdgCode());
       if (pdgpart != nullptr) {
-        float charge = (pdgpart->Charge() / 3 >= 1) ? 1.0 : ((pdgpart->Charge() / 3 <= -1) ? -1.0 : 0.0);
+        float charge = (pdgpart->Charge() >= 3) ? 1.0 : ((pdgpart->Charge() <= -3) ? -1.0 : 0.0);
         if (charge != 0.0) {
           ngen++;
         }
@@ -1511,7 +1511,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
 
     // Let's go through the reco-gen mapping to detect multi-reconstructed particles
     // For the time being we are only interested in the information based on the reconstructed tracks
-    LOGF(info, "New chunk with %d generated charged particles and %d reconstructed tracks", ngen, nreco);
+    LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed tracks", ngen, nreco);
 
     for (auto& track : tracks) {
       int64_t recix = track.globalIndex();
@@ -1519,21 +1519,21 @@ struct CheckGeneratorLevelVsDetectorLevel {
 
       // LOGF(info, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
       if (track.collisionId() < 0) {
-        if (label > 0) {
+        if (label >= 0) {
           mclabelpos_negcoll[label].push_back(recix);
-        } else if (label < 0) {
+        } else {
           mclabelneg_negcoll[-label].push_back(recix);
         }
       } else {
-        if (label > 0) {
+        if (label >= 0) {
           mclabelpos[label].push_back(recix);
-        } else if (label < 0) {
+        } else {
           mclabelneg[-label].push_back(recix);
         }
       }
     }
 
-    /* let's provide information on a per chunk level */
+    /* let's provide information on a per DF level */
     int nrec_poslabel = 0;
     int nrec_neglabel = 0;
     int nrec_poslabel_nc = 0;
