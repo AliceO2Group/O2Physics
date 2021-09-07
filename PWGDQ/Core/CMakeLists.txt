@@ -12,6 +12,7 @@
 o2physics_add_library(PWGDQCore
                SOURCES  VarManager.cxx
                         HistogramManager.cxx
+                        MixingHandler.cxx
                         AnalysisCut.cxx
                         AnalysisCompositeCut.cxx
                         MCProng.cxx
@@ -23,7 +24,9 @@ o2physics_target_root_dictionary(PWGDQCore
                                     AnalysisCompositeCut.h 
                                     VarManager.h 
                                     HistogramManager.h
-                                    CutsLibrary.h 
+                                    CutsLibrary.h
+                                    MixingHandler.h
+                                    MixingLibrary.h
                                     HistogramsLibrary.h
                                     MCProng.h
                                     MCSignal.h
