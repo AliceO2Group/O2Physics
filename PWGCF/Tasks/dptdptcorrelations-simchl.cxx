@@ -1470,40 +1470,188 @@ struct TracksAndEventClassificationQAGen {
   }
 };
 
+/// \brief Checks the correspondence generator level <=> detector level
+struct CheckGeneratorLevelVsDetectorLevel {
+  OutputObj<TH1F> multirecDeltaEta{TH1F("mrDeltaEta", "#Delta#eta multirec tracks;#Delta#eta", 100, -2, 2)};
+  OutputObj<TH1F> multirecDeltaPhi{TH1F("mrDeltaPhi", "#Delta#varphi multirec tracks;#Delta#varphi", 100, 0, 2.0f * static_cast<float>(M_PI))};
+  OutputObj<TH1F> multirecDeltaPt{TH1F("mrDeltaPt", "#Delta#it{p}_{T} multirec tracks;#Delta#it{p}_{T}", 100, 0, 4)};
+  OutputObj<TH1F> multirecDistribution{TH1F("multirec", "Multiple reconstruction; ##/particle; counts", 11, -0.5f, 10.5f)};
+  OutputObj<TH1F> multirecDeltaEta_nc{TH1F("mrDeltaEta_nc", "#Delta#eta multirec tracks;#Delta#eta", 100, -2, 2)};
+  OutputObj<TH1F> multirecDeltaPhi_nc{TH1F("mrDeltaPhi_nc", "#Delta#varphi multirec tracks;#Delta#varphi", 100, 0, 2.0f * static_cast<float>(M_PI))};
+  OutputObj<TH1F> multirecDeltaPt_nc{TH1F("mrDeltaPt_nc", "#Delta#it{p}_{T} multirec tracks;#Delta#it{p}_{T}", 100, 0, 4)};
+  OutputObj<TH1F> multirecDistribution_nc{TH1F("multirec_nc", "Multiple reconstruction; ##/particle; counts", 11, -0.5f, 10.5f)};
+  TDatabasePDG* fPDG;
+
+  void init(InitContext const& context)
+  {
+    fPDG = TDatabasePDG::Instance();
+  }
+
+  void process(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  {
+    constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
+
+    std::vector<std::vector<int64_t>> mclabelpos(mcParticles.size());
+    std::vector<std::vector<int64_t>> mclabelneg(mcParticles.size());
+    std::vector<std::vector<int64_t>> mclabelpos_negcoll(mcParticles.size());
+    std::vector<std::vector<int64_t>> mclabelneg_negcoll(mcParticles.size());
+
+    size_t nreco = tracks.size();
+    size_t ngen = 0;
+
+    for (auto& part : mcParticles) {
+      auto pdgpart = fPDG->GetParticle(part.pdgCode());
+      if (pdgpart != nullptr) {
+        float charge = (pdgpart->Charge() >= 3) ? 1.0 : ((pdgpart->Charge() <= -3) ? -1.0 : 0.0);
+        if (charge != 0.0) {
+          ngen++;
+        }
+      }
+    }
+
+    // Let's go through the reco-gen mapping to detect multi-reconstructed particles
+    // For the time being we are only interested in the information based on the reconstructed tracks
+    LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed tracks", ngen, nreco);
+
+    for (auto& track : tracks) {
+      int64_t recix = track.globalIndex();
+      int32_t label = track.mcParticleId();
+
+      // LOGF(info, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+      if (track.collisionId() < 0) {
+        if (label >= 0) {
+          mclabelpos_negcoll[label].push_back(recix);
+        } else {
+          mclabelneg_negcoll[-label].push_back(recix);
+        }
+      } else {
+        if (label >= 0) {
+          mclabelpos[label].push_back(recix);
+        } else {
+          mclabelneg[-label].push_back(recix);
+        }
+      }
+    }
+
+    /* let's provide information on a per DF level */
+    int nrec_poslabel = 0;
+    int nrec_neglabel = 0;
+    int nrec_poslabel_nc = 0;
+    int nrec_neglabel_nc = 0;
+    int nrec_poslabel_crosscoll = 0;
+    for (int il = 0; il < mcParticles.size(); ++il) {
+      /* multireconstructed tracks only for positive labels */
+      int nrec = mclabelpos[il].size();
+      nrec_poslabel += mclabelpos[il].size();
+      nrec_neglabel += mclabelneg[il].size();
+
+      if (nrec > 1) {
+        multirecDistribution->Fill(nrec);
+        bool crosscollfound = false;
+        for (int i = 0; i < mclabelpos[il].size(); ++i) {
+          for (int j = i + 1; j < mclabelpos[il].size(); ++j) {
+            auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
+            auto track2 = tracks.iteratorAt(mclabelpos[il][j]);
+
+            if (track1.collisionId() != track2.collisionId()) {
+              nrec_poslabel_crosscoll++;
+              crosscollfound = true;
+              break;
+            }
+          }
+          if (crosscollfound) {
+            break;
+          }
+        }
+
+        for (int i = 0; i < mclabelpos[il].size(); ++i) {
+          for (int j = i + 1; j < mclabelpos[il].size(); ++j) {
+            auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
+            auto track2 = tracks.iteratorAt(mclabelpos[il][j]);
+
+            float deltaeta = track1.eta() - track2.eta();
+            float deltaphi = track1.phi() - track2.phi();
+            if (deltaphi < 0) {
+              deltaphi += TWOPI;
+            }
+            if (deltaphi > TWOPI) {
+              deltaphi -= TWOPI;
+            }
+            float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
+
+            multirecDeltaEta->Fill(deltaeta);
+            multirecDeltaPhi->Fill(deltaphi);
+            multirecDeltaPt->Fill(deltapt);
+          }
+        }
+      }
+
+      /* multireconstructed tracks only for positive labels */
+      int nrec_nc = mclabelpos_negcoll[il].size();
+      nrec_poslabel_nc += mclabelpos_negcoll[il].size();
+      nrec_neglabel_nc += mclabelneg_negcoll[il].size();
+
+      if (nrec_nc > 1) {
+        multirecDistribution_nc->Fill(nrec_nc);
+        for (int i = 0; i < mclabelpos_negcoll[il].size(); ++i) {
+          for (int j = i + 1; j < mclabelpos_negcoll[il].size(); ++j) {
+            auto track1 = tracks.iteratorAt(mclabelpos_negcoll[il][i]);
+            auto track2 = tracks.iteratorAt(mclabelpos_negcoll[il][j]);
+
+            float deltaeta = track1.eta() - track2.eta();
+            float deltaphi = track1.phi() - track2.phi();
+            if (deltaphi < 0) {
+              deltaphi += TWOPI;
+            }
+            if (deltaphi > TWOPI) {
+              deltaphi -= TWOPI;
+            }
+            float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
+
+            multirecDeltaEta_nc->Fill(deltaeta);
+            multirecDeltaPhi_nc->Fill(deltaphi);
+            multirecDeltaPt_nc->Fill(deltapt);
+          }
+        }
+      }
+    }
+    LOGF(info, "Reconstructed tracks with positive collision ID: %d with positive label, %d with negative label, %d with cross collision", nrec_poslabel, nrec_neglabel, nrec_poslabel_crosscoll);
+    LOGF(info, "Reconstructed tracks with negative collision ID: %d with positive label, %d with negative label", nrec_poslabel_nc, nrec_neglabel_nc);
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::string multest = cfgc.options().get<std::string>("wfcentmultestimator");
   bool ismc = cfgc.options().get<bool>("isMCPROD");
   if (ismc) {
     if (multest == "NOCM") {
-      /* no centrality/multiplicity classes available */
       WorkflowSpec workflow{
         adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}, {"processWithoutCentMC", true}}}),
         adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
         adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
         adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}}),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}}})};
+        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}}}),
+        adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc)};
       return workflow;
     } else {
-      /* centrality/multiplicity classes available */
       WorkflowSpec workflow{
         adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithCent", true}, {"processWithCentMC", true}}}),
         adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
         adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
         adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}}),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}}})};
+        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}}}),
+        adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc)};
       return workflow;
     }
   } else {
     if (multest == "NOCM") {
-      /* no centrality/multiplicity classes available */
       WorkflowSpec workflow{
         adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}}}),
         adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
         adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}})};
       return workflow;
     } else {
-      /* centrality/multiplicity classes available */
       WorkflowSpec workflow{
         adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithCent", true}}}),
         adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
