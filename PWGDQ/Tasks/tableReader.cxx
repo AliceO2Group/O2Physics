@@ -18,10 +18,12 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/MixingHandler.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/MixingLibrary.h"
 #include <TH1F.h>
 #include <THashList.h>
 #include <TString.h>
@@ -73,6 +75,8 @@ using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
+void SetUpMixing(MixingHandler* mixHand, TString mixVar);
+
 // HACK: In order to be able to deduce which kind of aod object is transmitted to the templated VarManager::Fill functions
 //         a constexpr static bit map must be defined and sent as template argument
 //        The user has to include in this bit map all the tables needed in analysis, as defined in VarManager::ObjTypes
@@ -90,22 +94,24 @@ struct DQEventSelection {
   Produces<aod::MixingHashes> hash;
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
+  MixingHandler* fMixHandler;
   AnalysisCompositeCut* fEventCut;
   float* fValues;
 
   // TODO: make mixing binning configurable
-  std::vector<float> fCentLimsHashing{0.0f, 10.0f, 20.0f, 30.0f, 50.0f, 70.0f, 90.0f};
+  //  std::vector<float> fCentLimsHashing{0.0f, 10.0f, 20.0f, 30.0f, 50.0f, 70.0f, 90.0f};
+  Configurable<std::string> fConfigMixingVariables{"cfgMixingVar", "Centrality3", "Mixing configuriation used, variables separated by a coma "};
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
 
-  int getHash(float centrality)
-  {
-    if ((centrality < *fCentLimsHashing.begin()) || (centrality > *(fCentLimsHashing.end() - 1))) {
-      return -1;
-    }
-    auto cent = std::lower_bound(fCentLimsHashing.begin(), fCentLimsHashing.end(), centrality);
-    return (cent - fCentLimsHashing.begin());
-  }
+  //  int getHash(float centrality)
+  //  {
+  //    if ((centrality < *fCentLimsHashing.begin()) || (centrality > *(fCentLimsHashing.end() - 1))) {
+  //      return -1;
+  //    }
+  //    auto cent = std::lower_bound(fCentLimsHashing.begin(), fCentLimsHashing.end(), centrality);
+  //    return (cent - fCentLimsHashing.begin());
+  //  }
 
   void init(o2::framework::InitContext&)
   {
@@ -114,6 +120,11 @@ struct DQEventSelection {
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    fMixHandler = new MixingHandler("mixingHandler", "mixingHandler");
+    fMixHandler->Init();
+    TString mixingVarStr = fConfigMixingVariables.value;
+    SetUpMixing(fMixHandler, mixingVarStr.Data());
 
     DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
@@ -144,7 +155,8 @@ struct DQEventSelection {
     } else {
       eventSel(0);
     }
-    int hh = getHash(fValues[VarManager::kCentVZERO]);
+    //    int hh = getHash(fValues[VarManager::kCentVZERO]);
+    int hh = fMixHandler->FindEventCategory(fValues);
     hash(hh);
   }
 };
@@ -731,5 +743,13 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("DileptonHadronCorrelation")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
     }
+  } // end loop over histogram classes
+}
+
+void SetUpMixing(MixingHandler* mixHand, TString mixVar)
+{
+  std::unique_ptr<TObjArray> objArray(mixVar.Tokenize(","));
+  for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+    dqmixing::SetUpMixing(mixHand, objArray->At(iVar)->GetName());
   } // end loop over histogram classes
 }
