@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(hf-tree-creator-x-tojpsipipi
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hf-tree-creator-xicc-topkpipi
+                    SOURCES HFTreeCreatorXiccToPKPiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hf-d0-candidate-selector
                     SOURCES HFD0CandidateSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
