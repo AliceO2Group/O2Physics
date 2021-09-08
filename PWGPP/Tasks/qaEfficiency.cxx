@@ -146,6 +146,9 @@ struct QaTrackingEfficiency {
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, "Passed Prim.");
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7, Form("Passed PDG %i", pdg));
 
+    histos.add("eventMultiplicity", "Event Selection", kTH1D, {{1000, 0, 5000}});
+    histos.add("trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
+
     histos.add("pt/num", "Numerator " + tagPt, kTH1D, {axisPt});
     histos.add("pt/den", "Denominator " + tagPt, kTH1D, {axisPt});
     if (logPt) {
@@ -189,7 +192,7 @@ struct QaTrackingEfficiency {
 
   void process(const o2::aod::McParticles& mcParticles,
                const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels>& tracks,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions&)
   {
 
@@ -283,13 +286,18 @@ struct QaTrackingEfficiency {
       }
 
       histos.fill(HIST("trackSelection"), 8);
+      histos.fill(HIST("trackLength"), track.length());
       histos.fill(HIST("pt/num"), mcParticle.pt());
       histos.fill(HIST("eta/num"), mcParticle.eta());
       histos.fill(HIST("phi/num"), mcParticle.phi());
       recoTracks[ntrks++] = mcParticle.globalIndex();
     }
 
+    float dNdEta = 0;
     for (const auto& mcParticle : mcParticles) {
+      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughter0() && !mcParticle.has_daughter1()) {
+        dNdEta += 1.f;
+      }
       if (rejectParticle(mcParticle, HIST("partSelection"))) {
         continue;
       }
@@ -306,6 +314,7 @@ struct QaTrackingEfficiency {
       histos.fill(HIST("eta/den"), mcParticle.eta());
       histos.fill(HIST("phi/den"), mcParticle.phi());
     }
+    histos.fill(HIST("eventMultiplicity"), dNdEta * 0.5f / 2.f);
   }
 };
 

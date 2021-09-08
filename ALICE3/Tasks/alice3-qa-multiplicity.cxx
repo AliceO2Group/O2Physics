@@ -24,18 +24,19 @@ struct ALICE3MultTask {
   Configurable<float> MinEta{"MinEta", -0.8f, "Minimum eta in range"};
   Configurable<float> MaxEta{"MaxEta", 0.8f, "Maximum eta in range"};
   Configurable<float> MaxMult{"MaxMult", 1000.f, "Maximum multiplicity in range"};
+  Configurable<float> MinContrib{"MinContrib", 2.f, "Minimum number of contributors to the PV"};
 
   void init(InitContext&)
   {
-    histos.add("multiplicity/numberOfTracks", ";Reconstructed tracks", kTH1D, {{(int)MaxMult, 0, MaxMult}});
+    const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : (int)MaxMult, 0, MaxMult, "Reconstructed tracks"};
+    TString tit = Form("%.3f < #it{#eta} < %.3f", MinEta.value, MaxEta.value);
+    histos.add("multiplicity/numberOfTracksNoCut", tit, kTH1D, {axisMult});
+    histos.add("multiplicity/numberOfTracks", tit, kTH1D, {axisMult});
   }
 
+  int nevs = 0;
   void process(const o2::aod::Collision& collision, const o2::aod::Tracks& tracks)
   {
-    if (collision.numContrib() < 2) {
-      return;
-    }
-
     int nTracks = 0;
     for (const auto& track : tracks) {
       if (track.eta() < MinEta || track.eta() > MaxEta) {
@@ -43,12 +44,16 @@ struct ALICE3MultTask {
       }
       nTracks++;
     }
-
+    LOG(info) << nevs++ << ") Event " << collision.globalIndex() << " has " << nTracks << " tracks";
+    histos.fill(HIST("multiplicity/numberOfTracksNoCut"), nTracks);
+    if (collision.numContrib() < MinContrib) {
+      return;
+    }
     histos.fill(HIST("multiplicity/numberOfTracks"), nTracks);
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<ALICE3MultTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<ALICE3MultTask>(cfgc, TaskName{"alice3-qa-multiplicity"})};
 }
