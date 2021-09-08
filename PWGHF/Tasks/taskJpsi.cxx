@@ -47,10 +47,10 @@ struct TaskJpsi {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
-  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select TOF PID for Jpsi"};
-  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select RICH PID for Jpsi"};
-  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select TOF and RICH PID for Jpsi"};
-  Configurable<bool> selectedMidPid{"selectedMidPid", false, "select MID PID for Jpsi to mu+mu-"};
+  Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
+  Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
+  Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
+  Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -87,20 +87,20 @@ struct TaskJpsi {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
-          if (selectedMidPid && candidate.isSelJpsiToMuMuMid() <= 0) {
+          if (selectedMid && candidate.isSelJpsiToMuMuMid() <= 0) {
             continue;
           }
         } else {
           if (candidate.isSelJpsiToEETopol() <= 0) {
             continue;
           }
-          if (selectedTofPid && candidate.isSelJpsiToEETof() <= 0) {
+          if (selectedTof && candidate.isSelJpsiToEETof() <= 0) {
             continue;
           }
-          if (selectedRichPid && candidate.isSelJpsiToEERich() <= 0) {
+          if (selectedRich && candidate.isSelJpsiToEERich() <= 0) {
             continue;
           }
-          if (selectedCombPid && candidate.isSelJpsiToEETofRich() <= 0) {
+          if (selectedTofRich && candidate.isSelJpsiToEETofRich() <= 0) {
             continue;
           }
         }
@@ -150,10 +150,10 @@ struct TaskJpsiMC {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
-  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select TOF PID for Jpsi"};
-  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select RICH PID for Jpsi"};
-  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select TOF and RICH PID for Jpsi"};
-  Configurable<bool> selectedMidPid{"selectedMidPid", false, "select MID PID for Jpsi to mu+mu-"};
+  Configurable<bool> selectedTof{"selectedTof", false, "select TOF for Jpsi"};
+  Configurable<bool> selectedRich{"selectedRich", false, "select RICH for Jpsi"};
+  Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
+  Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -207,20 +207,20 @@ struct TaskJpsiMC {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
-          if (selectedMidPid && candidate.isSelJpsiToMuMuMid() <= 0) {
+          if (selectedMid && candidate.isSelJpsiToMuMuMid() <= 0) {
             continue;
           }
         } else {
           if (candidate.isSelJpsiToEETopol() <= 0) {
             continue;
           }
-          if (selectedTofPid && candidate.isSelJpsiToEETof() <= 0) {
+          if (selectedTof && candidate.isSelJpsiToEETof() <= 0) {
             continue;
           }
-          if (selectedRichPid && candidate.isSelJpsiToEERich() <= 0) {
+          if (selectedRich && candidate.isSelJpsiToEERich() <= 0) {
             continue;
           }
-          if (selectedCombPid && candidate.isSelJpsiToEETofRich() <= 0) {
+          if (selectedTofRich && candidate.isSelJpsiToEETofRich() <= 0) {
             continue;
           }
         }
