@@ -47,10 +47,10 @@ struct TaskJpsi {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
-  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select tof PID for Jpsi"};
-  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select rich PID for Jpsi"};
-  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select tof and rich PID for Jpsi"};
-  Configurable<bool> selectedMid{"selectedMid", false, "select MID PID for Jpsi to mu+mu-"};
+  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select TOF PID for Jpsi"};
+  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select RICH PID for Jpsi"};
+  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select TOF and RICH PID for Jpsi"};
+  Configurable<bool> selectedMidPid{"selectedMidPid", false, "select MID PID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -87,7 +87,7 @@ struct TaskJpsi {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
-          if (selectedMid && candidate.isSelJpsiToMuMuMid() <= 0) {
+          if (selectedMidPid && candidate.isSelJpsiToMuMuMid() <= 0) {
             continue;
           }
         } else {
@@ -150,10 +150,10 @@ struct TaskJpsiMC {
   Configurable<bool> d_modeJpsiToMuMu{"d_modeJpsiToMuMu", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_jpsi_toee::pTBins_v}, "pT bin limits"};
-  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select tof PID for Jpsi"};
-  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select rich PID for Jpsi"};
-  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select tof and rich PID for Jpsi"};
-  Configurable<bool> selectedMid{"selectedMid", false, "select MID PID for Jpsi to mu+mu-"};
+  Configurable<bool> selectedTofPid{"selectedTofPid", false, "select TOF PID for Jpsi"};
+  Configurable<bool> selectedRichPid{"selectedRichPid", false, "select RICH PID for Jpsi"};
+  Configurable<bool> selectedCombPid{"selectedCombPid", false, "select TOF and RICH PID for Jpsi"};
+  Configurable<bool> selectedMidPid{"selectedMidPid", false, "select MID PID for Jpsi to mu+mu-"};
 
   void init(o2::framework::InitContext&)
   {
@@ -207,7 +207,7 @@ struct TaskJpsiMC {
           if (candidate.isSelJpsiToMuMuTopol() <= 0) {
             continue;
           }
-          if (selectedMid && candidate.isSelJpsiToMuMuMid() <= 0) {
+          if (selectedMidPid && candidate.isSelJpsiToMuMuMid() <= 0) {
             continue;
           }
         } else {
