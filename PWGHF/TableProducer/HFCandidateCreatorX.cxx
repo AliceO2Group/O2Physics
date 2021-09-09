@@ -49,7 +49,7 @@ struct HFCandidateCreatorX {
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> minPionPtCut{"minPionPtCut", 0.15, "minimum pion pT threshold (GeV/c)"};
+  Configurable<double> ptPionMin{"ptPionMin", 0.15, "minimum pion pT threshold (GeV/c)"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
   OutputObj<TH1F> hMassJpsi{TH1F("hMassJpsi", "J/#psi candidates;inv. mass (#e+ e-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -135,7 +135,7 @@ struct HFCandidateCreatorX {
         if (trackPos.globalIndex() == index0Jpsi) {
           continue;
         }
-        if (trackPos.pt() < minPionPtCut) {
+        if (trackPos.pt() < ptPionMin) {
           continue;
         }
 
@@ -147,7 +147,7 @@ struct HFCandidateCreatorX {
           if (trackNeg.globalIndex() == index1Jpsi) {
             continue;
           }
-          if (trackNeg.pt() < minPionPtCut) {
+          if (trackNeg.pt() < ptPionMin) {
             continue;
           }
 
