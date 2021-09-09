@@ -94,7 +94,7 @@ struct BcSelectionTask {
   EvSelParameters par;
   void init(InitContext&)
   {
-    ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -109,7 +109,7 @@ struct BcSelectionTask {
     aod::FT0s const& ft0s,
     aod::FDDs const& fdds)
   {
-    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("Trigger/TriggerAliases", bc.timestamp());
+    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
     if (!aliases) {
       LOGF(fatal, "Trigger aliases are not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
     }
@@ -154,8 +154,8 @@ struct BcSelectionTask {
     int32_t selection[kNsel] = {0}; // TODO switch to bool array
     selection[kIsBBV0A] = bbV0A;
     selection[kIsBBV0C] = bbV0C;
-    selection[kIsBBFDA] = bgFDA;
-    selection[kIsBBFDC] = bgFDC;
+    selection[kIsBBFDA] = bbFDA;
+    selection[kIsBBFDC] = bbFDC;
     selection[kNoBGFDA] = !bgFDA;
     selection[kNoBGFDC] = !bgFDC;
     selection[kNoBGFDA] = !bgFDA;

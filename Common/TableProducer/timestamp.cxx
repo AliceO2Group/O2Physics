@@ -37,8 +37,8 @@ struct TimestampTask {
   // Configurables
   Configurable<bool> verbose{"verbose", false, "verbose mode"};
   Configurable<std::string> rct_path{"rct-path", "RCT/RunInformation/", "path to the ccdb RCT objects for the SOR timestamps"};
-  Configurable<std::string> start_orbit_path{"start-orbit-path", "Trigger/StartOrbit", "path to the ccdb SOR orbit objects"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "URL of the CCDB database"};
+  Configurable<std::string> start_orbit_path{"start-orbit-path", "GRP/StartOrbit", "path to the ccdb SOR orbit objects"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
   void init(o2::framework::InitContext&)

@@ -25,7 +25,7 @@ struct CentralityTableTask {
 
   void init(InitContext&)
   {
-    ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -34,7 +34,7 @@ struct CentralityTableTask {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     LOGF(debug, "timestamp=%llu", bc.timestamp());
-    TH1F* hCumMultV0M = ccdb->getForTimeStamp<TH1F>("Multiplicity/CumMultV0M", bc.timestamp());
+    TH1F* hCumMultV0M = ccdb->getForTimeStamp<TH1F>("Centrality/CumMultV0M", bc.timestamp());
     if (!hCumMultV0M) {
       LOGF(fatal, "V0M centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
     }
