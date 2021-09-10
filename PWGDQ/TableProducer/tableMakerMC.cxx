@@ -110,7 +110,8 @@ struct TableMakerMC {
   AnalysisCompositeCut* fTrackCut;
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
-  Filter barrelSelectedTracks = aod::track::trackType == uint8_t(aod::track::Run2Track) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 70.0f && o2::aod::track::tpcSignal <= 100.0f && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
+  //Filter barrelSelectedTracks = aod::track::trackType == uint8_t(aod::track::Run2Track) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 70.0f && o2::aod::track::tpcSignal <= 100.0f && o2::aod::track::tpcChi2NCl < 4.0f;
+  Filter barrelSelectedTracks = o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 70.0f && o2::aod::track::tpcSignal <= 100.0f && o2::aod::track::tpcChi2NCl < 4.0f;
 
   void init(o2::framework::InitContext&)
   {
@@ -246,6 +247,7 @@ struct TableMakerMC {
       VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
       fHistMan->FillHistClass("TrackBarrel_AfterCuts", fValues);
 
+      cout << "track pt (rec/gen): " << track.pt() << " / " << mctrack.pt() << endl;
       // if the MC truth particle corresponding to this reconstructed track is not already written,
       //   add it to the skimmed stack
       mcflags = 0;
