@@ -144,8 +144,8 @@ struct tofPidFull {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          table(responsePID.GetExpectedSigma(response, trk),
-                responsePID.GetSeparation(response, trk));
+          table(responsePID.GetExpectedSigmaFromTrackTime(response, trk),
+                responsePID.GetSeparationFromTrackTime(response, trk));
         }
       }
     };
@@ -269,11 +269,12 @@ struct tofPidFullQa {
     histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
-                                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                                                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                                          aod::TrackSelection> const& tracks)
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
+                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
+                         aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                         aod::TrackSelection>;
+  void process(aod::Collision const& collision, Trks const& tracks)
   {
     // Computing Multiplicity first
     int mult = 0;
@@ -300,10 +301,11 @@ struct tofPidFullQa {
         continue;
       }
 
-      const float tof = t.tofSignal() - collisionTime_ps;
+      const float tofSignal = o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t);
+      const float tof = tofSignal - collisionTime_ps;
 
       //
-      histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
+      histos.fill(HIST("event/tofsignal"), t.p(), tofSignal);
       histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom());
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());

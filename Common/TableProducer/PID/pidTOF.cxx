@@ -40,8 +40,38 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-struct tofPid {
+struct tofSignal { /// Task that produces the TOF signal from the trackTime
+  Produces<o2::aod::TOFSignal> table;
+  bool enableTable = false;
+
+  void init(o2::framework::InitContext& initContext)
+  {
+    // Checking the tables are requested in the workflow and enabling them
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (DeviceSpec device : workflows.devices) {
+      for (auto input : device.inputs) {
+        const std::string table = "TOFSignal";
+        if (input.matcher.binding == table) {
+          enableTable = true;
+        }
+      }
+    }
+  }
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
+  void process(aod::Collision const& collision, Trks const& tracks)
+  {
+    if (!enableTable) {
+      return;
+    }
+    table.reserve(tracks.size());
+    for (auto& t : tracks) {
+      table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
+    }
+  }
+};
+
+struct tofPid {
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal>;
   using Colls = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFEl> tablePIDEl;
@@ -248,7 +278,7 @@ struct tofPidQa {
                                                           aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                                           aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                                           aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
-                                                          aod::TrackSelection> const& tracks)
+                                                          aod::TOFSignal, aod::TrackSelection> const& tracks)
   {
     const float collisionTime_ps = collision.collisionTime() * 1000.f;
     histos.fill(HIST("event/vertexz"), collision.posZ());
@@ -287,7 +317,8 @@ struct tofPidQa {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tofPid>(cfgc)};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc),
+                               adaptAnalysisTask<tofPid>(cfgc)};
   if (cfgc.options().get<int>("add-qa")) {
     workflow.push_back(adaptAnalysisTask<tofPidQa>(cfgc));
   }

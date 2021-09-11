@@ -44,6 +44,11 @@ void packInTable(const float& separation, tableType& table, const float& lowest,
 }
 } // namespace pidutils
 
+namespace pidtofsignal
+{
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! TOF signal from track time
+} // namespace pidtofsignal
+
 namespace pidtofbeta
 {
 DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
@@ -98,6 +103,32 @@ DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
 DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
 DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with the TOF detector for alpha
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,     //! Nsigma separation with the TOF detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const float& De,
+                              const float& Tr, const float& He, const float& Al,
+                              const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return El;
+                               case o2::track::PID::Muon:
+                                 return Mu;
+                               case o2::track::PID::Pion:
+                                 return Pi;
+                               case o2::track::PID::Kaon:
+                                 return Ka;
+                               case o2::track::PID::Proton:
+                                 return Pr;
+                               case o2::track::PID::Deuteron:
+                                 return De;
+                               case o2::track::PID::Triton:
+                                 return Tr;
+                               case o2::track::PID::Helium3:
+                                 return He;
+                               case o2::track::PID::Alpha:
+                                 return Al;
+                             }
+                           });
 } // namespace pidtof
 
 // Macro to convert the stored Nsigmas to floats
@@ -134,8 +165,37 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaDe, tofNSigmaDe); //! Unwrapped (float) nsi
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaTr, tofNSigmaTr); //! Unwrapped (float) nsigma with the TOF detector for triton
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaHe, tofNSigmaHe); //! Unwrapped (float) nsigma with the TOF detector for helium3
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsigma with the TOF detector for alpha
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,       //! Nsigma separation with the TOF detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const float& De,
+                              const float& Tr, const float& He, const float& Al,
+                              const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return bin_width * static_cast<float>(El);
+                               case o2::track::PID::Muon:
+                                 return bin_width * static_cast<float>(Mu);
+                               case o2::track::PID::Pion:
+                                 return bin_width * static_cast<float>(Pi);
+                               case o2::track::PID::Kaon:
+                                 return bin_width * static_cast<float>(Ka);
+                               case o2::track::PID::Proton:
+                                 return bin_width * static_cast<float>(Pr);
+                               case o2::track::PID::Deuteron:
+                                 return bin_width * static_cast<float>(De);
+                               case o2::track::PID::Triton:
+                                 return bin_width * static_cast<float>(Tr);
+                               case o2::track::PID::Helium3:
+                                 return bin_width * static_cast<float>(He);
+                               case o2::track::PID::Alpha:
+                                 return bin_width * static_cast<float>(Al);
+                             }
+                           });
 
 } // namespace pidtof_tiny
+
+DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
+                  pidtofsignal::TOFSignal);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::Beta, pidtofbeta::BetaError,
@@ -162,7 +222,10 @@ DECLARE_SOA_TABLE(pidTOFFullHe, "AOD", "pidTOFFullHe", //! Table of the TOF (ful
                   pidtof::TOFExpSignalDiffHe<pidtof::TOFNSigmaHe, pidtof::TOFExpSigmaHe>, pidtof::TOFExpSigmaHe, pidtof::TOFNSigmaHe);
 DECLARE_SOA_TABLE(pidTOFFullAl, "AOD", "pidTOFFullAl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for alpha
                   pidtof::TOFExpSignalDiffAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>, pidtof::TOFExpSigmaAl, pidtof::TOFNSigmaAl);
-
+DECLARE_SOA_TABLE(pidTOFFull, "AOD", "pidTOFFull", //! Table of the TOF NSigmas with full tables
+                  pidtof::TOFNSigma<pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi,
+                                    pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr, pidtof::TOFNSigmaDe,
+                                    pidtof::TOFNSigmaTr, pidtof::TOFNSigmaHe, pidtof::TOFNSigmaAl>);
 // Tiny size tables
 DECLARE_SOA_TABLE(pidTOFEl, "AOD", "pidTOFEl", //! Table of the TOF response with binned Nsigma for electron
                   pidtof_tiny::TOFNSigmaStoreEl, pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>);
@@ -182,7 +245,10 @@ DECLARE_SOA_TABLE(pidTOFHe, "AOD", "pidTOFHe", //! Table of the TOF response wit
                   pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaHe<pidtof_tiny::TOFNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response with binned Nsigma for alpha
                   pidtof_tiny::TOFNSigmaStoreAl, pidtof_tiny::TOFNSigmaAl<pidtof_tiny::TOFNSigmaStoreAl>);
-
+DECLARE_SOA_TABLE(pidTOF, "AOD", "pidTOF", //! Table of the TOF NSigmas with binned Nsigma
+                  pidtof_tiny::TOFNSigma<pidtof_tiny::TOFNSigmaStoreEl, pidtof_tiny::TOFNSigmaStoreMu, pidtof_tiny::TOFNSigmaStorePi,
+                                         pidtof_tiny::TOFNSigmaStoreKa, pidtof_tiny::TOFNSigmaStorePr, pidtof_tiny::TOFNSigmaStoreDe,
+                                         pidtof_tiny::TOFNSigmaStoreTr, pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaStoreAl>);
 namespace pidtpc
 {
 // Expected signals
@@ -224,6 +290,33 @@ DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TPCNSigmaTr, tpcNSigmaTr, float); //! Nsigma separation with the TPC detector for triton
 DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma separation with the TPC detector for helium3
 DECLARE_SOA_COLUMN(TPCNSigmaAl, tpcNSigmaAl, float); //! Nsigma separation with the TPC detector for alpha
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,     //! Nsigma separation with the TPC detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const float& De,
+                              const float& Tr, const float& He, const float& Al,
+                              const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return El;
+                               case o2::track::PID::Muon:
+                                 return Mu;
+                               case o2::track::PID::Pion:
+                                 return Pi;
+                               case o2::track::PID::Kaon:
+                                 return Ka;
+                               case o2::track::PID::Proton:
+                                 return Pr;
+                               case o2::track::PID::Deuteron:
+                                 return De;
+                               case o2::track::PID::Triton:
+                                 return Tr;
+                               case o2::track::PID::Helium3:
+                                 return He;
+                               case o2::track::PID::Alpha:
+                                 return Al;
+                             }
+                           });
+
 } // namespace pidtpc
 
 namespace pidtpc_tiny
@@ -255,7 +348,32 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaDe, tpcNSigmaDe); //! Unwrapped (float) nsi
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaTr, tpcNSigmaTr); //! Unwrapped (float) nsigma with the TPC detector for triton
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaHe, tpcNSigmaHe); //! Unwrapped (float) nsigma with the TPC detector for helium3
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaAl, tpcNSigmaAl); //! Unwrapped (float) nsigma with the TPC detector for alpha
-
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,       //! Nsigma separation with the TPC detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const float& De,
+                              const float& Tr, const float& He, const float& Al,
+                              const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return bin_width * static_cast<float>(El);
+                               case o2::track::PID::Muon:
+                                 return bin_width * static_cast<float>(Mu);
+                               case o2::track::PID::Pion:
+                                 return bin_width * static_cast<float>(Pi);
+                               case o2::track::PID::Kaon:
+                                 return bin_width * static_cast<float>(Ka);
+                               case o2::track::PID::Proton:
+                                 return bin_width * static_cast<float>(Pr);
+                               case o2::track::PID::Deuteron:
+                                 return bin_width * static_cast<float>(De);
+                               case o2::track::PID::Triton:
+                                 return bin_width * static_cast<float>(Tr);
+                               case o2::track::PID::Helium3:
+                                 return bin_width * static_cast<float>(He);
+                               case o2::track::PID::Alpha:
+                                 return bin_width * static_cast<float>(Al);
+                             }
+                           });
 } // namespace pidtpc_tiny
 
 // Per particle tables
@@ -277,6 +395,10 @@ DECLARE_SOA_TABLE(pidTPCFullHe, "AOD", "pidTPCFullHe", //! Table of the TPC (ful
                   pidtpc::TPCExpSignalDiffHe<pidtpc::TPCNSigmaHe, pidtpc::TPCExpSigmaHe>, pidtpc::TPCExpSigmaHe, pidtpc::TPCNSigmaHe);
 DECLARE_SOA_TABLE(pidTPCFullAl, "AOD", "pidTPCFullAl", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for alpha
                   pidtpc::TPCExpSignalDiffAl<pidtpc::TPCNSigmaAl, pidtpc::TPCExpSigmaAl>, pidtpc::TPCExpSigmaAl, pidtpc::TPCNSigmaAl);
+DECLARE_SOA_TABLE(pidTPCFull, "AOD", "pidTPCFull", //! Table of the TPC NSigmas with full tables
+                  pidtpc::TPCNSigma<pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi,
+                                    pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr, pidtpc::TPCNSigmaDe,
+                                    pidtpc::TPCNSigmaTr, pidtpc::TPCNSigmaHe, pidtpc::TPCNSigmaAl>);
 
 // Tiny size tables
 DECLARE_SOA_TABLE(pidTPCEl, "AOD", "pidTPCEl", //! Table of the TPC response with binned Nsigma for electron
@@ -297,6 +419,10 @@ DECLARE_SOA_TABLE(pidTPCHe, "AOD", "pidTPCHe", //! Table of the TPC response wit
                   pidtpc_tiny::TPCNSigmaStoreHe, pidtpc_tiny::TPCNSigmaHe<pidtpc_tiny::TPCNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTPCAl, "AOD", "pidTPCAl", //! Table of the TPC response with binned Nsigma for alpha
                   pidtpc_tiny::TPCNSigmaStoreAl, pidtpc_tiny::TPCNSigmaAl<pidtpc_tiny::TPCNSigmaStoreAl>);
+DECLARE_SOA_TABLE(pidTPC, "AOD", "pidTPC", //! Table of the TPC NSigmas with binned Nsigma
+                  pidtpc_tiny::TPCNSigma<pidtpc_tiny::TPCNSigmaStoreEl, pidtpc_tiny::TPCNSigmaStoreMu, pidtpc_tiny::TPCNSigmaStorePi,
+                                         pidtpc_tiny::TPCNSigmaStoreKa, pidtpc_tiny::TPCNSigmaStorePr, pidtpc_tiny::TPCNSigmaStoreDe,
+                                         pidtpc_tiny::TPCNSigmaStoreTr, pidtpc_tiny::TPCNSigmaStoreHe, pidtpc_tiny::TPCNSigmaStoreAl>);
 
 #undef DEFINE_UNWRAP_NSIGMA_COLUMN
 

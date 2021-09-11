@@ -68,12 +68,12 @@ struct tofSpectra {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
-  Filter trackFilterTOF = (aod::track::tofSignal > 0.f); // Skip tracks without TOF
+  Filter trackFilterTOF = (aod::track::tofChi2 >= 0.f); // Skip tracks without TOF
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                   aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                                                   aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                                  aod::pidTOFbeta, aod::TrackSelection>>;
+                                                  aod::pidTOFbeta, aod::TOFSignal, aod::TrackSelection>>;
 
   void process(TrackCandidates::iterator const& track)
   {
