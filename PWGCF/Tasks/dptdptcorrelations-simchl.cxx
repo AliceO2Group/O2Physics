@@ -36,19 +36,8 @@ using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec multest = {"wfcentmultestimator",
-                             VariantType::String,
-                             "NOCM",
-                             {"Centrality/multiplicity estimator detector at workflow creation level. A this level the default is NOCM"}};
-  ConfigParamSpec ismc = {"isMCPROD",
-                          VariantType::Bool,
-                          true,
-                          {"Analysis on MC data at workflow creation level. A this level the default is true"}};
-  workflowOptions.push_back(multest);
-  workflowOptions.push_back(ismc);
-}
+#define DPTDPTLOGCOLLISIONS debug
+#define DPTDPTLOGTRACKS debug
 
 #include "Framework/runDataProcessing.h"
 
@@ -517,7 +506,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       }
       scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
     }
-    LOGF(info, "Accepted %d reconstructed tracks", acceptedtracks);
+    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
   }
 
   template <typename ParticleListObject, typename CollisionIndex>
@@ -716,7 +705,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalysistask;
 
-    // LOGF(info, "FilterAnalysisTask::processWithCent(). New collision with %d tracks", ftracks.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCent(). New collision with %d tracks", ftracks.size());
 
     fhCentMultB->Fill(collision.centV0M());
     fhVertexZB->Fill(collision.posZ());
@@ -742,7 +731,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalysistask;
 
-    LOGF(info, "FilterAnalysisTask::processWithoutCent(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCent(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
 
     /* the task does not have access to either centrality nor multiplicity 
        classes information, so it has to live without it.
@@ -773,7 +762,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalysistask;
 
-    // LOGF(info, "FilterAnalysisTask::processWithCentMC(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentMC(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
 
     /* TODO: in here we have to decide what to do in the following cases
        - On the fly production -> clearly we will need a different process
@@ -815,7 +804,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalysistask;
 
-    // LOGF(info, "FilterAnalysisTask::processWithoutCentMC(). New generated collision with %d particles", mcparticles.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentMC(). New generated collision with %d particles", mcparticles.size());
 
     /* the task does not have access to either centrality nor multiplicity 
        classes information, so it has to live without it.
@@ -963,7 +952,7 @@ struct DptDptCorrelationsTask {
     template <typename TrackListObject>
     void processTracks(TrackListObject const& passedtracks, int tix, float cmul)
     {
-      LOGF(INFO, "Processing %d tracks of type %d in a collision with cent/mult %f ", passedtracks.size(), tix, cmul);
+      LOGF(DPTDPTLOGCOLLISIONS, "Processing %d tracks of type %d in a collision with cent/mult %f ", passedtracks.size(), tix, cmul);
 
       /* process magnitudes */
       double n1 = 0;       ///< weighted number of track 1 tracks for current collision
@@ -1317,8 +1306,8 @@ struct DptDptCorrelationsTask {
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
-      LOGF(INFO, "Accepted BC id %d collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
-      LOGF(INFO, "Accepted new collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
+      LOGF(DPTDPTLOGCOLLISIONS, "Accepted BC id %d collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
+      LOGF(DPTDPTLOGCOLLISIONS, "Accepted new collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
       dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult());
     }
   }
@@ -1336,12 +1325,20 @@ struct DptDptCorrelationsTask {
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
-      LOGF(INFO, "Accepted BC id %d generated collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
-      LOGF(INFO, "Accepted new generated collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
+      LOGF(DPTDPTLOGCOLLISIONS, "Accepted BC id %d generated collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
+      LOGF(DPTDPTLOGCOLLISIONS, "Accepted new generated collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
       dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult());
     }
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevel, "Process generator level correlations", false);
+
+  /// cleans the output object when the task is not used
+  void processCleaner(aod::Collisions const& colls)
+  {
+    LOGF(DPTDPTLOGCOLLISIONS, "Got %d new collisions", colls.size());
+    fOutput->Clear();
+  }
+  PROCESS_SWITCH(DptDptCorrelationsTask, processCleaner, "Cleaner process for not used output", false);
 };
 
 // Checking the filtered tables
@@ -1440,7 +1437,7 @@ struct TracksAndEventClassificationQARec {
 
   void process(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
-    LOGF(info, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
     processQATask(collision, tracks);
   }
 };
@@ -1465,7 +1462,7 @@ struct TracksAndEventClassificationQAGen {
 
   void process(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {
-    LOGF(info, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
     processQATask(collision, tracks);
   }
 };
@@ -1487,7 +1484,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     fPDG = TDatabasePDG::Instance();
   }
 
-  void process(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processMapChecks(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
     constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
 
@@ -1517,7 +1514,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
 
-      // LOGF(info, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+      LOGF(DPTDPTLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
       if (track.collisionId() < 0) {
         if (label >= 0) {
           mclabelpos_negcoll[label].push_back(recix);
@@ -1618,45 +1615,23 @@ struct CheckGeneratorLevelVsDetectorLevel {
     LOGF(info, "Reconstructed tracks with positive collision ID: %d with positive label, %d with negative label, %d with cross collision", nrec_poslabel, nrec_neglabel, nrec_poslabel_crosscoll);
     LOGF(info, "Reconstructed tracks with negative collision ID: %d with positive label, %d with negative label", nrec_poslabel_nc, nrec_neglabel_nc);
   }
+  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecks, "Process detector <=> generator levels mapping checks", false);
+
+  void processDummy(aod::Collisions const& colls)
+  {
+    LOGF(DPTDPTLOGCOLLISIONS, "Got a new set of %d collisions", colls.size());
+  }
+  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processDummy, "Dummy process of detector <=> generator levels mapping checks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  std::string multest = cfgc.options().get<std::string>("wfcentmultestimator");
-  bool ismc = cfgc.options().get<bool>("isMCPROD");
-  if (ismc) {
-    if (multest == "NOCM") {
-      WorkflowSpec workflow{
-        adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}, {"processWithoutCentMC", true}}}),
-        adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
-        adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}}),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}}}),
-        adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc)};
-      return workflow;
-    } else {
-      WorkflowSpec workflow{
-        adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithCent", true}, {"processWithCentMC", true}}}),
-        adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
-        adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}}),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}}}),
-        adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc)};
-      return workflow;
-    }
-  } else {
-    if (multest == "NOCM") {
-      WorkflowSpec workflow{
-        adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}}}),
-        adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}})};
-      return workflow;
-    } else {
-      WorkflowSpec workflow{
-        adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithCent", true}}}),
-        adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
-        adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}}})};
-      return workflow;
-    }
-  }
+  WorkflowSpec workflow{
+    adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}, {"processWithoutCentMC", true}}}),
+    adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
+    adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
+    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processCleaner", false}}}),
+    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processCleaner", false}}}),
+    adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc, SetDefaultProcesses{{{"processMapChecks", false}}})};
+  return workflow;
 }
