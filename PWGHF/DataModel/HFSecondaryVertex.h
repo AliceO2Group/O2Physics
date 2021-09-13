@@ -800,7 +800,8 @@ DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
 // mapping of decay types
-enum DecayType { XToJpsiPiPi = 0 }; // move this to a dedicated cascade namespace in the future?
+enum DecayType { XToJpsiPiPi = 0,
+                 XToJpsiToMuMuPiPi }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_x
 
 // declare dedicated X candidate table
