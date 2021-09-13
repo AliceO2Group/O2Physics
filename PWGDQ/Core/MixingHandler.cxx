@@ -26,37 +26,22 @@ ClassImp(MixingHandler);
 MixingHandler::MixingHandler() : TNamed(),
                                  fIsInitialized(kFALSE),
                                  fVariableLimits(),
-                                 fVariables(),
-                                 fVariableNames(),
-                                 fNMixingVariables(0)
+                                 fVariables()
 {
   //
   // default constructor
   //
-  float dummyRange[2] = {-99999., +99999.};
-  for (int iVar = 0; iVar < kNMaxVariables; ++iVar) {
-    fVariableLimits[iVar].Set(2, dummyRange);
-    fVariables[iVar] = VarManager::kNothing;
-    fVariableNames[iVar] = "";
-  }
 }
 
 //_________________________________________________________________________
 MixingHandler::MixingHandler(const char* name, const char* title) : TNamed(name, title),
                                                                     fIsInitialized(kFALSE),
                                                                     fVariableLimits(),
-                                                                    fVariables(),
-                                                                    fNMixingVariables(0)
+                                                                    fVariables()
 {
   //
   // Named constructor
   //
-  float dummyRange[2] = {-99999., +99999.};
-  for (int iVar = 0; iVar < kNMaxVariables; ++iVar) {
-    fVariableLimits[iVar].Set(2, dummyRange);
-    fVariables[iVar] = VarManager::kNothing;
-    fVariableNames[iVar] = "";
-  }
 }
 
 //_________________________________________________________________________
@@ -68,40 +53,33 @@ MixingHandler::~MixingHandler()
 }
 
 //_________________________________________________________________________
-void MixingHandler::AddMixingVariable(int var, int nBins, float* binLims, TString varName)
+void MixingHandler::AddMixingVariable(int var, int nBins, float* binLims)
 {
   //
   // add a mixing variable
   //
-  if (fNMixingVariables >= kNMaxVariables) {
-    cout << "MixingHandler::AddMixingVariable(): ERROR Too many variables for the mixing!" << endl;
-    cout << "                  Maximum number of variables: " << kNMaxVariables << endl;
-    return;
-  }
-  fVariables[fNMixingVariables] = var;
-  fVariableLimits[fNMixingVariables].Set(nBins, binLims);
-  fVariableNames[fNMixingVariables] += varName;
-  fNMixingVariables++;
+  fVariables.push_back(var);
+  fVariableLimits[fVariables.size()].Set(nBins, binLims);
   VarManager::SetUseVariable(var);
 }
 
 //_________________________________________________________________________
-void MixingHandler::AddMixingVariable(int var, int nBins, std::vector<float> binLims, TString varName)
+void MixingHandler::AddMixingVariable(int var, int nBins, std::vector<float> binLims)
 {
 
   float* bins = new float[nBins];
   for (int i = 0; i < nBins; ++i) {
     bins[i] = binLims[i];
   }
-  AddMixingVariable(var, nBins, bins, varName);
+  AddMixingVariable(var, nBins, bins);
 }
 
 //_________________________________________________________________________
-int MixingHandler::GetMixingVariable(TString vars)
+int MixingHandler::GetMixingVariable(VarManager::Variables var)
 {
   int varNum = -1;
-  for (int iVar = 0; iVar < fNMixingVariables; ++iVar) {
-    if (!fVariableNames[iVar].CompareTo(vars)) {
+  for (int iVar = 0; iVar < fVariables.size(); ++iVar) {
+    if (fVariables[iVar] == var) {
       varNum = iVar;
     }
   }
@@ -109,11 +87,11 @@ int MixingHandler::GetMixingVariable(TString vars)
 }
 
 //_________________________________________________________________________
-std::vector<float> MixingHandler::GetMixingVariableLimits(TString vars)
+std::vector<float> MixingHandler::GetMixingVariableLimits(VarManager::Variables var)
 {
   std::vector<float> binLimits;
-  for (int iVar = 0; iVar < fNMixingVariables; ++iVar) {
-    if (!fVariableNames[iVar].CompareTo(vars)) {
+  for (int iVar = 0; iVar < fVariables.size(); ++iVar) {
+    if (fVariables[iVar] == var) {
       for (int iBin = 0; iBin < fVariableLimits[iVar].GetSize(); ++iBin) {
         binLimits.push_back(fVariableLimits[iVar].At(iBin));
       }
@@ -127,12 +105,10 @@ void MixingHandler::Init()
 {
   //
   // Initialization of pools
-  // NOTE: The master array holding tracks is a 1D array but it will be represented as an n-dim array
-  //       The size of the array will be N_1 x N_2 x ... x N_n
   //       The correct event category will be retrieved using the function FindEventCategory()
   //
   int size = 1;
-  for (int iVar = 0; iVar < fNMixingVariables; ++iVar) {
+  for (int iVar = 0; iVar < fVariables.size(); ++iVar) {
     size *= (fVariableLimits[iVar].GetSize() - 1);
   }
 
@@ -143,17 +119,17 @@ void MixingHandler::Init()
 int MixingHandler::FindEventCategory(float* values)
 {
   //
-  // Find the event category corresponding to the centrality, vtxz and ep values
+  // Find the event category corresponding to the added mixing variables
   //
-  if (fNMixingVariables == 0) {
+  if (fVariables.size() == 0) {
     return -1;
   }
   if (!fIsInitialized) {
     Init();
   }
 
-  int bin[kNMaxVariables];
-  for (int i = 0; i < fNMixingVariables; ++i) {
+  int bin[fVariables.size()];
+  for (int i = 0; i < fVariables.size(); ++i) {
     bin[i] = TMath::BinarySearch(fVariableLimits[i].GetSize(), fVariableLimits[i].GetArray(), values[fVariables[i]]);
     if (bin[i] == -1 || bin[i] == fVariableLimits[i].GetSize() - 1) {
       return -1; // all variables must be inside limits
@@ -161,9 +137,9 @@ int MixingHandler::FindEventCategory(float* values)
   }
 
   int category = 0;
-  for (int iVar = 0; iVar < fNMixingVariables; ++iVar) {
+  for (int iVar = 0; iVar < fVariables.size(); ++iVar) {
     int tempCategory = 1;
-    for (int iVar2 = iVar; iVar2 < fNMixingVariables; ++iVar2) {
+    for (int iVar2 = iVar; iVar2 < fVariables.size(); ++iVar2) {
       if (iVar2 == iVar) {
         tempCategory *= bin[iVar2];
       } else {
@@ -176,19 +152,29 @@ int MixingHandler::FindEventCategory(float* values)
 }
 
 //_________________________________________________________________________
-int MixingHandler::GetBinFromCategory(int iVar, int category) const
+int MixingHandler::GetBinFromCategory(VarManager::Variables var, int category) const
 {
   //
   // find the bin in variable var for the n-dimensional "category"
   //
-  if (fNMixingVariables == 0) {
+  if (fVariables.size() == 0) {
     return -1;
   }
+
+  // Search for the position of the variable "var" in the internal variable list of the handler
+  int tempVar;
+  for (int i = 0; i < fVariables.size(); ++i) {
+    if (fVariables[i] == var) {
+      tempVar = i;
+    }
+  }
+
+  // extract the bin position in variable "var" from the category
   int norm = 1;
-  for (int i = fNMixingVariables - 1; i > iVar; --i) {
+  for (int i = fVariables.size() - 1; i > tempVar; --i) {
     norm *= (fVariableLimits[i].GetSize() - 1);
   }
   int truncatedCategory = category - (category % norm);
   truncatedCategory /= norm;
-  return truncatedCategory % (fVariableLimits[iVar].GetSize() - 1);
+  return truncatedCategory % (fVariableLimits[tempVar].GetSize() - 1);
 }

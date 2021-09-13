@@ -223,13 +223,10 @@ struct DQMuonTrackSelection {
 struct DQEventMixing {
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
-  MixingHandler* fMixHandler;
   float* fValues;
   // NOTE: The track filter produced by the barrel track selection contain a number of electron cut decisions and one last cut for hadrons used in the
   //           dilepton - hadron task downstream. So the bit mask is required to select pairs just based on the electron cuts
   uint8_t fTwoTrackFilterMask = 0;
-
-  Configurable<std::string> fConfigMixingVariables{"cfgMixingVar", "Centrality3,Vtx1", "Mixing configuriation used, variables separated by a coma "};
 
   Filter filterEventMixingSelected = aod::reducedevent::isEventMixingSelected == 1;
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
@@ -240,23 +237,12 @@ struct DQEventMixing {
     fValues = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
 
-    TString mixingVarStr = fConfigMixingVariables.value;
-    fMixHandler = new MixingHandler("mixingHandler", "mixingHandler");
-    fMixHandler->Init();
-    SetUpMixing(fMixHandler, mixingVarStr.Data());
-
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString histNames = "";
-    std::vector<float> fCentLimsHashing = fMixHandler->GetMixingVariableLimits("Cent");
-    for (int icent = 0; icent < fCentLimsHashing.size() - 1; ++icent) {
-      fCentBinNames.push_back(Form("%.1f%.1f", fCentLimsHashing[icent], fCentLimsHashing[icent + 1]));
-      histNames += Form("PairsMuonMEPM_%s;PairsMuonMEPP_%s;PairsMuonMEMM_%s;", fCentBinNames[icent].Data(), fCentBinNames[icent].Data(), fCentBinNames[icent].Data());
-      std::cout << "  CentralityBin " << icent << " : " << fCentLimsHashing[icent] << "-" << fCentLimsHashing[icent + 1] << std::endl;
-    }
-
+    histNames += "PairsMuonMEPM_PbPb;PairsMuonMEPP_PbPb;PairsMuonMEMM_PbPb;";
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -304,15 +290,14 @@ struct DQEventMixing {
             continue;
           }
           VarManager::FillPair(muon1, muon2, fValues, VarManager::kJpsiToMuMu);
-          int centBin = fMixHandler->GetBinFromCategory(fMixHandler->GetMixingVariable("Cent"), event1.mixingHash());
-          //            std::cout<<"  CentralityBin "<< centBin<<std::endl;
+
           if (muon1.sign() * muon2.sign() < 0) {
-            fHistMan->FillHistClass(Form("PairsMuonMEPM_%s", fCentBinNames[centBin].Data()), fValues);
+            fHistMan->FillHistClass("PairsMuonMEPM_PbPb", fValues);
           } else {
             if (muon1.sign() > 0) {
-              fHistMan->FillHistClass(Form("PairsMuonMEPP_%s", fCentBinNames[centBin].Data()), fValues);
+              fHistMan->FillHistClass("PairsMuonMEP_PbPb", fValues);
             } else {
-              fHistMan->FillHistClass(Form("PairsMuonMEMM_%s", fCentBinNames[centBin].Data()), fValues);
+              fHistMan->FillHistClass("PairsMuonMEMM_PbPb", fValues);
             }
           }
         } // end for (muon2)
@@ -324,13 +309,10 @@ struct DQEventMixing {
 struct DQDileptonMuMu {
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
-  MixingHandler* fMixHandler;
 
   float* fValues;
   uint8_t fTwoTrackFilterMask = 0;
   std::vector<TString> fCentBinNames;
-
-  Configurable<std::string> fConfigMixingVariables{"cfgMixingVar", "Centrality3,Vtx1,", "Mixing configuriation used, variables separated by a coma "};
 
   Filter filterEventSelected = aod::reducedevent::isEventSelected == 1;
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
@@ -340,22 +322,12 @@ struct DQDileptonMuMu {
     fValues = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
 
-    fMixHandler = new MixingHandler("mixingHandler", "mixingHandler");
-    fMixHandler->Init();
-    TString mixingVarStr = fConfigMixingVariables.value;
-    SetUpMixing(fMixHandler, mixingVarStr.Data());
-
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString histNames = "";
-    std::vector<float> fCentLimsHashing = fMixHandler->GetMixingVariableLimits("Cent");
-    for (int icent = 0; icent < fCentLimsHashing.size() - 1; ++icent) {
-      fCentBinNames.push_back(Form("%.1f%.1f", fCentLimsHashing[icent], fCentLimsHashing[icent + 1]));
-      histNames += Form("PairsMuonSEPM_%s;PairsMuonSEPP_%s;PairsMuonSEMM_%s;", fCentBinNames[icent].Data(), fCentBinNames[icent].Data(), fCentBinNames[icent].Data());
-      //        std::cout<<"  CentralityBin "<< icent<<" : "<< fCentLimsHashing[icent]<<"-"<<fCentLimsHashing[icent + 1]<<std::endl;
-    }
+    histNames += "PairsMuonSEPM_PbPb;PairsMuonSEPP_PbPb;PairsMuonSEMM_PbPb;";
 
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
@@ -381,15 +353,14 @@ struct DQDileptonMuMu {
         continue;
       }
       VarManager::FillPair(muon1, muon2, fValues, VarManager::kJpsiToMuMu);
-      int centBin = fMixHandler->GetBinFromCategory(fMixHandler->GetMixingVariable("Cent"), event.mixingHash());
-      //        std::cout<<"  CentralityBin "<< centBin<<std::endl;
+
       if (muon1.sign() * muon2.sign() < 0) {
-        fHistMan->FillHistClass(Form("PairsMuonSEPM_%s", fCentBinNames[centBin].Data()), fValues);
+        fHistMan->FillHistClass("PairsMuonSEPM_PbPb", fValues);
       } else {
         if (muon1.sign() > 0) {
-          fHistMan->FillHistClass(Form("PairsMuonSEPP_%s", fCentBinNames[centBin].Data()), fValues);
+          fHistMan->FillHistClass("PairsMuonSEPP_PbPb", fValues);
         } else {
-          fHistMan->FillHistClass(Form("PairsMuonSEMM_%s", fCentBinNames[centBin].Data()), fValues);
+          fHistMan->FillHistClass("PairsMuonSEMM_PbPb", fValues);
         }
       }
     } // end loop over muon track pairs
@@ -430,7 +401,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("Pairs")) {
       if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "PbPb");
       }
     }
   } // end loop over histogram classes

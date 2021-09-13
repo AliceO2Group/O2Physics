@@ -25,14 +25,10 @@
 #include <TString.h>
 
 #include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/VarManager.h"
 
 class MixingHandler : public TNamed
 {
-
- public:
-  enum Constants { // event mixing for correlations
-    kNMaxVariables = 10
-  };
 
  public:
   MixingHandler();
@@ -40,17 +36,17 @@ class MixingHandler : public TNamed
   virtual ~MixingHandler();
 
   // setters
-  void AddMixingVariable(int var, int nBins, float* binLims, TString varName);
-  void AddMixingVariable(int var, int nBins, std::vector<float> binLims, TString varName);
+  void AddMixingVariable(int var, int nBins, float* binLims);
+  void AddMixingVariable(int var, int nBins, std::vector<float> binLims);
 
   // getters
-  int GetNMixingVariables() const { return fNMixingVariables; }
-  int GetMixingVariable(TString vars);
-  std::vector<float> GetMixingVariableLimits(TString vars);
+  int GetNMixingVariables() const { return fVariables.size(); }
+  int GetMixingVariable(VarManager::Variables var); // returns the position in the internal varible list of the handler. Useful for checks, mostly
+  std::vector<float> GetMixingVariableLimits(VarManager::Variables var);
 
   void Init();
   int FindEventCategory(float* values);
-  int GetBinFromCategory(int iVar, int category) const;
+  int GetBinFromCategory(VarManager::Variables var, int category) const;
 
  private:
   MixingHandler(const MixingHandler& handler);
@@ -59,12 +55,10 @@ class MixingHandler : public TNamed
   // User options
   bool fIsInitialized; // check if the mixing handler is initialized
 
-  TArrayF fVariableLimits[kNMaxVariables];
-  int fVariables[kNMaxVariables];
-  TString fVariableNames[kNMaxVariables]; //! variable names
-  int fNMixingVariables;
+  std::vector<TArrayF> fVariableLimits;
+  std::vector<int> fVariables;
 
-  ClassDef(MixingHandler, 4);
+  ClassDef(MixingHandler, 1);
 };
 
 #endif
