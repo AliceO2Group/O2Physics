@@ -171,7 +171,7 @@ constexpr double pTBins[npTBins + 1] = {
 auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
 
 // default values for the cuts
-  constexpr double cuts[npTBins][nCutVars] = {{0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10.},   /* 0   < pT < 0.5 */
+constexpr double cuts[npTBins][nCutVars] = {{0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10.},   /* 0   < pT < 0.5 */
                                             {0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10.},   /* 0.5 < pT < 1   */
                                             {0.400, 300. * 1E-4, 0.8, 0.4, 0.4, 1000. * 1E-4, 1000. * 1E-4, -25000. * 1E-8, 0.80, 0., 0., 10., 10.},  /* 1   < pT < 1.5 */
                                             {0.400, 300. * 1E-4, 0.8, 0.4, 0.4, 1000. * 1E-4, 1000. * 1E-4, -25000. * 1E-8, 0.80, 0., 0., 10., 10.},  /* 1.5 < pT < 2   */
@@ -226,7 +226,7 @@ static const std::vector<std::string> pTBinLabels = {
   "pT bin 24"};
 
 // column labels
-  static const std::vector<std::string> cutVarLabels = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "normalized decay length XY", "decay length", "decay length XY"};
+static const std::vector<std::string> cutVarLabels = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "normalized decay length XY", "decay length", "decay length XY"};
 } // namespace hf_cuts_d0_topik
 
 namespace hf_cuts_lc_topkpi

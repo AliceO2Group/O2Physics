@@ -274,35 +274,35 @@ struct TaskD0MC {
       if (candidate.isSelD0() >= d_selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
-	  registry.fill(HIST("hptProng0Sig"), ptProng0, rapidityCandidate);
-	  registry.fill(HIST("hptProng1Sig"), ptProng1, rapidityCandidate);
-	  registry.fill(HIST("hdeclengthSig"), declengthCandidate, rapidityCandidate);
-	  registry.fill(HIST("hdeclengthxySig"), declengthxyCandidate, rapidityCandidate);
-	  registry.fill(HIST("hnormaliseddeclengthSig"), normaliseddeclengthCandidate, rapidityCandidate);
-	  registry.fill(HIST("hnormaliseddeclengthxySig"), normaliseddeclengthxyCandidate, rapidityCandidate);
-	  registry.fill(HIST("hd0Prong0Sig"), d0Prong0, rapidityCandidate);
-	  registry.fill(HIST("hd0Prong1Sig"), d0Prong1, rapidityCandidate);
-	  registry.fill(HIST("hd0d0Sig"), d0d0Candidate, rapidityCandidate);
-	  registry.fill(HIST("hCTSSig"), ctsCandidate, rapidityCandidate);
-	  registry.fill(HIST("hCtSig"), ctCandidate, rapidityCandidate);
-	  registry.fill(HIST("hCPASig"), cpaCandidate, rapidityCandidate);
-	  registry.fill(HIST("hCPAxySig"), cpaxyCandidate, rapidityCandidate);
+          registry.fill(HIST("hptProng0Sig"), ptProng0, rapidityCandidate);
+          registry.fill(HIST("hptProng1Sig"), ptProng1, rapidityCandidate);
+          registry.fill(HIST("hdeclengthSig"), declengthCandidate, rapidityCandidate);
+          registry.fill(HIST("hdeclengthxySig"), declengthxyCandidate, rapidityCandidate);
+          registry.fill(HIST("hnormaliseddeclengthSig"), normaliseddeclengthCandidate, rapidityCandidate);
+          registry.fill(HIST("hnormaliseddeclengthxySig"), normaliseddeclengthxyCandidate, rapidityCandidate);
+          registry.fill(HIST("hd0Prong0Sig"), d0Prong0, rapidityCandidate);
+          registry.fill(HIST("hd0Prong1Sig"), d0Prong1, rapidityCandidate);
+          registry.fill(HIST("hd0d0Sig"), d0d0Candidate, rapidityCandidate);
+          registry.fill(HIST("hCTSSig"), ctsCandidate, rapidityCandidate);
+          registry.fill(HIST("hCtSig"), ctCandidate, rapidityCandidate);
+          registry.fill(HIST("hCPASig"), cpaCandidate, rapidityCandidate);
+          registry.fill(HIST("hCPAxySig"), cpaxyCandidate, rapidityCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
         } else {
-	  registry.fill(HIST("hptProng0Bkg"), ptProng0, rapidityCandidate);
-	  registry.fill(HIST("hptProng1Bkg"), ptProng1, rapidityCandidate);
-	  registry.fill(HIST("hdeclengthBkg"), declengthCandidate, rapidityCandidate);
-	  registry.fill(HIST("hdeclengthxyBkg"), declengthxyCandidate, rapidityCandidate);
-	  registry.fill(HIST("hnormaliseddeclengthBkg"), normaliseddeclengthCandidate, rapidityCandidate);
-	  registry.fill(HIST("hnormaliseddeclengthxyBkg"), normaliseddeclengthxyCandidate, rapidityCandidate);
-	  registry.fill(HIST("hd0Prong0Bkg"), d0Prong0, rapidityCandidate);
-	  registry.fill(HIST("hd0Prong1Bkg"), d0Prong1, rapidityCandidate);
-	  registry.fill(HIST("hd0d0Bkg"), d0d0Candidate, rapidityCandidate);
-	  registry.fill(HIST("hCTSBkg"), ctsCandidate, rapidityCandidate);
-	  registry.fill(HIST("hCtBkg"), ctCandidate, rapidityCandidate);
-	  registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
-	  registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
-	  registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hptProng0Bkg"), ptProng0, rapidityCandidate);
+          registry.fill(HIST("hptProng1Bkg"), ptProng1, rapidityCandidate);
+          registry.fill(HIST("hdeclengthBkg"), declengthCandidate, rapidityCandidate);
+          registry.fill(HIST("hdeclengthxyBkg"), declengthxyCandidate, rapidityCandidate);
+          registry.fill(HIST("hnormaliseddeclengthBkg"), normaliseddeclengthCandidate, rapidityCandidate);
+          registry.fill(HIST("hnormaliseddeclengthxyBkg"), normaliseddeclengthxyCandidate, rapidityCandidate);
+          registry.fill(HIST("hd0Prong0Bkg"), d0Prong0, rapidityCandidate);
+          registry.fill(HIST("hd0Prong1Bkg"), d0Prong1, rapidityCandidate);
+          registry.fill(HIST("hd0d0Bkg"), d0d0Candidate, rapidityCandidate);
+          registry.fill(HIST("hCTSBkg"), ctsCandidate, rapidityCandidate);
+          registry.fill(HIST("hCtBkg"), ctCandidate, rapidityCandidate);
+          registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
+          registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
           if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
           }
@@ -318,7 +318,7 @@ struct TaskD0MC {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           }
         }
-      }      
+      }
     }
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
