@@ -10,5 +10,6 @@
 # **DO NOT USE** @AliceO2Group/core for anything else. 
 * @AliceO2Group/core @jgrosseo @iarsene @ktf
 /ALICE3  @njacazio @ginnocen @vkucera
+/PWGPP  @njacazio
 /PWGHF  @ginnocen @vkucera
 /EventFiltering @mpuccio
