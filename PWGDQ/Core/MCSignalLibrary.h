@@ -121,9 +121,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Pi0", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("SM")) {
+  if (!nameStr.compare("LFQ")) {
     MCProng prong(1, {600}, {true}, {false}, {0}, {0}, {false});
-    signal = new MCSignal(name, "same mothers", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s
+    signal = new MCSignal(name, "light flavor mesons + quarkonia", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s
+    return signal;
+  }
+  if (!nameStr.compare("LF")) {
+    MCProng prong(1, {601}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "ligh flavor mesons", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi
     return signal;
   }
   if (!nameStr.compare("electronFromDs")) {
@@ -206,9 +211,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from psi2s decays", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("eFromSM")) {
+  if (!nameStr.compare("eFromLFQ")) {
     MCProng prong(2, {11, 600}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    signal = new MCSignal(name, "Electrons from same mother decays", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s mesons
+    signal = new MCSignal(name, "Electrons from LF meson + quarkonia decays", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s mesons
+    return signal;
+  }
+  if (!nameStr.compare("eFromLF")) {
+    MCProng prong(2, {11, 601}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from LF meson decays", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi mesons
     return signal;
   }
   if (!nameStr.compare("eFromHc")) {
@@ -283,9 +293,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from psi2S decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("sm2ee")) {
+  if (!nameStr.compare("lfq2ee")) {
     MCProng prong(2, {11, 600}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    signal = new MCSignal(name, "ee pairs from same mother decays", {prong, prong}, {1, 1}); // signal at pair level
+    signal = new MCSignal(name, "ee pairs from light flavor meson + quarkonia decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("lf2ee")) {
+    MCProng prong(2, {11, 601}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
 

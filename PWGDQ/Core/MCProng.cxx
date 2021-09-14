@@ -350,7 +350,7 @@ bool MCProng::ComparePDG(int pdg, int prongPDG, bool checkBothCharges, bool excl
         }
       }
       break;
-    case 600:                     // all dielectron from same mother sources
+    case 900:                     // electron from LF mesons + Quarkonias for LMEE
       decision = absPDG == 111 || // pion
                  absPDG == 221 || // eta
                  absPDG == 331 || // eta'
@@ -359,6 +359,15 @@ bool MCProng::ComparePDG(int pdg, int prongPDG, bool checkBothCharges, bool excl
                  absPDG == 333 || // phi
                  absPDG == 443 || // jpsi
                  absPDG == 100443 // psi 2S
+        ;
+      break;
+    case 901:                     // electron from LF mesons for LMEE
+      decision = absPDG == 111 || // pion
+                 absPDG == 221 || // eta
+                 absPDG == 331 || // eta'
+                 absPDG == 113 || // rho
+                 absPDG == 223 || // omega
+                 absPDG == 333    // phi
         ;
       break;
     default: // all explicit PDG code cases
