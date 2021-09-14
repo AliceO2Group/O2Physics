@@ -51,17 +51,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons which are not produced during transport in detector", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("electronFromJpsi")) {
-    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    signal = new MCSignal(name, "Electrons from jpsi decays", {prong}, {-1});
-    return signal;
-  }
-  if (!nameStr.compare("electronFromNonpromptJpsi")) {
+  if (!nameStr.compare("eFromNonpromptJpsi")) {
     MCProng prong(3, {11, 443, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electrons from beauty jpsi decays", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("electronFromPromptJpsi")) {
+  if (!nameStr.compare("eFromPromptJpsi")) {
     MCProng prong(3, {11, 443, 503}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electrons from beauty jpsi decays", {prong}, {-1});
     return signal;
@@ -121,12 +116,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Pi0", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("LFQ")) {
+  if (!nameStr.compare("LMeeLFQ")) {
     MCProng prong(1, {600}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "light flavor mesons + quarkonia", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s
     return signal;
   }
-  if (!nameStr.compare("LF")) {
+  if (!nameStr.compare("LMeeLF")) {
     MCProng prong(1, {601}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "ligh flavor mesons", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi
     return signal;
@@ -253,52 +248,52 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   //LMEE pair signals for LF, same mother
-  if (!nameStr.compare("pizero2ee")) {
+  if (!nameStr.compare("eeFromPizero")) {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("eta2ee")) {
+  if (!nameStr.compare("eeFromEta")) {
     MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from eta decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("etaprime2ee")) {
+  if (!nameStr.compare("eeFromEtaprime")) {
     MCProng prong(2, {11, 331}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from eta' decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("rho2ee")) {
+  if (!nameStr.compare("eeFromRho")) {
     MCProng prong(2, {11, 113}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from rho decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("omega2ee")) {
+  if (!nameStr.compare("eeFromOmega")) {
     MCProng prong(2, {11, 223}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from omega decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("phi2ee")) {
+  if (!nameStr.compare("eeFromPhi")) {
     MCProng prong(2, {11, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from phi decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("jpsi2ee")) {
+  if (!nameStr.compare("eeFromJpsi")) {
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("psi2S2ee")) {
+  if (!nameStr.compare("eeFromPsi2S")) {
     MCProng prong(2, {11, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from psi2S decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("lfq2ee")) {
+  if (!nameStr.compare("eeFromLMeeLFQ")) {
     MCProng prong(2, {11, 600}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from light flavor meson + quarkonia decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
-  if (!nameStr.compare("lf2ee")) {
+  if (!nameStr.compare("eeFromLMeeLF")) {
     MCProng prong(2, {11, 601}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
