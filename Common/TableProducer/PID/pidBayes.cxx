@@ -80,7 +80,7 @@ struct bayesPid {
 
   std::array<bool, kNDet> enabledDet{false};
 
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
   Configurable<std::string> ccdbPathTPC{"ccdbPathTPC", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
   Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
@@ -247,7 +247,7 @@ struct bayesPid {
   }
 
   template <o2::track::PID::ID pid>
-  using respTPC = tpc::ELoss<Coll::iterator, Trks::iterator, pid>;
+  using respTPC = tpc::ELoss<Trks::iterator, pid>;
 
   /// Computes PID probabilities for the TPC
   template <o2::track::PID::ID pid>
@@ -267,8 +267,8 @@ struct bayesPid {
     //   dedx = GetTPCsignalTunedOnData(track);
     // }
 
-    const float bethe = responseTPCPID.GetExpectedSignal(Response[kTPC], track.collision(), track);
-    const float sigma = responseTPCPID.GetExpectedSigma(Response[kTPC], track.collision(), track);
+    const float bethe = responseTPCPID.GetExpectedSignal(Response[kTPC], track);
+    const float sigma = responseTPCPID.GetExpectedSigma(Response[kTPC], track);
     LOG(INFO) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
     // bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
     // sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
@@ -297,7 +297,7 @@ struct bayesPid {
 
   /// Response of the TOF detector
   template <o2::track::PID::ID pid>
-  using respTOF = tof::ExpTimes<Coll::iterator, Trks::iterator, pid>;
+  using respTOF = tof::ExpTimes<Trks::iterator, pid>;
 
   /// Compute PID probabilities for TOF
   template <o2::track::PID::ID pid>
@@ -359,10 +359,10 @@ struct bayesPid {
 
     const float meanCorrFactor = 0.07 / fTOFtail; // Correction factor on the mean because of the tail (should be ~ 0.1 with tail = 1.1)
 
-    const float nsigmas = responseTOFPID.GetSeparation(Response[kTOF], track.collision(), track) + meanCorrFactor;
+    const float nsigmas = responseTOFPID.GetSeparation(Response[kTOF], track) + meanCorrFactor;
 
-    const float expTime = responseTOFPID.GetExpectedSignal(track.collision(), track);
-    const float sig = responseTOFPID.GetExpectedSigma(Response[kTOF], track.collision(), track);
+    const float expTime = responseTOFPID.GetExpectedSignal(track);
+    const float sig = responseTOFPID.GetExpectedSigma(Response[kTOF], track);
 
     if (nsigmas < fTOFtail) {
       Probability[kTOF][pid] = exp(-0.5 * nsigmas * nsigmas) / sig;

@@ -28,7 +28,7 @@ namespace bpo = boost::program_options;
 bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[], bpo::variables_map& vm)
 {
   options.add_options()(
-    "url,u", bpo::value<std::string>()->default_value("http://ccdb-test.cern.ch:8080"), "URL of the CCDB database")(
+    "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database")(
     "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/ALICE3/PID/TOF"), "CCDB path for storage/retrieval")(
     "start,s", bpo::value<long>()->default_value(0), "Start timestamp of object validity")(
     "stop,S", bpo::value<long>()->default_value(4108971600000), "Stop timestamp of object validity")(

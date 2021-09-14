@@ -34,7 +34,7 @@ struct pidTOFTaskBeta {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
   using Colls = aod::Collisions;
   Produces<aod::pidTOFbeta> tablePIDBeta;
-  tof::Beta<Colls::iterator, Trks::iterator, PID::Electron> responseElectron;
+  tof::Beta<Trks::iterator, PID::Electron> responseElectron;
   Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
 
   void init(o2::framework::InitContext&)
@@ -46,11 +46,11 @@ struct pidTOFTaskBeta {
   {
     tablePIDBeta.reserve(tracks.size());
     for (auto const& trk : tracks) {
-      tablePIDBeta(responseElectron.GetBeta(trk.collision(), trk),
-                   responseElectron.GetExpectedSigma(trk.collision(), trk),
-                   responseElectron.GetExpectedSignal(trk.collision(), trk),
-                   responseElectron.GetExpectedSigma(trk.collision(), trk),
-                   responseElectron.GetSeparation(trk.collision(), trk));
+      tablePIDBeta(responseElectron.GetBeta(trk),
+                   responseElectron.GetExpectedSigma(trk),
+                   responseElectron.GetExpectedSignal(trk),
+                   responseElectron.GetExpectedSigma(trk),
+                   responseElectron.GetSeparation(trk));
     }
   }
 };
