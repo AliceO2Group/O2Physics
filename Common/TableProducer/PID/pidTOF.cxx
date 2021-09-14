@@ -58,7 +58,7 @@ struct tofPid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> sigmaname{"param-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
   Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   // Configuration flags to include and exclude particle hypotheses
@@ -125,7 +125,7 @@ struct tofPid {
   }
 
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = tof::ExpTimes<Colls::iterator, Trks::iterator, pid>;
+  using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
   void process(Trks const& tracks, Colls const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
@@ -144,7 +144,7 @@ struct tofPid {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          const float separation = responsePID.GetSeparation(response, trk.collision(), trk);
+          const float separation = responsePID.GetSeparation(response, trk);
           aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
                                      aod::pidtof_tiny::upper_bin,
                                      aod::pidtof_tiny::lower_bin>(separation, table,

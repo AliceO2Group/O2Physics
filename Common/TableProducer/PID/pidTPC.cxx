@@ -59,7 +59,7 @@ struct tpcPid {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> signalname{"param-signal", "BetheBloch", "Name of the parametrization for the expected signal, used in both file and CCDB mode"};
   Configurable<std::string> sigmaname{"param-sigma", "TPCReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
   Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   // Configuration flags to include and exclude particle hypotheses
@@ -131,7 +131,7 @@ struct tpcPid {
   }
 
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tpc::ELoss<Coll::iterator, Trks::iterator, pid>;
+  using ResponseImplementation = o2::pid::tpc::ELoss<Trks::iterator, pid>;
   void process(Coll const& collisions, Trks const& tracks)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
@@ -150,7 +150,7 @@ struct tpcPid {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          const float separation = responsePID.GetSeparation(response, trk.collision(), trk);
+          const float separation = responsePID.GetSeparation(response, trk);
           aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
                                      aod::pidtpc_tiny::upper_bin,
                                      aod::pidtpc_tiny::lower_bin>(separation, table,
