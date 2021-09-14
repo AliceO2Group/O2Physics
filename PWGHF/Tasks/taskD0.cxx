@@ -124,6 +124,32 @@ struct TaskD0MC {
      {"hEtaRecSig", "2-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaRecBg", "2-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+     {"hptProng0Sig", "prong0 pt (matched); #it{y}", {HistType::kTH2F, {{300, 0., 30.}, {10, -5., 5.}}}},
+     {"hptProng1Sig", "prong1 pt (matched); #it{y}", {HistType::kTH2F, {{300, 0., 30.}, {10, -5., 5.}}}},
+     {"hdeclengthSig", "2-prong candidates (matched);decay length (cm); #it{y}", {HistType::kTH2F, {{200, 0., 2.}, {10, -5., 5.}}}},
+     {"hdeclengthxySig", "2-prong candidates (matched);decay length xy (cm); #it{y}", {HistType::kTH2F, {{200, 0., 2.}, {10, -5., 5.}}}},
+     {"hnormaliseddeclengthSig", "2-prong candidates (matched);normalised decay length (cm); #it{y}", {HistType::kTH2F, {{200, 0., 10.}, {10, -5., 5.}}}},
+     {"hnormaliseddeclengthxySig", "2-prong candidates (matched);normalised decay length xy (cm); #it{y}", {HistType::kTH2F, {{200, 0., 10.}, {10, -5., 5.}}}},
+     {"hd0Prong0Sig", "2-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm); #it{y}", {HistType::kTH2F, {{100, -1., 1.}, {10, -5., 5.}}}},
+     {"hd0Prong1Sig", "2-prong candidates (matched);prong 1 DCAxy to prim. vertex (cm); #it{y}", {HistType::kTH2F, {{100, -1., 1.}, {10, -5., 5.}}}},
+     {"hd0d0Sig", "2-prong candidates (matched);product of DCAxy to prim. vertex (cm^{2}); #it{y}", {HistType::kTH2F, {{500, -1., 1.}, {10, -5., 5.}}}},
+     {"hCTSSig", "2-prong candidates (matched);cos #it{#theta}* (D^{0}); #it{y}", {HistType::kTH2F, {{110, -1.1, 1.1}, {10, -5., 5.}}}},
+     {"hCtSig", "2-prong candidates (matched);proper lifetime (D^{0}) * #it{c} (cm); #it{y}", {HistType::kTH2F, {{120, -20., 100.}, {10, -5., 5.}}}},
+     {"hCPASig", "2-prong candidates (matched);cosine of pointing angle; #it{y}", {HistType::kTH2F, {{440, -1.1, 1.1}, {10, -5., 5.}}}},
+     {"hCPAxySig", "2-prong candidates (matched);cosine of pointing angle xy; #it{y}", {HistType::kTH2F, {{440, -1.1, 1.1}, {10, -5., 5.}}}},
+     {"hptProng0Bkg", "prong0 pt (matched); #it{y}", {HistType::kTH2F, {{300, 0., 30.}, {10, -5., 5.}}}},
+     {"hptProng1Bkg", "prong1 pt (matched); #it{y}", {HistType::kTH2F, {{300, 0., 30.}, {10, -5., 5.}}}},
+     {"hdeclengthBkg", "2-prong candidates (checked);decay length (cm); #it{y}", {HistType::kTH2F, {{200, 0., 2.}, {10, -5., 5.}}}},
+     {"hdeclengthxyBkg", "2-prong candidates (checked);decay length xy (cm); #it{y}", {HistType::kTH2F, {{200, 0., 2.}, {10, -5., 5.}}}},
+     {"hnormaliseddeclengthBkg", "2-prong candidates (checked);normalised decay length (cm); #it{y}", {HistType::kTH2F, {{200, 0., 10.}, {10, -5., 5.}}}},
+     {"hnormaliseddeclengthxyBkg", "2-prong candidates (checked);normalised decay length xy (cm); #it{y}", {HistType::kTH2F, {{200, 0., 10.}, {10, -5., 5.}}}},
+     {"hd0Prong0Bkg", "2-prong candidates (checked);prong 0 DCAxy to prim. vertex (cm); #it{y}", {HistType::kTH2F, {{100, -1., 1.}, {10, -5., 5.}}}},
+     {"hd0Prong1Bkg", "2-prong candidates (checked);prong 1 DCAxy to prim. vertex (cm); #it{y}", {HistType::kTH2F, {{100, -1., 1.}, {10, -5., 5.}}}},
+     {"hd0d0Bkg", "2-prong candidates (checked);product of DCAxy to prim. vertex (cm^{2}); #it{y}", {HistType::kTH2F, {{500, -1., 1.}, {10, -5., 5.}}}},
+     {"hCTSBkg", "2-prong candidates (checked);cos #it{#theta}* (D^{0}); #it{y}", {HistType::kTH2F, {{110, -1.1, 1.1}, {10, -5., 5.}}}},
+     {"hCtBkg", "2-prong candidates (checked);proper lifetime (D^{0}) * #it{c} (cm); #it{y}", {HistType::kTH2F, {{120, -20., 100.}, {10, -5., 5.}}}},
+     {"hCPABkg", "2-prong candidates (checked);cosine of pointing angle; #it{y}", {HistType::kTH2F, {{440, -1.1, 1.1}, {10, -5., 5.}}}},
+     {"hCPAxyBkg", "2-prong candidates (checked);cosine of pointing angle xy; #it{y}", {HistType::kTH2F, {{440, -1.1, 1.1}, {10, -5., 5.}}}},
      {"hPtvsYRecSig_RecoPID", "2-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
      {"hPtvsYRecSigPrompt_RecoPID", "2-prong candidates (RecoPID - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
      {"hPtvsYRecSigNonPrompt_RecoPID", "2-prong candidates (RecoPID - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{100, 0., 10.}, {100, -2., 2.}}}},
@@ -231,13 +257,52 @@ struct TaskD0MC {
       auto massD0 = InvMassD0(candidate);
       auto massD0bar = InvMassD0bar(candidate);
       auto ptCandidate = candidate.pt();
+      auto ptProng0 = candidate.ptProng0();
+      auto ptProng1 = candidate.ptProng1();
       auto rapidityCandidate = YD0(candidate);
+      auto declengthCandidate = candidate.decayLength();
+      auto declengthxyCandidate = candidate.decayLengthXY();
+      auto normaliseddeclengthCandidate = candidate.decayLengthNormalised();
+      auto normaliseddeclengthxyCandidate = candidate.decayLengthXYNormalised();
+      auto d0Prong0 = candidate.impactParameter0();
+      auto d0Prong1 = candidate.impactParameter1();
+      auto d0d0Candidate = candidate.impactParameterProduct();
+      auto ctsCandidate = CosThetaStarD0(candidate);
+      auto ctCandidate = CtD0(candidate);
+      auto cpaCandidate = candidate.cpa();
+      auto cpaxyCandidate = candidate.cpaXY();
       if (candidate.isSelD0() >= d_selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
+	  registry.fill(HIST("hptProng0Sig"), ptProng0, rapidityCandidate);
+	  registry.fill(HIST("hptProng1Sig"), ptProng1, rapidityCandidate);
+	  registry.fill(HIST("hdeclengthSig"), declengthCandidate, rapidityCandidate);
+	  registry.fill(HIST("hdeclengthxySig"), declengthxyCandidate, rapidityCandidate);
+	  registry.fill(HIST("hnormaliseddeclengthSig"), normaliseddeclengthCandidate, rapidityCandidate);
+	  registry.fill(HIST("hnormaliseddeclengthxySig"), normaliseddeclengthxyCandidate, rapidityCandidate);
+	  registry.fill(HIST("hd0Prong0Sig"), d0Prong0, rapidityCandidate);
+	  registry.fill(HIST("hd0Prong1Sig"), d0Prong1, rapidityCandidate);
+	  registry.fill(HIST("hd0d0Sig"), d0d0Candidate, rapidityCandidate);
+	  registry.fill(HIST("hCTSSig"), ctsCandidate, rapidityCandidate);
+	  registry.fill(HIST("hCtSig"), ctCandidate, rapidityCandidate);
+	  registry.fill(HIST("hCPASig"), cpaCandidate, rapidityCandidate);
+	  registry.fill(HIST("hCPAxySig"), cpaxyCandidate, rapidityCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
+	  registry.fill(HIST("hptProng0Bkg"), ptProng0, rapidityCandidate);
+	  registry.fill(HIST("hptProng1Bkg"), ptProng1, rapidityCandidate);
+	  registry.fill(HIST("hdeclengthBkg"), declengthCandidate, rapidityCandidate);
+	  registry.fill(HIST("hdeclengthxyBkg"), declengthxyCandidate, rapidityCandidate);
+	  registry.fill(HIST("hnormaliseddeclengthBkg"), normaliseddeclengthCandidate, rapidityCandidate);
+	  registry.fill(HIST("hnormaliseddeclengthxyBkg"), normaliseddeclengthxyCandidate, rapidityCandidate);
+	  registry.fill(HIST("hd0Prong0Bkg"), d0Prong0, rapidityCandidate);
+	  registry.fill(HIST("hd0Prong1Bkg"), d0Prong1, rapidityCandidate);
+	  registry.fill(HIST("hd0d0Bkg"), d0d0Candidate, rapidityCandidate);
+	  registry.fill(HIST("hCTSBkg"), ctsCandidate, rapidityCandidate);
+	  registry.fill(HIST("hCtBkg"), ctCandidate, rapidityCandidate);
+	  registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
+	  registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
+	  registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
           if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
           }
@@ -253,7 +318,7 @@ struct TaskD0MC {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           }
         }
-      }
+      }      
     }
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
