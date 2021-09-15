@@ -18,10 +18,12 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/MixingHandler.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/MixingLibrary.h"
 #include <TH1F.h>
 #include <THashList.h>
 #include <TString.h>
@@ -64,12 +66,14 @@ using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtende
 using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventMixingCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
+using MyEventsVtxCovHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::MixingHashes>;
 
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
 using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
+void SetUpMixing(MixingHandler* mixHand, TString mixVar);
 // HACK: In order to be able to deduce which kind of aod object is transmitted to the templated VarManager::Fill functions
 //         a constexpr static bit map must be defined and sent as template argument
 //        The user has to include in this bit map all the tables needed in analysis, as defined in VarManager::ObjTypes
@@ -86,24 +90,15 @@ struct DQEventSelection {
   Produces<aod::MixingHashes> hash;
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
+  MixingHandler* fMixHandler;
   AnalysisCompositeCut* fEventCut;
   AnalysisCompositeCut* fEventMixingCut;
   float* fValues;
 
-  // TODO: make mixing binning configurable
-  std::vector<float> fCentLimsHashing{0.0f, 10.0f, 20.0f, 30.0f, 50.0f, 70.0f, 90.0f};
-
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventDimuonStandard", "Event selection"};
   Configurable<std::string> fConfigEventMixingCuts{"cfgEventMixingCuts", "eventMuonStandard", "Event selection"};
 
-  int getHash(float centrality)
-  {
-    if ((centrality < *fCentLimsHashing.begin()) || (centrality > *(fCentLimsHashing.end() - 1))) {
-      return -1;
-    }
-    auto cent = std::lower_bound(fCentLimsHashing.begin(), fCentLimsHashing.end(), centrality);
-    return (cent - fCentLimsHashing.begin());
-  }
+  Configurable<std::string> fConfigMixingVariables{"cfgMixingVar", "Centrality3,Vtx1", "Mixing configuriation used, variables separated by a coma "};
 
   void init(o2::framework::InitContext&)
   {
@@ -112,6 +107,11 @@ struct DQEventSelection {
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    fMixHandler = new MixingHandler("mixingHandler", "mixingHandler");
+    fMixHandler->Init();
+    TString mixingVarStr = fConfigMixingVariables.value;
+    SetUpMixing(fMixHandler, mixingVarStr.Data());
 
     DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;EventMixing_BeforeCuts;EventMixing_AfterCuts;"); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                                              // provide the list of required variables so that VarManager knows what to fill
@@ -154,8 +154,11 @@ struct DQEventSelection {
     } else {
       eventMixingSel(0);
     }
-    int hh = getHash(fValues[VarManager::kCentVZERO]);
+    int hh = fMixHandler->FindEventCategory(fValues);
     hash(hh);
+    //    int centBin = fMixHandler->GetBinFromCategory(0, hh);
+    //    int zBin = fMixHandler->GetBinFromCategory(1, hh);
+    //    LOGF(info, "  CentralityAndZBins %i:    CentralityBin : %i     ZBin : %i  ", hh, centBin, zBin);
   }
 };
 
@@ -170,8 +173,6 @@ struct DQMuonTrackSelection {
 
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "muon cut"};
-
-  Filter muonFilter = aod::reducedmuon::pt >= fConfigMuonPtLow;
 
   void init(o2::framework::InitContext&)
   {
@@ -191,13 +192,16 @@ struct DQMuonTrackSelection {
   void DefineCuts()
   {
     fTrackCut = new AnalysisCompositeCut(true);
+    AnalysisCut kineMuonCut;
+    kineMuonCut.AddCut(VarManager::kPt, fConfigMuonPtLow, 100.0);
+    fTrackCut->AddCut(&kineMuonCut);
     TString muonCutStr = fConfigMuonCuts.value;
     fTrackCut->AddCut(dqcuts::GetCompositeCut(muonCutStr.Data()));
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void process(MyEvents::iterator const& event, soa::Filtered<MyMuonTracks> const& muons)
+  void process(MyEvents::iterator const& event, MyMuonTracks const& muons)
   {
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables, fValues);
     VarManager::FillEvent<gkEventFillMap>(event, fValues);
@@ -223,22 +227,22 @@ struct DQEventMixing {
   // NOTE: The track filter produced by the barrel track selection contain a number of electron cut decisions and one last cut for hadrons used in the
   //           dilepton - hadron task downstream. So the bit mask is required to select pairs just based on the electron cuts
   uint8_t fTwoTrackFilterMask = 0;
-  std::vector<TString> fCutNames;
 
-  Filter filterEventMxingSelected = aod::reducedevent::isEventMixingSelected == 1;
+  Filter filterEventMixingSelected = aod::reducedevent::isEventMixingSelected == 1;
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
+  std::vector<TString> fCentBinNames;
 
   void init(o2::framework::InitContext&)
   {
     fValues = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
+
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString histNames = "";
-    histNames += "PairsMuonMEPM;PairsMuonMEPP;PairsMuonMEMM;";
-
+    histNames += "PairsMuonMEPM_PbPb;PairsMuonMEPP_PbPb;PairsMuonMEMM_PbPb;";
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -286,13 +290,14 @@ struct DQEventMixing {
             continue;
           }
           VarManager::FillPair(muon1, muon2, fValues, VarManager::kJpsiToMuMu);
+
           if (muon1.sign() * muon2.sign() < 0) {
-            fHistMan->FillHistClass("PairsMuonMEPM", fValues);
+            fHistMan->FillHistClass("PairsMuonMEPM_PbPb", fValues);
           } else {
             if (muon1.sign() > 0) {
-              fHistMan->FillHistClass("PairsMuonMEPP", fValues);
+              fHistMan->FillHistClass("PairsMuonMEP_PbPb", fValues);
             } else {
-              fHistMan->FillHistClass("PairsMuonMEMM", fValues);
+              fHistMan->FillHistClass("PairsMuonMEMM_PbPb", fValues);
             }
           }
         } // end for (muon2)
@@ -304,13 +309,10 @@ struct DQEventMixing {
 struct DQDileptonMuMu {
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
-  //NOTE: one could define also a dilepton cut, but for now basic selections can be supported using Partition
 
   float* fValues;
-  // NOTE: The track filter produced by the barrel track selection contain a number of electron cut decisions and one last cut for hadrons used in the
-  //           dilepton - hadron task downstream. So the bit mask is required to select pairs just based on the electron cuts
   uint8_t fTwoTrackFilterMask = 0;
-  std::vector<TString> fCutNames;
+  std::vector<TString> fCentBinNames;
 
   Filter filterEventSelected = aod::reducedevent::isEventSelected == 1;
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
@@ -319,19 +321,20 @@ struct DQDileptonMuMu {
   {
     fValues = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
+
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString histNames = "";
-    histNames += "PairsMuonSEPM;PairsMuonSEPP;PairsMuonSEMM;";
+    histNames += "PairsMuonSEPM_PbPb;PairsMuonSEPP_PbPb;PairsMuonSEMM_PbPb;";
 
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
-  void process(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
+  void process(soa::Filtered<MyEventsVtxCovHashSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     if (!event.isEventSelected()) {
       return;
@@ -350,13 +353,14 @@ struct DQDileptonMuMu {
         continue;
       }
       VarManager::FillPair(muon1, muon2, fValues, VarManager::kJpsiToMuMu);
+
       if (muon1.sign() * muon2.sign() < 0) {
-        fHistMan->FillHistClass("PairsMuonSEPM", fValues);
+        fHistMan->FillHistClass("PairsMuonSEPM_PbPb", fValues);
       } else {
         if (muon1.sign() > 0) {
-          fHistMan->FillHistClass("PairsMuonSEPP", fValues);
+          fHistMan->FillHistClass("PairsMuonSEPP_PbPb", fValues);
         } else {
-          fHistMan->FillHistClass("PairsMuonSEMM", fValues);
+          fHistMan->FillHistClass("PairsMuonSEMM_PbPb", fValues);
         }
       }
     } // end loop over muon track pairs
@@ -397,8 +401,16 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("Pairs")) {
       if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "pbpb");
       }
     }
+  } // end loop over histogram classes
+}
+
+void SetUpMixing(MixingHandler* mixHand, TString mixVar)
+{
+  std::unique_ptr<TObjArray> objArray(mixVar.Tokenize(","));
+  for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+    dqmixing::SetUpMixing(mixHand, objArray->At(iVar)->GetName());
   } // end loop over histogram classes
 }
