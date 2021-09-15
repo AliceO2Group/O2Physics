@@ -68,8 +68,23 @@ struct HfXiccToPKPiPiCandidateSelector {
       return false;
     }
 
-    // candidate decay length
-    if (hfCandXicc.decayLength() <= cuts->get(pTBin, "decay length")) {
+    // cosine of pointing angle XY
+    if (hfCandXicc.cpaXY() <= cuts->get(pTBin, "cos pointing angle XY")) {
+      return false;
+    }
+
+    // candidate maximum decay length
+    if (hfCandXicc.decayLength() > cuts->get(pTBin, "max decay length")) {
+      return false;
+    }
+
+    // candidate maximum decay length XY
+    if (hfCandXicc.decayLength() > cuts->get(pTBin, "max decay length XY")) {
+      return false;
+    }
+
+    // candidate minimum decay length
+    if (hfCandXicc.decayLength() <= cuts->get(pTBin, "min decay length")) {
       return false;
     }
 
