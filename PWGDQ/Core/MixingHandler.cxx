@@ -59,7 +59,9 @@ void MixingHandler::AddMixingVariable(int var, int nBins, float* binLims)
   // add a mixing variable
   //
   fVariables.push_back(var);
-  fVariableLimits[fVariables.size()].Set(nBins, binLims);
+  TArrayF varBins;
+  varBins.Set(nBins, binLims);
+  fVariableLimits.push_back(varBins);
   VarManager::SetUseVariable(var);
 }
 
@@ -128,9 +130,10 @@ int MixingHandler::FindEventCategory(float* values)
     Init();
   }
 
-  int bin[fVariables.size()];
+  std::vector<int> bin;
   for (int i = 0; i < fVariables.size(); ++i) {
-    bin[i] = TMath::BinarySearch(fVariableLimits[i].GetSize(), fVariableLimits[i].GetArray(), values[fVariables[i]]);
+    int binValue = TMath::BinarySearch(fVariableLimits[i].GetSize(), fVariableLimits[i].GetArray(), values[fVariables[i]]);
+    bin.push_back(binValue);
     if (bin[i] == -1 || bin[i] == fVariableLimits[i].GetSize() - 1) {
       return -1; // all variables must be inside limits
     }
