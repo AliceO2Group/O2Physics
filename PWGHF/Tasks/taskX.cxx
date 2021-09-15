@@ -32,11 +32,8 @@ using namespace o2::aod::hf_cand_prong2;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{
-    {"doMC", VariantType::Bool, true, {"Fill MC histograms."}},
-    {"dimu-sel", VariantType::Bool, true, {"Enable Jpsi dimuon decay channel"}},
-    {"diel-sel", VariantType::Bool, true, {"Enable Jpsi dieletron decay channel"}}};
-  std::swap(workflowOptions, options);
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
+  workflowOptions.push_back(optionDoMC);
 }
 
 #include "Framework/runDataProcessing.h"
@@ -250,19 +247,11 @@ struct TaskXMC {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  WorkflowSpec workflow{
+    adaptAnalysisTask<TaskX>(cfgc, TaskName{"hf-task-x"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
-  WorkflowSpec w;
-  if (cfgc.options().get<bool>("diel-sel")) {
-    w.push_back(adaptAnalysisTask<TaskX>(cfgc, TaskName{"hf-task-x-elel"}));
-    if (doMC) {
-      w.push_back(adaptAnalysisTask<TaskXMC>(cfgc, TaskName{"hf-task-x-mc-elel"}));
-    }
+  if (doMC) {
+    workflow.push_back(adaptAnalysisTask<TaskXMC>(cfgc, TaskName{"hf-task-x-mc"}));
   }
-  if (cfgc.options().get<bool>("dimu-sel")) {
-    w.push_back(adaptAnalysisTask<TaskX>(cfgc, TaskName{"hf-task-x-mumu"}));
-    if (doMC) {
-      w.push_back(adaptAnalysisTask<TaskXMC>(cfgc, TaskName{"hf-task-x-mc-mumu"}));
-    }
-  }
-  return w;
+  return workflow;
 }
