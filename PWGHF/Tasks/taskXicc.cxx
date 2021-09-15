@@ -55,8 +55,8 @@ struct HfTaskXicc {
     registry.add("hd0Prong0", "#Xi^{++}_{cc} candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1", "#Xi^{++}_{cc} candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCt", "#Xi^{++}_{cc} candidates;proper lifetime (#Xi^{++}_{cc}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPA", "#Xi^{++}_{cc} candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{200, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("habsCPA", "#Xi^{++}_{cc} candidates;abs. cosine of pointing angle;entries", {HistType::kTH2F, {{800, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPA", "#Xi^{++}_{cc} candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{1000, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("habsCPA", "#Xi^{++}_{cc} candidates;abs. cosine of pointing angle;entries", {HistType::kTH2F, {{200, 0.8, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "#Xi^{++}_{cc} candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{250, -5., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hY", "#Xi^{++}_{cc} candidates;candidate rapidity;entries", {HistType::kTH2F, {{250, -5., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hselectionstatus", "#Xi^{++}_{cc} candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -108,10 +108,10 @@ struct HfTaskXiccMc {
      {"hEtaRecSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{#eta};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hEtaRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);#it{#eta};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hEtaGen", "#Xi^{++}_{cc} MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
-     {"hYRecSig", "#Xi^{++}_{cc} candidates (rec. matched);rapidity;entries", {HistType::kTH1F, {{250, -5., 5.}}}},
-     {"hYRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);rapidity;entries", {HistType::kTH1F, {{250, -5., 5.}}}},
-     {"hYGen", "#Xi^{++}_{cc} MC particles (matched);rapidity;entries", {HistType::kTH1F, {{250, -5., 5.}}}},
-     {"hPtvsEtavsYGen", "#Xi^{++}_{cc} MC particles (matched);rapidity;entries", {HistType::kTH3F, {{100, 0., 10.0}, {250, -5., 5.}, {250, -5., 5.}}}}}};
+     {"hYRecSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
+     {"hYRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
+     {"hYGen", "#Xi^{++}_{cc} MC particles (matched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
+     {"hPtvsEtavsYGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T};#it{#eta};#it{y}", {HistType::kTH3F, {{100, 0., 10.0}, {250, -5., 5.}, {250, -5., 5.}}}}}};
 
   Configurable<int> d_selectionFlagXicc{"d_selectionFlagXicc", 1, "Selection Flag for Xicc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
@@ -132,8 +132,8 @@ struct HfTaskXiccMc {
     registry.add("hd0Prong1Bg", "#Xi^{++}_{cc} (rec. unmatched) candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCtSig", "#Xi^{++}_{cc} (rec. matched) candidates;proper lifetime (#Xi_{cc}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCtBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;proper lifetime (#Xi_{cc}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPASig", "#Xi^{++}_{cc} (rec. matched) candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{800, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPABg", "#Xi^{++}_{cc} (rec. unmatched) candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{800, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPASig", "#Xi^{++}_{cc} (rec. matched) candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{1000, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPABg", "#Xi^{++}_{cc} (rec. unmatched) candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{1000, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("habsCPASig", "#Xi^{++}_{cc} (rec. matched) candidates;abs. cosine of pointing angle;entries", {HistType::kTH2F, {{200, 0.8, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("habsCPABg", "#Xi^{++}_{cc} (rec. unmatched) candidates;abs. cosine of pointing angle;entries", {HistType::kTH2F, {{200, 0.8, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEtaSig", "#Xi^{++}_{cc} (rec. matched) candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{250, -5., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -154,8 +154,8 @@ struct HfTaskXiccMc {
     //debug
     registry.add("hDebugMCmatching", "#Xi^{++}_{cc} (rec. matched) candidates;debug MC matching bitmap;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // Check Y dependence (To be removed)
-    registry.add("hmassSigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
-    registry.add("hmassBgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
+    registry.add("hmassSigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;inv. mass (p K #pi #pi) (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
+    registry.add("hmassBgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;inv. mass (p K #pi #pi) (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{400, 3.2, 4.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("hChi2PCASigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;chi2 PCA (cm); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{500, 0., 0.01}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("hChi2PCABgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;chi2 PCA (cm); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{500, 0., 0.01}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("hDecLengthSigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;decay length (cm); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{500, 0., 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
@@ -166,8 +166,8 @@ struct HfTaskXiccMc {
     registry.add("hd0Prong1BgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;prong 1 DCAxy to prim. vertex (cm); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("hCtSigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;proper lifetime (#Xi_{cc}) * #it{c} (cm); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("hCtBgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;proper lifetime (#Xi_{cc}) * #it{c} (cm); #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
-    registry.add("hCPASigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{800, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
-    registry.add("hCPABgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{800, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
+    registry.add("hCPASigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{1000, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
+    registry.add("hCPABgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{1000, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("habsCPASigvsPtvsY", "#Xi^{++}_{cc} (rec. matched) candidates;abs. cosine of pointing angle;  #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{200, 0.8, 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
     registry.add("habsCPABgvsPtvsY", "#Xi^{++}_{cc} (rec. unmatched) candidates;abs. cosine of pointing angle; #it{p}_{T} (GeV/#it{c}); #it{y}", {HistType::kTH3F, {{200, 0.8, 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {250, -5., 5.}}});
   }
@@ -176,7 +176,6 @@ struct HfTaskXiccMc {
   //void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HFSelXiccToPKPiPiCandidate>> const& candidates)
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HFSelXiccToPKPiPiCandidate, aod::HfCandXiccMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
-
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
