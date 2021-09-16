@@ -41,7 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct tofPidFull {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrkTOFSignal, aod::TracksCov>;
   using Coll = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFFullEl> tablePIDEl;
@@ -273,7 +273,7 @@ struct tofPidFullQa {
                                                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                           aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                                                           aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                                          aod::TrackSelection> const& tracks)
+                                                          aod::TrkTOFSignal, aod::TrackSelection> const& tracks)
   {
     // Computing Multiplicity first
     int mult = 0;

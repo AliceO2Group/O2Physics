@@ -183,24 +183,25 @@ class TOFSignal
   {
     switch (trk.pidForTracking()) {
       case 0:
-        return ComputeTOFSignal(trk, responseEl);
+        return GetTOFSignal(trk, responseEl);
       case 1:
-        return ComputeTOFSignal(trk, responseMu);
+        return GetTOFSignal(trk, responseMu);
       case 2:
-        return ComputeTOFSignal(trk, responsePi);
+        return GetTOFSignal(trk, responsePi);
       case 3:
-        return ComputeTOFSignal(trk, responseKa);
+        return GetTOFSignal(trk, responseKa);
       case 4:
-        return ComputeTOFSignal(trk, responsePr);
+        return GetTOFSignal(trk, responsePr);
       case 5:
-        return ComputeTOFSignal(trk, responseDe);
+        return GetTOFSignal(trk, responseDe);
       case 6:
-        return ComputeTOFSignal(trk, responseTr);
+        return GetTOFSignal(trk, responseTr);
       case 7:
-        return ComputeTOFSignal(trk, responseHe);
+        return GetTOFSignal(trk, responseHe);
       case 8:
-        return ComputeTOFSignal(trk, responseAl);
+        return GetTOFSignal(trk, responseAl);
       default:
+        return 0.f;
         break;
     }
   }

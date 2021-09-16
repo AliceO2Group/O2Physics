@@ -30,6 +30,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::pid;
+using namespace o2::pid::tof;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
@@ -42,61 +43,13 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct trackTime {
-  Produces<o2::aod::pidTOFsignal> tableTOFSignal;
-
-  void init(o2::framework::InitContext&)
-  {
-  }
+  Produces<o2::aod::TrkTOFSignal> table;
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
   void process(aod::Collision const& collision, Trks const& tracks)
   {
-
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
-
-    tableTOFSignal.reserve(tracks.size());
-
+    table.reserve(tracks.size());
     for (auto& t : tracks) {
-      switch (t.pidForTracking()) {
-        case 0:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseEl.GetExpectedSignal(t));
-          break;
-        case 1:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseMu.GetExpectedSignal(t));
-          break;
-        case 2:
-          tableTOFSignal(t.trackTime() * 1e+3 + responsePi.GetExpectedSignal(t));
-          break;
-        case 3:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseKa.GetExpectedSignal(t));
-          break;
-        case 4:
-          tableTOFSignal(t.trackTime() * 1e+3 + responsePr.GetExpectedSignal(t));
-          break;
-        case 5:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseDe.GetExpectedSignal(t));
-          break;
-        case 6:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseTr.GetExpectedSignal(t));
-          break;
-        case 7:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseHe.GetExpectedSignal(t));
-          break;
-        case 8:
-          tableTOFSignal(t.trackTime() * 1e+3 + responseAl.GetExpectedSignal(t));
-          break;
-        default:
-          break;
-      }
+      table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
     }
   }
 };
@@ -204,7 +157,7 @@ struct trackTimeQa {
     histos.add("trk/al", "al", kTH2F, {pAxis, signalAxis});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::pidTOFsignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrkTOFSignal>;
   using Coll = aod::Collisions;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
@@ -227,7 +180,7 @@ struct trackTimeQa {
       }
 
       float diff = 9999.f;
-      const float ttrk = t.trktofSignal();
+      const float ttrk = t.tofSignal();
       if (!t.hasTOF()) {
         continue;
       }

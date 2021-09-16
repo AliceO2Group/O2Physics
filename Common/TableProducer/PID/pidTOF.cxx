@@ -41,7 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct tofPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TrkTOFSignal>;
   using Colls = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFEl> tablePIDEl;
@@ -248,7 +248,7 @@ struct tofPidQa {
                                                           aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                                           aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                                           aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
-                                                          aod::TrackSelection> const& tracks)
+                                                          aod::TrkTOFSignal, aod::TrackSelection> const& tracks)
   {
     const float collisionTime_ps = collision.collisionTime() * 1000.f;
     histos.fill(HIST("event/vertexz"), collision.posZ());
