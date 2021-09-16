@@ -10,10 +10,9 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   pidTOFFull.cxx
+/// \file   pidTOFTrackTime.cxx
 /// \author Nicolo' Jacazio
-/// \brief  Task to produce PID tables for TOF split for each particle.
-///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+/// \brief  Task to convert the trackTime to the tofSignal.
 ///
 
 // O2 includes
@@ -42,7 +41,80 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+namespace o2::aod
+{
+
+namespace pidtofsignal
+{
+DECLARE_SOA_COLUMN(TrkTOFSignal, trktofSignal, float); //! TOF signal from track time
+} // namespace pidtofsignal
+
+DECLARE_SOA_TABLE(pidTOFsignal, "AOD", "pidTOFsignal", //! Table of the TOF beta
+                  pidtofsignal::TrkTOFSignal);
+
+} // namespace o2::aod
+
 struct trackTime {
+  Produces<o2::aod::pidTOFsignal> tableTOFSignal;
+
+  void init(o2::framework::InitContext&)
+  {
+  }
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::pidTOFsignal>;
+  template <o2::track::PID::ID pid>
+  using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
+  void process(aod::Collision const& collision, Trks const& tracks)
+  {
+
+    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+
+    tableTOFSignal.reserve(tracks.size());
+
+    for (auto& t : tracks) {
+      switch (t.pidForTracking()) {
+        case 0:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseEl.GetExpectedSignal(t));
+          break;
+        case 1:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseMu.GetExpectedSignal(t));
+          break;
+        case 2:
+          tableTOFSignal(t.trackTime() * 1e+3 + responsePi.GetExpectedSignal(t));
+          break;
+        case 3:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseKa.GetExpectedSignal(t));
+          break;
+        case 4:
+          tableTOFSignal(t.trackTime() * 1e+3 + responsePr.GetExpectedSignal(t));
+          break;
+        case 5:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseDe.GetExpectedSignal(t));
+          break;
+        case 6:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseTr.GetExpectedSignal(t));
+          break;
+        case 7:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseHe.GetExpectedSignal(t));
+          break;
+        case 8:
+          tableTOFSignal(t.trackTime() * 1e+3 + responseAl.GetExpectedSignal(t));
+          break;
+        default:
+          break;
+      }
+    }
+  }
+};
+
+struct trackTimeQa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
   Configurable<bool> cut{"cut", false, "Apply track cuts"};
   TrackSelection globalTracks; // Track with cut for primaries
@@ -145,12 +217,7 @@ struct trackTime {
     histos.add("trk/al", "al", kTH2F, {pAxis, signalAxis});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended>;
-  using Trks2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
-                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                          aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::pidTOFsignal>;
   using Coll = aod::Collisions;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
@@ -173,15 +240,12 @@ struct trackTime {
       }
 
       float diff = 9999.f;
-      float ttrk = 9999.f;
-      float texp = 9999.f;
+      const float ttrk = t.trktofSignal();
       if (!t.hasTOF()) {
         continue;
       }
 
 #define CasePID(resp, part)                                                   \
-  texp = resp.GetExpectedSignal(t);                                           \
-  ttrk = t.trackTime() * 1e+3 + texp;                                         \
   diff = t.tofSignal() - ttrk;                                                \
   histos.fill(HIST("vs/" part), t.tofSignal(), ttrk);                         \
   histos.fill(HIST("diff/" part), t.p(), diff);                               \
@@ -258,5 +322,8 @@ struct trackTime {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<trackTime>(cfgc)};
+  if (cfgc.options().get<int>("add-qa")) {
+    workflow.push_back(adaptAnalysisTask<trackTimeQa>(cfgc));
+  }
   return workflow;
 }
