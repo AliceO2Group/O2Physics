@@ -79,7 +79,7 @@ struct HfXiccToPKPiPiCandidateSelector {
     }
 
     // candidate maximum decay length XY
-    if (hfCandXicc.decayLength() > cuts->get(pTBin, "max decay length XY")) {
+    if (hfCandXicc.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
       return false;
     }
 
