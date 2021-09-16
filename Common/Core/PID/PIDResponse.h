@@ -103,6 +103,27 @@ DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
 DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
 DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with the TOF detector for alpha
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,     //! Nsigma separation with the TOF detector for the combined species
+                           [](float El, float Mu, float Pi, float Ka, float Pr, float De, float Tr, float He, float Al, int index) -> float {
+                             switch (index) {
+                               case 0:
+                                 return El;
+                               case 1:
+                                 return Mu;
+                               case 2:
+                                 return Pi;
+                               case 3:
+                                 return Ka;
+                               case 4:
+                                 return Pr;
+                               case 5:
+                                 return De;
+                               case 6:
+                                 return Tr;
+                               case 7:
+                                 return Al;
+                             }
+                           });
 } // namespace pidtof
 
 // Macro to convert the stored Nsigmas to floats
@@ -170,7 +191,10 @@ DECLARE_SOA_TABLE(pidTOFFullHe, "AOD", "pidTOFFullHe", //! Table of the TOF (ful
                   pidtof::TOFExpSignalDiffHe<pidtof::TOFNSigmaHe, pidtof::TOFExpSigmaHe>, pidtof::TOFExpSigmaHe, pidtof::TOFNSigmaHe);
 DECLARE_SOA_TABLE(pidTOFFullAl, "AOD", "pidTOFFullAl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for alpha
                   pidtof::TOFExpSignalDiffAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>, pidtof::TOFExpSigmaAl, pidtof::TOFNSigmaAl);
-
+DECLARE_SOA_TABLE(pidTOF, "AOD", "pidTOF", //! Table of the TOF NSigmas
+                  pidtof::TOFNSigma<pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi,
+                                    pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr, pidtof::TOFNSigmaDe,
+                                    pidtof::TOFNSigmaTr, pidtof::TOFNSigmaHe, pidtof::TOFNSigmaAl>);
 // Tiny size tables
 DECLARE_SOA_TABLE(pidTOFEl, "AOD", "pidTOFEl", //! Table of the TOF response with binned Nsigma for electron
                   pidtof_tiny::TOFNSigmaStoreEl, pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>);
