@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(alice3-pid-rich-qa
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-ecal-qa
+                    SOURCES ECALqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-pid-ftof-qa
                     SOURCES pidFTOFqa.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
