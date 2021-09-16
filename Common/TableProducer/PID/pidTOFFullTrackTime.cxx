@@ -41,26 +41,13 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-namespace o2::aod
-{
-
-namespace pidtofsignal
-{
-DECLARE_SOA_COLUMN(TrkTOFSignal, trktofSignal, float); //! TOF signal from track time
-} // namespace pidtofsignal
-
-DECLARE_SOA_TABLE(pidTOFsignal, "AOD", "pidTOFsignal", //! Table of the TOF beta
-                  pidtofsignal::TrkTOFSignal);
-
-} // namespace o2::aod
-
 struct trackTime {
   Produces<o2::aod::pidTOFsignal> tableTOFSignal;
 
   void init(o2::framework::InitContext&)
   {
   }
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::pidTOFsignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
   void process(aod::Collision const& collision, Trks const& tracks)

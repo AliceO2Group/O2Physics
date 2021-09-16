@@ -44,6 +44,11 @@ void packInTable(const float& separation, tableType& table, const float& lowest,
 }
 } // namespace pidutils
 
+namespace pidtofsignal
+{
+DECLARE_SOA_COLUMN(TrkTOFSignal, trktofSignal, float); //! TOF signal from track time
+} // namespace pidtofsignal
+
 namespace pidtofbeta
 {
 DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
@@ -136,6 +141,9 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaHe, tofNSigmaHe); //! Unwrapped (float) nsi
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsigma with the TOF detector for alpha
 
 } // namespace pidtof_tiny
+
+DECLARE_SOA_TABLE(pidTOFsignal, "AOD", "pidTOFsignal", //! Table of the TOF signal
+                  pidtofsignal::TrkTOFSignal);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::Beta, pidtofbeta::BetaError,
