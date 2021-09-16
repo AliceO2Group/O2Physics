@@ -61,7 +61,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from beauty jpsi decays", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("jpsi")) {
+  if (!nameStr.compare("Jpsi")) {
     MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
     return signal;
@@ -117,12 +117,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("LMeeLFQ")) {
-    MCProng prong(1, {600}, {true}, {false}, {0}, {0}, {false});
+    MCProng prong(1, {900}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "light flavor mesons + quarkonia", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s
     return signal;
   }
   if (!nameStr.compare("LMeeLF")) {
-    MCProng prong(1, {601}, {true}, {false}, {0}, {0}, {false});
+    MCProng prong(1, {901}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "ligh flavor mesons", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi
     return signal;
   }
@@ -289,12 +289,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("eeFromLMeeLFQ")) {
-    MCProng prong(2, {11, 600}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from light flavor meson + quarkonia decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
   if (!nameStr.compare("eeFromLMeeLF")) {
-    MCProng prong(2, {11, 601}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prong(2, {11, 901}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from light flavor meson decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
