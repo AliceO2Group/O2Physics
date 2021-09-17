@@ -173,14 +173,15 @@ struct HfTreeCreatorXTojpsipipi {
         }
       };
 
-      fillTable(0, candidate.isSelXToJpsiPiPi(), InvMassXToJpsiPiPi(candidate), CtX(candidate), YX(candidate));
+      fillTable(0, candidate.isSelXToJpsiToEEPiPi(), InvMassXToJpsiPiPi(candidate), CtX(candidate), YX(candidate));
+      fillTable(1, candidate.isSelXToJpsiToMuMuPiPi(), InvMassXToJpsiPiPi(candidate), CtX(candidate), YX(candidate));
     }
 
     // Filling particle properties
     float massX = 3.872;
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XToJpsiPiPi) {
+      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XToJpsiToEEPiPi || std::abs(particle.flagMCMatchGen()) == 1 << DecayType::XToJpsiToMuMuPiPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

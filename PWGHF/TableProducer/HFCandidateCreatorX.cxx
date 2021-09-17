@@ -14,6 +14,7 @@
 /// \note Adapted from HFCandidateCreator3Prong
 ///
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
+/// \author Luca Micheletti <luca.micheletti@to.infn>, INFN
 
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
@@ -52,9 +53,10 @@ struct HFCandidateCreatorX {
   Configurable<double> ptPionMin{"ptPionMin", 0.15, "minimum pion pT threshold (GeV/c)"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
-  OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e+ e-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu+ #mu-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtJpsi{TH1F("hPtJpsi", "J/#psi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPAJpsi{TH1F("hCPAJpsi", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassXToJpsiToEEPiPi{TH1F("hMassXToJpsiToEEPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow e+ e-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassXToJpsiToMuMuPiPi{TH1F("hMassXToJpsiToMuMuPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -97,7 +99,7 @@ struct HFCandidateCreatorX {
 
     // loop over Jpsi candidates
     for (auto& jpsiCand : jpsiCands) {
-      if (!(jpsiCand.hfflag() & 1 << JpsiToEE) && !(jpsiCand.hfflag() & 1 << JpsiToMuMu)) {
+      if (!(jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToMuMu)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > cutYCandMax) {
@@ -145,6 +147,7 @@ struct HFCandidateCreatorX {
         if (trackPos.pt() < ptPionMin) {
           continue;
         }
+        hPtPion->Fill(trackPos.pt());
 
         // loop over pi- candidates
         for (auto& trackNeg : tracks) {
@@ -157,6 +160,7 @@ struct HFCandidateCreatorX {
           if (trackNeg.pt() < ptPionMin) {
             continue;
           }
+          hPtPion->Fill(trackNeg.pt());
 
           auto trackParVarPos = getTrackParCov(trackPos);
           auto trackParVarNeg = getTrackParCov(trackNeg);
@@ -198,18 +202,18 @@ struct HFCandidateCreatorX {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           int hfFlag = 0;
-          if (jpsiCand.hfflag() & 1 << JpsiToMuMu) {
-            hfFlag = 1 << XToJpsiToMuMuPiPi; // dimuon channel
-          } else {
-            hfFlag = 1 << XToJpsiPiPi; // dielectron channel
-          }
+          //if (jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToMuMu) {
+            //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
+          //} else {
+            //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
+          //}
 
           if (jpsiCand.isSelJpsiToEE() > 0) {
-            hfFlag = 1 << XToJpsiPiPi;
+            hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
           }
 
           if (jpsiCand.isSelJpsiToMuMu() > 0) {
-            hfFlag = 1 << XToJpsiToMuMuPiPi;
+            hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
 
           // fill the candidate table for the X here:
@@ -258,6 +262,8 @@ struct HFCandidateCreatorXMC {
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
+    int xPdgCode = 9920443;
+    int jpsiPdgCode = 443;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
@@ -277,17 +283,15 @@ struct HFCandidateCreatorXMC {
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
-      if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 9920443, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
-        if (indexRec > -1) {
-          flag = 1 << XToJpsiPiPi;
-        }
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, xPdgCode, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
+      if (indexRec > -1) {
+        flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
       }
 
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 9920443, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, xPdgCode, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flag = 1 << XToJpsiToMuMuPiPi;
+          flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
         }
       }
 
@@ -309,20 +313,18 @@ struct HFCandidateCreatorXMC {
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, 9920443, array{443, +kPiPlus, -kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, xPdgCode, array{jpsiPdgCode, +kPiPlus, -kPiPlus}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{443}, 1);
+        RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{jpsiPdgCode}, 1);
         auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
-        if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, 443, array{+kElectron, -kElectron}, true)) {
-            flag = 1 << XToJpsiPiPi;
-          }
+        if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, jpsiPdgCode, array{+kElectron, -kElectron}, true)) {
+          flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
 
         if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, 443, array{+kMuonPlus, -kMuonPlus}, true)) {
-            flag = 1 << XToJpsiToMuMuPiPi;
+          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, jpsiPdgCode, array{+kMuonPlus, -kMuonPlus}, true)) {
+            flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
         }
       }

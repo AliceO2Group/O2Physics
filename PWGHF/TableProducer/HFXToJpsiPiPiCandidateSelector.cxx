@@ -13,6 +13,7 @@
 /// \brief X(3872) selection task.
 /// \note Adapted from HFJpsiCandidateSelector.cxx
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
+/// \author Luca Micheletti <luca.micheletti@to.infn>, INFN
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -195,11 +196,11 @@ struct HFXToJpsiPiPiCandidateSelector {
       int selJpsiToMuMu = 1;
 
       // check if flagged as X --> Jpsi Pi Pi
-      if (!(hfCandX.hfflag() & 1 << XToJpsiPiPi)) {
+      if (!(hfCandX.hfflag() & 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi)) {
         selJpsiToEE = 0;
       }
 
-      if (!(hfCandX.hfflag() & 1 << XToJpsiToMuMuPiPi)) {
+      if (!(hfCandX.hfflag() & 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi)) {
         selJpsiToMuMu = 0;
       }
 
