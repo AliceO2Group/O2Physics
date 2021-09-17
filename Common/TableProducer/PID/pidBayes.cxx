@@ -608,8 +608,6 @@ struct bayesPidQa {
         continue;
       }
 
-      const float tof = t.tofSignal() - collisionTime_ps;
-
       //
       histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
       histos.fill(HIST("event/eta"), t.eta());

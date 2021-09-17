@@ -108,41 +108,37 @@ class ExpTimes
   ~ExpTimes() = default;
 
   /// Computes the expected time of a track, given it TOF expected momentum
-  static float ComputeExpectedTime(const float& tofExpMom, const float& length, const float& massZ);
+  static float ComputeExpectedTime(const float& tofExpMom, const float& length, const float& massZ)
+  {
+    if (tofExpMom <= 0.f) {
+      return 0.f;
+    }
+    const float energy = sqrt((massZ * massZ) + (tofExpMom * tofExpMom));
+    const float exp = length * energy / (kCSPEED * tofExpMom);
+    return exp >= 0.f ? exp : 0.f;
+  }
 
   /// Gets the expected signal of the track of interest under the PID assumption
   static float GetExpectedSignal(const TrackType& trk) { return ComputeExpectedTime(trk.tofExpMom() / kCSPEED, trk.length(), o2::track::PID::getMass2Z(id)); }
 
   /// Gets the expected resolution of the measurement
-  float GetExpectedSigma(const DetectorResponse& response, const TrackType& trk) const;
+  static float GetExpectedSigma(const DetectorResponse& response, const TrackType& trk)
+  {
+    if (!trk.hasTOF()) {
+      return -999.f;
+    }
+    const float x[7] = {trk.p(), trk.tofSignal(), trk.collision().collisionTimeRes() * 1000.f, o2::track::PID::getMass2Z(id), trk.length(), trk.sigma1Pt(), trk.pt()};
+    const float reso = response(response.kSigma, x);
+    return reso >= 0.f ? reso : 0.f;
+  }
+
+  /// Gets the expected resolution of the measurement
+  static float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& trk);
 
   /// Gets the number of sigmas with respect the expected time
-  float GetSeparation(const DetectorResponse& response, const TrackType& trk) const { return trk.tofSignal() > 0.f ? (trk.tofSignal() - trk.collision().collisionTime() * 1000.f - GetExpectedSignal(trk)) / GetExpectedSigma(response, trk) : -999.f; }
+  static float GetSeparation(const DetectorResponse& response, const TrackType& trk) { return trk.hasTOF() ? (trk.tofSignal() - trk.collision().collisionTime() * 1000.f - GetExpectedSignal(trk)) / GetExpectedSigma(response, trk) : -999.f; }
+  static float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& trk);
 };
-
-//_________________________________________________________________________
-template <typename TrackType, o2::track::PID::ID id>
-float ExpTimes<TrackType, id>::ComputeExpectedTime(const float& tofExpMom, const float& length, const float& massZ)
-{
-  if (tofExpMom <= 0.f) {
-    return 0.f;
-  }
-  const float energy = sqrt((massZ * massZ) + (tofExpMom * tofExpMom));
-  const float exp = length * energy / (kCSPEED * tofExpMom);
-  return exp >= 0.f ? exp : 0.f;
-}
-
-//_________________________________________________________________________
-template <typename TrackType, o2::track::PID::ID id>
-float ExpTimes<TrackType, id>::GetExpectedSigma(const DetectorResponse& response, const TrackType& trk) const
-{
-  if (!trk.hasTOF()) {
-    return -999.f;
-  }
-  const float x[7] = {trk.p(), trk.tofSignal(), trk.collision().collisionTimeRes() * 1000.f, o2::track::PID::getMass2Z(id), trk.length(), trk.sigma1Pt(), trk.pt()};
-  const float reso = response(response.kSigma, x);
-  return reso >= 0.f ? reso : 0.f;
-}
 
 /// \brief Class to convert the trackTime to the tofSignal used for PID
 template <typename TrackType>
@@ -206,6 +202,25 @@ class TOFSignal
     }
   }
 };
+
+//_________________________________________________________________________
+template <typename TrackType, o2::track::PID::ID id>
+float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& trk)
+{
+  if (!trk.hasTOF()) {
+    return -999.f;
+  }
+  const float x[7] = {trk.p(), o2::pid::tof::TOFSignal<TrackType>::GetTOFSignal(trk), trk.collision().collisionTimeRes() * 1000.f, o2::track::PID::getMass2Z(id), trk.length(), trk.sigma1Pt(), trk.pt()};
+  const float reso = response(response.kSigma, x);
+  return reso >= 0.f ? reso : 0.f;
+}
+
+//_________________________________________________________________________
+template <typename TrackType, o2::track::PID::ID id>
+float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& trk)
+{
+  return trk.hasTOF() ? (o2::pid::tof::TOFSignal<TrackType>::GetTOFSignal(trk) - trk.collision().collisionTime() * 1000.f - GetExpectedSignal(trk)) / GetExpectedSigmaFromTrackTime(response, trk) : -999.f;
+}
 
 } // namespace o2::pid::tof
 
