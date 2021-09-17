@@ -132,12 +132,14 @@ class ExpTimes
     return reso >= 0.f ? reso : 0.f;
   }
 
-  /// Gets the expected resolution of the measurement
-  static float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& trk);
-
   /// Gets the number of sigmas with respect the expected time
   static float GetSeparation(const DetectorResponse& response, const TrackType& trk) { return trk.hasTOF() ? (trk.tofSignal() - trk.collision().collisionTime() * 1000.f - GetExpectedSignal(trk)) / GetExpectedSigma(response, trk) : -999.f; }
-  static float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& trk);
+
+  /// Gets the expected resolution of the measurement from the track time
+  float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& trk) const;
+
+  /// Gets the number of sigmas with respect the expected time from the track time
+  float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& trk) const;
 };
 
 /// \brief Class to convert the trackTime to the tofSignal used for PID
@@ -205,7 +207,7 @@ class TOFSignal
 
 //_________________________________________________________________________
 template <typename TrackType, o2::track::PID::ID id>
-float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& trk)
+float ExpTimes<TrackType, id>::GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& trk) const
 {
   if (!trk.hasTOF()) {
     return -999.f;
@@ -217,7 +219,7 @@ float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const Trac
 
 //_________________________________________________________________________
 template <typename TrackType, o2::track::PID::ID id>
-float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& trk)
+float ExpTimes<TrackType, id>::GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& trk) const
 {
   return trk.hasTOF() ? (o2::pid::tof::TOFSignal<TrackType>::GetTOFSignal(trk) - trk.collision().collisionTime() * 1000.f - GetExpectedSignal(trk)) / GetExpectedSigmaFromTrackTime(response, trk) : -999.f;
 }
