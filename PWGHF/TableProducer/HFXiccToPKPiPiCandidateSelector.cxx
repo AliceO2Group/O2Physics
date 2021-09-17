@@ -65,8 +65,8 @@ struct HfXiccToPKPiPiCandidateSelector {
 
     // check candidate mass is within a defined mass window
     if (std::abs(InvMassXiccToXicPi(hfCandXicc) - RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus)) > cuts->get(pTBin, "m")) {
-        return false;
-    } 
+      return false;
+    }
 
     // cosine of pointing angle
     if (hfCandXicc.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
