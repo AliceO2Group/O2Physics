@@ -85,7 +85,7 @@ DECLARE_SOA_TABLE(HFSelBPlusToD0PiCandidate, "AOD", "HFSELBPLUSCAND", //!
 
 namespace hf_selcandidate_x
 {
-DECLARE_SOA_COLUMN(IsSelXToJpsiToEEPiPi, isSelXToJpsiToEEPiPi, int); //!
+DECLARE_SOA_COLUMN(IsSelXToJpsiToEEPiPi, isSelXToJpsiToEEPiPi, int);     //!
 DECLARE_SOA_COLUMN(IsSelXToJpsiToMuMuPiPi, isSelXToJpsiToMuMuPiPi, int); //!
 } // namespace hf_selcandidate_x
 DECLARE_SOA_TABLE(HFSelXToJpsiPiPiCandidate, "AOD", "HFSELXCAND", //!
