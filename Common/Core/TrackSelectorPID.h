@@ -434,7 +434,7 @@ class TrackSelectorPID
   {
     bool isSelTOF = false;
     bool isSelRICH = false;
-    bool hasRICH = isValidTrackPIDRICH(track);
+    bool hasRICH = track.richId() > -1;
     bool hasTOF = isValidTrackPIDTOF(track);
     auto nSigmaTOFEl = track.tofNSigmaEl();
     auto nSigmaTOFPi = track.tofNSigmaPi();
@@ -471,7 +471,7 @@ class TrackSelectorPID
         isSelRICH = false; // is selected as pion by RICH
       }
     } else {
-      isSelRICH = true;
+      isSelRICH = false;
     }
 
     return isSelRICH || isSelTOF;
