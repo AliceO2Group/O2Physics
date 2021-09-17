@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct bayesPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TrkTOFSignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal>;
   using Coll = aod::Collisions;
 
   // Tables to produce
@@ -593,7 +593,7 @@ struct bayesPidQa {
                                                           aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesPi,
                                                           aod::pidBayesKa, aod::pidBayesPr, aod::pidBayesDe,
                                                           aod::pidBayesTr, aod::pidBayesHe, aod::pidBayesAl,
-                                                          aod::pidBayes, aod::TrkTOFSignal, aod::TrackSelection> const& tracks)
+                                                          aod::pidBayes, aod::TOFSignal, aod::TrackSelection> const& tracks)
   {
     const float collisionTime_ps = collision.collisionTime() * 1000.f;
     histos.fill(HIST("event/vertexz"), collision.posZ());

@@ -67,7 +67,7 @@ struct tofSpectraTiny {
                                                   aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                                   aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                                   aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
-                                                  aod::TrkTOFSignal, aod::TrackSelection>>;
+                                                  aod::TOFSignal, aod::TrackSelection>>;
 
   void process(TrackCandidates::iterator const& track)
   {

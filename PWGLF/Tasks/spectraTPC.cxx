@@ -156,7 +156,7 @@ struct tpcPidQaSignalwTof {
                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                   aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                                                   aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                                  aod::TrkTOFSignal, aod::TrackSelection>>;
+                                                  aod::TOFSignal, aod::TrackSelection>>;
   void process(TrackCandidates::iterator const& track)
   {
     // const float mom = track.p();

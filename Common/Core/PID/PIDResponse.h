@@ -194,7 +194,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,       //! Nsigma separation wit
 
 } // namespace pidtof_tiny
 
-DECLARE_SOA_TABLE(TrkTOFSignal, "AOD", "TrkTOFSignal", //! Table of the TOF signal
+DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta

@@ -43,7 +43,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct trackTime {
-  Produces<o2::aod::TrkTOFSignal> table;
+  Produces<o2::aod::TOFSignal> table;
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
   void process(aod::Collision const& collision, Trks const& tracks)
   {
@@ -157,7 +157,7 @@ struct trackTimeQa {
     histos.add("trk/al", "al", kTH2F, {pAxis, signalAxis});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrkTOFSignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TOFSignal>;
   using Coll = aod::Collisions;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
