@@ -203,9 +203,9 @@ struct HFCandidateCreatorX {
 
           int hfFlag = 0;
           //if (jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToMuMu) {
-            //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
+          //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
           //} else {
-            //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
+          //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
           //}
 
           if (jpsiCand.isSelJpsiToEE() > 0) {
