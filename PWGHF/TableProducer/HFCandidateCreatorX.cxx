@@ -14,7 +14,7 @@
 /// \note Adapted from HFCandidateCreator3Prong
 ///
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
-/// \author Luca Micheletti <luca.micheletti@to.infn>, INFN
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
@@ -25,10 +25,10 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
-using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
 
@@ -99,7 +99,7 @@ struct HFCandidateCreatorX {
 
     // loop over Jpsi candidates
     for (auto& jpsiCand : jpsiCands) {
-      if (!(jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToMuMu)) {
+      if (!(jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YJpsi(jpsiCand)) > cutYCandMax) {
@@ -202,18 +202,18 @@ struct HFCandidateCreatorX {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           int hfFlag = 0;
-          //if (jpsiCand.hfflag() & 1 << o2::aod::hf_cand_prong2::DecayType::JpsiToMuMu) {
-          //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
+          //if (jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu) {
+          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
           //} else {
-          //hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
+          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
           //}
 
           if (jpsiCand.isSelJpsiToEE() > 0) {
-            hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
+            hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
           }
 
           if (jpsiCand.isSelJpsiToMuMu() > 0) {
-            hfFlag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
+            hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
 
           // fill the candidate table for the X here:
@@ -263,7 +263,7 @@ struct HFCandidateCreatorXMC {
   {
     int indexRec = -1;
     int xPdgCode = 9920443;
-    int jpsiPdgCode = 443;
+    int jpsiPdgCode = pdg::Code::kJpsi;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
@@ -285,13 +285,13 @@ struct HFCandidateCreatorXMC {
       //Printf("Checking X → J/ψ π+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, xPdgCode, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
       if (indexRec > -1) {
-        flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
+        flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
       }
 
       if (flag == 0) {
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, xPdgCode, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
+          flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
         }
       }
 
@@ -319,12 +319,12 @@ struct HFCandidateCreatorXMC {
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{jpsiPdgCode}, 1);
         auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, jpsiPdgCode, array{+kElectron, -kElectron}, true)) {
-          flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
+          flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
 
         if (flag == 0) {
           if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, jpsiPdgCode, array{+kMuonPlus, -kMuonPlus}, true)) {
-            flag = 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
+            flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
         }
       }

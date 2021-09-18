@@ -13,7 +13,7 @@
 /// \brief X(3872) selection task.
 /// \note Adapted from HFJpsiCandidateSelector.cxx
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
-/// \author Luca Micheletti <luca.micheletti@to.infn>, INFN
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -21,6 +21,7 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::analysis;
@@ -196,11 +197,11 @@ struct HFXToJpsiPiPiCandidateSelector {
       int selJpsiToMuMu = 1;
 
       // check if flagged as X --> Jpsi Pi Pi
-      if (!(hfCandX.hfflag() & 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi)) {
+      if (!(hfCandX.hfflag() & 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi)) {
         selJpsiToEE = 0;
       }
 
-      if (!(hfCandX.hfflag() & 1 << o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi)) {
+      if (!(hfCandX.hfflag() & 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi)) {
         selJpsiToMuMu = 0;
       }
 

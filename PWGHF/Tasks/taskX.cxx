@@ -14,7 +14,7 @@
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
-/// \author Luca Micheletti <luca.micheletti@to.infn>, INFN
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -23,6 +23,7 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_x_tojpsipipi;
 using namespace o2::framework;
@@ -72,7 +73,7 @@ struct TaskX {
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HFSelXToJpsiPiPiCandidate>> const& candidates)
   {
-    int decayMode = modeXToJpsiToMuMuPiPi ? o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi : o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
+    int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
@@ -158,7 +159,7 @@ struct TaskXMC {
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
-    int decayMode = modeXToJpsiToMuMuPiPi ? o2::aod::hf_cand_x::DecayType::XToJpsiToMuMuPiPi : o2::aod::hf_cand_x::DecayType::XToJpsiToEEPiPi;
+    int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
