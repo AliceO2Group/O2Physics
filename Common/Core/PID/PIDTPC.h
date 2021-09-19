@@ -32,7 +32,7 @@ namespace o2::pid::tpc
 {
 
 /// \brief Class to handle the the TPC detector response
-template <typename Trck, o2::track::PID::ID id>
+template <typename TrackType, o2::track::PID::ID id>
 class ELoss
 {
  public:
@@ -40,25 +40,25 @@ class ELoss
   ~ELoss() = default;
 
   /// Gets the expected signal of the measurement
-  float GetExpectedSignal(const DetectorResponse& response, const Trck& trk) const;
+  float GetExpectedSignal(const DetectorResponse& response, const TrackType& trk) const;
 
   /// Gets the expected resolution of the measurement
-  float GetExpectedSigma(const DetectorResponse& response, const Trck& trk) const;
+  float GetExpectedSigma(const DetectorResponse& response, const TrackType& trk) const;
 
   /// Gets the number of sigmas with respect the expected value
-  float GetSeparation(const DetectorResponse& response, const Trck& trk) const { return (trk.tpcSignal() - GetExpectedSignal(response, trk)) / GetExpectedSigma(response, trk); }
+  float GetSeparation(const DetectorResponse& response, const TrackType& trk) const { return (trk.tpcSignal() - GetExpectedSignal(response, trk)) / GetExpectedSigma(response, trk); }
 };
 
-template <typename Trck, o2::track::PID::ID id>
-float ELoss<Trck, id>::GetExpectedSignal(const DetectorResponse& response, const Trck& trk) const
+template <typename TrackType, o2::track::PID::ID id>
+float ELoss<TrackType, id>::GetExpectedSignal(const DetectorResponse& response, const TrackType& trk) const
 {
   const float x[2] = {trk.tpcInnerParam() / o2::track::PID::getMass(id), (float)o2::track::PID::getCharge(id)};
   const float bethe = response(DetectorResponse::kSignal, x);
   return bethe >= 0.f ? bethe : 0.f;
 }
 
-template <typename Trck, o2::track::PID::ID id>
-float ELoss<Trck, id>::GetExpectedSigma(const DetectorResponse& response, const Trck& trk) const
+template <typename TrackType, o2::track::PID::ID id>
+float ELoss<TrackType, id>::GetExpectedSigma(const DetectorResponse& response, const TrackType& trk) const
 {
   const float x[2] = {trk.tpcSignal(), (float)trk.tpcNClsFound()};
   const float reso = response(DetectorResponse::kSigma, x);

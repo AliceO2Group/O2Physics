@@ -43,7 +43,7 @@ using FilteredFullCollision = soa::Filtered<soa::Join<aod::Collisions,
                                                       aod::EvSels,
                                                       aod::Mults>>::iterator;
 using FilteredFullTracks = soa::Join<aod::FullTracks,
-                                     aod::TracksExtended,
+                                     aod::TracksExtended, aod::TOFSignal,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                      aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                      aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,

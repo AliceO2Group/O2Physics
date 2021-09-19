@@ -31,7 +31,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct pidTOFTaskBeta {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Colls = aod::Collisions;
   Produces<aod::pidTOFbeta> tablePIDBeta;
   tof::Beta<Trks::iterator, PID::Electron> responseElectron;
@@ -107,7 +107,7 @@ struct tofPidQaBeta {
     histos.fill(HIST(hexpected_diff[i]), t.p(), exp_diff);
     histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
   }
-  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTOFbeta, aod::TrackSelection> const& tracks,
+  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal> const& tracks,
                aod::Collisions const&)
   {
     for (auto const& track : tracks) {
