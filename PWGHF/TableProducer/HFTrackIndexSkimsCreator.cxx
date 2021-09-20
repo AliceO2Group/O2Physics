@@ -44,6 +44,17 @@ enum CandidateType {
   NCandidateTypes
 };
 
+// event rejection types
+enum EventRejection {
+  Trigger = 0,
+  PositionX,
+  PositionY,
+  PositionZ,
+  NContrib,
+  Chi2,
+  NEventRejection
+};
+
 static const double massPi = RecoDecay::getMassPDG(kPiPlus);
 static const double massK = RecoDecay::getMassPDG(kKPlus);
 static const double massProton = RecoDecay::getMassPDG(kProton);
@@ -52,8 +63,8 @@ static const double massMuon = RecoDecay::getMassPDG(kMuonPlus);
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"do-LcK0Sp", VariantType::Bool, false, {"Skim also Lc --> K0S+p"}};
-  ConfigParamSpec optionEvSel{"doEvSel", VariantType::Bool, false, {"Apply event selection"}};
+  ConfigParamSpec optionDoMC{"doCascades", VariantType::Bool, false, {"Skim also Λc -> K0S p"}};
+  ConfigParamSpec optionEvSel{"doTrigSel", VariantType::Bool, false, {"Apply trigger selection"}};
   workflowOptions.push_back(optionDoMC);
   workflowOptions.push_back(optionEvSel);
 }
@@ -80,36 +91,101 @@ struct HfTagSelCollisions {
   Produces<aod::HFSelCollision> rowSelectedCollision;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
+  Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of primary vertex [cm]"};
+  Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of primary vertex [cm]"};
+  Configurable<double> yVertexMin{"yVertexMin", -100., "min. y of primary vertex [cm]"};
+  Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of primary vertex [cm]"};
+  Configurable<double> zVertexMin{"zVertexMin", -100., "min. z of primary vertex [cm]"};
+  Configurable<double> zVertexMax{"zVertexMax", 100., "max. z of primary vertex [cm]"};
+  Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
+  Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   int triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
-  HistogramRegistry registry{
-    "registry",
-    {{"hEvents", "Events;;entries", {HistType::kTH1F, {{3, 0.5, 3.5}}}}}};
+  HistogramRegistry registry{"registry", {}};
 
   void init(InitContext const&)
   {
-    std::string labels[3] = {"processed collisions", "selected collisions", "rej. trigger class"};
-    for (int iBin = 0; iBin < 3; iBin++) {
+    const int nBinsEvents = 2 + EventRejection::NEventRejection;
+    std::string labels[nBinsEvents];
+    labels[0] = "processed";
+    labels[1] = "selected";
+    labels[2 + EventRejection::Trigger] = "rej. trigger";
+    labels[2 + EventRejection::PositionX] = "rej. #it{x}";
+    labels[2 + EventRejection::PositionY] = "rej. #it{y}";
+    labels[2 + EventRejection::PositionZ] = "rej. #it{z}";
+    labels[2 + EventRejection::NContrib] = "rej. # of contributors";
+    labels[2 + EventRejection::Chi2] = "rej. #it{#chi}^{2}";
+    AxisSpec axisEvents = {nBinsEvents, 0.5, nBinsEvents + 0.5, ""};
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+    for (int iBin = 0; iBin < nBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
   }
 
-  // event selection
-  void processEvSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  /// Primary-vertex selection
+  /// \param collision  collision table row
+  /// \param statusCollision  bit map with rejection results
+  template <typename Col>
+  void selectVertex(const Col& collision, int& statusCollision)
+  {
+    // x position
+    if (collision.posX() < xVertexMin || collision.posX() > xVertexMax) {
+      SETBIT(statusCollision, EventRejection::PositionX);
+      if (fillHistograms) {
+        registry.get<TH1>(HIST("hEvents"))->Fill(3 + EventRejection::PositionX);
+      }
+    }
+    // y position
+    if (collision.posY() < yVertexMin || collision.posY() > yVertexMax) {
+      SETBIT(statusCollision, EventRejection::PositionY);
+      if (fillHistograms) {
+        registry.get<TH1>(HIST("hEvents"))->Fill(3 + EventRejection::PositionY);
+      }
+    }
+    // z position
+    if (collision.posZ() < zVertexMin || collision.posZ() > zVertexMax) {
+      SETBIT(statusCollision, EventRejection::PositionZ);
+      if (fillHistograms) {
+        registry.get<TH1>(HIST("hEvents"))->Fill(3 + EventRejection::PositionZ);
+      }
+    }
+    // number of contributors
+    if (collision.numContrib() < nContribMin) {
+      SETBIT(statusCollision, EventRejection::NContrib);
+      if (fillHistograms) {
+        registry.get<TH1>(HIST("hEvents"))->Fill(3 + EventRejection::NContrib);
+      }
+    }
+    // chi^2
+    if (chi2Max > 0. && collision.chi2() > chi2Max) {
+      SETBIT(statusCollision, EventRejection::Chi2);
+      if (fillHistograms) {
+        registry.get<TH1>(HIST("hEvents"))->Fill(3 + EventRejection::Chi2);
+      }
+    }
+  }
+
+  /// Event selection with trigger selection
+  void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
     int statusCollision = 0;
 
+    // processed events
     if (fillHistograms) {
       registry.get<TH1>(HIST("hEvents"))->Fill(1);
     }
 
+    // trigger selection
     if (!collision.alias()[triggerClass]) {
-      statusCollision |= BIT(0);
+      SETBIT(statusCollision, EventRejection::Trigger);
       if (fillHistograms) {
-        registry.get<TH1>(HIST("hEvents"))->Fill(3);
+        registry.get<TH1>(HIST("hEvents"))->Fill(3 + EventRejection::Trigger);
       }
     }
+
+    // vertex selection
+    selectVertex(collision, statusCollision);
 
     //TODO: add more event selection criteria
 
@@ -122,15 +198,23 @@ struct HfTagSelCollisions {
     rowSelectedCollision(statusCollision);
   };
 
-  PROCESS_SWITCH(HfTagSelCollisions, processEvSel, "Use event selection", true);
+  PROCESS_SWITCH(HfTagSelCollisions, processTrigSel, "Use trigger selection", true);
 
-  // no event selection in case of no event-selection task attached
-  void processNoEvSel(aod::Collision const&)
+  /// Event selection without trigger selection
+  void processNoTrigSel(aod::Collision const& collision)
   {
     int statusCollision = 0;
 
+    // processed events
     if (fillHistograms) {
       registry.get<TH1>(HIST("hEvents"))->Fill(1);
+    }
+
+    // vertex selection
+    selectVertex(collision, statusCollision);
+
+    // selected events
+    if (fillHistograms && statusCollision == 0) {
       registry.get<TH1>(HIST("hEvents"))->Fill(2);
     }
 
@@ -138,7 +222,7 @@ struct HfTagSelCollisions {
     rowSelectedCollision(statusCollision);
   };
 
-  PROCESS_SWITCH(HfTagSelCollisions, processNoEvSel, "Do not use event selection", false);
+  PROCESS_SWITCH(HfTagSelCollisions, processNoTrigSel, "Do not use trigger selection", false);
 };
 
 /// Track selection
@@ -1474,18 +1558,18 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
 
-  const bool doEvSel = cfgc.options().get<bool>("doEvSel");
-  if (doEvSel) {
+  const bool doTrigSel = cfgc.options().get<bool>("doTrigSel");
+  if (doTrigSel) {
     workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc));
   } else {
-    workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processEvSel", false}, {"processNoEvSel", true}}}));
+    workflow.push_back(adaptAnalysisTask<HfTagSelCollisions>(cfgc, SetDefaultProcesses{{{"processTrigSel", false}, {"processNoTrigSel", true}}}));
   }
 
   workflow.push_back(adaptAnalysisTask<HfTagSelTracks>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreator>(cfgc));
 
-  const bool doLcK0Sp = cfgc.options().get<bool>("do-LcK0Sp");
-  if (doLcK0Sp) {
+  const bool doCascades = cfgc.options().get<bool>("doCascades");
+  if (doCascades) {
     workflow.push_back(adaptAnalysisTask<HfTrackIndexSkimsCreatorCascades>(cfgc));
   }
 
