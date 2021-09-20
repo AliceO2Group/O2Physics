@@ -202,19 +202,19 @@ struct HFCandidateCreatorX {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           int hfFlag = 0;
-          //if (jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu) {
-          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
-          //} else {
-          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
+          if (jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu) {
+          hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
+          } else {
+          hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
+          }
+
+          //if (jpsiCand.isSelJpsiToEE() > 0) {
+          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
           //}
 
-          if (jpsiCand.isSelJpsiToEE() > 0) {
-            hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
-          }
-
-          if (jpsiCand.isSelJpsiToMuMu() > 0) {
-            hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
-          }
+          //if (jpsiCand.isSelJpsiToMuMu() > 0) {
+          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
+          //}
 
           // fill the candidate table for the X here:
           rowCandidateBase(collision.globalIndex(),
@@ -262,8 +262,8 @@ struct HFCandidateCreatorXMC {
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
-    int xPdgCode = 9920443;
-    int jpsiPdgCode = pdg::Code::kJpsi;
+    int pdgCodeX = pdg::Code::kX3872;
+    int pdgCodeJpsi = pdg::Code::kJpsi;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
@@ -283,13 +283,13 @@ struct HFCandidateCreatorXMC {
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, xPdgCode, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
       if (indexRec > -1) {
         flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
       }
 
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, xPdgCode, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
         }
@@ -313,17 +313,17 @@ struct HFCandidateCreatorXMC {
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, xPdgCode, array{jpsiPdgCode, +kPiPlus, -kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeX, array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{jpsiPdgCode}, 1);
+        RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{pdgCodeJpsi}, 1);
         auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
-        if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, jpsiPdgCode, array{+kElectron, -kElectron}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }
 
         if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, jpsiPdgCode, array{+kMuonPlus, -kMuonPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kMuonPlus, -kMuonPlus}, true)) {
             flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
           }
         }
