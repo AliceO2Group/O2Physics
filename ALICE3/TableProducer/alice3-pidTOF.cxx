@@ -84,12 +84,12 @@ struct ALICE3pidTOFTask {
   template <o2::track::PID::ID id>
   float sigma(Trks::iterator track)
   {
-    return o2::pid::tof::TOFResoALICE3ParamTrack<id>(track.collision(), track, resoParameters);
+    return o2::pid::tof::TOFResoALICE3ParamTrack<id>(track, resoParameters);
   }
   template <o2::track::PID::ID id>
   float nsigma(Trks::iterator track)
   {
-    return (track.trackTime() - track.collision().collisionTime() * 1000.f - tof::ExpTimes<Trks::iterator, id>::GetExpectedSignal(track)) / sigma<id>(track);
+    return (track.trackTime() * 1e3f - track.collision().collisionTime() * 1000.f - tof::ExpTimes<Trks::iterator, id>::GetExpectedSignal(track)) / sigma<id>(track);
   }
   void process(Coll const& collisions, Trks const& tracks)
   {
@@ -263,12 +263,13 @@ struct ALICE3pidTOFTaskQA {
         continue;
       }
 
+      const float tofSignal = t.trackTime() * 1e3f;
       // const float tof = t.tofSignal() - collisionTime_ps;
-      const float tof = t.trackTime() - collisionTime_ps;
+      const float tof = tofSignal - collisionTime_ps;
 
       //
       // histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
-      histos.fill(HIST("event/tofsignal"), t.p(), t.trackTime());
+      histos.fill(HIST("event/tofsignal"), t.p(), tofSignal);
       histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom());
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());

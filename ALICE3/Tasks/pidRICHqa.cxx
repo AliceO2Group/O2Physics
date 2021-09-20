@@ -44,25 +44,11 @@ DECLARE_SOA_INDEX_COLUMN(FRICH, frich);
 
 DECLARE_SOA_INDEX_TABLE_USER(RICHTracksIndex, Tracks, "RICHTRK", indices::TrackId, indices::RICHId);
 DECLARE_SOA_INDEX_TABLE_USER(FRICHTracksIndex, Tracks, "FRICHTRK", indices::TrackId, indices::FRICHId);
-DECLARE_SOA_INDEX_TABLE_USER(BothRICHTracksIndex, Tracks, "FRICHTRK", indices::TrackId, indices::RICHId, indices::FRICHId);
 } // namespace o2::aod
 
 struct richIndexBuilder { // Builder of the RICH-track index linkage
-  Builds<o2::aod::RICHTracksIndex> ind;
-  void init(o2::framework::InitContext&)
-  {
-  }
-};
-
-struct frichIndexBuilder { // Builder of the FRICH-track index linkage
-  Builds<o2::aod::FRICHTracksIndex> ind;
-  void init(o2::framework::InitContext&)
-  {
-  }
-};
-
-struct bothrichIndexBuilder { // Builder of the RICH and FRICH track index linkage
-  Builds<o2::aod::BothRICHTracksIndex> ind;
+  Builds<o2::aod::RICHTracksIndex> indB;
+  Builds<o2::aod::FRICHTracksIndex> indF;
   void init(o2::framework::InitContext&)
   {
   }
@@ -91,27 +77,6 @@ struct richPidQaMc {
   Configurable<float> maxDelta{"maxDelta", 0.4f, "Maximum delta plotted (rad)"};
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
 
-  template <typename T>
-  void makelogaxis(T h)
-  {
-    if (logAxis == 0) {
-      return;
-    }
-    const int nbins = h->GetNbinsX();
-    double binp[nbins + 1];
-    double max = h->GetXaxis()->GetBinUpEdge(nbins);
-    double min = h->GetXaxis()->GetBinLowEdge(1);
-    if (min <= 0) {
-      min = 0.00001;
-    }
-    double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-    for (int i = 0; i < nbins; i++) {
-      binp[i] = TMath::Exp(TMath::Log(10) * (lmin + i * ldelta));
-    }
-    binp[nbins] = max + 1;
-    h->GetXaxis()->Set(nbins, binp);
-  }
   static constexpr int Np = 5;
   static constexpr std::string_view hdelta[Np] = {"delta/El", "delta/Mu", "delta/Pi", "delta/Ka", "delta/Pr"};
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi", "nsigma/Ka", "nsigma/Pr"};
@@ -130,7 +95,10 @@ struct richPidQaMc {
   template <uint8_t i>
   void addParticleHistos()
   {
-    const AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    if (logAxis) {
+      ptAxis.makeLogaritmic();
+    }
     const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
 
     TString tit = Form("%s", pT[i]);
@@ -139,16 +107,18 @@ struct richPidQaMc {
     }
     // NSigma
     histos.add(hnsigmaMC[i].data(), "True " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hnsigmaMC[i])));
     histos.add(hnsigmaMCprm[i].data(), "True Primary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hnsigmaMCprm[i])));
     histos.add(hnsigmaMCsec[i].data(), "True Secondary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hnsigmaMCsec[i])));
   }
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec momAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    const AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec momAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    if (logAxis) {
+      momAxis.makeLogaritmic();
+      ptAxis.makeLogaritmic();
+    }
+
     const AxisSpec sigAxis{1000, 0, 0.3, "Cherenkov angle (rad)"};
     const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("#Delta(%s) (rad)", pT[pid_type])};
@@ -162,21 +132,15 @@ struct richPidQaMc {
     histos.add("qa/eta", ";#it{#eta}", kTH1F, {{100, -4, 4}});
     histos.add("qa/signalerror", ";Cherenkov angle error (rad)", kTH1F, {{100, 0, 1}});
     histos.add("qa/signalvsP", "", kTH2F, {momAxis, sigAxis});
-    makelogaxis(histos.get<TH2>(HIST("qa/signalvsP")));
     histos.add("qa/signalvsPPrim", "", kTH2F, {momAxis, sigAxis});
-    makelogaxis(histos.get<TH2>(HIST("qa/signalvsPPrim")));
     histos.add("qa/signalvsPSec", "", kTH2F, {momAxis, sigAxis});
-    makelogaxis(histos.get<TH2>(HIST("qa/signalvsPSec")));
     histos.add(hdelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hdelta[pid_type])));
     histos.add(hnsigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hnsigma[pid_type])));
     histos.add(hnsigmaprm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hnsigmaprm[pid_type])));
     histos.add(hnsigmasec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hnsigmasec[pid_type])));
+
     histos.add(hfrichnsigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST(hfrichnsigma[pid_type])));
+
     addParticleHistos<0>();
     addParticleHistos<1>();
     addParticleHistos<2>();
@@ -202,11 +166,9 @@ struct richPidQaMc {
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using TrksfRICH = soa::Join<aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
-  using TrksbothRICH = soa::Join<aod::Tracks, aod::BothRICHTracksIndex, aod::TracksExtra>;
   void process(const aod::McParticles& mcParticles,
                const Trks& tracks,
                const TrksfRICH& tracksfrich,
-               const TrksbothRICH& tracksbothrich,
                const aod::McTrackLabels& labels,
                const aod::RICHs&,
                const aod::FRICHs&,
@@ -337,23 +299,12 @@ struct richPidQaMc {
         histos.fill(HIST(hfrichnsigmasec[pid_type]), track.pt(), nsigma);
       }
     }
-
-    for (const auto& track : tracksbothrich) { // Barrel and Forward RICH
-      if (!track.has_frich()) {
-        continue;
-      }
-      if (!track.has_rich()) {
-        continue;
-      }
-    }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<richIndexBuilder>(cfg),
-                               adaptAnalysisTask<frichIndexBuilder>(cfg),
-                               adaptAnalysisTask<bothrichIndexBuilder>(cfg)};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<richIndexBuilder>(cfg)};
   if (cfg.options().get<int>("qa-el")) {
     workflow.push_back(adaptAnalysisTask<richPidQaMc<PID::Electron>>(cfg, TaskName{"pidRICH-qa-El"}));
   }
