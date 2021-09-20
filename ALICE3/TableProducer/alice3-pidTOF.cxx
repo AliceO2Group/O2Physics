@@ -89,7 +89,7 @@ struct ALICE3pidTOFTask {
   template <o2::track::PID::ID id>
   float nsigma(Trks::iterator track)
   {
-    return (track.trackTime() * 1e3f - track.collision().collisionTime() * 1000.f - tof::ExpTimes<Trks::iterator, id>::GetExpectedSignal(track)) / sigma<id>(track);
+    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - tof::ExpTimes<Trks::iterator, id>::GetExpectedSignal(track)) / sigma<id>(track);
   }
   void process(Coll const& collisions, Trks const& tracks)
   {
