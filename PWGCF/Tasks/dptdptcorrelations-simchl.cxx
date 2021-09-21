@@ -418,7 +418,7 @@ inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
 }
 
 template <typename ParticleObject, typename ParticleListObject>
-inline void AcceptTrueTrack(ParticleObject& particle, ParticleListObject& particles, bool& asone, bool& astwo)
+inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particles, bool& asone, bool& astwo)
 {
   using namespace filteranalysistask;
 
@@ -437,6 +437,74 @@ inline void AcceptTrueTrack(ParticleObject& particle, ParticleListObject& partic
         astwo = true;
       }
     }
+  }
+}
+
+template <typename TrackObject>
+void fillTrackHistosBeforeSelection(TrackObject const& track)
+{
+  using namespace filteranalysistask;
+
+  fhPtB->Fill(track.pt());
+  fhEtaB->Fill(track.eta());
+  fhPhiB->Fill(track.phi());
+  fhEtaVsPhiB->Fill(track.phi(), track.eta());
+  fhPtVsEtaB->Fill(track.eta(), track.pt());
+  if (track.sign() > 0) {
+    fhPtPosB->Fill(track.pt());
+  } else {
+    fhPtNegB->Fill(track.pt());
+  }
+}
+
+template <typename TrackObject>
+void fillTrackHistosAfterSelection(TrackObject const& track)
+{
+  using namespace filteranalysistask;
+
+  fhPtA->Fill(track.pt());
+  fhEtaA->Fill(track.eta());
+  fhPhiA->Fill(track.phi());
+  fhEtaVsPhiA->Fill(track.phi(), track.eta());
+  fhPtVsEtaA->Fill(track.eta(), track.pt());
+  if (track.sign() > 0) {
+    fhPtPosA->Fill(track.pt());
+  } else {
+    fhPtNegA->Fill(track.pt());
+  }
+}
+
+template <typename ParticleObject>
+void fillParticleHistosBeforeSelection(ParticleObject const& particle, float charge)
+{
+  using namespace filteranalysistask;
+
+  fhTruePtB->Fill(particle.pt());
+  fhTrueEtaB->Fill(particle.eta());
+  fhTruePhiB->Fill(particle.phi());
+  fhTrueEtaVsPhiB->Fill(particle.phi(), particle.eta());
+  fhTruePtVsEtaB->Fill(particle.eta(), particle.pt());
+  if (charge > 0) {
+    fhTruePtPosB->Fill(particle.pt());
+  } else if (charge < 0) {
+    fhTruePtNegB->Fill(particle.pt());
+  }
+}
+
+template <typename ParticleObject>
+void fillParticleHistosAfterSelection(ParticleObject const& particle, float charge)
+{
+  using namespace filteranalysistask;
+
+  fhTruePtA->Fill(particle.pt());
+  fhTrueEtaA->Fill(particle.eta());
+  fhTruePhiA->Fill(particle.phi());
+  fhTrueEtaVsPhiA->Fill(particle.phi(), particle.eta());
+  fhTruePtVsEtaA->Fill(particle.eta(), particle.pt());
+  if (charge > 0) {
+    fhTruePtPosA->Fill(particle.pt());
+  } else {
+    fhTruePtNegA->Fill(particle.pt());
   }
 }
 
@@ -475,16 +543,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
     for (auto& track : ftracks) {
       /* before track selection */
-      fhPtB->Fill(track.pt());
-      fhEtaB->Fill(track.eta());
-      fhPhiB->Fill(track.phi());
-      fhEtaVsPhiB->Fill(track.phi(), track.eta());
-      fhPtVsEtaB->Fill(track.eta(), track.pt());
-      if (track.sign() > 0) {
-        fhPtPosB->Fill(track.pt());
-      } else {
-        fhPtNegB->Fill(track.pt());
-      }
+      fillTrackHistosBeforeSelection(track);
 
       /* track selection */
       /* tricky because the boolean columns issue */
@@ -492,16 +551,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       AcceptTrack(track, asone, astwo);
       if (asone or astwo) {
         /* the track has been accepted */
-        fhPtA->Fill(track.pt());
-        fhEtaA->Fill(track.eta());
-        fhPhiA->Fill(track.phi());
-        fhEtaVsPhiA->Fill(track.phi(), track.eta());
-        fhPtVsEtaA->Fill(track.eta(), track.pt());
-        if (track.sign() > 0) {
-          fhPtPosA->Fill(track.pt());
-        } else {
-          fhPtNegA->Fill(track.pt());
-        }
+        fillTrackHistosAfterSelection(track);
         acceptedtracks++;
       }
       scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
@@ -509,10 +559,41 @@ struct DptDptCorrelationsFilterAnalysisTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
   }
 
-  template <typename ParticleListObject, typename CollisionIndex>
-  void filterTrueTracks(ParticleListObject const& particles, CollisionIndex colix)
+  template <typename TrackListObject, typename CollisionIndex>
+  void filterDetectorLevelTracks(TrackListObject const& ftracks, CollisionIndex colix)
   {
     using namespace filteranalysistask;
+
+    int acceptedtracks = 0;
+
+    for (auto& track : ftracks) {
+      bool asone = false;
+      bool astwo = false;
+      if (not(track.mcParticleId() < 0)) {
+        /* correctly reconstructed track */
+        /* before track selection */
+        fillTrackHistosBeforeSelection(track);
+
+        /* track selection */
+        /* tricky because the boolean columns issue */
+        AcceptTrack(track, asone, astwo);
+        if (asone or astwo) {
+          /* the track has been accepted */
+          fillTrackHistosAfterSelection(track);
+          acceptedtracks++;
+        }
+      }
+      scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
+    }
+    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
+  }
+
+  template <typename ParticleListObject, typename CollisionIndex>
+  void filterParticles(ParticleListObject const& particles, CollisionIndex colix)
+  {
+    using namespace filteranalysistask;
+
+    int acceptedparticles = 0;
 
     for (auto& particle : particles) {
       float charge = 0.0;
@@ -521,40 +602,24 @@ struct DptDptCorrelationsFilterAnalysisTask {
         charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
       }
 
-      /* before particle selection */
-      fhTruePtB->Fill(particle.pt());
-      fhTrueEtaB->Fill(particle.eta());
-      fhTruePhiB->Fill(particle.phi());
-      fhTrueEtaVsPhiB->Fill(particle.phi(), particle.eta());
-      fhTruePtVsEtaB->Fill(particle.eta(), particle.pt());
-      if (charge > 0) {
-        fhTruePtPosB->Fill(particle.pt());
-      } else if (charge < 0) {
-        fhTruePtNegB->Fill(particle.pt());
-      }
-
-      /* track selection */
-      /* tricky because the boolean columns issue */
       bool asone = false;
       bool astwo = false;
       if (charge != 0) {
-        AcceptTrueTrack(particle, particles, asone, astwo);
+        /* before particle selection */
+        fillParticleHistosBeforeSelection(particle, charge);
+
+        /* track selection */
+        /* tricky because the boolean columns issue */
+        AcceptParticle(particle, particles, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
-          fhTruePtA->Fill(particle.pt());
-          fhTrueEtaA->Fill(particle.eta());
-          fhTruePhiA->Fill(particle.phi());
-          fhTrueEtaVsPhiA->Fill(particle.phi(), particle.eta());
-          fhTruePtVsEtaA->Fill(particle.eta(), particle.pt());
-          if (charge > 0) {
-            fhTruePtPosA->Fill(particle.pt());
-          } else {
-            fhTruePtNegA->Fill(particle.pt());
-          }
+          fillParticleHistosAfterSelection(particle, charge);
+          acceptedparticles++;
         }
       }
       scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
     }
+    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
   }
 
   void init(InitContext const&)
@@ -756,13 +821,70 @@ struct DptDptCorrelationsFilterAnalysisTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCent, "Process reco without centrality", false);
 
-  void processWithCentMC(aod::McCollision const& mccollision,
-                         soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Cents> const& collisions,
-                         aod::McParticles const& mcparticles)
+  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision,
+                                    soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
   {
     using namespace filteranalysistask;
 
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentMC(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentDetectorLevel(). New collision with %d tracks", ftracks.size());
+
+    fhCentMultB->Fill(collision.centV0M());
+    fhVertexZB->Fill(collision.posZ());
+    bool acceptedevent = false;
+    float centormult = -100.0;
+    if (IsEvtSelected(collision, centormult)) {
+      acceptedevent = true;
+      fhCentMultA->Fill(collision.centV0M());
+      fhVertexZA->Fill(collision.posZ());
+      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
+
+      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
+    } else {
+      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
+      for (auto& track : ftracks) {
+        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
+      }
+    }
+  }
+  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
+
+  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision,
+                                       soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
+  {
+    using namespace filteranalysistask;
+
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentDetectorLevel(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
+
+    /* the task does not have access to either centrality nor multiplicity 
+       classes information, so it has to live without it.
+       For the time being we assign a value of 50% */
+    fhCentMultB->Fill(50.0);
+    fhVertexZB->Fill(collision.posZ());
+    bool acceptedevent = false;
+    float centormult = -100.0;
+    if (IsEvtSelectedNoCentMult(collision, centormult)) {
+      acceptedevent = true;
+      fhCentMultA->Fill(50.0);
+      fhVertexZA->Fill(collision.posZ());
+      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
+
+      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
+    } else {
+      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
+      for (auto& track : ftracks) {
+        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
+      }
+    }
+  }
+  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
+
+  void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
+                                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Cents> const& collisions,
+                                     aod::McParticles const& mcparticles)
+  {
+    using namespace filteranalysistask;
+
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentGeneratorLevel(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
 
     /* TODO: in here we have to decide what to do in the following cases
        - On the fly production -> clearly we will need a different process
@@ -772,7 +894,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
        - generated collision with several associated reconstructed collisions: from which to extract multiplicity/centrality classes?
     */
     if (collisions.size() > 1) {
-      LOGF(error, "FilterAnalysisTask::processWithCentMC(). Generated collision with more than one reconstructed collisions. Processing only the first for centrality/multiplicity classes extraction");
+      LOGF(error, "FilterAnalysisTask::processWithCentGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first for centrality/multiplicity classes extraction");
     }
 
     for (auto& collision : collisions) {
@@ -787,7 +909,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
         fhTrueVertexZA->Fill(mccollision.posZ());
         acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
 
-        filterTrueTracks(mcparticles, acceptedtrueevents.lastIndex());
+        filterParticles(mcparticles, acceptedtrueevents.lastIndex());
       } else {
         acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
         for (auto& particle : mcparticles) {
@@ -797,14 +919,14 @@ struct DptDptCorrelationsFilterAnalysisTask {
       break; /* TODO: only processing the first reconstructed collision for centrality/multiplicity class estimation */
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentMC, "Process generated with centrality", false);
+  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentGeneratorLevel, "Process generated with centrality", false);
 
-  void processWithoutCentMC(aod::McCollision const& mccollision,
-                            aod::McParticles const& mcparticles)
+  void processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
+                                        aod::McParticles const& mcparticles)
   {
     using namespace filteranalysistask;
 
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentMC(). New generated collision with %d particles", mcparticles.size());
+    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentGeneratorLevel(). New generated collision with %d particles", mcparticles.size());
 
     /* the task does not have access to either centrality nor multiplicity 
        classes information, so it has to live without it.
@@ -820,7 +942,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTrueVertexZA->Fill(mccollision.posZ());
       acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
 
-      filterTrueTracks(mcparticles, acceptedtrueevents.lastIndex());
+      filterParticles(mcparticles, acceptedtrueevents.lastIndex());
     } else {
       acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
       for (auto& particle : mcparticles) {
@@ -828,7 +950,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       }
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentMC, "Process generated without centrality", false);
+  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
 };
 
 // Task for building <dpt,dpt> correlations
@@ -1469,19 +1591,35 @@ struct TracksAndEventClassificationQAGen {
 
 /// \brief Checks the correspondence generator level <=> detector level
 struct CheckGeneratorLevelVsDetectorLevel {
-  OutputObj<TH1F> multirecDeltaEta{TH1F("mrDeltaEta", "#Delta#eta multirec tracks;#Delta#eta", 100, -2, 2)};
-  OutputObj<TH1F> multirecDeltaPhi{TH1F("mrDeltaPhi", "#Delta#varphi multirec tracks;#Delta#varphi", 100, 0, 2.0f * static_cast<float>(M_PI))};
-  OutputObj<TH1F> multirecDeltaPt{TH1F("mrDeltaPt", "#Delta#it{p}_{T} multirec tracks;#Delta#it{p}_{T}", 100, 0, 4)};
-  OutputObj<TH1F> multirecDistribution{TH1F("multirec", "Multiple reconstruction; ##/particle; counts", 11, -0.5f, 10.5f)};
-  OutputObj<TH1F> multirecDeltaEta_nc{TH1F("mrDeltaEta_nc", "#Delta#eta multirec tracks;#Delta#eta", 100, -2, 2)};
-  OutputObj<TH1F> multirecDeltaPhi_nc{TH1F("mrDeltaPhi_nc", "#Delta#varphi multirec tracks;#Delta#varphi", 100, 0, 2.0f * static_cast<float>(M_PI))};
-  OutputObj<TH1F> multirecDeltaPt_nc{TH1F("mrDeltaPt_nc", "#Delta#it{p}_{T} multirec tracks;#Delta#it{p}_{T}", 100, 0, 4)};
-  OutputObj<TH1F> multirecDistribution_nc{TH1F("multirec_nc", "Multiple reconstruction; ##/particle; counts", 11, -0.5f, 10.5f)};
+  HistogramRegistry histos{"RecoGenHistograms", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   TDatabasePDG* fPDG;
 
   void init(InitContext const& context)
   {
+    constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
     fPDG = TDatabasePDG::Instance();
+
+    AxisSpec deltaEta = {100, -2, 2, "#Delta#eta"};
+    AxisSpec deltaPhi = {100, 0, TWOPI, "#Delta#varphi (rad)"};
+    AxisSpec deltaPt = {1000, 0, 4, "#Delta#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec mrectimes = {11, -0.5f, 10.5f, "##/particle"};
+
+    histos.add("positivecolid/mrDeltaEta", "#Delta#eta multirec tracks", kTH1F, {deltaEta});
+    histos.add("positivecolid/mrDeltaPhi", "#Delta#varphi multirec tracks", kTH1F, {deltaPhi});
+    histos.add("positivecolid/mrDeltaPt", "#Delta#it{p}_{T} multirec tracks", kTH1F, {deltaPt});
+    histos.add("positivecolid/multirec", "Multiple reconstruction", kTH1F, {mrectimes});
+    histos.add("positivecolid/genrecoeta", "#eta Generated vs reconstructed", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
+    histos.add("positivecolid/genrecophi", "#varphi Generated vs reconstructed", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
+    histos.add("positivecolid/genrecopt", "#it{p}_{T} Generated vs reconstructed", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
+    histos.add("positivecolid/tracktype", "Type of track", kTH1F, {{25, -0.5, 24.5, "TrackType"}});
+    histos.add("positivecolid/genrecomreta", "#eta Generated vs reconstructed (mr)", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
+    histos.add("positivecolid/genrecomrphi", "#varphi Generated vs reconstructed (mr)", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
+    histos.add("positivecolid/genrecomrpt", "#it{p}_{T} Generated vs reconstructed (mr)", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
+    histos.add("positivecolid/recomreta", "#eta Reconstructed (mr)", kTH1F, {{100, -1.0, 1.0, "#eta"}});
+    histos.add("positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, TWOPI, "#varphi (rad)"}});
+    histos.add("positivecolid/recomrpt", "#it{p}_{T} Reconstructed (mr)", kTH1F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    histos.add("positivecolid/tracktypemr", "Type of track (mr)", kTH1F, {{25, -0.5, 24.5, "TrackType"}});
+    histos.addClone("positivecolid/", "negativecolid/");
   }
 
   void processMapChecks(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
@@ -1537,33 +1675,30 @@ struct CheckGeneratorLevelVsDetectorLevel {
     int nrec_neglabel_nc = 0;
     int nrec_poslabel_crosscoll = 0;
     for (int il = 0; il < mcParticles.size(); ++il) {
+      auto particle = mcParticles.iteratorAt(il);
       /* multireconstructed tracks only for positive labels */
       int nrec = mclabelpos[il].size();
       nrec_poslabel += mclabelpos[il].size();
       nrec_neglabel += mclabelneg[il].size();
 
       if (nrec > 1) {
-        multirecDistribution->Fill(nrec);
+        histos.fill(HIST("positivecolid/multirec"), nrec);
         bool crosscollfound = false;
-        for (int i = 0; i < mclabelpos[il].size(); ++i) {
-          for (int j = i + 1; j < mclabelpos[il].size(); ++j) {
+        for (int i = 0; (i < mclabelpos[il].size()) and not crosscollfound; ++i) {
+          for (int j = i + 1; (j < mclabelpos[il].size()) and not crosscollfound; ++j) {
             auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
             auto track2 = tracks.iteratorAt(mclabelpos[il][j]);
 
             if (track1.collisionId() != track2.collisionId()) {
               nrec_poslabel_crosscoll++;
               crosscollfound = true;
-              break;
             }
-          }
-          if (crosscollfound) {
-            break;
           }
         }
 
         for (int i = 0; i < mclabelpos[il].size(); ++i) {
+          auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
           for (int j = i + 1; j < mclabelpos[il].size(); ++j) {
-            auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
             auto track2 = tracks.iteratorAt(mclabelpos[il][j]);
 
             float deltaeta = track1.eta() - track2.eta();
@@ -1576,11 +1711,24 @@ struct CheckGeneratorLevelVsDetectorLevel {
             }
             float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
 
-            multirecDeltaEta->Fill(deltaeta);
-            multirecDeltaPhi->Fill(deltaphi);
-            multirecDeltaPt->Fill(deltapt);
+            histos.fill(HIST("positivecolid/mrDeltaEta"), deltaeta);
+            histos.fill(HIST("positivecolid/mrDeltaPhi"), deltaphi);
+            histos.fill(HIST("positivecolid/mrDeltaPt"), deltapt);
           }
+          histos.fill(HIST("positivecolid/recomreta"), track1.eta());
+          histos.fill(HIST("positivecolid/recomrphi"), track1.phi());
+          histos.fill(HIST("positivecolid/recomrpt"), track1.pt());
+          histos.fill(HIST("positivecolid/tracktypemr"), track1.trackType());
+          histos.fill(HIST("positivecolid/genrecomreta"), track1.eta(), particle.eta());
+          histos.fill(HIST("positivecolid/genrecomrphi"), track1.phi(), particle.phi());
+          histos.fill(HIST("positivecolid/genrecomrpt"), track1.pt(), particle.pt());
         }
+      } else if (nrec > 0) {
+        auto track = tracks.iteratorAt(mclabelpos[il][0]);
+        histos.fill(HIST("positivecolid/genrecoeta"), track.eta(), particle.eta());
+        histos.fill(HIST("positivecolid/genrecophi"), track.phi(), particle.phi());
+        histos.fill(HIST("positivecolid/genrecopt"), track.pt(), particle.pt());
+        histos.fill(HIST("positivecolid/tracktype"), track.trackType());
       }
 
       /* multireconstructed tracks only for positive labels */
@@ -1589,10 +1737,10 @@ struct CheckGeneratorLevelVsDetectorLevel {
       nrec_neglabel_nc += mclabelneg_negcoll[il].size();
 
       if (nrec_nc > 1) {
-        multirecDistribution_nc->Fill(nrec_nc);
+        histos.fill(HIST("negativecolid/multirec"), nrec_nc);
         for (int i = 0; i < mclabelpos_negcoll[il].size(); ++i) {
+          auto track1 = tracks.iteratorAt(mclabelpos_negcoll[il][i]);
           for (int j = i + 1; j < mclabelpos_negcoll[il].size(); ++j) {
-            auto track1 = tracks.iteratorAt(mclabelpos_negcoll[il][i]);
             auto track2 = tracks.iteratorAt(mclabelpos_negcoll[il][j]);
 
             float deltaeta = track1.eta() - track2.eta();
@@ -1605,11 +1753,24 @@ struct CheckGeneratorLevelVsDetectorLevel {
             }
             float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
 
-            multirecDeltaEta_nc->Fill(deltaeta);
-            multirecDeltaPhi_nc->Fill(deltaphi);
-            multirecDeltaPt_nc->Fill(deltapt);
+            histos.fill(HIST("negativecolid/mrDeltaEta"), deltaeta);
+            histos.fill(HIST("negativecolid/mrDeltaPhi"), deltaphi);
+            histos.fill(HIST("negativecolid/mrDeltaPt"), deltapt);
           }
+          histos.fill(HIST("negativecolid/recomreta"), track1.eta());
+          histos.fill(HIST("negativecolid/recomrphi"), track1.phi());
+          histos.fill(HIST("negativecolid/recomrpt"), track1.pt());
+          histos.fill(HIST("negativecolid/tracktypemr"), track1.trackType());
+          histos.fill(HIST("negativecolid/genrecomreta"), track1.eta(), particle.eta());
+          histos.fill(HIST("negativecolid/genrecomrphi"), track1.phi(), particle.phi());
+          histos.fill(HIST("negativecolid/genrecomrpt"), track1.pt(), particle.pt());
         }
+      } else if (nrec_nc > 0) {
+        auto track = tracks.iteratorAt(mclabelpos_negcoll[il][0]);
+        histos.fill(HIST("negativecolid/genrecoeta"), track.eta(), particle.eta());
+        histos.fill(HIST("negativecolid/genrecophi"), track.phi(), particle.phi());
+        histos.fill(HIST("negativecolid/genrecopt"), track.pt(), particle.pt());
+        histos.fill(HIST("negativecolid/tracktype"), track.trackType());
       }
     }
     LOGF(info, "Reconstructed tracks with positive collision ID: %d with positive label, %d with negative label, %d with cross collision", nrec_poslabel, nrec_neglabel, nrec_poslabel_crosscoll);
