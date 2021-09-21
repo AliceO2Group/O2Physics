@@ -53,7 +53,7 @@ class TrackSelection
   bool IsSelected(T const& track)
   {
     const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
-    if ((!isRun2 || track.trackType() == mTrackType) && // tmp: skip track type selection for current run3 simulations
+    if (track.trackType() == mTrackType &&
         track.pt() >= mMinPt && track.pt() <= mMaxPt &&
         track.eta() >= mMinEta && track.eta() <= mMaxEta &&
         track.tpcNClsFound() >= mMinNClustersTPC &&
@@ -78,7 +78,7 @@ class TrackSelection
   template <typename T>
   bool IsSelected(T const& track, const TrackCuts& cut)
   {
-    bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
+    const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
 
     switch (cut) {
       case TrackCuts::kTrackType:
