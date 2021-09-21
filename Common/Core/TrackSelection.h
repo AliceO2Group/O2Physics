@@ -52,6 +52,7 @@ class TrackSelection
   template <typename T>
   bool IsSelected(T const& track)
   {
+    const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
     if (track.trackType() == mTrackType &&
         track.pt() >= mMinPt && track.pt() <= mMaxPt &&
         track.eta() >= mMinEta && track.eta() <= mMaxEta &&
@@ -61,9 +62,9 @@ class TrackSelection
         (track.itsNCls() >= mMinNClustersITS) &&
         (track.itsChi2NCl() <= mMaxChi2PerClusterITS) &&
         (track.tpcChi2NCl() <= mMaxChi2PerClusterTPC) &&
-        ((mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true) &&
-        ((mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true) &&
-        ((mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true) &&
+        ((isRun2 && mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true) &&
+        ((isRun2 && mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true) &&
+        ((isRun2 && mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true) &&
         FulfillsITSHitRequirements(track.itsClusterMap()) &&
         abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY) &&
         abs(track.dcaZ()) <= mMaxDcaZ) {
@@ -77,37 +78,54 @@ class TrackSelection
   template <typename T>
   bool IsSelected(T const& track, const TrackCuts& cut)
   {
+    const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
+
     switch (cut) {
       case TrackCuts::kTrackType:
         return track.trackType() == mTrackType;
+
       case TrackCuts::kPtRange:
         return track.pt() >= mMinPt && track.pt() <= mMaxPt;
+
       case TrackCuts::kEtaRange:
         return track.eta() >= mMinEta && track.eta() <= mMaxEta;
+
       case TrackCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
+
       case TrackCuts::kTPCCrossedRows:
         return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
+
       case TrackCuts::kTPCCrossedRowsOverNCls:
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
+
       case TrackCuts::kTPCChi2NDF:
-        return track.itsNCls() >= mMinNClustersITS;
-      case TrackCuts::kTPCRefit:
-        return track.itsChi2NCl() <= mMaxChi2PerClusterITS;
-      case TrackCuts::kITSNCls:
         return track.tpcChi2NCl() <= mMaxChi2PerClusterTPC;
+
+      case TrackCuts::kTPCRefit:
+        return (isRun2 && mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true;
+
+      case TrackCuts::kITSNCls:
+        return track.itsNCls() >= mMinNClustersITS;
+
       case TrackCuts::kITSChi2NDF:
-        return (mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true;
+        return track.itsChi2NCl() <= mMaxChi2PerClusterITS;
+
       case TrackCuts::kITSRefit:
-        return (mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true;
+        return (isRun2 && mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true;
+
       case TrackCuts::kITSHits:
-        return (mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true;
-      case TrackCuts::kGoldenChi2:
         return FulfillsITSHitRequirements(track.itsClusterMap());
+
+      case TrackCuts::kGoldenChi2:
+        return (isRun2 && mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true;
+
       case TrackCuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+
       case TrackCuts::kDCAz:
         return abs(track.dcaZ()) <= mMaxDcaZ;
+
       default:
         return false;
     }
