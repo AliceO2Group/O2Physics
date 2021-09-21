@@ -141,10 +141,10 @@ struct HfTaskXiccMc {
     registry.add("hImpParErr1VsPtRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{200, 0, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpParErr1VsPtRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{200, 0, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // resolutions
-    registry.add("hXSecVtxPosRecGenDiff", "#Xi^{++}_{cc} (rec. matched) candidates;x-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYSecVtxPosRecGenDiff", "#Xi^{++}_{cc} (rec. matched) candidates;y-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hZSecVtxPosRecGenDiff", "#Xi^{++}_{cc} (rec. matched) candidates;z-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecGenDiff", "#Xi^{++}_{cc} (rec. matched) candidates;pt reco - gen;entries (GeV/#it{c}})", {HistType::kTH2F, {{400, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hXSecVtxPosRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;x-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYSecVtxPosRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;y-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hZSecVtxPosRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;z-axis sec. vertex pos. reco - gen (cm);entries", {HistType::kTH2F, {{400, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtRecGenDiffSig", "#Xi^{++}_{cc} (rec. matched) candidates;pt reco - gen;entries (GeV/#it{c}})", {HistType::kTH2F, {{400, -1.0, 1.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     //debug
     registry.add("hDebugMCmatching", "#Xi^{++}_{cc} (rec. matched) candidates;debug MC matching bitmap;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // Check Y dependence (To be removed)
@@ -210,10 +210,10 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hYVsPtRecSig"), YXicc(candidate), candidate.pt());
         registry.fill(HIST("hImpParErr0VsPtRecSig"), candidate.errorImpactParameter0(), candidate.pt());
         registry.fill(HIST("hImpParErr1VsPtRecSig"), candidate.errorImpactParameter1(), candidate.pt());
-        registry.fill(HIST("hXSecVtxPosRecGenDiff"), candidate.xSecondaryVertex() - particleXic.vx(), candidate.pt());
-        registry.fill(HIST("hYSecVtxPosRecGenDiff"), candidate.ySecondaryVertex() - particleXic.vy(), candidate.pt());
-        registry.fill(HIST("hZSecVtxPosRecGenDiff"), candidate.zSecondaryVertex() - particleXic.vz(), candidate.pt());
-        registry.fill(HIST("hPtRecGenDiff"), candidate.pt() - particleXicc.pt(), candidate.pt());
+        registry.fill(HIST("hXSecVtxPosRecGenDiffSig"), candidate.xSecondaryVertex() - particleXic.vx(), candidate.pt());
+        registry.fill(HIST("hYSecVtxPosRecGenDiffSig"), candidate.ySecondaryVertex() - particleXic.vy(), candidate.pt());
+        registry.fill(HIST("hZSecVtxPosRecGenDiffSig"), candidate.zSecondaryVertex() - particleXic.vz(), candidate.pt());
+        registry.fill(HIST("hPtRecGenDiffSig"), candidate.pt() - particleXicc.pt(), candidate.pt());
         // Check Y dependence (To be removed)
         registry.fill(HIST("hMassVsPtVsYRecSig"), InvMassXiccToXicPi(candidate), candidate.pt(), YXicc(candidate));
         registry.fill(HIST("hDecLengthVsPtVsYRecSig"), candidate.decayLength(), candidate.pt(), YXicc(candidate));
