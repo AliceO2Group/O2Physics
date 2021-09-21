@@ -67,8 +67,8 @@ struct richPidQaMc {
   Configurable<float> minEta{"minEta", -1.4, "Minimum eta of accepted tracks"};
   Configurable<float> maxEta{"maxEta", 1.4, "Maximum eta of accepted tracks"};
   Configurable<int> nBinsP{"nBinsP", 500, "Number of momentum bins"};
-  Configurable<float> minP{"minP", 0.01, "Minimum momentum plotted (GeV/c)"};
-  Configurable<float> maxP{"maxP", 100, "Maximum momentum plotted (GeV/c)"};
+  Configurable<float> minP{"minP", -2, "Minimum momentum plotted (GeV/c)"};
+  Configurable<float> maxP{"maxP", 2, "Maximum momentum plotted (GeV/c)"};
   Configurable<int> nBinsNsigma{"nBinsNsigma", 600, "Number of Nsigma bins"};
   Configurable<float> minNsigma{"minNsigma", -100.f, "Minimum Nsigma plotted"};
   Configurable<float> maxNsigma{"maxNsigma", 100.f, "Maximum Nsigma plotted"};
@@ -78,17 +78,21 @@ struct richPidQaMc {
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
 
   static constexpr int Np = 5;
-  static constexpr std::string_view hdelta[Np] = {"delta/El", "delta/Mu", "delta/Pi", "delta/Ka", "delta/Pr"};
-  static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi", "nsigma/Ka", "nsigma/Pr"};
-  static constexpr std::string_view hnsigmaprm[Np] = {"nsigmaprm/El", "nsigmaprm/Mu", "nsigmaprm/Pi", "nsigmaprm/Ka", "nsigmaprm/Pr"};
-  static constexpr std::string_view hnsigmasec[Np] = {"nsigmasec/El", "nsigmasec/Mu", "nsigmasec/Pi", "nsigmasec/Ka", "nsigmasec/Pr"};
-  static constexpr std::string_view hnsigmaMC[Np] = {"nsigmaMC/El", "nsigmaMC/Mu", "nsigmaMC/Pi", "nsigmaMC/Ka", "nsigmaMC/Pr"};
-  static constexpr std::string_view hnsigmaMCsec[Np] = {"nsigmaMCsec/El", "nsigmaMCsec/Mu", "nsigmaMCsec/Pi", "nsigmaMCsec/Ka", "nsigmaMCsec/Pr"};
-  static constexpr std::string_view hnsigmaMCprm[Np] = {"nsigmaMCprm/El", "nsigmaMCprm/Mu", "nsigmaMCprm/Pi", "nsigmaMCprm/Ka", "nsigmaMCprm/Pr"};
+  static constexpr std::string_view hbRICHDelta[Np] = {"bRICH/delta/El", "bRICH/delta/Mu", "bRICH/delta/Pi", "bRICH/delta/Ka", "bRICH/delta/Pr"};
+  static constexpr std::string_view hbRICHNSigma[Np] = {"bRICH/nsigma/El", "bRICH/nsigma/Mu", "bRICH/nsigma/Pi", "bRICH/nsigma/Ka", "bRICH/nsigma/Pr"};
+  static constexpr std::string_view hbRICHNSigmaPrm[Np] = {"bRICH/nsigmaprm/El", "bRICH/nsigmaprm/Mu", "bRICH/nsigmaprm/Pi", "bRICH/nsigmaprm/Ka", "bRICH/nsigmaprm/Pr"};
+  static constexpr std::string_view hbRICHNSigmaSec[Np] = {"bRICH/nsigmasec/El", "bRICH/nsigmasec/Mu", "bRICH/nsigmasec/Pi", "bRICH/nsigmasec/Ka", "bRICH/nsigmasec/Pr"};
+  static constexpr std::string_view hbRICHNSigmaMC[Np] = {"bRICH/nsigmaMC/El", "bRICH/nsigmaMC/Mu", "bRICH/nsigmaMC/Pi", "bRICH/nsigmaMC/Ka", "bRICH/nsigmaMC/Pr"};
+  static constexpr std::string_view hbRICHNSigmaMCSec[Np] = {"bRICH/nsigmaMCsec/El", "bRICH/nsigmaMCsec/Mu", "bRICH/nsigmaMCsec/Pi", "bRICH/nsigmaMCsec/Ka", "bRICH/nsigmaMCsec/Pr"};
+  static constexpr std::string_view hbRICHNSigmaMCPrm[Np] = {"bRICH/nsigmaMCprm/El", "bRICH/nsigmaMCprm/Mu", "bRICH/nsigmaMCprm/Pi", "bRICH/nsigmaMCprm/Ka", "bRICH/nsigmaMCprm/Pr"};
 
-  static constexpr std::string_view hfrichnsigma[Np] = {"fRICH/nsigma/El", "fRICH/nsigma/Mu", "fRICH/nsigma/Pi", "fRICH/nsigma/Ka", "fRICH/nsigma/Pr"};
-  static constexpr std::string_view hfrichnsigmaprm[Np] = {"fRICH/nsigmaprm/El", "fRICH/nsigmaprm/Mu", "fRICH/nsigmaprm/Pi", "fRICH/nsigmaprm/Ka", "fRICH/nsigmaprm/Pr"};
-  static constexpr std::string_view hfrichnsigmasec[Np] = {"fRICH/nsigmasec/El", "fRICH/nsigmasec/Mu", "fRICH/nsigmasec/Pi", "fRICH/nsigmasec/Ka", "fRICH/nsigmasec/Pr"};
+  static constexpr std::string_view hfRICHDelta[Np] = {"fRICH/delta/El", "fRICH/delta/Mu", "fRICH/delta/Pi", "fRICH/delta/Ka", "fRICH/delta/Pr"};
+  static constexpr std::string_view hfRICHNSigma[Np] = {"fRICH/nsigma/El", "fRICH/nsigma/Mu", "fRICH/nsigma/Pi", "fRICH/nsigma/Ka", "fRICH/nsigma/Pr"};
+  static constexpr std::string_view hfRICHNSigmaPrm[Np] = {"fRICH/nsigmaprm/El", "fRICH/nsigmaprm/Mu", "fRICH/nsigmaprm/Pi", "fRICH/nsigmaprm/Ka", "fRICH/nsigmaprm/Pr"};
+  static constexpr std::string_view hfRICHNSigmaSec[Np] = {"fRICH/nsigmasec/El", "fRICH/nsigmasec/Mu", "fRICH/nsigmasec/Pi", "fRICH/nsigmasec/Ka", "fRICH/nsigmasec/Pr"};
+  static constexpr std::string_view hfRICHNSigmaMC[Np] = {"fRICH/nsigmaMC/El", "fRICH/nsigmaMC/Mu", "fRICH/nsigmaMC/Pi", "fRICH/nsigmaMC/Ka", "fRICH/nsigmaMC/Pr"};
+  static constexpr std::string_view hfRICHNSigmaMCSec[Np] = {"fRICH/nsigmaMCsec/El", "fRICH/nsigmaMCsec/Mu", "fRICH/nsigmaMCsec/Pi", "fRICH/nsigmaMCsec/Ka", "fRICH/nsigmaMCsec/Pr"};
+  static constexpr std::string_view hfRICHNSigmaMCPrm[Np] = {"fRICH/nsigmaMCprm/El", "fRICH/nsigmaMCprm/Mu", "fRICH/nsigmaMCprm/Pi", "fRICH/nsigmaMCprm/Ka", "fRICH/nsigmaMCprm/Pr"};
 
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p"};
   static constexpr int PDGs[Np] = {11, 13, 211, 321, 2212};
@@ -106,10 +110,15 @@ struct richPidQaMc {
       tit = Form("TOF Selected %s", pT[i]);
     }
     // NSigma
-    histos.add(hnsigmaMC[i].data(), "True " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
-    histos.add(hnsigmaMCprm[i].data(), "True Primary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
-    histos.add(hnsigmaMCsec[i].data(), "True Secondary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hbRICHNSigmaMC[i].data(), "True " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hbRICHNSigmaMCPrm[i].data(), "True Primary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hbRICHNSigmaMCSec[i].data(), "True Secondary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+
+    histos.add(hfRICHNSigmaMC[i].data(), "True " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaMCPrm[i].data(), "True Primary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaMCSec[i].data(), "True Secondary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
   }
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec momAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
@@ -120,26 +129,58 @@ struct richPidQaMc {
     }
 
     const AxisSpec sigAxis{1000, 0, 0.3, "Cherenkov angle (rad)"};
+    const AxisSpec lengthAxis{1000, 0, 3000, "Track length (cm)"};
+    const AxisSpec sigErrAxis{100, 0, 1, "Cherenkov angle error (rad)"};
     const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("#Delta(%s) (rad)", pT[pid_type])};
+    const AxisSpec etaAxis{100, -4, 4, "#it{#eta}"};
 
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
-    histos.add("p/Unselected", "Unselected", kTH1F, {momAxis});
-    histos.add("p/Prim", "Primaries", kTH1F, {momAxis});
-    histos.add("p/Sec", "Secondaries", kTH1F, {momAxis});
-    histos.add("pt/Unselected", "Unselected", kTH1F, {momAxis});
-    histos.add("qa/signal", "", kTH1F, {sigAxis});
-    histos.add("qa/eta", ";#it{#eta}", kTH1F, {{100, -4, 4}});
-    histos.add("qa/signalerror", ";Cherenkov angle error (rad)", kTH1F, {{100, 0, 1}});
-    histos.add("qa/signalvsP", "", kTH2F, {momAxis, sigAxis});
-    histos.add("qa/signalvsPPrim", "", kTH2F, {momAxis, sigAxis});
-    histos.add("qa/signalvsPSec", "", kTH2F, {momAxis, sigAxis});
-    histos.add(hdelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
-    histos.add(hnsigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
-    histos.add(hnsigmaprm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
-    histos.add(hnsigmasec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add("particle/p", "", kTH1F, {momAxis});
+    histos.add("particle/pt", "", kTH1F, {ptAxis});
+    histos.add("particle/eta", "", kTH1F, {etaAxis});
+    histos.add("tracks/p", "", kTH1F, {momAxis});
+    histos.add("tracks/pt", "", kTH1F, {ptAxis});
+    histos.add("tracks/eta", "", kTH1F, {etaAxis});
+    histos.add("tracks/length", "", kTH1F, {lengthAxis});
 
-    histos.add(hfrichnsigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
+#define MakeRICHHistos(rich)                                                                                                 \
+  histos.add(rich "/TrackSelection", "", kTH1F, {{10, 0.5, 10.5}});                                                          \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");                                  \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(2, "Passed RICH");                                  \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(3, "Passed TOF");                                   \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(4, Form("Passed minLength %.2f", minLength.value)); \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(5, Form("Passed maxLength %.2f", maxLength.value)); \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(6, Form("Passed minEta %.2f", minEta.value));       \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(7, Form("Passed maxEta %.2f", maxEta.value));       \
+  histos.get<TH1>(HIST(rich "/TrackSelection"))->GetXaxis()->SetBinLabel(8, "Passed PDG");                                   \
+  histos.add(rich "/pt", "Unselected", kTH1F, {ptAxis});                                                                     \
+  histos.add(rich "/ptPrm", "Primaries", kTH1F, {ptAxis});                                                                   \
+  histos.add(rich "/ptSec", "Secondaries", kTH1F, {ptAxis});                                                                 \
+  histos.add(rich "/p", "Unselected", kTH1F, {momAxis});                                                                     \
+  histos.add(rich "/pPrm", "Primaries", kTH1F, {momAxis});                                                                   \
+  histos.add(rich "/pSec", "Secondaries", kTH1F, {momAxis});                                                                 \
+  histos.add(rich "/signal", "", kTH1F, {sigAxis});                                                                          \
+  histos.add(rich "/eta", "", kTH1F, {etaAxis});                                                                             \
+  histos.add(rich "/signalerror", "", kTH1F, {sigErrAxis});                                                                  \
+  histos.add(rich "/signalvsP", "Unselected", kTH2F, {momAxis, sigAxis});                                                    \
+  histos.add(rich "/signalvsPPrm", "Primaries", kTH2F, {momAxis, sigAxis});                                                  \
+  histos.add(rich "/signalvsPSec", "Secondaries", kTH2F, {momAxis, sigAxis});
+
+    MakeRICHHistos("bRICH");
+    MakeRICHHistos("fRICH");
+
+#undef MakeRICHHistos
+
+    histos.add(hbRICHDelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
+    histos.add(hbRICHNSigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hbRICHNSigmaPrm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hbRICHNSigmaSec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
+
+    histos.add(hfRICHDelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
+    histos.add(hfRICHNSigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaPrm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaSec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
 
     addParticleHistos<0>();
     addParticleHistos<1>();
@@ -152,24 +193,23 @@ struct richPidQaMc {
   void fillNsigma(const T& track, const TTT& particle, const TT& mcParticles, const float& nsigma)
   {
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
-      histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
+      histos.fill(HIST(hbRICHNSigmaMC[pidIndex]), track.pt(), nsigma);
 
       if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
-        histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
+        histos.fill(HIST(hbRICHNSigmaMCPrm[pidIndex]), track.pt(), nsigma);
       } else {
-        histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
+        histos.fill(HIST(hbRICHNSigmaMCSec[pidIndex]), track.pt(), nsigma);
       }
     }
   }
 
   using Trks = soa::Join<aod::Tracks, aod::RICHTracksIndex, aod::TracksExtra,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                         aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using TrksfRICH = soa::Join<aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
-  void process(const aod::McParticles& mcParticles,
-               const Trks& tracks,
+                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>;
+  using TrksfRICH = soa::Join<aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra, aod::McTrackLabels>;
+  void process(const Trks& tracks,
+               const aod::McParticles& mcParticles,
                const TrksfRICH& tracksfrich,
-               const aod::McTrackLabels& labels,
                const aod::RICHs&,
                const aod::FRICHs&,
                const aod::Collisions& colls)
@@ -177,78 +217,107 @@ struct richPidQaMc {
     for (const auto& col : colls) {
       histos.fill(HIST("event/vertexz"), col.posZ());
     }
+    for (const auto& p : mcParticles) {
+      if (pdgCode != 0 && abs(p.pdgCode()) != pdgCode) {
+        continue;
+      }
+      histos.fill(HIST("particle/p"), p.p());
+      histos.fill(HIST("particle/pt"), p.pt());
+      histos.fill(HIST("particle/eta"), p.eta());
+    }
+
+    for (const auto& t : tracks) {
+      histos.fill(HIST("tracks/p"), t.p());
+      histos.fill(HIST("tracks/pt"), t.pt());
+      histos.fill(HIST("tracks/eta"), t.eta());
+      histos.fill(HIST("tracks/length"), t.length());
+    }
+
+    auto rejectTrack = [&](const auto& t, auto h) {
+      if (t.length() < minLength) {
+        return true;
+      }
+      histos.fill(h, 4);
+      if (t.length() > maxLength) {
+        return true;
+      }
+      histos.fill(h, 5);
+      if (t.eta() < minEta) {
+        return true;
+      }
+      histos.fill(h, 6);
+      if (t.eta() > maxEta) {
+        return true;
+      }
+      histos.fill(h, 7);
+      const auto mcParticle = t.mcParticle();
+      if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
+        return true;
+      }
+      histos.fill(h, 8);
+      return false;
+    };
 
     for (const auto& track : tracks) { // Barrel RICH
+      histos.fill(HIST("bRICH/TrackSelection"), 1);
       if (!track.has_rich()) {
         continue;
       }
-      if (track.length() < minLength) {
-        continue;
-      }
-      if (track.length() > maxLength) {
-        continue;
-      }
-      if (track.eta() > maxEta || track.eta() < minEta) {
-        continue;
-      }
-      const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
-      if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
-        continue;
-      }
+      histos.fill(HIST("bRICH/TrackSelection"), 2);
       if (useTOF && !track.hasTOF()) {
         continue;
       }
+      histos.fill(HIST("bRICH/TrackSelection"), 3);
+      if (rejectTrack(track, HIST("bRICH/TrackSelection"))) {
+        continue;
+      }
 
-      histos.fill(HIST("p/Unselected"), track.p());
-      histos.fill(HIST("pt/Unselected"), track.pt());
-      histos.fill(HIST("qa/eta"), track.eta());
-      histos.fill(HIST("qa/signal"), track.rich().richSignal());
-      histos.fill(HIST("qa/signalerror"), track.rich().richSignalError());
-      histos.fill(HIST("qa/signalvsP"), track.p(), track.rich().richSignal());
-
-      float delta = -999.f;
-      float nsigma = -999.f;
+      const float delta = track.rich().richDelta(pid_type);
+      const float nsigma = track.rich().richNsigma(pid_type);
       if constexpr (pid_type == 0) {
-        delta = track.rich().richDeltaEl();
-        nsigma = track.rich().richNsigmaEl();
         if (useTOF && abs(track.tofNSigmaEl()) > 3.f) {
           continue;
         }
       } else if constexpr (pid_type == 1) {
-        delta = track.rich().richDeltaMu();
-        nsigma = track.rich().richNsigmaMu();
         if (useTOF && abs(track.tofNSigmaMu()) > 3.f) {
           continue;
         }
       } else if constexpr (pid_type == 2) {
-        delta = track.rich().richDeltaPi();
-        nsigma = track.rich().richNsigmaPi();
         if (useTOF && abs(track.tofNSigmaPi()) > 3.f) {
           continue;
         }
       } else if constexpr (pid_type == 3) {
-        delta = track.rich().richDeltaKa();
-        nsigma = track.rich().richNsigmaKa();
         if (useTOF && abs(track.tofNSigmaKa()) > 3.f) {
           continue;
         }
       } else if constexpr (pid_type == 4) {
-        delta = track.rich().richDeltaPr();
-        nsigma = track.rich().richNsigmaPr();
         if (useTOF && abs(track.tofNSigmaPr()) > 3.f) {
           continue;
         }
       }
-      histos.fill(HIST(hnsigma[pid_type]), track.pt(), nsigma);
-      histos.fill(HIST(hdelta[pid_type]), track.p(), delta);
-      if (MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
-        histos.fill(HIST(hnsigmaprm[pid_type]), track.pt(), nsigma);
-        histos.fill(HIST("p/Prim"), track.p());
-      } else {
-        histos.fill(HIST(hnsigmasec[pid_type]), track.pt(), nsigma);
-        histos.fill(HIST("p/Sec"), track.p());
-      }
 
+      histos.fill(HIST("bRICH/p"), track.p());
+      histos.fill(HIST("bRICH/pt"), track.pt());
+      histos.fill(HIST("bRICH/eta"), track.eta());
+      histos.fill(HIST("bRICH/signal"), track.rich().richSignal());
+      histos.fill(HIST("bRICH/signalerror"), track.rich().richSignalError());
+      histos.fill(HIST("bRICH/signalvsP"), track.p(), track.rich().richSignal());
+
+      histos.fill(HIST(hbRICHNSigma[pid_type]), track.pt(), nsigma);
+      histos.fill(HIST(hbRICHDelta[pid_type]), track.p(), delta);
+      // const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
+      const auto mcParticle = track.mcParticle();
+      if (MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
+        histos.fill(HIST(hbRICHNSigmaPrm[pid_type]), track.pt(), nsigma);
+        histos.fill(HIST("bRICH/signalvsPPrm"), track.p(), track.rich().richSignal());
+        histos.fill(HIST("bRICH/pPrm"), track.p());
+        histos.fill(HIST("bRICH/ptPrm"), track.pt());
+      } else {
+        histos.fill(HIST(hbRICHNSigmaSec[pid_type]), track.pt(), nsigma);
+        histos.fill(HIST("bRICH/signalvsPSec"), track.p(), track.rich().richSignal());
+        histos.fill(HIST("bRICH/pSec"), track.p());
+        histos.fill(HIST("bRICH/ptSec"), track.pt());
+      }
       fillNsigma<0>(track, mcParticle, mcParticles, nsigma);
       fillNsigma<1>(track, mcParticle, mcParticles, nsigma);
       fillNsigma<2>(track, mcParticle, mcParticles, nsigma);
@@ -257,46 +326,38 @@ struct richPidQaMc {
     }
 
     for (const auto& track : tracksfrich) { // Forward RICH
+      histos.fill(HIST("fRICH/TrackSelection"), 1);
       if (!track.has_frich()) {
         continue;
       }
-      if (track.length() < minLength) {
-        continue;
-      }
-      if (track.length() > maxLength) {
-        continue;
-      }
-      if (track.eta() > maxEta || track.eta() < minEta) {
-        continue;
-      }
-      const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
-      if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
+      histos.fill(HIST("fRICH/TrackSelection"), 2);
+      if (rejectTrack(track, HIST("fRICH/TrackSelection"))) {
         continue;
       }
 
-      float delta = -999.f;
-      float nsigma = -999.f;
-      if constexpr (pid_type == 0) {
-        delta = track.frich().frichDeltaEl();
-        nsigma = track.frich().frichNsigmaEl();
-      } else if constexpr (pid_type == 1) {
-        delta = track.frich().frichDeltaMu();
-        nsigma = track.frich().frichNsigmaMu();
-      } else if constexpr (pid_type == 2) {
-        delta = track.frich().frichDeltaPi();
-        nsigma = track.frich().frichNsigmaPi();
-      } else if constexpr (pid_type == 3) {
-        delta = track.frich().frichDeltaKa();
-        nsigma = track.frich().frichNsigmaKa();
-      } else if constexpr (pid_type == 4) {
-        delta = track.frich().frichDeltaPr();
-        nsigma = track.frich().frichNsigmaPr();
-      }
-      histos.fill(HIST(hfrichnsigma[pid_type]), track.pt(), nsigma);
+      const float delta = track.frich().frichDelta(pid_type);
+      const float nsigma = track.frich().frichNsigma(pid_type);
+
+      histos.fill(HIST("fRICH/p"), track.p());
+      histos.fill(HIST("fRICH/pt"), track.pt());
+      histos.fill(HIST("fRICH/eta"), track.eta());
+      histos.fill(HIST("fRICH/signal"), track.frich().frichSignal());
+      histos.fill(HIST("fRICH/signalerror"), track.frich().frichSignalError());
+      histos.fill(HIST("fRICH/signalvsP"), track.p(), track.frich().frichSignal());
+
+      histos.fill(HIST(hfRICHNSigma[pid_type]), track.pt(), nsigma);
+      histos.fill(HIST(hfRICHDelta[pid_type]), track.p(), delta);
+      const auto mcParticle = track.mcParticle();
       if (MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
-        histos.fill(HIST(hfrichnsigmaprm[pid_type]), track.pt(), nsigma);
+        histos.fill(HIST(hfRICHNSigmaPrm[pid_type]), track.pt(), nsigma);
+        histos.fill(HIST("fRICH/signalvsPPrm"), track.p(), track.frich().frichSignal());
+        histos.fill(HIST("fRICH/pPrm"), track.p());
+        histos.fill(HIST("fRICH/ptPrm"), track.pt());
       } else {
-        histos.fill(HIST(hfrichnsigmasec[pid_type]), track.pt(), nsigma);
+        histos.fill(HIST(hfRICHNSigmaSec[pid_type]), track.pt(), nsigma);
+        histos.fill(HIST("fRICH/signalvsPSec"), track.p(), track.frich().frichSignal());
+        histos.fill(HIST("fRICH/pSec"), track.p());
+        histos.fill(HIST("fRICH/ptSec"), track.pt());
       }
     }
   }

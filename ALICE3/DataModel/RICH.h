@@ -21,6 +21,7 @@
 
 // O2 includes
 #include "Framework/AnalysisDataModel.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::aod
 {
@@ -39,6 +40,42 @@ DECLARE_SOA_COLUMN(RICHNsigmaMu, richNsigmaMu, float);       //! nsigma separati
 DECLARE_SOA_COLUMN(RICHNsigmaPi, richNsigmaPi, float);       //! nsigma separation for pions
 DECLARE_SOA_COLUMN(RICHNsigmaKa, richNsigmaKa, float);       //! nsigma separation for kaons
 DECLARE_SOA_COLUMN(RICHNsigmaPr, richNsigmaPr, float);       //! nsigma separation for protons
+DECLARE_SOA_DYNAMIC_COLUMN(RICHDelta, richDelta,             //! Delta separation with the RICH detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return El;
+                               case o2::track::PID::Muon:
+                                 return Mu;
+                               case o2::track::PID::Pion:
+                                 return Pi;
+                               case o2::track::PID::Kaon:
+                                 return Ka;
+                               case o2::track::PID::Proton:
+                                 return Pr;
+                               default:
+                                 return -999.f;
+                             }
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(RICHNsigma, richNsigma, //! Nsigma separation with the RICH detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return El;
+                               case o2::track::PID::Muon:
+                                 return Mu;
+                               case o2::track::PID::Pion:
+                                 return Pi;
+                               case o2::track::PID::Kaon:
+                                 return Ka;
+                               case o2::track::PID::Proton:
+                                 return Pr;
+                               default:
+                                 return -999.f;
+                             }
+                           });
 } // namespace alice3rich
 
 namespace alice3frich
@@ -56,6 +93,42 @@ DECLARE_SOA_COLUMN(FRICHNsigmaMu, frichNsigmaMu, float);       //! nsigma separa
 DECLARE_SOA_COLUMN(FRICHNsigmaPi, frichNsigmaPi, float);       //! nsigma separation for pions
 DECLARE_SOA_COLUMN(FRICHNsigmaKa, frichNsigmaKa, float);       //! nsigma separation for kaons
 DECLARE_SOA_COLUMN(FRICHNsigmaPr, frichNsigmaPr, float);       //! nsigma separation for protons
+DECLARE_SOA_DYNAMIC_COLUMN(FRICHDelta, frichDelta,             //! Delta separation with the FRICH detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return El;
+                               case o2::track::PID::Muon:
+                                 return Mu;
+                               case o2::track::PID::Pion:
+                                 return Pi;
+                               case o2::track::PID::Kaon:
+                                 return Ka;
+                               case o2::track::PID::Proton:
+                                 return Pr;
+                               default:
+                                 return -999.f;
+                             }
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(FRICHNsigma, frichNsigma, //! Nsigma separation with the FRICH detector for the combined species
+                           [](const float& El, const float& Mu, const float& Pi,
+                              const float& Ka, const float& Pr, const o2::track::PID::ID& index) -> float {
+                             switch (index) {
+                               case o2::track::PID::Electron:
+                                 return El;
+                               case o2::track::PID::Muon:
+                                 return Mu;
+                               case o2::track::PID::Pion:
+                                 return Pi;
+                               case o2::track::PID::Kaon:
+                                 return Ka;
+                               case o2::track::PID::Proton:
+                                 return Pr;
+                               default:
+                                 return -999.f;
+                             }
+                           });
 } // namespace alice3frich
 
 DECLARE_SOA_TABLE(RICHs, "AOD", "RICH", //! Table for the ALICE3 RICH detector
@@ -72,7 +145,11 @@ DECLARE_SOA_TABLE(RICHs, "AOD", "RICH", //! Table for the ALICE3 RICH detector
                   alice3rich::RICHNsigmaMu,
                   alice3rich::RICHNsigmaPi,
                   alice3rich::RICHNsigmaKa,
-                  alice3rich::RICHNsigmaPr);
+                  alice3rich::RICHNsigmaPr,
+                  alice3rich::RICHDelta<alice3rich::RICHDeltaEl, alice3rich::RICHDeltaMu, alice3rich::RICHDeltaPi,
+                                        alice3rich::RICHDeltaKa, alice3rich::RICHDeltaPr>,
+                  alice3rich::RICHNsigma<alice3rich::RICHNsigmaEl, alice3rich::RICHNsigmaMu, alice3rich::RICHNsigmaPi,
+                                         alice3rich::RICHNsigmaKa, alice3rich::RICHNsigmaPr>);
 using RICH = RICHs::iterator;
 
 DECLARE_SOA_TABLE(FRICHs, "AOD", "FRICH", //! Table for the ALICE3 Forward RICH detector
@@ -89,7 +166,11 @@ DECLARE_SOA_TABLE(FRICHs, "AOD", "FRICH", //! Table for the ALICE3 Forward RICH 
                   alice3frich::FRICHNsigmaMu,
                   alice3frich::FRICHNsigmaPi,
                   alice3frich::FRICHNsigmaKa,
-                  alice3frich::FRICHNsigmaPr);
+                  alice3frich::FRICHNsigmaPr,
+                  alice3frich::FRICHDelta<alice3frich::FRICHDeltaEl, alice3frich::FRICHDeltaMu, alice3frich::FRICHDeltaPi,
+                                          alice3frich::FRICHDeltaKa, alice3frich::FRICHDeltaPr>,
+                  alice3frich::FRICHNsigma<alice3frich::FRICHNsigmaEl, alice3frich::FRICHNsigmaMu, alice3frich::FRICHNsigmaPi,
+                                           alice3frich::FRICHNsigmaKa, alice3frich::FRICHNsigmaPr>);
 
 using FRICH = FRICHs::iterator;
 
