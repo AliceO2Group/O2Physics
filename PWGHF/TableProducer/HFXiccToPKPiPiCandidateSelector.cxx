@@ -63,13 +63,33 @@ struct HfXiccToPKPiPiCandidateSelector {
       return false;
     }
 
+    // check candidate mass is within a defined mass window
+    if (std::abs(InvMassXiccToXicPi(hfCandXicc) - RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus)) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
     // cosine of pointing angle
     if (hfCandXicc.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
       return false;
     }
 
-    // candidate decay length
-    if (hfCandXicc.decayLength() <= cuts->get(pTBin, "decay length")) {
+    // cosine of pointing angle XY
+    if (hfCandXicc.cpaXY() <= cuts->get(pTBin, "cos pointing angle XY")) {
+      return false;
+    }
+
+    // candidate maximum decay length
+    if (hfCandXicc.decayLength() > cuts->get(pTBin, "max decay length")) {
+      return false;
+    }
+
+    // candidate maximum decay length XY
+    if (hfCandXicc.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
+      return false;
+    }
+
+    // candidate minimum decay length
+    if (hfCandXicc.decayLength() <= cuts->get(pTBin, "min decay length")) {
       return false;
     }
 
@@ -77,8 +97,8 @@ struct HfXiccToPKPiPiCandidateSelector {
     if (hfCandXicc.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
       return false;
     }
-    if ((TMath::Abs(hfCandXicc.impactParameter0()) > cuts->get(pTBin, "d0 Xic")) ||
-        (TMath::Abs(hfCandXicc.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))) {
+    if ((std::abs(hfCandXicc.impactParameter0()) > cuts->get(pTBin, "d0 Xic")) ||
+        (std::abs(hfCandXicc.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))) {
       return false; // DCA check on daughters
     }
 
