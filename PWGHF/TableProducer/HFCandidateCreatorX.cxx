@@ -202,10 +202,11 @@ struct HFCandidateCreatorX {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           int hfFlag = 0;
-          if (jpsiCand.hfflag() & 1 << hf_cand_prong2::DecayType::JpsiToMuMu) {
-            hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi; // dimuon channel
-          } else {
-            hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi; // dielectron channel
+          if (TESTBIT(jpsiCand.hfflag(), hf_cand_prong2::DecayType::JpsiToMuMu)) {
+            SETBIT(hfFlag, hf_cand_x::DecayType::XToJpsiToMuMuPiPi); // dimuon channel
+          }
+          if (TESTBIT(jpsiCand.hfflag(), hf_cand_prong2::DecayType::JpsiToEE)) {
+            SETBIT(hfFlag, hf_cand_x::DecayType::XToJpsiToEEPiPi); // dielectron channel
           }
 
           //if (jpsiCand.isSelJpsiToEE() > 0) {
