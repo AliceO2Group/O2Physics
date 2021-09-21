@@ -98,7 +98,7 @@ struct QaTrackingEfficiency {
   void init(InitContext&)
   {
     if (pdgSign != 0 && pdgSign != 1 && pdgSign != -1) {
-      LOG(FATAL) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
+      LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
     }
     const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
                                o2::track::pid_constants::sNames[particle],
@@ -256,7 +256,7 @@ struct QaTrackingEfficiency {
           }
           break;
         default:
-          LOG(FATAL) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
+          LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
           break;
       }
       histos.fill(h, 7);

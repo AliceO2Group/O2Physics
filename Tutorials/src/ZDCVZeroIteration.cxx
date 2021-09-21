@@ -30,12 +30,12 @@ using namespace o2::framework::expressions;
 struct IterateV0 {
   void process(aod::CollisionMatchedRun2Sparse const& collisionMatched, aod::FV0As const&)
   {
-    LOGF(INFO, "Vertex = %f", collisionMatched.posZ());
+    LOGF(info, "Vertex = %f", collisionMatched.posZ());
     if (collisionMatched.has_fv0a()) {
       auto v0a = collisionMatched.fv0a();
       LOGF(info, "V0A: %f %f", v0a.amplitude()[0], v0a.amplitude()[1]);
     } else {
-      LOGF(INFO, "No V0A info");
+      LOGF(info, "No V0A info");
     }
   }
 };
@@ -48,7 +48,7 @@ struct IterateV0 {
 struct IterateV0Exclusive {
   void process(aod::Run2MatchedExclusive::iterator const& matcher, aod::Collisions const&, aod::FV0As const&)
   {
-    LOGF(INFO, "Vertex = %f", matcher.collision().posZ());
+    LOGF(info, "Vertex = %f", matcher.collision().posZ());
     auto fv0a = matcher.fv0a();
     LOGF(info, "V0: %f %f", fv0a.amplitude()[0], fv0a.amplitude()[1]);
   }
@@ -59,12 +59,12 @@ struct IterateV0Exclusive {
 struct IterateV0Tracks {
   void process(aod::CollisionMatchedRun2Sparse const& collisionMatched, aod::FV0As const&, aod::Tracks const& tracks)
   {
-    LOGF(INFO, "Vertex = %f. %d tracks", collisionMatched.posZ(), tracks.size());
+    LOGF(info, "Vertex = %f. %d tracks", collisionMatched.posZ(), tracks.size());
     if (collisionMatched.has_fv0a()) {
       auto v0a = collisionMatched.fv0a();
       LOGF(info, "V0A: %f %f", v0a.amplitude()[0], v0a.amplitude()[1]);
     } else {
-      LOGF(INFO, "No V0A info");
+      LOGF(info, "No V0A info");
     }
   }
 };
@@ -73,17 +73,17 @@ struct IterateV0Tracks {
 struct IterateV0ZDC {
   void process(aod::CollisionMatchedRun2Sparse const& collisionMatched, aod::FV0As const&, aod::Zdcs const&)
   {
-    LOGF(INFO, "Vertex = %f", collisionMatched.posZ());
+    LOGF(info, "Vertex = %f", collisionMatched.posZ());
     if (collisionMatched.has_fv0a()) {
       auto v0a = collisionMatched.fv0a();
       LOGF(info, "V0A: %f %f", v0a.amplitude()[0], v0a.amplitude()[1]);
     } else {
-      LOGF(INFO, "No V0A info");
+      LOGF(info, "No V0A info");
     }
     if (collisionMatched.has_zdc()) {
-      LOGF(INFO, "ZDC: E1 = %.3f; E2 = %.3f", collisionMatched.zdc().energyZEM1(), collisionMatched.zdc().energyZEM2());
+      LOGF(info, "ZDC: E1 = %.3f; E2 = %.3f", collisionMatched.zdc().energyZEM1(), collisionMatched.zdc().energyZEM2());
     } else {
-      LOGF(INFO, "No ZDC info");
+      LOGF(info, "No ZDC info");
     }
   }
 };

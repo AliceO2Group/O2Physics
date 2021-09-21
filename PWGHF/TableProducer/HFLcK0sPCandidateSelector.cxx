@@ -122,59 +122,59 @@ struct HFLcK0sPCandidateSelector {
     }
 
     if (candPt < pTCandMin || candPt >= pTCandMax) {
-      LOG(DEBUG) << "cand pt (first check) cut failed: from cascade --> " << candPt << ", cut --> " << pTCandMax;
+      LOG(debug) << "cand pt (first check) cut failed: from cascade --> " << candPt << ", cut --> " << pTCandMax;
       return false; //check that the candidate pT is within the analysis range
     }
 
     if (std::abs(hfCandCascade.mK0Short() - RecoDecay::getMassPDG(kK0Short)) > cuts[ptBin][0]) {
-      LOG(DEBUG) << "massK0s cut failed: from v0 in cascade, K0s --> " << hfCandCascade.mK0Short() << ", in PDG K0s --> " << RecoDecay::getMassPDG(kK0Short) << ", cut --> " << cuts[ptBin][0];
+      LOG(debug) << "massK0s cut failed: from v0 in cascade, K0s --> " << hfCandCascade.mK0Short() << ", in PDG K0s --> " << RecoDecay::getMassPDG(kK0Short) << ", cut --> " << cuts[ptBin][0];
       return false; // mass of the K0s
     }
 
     if ((std::abs(hfCandCascade.mLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts[ptBin][1]) || (std::abs(hfCandCascade.mAntiLambda() - RecoDecay::getMassPDG(kLambda0)) < cuts[ptBin][1])) {
-      LOG(DEBUG) << "mass L cut failed: from v0 in cascade, Lambda --> " << hfCandCascade.mLambda() << ", AntiLambda --> " << hfCandCascade.mAntiLambda() << ", in PDG, Lambda --> " << RecoDecay::getMassPDG(kLambda0) << ", cut --> " << cuts[ptBin][1];
+      LOG(debug) << "mass L cut failed: from v0 in cascade, Lambda --> " << hfCandCascade.mLambda() << ", AntiLambda --> " << hfCandCascade.mAntiLambda() << ", in PDG, Lambda --> " << RecoDecay::getMassPDG(kLambda0) << ", cut --> " << cuts[ptBin][1];
       return false; // mass of the Lambda
     }
 
     if (std::abs(InvMassGamma(hfCandCascade) - RecoDecay::getMassPDG(kGamma)) < cuts[ptBin][2]) {
-      LOG(DEBUG) << "mass gamma cut failed: from v0 in cascade, gamma --> " << InvMassGamma(hfCandCascade) << ", cut --> " << cuts[ptBin][2];
+      LOG(debug) << "mass gamma cut failed: from v0 in cascade, gamma --> " << InvMassGamma(hfCandCascade) << ", cut --> " << cuts[ptBin][2];
       return false; // mass of the Gamma
     }
 
     if (hfCandCascade.ptProng0() < cuts[ptBin][3]) {
-      LOG(DEBUG) << "bach pt cut failed, from cascade --> " << hfCandCascade.ptProng0() << " , cut --> " << cuts[ptBin][3];
+      LOG(debug) << "bach pt cut failed, from cascade --> " << hfCandCascade.ptProng0() << " , cut --> " << cuts[ptBin][3];
       return false; // pt of the p
     }
 
     if (hfCandCascade.ptV0Pos() < cuts[ptBin][4]) {
-      LOG(DEBUG) << "v0 pos daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Pos() << ", cut --> " << cuts[ptBin][4];
+      LOG(debug) << "v0 pos daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Pos() << ", cut --> " << cuts[ptBin][4];
       return false; // pt of the K0
     }
 
     if (hfCandCascade.ptV0Neg() < cuts[ptBin][4]) {
-      LOG(DEBUG) << "v0 neg daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Neg() << ", cut --> " << cuts[ptBin][4];
+      LOG(debug) << "v0 neg daugh pt cut failed, from cascade --> " << hfCandCascade.ptV0Neg() << ", cut --> " << cuts[ptBin][4];
       return false; // pt of the K0
     }
 
     if (hfCandCascade.pt() < cuts[ptBin][5]) {
-      LOG(DEBUG) << "cand pt cut failed, from cascade --> " << hfCandCascade.pt() << ", cut --> " << cuts[ptBin][5];
+      LOG(debug) << "cand pt cut failed, from cascade --> " << hfCandCascade.pt() << ", cut --> " << cuts[ptBin][5];
       return false; // pt of the Lc
     }
 
     if (std::abs(hfCandCascade.impactParameter0()) > cuts[ptBin][6]) {
-      LOG(DEBUG) << "d0 bach cut failed, in cascade --> " << hfCandCascade.impactParameter0() << ", cut --> " << cuts[ptBin][6];
+      LOG(debug) << "d0 bach cut failed, in cascade --> " << hfCandCascade.impactParameter0() << ", cut --> " << cuts[ptBin][6];
       return false; // d0 of the bachelor
     }
 
     /*
     if ((std::abs(hfCandCascade.dcapostopv()) > cuts[ptBin][7]) || (std::abs(hfCandCascade.dcanegtopv()) > cuts[ptBin][7])) {
-      LOG(DEBUG) << "v0 daugh cut failed, positive v0 daugh --> " << hfCandCascade.dcapostopv() << ", negative v0 daugh --> " << hfCandCascade.dcanegtopv() << " , cut --> " << cuts[ptBin][7];
+      LOG(debug) << "v0 daugh cut failed, positive v0 daugh --> " << hfCandCascade.dcapostopv() << ", negative v0 daugh --> " << hfCandCascade.dcanegtopv() << " , cut --> " << cuts[ptBin][7];
       return false; // d0 of the K0s daughters
     }
     */
 
     if (std::abs(hfCandCascade.impactParameter1()) > cuts[ptBin][7]) {
-      LOG(DEBUG) << "d0 v0 cut failed, in cascade --> " << hfCandCascade.impactParameter1() << ", cut --> " << cuts[ptBin][7];
+      LOG(debug) << "d0 v0 cut failed, in cascade --> " << hfCandCascade.impactParameter1() << ", cut --> " << cuts[ptBin][7];
       return false; // d0 of the v0
     }
 
@@ -189,7 +189,7 @@ struct HFLcK0sPCandidateSelector {
   bool validTPCPID(const T& track)
   {
     if (track.pt() < pidTPCMinPt || track.pt() >= pidTPCMaxPt) {
-      LOG(DEBUG) << "Bachelor pt is " << track.pt() << ", we trust TPC PID in [" << pidTPCMinPt << ", " << pidTPCMaxPt << "]";
+      LOG(debug) << "Bachelor pt is " << track.pt() << ", we trust TPC PID in [" << pidTPCMinPt << ", " << pidTPCMaxPt << "]";
       return false;
     }
     return true;
@@ -203,10 +203,10 @@ struct HFLcK0sPCandidateSelector {
   bool applyTPCPID(const T& track)
   {
     if (track.pt() < applyPidTPCMinPt) {
-      LOG(DEBUG) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << applyPidTPCMinPt;
+      LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << applyPidTPCMinPt;
       return false;
     }
-    LOG(DEBUG) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << applyPidTPCMinPt;
+    LOG(debug) << "Bachelor pt is " << track.pt() << ", we apply TPC PID from " << applyPidTPCMinPt;
     return true;
   }
 
@@ -234,7 +234,7 @@ struct HFLcK0sPCandidateSelector {
   {
     double nSigma = 100.0; //arbitarily large value
     nSigma = track.tpcNSigmaPr();
-    LOG(DEBUG) << "nSigma for bachelor = " << nSigma << ", cut at " << nSigmaCut;
+    LOG(debug) << "nSigma for bachelor = " << nSigma << ", cut at " << nSigmaCut;
     return std::abs(nSigma) < nSigmaCut;
   }
 
@@ -278,7 +278,7 @@ struct HFLcK0sPCandidateSelector {
     }
 
     if (validTPCPID(track)) {
-      LOG(DEBUG) << "We check the TPC PID now";
+      LOG(debug) << "We check the TPC PID now";
       if (!selectionPIDTPC(track, nSigmaTPC)) {
         statusTPC = 0;
         /*
@@ -341,8 +341,8 @@ struct HFLcK0sPCandidateSelector {
       bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
       bool isK0SfromLc = isK0SfromLcFunc(indexV0DaughPos, indexV0DaughNeg, indexK0Spos, indexK0Sneg);
 #endif
-      MY_DEBUG_MSG(isLc, printf("\n"); LOG(INFO) << "In selector: correct Lc found: proton --> " << indexBach << ", posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
-      //MY_DEBUG_MSG(isLc != 1, printf("\n"); LOG(INFO) << "In selector: wrong Lc found: proton --> " << indexBach << ", posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
+      MY_DEBUG_MSG(isLc, printf("\n"); LOG(info) << "In selector: correct Lc found: proton --> " << indexBach << ", posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
+      //MY_DEBUG_MSG(isLc != 1, printf("\n"); LOG(info) << "In selector: wrong Lc found: proton --> " << indexBach << ", posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
 
       statusLc = 0;
       /* // not needed for the Lc
@@ -356,32 +356,32 @@ struct HFLcK0sPCandidateSelector {
       pidProton = -1;
 
       // daughter track validity selection
-      LOG(DEBUG) << "daughterSelection(bach) = " << daughterSelection(bach);
+      LOG(debug) << "daughterSelection(bach) = " << daughterSelection(bach);
       if (!daughterSelection(bach)) {
-        MY_DEBUG_MSG(isLc, LOG(INFO) << "In selector: Lc rejected due to selections on bachelor");
+        MY_DEBUG_MSG(isLc, LOG(info) << "In selector: Lc rejected due to selections on bachelor");
         hfSelLcK0sPCandidate(statusLc);
         continue;
       }
 
       //implement filter bit 4 cut - should be done before this task at the track selection level
       //need to add special cuts (additional cuts on decay length and d0 norm)
-      LOG(DEBUG) << "selectionTopol(candidate) = " << selectionTopol(candidate);
+      LOG(debug) << "selectionTopol(candidate) = " << selectionTopol(candidate);
       if (!selectionTopol(candidate)) {
-        MY_DEBUG_MSG(isLc, LOG(INFO) << "In selector: Lc rejected due to topological selections");
+        MY_DEBUG_MSG(isLc, LOG(info) << "In selector: Lc rejected due to topological selections");
         hfSelLcK0sPCandidate(statusLc);
         continue;
       }
 
       pidProton = selectionPID(bach);
 
-      LOG(DEBUG) << "pidProton = " << pidProton;
+      LOG(debug) << "pidProton = " << pidProton;
 
       if (pidProton == 1) {
         statusLc = 1;
       }
 
-      MY_DEBUG_MSG(isLc && pidProton != 1, LOG(INFO) << "In selector: Lc rejected due to PID selections on bachelor");
-      MY_DEBUG_MSG(isLc && pidProton == 1, LOG(INFO) << "In selector: Lc ACCEPTED");
+      MY_DEBUG_MSG(isLc && pidProton != 1, LOG(info) << "In selector: Lc rejected due to PID selections on bachelor");
+      MY_DEBUG_MSG(isLc && pidProton == 1, LOG(info) << "In selector: Lc ACCEPTED");
 
       hfSelLcK0sPCandidate(statusLc);
     }

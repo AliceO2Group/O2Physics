@@ -70,27 +70,27 @@ struct EmcalCorrectionTask {
 
   void init(InitContext const&)
   {
-    LOG(DEBUG) << "Start init!";
+    LOG(debug) << "Start init!";
     // NOTE: The geometry manager isn't necessary just to load the EMCAL geometry.
     //       However, it _is_ necessary for loading the misalignment matrices as of September 2020
     //       Eventually, those matrices will be moved to the CCDB, but it's not yet ready.
     // FIXME: Hardcoded for run 2
     o2::base::GeometryManager::loadGeometry(); // for generating full clusters
-    LOG(DEBUG) << "After load geometry!";
+    LOG(debug) << "After load geometry!";
     o2::emcal::Geometry* geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
     if (!geometry) {
-      LOG(ERROR) << "Failure accessing geometry";
+      LOG(error) << "Failure accessing geometry";
     }
 
     // Setup clusterizer
-    LOG(DEBUG) << "Init clusterizer!";
+    LOG(debug) << "Init clusterizer!";
     mClusterizer = decltype(mClusterizer)(new o2::emcal::Clusterizer<o2::emcal::Cell>());
     mClusterizer->initialize(timeCut, timeMin, timeMax, gradientCut, enableEnergyGradientCut, seedEnergy, minCellEnergy);
     mClusterizer->setGeometry(geometry);
-    LOG(DEBUG) << "Done with clusterizer. Setup cluster factory.";
+    LOG(debug) << "Done with clusterizer. Setup cluster factory.";
     // Setup cluster factory.
     mClusterFactory = decltype(mClusterFactory)(new o2::emcal::ClusterFactory<o2::emcal::Cell>());
-    LOG(DEBUG) << "Completed init!";
+    LOG(debug) << "Completed init!";
 
     // Setup QA hists.
     hCellE.setObject(new TH1F("hCellE", "hCellE", 200, 0.0, 100));
@@ -108,17 +108,17 @@ struct EmcalCorrectionTask {
   // Appears to need the BC to be accessed to be available in the collision table...
   void process(aod::Collision const& collision, aod::Calos const& cells, aod::BCs const& bcs)
   {
-    LOG(DEBUG) << "Starting process.";
+    LOG(debug) << "Starting process.";
     // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
     // In particular, we need to filter only EMCAL cells.
     mEmcalCells.clear();
     for (auto& cell : cells) {
       if (cell.caloType() != selectedCellType || cell.bc() != collision.bc()) {
-        //LOG(DEBUG) << "Rejected";
+        //LOG(debug) << "Rejected";
         continue;
       }
-      //LOG(DEBUG) << "Cell E: " << cell.getEnergy();
-      //LOG(DEBUG) << "Cell E: " << cell;
+      //LOG(debug) << "Cell E: " << cell.getEnergy();
+      //LOG(debug) << "Cell E: " << cell;
 
       mEmcalCells.emplace_back(o2::emcal::Cell(
         cell.cellNumber(),
@@ -140,19 +140,19 @@ struct EmcalCorrectionTask {
     }
 
     // TODO: Helpful for now, but should be removed.
-    LOG(DEBUG) << "Converted EMCAL cells";
+    LOG(debug) << "Converted EMCAL cells";
     for (auto& cell : mEmcalCells) {
-      LOG(DEBUG) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
+      LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
     }
 
-    LOG(INFO) << "Converted cells. Contains: " << mEmcalCells.size() << ". Originally " << cells.size() << ". About to run clusterizer.";
+    LOG(info) << "Converted cells. Contains: " << mEmcalCells.size() << ". Originally " << cells.size() << ". About to run clusterizer.";
 
     // Run the clusterizer
     mClusterizer->findClusters(mEmcalCells);
-    LOG(DEBUG) << "Found clusters.";
+    LOG(debug) << "Found clusters.";
     auto emcalClusters = mClusterizer->getFoundClusters();
     auto emcalClustersInputIndices = mClusterizer->getFoundClustersInputIndices();
-    LOG(DEBUG) << "Retrieved results. About to setup cluster factory.";
+    LOG(debug) << "Retrieved results. About to setup cluster factory.";
 
     // Convert to analysis clusters.
     // First, the cluster factory requires cluster and cell information in order to build the clusters.
@@ -161,14 +161,14 @@ struct EmcalCorrectionTask {
     mClusterFactory->setClustersContainer(*emcalClusters);
     mClusterFactory->setCellsContainer(mEmcalCells);
     mClusterFactory->setCellsIndicesContainer(*emcalClustersInputIndices);
-    LOG(DEBUG) << "Cluster factory set up.";
+    LOG(debug) << "Cluster factory set up.";
 
     // Convert to analysis clusters.
     for (int icl = 0; icl < mClusterFactory->getNumberOfClusters(); icl++) {
       auto analysisCluster = mClusterFactory->buildCluster(icl);
       mAnalysisClusters.emplace_back(analysisCluster);
     }
-    LOG(DEBUG) << "Converted to analysis clusters.";
+    LOG(debug) << "Converted to analysis clusters.";
 
     // Store the clusters in the table
     clusters.reserve(mAnalysisClusters.size());
@@ -180,7 +180,7 @@ struct EmcalCorrectionTask {
       pos /= (cluster.E() / std::sqrt(pos.Mag2()));
 
       // We have our necessary properties. Now we store outputs
-      //LOG(DEBUG) << "Cluster E: " << cluster.E();
+      //LOG(debug) << "Cluster E: " << cluster.E();
       clusters(collision, cluster.E(), pos.Eta(), pos.Phi(), cluster.getM02());
       //if (cluster.E() < 0.300) {
       //    continue;
@@ -188,7 +188,7 @@ struct EmcalCorrectionTask {
       hClusterE->Fill(cluster.E());
       hClusterEtaPhi->Fill(pos.Eta(), pos.Phi());
     }
-    LOG(DEBUG) << "Done with process.";
+    LOG(debug) << "Done with process.";
   }
 };
 

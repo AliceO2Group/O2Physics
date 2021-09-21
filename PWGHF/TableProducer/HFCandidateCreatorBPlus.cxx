@@ -113,8 +113,8 @@ struct HfCandidateCreatorBplus {
       auto prong1TrackParCov = getTrackParCov(prong1);
       auto collision = prong0.collision();
 
-      // LOGF(INFO, "All track: %d (prong0); %d (prong1)", candidate.index0().globalIndex(), candidate.index1().globalIndex());
-      // LOGF(INFO, "All track pT: %f (prong0); %f (prong1)", prong0.pt(), prong1.pt());
+      // LOGF(info, "All track: %d (prong0); %d (prong1)", candidate.index0().globalIndex(), candidate.index1().globalIndex());
+      // LOGF(info, "All track pT: %f (prong0); %f (prong1)", prong0.pt(), prong1.pt());
 
       // reconstruct D0 secondary vertex
       if (df.process(prong0TrackParCov, prong1TrackParCov) == 0) {
@@ -133,7 +133,7 @@ struct HfCandidateCreatorBplus {
       auto count = 0;
       for (auto& track : tracks) {
         //if(count % 100 == 0){
-        //LOGF(INFO, "Col: %d (cand); %d (track)", candidate.collisionId(), track.collisionId());
+        //LOGF(info, "Col: %d (cand); %d (track)", candidate.collisionId(), track.collisionId());
         //  count++;
         // }
 

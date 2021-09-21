@@ -53,9 +53,9 @@ struct ConsumeEtaPhi {
   // process the entire table in one step
   void process(aod::EtaPhi const& etaPhis)
   {
-    LOGF(INFO, "Number of etaPhis: %d", etaPhis.size());
+    LOGF(info, "Number of etaPhis: %d", etaPhis.size());
     for (auto& etaPhi : etaPhis) {
-      LOGF(INFO, "(%f, %f)", etaPhi.eta(), etaPhi.phi());
+      LOGF(info, "(%f, %f)", etaPhi.eta(), etaPhi.phi());
     }
   }
 };
@@ -67,7 +67,7 @@ struct LoopEtaPhi {
   // process the table row by row
   void process(EtaPhiRow const& etaPhi)
   {
-    LOGF(INFO, "(%f, %f)", etaPhi.eta(), etaPhi.phi());
+    LOGF(info, "(%f, %f)", etaPhi.eta(), etaPhi.phi());
   }
 };
 

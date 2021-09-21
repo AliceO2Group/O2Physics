@@ -168,7 +168,7 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry)
     /// \todo this should be an automatic check in the parent class
     int nSelections = getNSelections() + mPIDspecies.size() * (getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax) - 1);
     if (8 * sizeof(cutContainerType) < nSelections) {
-      LOG(FATAL) << "FemtoDreamTrackCuts: Number of selections to large for your container - quitting!";
+      LOG(fatal) << "FemtoDreamTrackCuts: Number of selections to large for your container - quitting!";
     }
 
     std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]);

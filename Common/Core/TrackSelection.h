@@ -171,7 +171,7 @@ class TrackSelection
   {
     // layer 0 corresponds to the the innermost ITS layer
     if (minNRequiredHits > requiredLayers.size()) {
-      LOGF(FATAL, "More ITS hits required than layers specified.");
+      LOGF(fatal, "More ITS hits required than layers specified.");
     } else {
       mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
     }

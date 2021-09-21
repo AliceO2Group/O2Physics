@@ -68,12 +68,12 @@ struct ConfigurableObjectDemo {
 
   void init(InitContext const&)
   {
-    LOGF(INFO, "Cut1 bins: %s; Cut2 bins: %s", printArray(cut->getBins()), printArray(mutable_cut->getBins()));
-    LOGF(INFO, "Cut1 labels: %s; Cut2 labels: %s", printArray(cut->getLabels()), printArray(mutable_cut->getLabels()));
+    LOGF(info, "Cut1 bins: %s; Cut2 bins: %s", printArray(cut->getBins()), printArray(mutable_cut->getBins()));
+    LOGF(info, "Cut1 labels: %s; Cut2 labels: %s", printArray(cut->getLabels()), printArray(mutable_cut->getLabels()));
     auto vec = (std::vector<int>)array;
-    LOGF(INFO, "Array: %s", printArray(vec).c_str());
-    LOGF(INFO, "Matrix: %s", printMatrix((Array2D<float>)vmatrix));
-    LOGF(INFO, "Labeled:\n %s\n %s\n %s", printArray(vla->getLabelsRows()), printArray(vla->getLabelsCols()), printMatrix(vla->getData()));
+    LOGF(info, "Array: %s", printArray(vec).c_str());
+    LOGF(info, "Matrix: %s", printMatrix((Array2D<float>)vmatrix));
+    LOGF(info, "Labeled:\n %s\n %s\n %s", printArray(vla->getLabelsRows()), printArray(vla->getLabelsCols()), printMatrix(vla->getData()));
   };
 
   void process(aod::Collision const&, aod::Tracks const& tracks)
@@ -81,7 +81,7 @@ struct ConfigurableObjectDemo {
     std::stringstream tmpcut, tmpmutable_cut;
     tmpcut << cut;
     tmpmutable_cut << mutable_cut;
-    LOGF(INFO, "Cut1: %s; Cut2: %s", tmpcut.str(), tmpmutable_cut.str());
+    LOGF(info, "Cut1: %s; Cut2: %s", tmpcut.str(), tmpmutable_cut.str());
 
     for (auto const& track : tracks) {
       if (track.globalIndex() % 500 == 0) {
@@ -97,7 +97,7 @@ struct ConfigurableObjectDemo {
         } else {
           decision2 = "false";
         }
-        LOGF(INFO, "Cut1: %s; Cut2: %s", decision1, decision2);
+        LOGF(info, "Cut1: %s; Cut2: %s", decision1, decision2);
         if (decision2 == "false") {
           mutable_cut->setState(-1);
         } else {

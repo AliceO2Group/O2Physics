@@ -326,7 +326,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
     if (cfgCentMultEstimator->compare("V0M") == 0) {
       fCentMultEstimator = kV0M;
     } else {
-      LOGF(FATAL, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
+      LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
     }
 
     /* if the system type is not known at this time, we have to put the initalization somewhere else */
@@ -395,7 +395,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalyistask;
 
-    //    LOGF(INFO,"New collision with %d filtered tracks", ftracks.size());
+    //    LOGF(info,"New collision with %d filtered tracks", ftracks.size());
     fhCentMultB->Fill(collision.centV0M());
     fhVertexZB->Fill(collision.posZ());
     bool acceptedevent = false;
@@ -404,7 +404,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       acceptedevent = true;
       fhCentMultA->Fill(collision.centV0M());
       fhVertexZA->Fill(collision.posZ());
-      //      LOGF(INFO,"New accepted collision with %d filtered tracks", ftracks.size());
+      //      LOGF(info,"New accepted collision with %d filtered tracks", ftracks.size());
 
       for (auto& track : ftracks) {
         /* before track selection */

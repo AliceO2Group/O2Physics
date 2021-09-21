@@ -39,7 +39,7 @@ struct JetAnalysis {
   {
     hJetPt->Fill(jet.pt());
     for (const auto& c : constituents) {
-      LOGF(DEBUG, "jet %d: track id %d, track pt %g", jet.index(), c.trackId(), c.track().pt());
+      LOGF(debug, "jet %d: track id %d, track pt %g", jet.index(), c.trackId(), c.track().pt());
       hConstPt->Fill(c.track().pt());
     }
   }

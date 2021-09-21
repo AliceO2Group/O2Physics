@@ -30,7 +30,7 @@ inline bool isK0SfromLcFunc(int labelK0SPos, int labelK0SNeg, std::vector<int> l
 
   // checking sizes of vectors: they should be identical
   if (nPositiveDau != nNegativeDau) {
-    LOG(ERROR) << "Number of elements in vector of positive daughters of K0S different from the number of elements in the vector for the negative ones: " << nPositiveDau << " : " << nNegativeDau;
+    LOG(error) << "Number of elements in vector of positive daughters of K0S different from the number of elements in the vector for the negative ones: " << nPositiveDau << " : " << nNegativeDau;
     throw std::runtime_error("sizes of configurables for debug do not match");
   }
 
@@ -67,7 +67,7 @@ inline bool isLcK0SpFunc(int labelProton, int labelK0SPos, int labelK0SNeg, std:
 
   // checking sizes of vectors: they should be identical
   if (nPositiveDau != nNegativeDau || nPositiveDau != nProtons) {
-    LOG(ERROR) << "Number of elements in vector of positive daughters of K0S, in vector of negative daughters of K0S, and in vector of protons differ: " << nPositiveDau << " : " << nNegativeDau << " : " << nProtons;
+    LOG(error) << "Number of elements in vector of positive daughters of K0S, in vector of negative daughters of K0S, and in vector of protons differ: " << nPositiveDau << " : " << nNegativeDau << " : " << nProtons;
     throw std::runtime_error("sizes of configurables for debug do not match");
   }
 

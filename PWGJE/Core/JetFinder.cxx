@@ -42,7 +42,7 @@ void JetFinder::setBkgE()
     bkgE = decltype(bkgE)(new fastjet::JetMedianBackgroundEstimator(selRho, jetDefBkg, areaDefBkg));
   } else {
     if (bkgSubMode != BkgSubMode::none) {
-      LOGF(ERROR, "requested subtraction mode not implemented!");
+      LOGF(error, "requested subtraction mode not implemented!");
     }
   }
 }
@@ -63,7 +63,7 @@ void JetFinder::setSub()
     constituentSub->set_background_estimator(bkgE.get()); //what about rho_m
   } else {
     if (bkgSubMode != BkgSubMode::none) {
-      LOGF(ERROR, "requested subtraction mode not implemented!");
+      LOGF(error, "requested subtraction mode not implemented!");
     }
   }
 }

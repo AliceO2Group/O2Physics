@@ -162,7 +162,7 @@ struct Alice3SingleParticle {
           continue;
         }
         if (doPrint) {
-          LOG(INFO) << "Track " << track.globalIndex() << " comes from a " << mother.pdgCode() << " and is a " << mcParticle.pdgCode();
+          LOG(info) << "Track " << track.globalIndex() << " comes from a " << mother.pdgCode() << " and is a " << mcParticle.pdgCode();
         }
       } else {
         if (mcParticle.pdgCode() != PDG) {
@@ -172,7 +172,7 @@ struct Alice3SingleParticle {
         histos.fill(HIST("track/Eta"), track.eta());
         if (!mcParticle.has_mother0()) {
           if (doPrint) {
-            LOG(INFO) << "Track " << track.globalIndex() << " is a " << mcParticle.pdgCode();
+            LOG(info) << "Track " << track.globalIndex() << " is a " << mcParticle.pdgCode();
           }
           continue;
         }
@@ -183,7 +183,7 @@ struct Alice3SingleParticle {
           histos.get<TH1>(HIST("track/secondaries"))->Fill(Form("%i", mother.pdgCode()), 1.f);
         }
         if (doPrint) {
-          LOG(INFO) << "Track " << track.globalIndex() << " is a " << mcParticle.pdgCode() << " and comes from a " << mother.pdgCode() << " and is " << (MC::isPhysicalPrimary(mcParticle) ? "" : "not") << " a primary";
+          LOG(info) << "Track " << track.globalIndex() << " is a " << mcParticle.pdgCode() << " and comes from a " << mother.pdgCode() << " and is " << (MC::isPhysicalPrimary(mcParticle) ? "" : "not") << " a primary";
         }
       }
     }

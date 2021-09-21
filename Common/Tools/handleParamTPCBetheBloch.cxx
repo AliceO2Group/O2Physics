@@ -53,15 +53,15 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
 
     // help
     if (vm.count("help")) {
-      LOG(INFO) << options;
+      LOG(info) << options;
       return false;
     }
 
     bpo::notify(vm);
   } catch (const bpo::error& e) {
-    LOG(ERROR) << e.what() << "\n";
-    LOG(ERROR) << "Error parsing command line arguments; Available options:";
-    LOG(ERROR) << options;
+    LOG(error) << e.what() << "\n";
+    LOG(error) << "Error parsing command line arguments; Available options:";
+    LOG(error) << options;
     return false;
   }
   return true;
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
   const std::string url = vm["url"].as<std::string>();
   api.init(url);
   if (!api.isHostReachable()) {
-    LOG(WARNING) << "CCDB host " << url << " is not reacheable, cannot go forward";
+    LOG(warning) << "CCDB host " << url << " is not reacheable, cannot go forward";
     return 1;
   }
   BetheBloch* bb = nullptr;
@@ -91,12 +91,12 @@ int main(int argc, char* argv[])
   const std::string exp_name = vm["exp-name"].as<std::string>();
   const std::string reso_name = vm["reso-name"].as<std::string>();
   if (mode == 0) { // Push mode
-    LOG(INFO) << "Handling TPC parametrization in create mode";
+    LOG(info) << "Handling TPC parametrization in create mode";
     const std::string input_file_name = vm["read-from-file"].as<std::string>();
     if (!input_file_name.empty()) {
       TFile f(input_file_name.data(), "READ");
       if (!f.IsOpen()) {
-        LOG(WARNING) << "Input file " << input_file_name << " is not reacheable, cannot get param from file";
+        LOG(warning) << "Input file " << input_file_name << " is not reacheable, cannot get param from file";
       }
       f.GetObject(exp_name.c_str(), bb);
       f.GetObject(reso_name.c_str(), reso);
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     bb->Print();
     const std::string fname = vm["save-to-file"].as<std::string>();
     if (!fname.empty()) { // Saving it to file
-      LOG(INFO) << "Saving parametrization to file " << fname;
+      LOG(info) << "Saving parametrization to file " << fname;
       TFile f(fname.data(), "RECREATE");
       bb->Write();
       bb->GetParameters().Write();
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
       f.ls();
       f.Close();
     } else { // Saving it to CCDB
-      LOG(INFO) << "Saving parametrization to CCDB " << path;
+      LOG(info) << "Saving parametrization to CCDB " << path;
 
       long start = vm["start"].as<long>();
       long stop = vm["stop"].as<long>();
@@ -141,14 +141,14 @@ int main(int argc, char* argv[])
       api.storeAsTFileAny(params, path + "/Parameters/" + reso_name, metadata, start, stop);
     }
   } else { // Pull and test mode
-    LOG(INFO) << "Handling TPC parametrization in test mode";
+    LOG(info) << "Handling TPC parametrization in test mode";
     const float x[2] = {1, 1};
     BetheBloch* bb = api.retrieveFromTFileAny<BetheBloch>(path + "/" + exp_name, metadata, -1, headers);
     bb->Print();
-    LOG(INFO) << "BetheBloch " << bb->operator()(x);
+    LOG(info) << "BetheBloch " << bb->operator()(x);
     TPCReso* reso = api.retrieveFromTFileAny<TPCReso>(path + "/" + reso_name, metadata, -1, headers);
     reso->Print();
-    LOG(INFO) << "TPCReso " << reso->operator()(x);
+    LOG(info) << "TPCReso " << reso->operator()(x);
   }
 
   return 0;

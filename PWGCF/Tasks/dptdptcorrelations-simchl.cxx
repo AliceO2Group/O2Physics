@@ -1271,7 +1271,7 @@ struct DptDptCorrelationsTask {
       }
       delete tokens;
       for (int i = 0; i < ncmranges; ++i) {
-        LOGF(INFO, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
+        LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
       }
     }
   }

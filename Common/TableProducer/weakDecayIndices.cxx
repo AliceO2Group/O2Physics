@@ -24,7 +24,7 @@ struct IndexV0s {
   {
     for (auto& v0 : v0s) {
       if (v0.posTrack().collisionId() != v0.negTrack().collisionId()) {
-        LOGF(WARNING, "V0 %d has inconsistent collision information (%d, %d)", v0.globalIndex(), v0.posTrack().collisionId(), v0.negTrack().collisionId());
+        LOGF(warning, "V0 %d has inconsistent collision information (%d, %d)", v0.globalIndex(), v0.posTrack().collisionId(), v0.negTrack().collisionId());
       }
       transientV0s(v0.posTrack().collisionId());
     }
@@ -39,7 +39,7 @@ struct IndexCascades {
   {
     for (auto& cascade : cascades) {
       if (cascade.bachelor().collisionId() != cascade.v0().posTrack().collisionId() || cascade.v0().posTrack().collisionId() != cascade.v0().negTrack().collisionId()) {
-        LOGF(WARNING, "Cascade %d has inconsistent collision information (%d, %d, %d)", cascade.globalIndex(), cascade.bachelor().collisionId(), cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId());
+        LOGF(warning, "Cascade %d has inconsistent collision information (%d, %d, %d)", cascade.globalIndex(), cascade.bachelor().collisionId(), cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId());
       }
       transientCascades(cascade.bachelor().collisionId());
     }
