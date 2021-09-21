@@ -43,7 +43,7 @@ class FemtoDreamCutculator
     try {
       boost::property_tree::read_json(configFile, root);
     } catch (const boost::property_tree::ptree_error& e) {
-      LOG(FATAL) << "Failed to read JSON config file " << configFile << " (" << e.what() << ")";
+      LOG(fatal) << "Failed to read JSON config file " << configFile << " (" << e.what() << ")";
     }
     mConfigTree = root.get_child("femto-dream-producer-task");
   };
@@ -62,7 +62,7 @@ class FemtoDreamCutculator
       }
       return tmpVec;
     } catch (const boost::property_tree::ptree_error& e) {
-      LOG(WARNING) << "Selection " << name << " not available (" << e.what() << ")";
+      LOG(warning) << "Selection " << name << " not available (" << e.what() << ")";
       return {};
     }
   }

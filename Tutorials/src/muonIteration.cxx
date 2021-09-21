@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 struct IterateMuonsExclusive {
   void process(aod::MatchedBCCollisionsExclusive::iterator const& m, aod::Collisions const&, aod::FwdTracks const& muons)
   {
-    LOGF(INFO, "Vertex = %f has %d muons", m.collision().posZ(), muons.size());
+    LOGF(info, "Vertex = %f has %d muons", m.collision().posZ(), muons.size());
     for (auto& muon : muons) {
       LOGF(info, "  pT = %.2f", muon.pt());
     }
@@ -39,7 +39,7 @@ struct IterateMuonsExclusive {
 struct IterateMuons {
   void process(aod::Collisions::iterator const& collision, aod::FwdTracks const& muons)
   {
-    LOGF(INFO, "Vertex = %f has %d muons", collision.posZ(), muons.size());
+    LOGF(info, "Vertex = %f has %d muons", collision.posZ(), muons.size());
     for (auto& muon : muons) {
       LOGF(info, "  pT = %.2f", muon.pt());
     }
@@ -52,9 +52,9 @@ struct IterateMuonsSparse {
   void process(aod::MatchedBCCollisionsSparse::iterator const& m, aod::Collisions const&, aod::FwdTracks const& muons)
   {
     if (m.has_collision()) {
-      LOGF(INFO, "Vertex = %f has %d muons", m.collision().posZ(), muons.size());
+      LOGF(info, "Vertex = %f has %d muons", m.collision().posZ(), muons.size());
     } else {
-      LOGF(INFO, "BC without collision has %d muons", muons.size());
+      LOGF(info, "BC without collision has %d muons", muons.size());
     }
     for (auto& muon : muons) {
       LOGF(info, "  pT = %.2f", muon.pt());

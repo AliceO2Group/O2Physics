@@ -60,7 +60,7 @@ class FemtoDreamParticleHisto
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
         /// Cascade histograms
       } else {
-        LOG(FATAL) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
+        LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
     }
   }
@@ -89,7 +89,7 @@ class FemtoDreamParticleHisto
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
         /// Cascade histograms
       } else {
-        LOG(FATAL) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
+        LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
     }
   }

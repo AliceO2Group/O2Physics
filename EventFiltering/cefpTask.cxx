@@ -49,7 +49,7 @@ bool readJsonFile(std::string& config, Document& d)
 {
   FILE* fp = fopen(config.data(), "rb");
   if (!fp) {
-    LOG(WARNING) << "Missing configuration json file: " << config;
+    LOG(warning) << "Missing configuration json file: " << config;
     return false;
   }
 
@@ -111,12 +111,12 @@ struct centralEventFilterTask {
 
   void init(o2::framework::InitContext& initc)
   {
-    LOG(INFO) << "Start init";
+    LOG(info) << "Start init";
     int nCols{0};
     for (auto& table : mDownscaling) {
       nCols += table.second.size();
     }
-    LOG(INFO) << "Middle init, total number of columns " << nCols;
+    LOG(info) << "Middle init, total number of columns " << nCols;
 
     auto mScalers = std::get<std::shared_ptr<TH1>>(scalers.add("mScalers", ";;Number of events", HistType::kTH1F, {{nCols + 1, -0.5, 0.5 + nCols}}));
     auto mFiltered = std::get<std::shared_ptr<TH1>>(scalers.add("mFiltered", ";;Number of filtered events", HistType::kTH1F, {{nCols + 1, -0.5, 0.5 + nCols}}));
@@ -147,14 +147,14 @@ struct centralEventFilterTask {
     int64_t nEvents{-1};
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
-        LOG(FATAL) << tableName.first << " table is not valid.";
+        LOG(fatal) << tableName.first << " table is not valid.";
       }
       auto tableConsumer = pc.inputs().get<TableConsumer>(tableName.first);
       auto tablePtr{tableConsumer->asArrowTable()};
       int64_t nRows{tablePtr->num_rows()};
       nEvents = nEvents < 0 ? nRows : nEvents;
       if (nEvents != nRows) {
-        LOG(FATAL) << "Inconsistent number of rows across trigger tables.";
+        LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
       auto schema{tablePtr->schema()};
@@ -211,7 +211,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 
   for (uint32_t iFilter{0}; iFilter < NumberOfFilters; ++iFilter) {
     if (!enabledFilters[iFilter]) {
-      LOG(INFO) << std::string_view(AvailableFilters[iFilter]) << " not present in the configuration, removing it.";
+      LOG(info) << std::string_view(AvailableFilters[iFilter]) << " not present in the configuration, removing it.";
       downscalings.erase(std::string(AvailableFilters[iFilter]));
     }
   }

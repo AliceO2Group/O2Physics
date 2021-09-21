@@ -129,7 +129,7 @@ struct JetFinderTask {
   template <typename T>
   void processImplementation(T const& collision)
   {
-    LOG(DEBUG) << "Process Implementation";
+    LOG(debug) << "Process Implementation";
     // NOTE: Can't just iterate directly - we have to cast first
     auto jetRValues = static_cast<std::vector<double>>(jetR);
     for (auto R : jetRValues) {
@@ -208,7 +208,7 @@ struct JetFinderTask {
   template <typename T, typename U>
   void processData(T const& collision, U const& tracks, aod::EMCALClusters const* clusters = nullptr)
   {
-    LOG(DEBUG) << "Process data!";
+    LOG(debug) << "Process data!";
     // Setup
     // As of June 2021, I don't think enums are supported as configurables, so we have to handle the conversion here.
     // FIXME: Double cast is to work around conversion failure.
@@ -219,7 +219,7 @@ struct JetFinderTask {
     if (!accepted) {
       return;
     }
-    LOG(DEBUG) << "Accepted event!";
+    LOG(debug) << "Accepted event!";
 
     if (_jetType == JetType_t::full || _jetType == JetType_t::charged) {
       for (auto& track : tracks) {
@@ -253,7 +253,7 @@ struct JetFinderTask {
   void processDataCharged(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                           soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    LOG(DEBUG) << "Process data charged!";
+    LOG(debug) << "Process data charged!";
     processData(collision, tracks);
   }
 
@@ -263,7 +263,7 @@ struct JetFinderTask {
                        soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks,
                        aod::EMCALClusters const& clusters)
   {
-    LOG(DEBUG) << "Process data full!";
+    LOG(debug) << "Process data full!";
     processData(collision, tracks, &clusters);
   }
 

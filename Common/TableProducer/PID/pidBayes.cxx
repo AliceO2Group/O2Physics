@@ -107,15 +107,15 @@ struct bayesPid {
   {
     static_assert(detIndex < kNDet && detIndex >= 0);
     if (!enabledDet[detIndex]) {
-      LOG(DEBUG) << "Detector " << detectorName[detIndex] << " disabled";
+      LOG(debug) << "Detector " << detectorName[detIndex] << " disabled";
       return false; // Setting the probability to 1 if the detector is disabled
     }
-    LOG(DEBUG) << "Detector " << detectorName[detIndex] << " enabled with " << enabledSpecies.size() << " species";
+    LOG(debug) << "Detector " << detectorName[detIndex] << " enabled with " << enabledSpecies.size() << " species";
 
     for (const auto enabledPid : enabledSpecies) { // Checking that the species is enabled
-      LOG(DEBUG) << "Testing " << PID::getName(enabledPid) << " " << (int)enabledPid << " vs " << (int)pid;
+      LOG(debug) << "Testing " << PID::getName(enabledPid) << " " << (int)enabledPid << " vs " << (int)pid;
       if (enabledPid == pid) {
-        LOG(DEBUG) << "Particle " << PID::getName(enabledPid) << " enabled";
+        LOG(debug) << "Particle " << PID::getName(enabledPid) << " enabled";
         Probability[detIndex][pid] = 1.f / enabledSpecies.size(); // set flat distribution (no decision yet)
         return true;
       }
@@ -143,7 +143,7 @@ struct bayesPid {
       }
     }
     if (!atLeastOne) {
-      LOG(FATAL) << "All detectors are disabled";
+      LOG(fatal) << "All detectors are disabled";
     }
 
     // Checking the tables are requested in the workflow and enabling them
@@ -158,12 +158,12 @@ struct bayesPid {
           if (input.matcher.binding == table) {
             if (flag < 0) {
               flag.value = 1;
-              LOG(INFO) << "Auto-enabling table: " + table;
+              LOG(info) << "Auto-enabling table: " + table;
             } else if (flag > 0) {
               flag.value = 1;
-              LOG(INFO) << "Table enabled: " + table;
+              LOG(info) << "Table enabled: " + table;
             } else {
-              LOG(INFO) << "Table disabled: " + table;
+              LOG(info) << "Table disabled: " + table;
             }
           }
         };
@@ -185,7 +185,7 @@ struct bayesPid {
                                  const Configurable<int>& flag) {
       if (flag.value == 1) {
         enabledSpecies.push_back(id);
-        LOG(INFO) << "Enabling particle: " << (int)id << " " << PID::getName(enabledSpecies.back());
+        LOG(info) << "Enabling particle: " << (int)id << " " << PID::getName(enabledSpecies.back());
       }
     };
 
@@ -202,13 +202,13 @@ struct bayesPid {
     enabledSpecies.shrink_to_fit();
     std::sort(enabledSpecies.begin(), enabledSpecies.end());
     if (enabledSpecies.size() == 0) { // No enabled species
-      LOG(FATAL) << "No species are enabled";
+      LOG(fatal) << "No species are enabled";
     } else if (enabledSpecies.size() > PID::NIDs) { // Too many enabled species
-      LOG(FATAL) << "Too many enabled species! " << enabledSpecies.size() << " vs " << static_cast<int>(PID::NIDs) << " available";
+      LOG(fatal) << "Too many enabled species! " << enabledSpecies.size() << " vs " << static_cast<int>(PID::NIDs) << " available";
     } else if (std::unique(enabledSpecies.begin(), enabledSpecies.end()) != enabledSpecies.end()) { // Duplicate enabled species
-      LOG(FATAL) << "Duplicated enabled species!";
+      LOG(fatal) << "Duplicated enabled species!";
     } else { // All ok
-      LOG(INFO) << enabledSpecies.size() << " species enabled for the Bayesian PID computation";
+      LOG(info) << enabledSpecies.size() << " species enabled for the Bayesian PID computation";
     }
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
@@ -222,26 +222,26 @@ struct bayesPid {
     Response[kTOF].SetParameters(DetectorResponse::kSigma, p);
     const std::string fname = paramfile.value;
     if (!fname.empty()) { // Loading the parametrization from file
-      LOG(INFO) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << TOFsigmaname.value;
+      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << TOFsigmaname.value;
       Response[kTOF].LoadParamFromFile(fname.data(), TOFsigmaname.value, DetectorResponse::kSigma);
 
-      LOG(INFO) << "Loading exp. signal parametrization from file" << fname << ", using param: " << TPCsignalname.value;
+      LOG(info) << "Loading exp. signal parametrization from file" << fname << ", using param: " << TPCsignalname.value;
       Response[kTPC].LoadParamFromFile(fname.data(), TPCsignalname.value, DetectorResponse::kSignal);
 
-      LOG(INFO) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << TPCsigmaname.value;
+      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << TPCsigmaname.value;
       Response[kTPC].LoadParamFromFile(fname.data(), TPCsigmaname.value, DetectorResponse::kSigma);
 
     } else { // Loading it from CCDB
       std::string path = ccdbPathTOF.value + "/" + TOFsigmaname.value;
-      LOG(INFO) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
       Response[kTOF].LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
 
       path = ccdbPathTPC.value + "/" + TPCsignalname.value;
-      LOG(INFO) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
+      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
       Response[kTPC].LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
 
       path = ccdbPathTPC.value + "/" + TPCsigmaname.value;
-      LOG(INFO) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
       Response[kTPC].LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
     }
   }
@@ -269,7 +269,7 @@ struct bayesPid {
 
     const float bethe = responseTPCPID.GetExpectedSignal(Response[kTPC], track);
     const float sigma = responseTPCPID.GetExpectedSigma(Response[kTPC], track);
-    LOG(INFO) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
+    LOG(info) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
     // bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
     // sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
 
@@ -371,13 +371,13 @@ struct bayesPid {
     }
 
     Probability[kTOF][pid] += fgTOFmismatchProb * mismPropagationFactor[pid];
-    LOG(DEBUG) << "For " << pid_constants::sNames[pid] << " with signal " << track.tofSignal() << " computing exp time " << expTime << " and sigma " << sig << " and nsigma " << nsigmas << " probability " << Probability[kTOF][pid];
+    LOG(debug) << "For " << pid_constants::sNames[pid] << " with signal " << track.tofSignal() << " computing exp time " << expTime << " and sigma " << sig << " and nsigma " << nsigmas << " probability " << Probability[kTOF][pid];
   }
 
   /// Calculate probabilities from all enabled detectors and species
   void MergeProbabilities()
   {
-    LOG(DEBUG) << "Merging probabilities";
+    LOG(debug) << "Merging probabilities";
 
     float probSum[kNDet + 1] = {0.f}; /// Summed probabilities for all detectors + 1 for the sum of all detectors
 
@@ -388,34 +388,34 @@ struct bayesPid {
         Probability[kMerged][enabledPid] *= Probability[det][enabledPid];
       }
       probSum[kNDet] += Probability[kMerged][enabledPid];
-      LOG(DEBUG) << "For " << PID::getName(enabledPid);
+      LOG(debug) << "For " << PID::getName(enabledPid);
       for (int det = 0; det < kNDet; det++) {
         if (enabledDet[det]) {
-          LOG(DEBUG) << "\t" << detectorName[det] << " Probability " << Probability[det][enabledPid];
+          LOG(debug) << "\t" << detectorName[det] << " Probability " << Probability[det][enabledPid];
         }
       }
-      LOG(DEBUG) << "\tCombined: " << Probability[kMerged][enabledPid];
+      LOG(debug) << "\tCombined: " << Probability[kMerged][enabledPid];
     }
     for (int det = 0; det < kNDet; det++) {
       if (enabledDet[det]) {
-        LOG(DEBUG) << "\tSum " << detectorName[det] << " Probability " << probSum[det];
+        LOG(debug) << "\tSum " << detectorName[det] << " Probability " << probSum[det];
       }
     }
-    LOG(DEBUG) << "\tSum combined: " << probSum[kNDet];
+    LOG(debug) << "\tSum combined: " << probSum[kNDet];
   }
 
   /// Calculate Bayesian probabilities
   void ComputeBayesProbabilities()
   {
-    LOG(DEBUG) << "Computing bayes probabilities";
+    LOG(debug) << "Computing bayes probabilities";
 
     float sum = 0.;
     for (const auto enabledPid : enabledSpecies) {
-      LOG(DEBUG) << "Adding " << Probability[kMerged][enabledPid] << " with prior " << Probability[kPrior][enabledPid];
+      LOG(debug) << "Adding " << Probability[kMerged][enabledPid] << " with prior " << Probability[kPrior][enabledPid];
       sum += Probability[kMerged][enabledPid] * Probability[kPrior][enabledPid];
     }
     if (sum <= 0) {
-      LOG(WARNING) << "Invalid probability densities or prior probabilities";
+      LOG(warning) << "Invalid probability densities or prior probabilities";
       for (int i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
@@ -426,7 +426,7 @@ struct bayesPid {
       // if (probDensityMism) {
       //   probDensityMism[enabledPid] *= Probability[kPrior][enabledPid] / sum;
       // }
-      LOG(DEBUG) << "For " << PID::getName(enabledPid) << " merged prob. " << Probability[kMerged][enabledPid] << " prior " << Probability[kPrior][enabledPid] << " sum " << sum << " bayesian Probability: " << Probability[kBayesian][enabledPid];
+      LOG(debug) << "For " << PID::getName(enabledPid) << " merged prob. " << Probability[kMerged][enabledPid] << " prior " << Probability[kPrior][enabledPid] << " sum " << sum << " bayesian Probability: " << Probability[kBayesian][enabledPid];
     }
   }
 

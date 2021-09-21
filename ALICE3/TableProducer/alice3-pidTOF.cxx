@@ -73,7 +73,7 @@ struct ALICE3pidTOFTask {
     resoParameters.SetParameters(p);
     const std::string fname = paramfile.value;
     if (!fname.empty()) { // Loading the parametrization from file
-      LOG(INFO) << "Loading parametrization from file" << fname << ", using param: " << sigmaname;
+      LOG(info) << "Loading parametrization from file" << fname << ", using param: " << sigmaname;
       resoParameters.LoadParamFromFile(fname.data(), sigmaname.value.data());
     } else { // Loading it from CCDB
       const std::string path = "Analysis/ALICE3/PID/TOF/Parameters";

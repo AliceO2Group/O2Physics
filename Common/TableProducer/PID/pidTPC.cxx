@@ -84,12 +84,12 @@ struct tpcPid {
           if (input.matcher.binding == table) {
             if (flag < 0) {
               flag.value = 1;
-              LOG(INFO) << "Auto-enabling table: " + table;
+              LOG(info) << "Auto-enabling table: " + table;
             } else if (flag > 0) {
               flag.value = 1;
-              LOG(INFO) << "Table enabled: " + table;
+              LOG(info) << "Table enabled: " + table;
             } else {
-              LOG(INFO) << "Table disabled: " + table;
+              LOG(info) << "Table disabled: " + table;
             }
           }
         };
@@ -114,18 +114,18 @@ struct tpcPid {
     //
     const std::string fname = paramfile.value;
     if (!fname.empty()) { // Loading the parametrization from file
-      LOG(INFO) << "Loading exp. signal parametrization from file" << fname << ", using param: " << signalname.value;
+      LOG(info) << "Loading exp. signal parametrization from file" << fname << ", using param: " << signalname.value;
       response.LoadParamFromFile(fname.data(), signalname.value, DetectorResponse::kSignal);
 
-      LOG(INFO) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
+      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
       response.LoadParamFromFile(fname.data(), sigmaname.value, DetectorResponse::kSigma);
     } else { // Loading it from CCDB
       std::string path = ccdbPath.value + "/" + signalname.value;
-      LOG(INFO) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
+      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
       response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
 
       path = ccdbPath.value + "/" + sigmaname.value;
-      LOG(INFO) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
       response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
     }
   }

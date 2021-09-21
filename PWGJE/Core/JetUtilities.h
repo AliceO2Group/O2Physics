@@ -165,10 +165,10 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
     treeTag.FindNearestNeighbors(point, 1, &index, &distance);
     // test whether indices are matching:
     if (index >= 0 && distance < maxMatchingDistance) {
-      LOG(DEBUG) << "Found closest tag jet for " << iBase << " with match index " << index << " and distance " << distance << "\n";
+      LOG(debug) << "Found closest tag jet for " << iBase << " with match index " << index << " and distance " << distance << "\n";
       matchIndexTag[iBase] = index;
     } else {
-      LOG(DEBUG) << "Closest tag jet not found for " << iBase << ", distance to closest " << distance << "\n";
+      LOG(debug) << "Closest tag jet not found for " << iBase << ", distance to closest " << distance << "\n";
     }
   }
 
@@ -179,10 +179,10 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
     Double_t distance(-1);
     treeBase.FindNearestNeighbors(point, 1, &index, &distance);
     if (index >= 0 && distance < maxMatchingDistance) {
-      LOG(DEBUG) << "Found closest base jet for " << iTag << " with match index " << index << " and distance " << distance << std::endl;
+      LOG(debug) << "Found closest base jet for " << iTag << " with match index " << index << " and distance " << distance << std::endl;
       matchIndexBase[iTag] = index;
     } else {
-      LOG(DEBUG) << "Closest tag jet not found for " << iTag << ", distance to closest " << distance << "\n";
+      LOG(debug) << "Closest tag jet not found for " << iTag << ", distance to closest " << distance << "\n";
     }
   }
 
@@ -207,14 +207,14 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
   // As the lists are linear a loop over the outer base jet is sufficient.
   std::vector<int> baseToTagMap(nJetsBase, -1);
   std::vector<int> tagToBaseMap(nJetsTag, -1);
-  LOG(DEBUG) << "Starting true jet loop: nbase(" << nJetsBase << "), ntag(" << nJetsTag << ")\n";
+  LOG(debug) << "Starting true jet loop: nbase(" << nJetsBase << "), ntag(" << nJetsTag << ")\n";
   for (std::size_t iBase = 0; iBase < nJetsBase; iBase++) {
-    LOG(DEBUG) << "base jet " << iBase << ": match index in tag jet container " << matchIndexTag[iBase] << "\n";
+    LOG(debug) << "base jet " << iBase << ": match index in tag jet container " << matchIndexTag[iBase] << "\n";
     if (matchIndexTag[iBase] > -1) {
-      LOG(DEBUG) << "tag jet " << matchIndexTag[iBase] << ": matched base jet " << matchIndexBase[matchIndexTag[iBase]] << "\n";
+      LOG(debug) << "tag jet " << matchIndexTag[iBase] << ": matched base jet " << matchIndexBase[matchIndexTag[iBase]] << "\n";
     }
     if (matchIndexTag[iBase] > -1 && matchIndexBase[matchIndexTag[iBase]] == iBase) {
-      LOG(DEBUG) << "True match! base index: " << iBase << ", tag index: " << matchIndexTag[iBase] << "\n";
+      LOG(debug) << "True match! base index: " << iBase << ", tag index: " << matchIndexTag[iBase] << "\n";
       baseToTagMap[iBase] = matchIndexTag[iBase];
       tagToBaseMap[matchIndexTag[iBase]] = iBase;
     }

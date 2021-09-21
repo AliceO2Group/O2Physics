@@ -79,7 +79,7 @@ class FemtoDreamPairCleaner
       // \todo to be implemented
       return false;
     } else {
-      LOG(FATAL) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
+      LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
       return false;
     }
   }

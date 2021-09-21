@@ -207,7 +207,7 @@ struct identifiedraaTask {
                            aod::pidTOFFullPr> const& tracks,
                  const aod::McParticles& mcParticles)
   {
-    // LOGF(INFO, "Enter processMC!");
+    // LOGF(info, "Enter processMC!");
     fillHistograms_MC<0>(tracks, mcParticles);
     fillHistograms_MC<1>(tracks, mcParticles);
     fillHistograms_MC<2>(tracks, mcParticles);
@@ -284,7 +284,7 @@ struct identifiedraaTask {
                              aod::pidTOFFullPr, aod::pidTPCFullPi,
                              aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
   {
-    // LOGF(INFO, "Enter processData!");
+    // LOGF(info, "Enter processData!");
     histos.fill(HIST(num_events), 1);
     if (!collision.alias()[kINT7]) {
       return;
@@ -318,7 +318,7 @@ struct identifiedraaTask {
                                  aod::pidTOFFullPr, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
   {
-    // LOGF(INFO, "Enter processData!");
+    // LOGF(info, "Enter processData!");
     histos.fill(HIST(num_events), 1);
     if (std::abs(collision.posZ()) > 10.f) {
       return;
