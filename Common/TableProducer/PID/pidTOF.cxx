@@ -58,7 +58,7 @@ struct tofSignal { /// Task that produces the TOF signal from the trackTime
     }
   }
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-  void process(aod::Collision const& collision, Trks const& tracks)
+  void process(Trks const& tracks)
   {
     if (!enableTable) {
       return;
