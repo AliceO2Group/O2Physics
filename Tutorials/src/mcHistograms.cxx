@@ -15,7 +15,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "AnalysisCore/MC.h"
+#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;

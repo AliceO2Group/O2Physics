@@ -73,10 +73,10 @@ struct ProduceColExtra {
 struct ConsumeEtaPhi {
   void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::EtaPhi> const& extTracks)
   {
-    LOGF(INFO, "ID: %d", collision.globalIndex());
-    LOGF(INFO, "Tracks: %d", extTracks.size());
+    LOGF(info, "ID: %d", collision.globalIndex());
+    LOGF(info, "Tracks: %d", extTracks.size());
     for (auto& track : extTracks) {
-      LOGF(INFO, "(%f, %f) - (%f, %f)", track.eta(), track.phiraw(), track.etas(), track.phis());
+      LOGF(info, "(%f, %f) - (%f, %f)", track.eta(), track.phiraw(), track.etas(), track.phis());
     }
   }
 };
@@ -90,11 +90,11 @@ struct ConsumeColExtra {
   void process(soa::Filtered<myCol>::iterator const& col, aod::Tracks const& tracks)
   {
     // get collision index and track multiplicity from the collisions ...
-    LOGF(INFO, "[direct] ID: %d; %d == %d", col.globalIndex(), col.mult(), tracks.size());
+    LOGF(info, "[direct] ID: %d; %d == %d", col.globalIndex(), col.mult(), tracks.size());
     if (tracks.size() > 0) {
       // ... or through an associated track.
       auto track0 = tracks.begin();
-      LOGF(INFO, "[index ] ID: %d; %d == %d", track0.collision_as<myCol>().globalIndex(), track0.collision_as<myCol>().mult(), tracks.size());
+      LOGF(info, "[index ] ID: %d; %d == %d", track0.collision_as<myCol>().globalIndex(), track0.collision_as<myCol>().mult(), tracks.size());
     }
   }
 };
@@ -110,27 +110,27 @@ struct PartitionColExtra {
     auto multbin30_100 = collisions.select(aod::collision::mult >= 30 && aod::collision::mult < 100);
 
     // loop over the collisions in each partition and ...
-    LOGF(INFO, "Bin 0-10");
+    LOGF(info, "Bin 0-10");
     for (auto& col : multbin0_10) {
       // ... find all the associated tracks
       auto groupedTracks = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
-      LOGF(INFO, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
+      LOGF(info, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
       if (groupedTracks.size() > 0) {
         auto track = groupedTracks.begin();
-        LOGF(INFO, "Track 0 belongs to collision %d at Z = %f", track.collisionId(), track.collision_as<myCol>().posZ());
+        LOGF(info, "Track 0 belongs to collision %d at Z = %f", track.collisionId(), track.collision_as<myCol>().posZ());
       }
     }
 
-    LOGF(INFO, "Bin 10-30");
+    LOGF(info, "Bin 10-30");
     for (auto& col : multbin10_30) {
       auto groupedTracks = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
-      LOGF(INFO, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
+      LOGF(info, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
     }
 
-    LOGF(INFO, "Bin 30-100");
+    LOGF(info, "Bin 30-100");
     for (auto& col : multbin30_100) {
       auto groupedTracks = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
-      LOGF(INFO, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
+      LOGF(info, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
     }
   }
 };
@@ -147,13 +147,13 @@ struct ConsumeHmpidIndex {
   // bind to Tracks and HMPIDs
   void process(aod::Collision const& collision, exTracks const& tracks, aod::HMPIDs const&)
   {
-    LOGF(INFO, "Collision [%d]", collision.globalIndex());
+    LOGF(info, "Collision [%d]", collision.globalIndex());
     // loop over tracks of given collision
     for (auto& track : tracks) {
       // check weather given track has associated HMPID information
       if (track.has_hmpid()) {
         // access the HMIPD information associated with the actual track
-        LOGF(INFO, "Track %d has HMPID info: %.2f", track.globalIndex(), track.hmpid().hmpidSignal());
+        LOGF(info, "Track %d has HMPID info: %.2f", track.globalIndex(), track.hmpid().hmpidSignal());
       }
     }
   }

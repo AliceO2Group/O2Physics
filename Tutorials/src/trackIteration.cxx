@@ -28,7 +28,7 @@ struct SingleTracks {
   void process(aod::Track const& track)
   {
     // count the tracks contained in the input file
-    LOGF(INFO, "Track %d: Momentum: %f", count, track.p());
+    LOGF(info, "Track %d: Momentum: %f", count, track.p());
     count++;
   }
 };
@@ -52,7 +52,7 @@ struct AllTracks {
     }
     totalCount += count;
 
-    LOGF(INFO, "DataFrame %d: Number of tracks: %d Accumulated number of tracks: %d", numberDataFrames, count, totalCount);
+    LOGF(info, "DataFrame %d: Number of tracks: %d Accumulated number of tracks: %d", numberDataFrames, count, totalCount);
   }
 };
 

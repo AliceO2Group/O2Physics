@@ -33,13 +33,13 @@ T getCompatibleBCs(aod::Collision const& collision, T const& bcs)
   uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / (o2::constants::lhc::LHCBunchSpacingNS / 1000));
   int deltaBC = std::ceil(collision.collisionTimeRes() / (o2::constants::lhc::LHCBunchSpacingNS / 1000) * 4);
 
-  LOGF(INFO, "BC range: %llu - %llu", meanBC - deltaBC, meanBC + deltaBC);
+  LOGF(info, "BC range: %llu - %llu", meanBC - deltaBC, meanBC + deltaBC);
 
   // find slice of BCs table with BC in [meanBC - deltaBC, meanBC + deltaBC]
   int64_t maxBCId = bcIter.globalIndex();
   int moveCount = 0; // optimize to avoid to re-create the iterator
   while (bcIter != bcs.end() && bcIter.globalBC() <= meanBC + deltaBC && bcIter.globalBC() >= meanBC - deltaBC) {
-    LOGF(DEBUG, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
     maxBCId = bcIter.globalIndex();
     ++bcIter;
     ++moveCount;
@@ -48,12 +48,12 @@ T getCompatibleBCs(aod::Collision const& collision, T const& bcs)
   bcIter.moveByIndex(-moveCount); // Move back to original position
   int64_t minBCId = collision.bcId();
   while (bcIter != bcs.begin() && bcIter.globalBC() <= meanBC + deltaBC && bcIter.globalBC() >= meanBC - deltaBC) {
-    LOGF(DEBUG, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
     minBCId = bcIter.globalIndex();
     --bcIter;
   }
 
-  LOGF(INFO, "Will consider BC entries from %d to %d", minBCId, maxBCId);
+  LOGF(info, "Will consider BC entries from %d to %d", minBCId, maxBCId);
 
   T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
   bcs.copyIndexBindings(slice);
@@ -65,7 +65,7 @@ T getCompatibleBCs(aod::Collision const& collision, T const& bcs)
 struct CompatibleBCs {
   void process(aod::Collision const& collision, aod::BCs const& bcs)
   {
-    LOGF(INFO, "Vertex with most probably BC %llu and collision time %f +- %f ps", collision.bc().globalBC(), collision.collisionTime(), collision.collisionTimeRes());
+    LOGF(info, "Vertex with most probably BC %llu and collision time %f +- %f ps", collision.bc().globalBC(), collision.collisionTime(), collision.collisionTimeRes());
 
     auto bcSlice = getCompatibleBCs(collision, bcs);
 
@@ -85,7 +85,7 @@ struct CompatibleT0V0A {
   {
     // NOTE collision.bc() causes SEGV here because we have only subscribed to BCs joined, therefore:
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
-    LOGF(INFO, "Vertex with most probable BC %llu and collision time %f +- %f ps", bc.globalBC(), collision.collisionTime(), collision.collisionTimeRes());
+    LOGF(info, "Vertex with most probable BC %llu and collision time %f +- %f ps", bc.globalBC(), collision.collisionTime(), collision.collisionTimeRes());
 
     auto bcSlice = getCompatibleBCs(collision, bct0s);
 
