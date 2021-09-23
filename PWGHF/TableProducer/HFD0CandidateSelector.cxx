@@ -102,7 +102,7 @@ struct HFD0CandidateSelector {
     if (std::abs(candidate.impactParameterNormalised0()) < 0.5 || std::abs(candidate.impactParameterNormalised1()) < 0.5) {
       return false;
     }
-    double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, 0.06);
+    double decayLengthCut = std::min((candidate.p() * 0.0066) + 0.01, cuts->get(pTBin, "minimum decay length"));
     if (candidate.decayLength() * candidate.decayLength() < decayLengthCut * decayLengthCut) {
       return false;
     }
