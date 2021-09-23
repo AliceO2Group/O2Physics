@@ -14,72 +14,72 @@ o2physics_add_dpl_workflow(qa-rejection
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-d0
+o2physics_add_dpl_workflow(task-d0
                     SOURCES taskD0.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-dplus
+o2physics_add_dpl_workflow(task-dplus
                     SOURCES taskDPlus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-lc
+o2physics_add_dpl_workflow(task-lc
                     SOURCES taskLc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-jpsi
+o2physics_add_dpl_workflow(task-jpsi
                     SOURCES taskJpsi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-bplus
+o2physics_add_dpl_workflow(task-bplus
                     SOURCES taskBPlus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-xic
+o2physics_add_dpl_workflow(task-xic
                     SOURCES taskXic.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-xicc
+o2physics_add_dpl_workflow(task-xicc
                     SOURCES taskXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-x
+o2physics_add_dpl_workflow(task-x
                     SOURCES taskX.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-mc-validation
+o2physics_add_dpl_workflow(mc-validation
                     SOURCES HFMCValidation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-lc-tok0sp
+o2physics_add_dpl_workflow(task-lc-tok0sp
                     SOURCES taskLcK0sP.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-correlator-d0d0bar
+o2physics_add_dpl_workflow(correlator-d0d0bar
                     SOURCES HFCorrelatorD0D0bar.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-correlator-dplusdminus
+o2physics_add_dpl_workflow(correlator-dplusdminus
                     SOURCES HFCorrelatorDplusDminus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-correlation-ddbar
+o2physics_add_dpl_workflow(task-correlation-ddbar
                     SOURCES taskCorrelationDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-sel-optimisation
+o2physics_add_dpl_workflow(sel-optimisation
                     SOURCES HFSelOptimisation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
