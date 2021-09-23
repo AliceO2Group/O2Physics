@@ -20,6 +20,7 @@ include_guard()
 # * IS_TEST: present to denote the target is a test executable
 # * IS_BENCH: present to denote the target is a benchmark executable
 # * IS_EXE: present to denote the target is an executable (and not a library)
+# * PWG (optional): PWG name to be appended to the target name
 #
 function(o2physics_name_target baseTargetName)
 
@@ -28,7 +29,7 @@ function(o2physics_name_target baseTargetName)
                         A
                         "IS_TEST;IS_BENCH;IS_EXE"
                         "NAME;COMPONENT_NAME"
-                        "")
+                        "PWG")
 
   if(A_UNPARSED_ARGUMENTS)
     message(
@@ -56,8 +57,14 @@ function(o2physics_name_target baseTargetName)
     set(comp -${component})
   endif()
 
+  # optional PWG name
+  if(A_PWG)
+    string(TOLOWER ${A_PWG} pwg_lower)
+    set(pwg -${pwg_lower})
+  endif()
+
   set(${A_NAME}
-      ${PROJECT_NAME}${targetType}${comp}-${baseTargetName}
+      ${PROJECT_NAME}${targetType}${comp}${pwg}-${baseTargetName}
       PARENT_SCOPE)
 
 endfunction()
