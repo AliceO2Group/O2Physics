@@ -20,6 +20,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
@@ -45,6 +46,8 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
+static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+
 struct CorrelationTask {
 
   // Configuration
@@ -60,11 +63,8 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCut, float, -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)");
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
 
-  O2_DEFINE_CONFIGURABLE(cfgPairCutPhoton, float, -1, "Pair cut on photons: -1 = off; >0 otherwise distance value (suggested: 0.004)")
-  O2_DEFINE_CONFIGURABLE(cfgPairCutK0, float, -1, "Pair cut on K0s: -1 = off; >0 otherwise distance value (suggested: 0.005)")
-  O2_DEFINE_CONFIGURABLE(cfgPairCutLambda, float, -1, "Pair cut on Lambda: -1 = off; >0 otherwise distance value (suggested: 0.005)")
-  O2_DEFINE_CONFIGURABLE(cfgPairCutPhi, float, -1, "Pair cut on Phi: -1 = off; >0 otherwise distance value")
-  O2_DEFINE_CONFIGURABLE(cfgPairCutRho, float, -1, "Pair cut on Rho: -1 = off; >0 otherwise distance value")
+  // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {cfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyTrigger, std::string, "", "CCDB path to efficiency object for trigger particles")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
@@ -82,12 +82,17 @@ struct CorrelationTask {
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
-  // Filters and input definitions
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  // TODO bitwise operations not supported, yet
-  // Filter vertexTypeFilter = aod::collision::flags & (uint16_t) aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  // This filter is applied to AOD and derived data (column names are identical)
+  Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  // This filter is only applied to AOD
+  Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
+
+  // Track filters
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && (aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt);
+
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  using derivedTracks = soa::Filtered<aod::CFTracks>;
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -111,12 +116,12 @@ struct CorrelationTask {
 
     mPairCuts.SetHistogramRegistry(&registry);
 
-    if (cfgPairCutPhoton > 0 || cfgPairCutK0 > 0 || cfgPairCutLambda > 0 || cfgPairCutPhi > 0 || cfgPairCutRho > 0) {
-      mPairCuts.SetPairCut(PairCuts::Photon, cfgPairCutPhoton);
-      mPairCuts.SetPairCut(PairCuts::K0, cfgPairCutK0);
-      mPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCutLambda);
-      mPairCuts.SetPairCut(PairCuts::Phi, cfgPairCutPhi);
-      mPairCuts.SetPairCut(PairCuts::Rho, cfgPairCutRho);
+    if (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 || cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0) {
+      mPairCuts.SetPairCut(PairCuts::Photon, cfgPairCut->get("Photon"));
+      mPairCuts.SetPairCut(PairCuts::K0, cfgPairCut->get("K0"));
+      mPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCut->get("Lambda"));
+      mPairCuts.SetPairCut(PairCuts::Phi, cfgPairCut->get("Phi"));
+      mPairCuts.SetPairCut(PairCuts::Rho, cfgPairCut->get("Rho"));
       cfg.mPairCuts = true;
     }
 
@@ -157,25 +162,25 @@ struct CorrelationTask {
     }
   }
 
-  template <typename TTarget, typename TCollision>
-  bool fillCollision(TTarget target, TCollision collision, float centrality)
+  template <typename TCollision, typename TTracks>
+  void fillQA(TCollision collision, float centrality, TTracks tracks)
   {
-    same->fillEvent(centrality, CorrelationContainer::kCFStepAll);
+    for (auto& track1 : tracks) {
+      registry.fill(HIST("yields"), centrality, track1.pt(), track1.eta());
+      registry.fill(HIST("etaphi"), centrality, track1.eta(), track1.phi());
+    }
+  }
+
+  template <typename TTarget, typename TCollision>
+  bool fillCollisionAOD(TTarget target, TCollision collision, float centrality)
+  {
+    target->fillEvent(centrality, CorrelationContainer::kCFStepAll);
 
     if (!collision.alias()[kINT7] || !collision.sel7()) {
       return false;
     }
 
-    same->fillEvent(centrality, CorrelationContainer::kCFStepTriggered);
-
-    // vertex range already checked as filter, but bitwise operations not yet supported
-    // TODO (collision.flags() != 0) can be removed with next conversion (AliPhysics >= 20210305)
-    if ((collision.flags() != 0) && ((collision.flags() & aod::collision::CollisionFlagsRun2::Run2VertexerTracks) != aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) {
-      return false;
-    }
-
-    same->fillEvent(centrality, CorrelationContainer::kCFStepVertex);
-    same->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
+    target->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
 
     return true;
   }
@@ -256,8 +261,9 @@ struct CorrelationTask {
   }
 
   // Version with explicit nested loop
-  void processSame(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  void processSameAOD(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents>>::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
+    // TODO will go to CCDBConfigurable
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgEfficiencyTrigger.value.empty() == false) {
       cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, bc.timestamp());
@@ -268,30 +274,33 @@ struct CorrelationTask {
       LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
     }
 
-    LOGF(info, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
-
-    if (std::abs(collision.posZ()) > cfgCutVertex) {
-      LOGF(warning, "Unexpected: Vertex %f outside of cut %f", collision.posZ(), (float)cfgCutVertex);
-    }
+    LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
 
     int bSign = 1; // TODO magnetic field from CCDB
     const auto centrality = collision.centV0M();
 
-    if (fillCollision(same, collision, centrality) == false) {
+    if (fillCollisionAOD(same, collision, centrality) == false) {
       return;
     }
-
-    for (auto& track1 : tracks) {
-      registry.fill(HIST("yields"), centrality, track1.pt(), track1.eta());
-      registry.fill(HIST("etaphi"), centrality, track1.eta(), track1.phi());
-    }
-
+    fillQA(collision, centrality, tracks);
     fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), bSign);
   }
+  PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
-  PROCESS_SWITCH(CorrelationTask, processSame, "Process same event", true);
+  void processSameDerived(soa::Filtered<aod::CFCollisions>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centV0M());
 
-  void processMixed(soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::Cents>& collisions, myTracks const& tracks)
+    int bSign = 1; // TODO magnetic field from CCDB
+    const auto centrality = collision.centV0M();
+
+    same->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
+    fillQA(collision, centrality, tracks);
+    fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), bSign);
+  }
+  PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
+
+  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::Cents>>& collisions, aodTracks const& tracks)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
@@ -304,10 +313,10 @@ struct CorrelationTask {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      LOGF(info, "Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
+      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
-      if (fillCollision(mixed, collision1, collision1.centV0M()) == false) {
+      if (fillCollisionAOD(mixed, collision1, collision1.centV0M()) == false) {
         continue;
       }
 
@@ -326,9 +335,9 @@ struct CorrelationTask {
         }
       }
 
-      auto tracks1 = std::get<myTracks>(it1.associatedTables());
+      auto tracks1 = std::get<aodTracks>(it1.associatedTables());
       tracks1.bindExternalIndices(&collisions);
-      auto tracks2 = std::get<myTracks>(it2.associatedTables());
+      auto tracks2 = std::get<aodTracks>(it2.associatedTables());
       tracks2.bindExternalIndices(&collisions);
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
@@ -336,8 +345,51 @@ struct CorrelationTask {
       fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), bSign);
     }
   }
+  PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", true);
 
-  PROCESS_SWITCH(CorrelationTask, processMixed, "Process mixed events", true);
+  void processMixedDerived(soa::Filtered<soa::Join<aod::CFCollisions, aod::Hashes>>& collisions, derivedTracks const& tracks)
+  {
+    // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
+
+    int bSign = 1; // TODO magnetic field from CCDB
+
+    collisions.bindExternalIndices(&tracks);
+    auto tracksTuple = std::make_tuple(tracks);
+    AnalysisDataProcessorBuilder::GroupSlicer slicer(collisions, tracksTuple);
+
+    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
+
+      mixed->fillEvent(collision1.centV0M(), CorrelationContainer::kCFStepReconstructed);
+
+      auto it1 = slicer.begin();
+      auto it2 = slicer.begin();
+      for (auto& slice : slicer) {
+        if (slice.groupingElement().index() == collision1.index()) {
+          it1 = slice;
+          break;
+        }
+      }
+      for (auto& slice : slicer) {
+        if (slice.groupingElement().index() == collision2.index()) {
+          it2 = slice;
+          break;
+        }
+      }
+
+      auto tracks1 = std::get<derivedTracks>(it1.associatedTables());
+      tracks1.bindExternalIndices(&collisions);
+      auto tracks2 = std::get<derivedTracks>(it2.associatedTables());
+      tracks2.bindExternalIndices(&collisions);
+
+      // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
+
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), bSign);
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
 
   // Version with combinations
   void processWithCombinations(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
@@ -395,7 +447,7 @@ struct CorrelationTask {
     }
   }
 
-  PROCESS_SWITCH(CorrelationTask, processWithCombinations, "Process with combinations", false);
+  PROCESS_SWITCH(CorrelationTask, processWithCombinations, "Process same event on AOD with combinations", false);
 
   double getEfficiency(THn* eff, float eta, float pt, float centrality, float posZ)
   {
@@ -486,7 +538,7 @@ struct CorrelationHashTask {
     return -1;
   }
 
-  void process(soa::Join<aod::Collisions, aod::Cents> const& collisions)
+  void processAOD(soa::Join<aod::Collisions, aod::Cents> const& collisions)
   {
     for (auto& collision : collisions) {
       int hash = getHash(collision.posZ(), collision.centV0M());
@@ -494,6 +546,17 @@ struct CorrelationHashTask {
       hashes(hash);
     }
   }
+  PROCESS_SWITCH(CorrelationHashTask, processAOD, "Create hashes for mixing on AOD", true);
+
+  void processDerived(aod::CFCollisions const& collisions)
+  {
+    for (auto& collision : collisions) {
+      int hash = getHash(collision.posZ(), collision.centV0M());
+      LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centV0M(), hash);
+      hashes(hash);
+    }
+  }
+  PROCESS_SWITCH(CorrelationHashTask, processDerived, "Create hashes for mixing on AOD", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
