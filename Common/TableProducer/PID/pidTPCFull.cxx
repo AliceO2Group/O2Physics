@@ -181,7 +181,7 @@ struct tpcPidFullQa {
                                                    "nsigma/Tr", "nsigma/He", "nsigma/Al"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
 
-  Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
+  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};

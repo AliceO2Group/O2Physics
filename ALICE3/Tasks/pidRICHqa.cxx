@@ -75,7 +75,7 @@ struct richPidQaMc {
   Configurable<int> nBinsDelta{"nBinsDelta", 600, "Number of delta bins"};
   Configurable<float> minDelta{"minDelta", -0.4f, "Minimum delta plotted (rad)"};
   Configurable<float> maxDelta{"maxDelta", 0.4f, "Maximum delta plotted (rad)"};
-  Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
+  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
 
   static constexpr int Np = 5;
   static constexpr std::string_view hbRICHDelta[Np] = {"bRICH/delta/El", "bRICH/delta/Mu", "bRICH/delta/Pi", "bRICH/delta/Ka", "bRICH/delta/Pr"};

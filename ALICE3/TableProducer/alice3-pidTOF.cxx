@@ -136,8 +136,8 @@ struct ALICE3pidTOFTaskQA {
 
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
+  Configurable<float> minP{"minP", -2.f, "Minimum momentum in range"};
+  Configurable<float> maxP{"maxP", 2.f, "Maximum momentum in range"};
   Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
   Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
   Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
