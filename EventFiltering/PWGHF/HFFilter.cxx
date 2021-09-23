@@ -326,17 +326,17 @@ struct HfFilter {
         // 3-prong femto
         int iFemtoHypo = 0;
         if (!keepEvent[kFemto]) {
-          isProton = isSelectedProton(track);
-        }
-        while (!keepEvent[kFemto] && iFemtoHypo < 3) {
-          if (specieCharmHypos[iFemtoHypo] && isProton) {
-            float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iFemtoHypo]);
-            if (RelativeMomentum < femtoMaxRelativeMomentum) {
-              keepEvent[kFemto] = true;
+          bool isProton = isSelectedProton(track);
+          while (!keepEvent[kFemto] && iFemtoHypo < 3) {
+            if (specieCharmHypos[iFemtoHypo] && isProton) {
+              float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iFemtoHypo]);
+              if (RelativeMomentum < femtoMaxRelativeMomentum) {
+                keepEvent[kFemto] = true;
+              }
             }
-          }
-          iFemtoHypo++;
-        } //while (!keepEvent[kFemto] && iFemtoHypo < 3)
+            iFemtoHypo++;
+          } //while (!keepEvent[kFemto] && iFemtoHypo < 3)
+        }
 
       } // end loop over tracks
     }   // end loop over 3-prong candidates
