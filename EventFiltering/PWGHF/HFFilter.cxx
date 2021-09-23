@@ -325,7 +325,6 @@ struct HfFilter {
 
         // 3-prong femto
         int iFemtoHypo = 0;
-        bool isProton;
         if (!keepEvent[kFemto]) {
           isProton = isSelectedProton(track);
         }
