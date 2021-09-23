@@ -80,7 +80,6 @@ function(o2physics_add_executable baseTargetName)
   endif()
 
   set(exeName o2${exeType}${comp}${pwg}-${baseTargetName})
-  message("exe ${exeName}")
 
   if(A_IS_TEST)
     set(isTest "IS_TEST")
