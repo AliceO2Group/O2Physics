@@ -162,36 +162,35 @@ struct HfFilter {
     }
     return true;
   }
-    
+
   /// Basic selection of proton candidates
   /// \param track is a track
   /// \return true if track passes all cuts
   template <typename T>
   bool isSelectedProton(const T& track)
   {
-    if(track.pt()<femtoMinProtonPt){
-        return false;
+    if (track.pt() < femtoMinProtonPt) {
+      return false;
     }
-        
+
     float NSigmaTPC = track.tpcNSigmaPr();
     float NSigmaTOF = track.tofNSigmaPr();
     float NSigma;
-      
-    if(femtoProtonOnlyTOF){
-        NSigma = abs(NSigmaTOF);
+
+    if (femtoProtonOnlyTOF) {
+      NSigma = abs(NSigmaTOF);
+    } else {
+      NSigma = sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
     }
-    else{
-        NSigma = sqrt(NSigmaTPC*NSigmaTPC + NSigmaTOF*NSigmaTOF);
+
+    if (NSigma > 3.0) {
+      return false;
     }
-            
-    if(NSigma > 3.0){
-        return false;
-    }
-           
+
     return true;
-          
-  }//bool isSelectedProton(const T& track)
-      
+
+  } //bool isSelectedProton(const T& track)
+
   /// Computation of the relative momentum between particle pairs
   /// \param track is a track
   /// \param ProtonMass is the mass of a proton
@@ -203,16 +202,16 @@ struct HfFilter {
   {
     ROOT::Math::PxPyPzMVector part1(track.px(), track.py(), track.pz(), massProton);
     ROOT::Math::PxPyPzMVector part2(CharmCandMomentum[0], CharmCandMomentum[1], CharmCandMomentum[2], CharmMass);
-        
+
     ROOT::Math::PxPyPzMVector trackSum = part1 + part2;
     ROOT::Math::Boost boostv12{trackSum.BoostToCM()};
     ROOT::Math::PxPyPzMVector part1CM = boostv12(part1);
     ROOT::Math::PxPyPzMVector part2CM = boostv12(part2);
     ROOT::Math::PxPyPzMVector trackRelK = part1CM - part2CM;
-        
+
     float kStar = 0.5 * trackRelK.P();
     return kStar;
-  }//float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
+  } //float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
   using HfTrackIndexProng2withColl = soa::Join<aod::HfTrackIndexProng2, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::HfTrackIndexProng3, aod::Colls3Prong>;
@@ -264,16 +263,15 @@ struct HfFilter {
         }
 
         // 2-prong femto
-        if(!keepEvent[kFemto]){
-            bool isProton = isSelectedProton(track);
-            if(isProton)
-            {
-                float RelativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
-                if(RelativeMomentum < femtoMaxRelativeMomentum){
-                        keepEvent[kFemto] = true;
-                }
+        if (!keepEvent[kFemto]) {
+          bool isProton = isSelectedProton(track);
+          if (isProton) {
+            float RelativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
+            if (RelativeMomentum < femtoMaxRelativeMomentum) {
+              keepEvent[kFemto] = true;
             }
-        }//if(!keepEvent[kFemto])
+          }
+        } //if(!keepEvent[kFemto])
 
       } // end loop over tracks
     }   // end loop over 2-prong candidates
@@ -329,18 +327,18 @@ struct HfFilter {
         // 3-prong femto
         int iFemtoHypo = 0;
         bool isProton;
-        if(!keepEvent[kFemto]){
-            isProton = isSelectedProton(track);
+        if (!keepEvent[kFemto]) {
+          isProton = isSelectedProton(track);
         }
-        while (!keepEvent[kFemto] && iFemtoHypo < 3){
-            if (specieCharmHypos[iFemtoHypo] && isProton) {
-                    float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iFemtoHypo]);
-                    if(RelativeMomentum < femtoMaxRelativeMomentum){
-                        keepEvent[kFemto] = true;
-                    }
+        while (!keepEvent[kFemto] && iFemtoHypo < 3) {
+          if (specieCharmHypos[iFemtoHypo] && isProton) {
+            float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iFemtoHypo]);
+            if (RelativeMomentum < femtoMaxRelativeMomentum) {
+              keepEvent[kFemto] = true;
             }
-              iFemtoHypo++;
-        }//while (!keepEvent[kFemto] && iFemtoHypo < 3)
+          }
+          iFemtoHypo++;
+        } //while (!keepEvent[kFemto] && iFemtoHypo < 3)
 
       } // end loop over tracks
     }   // end loop over 3-prong candidates
