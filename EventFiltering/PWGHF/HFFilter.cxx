@@ -182,7 +182,7 @@ Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum va
       NSigma = sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
     }
 
-    if (NSigma > 3.0) {
+    if (NSigma > femtoMaxNsigmaProton) {
       return false;
     }
 
