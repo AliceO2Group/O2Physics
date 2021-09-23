@@ -27,6 +27,9 @@
 
 #include <cmath>
 #include <string>
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
 
 namespace
 {
@@ -114,7 +117,10 @@ struct HfFilter {
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
   Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
-
+  Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
+  Configurable<float> femtoMinProtonPt{"femtoMinProtonPt", 0.5, "Minimal required transverse momentum for proton in GeV/c"};
+  Configurable<bool> femtoProtonOnlyTOF{"femtoProtonOnlyTOF", true, "Use only TOF information for proton identification if true"};
+  Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum value for PID proton Nsigma for femto triggers"};
   // array of single-track cuts for pion
   std::array<LabeledArray<double>, 2> cutsSingleTrackBeauty;
 
@@ -156,13 +162,64 @@ struct HfFilter {
     return true;
   }
 
+  /// Basic selection of proton candidates
+  /// \param track is a track
+  /// \return true if track passes all cuts
+  template <typename T>
+  bool isSelectedProton(const T& track)
+  {
+    if (track.pt() < femtoMinProtonPt) {
+      return false;
+    }
+
+    float NSigmaTPC = track.tpcNSigmaPr();
+    float NSigmaTOF = track.tofNSigmaPr();
+    float NSigma;
+
+    if (femtoProtonOnlyTOF) {
+      NSigma = abs(NSigmaTOF);
+    } else {
+      NSigma = sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
+    }
+
+    if (NSigma > femtoMaxNsigmaProton) {
+      return false;
+    }
+
+    return true;
+
+  } //bool isSelectedProton(const T& track)
+
+  /// Computation of the relative momentum between particle pairs
+  /// \param track is a track
+  /// \param ProtonMass is the mass of a proton
+  /// \param CharmCandMomentum is the three momentum of a charm candidate
+  /// \param CharmMass is the mass of the charm hadron
+  /// \return relative momentum of pair
+  template <typename T> //template <typename T, typename C>
+  float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
+  {
+    ROOT::Math::PxPyPzMVector part1(track.px(), track.py(), track.pz(), massProton);
+    ROOT::Math::PxPyPzMVector part2(CharmCandMomentum[0], CharmCandMomentum[1], CharmCandMomentum[2], CharmMass);
+
+    ROOT::Math::PxPyPzMVector trackSum = part1 + part2;
+    ROOT::Math::Boost boostv12{trackSum.BoostToCM()};
+    ROOT::Math::PxPyPzMVector part1CM = boostv12(part1);
+    ROOT::Math::PxPyPzMVector part2CM = boostv12(part2);
+    ROOT::Math::PxPyPzMVector trackRelK = part1CM - part2CM;
+
+    float kStar = 0.5 * trackRelK.P();
+    return kStar;
+  } //float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
+
   using HfTrackIndexProng2withColl = soa::Join<aod::HfTrackIndexProng2, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::HfTrackIndexProng3, aod::Colls3Prong>;
+  using BigTracksWithProtonPID = soa::Join<aod::BigTracks, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
   void process(aod::Collision const& collision,
                HfTrackIndexProng2withColl const& cand2Prongs,
                HfTrackIndexProng3withColl const& cand3Prongs,
-               aod::BigTracks const& tracks)
+               BigTracksWithProtonPID const& tracks)
   {
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
 
@@ -176,8 +233,8 @@ struct HfFilter {
         continue;
       }
 
-      auto trackPos = cand2Prong.index0_as<aod::BigTracks>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<aod::BigTracks>(); // negative daughter
+      auto trackPos = cand2Prong.index0_as<BigTracksWithProtonPID>(); // positive daughter
+      auto trackNeg = cand2Prong.index1_as<BigTracksWithProtonPID>(); // negative daughter
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
 
@@ -204,7 +261,16 @@ struct HfFilter {
           }
         }
 
-        // TODO: add momentum correlation with a track for femto
+        // 2-prong femto
+        if (!keepEvent[kFemto]) {
+          bool isProton = isSelectedProton(track);
+          if (isProton) {
+            float RelativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
+            if (RelativeMomentum < femtoMaxRelativeMomentum) {
+              keepEvent[kFemto] = true;
+            }
+          }
+        } //if(!keepEvent[kFemto])
 
       } // end loop over tracks
     }   // end loop over 2-prong candidates
@@ -218,9 +284,9 @@ struct HfFilter {
         continue;
       }
 
-      auto trackFirst = cand3Prong.index0_as<aod::BigTracks>();
-      auto trackSecond = cand3Prong.index1_as<aod::BigTracks>();
-      auto trackThird = cand3Prong.index2_as<aod::BigTracks>();
+      auto trackFirst = cand3Prong.index0_as<BigTracksWithProtonPID>();
+      auto trackSecond = cand3Prong.index1_as<BigTracksWithProtonPID>();
+      auto trackThird = cand3Prong.index2_as<BigTracksWithProtonPID>();
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
       std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
@@ -257,7 +323,20 @@ struct HfFilter {
           }
         }
 
-        // TODO: add momentum correlation with a track for femto
+        // 3-prong femto
+        int iFemtoHypo = 0;
+        if (!keepEvent[kFemto]) {
+          bool isProton = isSelectedProton(track);
+          while (!keepEvent[kFemto] && iFemtoHypo < 3) {
+            if (specieCharmHypos[iFemtoHypo] && isProton) {
+              float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iFemtoHypo]);
+              if (RelativeMomentum < femtoMaxRelativeMomentum) {
+                keepEvent[kFemto] = true;
+              }
+            }
+            iFemtoHypo++;
+          } //while (!keepEvent[kFemto] && iFemtoHypo < 3)
+        }
 
       } // end loop over tracks
     }   // end loop over 3-prong candidates
