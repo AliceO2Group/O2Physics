@@ -96,7 +96,7 @@ function(o2physics_add_executable baseTargetName)
                         IS_EXE
                         ${isTest}
                         ${isBench}
-                        PWG ${PWG})
+                        PWG ${PWGSUFFIX})
 
   set(target ${targetName})
 
