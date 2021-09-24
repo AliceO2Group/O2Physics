@@ -277,6 +277,7 @@ struct HFCandidateCreatorXMC {
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.index0();
+      auto arrayJpsiDaughters = array{jpsiTrack.index0_as<aod::BigTracksMC>(),jpsiTrack.index1_as<aod::BigTracksMC>()};
       auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),
                                   candidate.index2_as<aod::BigTracksMC>(),
                                   jpsiTrack.index0_as<aod::BigTracksMC>(),
@@ -284,15 +285,21 @@ struct HFCandidateCreatorXMC {
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
       if (indexRec > -1) {
-        flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kElectron, -kElectron}, true, &sign, 2);
+        if (indexRec > -1) {
+          flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
+        }
       }
 
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
-          flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
+          indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdgCodeX, array{+kPiPlus, -kPiPlus, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            flag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
+          }
         }
       }
 
