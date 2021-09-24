@@ -277,11 +277,13 @@ struct HFCandidateCreatorXMC {
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.index0();
-      auto arrayJpsiDaughters = array{jpsiTrack.index0_as<aod::BigTracksMC>(), jpsiTrack.index1_as<aod::BigTracksMC>()};
+      auto daughterPosJpsi = jpsiTrack.index0_as<aod::BigTracksMC>();
+      auto daughterNegJpsi = jpsiTrack.index1_as<aod::BigTracksMC>();
+      auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
       auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),
                                   candidate.index2_as<aod::BigTracksMC>(),
-                                  jpsiTrack.index0_as<aod::BigTracksMC>(),
-                                  jpsiTrack.index1_as<aod::BigTracksMC>()};
+                                  daughterPosJpsi,
+                                  daughterNegJpsi};
 
       // X → J/ψ π+ π-
       //Printf("Checking X → J/ψ π+ π-");
