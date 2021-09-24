@@ -50,12 +50,35 @@ enum TrackSel { kSign,        ///< Sign of the track
 class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDreamTrackSelection::TrackSel>
 {
  public:
+  FemtoDreamTrackSelection() : nPtMinSel(0),
+                               nPtMaxSel(0),
+                               nEtaSel(0),
+                               nTPCnMinSel(0),
+                               nTPCfMinSel(0),
+                               nTPCcMinSel(0),
+                               nTPCsMaxSel(0),
+                               nDCAxyMaxSel(0),
+                               nDCAzMaxSel(0),
+                               nDCAMinSel(0),
+                               nPIDnSigmaSel(0),
+                               pTMin(9999999.),
+                               pTMax(-9999999.),
+                               etaMax(-9999999.),
+                               nClsMin(9999999.),
+                               fClsMin(9999999.),
+                               cTPCMin(9999999.),
+                               sTPCMax(-9999999.),
+                               dcaXYMax(-9999999.),
+                               dcaZMax(-9999999.),
+                               dcaMin(9999999.),
+                               nSigmaPIDMax(9999999.){};
+
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
   /// \tparam cutContainerType Data type of the bit-wise container for the selections
   /// \param registry HistogramRegistry for QA output
   template <o2::aod::femtodreamparticle::ParticleType part, typename cutContainerType>
-  void init(HistogramRegistry* registry);
+  void init(HistogramRegistry* registry, const std::string WhichDaugh = "");
 
   /// Passes the species to the task for which PID needs to be stored
   /// \tparam T Data type of the configurable passed to the functions
@@ -106,7 +129,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   /// \tparam T Data type of the track
   /// \param track Track
   template <o2::aod::femtodreamparticle::ParticleType part, typename T>
-  void fillQA(T const& track);
+  void fillQA(T const& track, const std::string_view WhichDaugh = "");
 
   /// Helper function to obtain the name of a given selection criterion for consistent naming of the configurables
   /// \param iSel Track selection variable to be examined
@@ -131,6 +154,28 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   }
 
  private:
+  int nPtMinSel;
+  int nPtMaxSel;
+  int nEtaSel;
+  int nTPCnMinSel;
+  int nTPCfMinSel;
+  int nTPCcMinSel;
+  int nTPCsMaxSel;
+  int nDCAxyMaxSel;
+  int nDCAzMaxSel;
+  int nDCAMinSel;
+  int nPIDnSigmaSel;
+  float pTMin;
+  float pTMax;
+  float etaMax;
+  float nClsMin;
+  float fClsMin;
+  float cTPCMin;
+  float sTPCMax;
+  float dcaXYMax;
+  float dcaZMax;
+  float dcaMin;
+  float nSigmaPIDMax;
   std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
   static constexpr std::string_view mSelectionNames[12] = {"Sign",
                                                            "PtMin",
@@ -159,11 +204,18 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
 };                                                                                   // namespace femtoDream
 
 template <o2::aod::femtodreamparticle::ParticleType part, typename cutContainerType>
-void FemtoDreamTrackSelection::init(HistogramRegistry* registry)
+void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::string WhichDaugh)
 {
   if (registry) {
     mHistogramRegistry = registry;
-    fillSelectionHistogram<part>();
+    std::string folderName;
+    if (WhichDaugh.empty()) {
+      fillSelectionHistogram<part>();
+      folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]);
+    } else {
+      printf("Are you working on Daughters? Not filling the selection criteria histogram!\n");
+      folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/" + WhichDaugh;
+    }
 
     /// \todo this should be an automatic check in the parent class
     int nSelections = getNSelections() + mPIDspecies.size() * (getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax) - 1);
@@ -171,7 +223,6 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry)
       LOG(fatal) << "FemtoDreamTrackCuts: Number of selections to large for your container - quitting!";
     }
 
-    std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]);
     mHistogramRegistry->add((folderName + "/pThist").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});
     mHistogramRegistry->add((folderName + "/etahist").c_str(), "; #eta; Entries", kTH1F, {{1000, -1, 1}});
     mHistogramRegistry->add((folderName + "/phihist").c_str(), "; #phi; Entries", kTH1F, {{1000, 0, 2. * M_PI}});
@@ -185,6 +236,30 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/tpcdEdx").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
     mHistogramRegistry->add((folderName + "/tofSignal").c_str(), "; #it{p} (GeV/#it{c}); TOF Signal", kTH2F, {{100, 0, 10}, {1000, 0, 100e3}});
   }
+  /// set cuts
+  nPtMinSel = getNSelections(femtoDreamTrackSelection::kpTMin);
+  nPtMaxSel = getNSelections(femtoDreamTrackSelection::kpTMax);
+  nEtaSel = getNSelections(femtoDreamTrackSelection::kEtaMax);
+  nTPCnMinSel = getNSelections(femtoDreamTrackSelection::kTPCnClsMin);
+  nTPCfMinSel = getNSelections(femtoDreamTrackSelection::kTPCfClsMin);
+  nTPCcMinSel = getNSelections(femtoDreamTrackSelection::kTPCcRowsMin);
+  nTPCsMaxSel = getNSelections(femtoDreamTrackSelection::kTPCsClsMax);
+  nDCAxyMaxSel = getNSelections(femtoDreamTrackSelection::kDCAxyMax);
+  nDCAzMaxSel = getNSelections(femtoDreamTrackSelection::kDCAzMax);
+  nDCAMinSel = getNSelections(femtoDreamTrackSelection::kDCAMin);
+  nPIDnSigmaSel = getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
+
+  pTMin = getMinimalSelection(femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+  pTMax = getMinimalSelection(femtoDreamTrackSelection::kpTMax, femtoDreamSelection::kUpperLimit);
+  etaMax = getMinimalSelection(femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+  nClsMin = getMinimalSelection(femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+  fClsMin = getMinimalSelection(femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit);
+  cTPCMin = getMinimalSelection(femtoDreamTrackSelection::kTPCcRowsMin, femtoDreamSelection::kLowerLimit);
+  sTPCMax = getMinimalSelection(femtoDreamTrackSelection::kTPCsClsMax, femtoDreamSelection::kUpperLimit);
+  dcaXYMax = getMinimalSelection(femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
+  dcaZMax = getMinimalSelection(femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
+  dcaMin = getMinimalSelection(femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+  nSigmaPIDMax = getMinimalSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
 }
 
 template <typename T>
@@ -266,31 +341,6 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
-
-  /// check whether the most open cuts are fulfilled
-  const static int nPtMinSel = getNSelections(femtoDreamTrackSelection::kpTMin);
-  const static int nPtMaxSel = getNSelections(femtoDreamTrackSelection::kpTMax);
-  const static int nEtaSel = getNSelections(femtoDreamTrackSelection::kEtaMax);
-  const static int nTPCnMinSel = getNSelections(femtoDreamTrackSelection::kTPCnClsMin);
-  const static int nTPCfMinSel = getNSelections(femtoDreamTrackSelection::kTPCfClsMin);
-  const static int nTPCcMinSel = getNSelections(femtoDreamTrackSelection::kTPCcRowsMin);
-  const static int nTPCsMaxSel = getNSelections(femtoDreamTrackSelection::kTPCsClsMax);
-  const static int nDCAxyMaxSel = getNSelections(femtoDreamTrackSelection::kDCAxyMax);
-  const static int nDCAzMaxSel = getNSelections(femtoDreamTrackSelection::kDCAzMax);
-  const static int nDCAMinSel = getNSelections(femtoDreamTrackSelection::kDCAMin);
-  const static int nPIDnSigmaSel = getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
-
-  const static float pTMin = getMinimalSelection(femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
-  const static float pTMax = getMinimalSelection(femtoDreamTrackSelection::kpTMax, femtoDreamSelection::kUpperLimit);
-  const static float etaMax = getMinimalSelection(femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
-  const static float nClsMin = getMinimalSelection(femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-  const static float fClsMin = getMinimalSelection(femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit);
-  const static float cTPCMin = getMinimalSelection(femtoDreamTrackSelection::kTPCcRowsMin, femtoDreamSelection::kLowerLimit);
-  const static float sTPCMax = getMinimalSelection(femtoDreamTrackSelection::kTPCsClsMax, femtoDreamSelection::kUpperLimit);
-  const static float dcaXYMax = getMinimalSelection(femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
-  const static float dcaZMax = getMinimalSelection(femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
-  const static float dcaMin = getMinimalSelection(femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
-  const static float nSigmaPIDMax = getMinimalSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
 
   if (nPtMinSel > 0 && pT < pTMin) {
     return false;
@@ -420,9 +470,9 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
 }
 
 template <o2::aod::femtodreamparticle::ParticleType part, typename T>
-void FemtoDreamTrackSelection::fillQA(T const& track)
+void FemtoDreamTrackSelection::fillQA(T const& track, std::string_view WhichDaugh)
 {
-  if (mHistogramRegistry) {
+  if (mHistogramRegistry) { /// \TODO to add possibility to write to Daughters folders
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/pThist"), track.pt());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/etahist"), track.eta());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/phihist"), track.phi());
