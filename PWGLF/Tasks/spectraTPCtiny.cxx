@@ -18,8 +18,8 @@
 
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -38,6 +38,15 @@ struct tpcSpectraTiny {
 
   void init(o2::framework::InitContext&)
   {
+    const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
+    histos.add("event/vertexz", "", HistType::kTH1F, {vtxZAxis});
+    auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1F, {{10, 0.5, 10.5}});
+    h->GetXaxis()->SetBinLabel(1, "Events read");
+    h->GetXaxis()->SetBinLabel(2, "posZ passed");
+    h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1F, {{10, 0.5, 10.5}});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "Eta passed");
+    h->GetXaxis()->SetBinLabel(3, "Quality passed");
     histos.add("p/Unselected", "Unselected;#it{p} (GeV/#it{c})", kTH1F, {{100, 0, 20}});
     histos.add("pt/Unselected", "Unselected;#it{p}_{T} (GeV/#it{c})", kTH1F, {{100, 0, 20}});
     for (int i = 0; i < Np; i++) {
@@ -60,29 +69,45 @@ struct tpcSpectraTiny {
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
-                                                  aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                                  aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
-                                                  aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl,
-                                                  aod::TrackSelection>>;
-
-  void process(TrackCandidates::iterator const& track)
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
+                                    aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                    aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
+                                    aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl,
+                                    aod::TrackSelection>;
+  void process(aod::Collision const& collision,
+               TrackCandidates const& tracks)
   {
-    histos.fill(HIST("p/Unselected"), track.p());
-    histos.fill(HIST("pt/Unselected"), track.pt());
+    histos.fill(HIST("evsel"), 1);
+    if (abs(collision.posZ()) > cfgCutVertex) {
+      return;
+    }
+    histos.fill(HIST("evsel"), 2);
+    histos.fill(HIST("event/vertexz"), collision.posZ());
 
-    fillParticleHistos<0>(track, track.tpcNSigmaEl());
-    fillParticleHistos<1>(track, track.tpcNSigmaMu());
-    fillParticleHistos<2>(track, track.tpcNSigmaPi());
-    fillParticleHistos<3>(track, track.tpcNSigmaKa());
-    fillParticleHistos<4>(track, track.tpcNSigmaPr());
-    fillParticleHistos<5>(track, track.tpcNSigmaDe());
-    fillParticleHistos<6>(track, track.tpcNSigmaTr());
-    fillParticleHistos<7>(track, track.tpcNSigmaHe());
-    fillParticleHistos<8>(track, track.tpcNSigmaAl());
+    for (const auto& track : tracks) {
+      histos.fill(HIST("tracksel"), 1);
+      if (abs(track.eta()) > cfgCutEta) {
+        continue;
+      }
+      histos.fill(HIST("tracksel"), 2);
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      histos.fill(HIST("tracksel"), 3);
 
+      histos.fill(HIST("p/Unselected"), track.p());
+      histos.fill(HIST("pt/Unselected"), track.pt());
+
+      fillParticleHistos<0>(track, track.tpcNSigmaEl());
+      fillParticleHistos<1>(track, track.tpcNSigmaMu());
+      fillParticleHistos<2>(track, track.tpcNSigmaPi());
+      fillParticleHistos<3>(track, track.tpcNSigmaKa());
+      fillParticleHistos<4>(track, track.tpcNSigmaPr());
+      fillParticleHistos<5>(track, track.tpcNSigmaDe());
+      fillParticleHistos<6>(track, track.tpcNSigmaTr());
+      fillParticleHistos<7>(track, track.tpcNSigmaHe());
+      fillParticleHistos<8>(track, track.tpcNSigmaAl());
+    }
   } // end of the process function
 };
 

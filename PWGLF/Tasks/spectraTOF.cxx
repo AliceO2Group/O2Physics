@@ -38,6 +38,17 @@ struct tofSpectra {
 
   void init(o2::framework::InitContext&)
   {
+    const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
+    histos.add("event/vertexz", "", HistType::kTH1F, {vtxZAxis});
+    auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1F, {{10, 0.5, 10.5}});
+    h->GetXaxis()->SetBinLabel(1, "Events read");
+    h->GetXaxis()->SetBinLabel(2, "posZ passed");
+    h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1F, {{10, 0.5, 10.5}});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "Eta passed");
+    h->GetXaxis()->SetBinLabel(3, "Quality passed");
+    h->GetXaxis()->SetBinLabel(4, "TOF passed");
+    h->GetXaxis()->SetBinLabel(5, "TrackTimeRes passed");
     histos.add("p/Unselected", "Unselected;#it{p} (GeV/#it{c})", kTH1F, {{100, 0, 20}});
     histos.add("pt/Unselected", "Unselected;#it{p}_{T} (GeV/#it{c})", kTH1F, {{100, 0, 20}});
     for (int i = 0; i < Np; i++) {
@@ -66,38 +77,64 @@ struct tofSpectra {
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
-  Filter trackFilterTOF = (aod::track::tofChi2 >= 0.f); // Skip tracks without TOF
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
-                                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                                                  aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                                  aod::pidTOFbeta, aod::TOFSignal, aod::TrackSelection>>;
-
-  void process(TrackCandidates::iterator const& track)
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
+                                    aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                    aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
+                                    aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                                    aod::pidTOFbeta, aod::TOFSignal, aod::TrackSelection>;
+  void process(aod::Collision const& collision,
+               TrackCandidates const& tracks)
   {
-    histos.fill(HIST("p/Unselected"), track.p());
-    histos.fill(HIST("pt/Unselected"), track.pt());
+    histos.fill(HIST("evsel"), 1);
+    if (abs(collision.posZ()) > cfgCutVertex) {
+      return;
+    }
+    histos.fill(HIST("evsel"), 2);
+    histos.fill(HIST("event/vertexz"), collision.posZ());
 
-    fillParticleHistos<0>(track, track.tofNSigmaEl());
-    fillParticleHistos<1>(track, track.tofNSigmaMu());
-    fillParticleHistos<2>(track, track.tofNSigmaPi());
-    fillParticleHistos<3>(track, track.tofNSigmaKa());
-    fillParticleHistos<4>(track, track.tofNSigmaPr());
-    fillParticleHistos<5>(track, track.tofNSigmaDe());
-    fillParticleHistos<6>(track, track.tofNSigmaTr());
-    fillParticleHistos<7>(track, track.tofNSigmaHe());
-    fillParticleHistos<8>(track, track.tofNSigmaAl());
+    for (const auto& track : tracks) {
+      histos.fill(HIST("tracksel"), 1);
+      if (abs(track.eta()) > cfgCutEta) {
+        continue;
+      }
+      histos.fill(HIST("tracksel"), 2);
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      histos.fill(HIST("tracksel"), 3);
+      if (!track.hasTOF()) {
+        continue;
+      }
+      histos.fill(HIST("tracksel"), 4);
+      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Track) { // check fTrackTimeRes, this can removed for conversions of Run2 data done with Aliphysics later than vAN-20210917
+        if (track.trackTimeRes() <= 0.f || track.trackTimeRes() > 250e-3f) {
+          continue;
+        }
+      }
+      histos.fill(HIST("tracksel"), 5);
 
-    //
-    if (TMath::Abs(track.separationbetael() < 1.f)) {
-      histos.fill(HIST("electronbeta/hp_El"), track.p());
-      histos.fill(HIST("electronbeta/hpt_El"), track.pt());
-      histos.fill(HIST("electronbeta/hlength_El"), track.length());
-      histos.fill(HIST("electronbeta/htime_El"), track.tofSignal() / 1000);
-      histos.fill(HIST("electronbeta/hp_beta_El"), track.p(), track.diffbetael());
-      histos.fill(HIST("electronbeta/hp_betasigma_El"), track.p(), track.separationbetael());
+      histos.fill(HIST("p/Unselected"), track.p());
+      histos.fill(HIST("pt/Unselected"), track.pt());
+
+      fillParticleHistos<0>(track, track.tofNSigmaEl());
+      fillParticleHistos<1>(track, track.tofNSigmaMu());
+      fillParticleHistos<2>(track, track.tofNSigmaPi());
+      fillParticleHistos<3>(track, track.tofNSigmaKa());
+      fillParticleHistos<4>(track, track.tofNSigmaPr());
+      fillParticleHistos<5>(track, track.tofNSigmaDe());
+      fillParticleHistos<6>(track, track.tofNSigmaTr());
+      fillParticleHistos<7>(track, track.tofNSigmaHe());
+      fillParticleHistos<8>(track, track.tofNSigmaAl());
+
+      //
+      if (TMath::Abs(track.separationbetael() < 1.f)) {
+        histos.fill(HIST("electronbeta/hp_El"), track.p());
+        histos.fill(HIST("electronbeta/hpt_El"), track.pt());
+        histos.fill(HIST("electronbeta/hlength_El"), track.length());
+        histos.fill(HIST("electronbeta/htime_El"), track.tofSignal() / 1000);
+        histos.fill(HIST("electronbeta/hp_beta_El"), track.p(), track.diffbetael());
+        histos.fill(HIST("electronbeta/hp_betasigma_El"), track.p(), track.separationbetael());
+      }
     }
   } // end of the process function
 };
