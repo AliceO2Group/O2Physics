@@ -279,7 +279,7 @@ struct DQFilterPPTaskTiny {
   void process(MyEventsSelected::iterator const& event, MyBarrelTracksSelected const& tracks, aod::BCs const& bcs)
   {
     uint64_t filter = 0;
-		constexpr int pairType = VarManager::kJpsiToEE;
+    constexpr int pairType = VarManager::kJpsiToEE;
 
     if (event.isDQEventSelected() == 1) {
       // Reset the fValues array
