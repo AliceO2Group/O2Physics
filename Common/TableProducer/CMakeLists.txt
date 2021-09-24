@@ -36,6 +36,11 @@ o2physics_add_dpl_workflow(centrality-table
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::CCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(centralitynew-table
+                    SOURCES centralityTable_new.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::CCDB
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(timestamp
                     SOURCES timestamp.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsRaw O2Physics::AnalysisCore O2::CommonDataFormat O2::CCDB
