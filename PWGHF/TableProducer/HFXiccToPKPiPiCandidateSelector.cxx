@@ -97,9 +97,17 @@ struct HfXiccToPKPiPiCandidateSelector {
     if (hfCandXicc.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
       return false;
     }
-    if ((std::abs(hfCandXicc.impactParameter0()) > cuts->get(pTBin, "d0 Xic")) ||
-        (std::abs(hfCandXicc.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))) {
-      return false; // DCA check on daughters
+
+    // Maximum DCA check on daughters
+    if ((std::abs(hfCandXicc.impactParameter0()) > cuts->get(pTBin, "max d0 Xic")) ||
+        (std::abs(hfCandXicc.impactParameter1()) > cuts->get(pTBin, "max d0 Pi"))) {
+      return false;
+    }
+
+    // Minimum DCA check on daughters
+    if ((std::abs(hfCandXicc.impactParameter0()) <= cuts->get(pTBin, "min d0 Xic")) ||
+        (std::abs(hfCandXicc.impactParameter1()) <= cuts->get(pTBin, "min d0 Pi"))) {
+      return false;
     }
 
     // cut on daughter pT
