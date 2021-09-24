@@ -277,7 +277,7 @@ struct HFCandidateCreatorXMC {
       origin = 0;
       channel = 0;
       auto jpsiTrack = candidate.index0();
-      auto arrayJpsiDaughters = array{jpsiTrack.index0_as<aod::BigTracksMC>(),jpsiTrack.index1_as<aod::BigTracksMC>()};
+      auto arrayJpsiDaughters = array{jpsiTrack.index0_as<aod::BigTracksMC>(), jpsiTrack.index1_as<aod::BigTracksMC>()};
       auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),
                                   candidate.index2_as<aod::BigTracksMC>(),
                                   jpsiTrack.index0_as<aod::BigTracksMC>(),
