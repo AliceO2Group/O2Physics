@@ -23,6 +23,7 @@ namespace v0data
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                         //!
 
 //General V0 properties: position, momentum
 DECLARE_SOA_COLUMN(PosX, posX, float);   //! positive track X at min
@@ -176,7 +177,7 @@ using V0Data = V0Datas::iterator;
 namespace cascdata
 {
 //Necessary for full filtering functionality
-DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                           //!
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                           //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
 //General V0 properties: position, momentum
@@ -260,7 +261,7 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
 } // namespace cascdataext
 
 DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
-                  o2::soa::Index<>, cascdata::V0DataId, cascdata::BachelorId, cascdata::CollisionId,
+                  o2::soa::Index<>, cascdata::V0Id, cascdata::BachelorId, cascdata::CollisionId,
 
                   cascdata::Sign,
                   cascdata::X, cascdata::Y, cascdata::Z,
@@ -297,6 +298,14 @@ DECLARE_SOA_EXTENDED_TABLE_USER(CascDataExt, CascDataOrigin, "CascDATAEXT", //!
                                 cascdataext::Px, cascdataext::Py, cascdataext::Pz);
 
 using CascDataFull = CascDataExt;
+
+namespace v0ind {
+DECLARE_SOA_INDEX_COLUMN(V0, v0); //the biggest object 
+DECLARE_SOA_INDEX_COLUMN(V0Data, v0data); //the skimmed object 
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade); //the part that will use the previous ones
+}
+DECLARE_SOA_INDEX_TABLE_EXCLUSIVE(MatchedV0Cascades, V0s, "AOD", v0ind::V0DataId, v0ind::V0Id, v0ind::CascadeId);
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_STRANGENESSTABLES_H_
