@@ -206,6 +206,7 @@ struct HFXToJpsiPiPiCandidateSelector {
       }
 
       if (selJpsiToEE == 0 && selJpsiToMuMu == 0) {
+        hfSelXToJpsiPiPiCandidate(0, 0);
         continue;
       }
 
