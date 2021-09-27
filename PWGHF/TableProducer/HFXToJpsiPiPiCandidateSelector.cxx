@@ -205,6 +205,10 @@ struct HFXToJpsiPiPiCandidateSelector {
         selJpsiToMuMu = 0;
       }
 
+      if (selJpsiToEE == 0 && selJpsiToMuMu == 0) {
+        continue;
+      }
+
       // daughter track validity selection
       if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {
         hfSelXToJpsiPiPiCandidate(0, 0);

@@ -209,14 +209,6 @@ struct HFCandidateCreatorX {
             SETBIT(hfFlag, hf_cand_x::DecayType::XToJpsiToEEPiPi); // dielectron channel
           }
 
-          //if (jpsiCand.isSelJpsiToEE() > 0) {
-          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
-          //}
-
-          //if (jpsiCand.isSelJpsiToMuMu() > 0) {
-          //hfFlag = 1 << hf_cand_x::DecayType::XToJpsiToMuMuPiPi;
-          //}
-
           // fill the candidate table for the X here:
           rowCandidateBase(collision.globalIndex(),
                            collision.posX(), collision.posY(), collision.posZ(),
