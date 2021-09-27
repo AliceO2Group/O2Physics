@@ -14,6 +14,7 @@
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -22,10 +23,10 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_x_tojpsipipi;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
@@ -49,6 +50,7 @@ struct TaskX {
 
   Configurable<int> d_selectionFlagX{"d_selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -66,12 +68,13 @@ struct TaskX {
     registry.add("hDecLenXYErr", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiPiPi >= d_selectionFlagX);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= d_selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= d_selectionFlagX);
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HFSelXToJpsiPiPiCandidate>> const& candidates)
   {
+    int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
     for (auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << XToJpsiPiPi)) {
+      if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YX(candidate)) > cutYCandMax) {
@@ -108,6 +111,7 @@ struct TaskXMC {
 
   Configurable<int> d_selectionFlagX{"d_selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_x_tojpsipipi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -147,21 +151,22 @@ struct TaskXMC {
     registry.add("hYBg", "3-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiPiPi >= d_selectionFlagX);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= d_selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= d_selectionFlagX);
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HFSelXToJpsiPiPiCandidate, aod::HfCandXMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
+    int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;
     for (auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << XToJpsiPiPi)) {
+      if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YX(candidate)) > cutYCandMax) {
         continue;
       }
-      if (candidate.flagMCMatchRec() == 1 << XToJpsiPiPi) {
+      if (candidate.flagMCMatchRec() == 1 << decayMode) {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXMCGen>>(), 9920443, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
@@ -201,7 +206,7 @@ struct TaskXMC {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (particle.flagMCMatchGen() == 1 << XToJpsiPiPi) {
+      if (particle.flagMCMatchGen() == 1 << decayMode) {
         // TODO: add X(3872) mass such that we can use the getMassPDG function instead of hardcoded mass
         if (cutYCandMax >= 0. && std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168)) > cutYCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));

@@ -702,32 +702,6 @@ auto InvMassXicToPiKP(const T& candidate)
   return InvMassLcpiKp(candidate);
 }
 
-// X → Jpsi π+ π-
-// TODO: add pdg code for X (9920443), temporarily hardcode mass here:
-float massX = 3.872; // replace this with: "RecoDecay::getMassPDG(9920443)" when pdg is added
-template <typename T>
-auto CtX(const T& candidate)
-{
-  return candidate.ct(massX);
-}
-
-template <typename T>
-auto YX(const T& candidate)
-{
-  return candidate.y(massX);
-}
-
-template <typename T>
-auto EX(const T& candidate)
-{
-  return candidate.e(massX);
-}
-template <typename T>
-auto InvMassXToJpsiPiPi(const T& candidate)
-{
-  return candidate.m(array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
-}
-
 } // namespace hf_cand_prong3
 
 // 3-prong decay candidate table
@@ -800,8 +774,35 @@ DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
 // mapping of decay types
-enum DecayType { XToJpsiPiPi = 0 }; // move this to a dedicated cascade namespace in the future?
+enum DecayType { XToJpsiToEEPiPi = 0,
+                 XToJpsiToMuMuPiPi }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_x
+
+// X → Jpsi π+ π-
+// TODO: add pdg code for X (9920443), temporarily hardcode mass here:
+float massX = 3.872; // replace this with: "RecoDecay::getMassPDG(9920443)" when pdg is added
+template <typename T>
+auto CtX(const T& candidate)
+{
+  return candidate.ct(massX);
+}
+
+template <typename T>
+auto YX(const T& candidate)
+{
+  return candidate.y(massX);
+}
+
+template <typename T>
+auto EX(const T& candidate)
+{
+  return candidate.e(massX);
+}
+template <typename T>
+auto InvMassXToJpsiPiPi(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
 
 // declare dedicated X candidate table
 DECLARE_SOA_TABLE(HfCandXBase, "AOD", "HFCANDXBASE",
