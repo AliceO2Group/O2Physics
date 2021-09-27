@@ -32,6 +32,8 @@
 #include "Math/Vector4D.h"
 #include "TMath.h"
 
+
+
 using namespace o2;
 using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
@@ -177,9 +179,10 @@ struct femtoDreamProducerTask {
     const auto vtxZ = col.posZ();
     const auto mult = col.multV0M();
     const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto globalIndexAO2D = col.globalIndex(); // this is required for the 3-body trigger
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision(vtxZ, mult, spher);
+    outputCollision(globalIndexAO2D,vtxZ, mult, spher);// globalIndexAO2D is required for the 3-body trigger
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
@@ -221,6 +224,7 @@ struct femtoDreamProducerTask {
       }
       v0Cuts.fillQA<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
       auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, v0, postrack, negtrack);
+
       if ((cutContainerV0.at(0) > 0) && (cutContainerV0.at(1) > 0) && (cutContainerV0.at(3) > 0)) {
         int postrackID = v0.posTrackId();
         int rowInPrimaryTrackTablePos = -1;
