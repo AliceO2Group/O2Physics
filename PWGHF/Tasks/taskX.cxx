@@ -27,7 +27,6 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_x_tojpsipipi;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_x;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
