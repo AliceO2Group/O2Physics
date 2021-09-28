@@ -60,7 +60,6 @@ DECLARE_SOA_TABLE(CFFilters, "AOD", "CF Filters", //!
                   filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
 using CfFilter = CFFilters::iterator;
 
-
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{4};
 constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters"};

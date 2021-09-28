@@ -19,7 +19,6 @@
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
-
 using namespace o2::framework;
 
 namespace o2::analysis::femtoDream
@@ -64,9 +63,9 @@ class FemtoDreamPairCleaner
       // \todo to be implemented
       uint64_t id1 = part2.indices()[0];
       uint64_t id2 = part2.indices()[1];
-      auto daughter1 = particles.begin()+id1;
-      auto daughter2 = particles.begin()+id2;
-      if((*daughter1).indices()[0]<=0&&(*daughter1).indices()[1]<=0&&(*daughter2).indices()[0]<=0&&(*daughter2).indices()[1]<=0){
+      auto daughter1 = particles.begin() + id1;
+      auto daughter2 = particles.begin() + id2;
+      if ((*daughter1).indices()[0] <= 0 && (*daughter1).indices()[1] <= 0 && (*daughter2).indices()[0] <= 0 && (*daughter2).indices()[1] <= 0) {
         return true;
       }
       return false;

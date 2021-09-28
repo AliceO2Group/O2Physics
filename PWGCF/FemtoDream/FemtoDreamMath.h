@@ -59,7 +59,7 @@ class FemtoDreamMath
     const ROOT::Math::PxPyPzMVector trackRelK = PartOneCMS - PartTwoCMS;
     return 0.5 * trackRelK.P();
   }
-    /// Compute the qij of a pair of particles
+  /// Compute the qij of a pair of particles
   /// \tparam T type of tracks
   /// \param vecparti Particle i PxPyPzMVector
   /// \param vecpartj Particle j PxPyPzMVector
@@ -77,8 +77,8 @@ class FemtoDreamMath
   {
     ROOT::Math::PxPyPzEVector trackSum = vecparti + vecpartj;
     ROOT::Math::PxPyPzEVector trackDifference = vecparti - vecpartj;
-    float scaling = trackDifference.Dot(trackSum)/trackSum.Dot(trackSum);
-    return  trackDifference -  scaling * trackSum;
+    float scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
+    return trackDifference - scaling * trackSum;
   }
 
   /// Compute the Q3 of a triplet of particles
@@ -92,19 +92,19 @@ class FemtoDreamMath
   template <typename T>
   static float getQ3(const T& part1, const float mass1, const T& part2, const float mass2, const T& part3, const float mass3)
   {
-    float E1 = sqrt(pow(part1.px(),2)+pow(part1.py(),2)+pow(part1.pz(),2)+pow(mass1,2));
-    float E2 = sqrt(pow(part2.px(),2)+pow(part2.py(),2)+pow(part2.pz(),2)+pow(mass2,2));
-    float E3 = sqrt(pow(part3.px(),2)+pow(part3.py(),2)+pow(part3.pz(),2)+pow(mass3,2));
+    float E1 = sqrt(pow(part1.px(), 2) + pow(part1.py(), 2) + pow(part1.pz(), 2) + pow(mass1, 2));
+    float E2 = sqrt(pow(part2.px(), 2) + pow(part2.py(), 2) + pow(part2.pz(), 2) + pow(mass2, 2));
+    float E3 = sqrt(pow(part3.px(), 2) + pow(part3.py(), 2) + pow(part3.pz(), 2) + pow(mass3, 2));
 
     const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), E1);
     const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), E2);
     const ROOT::Math::PxPyPzEVector vecpart3(part3.px(), part3.py(), part3.pz(), E3);
 
-    ROOT::Math::PxPyPzEVector q12 = getqij(vecpart1,vecpart2);
-    ROOT::Math::PxPyPzEVector q23 = getqij(vecpart2,vecpart3);
-    ROOT::Math::PxPyPzEVector q31 = getqij(vecpart3,vecpart1);
+    ROOT::Math::PxPyPzEVector q12 = getqij(vecpart1, vecpart2);
+    ROOT::Math::PxPyPzEVector q23 = getqij(vecpart2, vecpart3);
+    ROOT::Math::PxPyPzEVector q31 = getqij(vecpart3, vecpart1);
 
-    float Q32 = q12.M2()+q23.M2()+q31.M2();
+    float Q32 = q12.M2() + q23.M2() + q31.M2();
 
     return sqrt(-Q32);
   }
