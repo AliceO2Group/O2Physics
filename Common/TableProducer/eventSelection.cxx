@@ -102,121 +102,123 @@ struct BcSelectionTask {
   using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
 
   void process(
-    BCsWithRun2InfosTimestampsAndMatches::iterator const& bc,
-    aod::Zdcs const& zdcs,
-    aod::FV0As const& fv0as,
-    aod::FV0Cs const& fv0cs,
-    aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    BCsWithRun2InfosTimestampsAndMatches const& bcs,
+    aod::Zdcs const&,
+    aod::FV0As const&,
+    aod::FV0Cs const&,
+    aod::FT0s const&,
+    aod::FDDs const&)
   {
-    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
-    if (!aliases) {
-      LOGF(fatal, "Trigger aliases are not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-    }
-
-    // fill fired aliases
-    int32_t alias[kNaliases] = {0};
-    uint64_t triggerMask = bc.triggerMask();
-    for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
-      alias[al.first] |= (triggerMask & al.second) > 0;
-    }
-    uint64_t triggerMaskNext50 = bc.triggerMaskNext50();
-    for (auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
-      alias[al.first] |= (triggerMaskNext50 & al.second) > 0;
-    }
-
-    // get timing info from ZDC, FV0, FT0 and FDD
-    float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
-    float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
-    float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
-    float timeV0C = bc.has_fv0c() ? bc.fv0c().time() : -999.f;
-    float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
-    float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
-    float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
-    float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
-
-    LOGF(debug, "timeZNA=%f timeZNC=%f", timeZNA, timeZNC);
-    LOGF(debug, "timeV0A=%f timeV0C=%f", timeV0A, timeV0C);
-    LOGF(debug, "timeFDA=%f timeFDC=%f", timeFDA, timeFDC);
-    LOGF(debug, "timeT0A=%f timeT0C=%f", timeT0A, timeT0C);
-
-    // applying timing selections
-    bool bbV0A = timeV0A > par.fV0ABBlower && timeV0A < par.fV0ABBupper;
-    bool bbV0C = timeV0C > par.fV0CBBlower && timeV0C < par.fV0CBBupper;
-    bool bbFDA = timeFDA > par.fFDABBlower && timeFDA < par.fFDABBupper;
-    bool bbFDC = timeFDC > par.fFDCBBlower && timeFDC < par.fFDCBBupper;
-    bool bgV0A = timeV0A > par.fV0ABGlower && timeV0A < par.fV0ABGupper;
-    bool bgV0C = timeV0C > par.fV0CBGlower && timeV0C < par.fV0CBGupper;
-    bool bgFDA = timeFDA > par.fFDABGlower && timeFDA < par.fFDABGupper;
-    bool bgFDC = timeFDC > par.fFDCBGlower && timeFDC < par.fFDCBGupper;
-
-    // fill time-based selection criteria
-    int32_t selection[kNsel] = {0}; // TODO switch to bool array
-    selection[kIsBBV0A] = bbV0A;
-    selection[kIsBBV0C] = bbV0C;
-    selection[kIsBBFDA] = bbFDA;
-    selection[kIsBBFDC] = bbFDC;
-    selection[kNoBGFDA] = !bgFDA;
-    selection[kNoBGFDC] = !bgFDC;
-    selection[kNoBGFDA] = !bgFDA;
-    selection[kNoBGFDC] = !bgFDC;
-    selection[kIsBBT0A] = timeT0A > par.fT0ABBlower && timeT0A < par.fT0ABBupper;
-    selection[kIsBBT0C] = timeT0C > par.fT0CBBlower && timeT0C < par.fT0CBBupper;
-    selection[kIsBBZNA] = timeZNA > par.fZNABBlower && timeZNA < par.fZNABBupper;
-    selection[kIsBBZNC] = timeZNC > par.fZNCBBlower && timeZNC < par.fZNCBBupper;
-    selection[kNoBGZNA] = !(fabs(timeZNA) > par.fZNABGlower && fabs(timeZNA < par.fZNABGupper));
-    selection[kNoBGZNC] = !(fabs(timeZNC) > par.fZNCBGlower && fabs(timeZNC < par.fZNCBGupper));
-
-    // Calculate V0 multiplicity per ring
-    float multRingV0A[5] = {0.};
-    float multRingV0C[4] = {0.};
-    float multV0A = 0;
-    float multV0C = 0;
-    if (bc.has_fv0a()) {
-      for (int ring = 0; ring < 4; ring++) { // TODO adjust for Run3 V0A
-        for (int sector = 0; sector < 8; sector++) {
-          multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
-        }
-        multV0A += multRingV0A[ring];
+    for (auto& bc : bcs) {
+      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
+      if (!aliases) {
+        LOGF(fatal, "Trigger aliases are not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
-    }
 
-    if (bc.has_fv0c()) {
-      for (int ring = 0; ring < 4; ring++) {
-        for (int sector = 0; sector < 8; sector++) {
-          multRingV0C[ring] += bc.fv0c().amplitude()[ring * 8 + sector];
-        }
-        multV0C += multRingV0C[ring];
+      // fill fired aliases
+      int32_t alias[kNaliases] = {0};
+      uint64_t triggerMask = bc.triggerMask();
+      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+        alias[al.first] |= (triggerMask & al.second) > 0;
       }
+      uint64_t triggerMaskNext50 = bc.triggerMaskNext50();
+      for (auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
+        alias[al.first] |= (triggerMaskNext50 & al.second) > 0;
+      }
+
+      // get timing info from ZDC, FV0, FT0 and FDD
+      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
+      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
+      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+      float timeV0C = bc.has_fv0c() ? bc.fv0c().time() : -999.f;
+      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+
+      LOGF(debug, "timeZNA=%f timeZNC=%f", timeZNA, timeZNC);
+      LOGF(debug, "timeV0A=%f timeV0C=%f", timeV0A, timeV0C);
+      LOGF(debug, "timeFDA=%f timeFDC=%f", timeFDA, timeFDC);
+      LOGF(debug, "timeT0A=%f timeT0C=%f", timeT0A, timeT0C);
+
+      // applying timing selections
+      bool bbV0A = timeV0A > par.fV0ABBlower && timeV0A < par.fV0ABBupper;
+      bool bbV0C = timeV0C > par.fV0CBBlower && timeV0C < par.fV0CBBupper;
+      bool bbFDA = timeFDA > par.fFDABBlower && timeFDA < par.fFDABBupper;
+      bool bbFDC = timeFDC > par.fFDCBBlower && timeFDC < par.fFDCBBupper;
+      bool bgV0A = timeV0A > par.fV0ABGlower && timeV0A < par.fV0ABGupper;
+      bool bgV0C = timeV0C > par.fV0CBGlower && timeV0C < par.fV0CBGupper;
+      bool bgFDA = timeFDA > par.fFDABGlower && timeFDA < par.fFDABGupper;
+      bool bgFDC = timeFDC > par.fFDCBGlower && timeFDC < par.fFDCBGupper;
+
+      // fill time-based selection criteria
+      int32_t selection[kNsel] = {0}; // TODO switch to bool array
+      selection[kIsBBV0A] = bbV0A;
+      selection[kIsBBV0C] = bbV0C;
+      selection[kIsBBFDA] = bbFDA;
+      selection[kIsBBFDC] = bbFDC;
+      selection[kNoBGFDA] = !bgFDA;
+      selection[kNoBGFDC] = !bgFDC;
+      selection[kNoBGFDA] = !bgFDA;
+      selection[kNoBGFDC] = !bgFDC;
+      selection[kIsBBT0A] = timeT0A > par.fT0ABBlower && timeT0A < par.fT0ABBupper;
+      selection[kIsBBT0C] = timeT0C > par.fT0CBBlower && timeT0C < par.fT0CBBupper;
+      selection[kIsBBZNA] = timeZNA > par.fZNABBlower && timeZNA < par.fZNABBupper;
+      selection[kIsBBZNC] = timeZNC > par.fZNCBBlower && timeZNC < par.fZNCBBupper;
+      selection[kNoBGZNA] = !(fabs(timeZNA) > par.fZNABGlower && fabs(timeZNA < par.fZNABGupper));
+      selection[kNoBGZNC] = !(fabs(timeZNC) > par.fZNCBGlower && fabs(timeZNC < par.fZNCBGupper));
+
+      // Calculate V0 multiplicity per ring
+      float multRingV0A[5] = {0.};
+      float multRingV0C[4] = {0.};
+      float multV0A = 0;
+      float multV0C = 0;
+      if (bc.has_fv0a()) {
+        for (int ring = 0; ring < 4; ring++) { // TODO adjust for Run3 V0A
+          for (int sector = 0; sector < 8; sector++) {
+            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
+          }
+          multV0A += multRingV0A[ring];
+        }
+      }
+
+      if (bc.has_fv0c()) {
+        for (int ring = 0; ring < 4; ring++) {
+          for (int sector = 0; sector < 8; sector++) {
+            multRingV0C[ring] += bc.fv0c().amplitude()[ring * 8 + sector];
+          }
+          multV0C += multRingV0C[ring];
+        }
+      }
+      uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
+
+      // Calculate pileup and background related selection flags
+      float multV0C012 = multRingV0C[0] + multRingV0C[1] + multRingV0C[2];
+      float ofV0M = multV0A + multV0C;
+      float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
+      float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
+      float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
+      selection[kNoV0MOnVsOfPileup] = onV0M > par.fV0MOnVsOfA + par.fV0MOnVsOfB * ofV0M;
+      selection[kNoSPDOnVsOfPileup] = onSPD > par.fSPDOnVsOfA + par.fSPDOnVsOfB * ofSPD;
+      selection[kNoV0Casymmetry] = multRingV0C[3] > par.fV0CasymA + par.fV0CasymB * multV0C012;
+
+      // copy remaining selection decisions from eventCuts
+      uint32_t eventCuts = bc.eventCuts();
+      selection[kIsGoodTimeRange] = (eventCuts & 1 << aod::kTimeRangeCut) > 0;
+      selection[kNoIncompleteDAQ] = (eventCuts & 1 << aod::kIncompleteDAQ) > 0;
+      selection[kNoTPCLaserWarmUp] = (eventCuts & 1 << aod::kIsTPCLaserWarmUp) == 0;
+      selection[kNoTPCHVdip] = (eventCuts & 1 << aod::kIsTPCHVdip) == 0;
+      selection[kNoPileupFromSPD] = (eventCuts & 1 << aod::kIsPileupFromSPD) == 0;
+      selection[kNoV0PFPileup] = (eventCuts & 1 << aod::kIsV0PFPileup) == 0;
+
+      int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+
+      // Fill bc selection columns
+      bcsel(alias, selection,
+            bbV0A, bbV0C, bgV0A, bgV0C,
+            bbFDA, bbFDC, bgFDA, bgFDC,
+            multRingV0A, multRingV0C, spdClusters, foundFT0);
     }
-    uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
-
-    // Calculate pileup and background related selection flags
-    float multV0C012 = multRingV0C[0] + multRingV0C[1] + multRingV0C[2];
-    float ofV0M = multV0A + multV0C;
-    float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
-    float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
-    float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
-    selection[kNoV0MOnVsOfPileup] = onV0M > par.fV0MOnVsOfA + par.fV0MOnVsOfB * ofV0M;
-    selection[kNoSPDOnVsOfPileup] = onSPD > par.fSPDOnVsOfA + par.fSPDOnVsOfB * ofSPD;
-    selection[kNoV0Casymmetry] = multRingV0C[3] > par.fV0CasymA + par.fV0CasymB * multV0C012;
-
-    // copy remaining selection decisions from eventCuts
-    uint32_t eventCuts = bc.eventCuts();
-    selection[kIsGoodTimeRange] = (eventCuts & 1 << aod::kTimeRangeCut) > 0;
-    selection[kNoIncompleteDAQ] = (eventCuts & 1 << aod::kIncompleteDAQ) > 0;
-    selection[kNoTPCLaserWarmUp] = (eventCuts & 1 << aod::kIsTPCLaserWarmUp) == 0;
-    selection[kNoTPCHVdip] = (eventCuts & 1 << aod::kIsTPCHVdip) == 0;
-    selection[kNoPileupFromSPD] = (eventCuts & 1 << aod::kIsPileupFromSPD) == 0;
-    selection[kNoV0PFPileup] = (eventCuts & 1 << aod::kIsV0PFPileup) == 0;
-
-    int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
-
-    // Fill bc selection columns
-    bcsel(alias, selection,
-          bbV0A, bbV0C, bgV0A, bgV0C,
-          bbFDA, bbFDC, bgFDA, bgFDC,
-          multRingV0A, multRingV0C, spdClusters, foundFT0);
   }
 };
 
@@ -224,69 +226,71 @@ struct BcSelectionTaskRun3 {
   Produces<aod::BcSels> bcsel;
   EvSelParameters par;
   using BCsWithMatchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
-  void process(BCsWithMatchings::iterator const& bc,
-               aod::Zdcs const& zdcs,
-               aod::FV0As const& fv0as,
-               aod::FT0s const& ft0s,
-               aod::FDDs const& fdds)
+  void process(BCsWithMatchings const& bcs,
+               aod::Zdcs const&,
+               aod::FV0As const&,
+               aod::FT0s const&,
+               aod::FDDs const&)
   {
-    // TODO: fill fired aliases for run3
-    int32_t alias[kNaliases] = {0};
+    for (auto& bc : bcs) {
+      // TODO: fill fired aliases for run3
+      int32_t alias[kNaliases] = {0};
 
-    // get timing info from ZDC, FV0, FT0 and FDD
-    float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
-    float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
-    float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
-    float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
-    float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
-    float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
-    float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+      // get timing info from ZDC, FV0, FT0 and FDD
+      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
+      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
+      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
 
-    // applying timing selections
-    bool bbV0A = timeV0A > par.fV0ABBlower && timeV0A < par.fV0ABBupper;
-    bool bbFDA = timeFDA > par.fFDABBlower && timeFDA < par.fFDABBupper;
-    bool bbFDC = timeFDC > par.fFDCBBlower && timeFDC < par.fFDCBBupper;
-    bool bgV0A = timeV0A > par.fV0ABGlower && timeV0A < par.fV0ABGupper;
-    bool bgFDA = timeFDA > par.fFDABGlower && timeFDA < par.fFDABGupper;
-    bool bgFDC = timeFDC > par.fFDCBGlower && timeFDC < par.fFDCBGupper;
-    bool bbV0C = 0;
-    bool bgV0C = 0;
+      // applying timing selections
+      bool bbV0A = timeV0A > par.fV0ABBlower && timeV0A < par.fV0ABBupper;
+      bool bbFDA = timeFDA > par.fFDABBlower && timeFDA < par.fFDABBupper;
+      bool bbFDC = timeFDC > par.fFDCBBlower && timeFDC < par.fFDCBBupper;
+      bool bgV0A = timeV0A > par.fV0ABGlower && timeV0A < par.fV0ABGupper;
+      bool bgFDA = timeFDA > par.fFDABGlower && timeFDA < par.fFDABGupper;
+      bool bgFDC = timeFDC > par.fFDCBGlower && timeFDC < par.fFDCBGupper;
+      bool bbV0C = 0;
+      bool bgV0C = 0;
 
-    // fill time-based selection criteria
-    int32_t selection[kNsel] = {0}; // TODO switch to bool array
-    selection[kIsBBV0A] = bbV0A;
-    selection[kIsBBFDA] = bbFDA;
-    selection[kIsBBFDC] = bbFDC;
-    selection[kNoBGV0A] = !bgV0A;
-    selection[kNoBGFDA] = !bgFDA;
-    selection[kNoBGFDC] = !bgFDC;
-    selection[kIsBBT0A] = timeT0A > par.fT0ABBlower && timeT0A < par.fT0ABBupper;
-    selection[kIsBBT0C] = timeT0C > par.fT0CBBlower && timeT0C < par.fT0CBBupper;
-    selection[kIsBBZNA] = timeZNA > par.fZNABBlower && timeZNA < par.fZNABBupper;
-    selection[kIsBBZNC] = timeZNC > par.fZNCBBlower && timeZNC < par.fZNCBBupper;
-    selection[kNoBGZNA] = !(fabs(timeZNA) > par.fZNABGlower && fabs(timeZNA < par.fZNABGupper));
-    selection[kNoBGZNC] = !(fabs(timeZNC) > par.fZNCBGlower && fabs(timeZNC < par.fZNCBGupper));
+      // fill time-based selection criteria
+      int32_t selection[kNsel] = {0}; // TODO switch to bool array
+      selection[kIsBBV0A] = bbV0A;
+      selection[kIsBBFDA] = bbFDA;
+      selection[kIsBBFDC] = bbFDC;
+      selection[kNoBGV0A] = !bgV0A;
+      selection[kNoBGFDA] = !bgFDA;
+      selection[kNoBGFDC] = !bgFDC;
+      selection[kIsBBT0A] = timeT0A > par.fT0ABBlower && timeT0A < par.fT0ABBupper;
+      selection[kIsBBT0C] = timeT0C > par.fT0CBBlower && timeT0C < par.fT0CBBupper;
+      selection[kIsBBZNA] = timeZNA > par.fZNABBlower && timeZNA < par.fZNABBupper;
+      selection[kIsBBZNC] = timeZNC > par.fZNCBBlower && timeZNC < par.fZNCBBupper;
+      selection[kNoBGZNA] = !(fabs(timeZNA) > par.fZNABGlower && fabs(timeZNA < par.fZNABGupper));
+      selection[kNoBGZNC] = !(fabs(timeZNC) > par.fZNCBGlower && fabs(timeZNC < par.fZNCBGupper));
 
-    // Calculate V0 multiplicity per ring
-    float multRingV0A[5] = {0.};
-    float multRingV0C[4] = {0.};
-    if (bc.has_fv0a()) {
-      for (int ring = 0; ring < 5; ring++) {
-        for (int sector = 0; sector < 8; sector++) {
-          multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
+      // Calculate V0 multiplicity per ring
+      float multRingV0A[5] = {0.};
+      float multRingV0C[4] = {0.};
+      if (bc.has_fv0a()) {
+        for (int ring = 0; ring < 5; ring++) {
+          for (int sector = 0; sector < 8; sector++) {
+            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
+          }
         }
       }
+
+      uint32_t spdClusters = 0;
+
+      int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      LOGP(INFO, "foundFT0={}\n", foundFT0);
+      // Fill bc selection columns
+      bcsel(alias, selection,
+            bbV0A, bbV0C, bgV0A, bgV0C,
+            bbFDA, bbFDC, bgFDA, bgFDC,
+            multRingV0A, multRingV0C, spdClusters, foundFT0);
     }
-
-    uint32_t spdClusters = 0;
-
-    int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
-    LOGP(INFO, "foundFT0={}\n", foundFT0);
-    // Fill bc selection columns
-    bcsel(alias, selection,
-          bbV0A, bbV0C, bgV0A, bgV0C,
-          bbFDA, bbFDC, bgFDA, bgFDC,
-          multRingV0A, multRingV0C, spdClusters, foundFT0);
   }
 };
 
