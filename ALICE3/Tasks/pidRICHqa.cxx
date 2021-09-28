@@ -76,6 +76,7 @@ struct richPidQaMc {
   Configurable<float> minDelta{"minDelta", -0.4f, "Minimum delta plotted (rad)"};
   Configurable<float> maxDelta{"maxDelta", 0.4f, "Maximum delta plotted (rad)"};
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
+  Configurable<float> nSigmaNorm{"nSigmaNorm", 0.7071067811865475f, "Normalization for the combined Nsigma"};
 
   static constexpr int Np = 5;
   static constexpr std::string_view hbRICHDelta[Np] = {"bRICH/delta/El", "bRICH/delta/Mu", "bRICH/delta/Pi", "bRICH/delta/Ka", "bRICH/delta/Pr"};
@@ -131,7 +132,8 @@ struct richPidQaMc {
     const AxisSpec sigAxis{1000, 0, 0.3, "Cherenkov angle (rad)"};
     const AxisSpec lengthAxis{1000, 0, 3000, "Track length (cm)"};
     const AxisSpec sigErrAxis{100, 0, 1, "Cherenkov angle error (rad)"};
-    const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
+    const char* detName = useTOF ? "TOF-RICH" : "RICH";
+    const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{%s}(%s)", detName, pT[pid_type])};
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("#Delta(%s) (rad)", pT[pid_type])};
     const AxisSpec etaAxis{100, -4, 4, "#it{#eta}"};
 
@@ -273,27 +275,20 @@ struct richPidQaMc {
       }
 
       const float delta = track.rich().richDelta(pid_type);
-      const float nsigma = track.rich().richNsigma(pid_type);
-      if constexpr (pid_type == 0) {
-        if (useTOF && abs(track.tofNSigmaEl()) > 3.f) {
-          continue;
+      float nsigma = track.rich().richNsigma(pid_type);
+      if (useTOF) {
+        if constexpr (pid_type == 0) { // Electron
+          nsigma += track.tofNSigmaEl();
+        } else if constexpr (pid_type == 1) { // Muon
+          nsigma += track.tofNSigmaMu();
+        } else if constexpr (pid_type == 2) { // Pion
+          nsigma += track.tofNSigmaPi();
+        } else if constexpr (pid_type == 3) { // Kaon
+          nsigma += track.tofNSigmaKa();
+        } else if constexpr (pid_type == 4) { // Proton
+          nsigma += track.tofNSigmaPr();
         }
-      } else if constexpr (pid_type == 1) {
-        if (useTOF && abs(track.tofNSigmaMu()) > 3.f) {
-          continue;
-        }
-      } else if constexpr (pid_type == 2) {
-        if (useTOF && abs(track.tofNSigmaPi()) > 3.f) {
-          continue;
-        }
-      } else if constexpr (pid_type == 3) {
-        if (useTOF && abs(track.tofNSigmaKa()) > 3.f) {
-          continue;
-        }
-      } else if constexpr (pid_type == 4) {
-        if (useTOF && abs(track.tofNSigmaPr()) > 3.f) {
-          continue;
-        }
+        nsigma *= nSigmaNorm; // Normalize to 1
       }
 
       histos.fill(HIST("bRICH/p"), track.p());

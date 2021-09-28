@@ -67,7 +67,7 @@ struct ecalQaMc {
     for (auto& track : tracks) {
       if (!track.has_ecal())
         continue;
-      histos.fill(HIST("energy"), track.ecal().energy());
+      histos.fill(HIST("energy"), track.ecal().e());
     }
   }
 };

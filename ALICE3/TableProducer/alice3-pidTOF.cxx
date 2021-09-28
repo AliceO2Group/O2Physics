@@ -25,6 +25,7 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "ALICE3/Core/TOFResoALICE3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,6 +40,36 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 }
 
 #include "Framework/runDataProcessing.h"
+
+struct ALICE3tofSignal { /// Task that produces the TOF signal from the trackTime
+  Produces<o2::aod::TOFSignal> table;
+  bool enableTable = false;
+
+  void init(o2::framework::InitContext& initContext)
+  {
+    // Checking the tables are requested in the workflow and enabling them
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (DeviceSpec device : workflows.devices) {
+      for (auto input : device.inputs) {
+        const std::string table = "TOFSignal";
+        if (input.matcher.binding == table) {
+          enableTable = true;
+        }
+      }
+    }
+  }
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
+  void process(Trks const& tracks)
+  {
+    if (!enableTable) {
+      return;
+    }
+    table.reserve(tracks.size());
+    for (auto& t : tracks) {
+      table(t.trackTime() * 1000.f);
+    }
+  }
+};
 
 struct ALICE3pidTOFTask {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -291,7 +322,8 @@ struct ALICE3pidTOFTaskQA {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<ALICE3pidTOFTask>(cfgc, TaskName{"alice3-pidTOF-task"})};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<ALICE3pidTOFTask>(cfgc, TaskName{"alice3-pidTOF-task"}),
+                               adaptAnalysisTask<ALICE3tofSignal>(cfgc, TaskName{"alice3-tof-signal-task"})};
   if (cfgc.options().get<int>("add-qa")) {
     workflow.push_back(adaptAnalysisTask<ALICE3pidTOFTaskQA>(cfgc, TaskName{"alice3-pidTOFQA-task"}));
   }
