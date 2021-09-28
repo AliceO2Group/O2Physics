@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(PIDML)
+
 o2physics_add_library(AnalysisCore
                SOURCES TrackSelection.cxx
                        PID/ParamBase.cxx
