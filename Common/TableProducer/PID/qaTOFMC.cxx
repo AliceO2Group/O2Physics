@@ -11,7 +11,7 @@
 
 ///
 /// \file   qaTOFMC.cxx
-/// \author Nicolo' Jacazio
+/// \author Nicolò Jacazio
 /// \brief  Task to produce QA output of the PID with TOF running on the MC.
 ///
 
@@ -81,7 +81,7 @@ struct pidTOFTaskQA {
   Configurable<float> minEta{"minEta", -0.8, "Minimum eta in range"};
   Configurable<float> maxEta{"maxEta", 0.8, "Maximum eta in range"};
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the vertex"};
-  Configurable<int> logPt{"log-pt", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
+  Configurable<int> logAxis{"logAxis", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
 
   template <uint8_t i>
   void addParticleHistos()
@@ -89,7 +89,7 @@ struct pidTOFTaskQA {
 
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[pid_type])};
-    if (logPt) {
+    if (logAxis) {
       ptAxis.makeLogaritmic();
     }
 
@@ -104,11 +104,11 @@ struct pidTOFTaskQA {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logPt) {
-      ptAxis.makeLogaritmic();
+    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    if (logAxis) {
       pAxis.makeLogaritmic();
+      ptAxis.makeLogaritmic();
     }
     const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[pid_type])};
     const AxisSpec betaAxis{1000, 0, 1.2, "TOF #beta"};
@@ -119,6 +119,18 @@ struct pidTOFTaskQA {
       histos.add(hnsigmaprm[pid_type].data(), Form("Primary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
       histos.add(hnsigmasec[pid_type].data(), Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     }
+    const AxisSpec lengthAxis{1000, 0, 3000, "Track length (cm)"};
+    const AxisSpec etaAxis{100, -4, 4, "#it{#eta}"};
+
+    histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
+    histos.add("particle/p", "", kTH1F, {pAxis});
+    histos.add("particle/pt", "", kTH1F, {ptAxis});
+    histos.add("particle/eta", "", kTH1F, {etaAxis});
+    histos.add("tracks/p", "", kTH1F, {pAxis});
+    histos.add("tracks/pt", "", kTH1F, {ptAxis});
+    histos.add("tracks/eta", "", kTH1F, {etaAxis});
+    histos.add("tracks/length", "", kTH1F, {lengthAxis});
+
     addParticleHistos<0>();
     addParticleHistos<1>();
     addParticleHistos<2>();
@@ -165,9 +177,15 @@ struct pidTOFTaskQA {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
     }
+    for (const auto& p : mcParticles) {
+      histos.fill(HIST("particle/p"), p.p());
+      histos.fill(HIST("particle/pt"), p.pt());
+      histos.fill(HIST("particle/eta"), p.eta());
+    }
+
     const float collisionTime_ps = collision.collisionTime() * 1000.f;
     unsigned int nTracksWithTOF = 0;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       //
       if (!t.hasTOF()) { // Skipping tracks without TOF
         continue;
@@ -175,6 +193,12 @@ struct pidTOFTaskQA {
       if (t.eta() < minEta || t.eta() > maxEta) {
         continue;
       }
+
+      histos.fill(HIST("tracks/p"), t.p());
+      histos.fill(HIST("tracks/pt"), t.pt());
+      histos.fill(HIST("tracks/eta"), t.eta());
+      histos.fill(HIST("tracks/length"), t.length());
+
       nTracksWithTOF++;
       float nsigma = -999.f;
       if constexpr (pid_type == 0) {
@@ -228,6 +252,7 @@ struct pidTOFTaskQA {
       fillNsigma<8>(t, mcParticles, nsigma);
     }
     histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
+    histos.fill(HIST("event/vertexz"), collision.posZ());
   }
 };
 

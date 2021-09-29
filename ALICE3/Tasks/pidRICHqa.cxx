@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+///
+/// \file   qaTOFMC.cxx
+/// \author Nicolò Jacazio
+/// \brief  Task to produce QA output of the PID with ALICE3 RICH running on the MC.
+///
+
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "ALICE3/DataModel/RICH.h"
@@ -75,7 +81,7 @@ struct richPidQaMc {
   Configurable<int> nBinsDelta{"nBinsDelta", 600, "Number of delta bins"};
   Configurable<float> minDelta{"minDelta", -0.4f, "Minimum delta plotted (rad)"};
   Configurable<float> maxDelta{"maxDelta", 0.4f, "Maximum delta plotted (rad)"};
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
+  Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<float> nSigmaNorm{"nSigmaNorm", 0.7071067811865475f, "Normalization for the combined Nsigma"};
 
   static constexpr int Np = 5;
@@ -94,14 +100,20 @@ struct richPidQaMc {
   static constexpr std::string_view hfRICHNSigmaMC[Np] = {"fRICH/nsigmaMC/El", "fRICH/nsigmaMC/Mu", "fRICH/nsigmaMC/Pi", "fRICH/nsigmaMC/Ka", "fRICH/nsigmaMC/Pr"};
   static constexpr std::string_view hfRICHNSigmaMCSec[Np] = {"fRICH/nsigmaMCsec/El", "fRICH/nsigmaMCsec/Mu", "fRICH/nsigmaMCsec/Pi", "fRICH/nsigmaMCsec/Ka", "fRICH/nsigmaMCsec/Pr"};
   static constexpr std::string_view hfRICHNSigmaMCPrm[Np] = {"fRICH/nsigmaMCprm/El", "fRICH/nsigmaMCprm/Mu", "fRICH/nsigmaMCprm/Pi", "fRICH/nsigmaMCprm/Ka", "fRICH/nsigmaMCprm/Pr"};
+  static constexpr std::string_view hfRICHNSigmaVsp[Np] = {"fRICH/nsigmavsp/El", "fRICH/nsigmavsp/Mu", "fRICH/nsigmavsp/Pi", "fRICH/nsigmavsp/Ka", "fRICH/nsigmavsp/Pr"};
+  static constexpr std::string_view hfRICHNSigmaMCVsp[Np] = {"fRICH/nsigmaMCvsp/El", "fRICH/nsigmaMCvsp/Mu", "fRICH/nsigmaMCvsp/Pi", "fRICH/nsigmaMCvsp/Ka", "fRICH/nsigmaMCvsp/Pr"};
+  static constexpr std::string_view hfRICHNSigmaMCSecVsp[Np] = {"fRICH/nsigmaMCsecvsp/El", "fRICH/nsigmaMCsecvsp/Mu", "fRICH/nsigmaMCsecvsp/Pi", "fRICH/nsigmaMCsecvsp/Ka", "fRICH/nsigmaMCsecvsp/Pr"};
+  static constexpr std::string_view hfRICHNSigmaMCPrmVsp[Np] = {"fRICH/nsigmaMCprmvsp/El", "fRICH/nsigmaMCprmvsp/Mu", "fRICH/nsigmaMCprmvsp/Pi", "fRICH/nsigmaMCprmvsp/Ka", "fRICH/nsigmaMCprmvsp/Pr"};
 
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p"};
   static constexpr int PDGs[Np] = {11, 13, 211, 321, 2212};
   template <uint8_t i>
   void addParticleHistos()
   {
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
+      pAxis.makeLogaritmic();
       ptAxis.makeLogaritmic();
     }
     const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
@@ -118,14 +130,18 @@ struct richPidQaMc {
     histos.add(hfRICHNSigmaMC[i].data(), "True " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
     histos.add(hfRICHNSigmaMCPrm[i].data(), "True Primary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
     histos.add(hfRICHNSigmaMCSec[i].data(), "True Secondary " + tit, HistType::kTH2F, {ptAxis, nsigmaAxis});
+
+    histos.add(hfRICHNSigmaMCVsp[i].data(), "True " + tit, HistType::kTH2F, {pAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaMCPrmVsp[i].data(), "True Primary " + tit, HistType::kTH2F, {pAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaMCSecVsp[i].data(), "True Secondary " + tit, HistType::kTH2F, {pAxis, nsigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec momAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
-      momAxis.makeLogaritmic();
+      pAxis.makeLogaritmic();
       ptAxis.makeLogaritmic();
     }
 
@@ -138,10 +154,10 @@ struct richPidQaMc {
     const AxisSpec etaAxis{100, -4, 4, "#it{#eta}"};
 
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
-    histos.add("particle/p", "", kTH1F, {momAxis});
+    histos.add("particle/p", "", kTH1F, {pAxis});
     histos.add("particle/pt", "", kTH1F, {ptAxis});
     histos.add("particle/eta", "", kTH1F, {etaAxis});
-    histos.add("tracks/p", "", kTH1F, {momAxis});
+    histos.add("tracks/p", "", kTH1F, {pAxis});
     histos.add("tracks/pt", "", kTH1F, {ptAxis});
     histos.add("tracks/eta", "", kTH1F, {etaAxis});
     histos.add("tracks/length", "", kTH1F, {lengthAxis});
@@ -159,30 +175,31 @@ struct richPidQaMc {
   histos.add(rich "/pt", "Unselected", kTH1F, {ptAxis});                                                                     \
   histos.add(rich "/ptPrm", "Primaries", kTH1F, {ptAxis});                                                                   \
   histos.add(rich "/ptSec", "Secondaries", kTH1F, {ptAxis});                                                                 \
-  histos.add(rich "/p", "Unselected", kTH1F, {momAxis});                                                                     \
-  histos.add(rich "/pPrm", "Primaries", kTH1F, {momAxis});                                                                   \
-  histos.add(rich "/pSec", "Secondaries", kTH1F, {momAxis});                                                                 \
+  histos.add(rich "/p", "Unselected", kTH1F, {pAxis});                                                                       \
+  histos.add(rich "/pPrm", "Primaries", kTH1F, {pAxis});                                                                     \
+  histos.add(rich "/pSec", "Secondaries", kTH1F, {pAxis});                                                                   \
   histos.add(rich "/signal", "", kTH1F, {sigAxis});                                                                          \
   histos.add(rich "/eta", "", kTH1F, {etaAxis});                                                                             \
   histos.add(rich "/signalerror", "", kTH1F, {sigErrAxis});                                                                  \
-  histos.add(rich "/signalvsP", "Unselected", kTH2F, {momAxis, sigAxis});                                                    \
-  histos.add(rich "/signalvsPPrm", "Primaries", kTH2F, {momAxis, sigAxis});                                                  \
-  histos.add(rich "/signalvsPSec", "Secondaries", kTH2F, {momAxis, sigAxis});
+  histos.add(rich "/signalvsP", "Unselected", kTH2F, {pAxis, sigAxis});                                                      \
+  histos.add(rich "/signalvsPPrm", "Primaries", kTH2F, {pAxis, sigAxis});                                                    \
+  histos.add(rich "/signalvsPSec", "Secondaries", kTH2F, {pAxis, sigAxis});
 
     MakeRICHHistos("bRICH");
     MakeRICHHistos("fRICH");
 
 #undef MakeRICHHistos
 
-    histos.add(hbRICHDelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
+    histos.add(hbRICHDelta[pid_type].data(), "", kTH2F, {pAxis, deltaAxis});
     histos.add(hbRICHNSigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
     histos.add(hbRICHNSigmaPrm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
     histos.add(hbRICHNSigmaSec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
 
-    histos.add(hfRICHDelta[pid_type].data(), "", kTH2F, {momAxis, deltaAxis});
+    histos.add(hfRICHDelta[pid_type].data(), "", kTH2F, {pAxis, deltaAxis});
     histos.add(hfRICHNSigma[pid_type].data(), "", HistType::kTH2F, {ptAxis, nsigmaAxis});
     histos.add(hfRICHNSigmaPrm[pid_type].data(), "Primary", HistType::kTH2F, {ptAxis, nsigmaAxis});
     histos.add(hfRICHNSigmaSec[pid_type].data(), "Secondary", HistType::kTH2F, {ptAxis, nsigmaAxis});
+    histos.add(hfRICHNSigmaVsp[pid_type].data(), "", HistType::kTH2F, {pAxis, nsigmaAxis});
 
     addParticleHistos<0>();
     addParticleHistos<1>();
@@ -191,17 +208,36 @@ struct richPidQaMc {
     addParticleHistos<4>();
   }
 
-  template <uint8_t pidIndex, typename T, typename TTT, typename TT>
-  void fillNsigma(const T& track, const TTT& particle, const TT& mcParticles, const float& nsigma)
+  template <uint8_t pidIndex, typename T, typename TT>
+  void fillNsigma(const T& track, const TT& particle, const float& nsigma)
   {
-    if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
-      histos.fill(HIST(hbRICHNSigmaMC[pidIndex]), track.pt(), nsigma);
+    if (abs(particle.pdgCode()) != PDGs[pidIndex]) {
+      return;
+    }
+    histos.fill(HIST(hbRICHNSigmaMC[pidIndex]), track.pt(), nsigma);
 
-      if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
-        histos.fill(HIST(hbRICHNSigmaMCPrm[pidIndex]), track.pt(), nsigma);
-      } else {
-        histos.fill(HIST(hbRICHNSigmaMCSec[pidIndex]), track.pt(), nsigma);
-      }
+    if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+      histos.fill(HIST(hbRICHNSigmaMCPrm[pidIndex]), track.pt(), nsigma);
+    } else {
+      histos.fill(HIST(hbRICHNSigmaMCSec[pidIndex]), track.pt(), nsigma);
+    }
+  }
+
+  template <uint8_t pidIndex, typename T, typename TT>
+  void fillNsigmafRICH(const T& track, const TT& particle, const float& nsigma)
+  {
+    if (abs(particle.pdgCode()) != PDGs[pidIndex]) {
+      return;
+    }
+    histos.fill(HIST(hfRICHNSigmaMC[pidIndex]), track.pt(), nsigma);
+    histos.fill(HIST(hfRICHNSigmaMCVsp[pidIndex]), track.p(), nsigma);
+
+    if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+      histos.fill(HIST(hfRICHNSigmaMCPrm[pidIndex]), track.pt(), nsigma);
+      histos.fill(HIST(hfRICHNSigmaMCPrmVsp[pidIndex]), track.p(), nsigma);
+    } else {
+      histos.fill(HIST(hfRICHNSigmaMCSec[pidIndex]), track.pt(), nsigma);
+      histos.fill(HIST(hfRICHNSigmaMCSecVsp[pidIndex]), track.p(), nsigma);
     }
   }
 
@@ -313,11 +349,11 @@ struct richPidQaMc {
         histos.fill(HIST("bRICH/pSec"), track.p());
         histos.fill(HIST("bRICH/ptSec"), track.pt());
       }
-      fillNsigma<0>(track, mcParticle, mcParticles, nsigma);
-      fillNsigma<1>(track, mcParticle, mcParticles, nsigma);
-      fillNsigma<2>(track, mcParticle, mcParticles, nsigma);
-      fillNsigma<3>(track, mcParticle, mcParticles, nsigma);
-      fillNsigma<4>(track, mcParticle, mcParticles, nsigma);
+      fillNsigma<0>(track, mcParticle, nsigma);
+      fillNsigma<1>(track, mcParticle, nsigma);
+      fillNsigma<2>(track, mcParticle, nsigma);
+      fillNsigma<3>(track, mcParticle, nsigma);
+      fillNsigma<4>(track, mcParticle, nsigma);
     }
 
     for (const auto& track : tracksfrich) { // Forward RICH
@@ -354,6 +390,11 @@ struct richPidQaMc {
         histos.fill(HIST("fRICH/pSec"), track.p());
         histos.fill(HIST("fRICH/ptSec"), track.pt());
       }
+      fillNsigmafRICH<0>(track, mcParticle, nsigma);
+      fillNsigmafRICH<1>(track, mcParticle, nsigma);
+      fillNsigmafRICH<2>(track, mcParticle, nsigma);
+      fillNsigmafRICH<3>(track, mcParticle, nsigma);
+      fillNsigmafRICH<4>(track, mcParticle, nsigma);
     }
   }
 };
