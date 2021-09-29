@@ -64,9 +64,15 @@ DECLARE_SOA_TABLE(HFSelD0CandidateALICE3Forward, "AOD", "HFSELD0CANDA3F", //!
 namespace hf_selcandidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
+DECLARE_SOA_COLUMN(IsRecoHFFlag, isRecoHFFlag, int); //!
+DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);   //!
+DECLARE_SOA_COLUMN(IsRecoPID, isRecoPID, int);
 } // namespace hf_selcandidate_dplus
 DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELDPLUSCAND", //!
-                  hf_selcandidate_dplus::IsSelDplusToPiKPi);
+                  hf_selcandidate_dplus::IsSelDplusToPiKPi,
+                  hf_selcandidate_dplus::IsRecoHFFlag,
+                  hf_selcandidate_dplus::IsRecoTopol,
+                  hf_selcandidate_dplus::IsRecoPID);
 
 namespace hf_selcandidate_lc
 {

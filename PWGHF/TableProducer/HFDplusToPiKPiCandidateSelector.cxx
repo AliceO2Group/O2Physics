@@ -121,11 +121,15 @@ struct HFDplusToPiKPiCandidateSelector {
 
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusDplusToPiKPi = 0;
+      auto statusHFFlag = 0;
+      auto statusTopol = 0;
+      auto statusPID = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
         continue;
       }
+      statusHFFlag = 1;
 
       auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
@@ -143,9 +147,10 @@ struct HFDplusToPiKPiCandidateSelector {
 
       // topological selection
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
         continue;
       }
+      statusTopol = 1;
 
       // track-level PID selection
       int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
@@ -155,12 +160,13 @@ struct HFDplusToPiKPiCandidateSelector {
       if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
           pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) { // exclude D±
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
         continue;
       }
+      statusPID = 1;
 
       statusDplusToPiKPi = 1;
-      hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
+      hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
     }
   }
 };
