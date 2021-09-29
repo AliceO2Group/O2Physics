@@ -28,7 +28,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::aod::hf_cand_chic; 
+using namespace o2::aod::hf_cand_chic;
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -41,7 +41,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Reconstruction of chic candidates
 struct HFCandidateCreatorChic {
-  Produces<aod::HfCandChicBase> rowCandidateBase; 
+  Produces<aod::HfCandChicBase> rowCandidateBase;
 
   Configurable<double> magneticField{"magneticField", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
@@ -61,7 +61,7 @@ struct HFCandidateCreatorChic {
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
 
-//  double massPi = RecoDecay::getMassPDG(kPiPlus);
+  //  double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massJpsi = RecoDecay::getMassPDG(443);
   double massJpsiGamma;
 
@@ -86,8 +86,8 @@ struct HFCandidateCreatorChic {
     df2.setUseAbsDCA(true);
 
     // 3-prong vertex fitter
-//    o2::vertexing::DCAFitterN<3> df3;
-    o2::vertexing::DCAFitterN<2> df3;   // jpsi gamma has two prongs
+    //    o2::vertexing::DCAFitterN<3> df3;
+    o2::vertexing::DCAFitterN<2> df3; // jpsi gamma has two prongs
     df3.setBz(magneticField);
     df3.setPropagateToPCA(b_propdca);
     df3.setMaxR(d_maxr);
@@ -132,22 +132,22 @@ struct HFCandidateCreatorChic {
 
       // -----------------------------------------------------------------
       // adf: this has to be rewritten
-      
+
       // loop over pi+ candidates
-      for (auto& trackPos : tracks) {   // adf for now use the pi+ instead of gamma
-        if (trackPos.sign() < 0) { // select only positive tracks - use partitions?
+      for (auto& trackPos : tracks) { // adf for now use the pi+ instead of gamma
+        if (trackPos.sign() < 0) {    // select only positive tracks - use partitions?
           continue;
         }
 
-//        if (trackPos.E() < eneGammaMin) {
-//          continue;
-//        }
+        //        if (trackPos.E() < eneGammaMin) {
+        //          continue;
+        //        }
 
-//        if (trackPos.Eta() < etaGammaMin || trackPos.Eta() > etaGammaMax ) {
-//          continue;
-//        }
+        //        if (trackPos.Eta() < etaGammaMin || trackPos.Eta() > etaGammaMax ) {
+        //          continue;
+        //        }
 
-        auto trackParVarPos = getTrackParCov(trackPos);   
+        auto trackParVarPos = getTrackParCov(trackPos);
         array<float, 3> pvecPos;
 
         // reconstruct the Jpsi-gamma vertex
@@ -181,7 +181,7 @@ struct HFCandidateCreatorChic {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << ChicToJpsiGamma;  
+        int hfFlag = 1 << ChicToJpsiGamma;
 
         // fill the candidate table for the chi_c here:
         rowCandidateBase(collision.globalIndex(),
@@ -191,9 +191,9 @@ struct HFCandidateCreatorChic {
                          chi2PCA,
                          pvecJpsi[0], pvecJpsi[1], pvecJpsi[2],
                          pvecPos[0], pvecPos[1], pvecPos[2],
-//                           pvecNeg[0], pvecNeg[1], pvecNeg[2],
-                         impactParameter0.getY(), impactParameter1.getY(), 
-                        //impactParameter2.getY(),
+                         //                           pvecNeg[0], pvecNeg[1], pvecNeg[2],
+                         impactParameter0.getY(), impactParameter1.getY(),
+                         //impactParameter2.getY(),
                          std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
                          jpsiCand.globalIndex(), trackPos.globalIndex(),
                          hfFlag);
@@ -202,26 +202,26 @@ struct HFCandidateCreatorChic {
         auto arrayMomenta = array{pvecJpsi, pvecPos};
         massJpsiGamma = RecoDecay::M(std::move(arrayMomenta), array{massJpsi, 0.});
         hMassChic->Fill(massJpsiGamma);
-      }   // pi+ loop
+      } // pi+ loop
       // ---------------------------- adf: chic specific code stops here
-    }     // Jpsi loop
-  }       // process
-};        // struct
+    } // Jpsi loop
+  }   // process
+};    // struct
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreatorChicExpressions {
-  //  Spawns<aod::HfCandChicExt> rowCandidateChic; 
-  Spawns<aod::HfCandChicExt> rowCandidateChic;  
+  //  Spawns<aod::HfCandChicExt> rowCandidateChic;
+  Spawns<aod::HfCandChicExt> rowCandidateChic;
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
 struct HFCandidateCreatorChicMC {
-  Produces<aod::HfCandChicMCRec> rowMCMatchRec;   
-  Produces<aod::HfCandChicMCGen> rowMCMatchGen;   
+  Produces<aod::HfCandChicMCRec> rowMCMatchRec;
+  Produces<aod::HfCandChicMCGen> rowMCMatchGen;
 
-  void process(aod::HfCandChic const& candidates,  // adf should this be such a thing?
-               aod::HfCandProng2,            
+  void process(aod::HfCandChic const& candidates, // adf should this be such a thing?
+               aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -239,7 +239,7 @@ struct HFCandidateCreatorChicMC {
       channel = 0;
       auto jpsiTrack = candidate.index0();
       auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),
-//                                  candidate.index2_as<aod::BigTracksMC>(), adf: this should not be here, correct?
+                                  //                                  candidate.index2_as<aod::BigTracksMC>(), adf: this should not be here, correct?
                                   jpsiTrack.index0_as<aod::BigTracksMC>(),
                                   jpsiTrack.index1_as<aod::BigTracksMC>()};
 
@@ -247,7 +247,7 @@ struct HFCandidateCreatorChicMC {
       //Printf("Checking X → J/ψ π+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 20443, array{+kPiPlus, +kElectron, -kElectron}, true, &sign, 2); // adf change this when the photon is available
       if (indexRec > -1) {
-        flag = 1 << ChicToJpsiGamma;  
+        flag = 1 << ChicToJpsiGamma;
       }
 
       // Check whether the particle is non-prompt (from a b quark).
@@ -266,15 +266,15 @@ struct HFCandidateCreatorChicMC {
       origin = 0;
       channel = 0;
 
-      // chi_c → J/ψ gamma 
+      // chi_c → J/ψ gamma
       //Printf("Checking X → J/ψ π+ π-");
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, 20443, array{443, +kPiPlus}, true)) {  // adf change this! 
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, 20443, array{443, +kPiPlus}, true)) { // adf change this!
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{443}, 1);
         auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, 443, array{+kElectron, -kElectron}, true)) {
-          flag = 1 << ChicToJpsiGamma; 
+          flag = 1 << ChicToJpsiGamma;
         }
       }
 
