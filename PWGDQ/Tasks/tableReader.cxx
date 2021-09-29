@@ -11,6 +11,7 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -488,8 +489,12 @@ struct DQTableReader {
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
   Filter filterBarrelTrackSelected = aod::reducedtrack::isBarrelSelected > uint8_t(0);
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
-
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> fConfigElectronCuts{"cfgElectronCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+
+  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
+  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   void init(o2::framework::InitContext&)
   {
@@ -511,6 +516,14 @@ struct DQTableReader {
       }
     }
     histNames += "PairsMuonSEPM;PairsMuonSEPP;PairsMuonSEMM;";
+    ccdb->setURL(url.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(nolaterthan.value);
+    auto histCCDB = ccdb->get<TH1F>(ccdbPath.value);
+    if (!histCCDB) {
+      LOGF(fatal, "CCDB histogram not found");
+    }
 
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
