@@ -21,7 +21,7 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic;  // adf
+using namespace o2::aod::hf_cand_chic; // adf
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_chic_tojpsigamma; // adf
 
@@ -81,20 +81,20 @@ struct HFChicToJpsiGammaCandidateSelector {
       return false; //check that mass difference is within bounds
     }
 
-    if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi"))) {   // adf: Warning: no cut on photon
-      return false; //cut on daughter pT
+    if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi"))) { // adf: Warning: no cut on photon
+      return false;                                        //cut on daughter pT
     }
 
     // if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
     //   return false; //cut on daughter pT
     // }
 
-    if (hfCandChic.cpa() < cuts->get(pTBin, "CPA")) {  // adf: what is this?
-      return false; // CPA check
+    if (hfCandChic.cpa() < cuts->get(pTBin, "CPA")) { // adf: what is this?
+      return false;                                   // CPA check
     }
 
     if ((TMath::Abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
-      return false; // DCA check on daughters
+      return false;                                                                  // DCA check on daughters
     }
 
     // if ((TMath::Abs(hfCandX.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi")) ||
@@ -136,7 +136,7 @@ struct HFChicToJpsiGammaCandidateSelector {
   }
 
   //------------------------------------------------------------------------------------
-  // adf: change this 
+  // adf: change this
   /// Check if track is compatible with given TPC Nsigma cut for the pion hypothesis
   /// \param track is the track
   /// \param nSigmaCut is the nsigma threshold to test against
@@ -192,7 +192,7 @@ struct HFChicToJpsiGammaCandidateSelector {
   }
 
   //---------------------------------------------------------------
-  
+
   void process(aod::HfCandChic const& hfCandChics, aod::HfCandProng2, aod::BigTracksPID const& tracks)
   {
     for (auto& hfCandChic : hfCandChics) { //looping over chi_c candidates
@@ -209,7 +209,7 @@ struct HFChicToJpsiGammaCandidateSelector {
       }
 
       // daughter track validity selection
-      if (!daughterSelection(trackPos)) {  // adf change this 
+      if (!daughterSelection(trackPos)) { // adf change this
         hfSelChicToJpsiGammaCandidate(0);
         // Printf("chi_c candidate selection failed at daughter selection");
         continue;
@@ -225,7 +225,7 @@ struct HFChicToJpsiGammaCandidateSelector {
         continue;
       }
 
-      if (selectionPID(trackPos) == 0) {  // adf change this
+      if (selectionPID(trackPos) == 0) { // adf change this
         hfSelChicToJpsiGammaCandidate(0);
         // Printf("X candidate selection failed at selection PID");
         continue;

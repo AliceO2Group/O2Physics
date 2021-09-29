@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskChic.cxx
-/// \brief Chi_c1(1P) analysis task. Adapted from X 
+/// \brief Chi_c1(1P) analysis task. Adapted from X
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
@@ -189,7 +189,7 @@ struct TaskChicMC {
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (particle.flagMCMatchGen() == 1 << ChicToJpsiGamma) {
-	auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
+        auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
         if (cutYCandMax >= 0. && std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > cutYCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
@@ -200,7 +200,7 @@ struct TaskChicMC {
         // properties of gen matched chic, to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (int iD = particle.daughter0Id(); iD <= particle.daughter1Id(); ++iD) {  //adf check this
+        for (int iD = particle.daughter0Id(); iD <= particle.daughter1Id(); ++iD) { //adf check this
           ptProngs[counter] = particlesMC.iteratorAt(iD).pt();
           counter++;
         }

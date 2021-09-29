@@ -583,7 +583,7 @@ static const std::vector<std::string> cutVarLabels = {"m", "CPA", "d0 Jpsi", "d0
 
 namespace hf_cuts_chic_tojpsigamma
 {
-  // dummy selections for chic --> TO BE IMPLEMENTED
+// dummy selections for chic --> TO BE IMPLEMENTED
 static constexpr int npTBins = 9;
 static constexpr int nCutVars = 7;
 // default values for the pT bin edges (can be used to configure histogram axis)
@@ -604,15 +604,15 @@ auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
 
 // default values for the cuts
 //                                            m   CPA  d0Jpsi  d0gamma pTJpsi pTgamma chi2PCA
-constexpr double cuts[npTBins][nCutVars] = {{0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 0<pt<0.5 */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 0.5<pt<1 */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 1<pt<2   */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 2<pt<3   */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 3<pt<4   */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 4<pt<5   */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 5<pt<7   */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.},  /* 7<pt<10  */
-                                            {0.5, 0.80, 0.001, 0.001,  3.0,   0.15, 1.}}; /* 10<pt<15 */
+constexpr double cuts[npTBins][nCutVars] = {{0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 0<pt<0.5 */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 0.5<pt<1 */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 1<pt<2   */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 2<pt<3   */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 3<pt<4   */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 4<pt<5   */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 5<pt<7   */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.},  /* 7<pt<10  */
+                                            {0.5, 0.80, 0.001, 0.001, 3.0, 0.15, 1.}}; /* 10<pt<15 */
 // row labels
 static const std::vector<std::string> pTBinLabels = {
   "pT bin 0",

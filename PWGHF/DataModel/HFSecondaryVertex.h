@@ -314,7 +314,7 @@ auto InvMassJpsiToMuMu(const T& candidate)
   return candidate.m(array{RecoDecay::getMassPDG(kMuonPlus), RecoDecay::getMassPDG(kMuonMinus)});
 }
 
-// chic → Jpsi gamma   
+// chic → Jpsi gamma
 float massChic = RecoDecay::getMassPDG(20443); // chi_c1(1P)
 
 template <typename T>
@@ -1016,17 +1016,17 @@ DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
                   // 2-prong specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
-                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, 
-                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, 
-                  hf_cand_chic::Index0Id, hf_track_index::Index1Id, 
+                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
+                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand_chic::Index0Id, hf_track_index::Index1Id,
                   hf_track_index::HFflag,
-                  /* dynamic columns */ 
+                  /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   /* prong 2 */
-//                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
-//                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
-//                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  //                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  //                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  //                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
                   hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
