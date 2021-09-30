@@ -125,7 +125,7 @@ struct HFDplusToPiKPiCandidateSelector {
       // BIT(1) - selected by topological cuts
       // BIT(2) - selected by PID cuts
       auto statusDplusToPiKPi = 0;
- 
+
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
