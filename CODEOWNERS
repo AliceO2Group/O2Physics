@@ -10,6 +10,6 @@
 # **DO NOT USE** @AliceO2Group/core for anything else. 
 * @AliceO2Group/core @jgrosseo @iarsene @ktf
 /ALICE3  @njacazio @ginnocen @vkucera
-/PWGHF  @ginnocen @vkucera
+/PWGHF  @AliceO2Group/O2Physics-PWGHF-code-owners
 /EventFiltering @mpuccio
 /PWGMM @aalkin
