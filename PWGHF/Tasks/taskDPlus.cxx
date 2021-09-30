@@ -44,7 +44,7 @@ struct TaskDPlus {
      {"hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}}}};
 
-  Configurable<int> d_selectionFlagDPlus{"d_selectionFlagDPlus", 1, "Selection Flag for DPlus"};
+  Configurable<int> d_selectionFlagDPlus{"d_selectionFlagDPlus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
 
@@ -119,7 +119,6 @@ struct TaskDPlusMC {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  Configurable<int> d_selectionFlagDPlus{"d_selectionFlagDPlus", 1, "Selection Flag for DPlus"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits"};
 
@@ -144,7 +143,7 @@ struct TaskDPlusMC {
     registry.add("hPtvsYGenNonPrompt", "2-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagDPlus);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0);
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
