@@ -119,17 +119,18 @@ struct HFDplusToPiKPiCandidateSelector {
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {
 
-      // final selection flag: 0 - rejected, 1 - accepted
+      // final selection flag:
+      // 0 - rejected
+      // BIT(0) - bit for D+ candidate
+      // BIT(1) - selected by topological cuts
+      // BIT(2) - selected by PID cuts
       auto statusDplusToPiKPi = 0;
-      auto statusHFFlag = 0;
-      auto statusTopol = 0;
-      auto statusPID = 0;
-
+ 
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }
-      statusHFFlag = 1;
+      SETBIT(statusDplusToPiKPi, 0);
 
       auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
@@ -147,10 +148,10 @@ struct HFDplusToPiKPiCandidateSelector {
 
       // topological selection
       if (!selection(candidate, trackPos1, trackNeg, trackPos2)) {
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }
-      statusTopol = 1;
+      SETBIT(statusDplusToPiKPi, 1);
 
       // track-level PID selection
       int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
@@ -160,13 +161,12 @@ struct HFDplusToPiKPiCandidateSelector {
       if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
           pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
           pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) { // exclude D±
-        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
+        hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }
-      statusPID = 1;
+      SETBIT(statusDplusToPiKPi, 2);
 
-      statusDplusToPiKPi = 1;
-      hfSelDplusToPiKPiCandidate(statusDplusToPiKPi, statusHFFlag, statusTopol, statusPID);
+      hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
     }
   }
 };
