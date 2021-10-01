@@ -51,10 +51,10 @@ struct ALICE3Centrality {
     if (!hCumMultALICE3) {
       LOGF(fatal, "ALICE 3 centrality calibration is not available in CCDB, failed!");
     }
-    bool enoughcontribs=true;
+    bool enoughcontribs = true;
     int nTracks = 0;
     if (collision.numContrib() < 1) {
-      enoughcontribs=false;
+      enoughcontribs = false;
     }
     for (const auto& track : tracks) {
       if (track.eta() < MinEta || track.eta() > MaxEta) {
@@ -65,12 +65,13 @@ struct ALICE3Centrality {
       }
       nTracks++;
     }
-    
+
     LOG(info) << nevs++ << ") Event " << collision.globalIndex() << " has " << nTracks << " tracks";
     histos.fill(HIST("centrality/numberOfTracks"), nTracks);
 
     float centALICE3 = hCumMultALICE3->GetBinContent(nTracks);
-    if(!enoughcontribs) centALICE3 = 101; //not enough contribs
+    if (!enoughcontribs)
+      centALICE3 = 101; //not enough contribs
     cent(centALICE3);
   }
 };
