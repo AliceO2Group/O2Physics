@@ -70,11 +70,12 @@ struct TaskLc {
     registry.add("hdca2", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
+  // FIXME: Add ALICE 2/3 switch!
   //void process(aod::HfCandProng3 const& candidates)
   void process(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
   {
     float centrality = collision.centV0M();
-    registry.fill(HIST("hcentrality"), centrality);
+    registry.fill(HIST("hCentrality"), centrality);
 
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
