@@ -54,6 +54,7 @@ struct ALICE3Centrality {
 
     int nTracks = 0;
     if (collision.numContrib() < 1) {
+      cent(101);
       return;
     }
     for (const auto& track : tracks) {
