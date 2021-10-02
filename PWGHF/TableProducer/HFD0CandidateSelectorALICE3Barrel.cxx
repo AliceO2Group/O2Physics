@@ -189,7 +189,7 @@ struct HFD0CandidateSelectorALICE3Barrel {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::TracksExtra>;
+  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
   void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
@@ -198,19 +198,20 @@ struct HFD0CandidateSelectorALICE3Barrel {
       // selection flag
       int statusHFFlag = 0;
       int statusD0NoPID = 0;
+      int statusD0PerfectPID = 0;
       int statusD0TOFPID = 0;
       int statusD0RICHPID = 0;
       int statusD0TOFplusRICHPID = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
-        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
         continue;
       }
       statusHFFlag = 1;
 
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
-        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
         continue;
       }
 
@@ -224,10 +225,15 @@ struct HFD0CandidateSelectorALICE3Barrel {
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
-        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
+        hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
         continue;
       }
 
+      const auto mcParticlePositive = trackPos.mcParticle();
+      const auto mcParticleNegative = trackNeg.mcParticle();
+      int pdgPositive = mcParticlePositive.pdgCode();
+      int pdgNegative = mcParticleNegative.pdgCode();
+      //std::cout << "barrel= " << pdgPositive <<"\t"<< pdgNegative << "\n";
       float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
       float nsigmaTOFPosPion = -5000.0;
@@ -261,6 +267,8 @@ struct HFD0CandidateSelectorALICE3Barrel {
 
       if (topolD0) {
         statusD0NoPID = 1;
+        if (pdgPositive == 211 && pdgNegative == -321)
+          statusD0PerfectPID = 1;
         if ((std::abs(nsigmaTOFPosPion) < 3.0 && std::abs(nsigmaTOFNegKaon) < 3.0))
           statusD0TOFPID = 1;
         if ((std::abs(nsigmaRICHPosPion) < 3.0 && std::abs(nsigmaRICHNegKaon) < 3.0))
@@ -268,7 +276,7 @@ struct HFD0CandidateSelectorALICE3Barrel {
         if (selectPionTOFplusRICH && selectKaonTOFplusRICH)
           statusD0TOFplusRICHPID = 1;
       }
-      hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
+      hfSelD0CandidateALICE3Barrel(statusHFFlag, statusD0NoPID, statusD0PerfectPID, statusD0TOFPID, statusD0RICHPID, statusD0TOFplusRICHPID);
     }
   }
 };
