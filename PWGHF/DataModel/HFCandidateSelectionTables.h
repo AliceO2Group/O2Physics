@@ -35,6 +35,7 @@ namespace hf_selcandidate_d0_ALICE3_Barrel
 {
 DECLARE_SOA_COLUMN(IsSelHFFlag, isSelHFFlag, int);                     //!
 DECLARE_SOA_COLUMN(IsSelD0NoPID, isSelD0NoPID, int);                   //!
+DECLARE_SOA_COLUMN(IsSelD0PerfectPID, isSelD0PerfectPID, int);         //!
 DECLARE_SOA_COLUMN(IsSelD0TOFPID, isSelD0TOFPID, int);                 //!
 DECLARE_SOA_COLUMN(IsSelD0RICHPID, isSelD0RICHPID, int);               //!
 DECLARE_SOA_COLUMN(IsSelD0TOFplusRICHPID, isSelD0TOFplusRICHPID, int); //!
@@ -42,6 +43,7 @@ DECLARE_SOA_COLUMN(IsSelD0TOFplusRICHPID, isSelD0TOFplusRICHPID, int); //!
 DECLARE_SOA_TABLE(HFSelD0CandidateALICE3Barrel, "AOD", "HFSELD0CANDA3B", //!
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelHFFlag,
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0NoPID,
+                  hf_selcandidate_d0_ALICE3_Barrel::IsSelD0PerfectPID,
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0TOFPID,
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0RICHPID,
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0TOFplusRICHPID);
