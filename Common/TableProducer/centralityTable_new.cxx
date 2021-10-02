@@ -38,7 +38,7 @@ struct CentralityTableTask {
   Configurable<int> estCL1{"estCL1", -1, {"Produces centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   int mRunNumber;
-  bool mV0MCallibrationStored;
+  bool mV0MCalibrationStored;
   TH1* mhVtxAmpCorrV0A;
   TH1* mhVtxAmpCorrV0C;
   TH1* mhMultSelCalibV0M;
@@ -69,11 +69,11 @@ struct CentralityTableTask {
         enable("CL1", estCL1);
       }
     }
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     mRunNumber = 0;
-    mV0MCallibrationStored = false;
+    mV0MCalibrationStored = false;
     mhVtxAmpCorrV0A = nullptr;
     mhVtxAmpCorrV0C = nullptr;
     mhMultSelCalibV0M = nullptr;
@@ -88,49 +88,41 @@ struct CentralityTableTask {
       TList* callst = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality", bc.timestamp());
 
       if (callst != nullptr) {
-        auto zvtxcalib = [callst](const char* tpname, const char* hname) {
-          TProfile* tp = (TProfile*)callst->FindObject(tpname);
-          TH1* h = new TH1F(TString::Format("%s", hname), TString::Format("%s;#it{z}_{vtx}", hname),
-                            tp->GetNbinsX(), tp->GetXaxis()->GetBinLowEdge(1), tp->GetXaxis()->GetBinUpEdge(tp->GetNbinsX()));
-          TF1 one = TF1("one", "1", tp->GetXaxis()->GetBinLowEdge(1), tp->GetXaxis()->GetBinUpEdge(tp->GetNbinsX()));
-          h->Reset();
-          h->Add(&one, tp->GetMean(2));
-          h->Divide(tp);
-          return h;
-        };
-        auto multcalib = [callst](const char* ccdbhname, const char* hname) {
+        auto getccdb = [callst](const char* ccdbhname, const char* hname) {
           TH1* h = (TH1*)callst->FindObject(ccdbhname)->Clone(hname);
           return h;
         };
         if (estV0M == 1) {
-          mhVtxAmpCorrV0A = zvtxcalib("hVtx_fAmplitude_V0A", "zvtxCalibV0A");
-          mhVtxAmpCorrV0C = zvtxcalib("hVtx_fAmplitude_V0C", "zvtxCalibV0C");
-          mhMultSelCalibV0M = multcalib("hMultSelCalib_V0M", "MultSelCalibV0M");
+          mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized", "zvtxCalibV0A");
+          mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized", "zvtxCalibV0C");
+          mhMultSelCalibV0M = getccdb("hMultSelCalib_V0M", "MultSelCalibV0M");
           if ((mhVtxAmpCorrV0A != nullptr) and (mhVtxAmpCorrV0C != nullptr) and (mhMultSelCalibV0M != nullptr)) {
-            mV0MCallibrationStored = true;
+            mV0MCalibrationStored = true;
+          } else {
+            LOGF(fatal, "Calibration information from V0M for run %d corrupted");
           }
         }
         if (estSPD == 1) {
-          LOGF(fatal, "Calibraltion information estimated from SPD tracklets still not available");
+          LOGF(fatal, "Calibration information estimated from SPD tracklets still not available");
         }
         if (estCL0 == 1) {
-          LOGF(fatal, "Calibraltion information estimated from CL0 still not available");
+          LOGF(fatal, "Calibration information estimated from CL0 still not available");
         }
         if (estCL1 == 1) {
-          LOGF(fatal, "Calibraltion information estimated from CL1 still not available");
+          LOGF(fatal, "Calibration information estimated from CL1 still not available");
         }
-        if (mV0MCallibrationStored) {
+        if (mV0MCalibrationStored) {
           mRunNumber = bc.runNumber();
         }
       } else {
         /* we dont change the run number to keep trying */
-        mV0MCallibrationStored = false;
-        LOGF(error, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        mV0MCalibrationStored = false;
+        LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
     }
     if (estV0M == 1) {
       float centV0M = 105.0f;
-      if (mV0MCallibrationStored) {
+      if (mV0MCalibrationStored) {
         float v0m = collision.multV0A() * mhVtxAmpCorrV0A->GetBinContent(mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
                     collision.multV0C() * mhVtxAmpCorrV0C->GetBinContent(mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
         centV0M = mhMultSelCalibV0M->GetBinContent(mhMultSelCalibV0M->FindFixBin(v0m));
