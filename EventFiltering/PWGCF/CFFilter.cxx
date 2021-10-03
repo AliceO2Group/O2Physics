@@ -57,7 +57,7 @@ static constexpr uint8_t Track = 0;      // Track
 static constexpr uint8_t V0 = 1;         // V0
 static constexpr uint8_t V0Daughter = 2; // V0  daughters
 static constexpr uint32_t kSignMinusMask = 1;
-static constexpr uint32_t kSignPlusMask = 1<<1;
+static constexpr uint32_t kSignPlusMask = 1 << 1;
 static constexpr uint32_t kValue0 = 0;
 
 } // namespace
@@ -79,11 +79,10 @@ struct CFFilter {
   Produces<aod::CFFilters> tags;
 
   //Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
-  Partition<o2::aod::FemtoDreamParticles> partsProton1 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) >kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsLambda1 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) >kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsProton0 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask)  >kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsLambda0 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask)  >kValue0);
-
+  Partition<o2::aod::FemtoDreamParticles> partsProton1 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsLambda1 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsProton0 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsLambda0 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -92,7 +91,7 @@ struct CFFilter {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("fProcessedEvents", "CF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 4.5}});
+    registry.add("fProcessedEvents", "CF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 5.5}});
     std::array<std::string, 6> eventTitles = {"all", "rejected", "p-p-p", "p-p-L", "p-L-L", "L-L-L"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
@@ -107,13 +106,13 @@ struct CFFilter {
   {
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
     bool keepEvent[nTriplets]{false};
-    
+
     // This is the main trigger part for proton-proton-Lambda
     // pairCleanerTV -> Test if lambda hyperons don't have a daughter which is as well used as primary proton
     // Calculate Q3 and check if it is smaller than 0.6
     // If at collision has at least one triplet with Q3<0.6, the trigger value is set to true!
     // IMPORTANT: Include close pair rejection here
-    if(partsFemto.size()!=0){
+    if (partsFemto.size() != 0) {
       int lowQ3Triplets = 0;
       if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
         for (auto& partLambda : partsLambda0) {
@@ -141,10 +140,9 @@ struct CFFilter {
           }
         }
       } // end if
-      if (lowQ3Triplets > 0) keepEvent[kPPL] = true;
+      if (lowQ3Triplets > 0)
+        keepEvent[kPPL] = true;
     }
-
-
 
     tags(keepEvent[kPPP], keepEvent[kPPL], keepEvent[kPLL], keepEvent[kLLL]);
 
@@ -153,7 +151,7 @@ struct CFFilter {
     } else {
       for (int iTrigger{0}; iTrigger < nTriplets; iTrigger++) {
         if (keepEvent[iTrigger]) {
-          registry.get<TH1>(HIST("fProcessedEvents"))->Fill(iTrigger + 1);
+          registry.get<TH1>(HIST("fProcessedEvents"))->Fill(iTrigger + 2);
         }
       }
     } // end else

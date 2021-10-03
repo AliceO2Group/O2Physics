@@ -27,8 +27,8 @@ namespace o2::aod
 /// FemtoDreamCollision
 namespace femtodreamcollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);                                            //! V0M multiplicity
-DECLARE_SOA_COLUMN(Sphericity, sphericity, float);                                      //! Sphericity of the event
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
+DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",

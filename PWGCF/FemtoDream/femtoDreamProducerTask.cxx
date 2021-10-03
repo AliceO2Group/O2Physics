@@ -32,7 +32,6 @@
 #include "Math/Vector4D.h"
 #include "TMath.h"
 
-
 using namespace o2;
 using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
@@ -168,14 +167,14 @@ struct femtoDreamProducerTask {
     v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
   }
 
-  void process(soa::Join<aod::Collisions,aod::EvSels,aod::Mults>::iterator const& col,
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& col,
                aod::FilteredFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
-  {   
+  {
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     if (!colCuts.isSelected(col)) {
       // if it is a trigger run, store unselected collision as well
-      if(ConfIsTrigger){
+      if (ConfIsTrigger) {
         outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks)); // globalIndexAO2D is required for the 3-body trigger
       }
       return;
@@ -185,7 +184,7 @@ struct femtoDreamProducerTask {
     const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision( vtxZ, mult, spher); // globalIndexAO2D is required for the 3-body trigger
+    outputCollision(vtxZ, mult, spher); // globalIndexAO2D is required for the 3-body trigger
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
