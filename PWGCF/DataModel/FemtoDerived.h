@@ -16,7 +16,6 @@
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -25,21 +24,15 @@
 
 namespace o2::aod
 {
-using FilteredFullCollisions = soa::Filtered<soa::Join<aod::Collisions,
-                                                       aod::EvSels,
-                                                       aod::Mults>>;
-using FilteredFullCollision = FilteredFullCollisions::iterator;
 /// FemtoDreamCollision
 namespace femtodreamcollision
 {
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);                                            //! V0M multiplicity
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float);                                      //! Sphericity of the event
-DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, FilteredFullCollisions, "_0"); //! GlobalIndex
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
                   o2::soa::Index<>,
-                  femtodreamcollision::CollisionId,
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
                   femtodreamcollision::Sphericity);

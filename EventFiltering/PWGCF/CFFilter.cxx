@@ -22,18 +22,20 @@
 
 #include "../filterTables.h"
 
-#include "../../PWGCF/DataModel/FemtoDerived.h"
-#include "../../PWGCF/FemtoDream/FemtoDreamParticleHisto.h"
-#include "../../PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
-#include "../../PWGCF/FemtoDream/FemtoDreamContainer.h"
-#include "../../PWGCF/FemtoDream/FemtoDreamMath.h"
-#include "../../PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoDream/FemtoDreamParticleHisto.h"
+#include "PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/FemtoDreamContainer.h"
+#include "PWGCF/FemtoDream/FemtoDreamMath.h"
+#include "PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <cmath>
 #include <string>
+
+#include <iostream>
 
 namespace
 {
@@ -48,6 +50,15 @@ enum CFTriggers {
 };
 
 static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
+
+//uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
+//uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
+static constexpr uint8_t Track = 0;      // Track
+static constexpr uint8_t V0 = 1;         // V0
+static constexpr uint8_t V0Daughter = 2; // V0  daughters
+static constexpr uint32_t kSignMinusMask = 1;
+static constexpr uint32_t kSignPlusMask = 1<<1;
+static constexpr uint32_t kValue0 = 0;
 
 } // namespace
 
@@ -67,6 +78,13 @@ struct CFFilter {
 
   Produces<aod::CFFilters> tags;
 
+  //Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
+  Partition<o2::aod::FemtoDreamParticles> partsProton1 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) >kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsLambda1 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) >kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsProton0 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask)  >kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsLambda0 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask)  >kValue0);
+
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   //FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
@@ -85,48 +103,17 @@ struct CFFilter {
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
   float mMassLambda = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
 
-  void process(aod::FullCollision const& col, o2::aod::FemtoDreamCollisions const& colsFemto,
-               o2::aod::FemtoDreamParticles& partsFemto)
+  void process(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& partsFemto)
   {
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
     bool keepEvent[nTriplets]{false};
-
-    // check if current collision was selected by femto skimmer
-    auto collsInFemto = colsFemto.sliceBy(o2::aod::femtodreamcollision::collisionId, col.globalIndex());
-    if (collsInFemto.size() == 0) {
-      keepEvent[kPPL] = false;
-    } else {
-      auto collInFemto = collsInFemto.begin();
-
-      //uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
-      //uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
-      uint8_t Track = 0;      // Track
-      uint8_t V0 = 1;         // V0
-      uint8_t V0Daughter = 2; // V0
-      uint32_t trackMask = 524288;
-      uint32_t V0Mask = 64;
-      uint32_t testedBit0 = 0;
-
-      //Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
-      Partition<o2::aod::FemtoDreamParticles> partsProton1 = (o2::aod::femtodreamparticle::femtoDreamCollisionId == collInFemto.globalIndex()) &&
-                                                             (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & trackMask) == trackMask);
-      Partition<o2::aod::FemtoDreamParticles> partsLambda1 = (o2::aod::femtodreamparticle::femtoDreamCollisionId == collInFemto.globalIndex()) &&
-                                                             (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & V0Mask) == V0Mask);
-      Partition<o2::aod::FemtoDreamParticles> partsProton0 = (o2::aod::femtodreamparticle::femtoDreamCollisionId == collInFemto.globalIndex()) &&
-                                                             (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & trackMask) == testedBit0);
-      Partition<o2::aod::FemtoDreamParticles> partsLambda0 = (o2::aod::femtodreamparticle::femtoDreamCollisionId == collInFemto.globalIndex()) &&
-                                                             (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & V0Mask) == testedBit0);
-
-      partsProton1.bindTable(partsFemto);
-      partsLambda1.bindTable(partsFemto);
-      partsProton0.bindTable(partsFemto);
-      partsLambda0.bindTable(partsFemto);
-
-      // This is the main trigger part for proton-proton-Lambda
-      // pairCleanerTV -> Test if lambda hyperons don't have a daughter which is as well used as primary proton
-      // Calculate Q3 and check if it is smaller than 0.6
-      // If at collision has at least one triplet with Q3<0.6, the trigger value is set to true!
-      // IMPORTANT: Include close pair rejection here
+    
+    // This is the main trigger part for proton-proton-Lambda
+    // pairCleanerTV -> Test if lambda hyperons don't have a daughter which is as well used as primary proton
+    // Calculate Q3 and check if it is smaller than 0.6
+    // If at collision has at least one triplet with Q3<0.6, the trigger value is set to true!
+    // IMPORTANT: Include close pair rejection here
+    if(partsFemto.size()!=0){
       int lowQ3Triplets = 0;
       if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
         for (auto& partLambda : partsLambda0) {
@@ -140,7 +127,7 @@ struct CFFilter {
               lowQ3Triplets++; // real value 0.6. We use 1.5 here for testing locally because of statistics
           }
         }
-      }
+      } // end if
       if (partsLambda1.size() >= 1 && partsProton1.size() >= 2) {
         for (auto& partLambda : partsLambda1) {
           if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
@@ -153,10 +140,11 @@ struct CFFilter {
               lowQ3Triplets++; // real value 0.6. We use 1.5 here for testing locally because of statistics
           }
         }
-      }
-      if (lowQ3Triplets > 0)
-        keepEvent[kPPL] = true;
+      } // end if
+      if (lowQ3Triplets > 0) keepEvent[kPPL] = true;
     }
+
+
 
     tags(keepEvent[kPPP], keepEvent[kPPL], keepEvent[kPLL], keepEvent[kLLL]);
 
@@ -168,7 +156,7 @@ struct CFFilter {
           registry.get<TH1>(HIST("fProcessedEvents"))->Fill(iTrigger + 1);
         }
       }
-    }
+    } // end else
   }
 };
 

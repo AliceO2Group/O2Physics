@@ -32,6 +32,7 @@
 #include "Math/Vector4D.h"
 #include "TMath.h"
 
+
 using namespace o2;
 using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
@@ -39,16 +40,13 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-using FilteredFullCollision = soa::Filtered<soa::Join<aod::Collisions,
-                                                      aod::EvSels,
-                                                      aod::Mults>>::iterator;
 using FilteredFullTracks = soa::Join<aod::FullTracks,
                                      aod::TracksExtended, aod::TOFSignal,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                      aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                      aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                      aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
-using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
+//using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
 } // namespace o2::aod
 
 /// \todo fix how to pass array to setSelection, getRow() passing a different type!
@@ -77,6 +75,10 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
+  // Choose if filtering or skimming version is run
+
+  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", true, "Store all collisions"};
+
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -84,7 +86,7 @@ struct femtoDreamProducerTask {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
-  Filter colFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
+  //Filter colFilter = nabs(aod::collision::posZ) < ConfEvtZvtxSerksnyte;
 
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
@@ -120,9 +122,9 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfV0DaughPIDnSigmaMax{"ConfV0DaughPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Daugh sel: Max. PID nSigma TPC"};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
-  Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
+  /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
                     (nabs(aod::v0data::y) < V0DecVtxMax.value) &&
-                    (nabs(aod::v0data::z) < V0DecVtxMax.value);
+                    (nabs(aod::v0data::z) < V0DecVtxMax.value);*/
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working for now do not know why
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
@@ -166,21 +168,24 @@ struct femtoDreamProducerTask {
     v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
   }
 
-  void process(aod::FilteredFullCollision const& col,
+  void process(soa::Join<aod::Collisions,aod::EvSels,aod::Mults>::iterator const& col,
                aod::FilteredFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
-  {
+  {   
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     if (!colCuts.isSelected(col)) {
+      // if it is a trigger run, store unselected collision as well
+      if(ConfIsTrigger){
+        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks)); // globalIndexAO2D is required for the 3-body trigger
+      }
       return;
     }
     const auto vtxZ = col.posZ();
     const auto mult = col.multV0M();
     const auto spher = colCuts.computeSphericity(col, tracks);
-    const auto globalIndexAO2D = col.globalIndex(); // this is required for the 3-body trigger
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision(globalIndexAO2D, vtxZ, mult, spher); // globalIndexAO2D is required for the 3-body trigger
+    outputCollision( vtxZ, mult, spher); // globalIndexAO2D is required for the 3-body trigger
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
