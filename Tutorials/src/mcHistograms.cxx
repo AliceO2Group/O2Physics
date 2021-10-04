@@ -92,19 +92,25 @@ struct AccessMcTruth {
 // For each of them get the corresponding tracks
 struct LoopOverMcMatched {
   OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
-  void process(aod::McCollision const& mcCollision, soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
+  void process(aod::McCollisions const& mcCollisions, soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
                soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    // access MC truth information with mcCollision() and mcParticle() methods
-    LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
-    for (auto& collision : collisions) {
-      LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
+    auto collision = collisions.begin();
+    for (auto& mcCollision : mcCollisions) {
+      // access MC truth information with mcCollision() and mcParticle() methods
+      LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
+      while (collision.mcCollisionId() < mcCollision.globalIndex()) {
+        ++collision;
+      }
+      if (collision.mcCollisionId() == mcCollision.globalIndex()) {
+        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
 
-      // NOTE this will be replaced by a improved grouping in the future
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      LOGF(info, "  which has %d tracks", groupedTracks.size());
-      for (auto& track : groupedTracks) {
-        etaDiff->Fill(track.mcParticle().eta() - track.eta());
+        // NOTE this will be replaced by a improved grouping in the future
+        auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+        LOGF(info, "  which has %d tracks", groupedTracks.size());
+        for (auto& track : groupedTracks) {
+          etaDiff->Fill(track.mcParticle().eta() - track.eta());
+        }
       }
     }
   }
