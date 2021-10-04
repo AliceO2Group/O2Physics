@@ -46,7 +46,6 @@ struct TrackSelectionTask {
 
     if (isRun3) {
       globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
-      globalTracksSDD.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
     }
   }
 
