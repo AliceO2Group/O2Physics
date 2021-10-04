@@ -67,6 +67,11 @@ struct HfXiccToPKPiPiCandidateSelector {
     if (std::abs(InvMassXiccToXicPi(hfCandXicc) - RecoDecay::getMassPDG(pdg::Code::kXiCCPlusPlus)) > cuts->get(pTBin, "m")) {
       return false;
     }
+    
+    // impact parameter product
+    if (hfCandXicc.impactParameterProduct() > cuts->get(pTBin, "d0d0")) {
+      return false;
+    }
 
     // cosine of pointing angle
     if (hfCandXicc.cpa() <= cuts->get(pTBin, "cos pointing angle")) {

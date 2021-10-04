@@ -54,6 +54,7 @@ struct HfTaskXicc {
     registry.add("hChi2PCA", "#Xi^{++}_{cc} candidates;chi2 PCA (cm);entries", {HistType::kTH2F, {{500, 0., 0.01}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "#Xi^{++}_{cc} candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1", "#Xi^{++}_{cc} candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0d0", "#Xi^{++}_{cc} candidates;product of DCAxy to prim. vertex (cm^{2}); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCt", "#Xi^{++}_{cc} candidates;proper lifetime (#Xi^{++}_{cc}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPA", "#Xi^{++}_{cc} candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{2200, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "#Xi^{++}_{cc} candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{250, -5., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -79,6 +80,7 @@ struct HfTaskXicc {
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
+      registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
       registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hChi2PCA"), candidate.chi2PCA(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
@@ -128,6 +130,8 @@ struct HfTaskXiccMc {
     registry.add("hd0Prong0VsPtRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1VsPtRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1VsPtRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.02, 0.02}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0d0VsPtRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;product of DCAxy to prim. vertex (cm^{2}); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0d0VsPtRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;product of DCAxy to prim. vertex (cm^{2}); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCtVsPtRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;proper lifetime (#Xi_{cc}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCtVsPtRecBg", "#Xi^{++}_{cc} (rec. unmatched) candidates;proper lifetime (#Xi_{cc}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPAVsPtRecSig", "#Xi^{++}_{cc} (rec. matched) candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{2200, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -205,6 +209,7 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hCPAVsPtRecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hd0Prong0VsPtRecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1VsPtRecSig"), candidate.impactParameter1(), candidate.pt());
+        registry.fill(HIST("hd0d0VsPtRecSig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hCtVsPtRecSig"), CtXicc(candidate), candidate.pt());
         registry.fill(HIST("hEtaVsPtRecSig"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hYVsPtRecSig"), YXicc(candidate), candidate.pt());
@@ -232,6 +237,7 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hCPAVsPtRecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hd0Prong0VsPtRecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1VsPtRecBg"), candidate.impactParameter1(), candidate.pt());
+        registry.fill(HIST("hd0d0VsPtRecBg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hCtVsPtRecBg"), CtXicc(candidate), candidate.pt());
         registry.fill(HIST("hEtaVsPtRecBg"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hYVsPtRecBg"), YXicc(candidate), candidate.pt());
