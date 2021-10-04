@@ -38,9 +38,9 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HfTaskXicc {
   HistogramRegistry registry{
     "registry",
-    {{"hPtCand", "#Xi^{++}_{cc}-candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}},
-     {"hPtProng0", "#Xi^{++}_{cc}-candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}},
-     {"hPtProng1", "#Xi^{++}_{cc}-candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}}}};
+    {{"hPtCand", "#Xi^{++}_{cc}-candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtProng0", "#Xi^{++}_{cc}-candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtProng1", "#Xi^{++}_{cc}-candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}}};
 
   Configurable<int> d_selectionFlagXicc{"d_selectionFlagXicc", 1, "Selection Flag for Xicc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
@@ -101,17 +101,17 @@ struct HfTaskXicc {
 struct HfTaskXiccMc {
   HistogramRegistry registry{
     "registry",
-    {{"hPtRecSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}},
-     {"hPtRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}},
-     {"hPtGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}},
-     {"hPtGenSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360,0.,36.}}}},
+    {{"hPtRecSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
+     {"hPtGenSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"hEtaRecSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{#eta};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hEtaRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);#it{#eta};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hEtaGen", "#Xi^{++}_{cc} MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hYRecSig", "#Xi^{++}_{cc} candidates (rec. matched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hYRecBg", "#Xi^{++}_{cc} candidates (rec. unmatched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
      {"hYGen", "#Xi^{++}_{cc} MC particles (matched);#it{y};entries", {HistType::kTH1F, {{250, -5., 5.}}}},
-     {"hPtvsEtavsYGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T} (GeV/#it{c});#it{#eta};#it{y}", {HistType::kTH3F, {{360,0.,36.}, {250, -5., 5.}, {20, -5., 5.}}}}}};
+     {"hPtvsEtavsYGen", "#Xi^{++}_{cc} MC particles (matched);#it{p}_{T} (GeV/#it{c});#it{#eta};#it{y}", {HistType::kTH3F, {{360, 0., 36.}, {250, -5., 5.}, {20, -5., 5.}}}}}};
 
   Configurable<int> d_selectionFlagXicc{"d_selectionFlagXicc", 1, "Selection Flag for Xicc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
