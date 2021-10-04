@@ -39,6 +39,10 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
+
+using FilteredFullCollision = soa::Filtered<soa::Join<aod::Collisions,
+                                                      aod::EvSels,
+                                                      aod::Mults>>::iterator;
 using FilteredFullTracks = soa::Join<aod::FullTracks,
                                      aod::TracksExtended, aod::TOFSignal,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -76,7 +80,7 @@ struct femtoDreamProducerTask {
 
   // Choose if filtering or skimming version is run
 
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", true, "Store all collisions"};
+  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
@@ -85,7 +89,7 @@ struct femtoDreamProducerTask {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
-  //Filter colFilter = nabs(aod::collision::posZ) < ConfEvtZvtxSerksnyte;
+  Filter colFilter = (ConfIsTrigger == (uint8_t) false && nabs(aod::collision::posZ) < ConfEvtZvtx) || ConfIsTrigger == (uint8_t) true;
 
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
@@ -167,13 +171,15 @@ struct femtoDreamProducerTask {
     v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& col,
+  void process(aod::FilteredFullCollision const& col,
                aod::FilteredFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fullfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
-      // if it is a trigger run, store unselected collision as well
       if (ConfIsTrigger) {
         outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks)); // globalIndexAO2D is required for the 3-body trigger
       }
@@ -184,7 +190,7 @@ struct femtoDreamProducerTask {
     const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision(vtxZ, mult, spher); // globalIndexAO2D is required for the 3-body trigger
+    outputCollision(vtxZ, mult, spher);
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
