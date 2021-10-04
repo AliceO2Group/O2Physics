@@ -89,7 +89,7 @@ struct femtoDreamProducerTask {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
-  Filter colFilter = (ConfIsTrigger == (uint8_t) false && nabs(aod::collision::posZ) < ConfEvtZvtx) || ConfIsTrigger == (uint8_t) true;
+  Filter colFilter = (ConfIsTrigger == (uint8_t) true) || (nabs(aod::collision::posZ) < ConfEvtZvtx);
 
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
@@ -181,7 +181,7 @@ struct femtoDreamProducerTask {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks)); // globalIndexAO2D is required for the 3-body trigger
+        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks));
       }
       return;
     }
