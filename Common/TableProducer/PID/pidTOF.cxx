@@ -11,7 +11,7 @@
 
 ///
 /// \file   pidTOF.cxx
-/// \author Nicolo' Jacazio
+/// \author Nicolò Jacazio
 /// \brief  Task to produce PID tables for TOF split for each particle with only the Nsigma information.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
@@ -19,12 +19,12 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,38 +40,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-struct tofSignal { /// Task that produces the TOF signal from the trackTime
-  Produces<o2::aod::TOFSignal> table;
-  bool enableTable = false;
-
-  void init(o2::framework::InitContext& initContext)
-  {
-    // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
-        const std::string table = "TOFSignal";
-        if (input.matcher.binding == table) {
-          enableTable = true;
-        }
-      }
-    }
-  }
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-  void process(Trks const& tracks)
-  {
-    if (!enableTable) {
-      return;
-    }
-    table.reserve(tracks.size());
-    for (auto& t : tracks) {
-      table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
-    }
-  }
-};
-
 struct tofPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Colls = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFEl> tablePIDEl;
@@ -105,34 +75,30 @@ struct tofPid {
   void init(o2::framework::InitContext& initContext)
   {
     // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
-        auto enableFlag = [&input](const std::string particle, Configurable<int>& flag) {
-          const std::string table = "pidTOF" + particle;
-          if (input.matcher.binding == table) {
-            if (flag < 0) {
-              flag.value = 1;
-              LOG(info) << "Auto-enabling table: " + table;
-            } else if (flag > 0) {
-              flag.value = 1;
-              LOG(info) << "Table enabled: " + table;
-            } else {
-              LOG(info) << "Table disabled: " + table;
-            }
-          }
-        };
-        enableFlag("El", pidEl);
-        enableFlag("Mu", pidMu);
-        enableFlag("Pi", pidPi);
-        enableFlag("Ka", pidKa);
-        enableFlag("Pr", pidPr);
-        enableFlag("De", pidDe);
-        enableFlag("Tr", pidTr);
-        enableFlag("He", pidHe);
-        enableFlag("Al", pidAl);
+    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+      const std::string table = "pidTOF" + particle;
+      if (isTableRequiredInWorkflow(initContext, table)) {
+        if (flag < 0) {
+          flag.value = 1;
+          LOG(info) << "Auto-enabling table: " + table;
+        } else if (flag > 0) {
+          flag.value = 1;
+          LOG(info) << "Table enabled: " + table;
+        } else {
+          LOG(info) << "Table disabled: " + table;
+        }
       }
-    }
+    };
+    enableFlag("El", pidEl);
+    enableFlag("Mu", pidMu);
+    enableFlag("Pi", pidPi);
+    enableFlag("Ka", pidKa);
+    enableFlag("Pr", pidPr);
+    enableFlag("De", pidDe);
+    enableFlag("Tr", pidTr);
+    enableFlag("He", pidHe);
+    enableFlag("Al", pidAl);
+
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
     ccdb->setTimestamp(timestamp.value);
@@ -255,7 +221,7 @@ struct tofPidQa {
     histos.add("event/length", "", HistType::kTH1F, {lAxis});
     histos.add("event/pt", "", HistType::kTH1F, {ptAxis});
     histos.add("event/p", "", HistType::kTH1F, {pAxis});
-    histos.add("event/ptreso", "", HistType::kTH2F, {pAxis, ptResoAxis});
+    // histos.add("event/ptreso", "", HistType::kTH2F, {pAxis, ptResoAxis});
 
     addParticleHistos<0>();
     addParticleHistos<1>();
@@ -274,7 +240,7 @@ struct tofPidQa {
     histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
                                                           aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                                           aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                                           aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
@@ -300,7 +266,7 @@ struct tofPidQa {
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());
       histos.fill(HIST("event/pt"), t.pt());
-      histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
+      // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
       //
       fillParticleHistos<0>(t, t.tofNSigmaEl());
       fillParticleHistos<1>(t, t.tofNSigmaMu());
