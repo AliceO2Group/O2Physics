@@ -933,6 +933,7 @@ DECLARE_SOA_TABLE(HfCandXiccBase, "AOD", "HFCANDXICCBASE",
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
                   hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
