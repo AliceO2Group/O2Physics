@@ -21,6 +21,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
+#include "FemtoDreamTrackBitmask.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -34,9 +35,11 @@ struct femtoDreamPairTaskTrackTrack {
   // \todo checky why is the enum not working in the partition
   uint8_t Track = 0; // Track
 
+  FemtoDreamTrackBitmask mTrackBitmask;
+
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 1040230, "Particle 1 - Selection bit"};
+  // Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 1040230, "Particle 1 - Selection bit"};
   Configurable<float> ConfPtMinPartOne{"ConfPtMinPartOne", 0.4f, "Particle 1 - min. pT selection (GeV/c)"};
   Configurable<float> ConfPtMaxPartOne{"ConfPtMaxPartOne", 4.05f, "Particle 1 - max. pT selection (GeV/c)"};
   Configurable<float> ConfEtaMaxPartOne{"ConfEtaMaxPartOne", 0.8f, "Particle 1 - max. eta selection"};
@@ -59,7 +62,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 1040230, "Particle 2 - Selection bit"};
+  // Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 1040230, "Particle 2 - Selection bit"};
   Configurable<float> ConfPtMinPartTwo{"ConfPtMinPartTwo", 0.4f, "Particle 2 - min. pT selection (GeV/c)"};
   Configurable<float> ConfPtMaxPartTwo{"ConfPtMaxPartTwo", 4.05f, "Particle 2 - max. pT selection (GeV/c)"};
   Configurable<float> ConfEtaMaxPartTwo{"ConfEtaMaxPartTwo", 0.8f, "Particle 2 - max. eta selection"};
@@ -161,6 +164,8 @@ struct femtoDreamPairTaskTrackTrack {
     const int multCol = col.multV0M();
     /// Histogramming same event
     for (auto& part : partsOne) {
+      if (!mTrackBitmask.acceptTrack(part))
+        continue;
       if (!isFullPIDSelected(part.pidcut(), part.p(), ConfPIDThreshPartOne, vecTPCPIDPartOne, vecCombPIDPartOne)) {
         continue;
       }
@@ -168,6 +173,8 @@ struct femtoDreamPairTaskTrackTrack {
     }
     if (!ConfIsSame) {
       for (auto& part : partsTwo) {
+        if (!mTrackBitmask.acceptTrack(part))
+          continue;
         if (!isFullPIDSelected(part.pidcut(), part.p(), ConfPIDThreshPartTwo, vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
           continue;
         }
@@ -241,7 +248,7 @@ struct femtoDreamPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
-        if (!isFullPIDSelected(p1.pidcut(), p1.p(), ConfPIDThreshPartOne, vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), ConfPIDThreshPartTwo, vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+        if (!isFullPIDSelected(p1.pidcut(), p1.p(), ConfPIDThreshPartOne, vecTPCPIDPartOne, vecCombPIDPartOne) || !mTrackBitmask.acceptTrack(p1) || !isFullPIDSelected(p2.pidcut(), p2.p(), ConfPIDThreshPartTwo, vecTPCPIDPartTwo, vecCombPIDPartTwo) || !mTrackBitmask.acceptTrack(p2)) {
           continue;
         }
         mixedEventCont.setPair(p1, p2, collision1.multV0M()); // < \todo dirty trick, the multiplicity will be of course within the bin width used for the hashes
