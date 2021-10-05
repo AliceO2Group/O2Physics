@@ -74,6 +74,11 @@ o2physics_add_dpl_workflow(d0-candidate-selector-ALICE3-Barrel
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lc-candidate-selector-ALICE3
+                    SOURCES HFLcCandidateSelectorALICE3.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(d0-candidate-selector-ALICE3-Forward
                     SOURCES HFD0CandidateSelectorALICE3Forward.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
