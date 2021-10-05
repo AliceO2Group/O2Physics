@@ -195,6 +195,13 @@ TH2F* fhEtaVsPhiA = nullptr;
 TH2F* fhPtVsEtaB = nullptr;
 TH2F* fhPtVsEtaA = nullptr;
 
+TH1F* fhDCAxyB = nullptr;
+TH1F* fhDCAxyA = nullptr;
+TH1F* fhFineDCAxyA = nullptr;
+TH1F* fhDCAzB = nullptr;
+TH1F* fhDCAzA = nullptr;
+TH1F* fhFineDCAzA = nullptr;
+
 TH1F* fhTrueCentMultB = nullptr;
 TH1F* fhTrueCentMultA = nullptr;
 TH1F* fhTrueVertexZB = nullptr;
@@ -217,6 +224,11 @@ TH2F* fhTrueEtaVsPhiA = nullptr;
 
 TH2F* fhTruePtVsEtaB = nullptr;
 TH2F* fhTruePtVsEtaA = nullptr;
+
+TH1F* fhTrueDCAxyB = nullptr;
+TH1F* fhTrueDCAxyA = nullptr;
+TH1F* fhTrueDCAzB = nullptr;
+TH1F* fhTrueDCAzA = nullptr;
 } // namespace filteranalysistask
 
 namespace filteranalysistaskqa
@@ -391,8 +403,12 @@ bool matchTrackType(TrackObject const& track)
         return false;
       }
       break;
-    case 3:        /* Run3 track */
-      return true; // so far we accept every kind of Run3 tracks
+    case 3: /* Run3 track */
+      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+        return true;
+      } else {
+        return false;
+      }
       break;
     default:
       return false;
@@ -458,6 +474,8 @@ void fillTrackHistosBeforeSelection(TrackObject const& track)
   } else {
     fhPtNegB->Fill(track.pt());
   }
+  fhDCAxyB->Fill(track.dcaXY());
+  fhDCAzB->Fill(track.dcaZ());
 }
 
 template <typename TrackObject>
@@ -475,10 +493,18 @@ void fillTrackHistosAfterSelection(TrackObject const& track)
   } else {
     fhPtNegA->Fill(track.pt());
   }
+  fhDCAxyA->Fill(track.dcaXY());
+  fhDCAzA->Fill(track.dcaZ());
+  if (track.dcaXY() < 1.0) {
+    fhFineDCAxyA->Fill(track.dcaXY());
+  }
+  if (track.dcaZ() < 1.0) {
+    fhFineDCAzA->Fill(track.dcaZ());
+  }
 }
 
-template <typename ParticleObject>
-void fillParticleHistosBeforeSelection(ParticleObject const& particle, float charge)
+template <typename ParticleObject, typename MCCollisionObject>
+void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
 {
   using namespace filteranalysistask;
 
@@ -492,10 +518,14 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, float cha
   } else if (charge < 0) {
     fhTruePtNegB->Fill(particle.pt());
   }
+
+  fhTrueDCAxyB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
 }
 
-template <typename ParticleObject>
-void fillParticleHistosAfterSelection(ParticleObject const& particle, float charge)
+template <typename ParticleObject, typename MCCollisionObject>
+void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
 {
   using namespace filteranalysistask;
 
@@ -509,6 +539,10 @@ void fillParticleHistosAfterSelection(ParticleObject const& particle, float char
   } else {
     fhTruePtNegA->Fill(particle.pt());
   }
+
+  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
 }
 
 } /* end namespace dptdptcorrelations */
@@ -591,8 +625,8 @@ struct DptDptCorrelationsFilterAnalysisTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
   }
 
-  template <typename ParticleListObject, typename CollisionIndex>
-  void filterParticles(ParticleListObject const& particles, CollisionIndex colix)
+  template <typename ParticleListObject, typename MCCollisionObject, typename CollisionIndex>
+  void filterParticles(ParticleListObject const& particles, MCCollisionObject const& mccollision, CollisionIndex colix)
   {
     using namespace filteranalysistask;
 
@@ -609,14 +643,14 @@ struct DptDptCorrelationsFilterAnalysisTask {
       bool astwo = false;
       if (charge != 0) {
         /* before particle selection */
-        fillParticleHistosBeforeSelection(particle, charge);
+        fillParticleHistosBeforeSelection(particle, mccollision, charge);
 
         /* track selection */
         /* tricky because the boolean columns issue */
         AcceptParticle(particle, particles, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
-          fillParticleHistosAfterSelection(particle, charge);
+          fillParticleHistosAfterSelection(particle, mccollision, charge);
           acceptedparticles++;
           scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
         }
@@ -696,6 +730,12 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhEtaVsPhiA = new TH2F(TString::Format("CSTaskEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi;#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
       fhPtVsEtaB = new TH2F(TString::Format("fhPtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
       fhPtVsEtaA = new TH2F(TString::Format("fhPtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
+      fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
+      fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
+      fhFineDCAxyA = new TH1F("FineDCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 4000, -1.0, 1.0);
+      fhDCAzB = new TH1F("DCAzB", "DCA_{z} distribution for reconstructed before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+      fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+      fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhCentMultB);
@@ -716,6 +756,12 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fOutputList->Add(fhEtaVsPhiA);
       fOutputList->Add(fhPtVsEtaB);
       fOutputList->Add(fhPtVsEtaA);
+      fOutputList->Add(fhDCAxyB);
+      fOutputList->Add(fhDCAxyA);
+      fOutputList->Add(fhFineDCAxyA);
+      fOutputList->Add(fhDCAzB);
+      fOutputList->Add(fhDCAzA);
+      fOutputList->Add(fhFineDCAzA);
     }
 
     if (fDataType != kData) {
@@ -746,6 +792,10 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTrueEtaVsPhiA = new TH2F(TString::Format("CSTaskTrueEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi (truth);#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
       fhTruePtVsEtaB = new TH2F(TString::Format("fhTruePtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
       fhTruePtVsEtaA = new TH2F(TString::Format("fhTruePtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
+      fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
+      fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
+      fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+      fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhTrueCentMultB);
@@ -766,6 +816,10 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fOutputList->Add(fhTrueEtaVsPhiA);
       fOutputList->Add(fhTruePtVsEtaB);
       fOutputList->Add(fhTruePtVsEtaA);
+      fOutputList->Add(fhTrueDCAxyB);
+      fOutputList->Add(fhTrueDCAxyA);
+      fOutputList->Add(fhTrueDCAzB);
+      fOutputList->Add(fhTrueDCAzA);
     }
   }
 
@@ -912,7 +966,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
         fhTrueVertexZA->Fill(mccollision.posZ());
         acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
 
-        filterParticles(mcparticles, acceptedtrueevents.lastIndex());
+        filterParticles(mcparticles, collision, acceptedtrueevents.lastIndex());
       } else {
         acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
         for (auto& particle : mcparticles) {
@@ -945,7 +999,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTrueVertexZA->Fill(mccollision.posZ());
       acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
 
-      filterParticles(mcparticles, acceptedtrueevents.lastIndex());
+      filterParticles(mcparticles, mccollision, acceptedtrueevents.lastIndex());
     } else {
       acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
       for (auto& particle : mcparticles) {
@@ -1670,6 +1724,14 @@ struct CheckGeneratorLevelVsDetectorLevel {
     histos.add("before/positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, TWOPI, "#varphi (rad)"}});
     histos.add("before/positivecolid/recomrpt", "#it{p}_{T} Reconstructed (mr)", kTH1F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     histos.add("before/positivecolid/detectormapmr", "Active detectors (mr)", kTH1F, {detectors});
+    histos.add("before/positivecolid/dcaxy", "DCA_{xy} Reconstructed", kTH1F, {{1000, -4.0, 4.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/dcaz", "DCA_{z} Reconstructed", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
+    histos.add("before/positivecolid/finedcaxy", "DCA_{xy} Reconstructed", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/finedcaz", "DCA_{z} Reconstructed", kTH1F, {{2000, -1.0, 1.0, "DCA_{z} (cm)"}});
+    histos.add("before/positivecolid/dcaxymr", "DCA_{xy} Reconstructed (mr)", kTH1F, {{1000, -4.0, 4.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/dcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
+    histos.add("before/positivecolid/finedcaxymr", "DCA_{xy} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/finedcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{z} (cm)"}});
     for (int i = 0; i < detectorlbls.size(); ++i) {
       histos.get<TH1>(HIST("before/positivecolid/detectormap"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
       histos.get<TH1>(HIST("before/positivecolid/detectormapmr"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
@@ -1743,6 +1805,14 @@ struct CheckGeneratorLevelVsDetectorLevel {
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomrphi"), track1.phi());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomrpt"), track1.pt());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("detectormapmr"), track1.detectorMap());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaxymr"), track1.dcaXY());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcazmr"), track1.dcaZ());
+          if (track1.dcaXY() < 1.0) {
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaxymr"), track1.dcaXY());
+          }
+          if (track1.dcaZ() < 1.0) {
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcazmr"), track1.dcaZ());
+          }
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomreta"), track1.eta(), particle.eta());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrphi"), track1.phi(), particle.phi());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrpt"), track1.pt(), particle.pt());
@@ -1753,6 +1823,14 @@ struct CheckGeneratorLevelVsDetectorLevel {
         histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecophi"), track.phi(), particle.phi());
         histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecopt"), track.pt(), particle.pt());
         histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("detectormap"), track.detectorMap());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaxy"), track.dcaXY());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaz"), track.dcaZ());
+        if (track.dcaXY() < 1.0) {
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaxy"), track.dcaXY());
+        }
+        if (track.dcaZ() < 1.0) {
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
+        }
       }
     }
 
@@ -1765,7 +1843,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
   }
 
-  void processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
     using namespace recogenmap;
 
