@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(task-d0-ALICE3-Barrel-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-lc-ALICE3-mc
+                    SOURCES taskLcALICE3.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)		  
+
 o2physics_add_dpl_workflow(task-d0-ALICE3-Forward-mc
                     SOURCES taskD0ALICE3Forward.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
