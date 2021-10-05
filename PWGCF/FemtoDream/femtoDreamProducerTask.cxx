@@ -39,6 +39,7 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
+
 using FilteredFullCollision = soa::Filtered<soa::Join<aod::Collisions,
                                                       aod::EvSels,
                                                       aod::Mults>>::iterator;
@@ -48,7 +49,7 @@ using FilteredFullTracks = soa::Join<aod::FullTracks,
                                      aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                      aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                      aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
-using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
+//using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
 } // namespace o2::aod
 
 /// \todo fix how to pass array to setSelection, getRow() passing a different type!
@@ -77,6 +78,10 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
+  // Choose if filtering or skimming version is run
+
+  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
+
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -84,7 +89,7 @@ struct femtoDreamProducerTask {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
-  Filter colFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
+  Filter colFilter = (ConfIsTrigger == (uint8_t) true) || (nabs(aod::collision::posZ) < ConfEvtZvtx);
 
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
@@ -120,9 +125,9 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfV0DaughPIDnSigmaMax{"ConfV0DaughPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Daugh sel: Max. PID nSigma TPC"};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
-  Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
+  /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
                     (nabs(aod::v0data::y) < V0DecVtxMax.value) &&
-                    (nabs(aod::v0data::z) < V0DecVtxMax.value);
+                    (nabs(aod::v0data::z) < V0DecVtxMax.value);*/
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working for now do not know why
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
@@ -171,7 +176,13 @@ struct femtoDreamProducerTask {
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
+    // If the basic selection is NOT fullfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks));
+      }
       return;
     }
     const auto vtxZ = col.posZ();
@@ -221,6 +232,7 @@ struct femtoDreamProducerTask {
       }
       v0Cuts.fillQA<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
       auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, v0, postrack, negtrack);
+
       if ((cutContainerV0.at(0) > 0) && (cutContainerV0.at(1) > 0) && (cutContainerV0.at(3) > 0)) {
         int postrackID = v0.posTrackId();
         int rowInPrimaryTrackTablePos = -1;
