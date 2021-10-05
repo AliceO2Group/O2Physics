@@ -15,7 +15,7 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
-#include <iostream>
+//#include <iostream>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
@@ -254,7 +254,7 @@ struct HFLcCandidateSelectorALICE3 {
         selectKaonTOFplusRICH = true;
       if ((momentumNegTrack > 2.0 && trackNeg.has_rich() && std::sqrt(nsigmaRICHNegKaon * nsigmaRICHNegKaon + nsigmaTOFNegKaon * nsigmaTOFNegKaon) < 3.0))
         selectKaonTOFplusRICH = true;
-      std::cout << pdgPositive1 << "\t" << pdgPositive2 << "\t" << pdgNegative << "\n";
+      //std::cout << pdgPositive1 << "\t" << pdgPositive2 << "\t" << pdgNegative << "\n";
       if (topolLcpKpi) {
         statusLcNoPID = 1;
         if (pdgPositive1 == 2212 && pdgPositive2 == 211 && pdgNegative == -321)
