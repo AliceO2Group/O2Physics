@@ -19,6 +19,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+//#include "Common/DataModel/Centrality.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,16 +54,26 @@ struct TaskD0ALICE3BarrelMC {
      {"hMassSigBkgD0TOFplusRICHPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0TOFplusRICHPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0TOFplusRICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassSigBkgD0barTOFplusRICHPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hMassSigD0barTOFplusRICHPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
+     {"hMassBkgD0barTOFplusRICHPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassSigBkgD0PerfectPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0PerfectPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0PerfectPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}}}};
 
+  //Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
+  //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
+
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelHFFlag >= 1);
 
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  //void process(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
+    //float centrality = collision.centV0M();
     for (auto& candidate : candidates) {
+      //if (centrality<=centralitySelectionMin && centrality>centralitySelectionMax) {
+      //continue;
+      //}
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -104,6 +115,7 @@ struct TaskD0ALICE3BarrelMC {
           registry.fill(HIST("hMassBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
         }
       }
+
       if (candidate.isSelD0TOFplusRICHPID() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TOFplusRICHPID"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {
@@ -112,6 +124,16 @@ struct TaskD0ALICE3BarrelMC {
           registry.fill(HIST("hMassBkgD0TOFplusRICHPID"), massD0, ptCandidate, rapidityCandidate);
         }
       }
+
+      if (candidate.isSelD0barTOFplusRICHPID() >= 1) {
+        registry.fill(HIST("hMassSigBkgD0barTOFplusRICHPID"), massD0bar, ptCandidate, rapidityCandidate);
+        if (candidate.flagMCMatchRec() == -(1 << DecayType::D0ToPiK)) {
+          registry.fill(HIST("hMassSigD0barTOFplusRICHPID"), massD0bar, ptCandidate, rapidityCandidate);
+        } else {
+          registry.fill(HIST("hMassBkgD0barTOFplusRICHPID"), massD0bar, ptCandidate, rapidityCandidate);
+        }
+      }
+
       if (candidate.isSelD0PerfectPID() >= 1) {
         registry.fill(HIST("hMassSigBkgD0PerfectPID"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMCMatchRec() == (1 << DecayType::D0ToPiK)) {

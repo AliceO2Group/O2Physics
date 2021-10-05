@@ -39,6 +39,7 @@ DECLARE_SOA_COLUMN(IsSelD0PerfectPID, isSelD0PerfectPID, int);         //!
 DECLARE_SOA_COLUMN(IsSelD0TOFPID, isSelD0TOFPID, int);                 //!
 DECLARE_SOA_COLUMN(IsSelD0RICHPID, isSelD0RICHPID, int);               //!
 DECLARE_SOA_COLUMN(IsSelD0TOFplusRICHPID, isSelD0TOFplusRICHPID, int); //!
+DECLARE_SOA_COLUMN(IsSelD0barTOFplusRICHPID, isSelD0barTOFplusRICHPID, int); //!
 } // namespace hf_selcandidate_d0_ALICE3_Barrel
 DECLARE_SOA_TABLE(HFSelD0CandidateALICE3Barrel, "AOD", "HFSELD0CANDA3B", //!
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelHFFlag,
@@ -46,7 +47,8 @@ DECLARE_SOA_TABLE(HFSelD0CandidateALICE3Barrel, "AOD", "HFSELD0CANDA3B", //!
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0PerfectPID,
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0TOFPID,
                   hf_selcandidate_d0_ALICE3_Barrel::IsSelD0RICHPID,
-                  hf_selcandidate_d0_ALICE3_Barrel::IsSelD0TOFplusRICHPID);
+                  hf_selcandidate_d0_ALICE3_Barrel::IsSelD0TOFplusRICHPID,
+                  hf_selcandidate_d0_ALICE3_Barrel::IsSelD0barTOFplusRICHPID);
 
 namespace hf_selcandidate_d0_ALICE3_Forward
 {
@@ -73,6 +75,23 @@ DECLARE_SOA_COLUMN(IsSelLcpiKp, isSelLcpiKp, int); //!
 } // namespace hf_selcandidate_lc
 DECLARE_SOA_TABLE(HFSelLcCandidate, "AOD", "HFSELLCCAND", //!
                   hf_selcandidate_lc::IsSelLcpKpi, hf_selcandidate_lc::IsSelLcpiKp);
+
+namespace hf_selcandidate_lc_ALICE3
+{
+DECLARE_SOA_COLUMN(IsSelHFFlag, isSelHFFlag, int);                     //!
+DECLARE_SOA_COLUMN(IsSelLcNoPID, isSelLcNoPID, int);                   //!
+DECLARE_SOA_COLUMN(IsSelLcPerfectPID, isSelLcPerfectPID, int);         //!
+DECLARE_SOA_COLUMN(IsSelLcTOFPID, isSelLcTOFPID, int);                 //!
+DECLARE_SOA_COLUMN(IsSelLcRICHPID, isSelLcRICHPID, int);               //!
+DECLARE_SOA_COLUMN(IsSelLcTOFplusRICHPID, isSelLcTOFplusRICHPID, int); //!
+} // namespace hf_selcandidate_lc_ALICE3
+DECLARE_SOA_TABLE(HFSelLcCandidateALICE3, "AOD", "HFSELLCCANDA3B", //!
+                  hf_selcandidate_lc_ALICE3::IsSelHFFlag,
+                  hf_selcandidate_lc_ALICE3::IsSelLcNoPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPerfectPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcTOFPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcRICHPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcTOFplusRICHPID);
 
 namespace hf_selcandidate_jpsi
 {
