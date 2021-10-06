@@ -78,20 +78,24 @@ DECLARE_SOA_TABLE(HFSelLcCandidate, "AOD", "HFSELLCCAND", //!
 
 namespace hf_selcandidate_lc_ALICE3
 {
-DECLARE_SOA_COLUMN(IsSelHFFlag, isSelHFFlag, int);                     //!
-DECLARE_SOA_COLUMN(IsSelLcNoPID, isSelLcNoPID, int);                   //!
-DECLARE_SOA_COLUMN(IsSelLcPerfectPID, isSelLcPerfectPID, int);         //!
-DECLARE_SOA_COLUMN(IsSelLcTOFPID, isSelLcTOFPID, int);                 //!
-DECLARE_SOA_COLUMN(IsSelLcRICHPID, isSelLcRICHPID, int);               //!
-DECLARE_SOA_COLUMN(IsSelLcTOFplusRICHPID, isSelLcTOFplusRICHPID, int); //!
+DECLARE_SOA_COLUMN(IsSelLcPKPiNoPID, isSelLcPKPiNoPID, int);                   //!
+DECLARE_SOA_COLUMN(IsSelLcPKPiPerfectPID, isSelLcPKPiPerfectPID, int);         //!
+DECLARE_SOA_COLUMN(IsSelLcPKPiTOFPID, isSelLcPKPiTOFPID, int);                 //!
+DECLARE_SOA_COLUMN(IsSelLcPKPiTOFplusRICHPID, isSelLcPKPiTOFplusRICHPID, int); //!
+DECLARE_SOA_COLUMN(IsSelLcPiKPNoPID, isSelLcPiKPNoPID, int);                   //!
+DECLARE_SOA_COLUMN(IsSelLcPiKPPerfectPID, isSelLcPiKPPerfectPID, int);         //!
+DECLARE_SOA_COLUMN(IsSelLcPiKPTOFPID, isSelLcPiKPTOFPID, int);                 //!
+DECLARE_SOA_COLUMN(IsSelLcPiKPTOFplusRICHPID, isSelLcPiKPTOFplusRICHPID, int); //!
 } // namespace hf_selcandidate_lc_ALICE3
 DECLARE_SOA_TABLE(HFSelLcCandidateALICE3, "AOD", "HFSELLCCANDA3B", //!
-                  hf_selcandidate_lc_ALICE3::IsSelHFFlag,
-                  hf_selcandidate_lc_ALICE3::IsSelLcNoPID,
-                  hf_selcandidate_lc_ALICE3::IsSelLcPerfectPID,
-                  hf_selcandidate_lc_ALICE3::IsSelLcTOFPID,
-                  hf_selcandidate_lc_ALICE3::IsSelLcRICHPID,
-                  hf_selcandidate_lc_ALICE3::IsSelLcTOFplusRICHPID);
+                  hf_selcandidate_lc_ALICE3::IsSelLcPKPiNoPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPKPiPerfectPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPKPiTOFPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPKPiTOFplusRICHPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPiKPNoPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPiKPPerfectPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPiKPTOFPID,
+                  hf_selcandidate_lc_ALICE3::IsSelLcPiKPTOFplusRICHPID);
 
 namespace hf_selcandidate_jpsi
 {
