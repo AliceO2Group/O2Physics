@@ -39,6 +39,8 @@ A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 504 - neutral open beauty mesons w/o s-quark     510-519
 505 - charged open beauty mesons                 520-529
 506 - charged open beauty mesons with s-quark    530-539
+900 - LF mesons + Quarkonia for LMEE             111, 221, 331, 113, 223, 333, 443, 100443
+901 - LF mesons             for LMEE             111, 221, 331, 113, 223, 333
 902 - all open charm open beauty mesons+baryons  400-439, 500-549, 4000-4399, 5000-5499
 903 - all hadrons in the code range              100-599, 1000-5999
 1000 - light unflavoured baryons in the code range 1000-1999
