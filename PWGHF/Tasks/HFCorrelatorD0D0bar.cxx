@@ -79,7 +79,7 @@ struct HfCorrelatorD0D0bar {
      {"hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{32, 0., 2. * o2::constants::math::PI}}}},
      {"hY", "D0,D0bar candidates;candidate #it{#y};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
      {"hCentralityPreSelection", "centrality prior to selection;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
-     {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}},
+     {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
      {"hDDbarVsEtaCut", "D0,D0bar pairs vs #eta cut;#eta_{max};entries", {HistType::kTH2F, {{(int)(maxEtaCut / incrementEtaCut), 0., maxEtaCut}, {(int)(ptThresholdForMaxEtaCut / incrementPtThreshold), 0., ptThresholdForMaxEtaCut}}}}}};
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -212,7 +212,7 @@ struct HfCorrelatorD0D0barMcRec {
      {"hPhiMCRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{32, 0., 2. * o2::constants::math::PI}}}},
      {"hYMCRec", "D0,D0bar candidates - MC reco;candidate #it{#y};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
      {"hCentralityPreSelectionMCRec", "centrality prior to selection;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
-     {"hCentralityMCRec", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}},
+     {"hCentralityMCRec", "centrality;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
      {"hDDbarVsEtaCut", "D0,D0bar pairs vs #eta cut;#eta_{max};entries", {HistType::kTH2F, {{(int)(maxEtaCut / incrementEtaCut), 0., maxEtaCut}, {(int)(ptThresholdForMaxEtaCut / incrementPtThreshold), 0., ptThresholdForMaxEtaCut}}}}}};
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
