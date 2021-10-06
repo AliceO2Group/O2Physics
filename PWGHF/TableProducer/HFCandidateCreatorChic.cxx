@@ -75,10 +75,10 @@ struct HFCandidateCreatorChic {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
-                aod::HfCandProng2,
+                 aod::HfCandProng2,
                  aod::HFSelJpsiCandidate>> const& jpsiCands,
                aod::BigTracks const& tracks,
-               aod::ECALs const &ecals)
+               aod::ECALs const& ecals)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
     o2::vertexing::DCAFitterN<2> df2;
@@ -128,19 +128,19 @@ struct HFCandidateCreatorChic {
       // -----------------------------------------------------------------
       // loop over gamma candidates
 
-      for (auto& ecal : ecals) { 
+      for (auto& ecal : ecals) {
 
         if (ecal.e() < eneGammaMin) {
           continue;
         }
 
-        auto thetagamma = TMath::ACos(ecal.pz()/TMath::Sqrt(ecal.px() * ecal.px() + ecal.py() * ecal.py() + ecal.pz() * ecal.pz() ));
-        auto etagamma = -TMath::Log(TMath::Tan(thetagamma/2.));
-        if (etagamma < etaGammaMin || etagamma > etaGammaMax ) { // calcolare la pseudorapidità da posz
+        auto thetagamma = TMath::ACos(ecal.pz() / TMath::Sqrt(ecal.px() * ecal.px() + ecal.py() * ecal.py() + ecal.pz() * ecal.pz()));
+        auto etagamma = -TMath::Log(TMath::Tan(thetagamma / 2.));
+        if (etagamma < etaGammaMin || etagamma > etaGammaMax) { // calcolare la pseudorapidità da posz
           continue;
         }
 
-        array<float, 3> pvecGamma {ecal.px(), ecal.py(), ecal.pz()};
+        array<float, 3> pvecGamma{ecal.px(), ecal.py(), ecal.pz()};
 
         // get track impact parameters
         // This modifies track momenta!
@@ -170,11 +170,11 @@ struct HFCandidateCreatorChic {
         rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
                          0.f, 0.f, 0.f, //    ChicsecondaryVertex[0], ChicsecondaryVertex[1], ChicsecondaryVertex[2],
-                         0.f, 0.f,    // errorDecayLength, errorDecayLengthXY,
-                         0.f, //chi2PCA,
+                         0.f, 0.f,      // errorDecayLength, errorDecayLengthXY,
+                         0.f,           //chi2PCA,
                          pvecJpsi[0], pvecJpsi[1], pvecJpsi[2],
                          pvecGamma[0], pvecGamma[1], pvecGamma[2],
-                         impactParameter0.getY(), 0.f, // impactParameter1.getY(),
+                         impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
                          std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
                          jpsiCand.globalIndex(), ecal.globalIndex(),
                          hfFlag);
@@ -185,13 +185,13 @@ struct HFCandidateCreatorChic {
         if (jpsiCand.isSelJpsiToEE() > 0) {
           hMassChicToJpsiToEEGamma->Fill(massJpsiGamma);
         }
-          if (jpsiCand.isSelJpsiToMuMu() > 0) {
-            hMassChicToJpsiToMuMuGamma->Fill(massJpsiGamma);
-          }
+        if (jpsiCand.isSelJpsiToMuMu() > 0) {
+          hMassChicToJpsiToMuMuGamma->Fill(massJpsiGamma);
+        }
       } // ecal loop
-    } // Jpsi loop
-  }   // process
-};    // struct
+    }   // Jpsi loop
+  }     // process
+};      // struct
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreatorChicExpressions {
@@ -208,7 +208,7 @@ struct HFCandidateCreatorChicMC {
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC,
-               aod::ECALs const & ecals)
+               aod::ECALs const& ecals)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -226,7 +226,7 @@ struct HFCandidateCreatorChicMC {
       auto jpsiTrack = candidate.index0();
       auto daughterPosJpsi = jpsiTrack.index0_as<aod::BigTracksMC>();
       auto daughterNegJpsi = jpsiTrack.index1_as<aod::BigTracksMC>();
-      auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};     
+      auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
 
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
@@ -252,7 +252,7 @@ struct HFCandidateCreatorChicMC {
           continue;
         }
         // Get the list of actual final daughters.
-        std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
+        std::vector<int> arrAllDaughtersIndex;                                                          // vector of indices of all daughters of the mother of the first provided daughter
         RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1); //
 
         if (arrAllDaughtersIndex.size() != 2) {
@@ -260,13 +260,13 @@ struct HFCandidateCreatorChicMC {
           continue;
         }
 
-        indexRec = indexMother; 
+        indexRec = indexMother;
         if (indexRec > -1) {
           flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
         }
       }
 
-      if (flag == 0) { 
+      if (flag == 0) {
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), 20443);
@@ -290,7 +290,7 @@ struct HFCandidateCreatorChicMC {
             continue;
           }
           // Get the list of actual final daughters.
-          std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
+          std::vector<int> arrAllDaughtersIndex;                                                          // vector of indices of all daughters of the mother of the first provided daughter
           RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1); //
 
           if (arrAllDaughtersIndex.size() != 2) {
@@ -298,7 +298,7 @@ struct HFCandidateCreatorChicMC {
             continue;
           }
 
-          indexRec = indexMother; 
+          indexRec = indexMother;
           if (indexRec > -1) {
             flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
           }
@@ -322,7 +322,7 @@ struct HFCandidateCreatorChicMC {
       channel = 0;
 
       // chi_c → J/ψ gamma
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, 20443, array{443, 22}, true)) { 
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, 20443, array{443, 22}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{443}, 1);
