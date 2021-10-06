@@ -177,7 +177,7 @@ struct TaskDPlusMC {
           registry.fill(HIST("hPtvsYRecSig_RecoPID"), ptRec, yRec);
         }
         if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
-          registry.fill(HIST("hPtRecSig"), ptRec);  // rec. level pT
+          registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         }
         if (candidate.originMCRec() == OriginType::Prompt) {
           registry.fill(HIST("hPtvsYRecSigPrompt_RecoSkim"), ptRec, yRec);
@@ -199,7 +199,7 @@ struct TaskDPlusMC {
             registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoPID"), ptRec, yRec);
           }
           if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
-            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec);  // rec. level pT, non-prompt
+            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
           }
         }
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
