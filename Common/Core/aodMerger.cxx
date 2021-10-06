@@ -66,6 +66,7 @@ int main(int argc, char* argv[])
 
   std::map<std::string, TTree*> trees;
   std::map<std::string, int> offsets;
+  std::map<std::string, int> unassignedIndexOffset;
 
   auto outputFile = TFile::Open(outputFileName.c_str(), "RECREATE", "", 501);
   TDirectory* outputDir = nullptr;
@@ -179,14 +180,29 @@ int main(int argc, char* argv[])
             }
           }
 
+          // on the first appending pass we need to find out the most negative index in the existing output
+          // to correctly continue negative index assignment
+          if (mergedDFs == 2) {
+            auto outentries = outputTree->GetEntries();
+            int minIndex = -1;
+            for (int i = 0; i < outentries; ++i) {
+              outputTree->GetEntry(i);
+              for (const auto& idx : indexList) {
+                minIndex = std::min(*(idx.first), minIndex);
+              }
+            }
+            unassignedIndexOffset[treeName] = minIndex;
+          }
+
           auto entries = inputTree->GetEntries();
+          int minIndexOffset = unassignedIndexOffset[treeName];
           for (int i = 0; i < entries; i++) {
             inputTree->GetEntry(i);
             // shift index columns by offset
             for (const auto& idx : indexList) {
               // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
               if (*(idx.first) < 0) {
-                *(idx.first) = -mergedDFs;
+                *(idx.first) += minIndexOffset;
               } else {
                 *(idx.first) += idx.second;
               }
@@ -196,6 +212,7 @@ int main(int argc, char* argv[])
               currentDirSize += nbytes;
             }
           }
+          unassignedIndexOffset[treeName] -= 1;
 
           for (const auto& idx : indexList) {
             delete idx.first;
