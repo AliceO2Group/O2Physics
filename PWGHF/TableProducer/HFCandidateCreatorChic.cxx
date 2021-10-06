@@ -230,87 +230,8 @@ struct HFCandidateCreatorChicMC {
 
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
-      if (indexRec > -1) {
-        int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), 20443);
-        // Check whether mother was found.
-        if (indexMother <= -1) {
-          //Printf("MC Rec: Rejected: bad mother index or PDG");
-          continue;
-        }
-        //Printf("MC Rec: Good mother: %d", indexMother);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
-        int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
-        int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
-        // Check the daughter indices.
-        if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
-          continue;
-        }
-        // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > 2) {
-          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
-          continue;
-        }
-        // Get the list of actual final daughters.
-        std::vector<int> arrAllDaughtersIndex;                                                          // vector of indices of all daughters of the mother of the first provided daughter
-        RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1); //
-
-        if (arrAllDaughtersIndex.size() != 2) {
-          //Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
-          continue;
-        }
-
-        indexRec = indexMother;
-        if (indexRec > -1) {
-          flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
-        }
-      }
-
-      if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
-        if (indexRec > -1) {
-          int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), 20443);
-          // Check whether mother was found.
-          if (indexMother <= -1) {
-            //Printf("MC Rec: Rejected: bad mother index or PDG");
-            continue;
-          }
-          //Printf("MC Rec: Good mother: %d", indexMother);
-          auto particleMother = particlesMC.iteratorAt(indexMother);
-          int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
-          int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
-          // Check the daughter indices.
-          if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-            //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
-            continue;
-          }
-          // Check that the number of direct daughters is not larger than the number of expected final daughters.
-          if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > 2) {
-            //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
-            continue;
-          }
-          // Get the list of actual final daughters.
-          std::vector<int> arrAllDaughtersIndex;                                                          // vector of indices of all daughters of the mother of the first provided daughter
-          RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1); //
-
-          if (arrAllDaughtersIndex.size() != 2) {
-            //Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
-            continue;
-          }
-
-          indexRec = indexMother;
-          if (indexRec > -1) {
-            flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
-          }
-        }
-      }
-
-      // Check whether the particle is non-prompt (from a b quark).
-      if (flag != 0) {
-        auto particle = particlesMC.iteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
-      }
-
+      auto photon = candidate.index1();
+      double test=photon.px();
       rowMCMatchRec(flag, origin, channel);
     }
 
