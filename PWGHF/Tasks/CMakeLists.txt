@@ -69,7 +69,7 @@ o2physics_add_dpl_workflow(task-x
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hf-task-chic
+o2physics_add_dpl_workflow(task-chic
                     SOURCES taskChic.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)

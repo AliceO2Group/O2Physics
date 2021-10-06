@@ -22,10 +22,10 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_prong3;
 using namespace o2::aod::hf_cand_chic;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
@@ -48,6 +48,7 @@ struct TaskChic {
 
   Configurable<int> d_selectionFlagChic{"d_selectionFlagChic", 1, "Selection Flag for Chic"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -64,12 +65,13 @@ struct TaskChic {
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiGamma >= d_selectionFlagChic);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= d_selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= d_selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate>> const& candidates)
   {
+   int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
     for (auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << ChicToJpsiGamma)) {
+      if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YChic(candidate)) > cutYCandMax) {
@@ -104,6 +106,7 @@ struct TaskChicMC {
 
   Configurable<int> d_selectionFlagChic{"d_selectionFlagChic", 1, "Selection Flag for Chic"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", false, "Perform Jpsi to mu+mu- analysis"}; 
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -138,21 +141,22 @@ struct TaskChicMC {
     registry.add("hYBg", "2-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiGamma >= d_selectionFlagChic);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= d_selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= d_selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate, aod::HfCandChicMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
+    int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
     for (auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << ChicToJpsiGamma)) {
+      if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YChic(candidate)) > cutYCandMax) {
         continue;
       }
-      if (candidate.flagMCMatchRec() == 1 << ChicToJpsiGamma) {
+      if (candidate.flagMCMatchRec() == 1 << decayMode) {
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandChicMCGen>>(), 20443, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
@@ -188,7 +192,7 @@ struct TaskChicMC {
     // MC gen.
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
-      if (particle.flagMCMatchGen() == 1 << ChicToJpsiGamma) {
+      if (particle.flagMCMatchGen() == 1 << decayMode) {
         auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
         if (cutYCandMax >= 0. && std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > cutYCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
