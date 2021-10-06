@@ -74,12 +74,15 @@ struct tofPidQaBeta {
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.1f, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 5.f, "Maximum momentum in range"};
+  Configurable<int> nBinsBeta{"nBinsBeta", 4000, "Number of bins for the beta"};
+  Configurable<float> minBeta{"minBeta", 0, "Minimum beta in range"};
+  Configurable<float> maxBeta{"maxBeta", 2.f, "Maximum beta in range"};
 
   void init(o2::framework::InitContext&)
   {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
-    const AxisSpec betaAxis{1000, 0, 2, "TOF #beta"};
+    const AxisSpec betaAxis{nBinsBeta, minBeta, maxBeta, "TOF #beta"};
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
