@@ -16,10 +16,10 @@ namespace o2::aod
 {
 // selection steps
 enum SelectionStep {
-    RecoSkims = 0,
-    RecoTopol,
-    RecoPID,
-    NSelectionSteps
+  RecoSkims = 0,
+  RecoTopol,
+  RecoPID,
+  NSelectionSteps
 };
 
 namespace hf_selcandidate_d0
