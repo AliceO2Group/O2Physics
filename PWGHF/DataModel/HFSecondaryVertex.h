@@ -803,7 +803,64 @@ auto InvMassXToJpsiPiPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
+template <typename T>
+auto QX(const T& candidate)
+{
+  array<float, 3> piVec0;
+  array<float, 3> piVec1;
 
+  piVec0[0] = candidate.pxProng1();
+  piVec0[1] = candidate.pyProng1();
+  piVec0[2] = candidate.pzProng1();
+
+  piVec1[0] = candidate.pxProng2();
+  piVec1[1] = candidate.pyProng2();
+  piVec1[2] = candidate.pzProng2();
+
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+
+  auto arrayMomenta = array{piVec0, piVec1};
+  double massPiPi = RecoDecay::M(arrayMomenta, array{massPi, massPi});
+
+  // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
+  double massMuMu = RecoDecay::getMassPDG(o2::analysis::pdg::kJpsi);
+
+  double massMuMuPiPi = InvMassXToJpsiPiPi(candidate);
+  //printf("mass MuMuPiPi = %f, mass MuMu = %f, mass PiPi = %f\n", massMuMuPiPi, massMuMu, massPiPi);
+  return std::abs(massMuMuPiPi - massMuMu - massPiPi);
+}
+template <typename T>
+auto DRX(const T& candidate, int numPi)
+{
+  double etaJpsi = RecoDecay::Eta(array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
+  double phiJpsi = RecoDecay::Phi(candidate.pxProng0(), candidate.pyProng0());
+
+  double etaPi, phiPi;
+
+  if (numPi <= 1) {
+    etaPi = RecoDecay::Eta(array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
+    phiPi = RecoDecay::Phi(candidate.pxProng1(), candidate.pyProng1());
+  } else {
+    etaPi = RecoDecay::Eta(array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
+    phiPi = RecoDecay::Phi(candidate.pxProng2(), candidate.pyProng2());
+  }
+
+  double deltaEta = etaJpsi - etaPi;
+  double deltaPhi = std::abs(phiJpsi - phiPi);
+  if (deltaPhi > M_PI) {
+    deltaPhi = 2 * M_PI - deltaPhi;
+  }
+
+  double deltaR = std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+  return deltaR;
+}
+template <typename T>
+auto PiBalanceX(const T& candidate)
+{
+  double ptPi1 = RecoDecay::Pt(candidate.pxProng1(), candidate.pyProng1());
+  double ptPi2 = RecoDecay::Pt(candidate.pxProng2(), candidate.pyProng2());
+  return std::abs(ptPi1 - ptPi2) / (ptPi1 + ptPi2);
+}
 // declare dedicated X candidate table
 DECLARE_SOA_TABLE(HfCandXBase, "AOD", "HFCANDXBASE",
                   // general columns
