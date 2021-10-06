@@ -111,6 +111,7 @@ class FemtoDreamCutculator
 
     /// If the input is sane, the selection bit is put together
     if (inputSane) {
+      int internal_index = 0;
       for (auto sel : selVec) {
         double signOffset;
         switch (sel.getSelectionType()) {
@@ -130,8 +131,12 @@ class FemtoDreamCutculator
         /// for upper and lower limit we have to substract/add an epsilon so that the cut is actually fulfilled
         if (sel.isSelected(input + signOffset * 1.e-6 * input)) {
           output |= 1UL << counter;
+          for (int i = internal_index; i > 0; i--) {
+            output &= ~(1UL << (counter - i));
+          }
         }
         ++counter;
+        ++internal_index;
       }
     } else {
       std::cout << "Choice " << in << " not recognized - repeating\n";
