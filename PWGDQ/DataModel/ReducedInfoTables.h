@@ -222,7 +222,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
-DECLARE_SOA_COLUMN(RawPhi, rawPhi, float); //!
+DECLARE_SOA_COLUMN(RawPhi, rawPhi, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh1, midBoardCh1, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>(midBoards & 0xFF); });
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh2, midBoardCh2, //!
