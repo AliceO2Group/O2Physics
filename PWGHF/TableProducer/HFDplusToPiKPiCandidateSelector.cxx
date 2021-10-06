@@ -120,17 +120,13 @@ struct HFDplusToPiKPiCandidateSelector {
     for (auto& candidate : candidates) {
 
       // final selection flag:
-      // 0 - rejected
-      // BIT(0) - bit for D+ candidate
-      // BIT(1) - selected by topological cuts
-      // BIT(2) - selected by PID cuts
       auto statusDplusToPiKPi = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }
-      SETBIT(statusDplusToPiKPi, 0);
+      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoSkims);
 
       auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
@@ -151,7 +147,7 @@ struct HFDplusToPiKPiCandidateSelector {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }
-      SETBIT(statusDplusToPiKPi, 1);
+      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoTopol);
 
       // track-level PID selection
       int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
@@ -164,7 +160,7 @@ struct HFDplusToPiKPiCandidateSelector {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         continue;
       }
-      SETBIT(statusDplusToPiKPi, 2);
+      SETBIT(statusDplusToPiKPi, aod::SelectionStep::RecoPID);
 
       hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
     }
