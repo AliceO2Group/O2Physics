@@ -18,6 +18,7 @@
 #ifndef O2_ANALYSIS_HFSECONDARYVERTEX_H_
 #define O2_ANALYSIS_HFSECONDARYVERTEX_H_
 
+#include "ALICE3/DataModel/ECAL.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
@@ -998,6 +999,7 @@ DECLARE_SOA_TABLE(HfCandXiccMCGen, "AOD", "HFCANDXICCMCGEN", //!
 namespace hf_cand_chic
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // Jpsi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ECALs, "_1");
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t);         // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t);         // generator level
@@ -1019,7 +1021,7 @@ DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_chic::Index0Id, hf_track_index::Index1Id,
+                  hf_cand_chic::Index0Id, hf_cand_chic::Index1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
