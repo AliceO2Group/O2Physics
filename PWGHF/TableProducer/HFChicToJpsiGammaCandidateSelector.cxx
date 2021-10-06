@@ -24,7 +24,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand_chic; 
+using namespace o2::aod::hf_cand_chic;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
 
@@ -89,8 +89,8 @@ struct HFChicToJpsiGammaCandidateSelector {
     //   return false; //cut on daughter pT
     // }
 
-    if (hfCandChic.cpa() < cuts->get(pTBin, "CPA")) { 
-      return false;                                   // CPA check
+    if (hfCandChic.cpa() < cuts->get(pTBin, "CPA")) {
+      return false; // CPA check
     }
 
     if ((TMath::Abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
@@ -140,8 +140,8 @@ struct HFChicToJpsiGammaCandidateSelector {
     if (nSigmaCut > 999.) {
       return true;
     }
-//    return track.tpcNSigmaPi() < nSigmaCut;
-    return true; 
+    //    return track.tpcNSigmaPi() < nSigmaCut;
+    return true;
   }
 
   // Check if track is compatible with given TOF NSigma cut for the pion hypothesis
@@ -154,8 +154,8 @@ struct HFChicToJpsiGammaCandidateSelector {
     if (nSigmaCut > 999.) {
       return true;
     }
-//    return track.tofNSigmaPi() < nSigmaCut;
-    return true; 
+    //    return track.tofNSigmaPi() < nSigmaCut;
+    return true;
   }
 
   // PID selection on daughter track
@@ -173,28 +173,28 @@ struct HFChicToJpsiGammaCandidateSelector {
     // } else {
     //   return -1; //no PID info
 
-    return true; 
+    return true;
   }
 
   //---------------------------------------------------------------
 
-  void process(aod::HfCandChic const& hfCandChics, aod::HfCandProng2, aod::BigTracksPID const& tracks, aod::ECALs const &ecals)
+  void process(aod::HfCandChic const& hfCandChics, aod::HfCandProng2, aod::BigTracksPID const& tracks, aod::ECALs const& ecals)
   {
     for (auto& hfCandChic : hfCandChics) { //looping over chi_c candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandChic.index0();
-      auto gamma = hfCandChic.index1_as<aod::ECALs>(); 
+      auto gamma = hfCandChic.index1_as<aod::ECALs>();
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;
 
       // check if flagged as chic --> Jpsi gamma
       if (!(hfCandChic.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma)) {
-        selJpsiToEE = 0; 
+        selJpsiToEE = 0;
       }
 
       if (!(hfCandChic.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma)) {
-        selJpsiToMuMu = 0; 
+        selJpsiToMuMu = 0;
       }
 
       if (selJpsiToEE == 0 && selJpsiToMuMu == 0) {
