@@ -47,7 +47,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == Track) &&
-                                                 //  (aod::femtodreamparticle::cut == ConfCutPartOne) && // not working, need for bit-mask
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) && // not working, need for bit-mask
                                                  (aod::femtodreamparticle::pt > ConfPtMinPartOne) &&
                                                  (aod::femtodreamparticle::pt < ConfPtMaxPartOne) &&
                                                  (nabs(aod::femtodreamparticle::tempFitVar) < ConfDCAxyMaxPartOne) &&
@@ -70,7 +70,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == Track) &&
-                                                 //  (aod::femtodreamparticle::cut == ConfCutPartTwo) && // not working, need for bit-mask
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) && // not working, need for bit-mask
                                                  (aod::femtodreamparticle::pt > ConfPtMinPartTwo) &&
                                                  (aod::femtodreamparticle::pt < ConfPtMaxPartTwo) &&
                                                  (nabs(aod::femtodreamparticle::tempFitVar) < ConfDCAxyMaxPartTwo) &&
