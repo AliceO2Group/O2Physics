@@ -1006,7 +1006,8 @@ DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
 // mapping of decay types
-enum DecayType { ChicToJpsiGamma = 0 }; // move this to a dedicated cascade namespace in the future?
+enum DecayType { ChicToJpsiToEEGamma = 0,
+                 ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_chic
 
 // declare dedicated chi_c candidate table
