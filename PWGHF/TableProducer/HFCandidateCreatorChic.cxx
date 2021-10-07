@@ -203,7 +203,7 @@ struct HFCandidateCreatorChicExpressions {
 struct HFCandidateCreatorChicMC {
   Produces<aod::HfCandChicMCRec> rowMCMatchRec;
   Produces<aod::HfCandChicMCGen> rowMCMatchGen;
-
+  OutputObj<TH1F> hMassChicToJpsiToMuMuGammaMatched{TH1F("hMassChicToJpsiToMuMuGammaMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   void process(aod::HfCandChic const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
@@ -243,7 +243,9 @@ struct HFCandidateCreatorChicMC {
           //    std::vector<int> arrAllDaughtersIndex;  
           //    RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1);
 	  //    if (arrAllDaughtersIndex.size() == 2){
-                flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+	        flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+		std::cout<<"FLAG="<<flag<<std::endl;
+                hMassChicToJpsiToMuMuGammaMatched->Fill(InvMassChicToJpsiGamma(candidate));
 	 //     }
 	 //   }
 	 // }
