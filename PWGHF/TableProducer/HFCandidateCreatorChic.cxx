@@ -227,21 +227,31 @@ struct HFCandidateCreatorChicMC {
       auto daughterPosJpsi = jpsiTrack.index0_as<aod::BigTracksMC>();
       auto daughterNegJpsi = jpsiTrack.index1_as<aod::BigTracksMC>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
-      //auto arrayDaughters = array{candidate.index1(),
-      //                            daughterPosJpsi,
-      //                            daughterNegJpsi};
 
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
-      //if (indexRec > -1) {
-      //  indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 20443, array{22, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
-      //  if (indexRec > -1) {
-      //    flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
-      //  }
-      //}
-      auto photon = candidate.index1();
-      auto photonmc = particlesMC.iteratorAt(photon.mcparticle().globalIndex());
-      std::cout<<"TEST"<<photonmc.pdgCode()<<std::endl;
+      if (indexRec > -1) {
+        int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), 20443);
+        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
+	if (indexMother > -1 && indexMotherGamma==indexMother){
+	  std::cout<<"GOOD CANDIDATE"<<std::endl;
+          //auto particleMother = particlesMC.iteratorAt(indexMother);
+          //int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
+          //int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
+          //if (!(indexDaughterFirst <= -1 && indexDaughterLast <= -1)) {
+	  //  if (!(indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > 2)){
+          //    std::vector<int> arrAllDaughtersIndex;  
+          //    RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1);
+	  //    if (arrAllDaughtersIndex.size() == 2){
+                flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+	 //     }
+	 //   }
+	 // }
+        }
+      }
+      //auto photon = candidate.index1();
+      //auto photonmc = particlesMC.iteratorAt(photon.mcparticle().globalIndex());
+      //std::cout<<"TEST"<<photonmc.pdgCode()<<std::endl;
       rowMCMatchRec(flag, origin, channel);
     }
 

@@ -47,8 +47,8 @@ struct TaskChic {
      {"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
   Configurable<int> d_selectionFlagChic{"d_selectionFlagChic", 1, "Selection Flag for Chic"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", false, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<double> cutYCandMax{"cutYCandMax", 1., "max. cand. rapidity"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -105,8 +105,8 @@ struct TaskChicMC {
      {"hPtGenSig", "2-prong candidates (rec. matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{150, 0., 15.}}}}}};
 
   Configurable<int> d_selectionFlagChic{"d_selectionFlagChic", 1, "Selection Flag for Chic"};
-  Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
-  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", false, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<double> cutYCandMax{"cutYCandMax", 1., "max. cand. rapidity"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
