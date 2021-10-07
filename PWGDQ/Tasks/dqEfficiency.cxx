@@ -26,6 +26,7 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include <TMath.h>
 #include <TH1F.h>
 #include <THashList.h>
 #include <TString.h>
@@ -192,7 +193,7 @@ struct DQBarrelTrackSelection {
 
   void process(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCTracks const& tracksMC)
   {
-    cout << "Event ######################################" << endl;
+    //cout << "Event ######################################" << endl;
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables, fValues);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<gkEventFillMap>(event, fValues);
@@ -202,13 +203,13 @@ struct DQBarrelTrackSelection {
 
     for (auto& track : tracks) {
       filterMap = uint8_t(0);
-      cout << "track ===================================" << endl;
+      //cout << "track ===================================" << endl;
       VarManager::FillTrack<gkTrackFillMap>(track, fValues);
-      cout << "after fill ===================================" << endl;
+      //cout << "after fill ===================================" << endl;
       auto mctrack = track.reducedMCTrack();
-      cout << "MC matched track " << mctrack.index() << "/" << mctrack.globalIndex() << ", pdgCode " << mctrack.pdgCode() << ", pt rec/gen " << track.pt() << "/" << mctrack.pt() << ", MCflags " << mctrack.mcReducedFlags() << endl;
+      //cout << "MC matched track " << mctrack.index() << "/" << mctrack.globalIndex() << ", pdgCode " << mctrack.pdgCode() << ", pt rec/gen " << track.pt() << "/" << mctrack.pt() << ", MCflags " << mctrack.mcReducedFlags() << endl;
       VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
-      cout << "after fill MC ===================================" << endl;
+      //cout << "after fill MC ===================================" << endl;
       fHistMan->FillHistClass("TrackBarrel_BeforeCuts", fValues);
 
       int i = 0;
@@ -299,11 +300,13 @@ struct DQQuarkoniumPairing {
     for (int isig = 0; isig < objGenSigArray->GetEntries(); isig++) {
       MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenSigArray->At(isig)->GetName());
       if (sig) {
-        if (sig->GetNProngs() != 1) { // NOTE: 1-prong signals required
-          continue;
+        if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
+          fGenMCSignals.push_back(*sig);
+          histClasses += Form("MCTruthGen_%s;", sig->GetName());
+        } else if (sig->GetNProngs() == 2) { // NOTE: 2-prong signals required
+          fGenMCSignals.push_back(*sig);
+          histClasses += Form("MCTruthGenPair_%s;", sig->GetName());
         }
-        fGenMCSignals.push_back(*sig);
-        histClasses += Form("MCTruthGen_%s;", sig->GetName());
       }
     }
 
@@ -359,11 +362,28 @@ struct DQQuarkoniumPairing {
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
       for (auto& sig : fGenMCSignals) {
+        if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
+          continue;
+        }
         if (sig.CheckSignal(false, tracksMC, mctrack)) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), fValues);
         }
       }
     }
+
+    cout << "entries in tracksMC = " << tracksMC.size() << endl;
+    //    // loop over mc stack and fill histograms for pure MC truth signals
+    for (auto& [t1, t2] : combinations(tracksMC, tracksMC)) {
+      for (auto& sig : fGenMCSignals) {
+        if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required
+          continue;
+        }
+        if (sig.CheckSignal(false, tracksMC, t1, t2)) {
+          VarManager::FillPairMC(t1, t2, fValues);
+          fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), fValues);
+        }
+      }
+    } //end of true pairing loop
   }
 };
 
@@ -402,6 +422,12 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
     }
 
+    if (classStr.Contains("MCTruthGenPair")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair");
+      /*histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kMCPt);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 500, -5.0, 5.0, VarManager::kMCEta);*/
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
+    }
     if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth");
       /*histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kMCPt);

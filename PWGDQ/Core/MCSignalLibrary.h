@@ -254,6 +254,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from open charmed hadron decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("eFromNonPromptHc")) {
+    MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from open charmed hadron decays from b hadron decays", {prong}, {-1});
+    return signal;
+  }
 
   //_________________________________________________________________________________________________________________________
   //LMEE pair signals for LF, same mother

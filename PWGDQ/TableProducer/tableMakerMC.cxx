@@ -247,7 +247,7 @@ struct TableMakerMC {
       VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
       fHistMan->FillHistClass("TrackBarrel_AfterCuts", fValues);
 
-      cout << "track pt (rec/gen): " << track.pt() << " / " << mctrack.pt() << endl;
+      //cout << "track pt (rec/gen): " << track.pt() << " / " << mctrack.pt() << endl;
       // if the MC truth particle corresponding to this reconstructed track is not already written,
       //   add it to the skimmed stack
       mcflags = 0;
