@@ -203,6 +203,9 @@ struct HFCandidateCreatorChicExpressions {
 struct HFCandidateCreatorChicMC {
   Produces<aod::HfCandChicMCRec> rowMCMatchRec;
   Produces<aod::HfCandChicMCGen> rowMCMatchGen;
+  OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGammaMatched{TH1F("hMassChicToJpsiToMuMuGammaMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   void process(aod::HfCandChic const& candidates,
                aod::HfCandProng2,
@@ -231,24 +234,26 @@ struct HFCandidateCreatorChicMC {
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
       if (indexRec > -1) {
+	hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.index0()));
+
         int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), 20443);
         int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
-	if (indexMother > -1 && indexMotherGamma==indexMother){
-	  std::cout<<"GOOD CANDIDATE"<<std::endl;
-          //auto particleMother = particlesMC.iteratorAt(indexMother);
-          //int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
-          //int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
-          //if (!(indexDaughterFirst <= -1 && indexDaughterLast <= -1)) {
-	  //  if (!(indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > 2)){
-          //    std::vector<int> arrAllDaughtersIndex;  
-          //    RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1);
-	  //    if (arrAllDaughtersIndex.size() == 2){
-	        flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
-		std::cout<<"FLAG="<<flag<<std::endl;
-                hMassChicToJpsiToMuMuGammaMatched->Fill(InvMassChicToJpsiGamma(candidate));
-	 //     }
-	 //   }
-	 // }
+	if (indexMother > -1 && indexMotherGamma==indexMother && candidate.index1().mcparticle().pdgCode()==22){
+          auto particleMother = particlesMC.iteratorAt(indexMother);
+	  hEphotonMatched->Fill(candidate.index1().e());
+	  hMassEMatched->Fill(sqrt(candidate.index1().px()*candidate.index1().px()+candidate.index1().py()*candidate.index1().py()+candidate.index1().pz()*candidate.index1().pz()));
+	  std::cout<<particleMother.pdgCode()<<std::endl;
+	  int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
+          int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
+          if ((indexDaughterFirst > -1 && indexDaughterLast > -1)) {
+            std::vector<int> arrAllDaughtersIndex;  
+            RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{22, 443}, 1);
+	    if (arrAllDaughtersIndex.size() == 2){
+	      flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+              std::cout<<"FLAG="<<flag<<std::endl;
+              hMassChicToJpsiToMuMuGammaMatched->Fill(InvMassChicToJpsiGamma(candidate));
+	    }
+	  }
         }
       }
       //auto photon = candidate.index1();
