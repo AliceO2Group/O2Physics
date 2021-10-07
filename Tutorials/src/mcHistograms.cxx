@@ -120,8 +120,7 @@ struct LoopOverMcMatchedRun3 {
     for (auto& mcCollision : mcCollisions) {
 
       // Do grouping by hand
-      // NB. This line should work but gives a SEGV. (The following lines does the same but less efficient). auto collisions = allCollisions.select(aod::mccollisionlabel::mcCollisionId == mcCollision.globalIndex());
-      auto collisions = allCollisions.sliceBy(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex());
+      auto collisions = allCollisions.select(aod::mccollisionlabel::mcCollisionId == mcCollision.globalIndex());
       auto mcParticles = allMcParticles.sliceBy(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
 
       // access MC truth information with mcCollision() and mcParticle() methods
