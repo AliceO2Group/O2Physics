@@ -281,7 +281,7 @@ struct HFLcCandidateSelectorALICE3 {
 
       if (topolLcpKpi) {
         statusLcPKPiNoPID = 1;
-        if (pdgPositive1 == 2212 && pdgPositive2 == 211 && pdgNegative == -321) {
+        if (pdgPositive1 == kProton && pdgPositive2 == kPiPlus && pdgNegative == kKMinus) {
           statusLcPKPiPerfectPID = 1;
         }
         if (std::abs(nSigmaTOFPos1Proton) < 3.0 && std::abs(nSigmaTOFPos2Pion) < 3.0 && std::abs(nSigmaTOFNegKaon) < 3.0) {
@@ -294,7 +294,7 @@ struct HFLcCandidateSelectorALICE3 {
 
       if (topolLcpiKp) {
         statusLcPiKPNoPID = 1;
-        if (pdgPositive2 == 2212 && pdgPositive1 == 211 && pdgNegative == -321) {
+        if (pdgPositive2 == kProton && pdgPositive1 == kPiPlus && pdgNegative == kKMinus) {
           statusLcPiKPPerfectPID = 1;
         }
         if (std::abs(nSigmaTOFPos2Proton) < 3.0 && std::abs(nSigmaTOFPos1Pion) < 3.0 && std::abs(nSigmaTOFNegKaon) < 3.0) {
