@@ -210,39 +210,39 @@ struct HFLcCandidateSelectorALICE3 {
       int pdgNegative = mcParticleNegative.pdgCode();
       int pdgPositive2 = mcParticlePositive2.pdgCode();
 
-      float nsigmaTOFPos1Proton = -5000.0;
-      float nsigmaRICHPos1Proton = -5000.0;
-      float nsigmaTOFPos2Proton = -5000.0;
-      float nsigmaRICHPos2Proton = -5000.0;
-      float nsigmaTOFNegKaon = -5000.0;
-      float nsigmaRICHNegKaon = -5000.0;
-      float nsigmaTOFPos1Pion = -5000.0;
-      float nsigmaRICHPos1Pion = -5000.0;
-      float nsigmaTOFPos2Pion = -5000.0;
-      float nsigmaRICHPos2Pion = -5000.0;
+      float nSigmaTOFPos1Proton = -5000.0;
+      float nSigmaRICHPos1Proton = -5000.0;
+      float nSigmaTOFPos2Proton = -5000.0;
+      float nSigmaRICHPos2Proton = -5000.0;
+      float nSigmaTOFNegKaon = -5000.0;
+      float nSigmaRICHNegKaon = -5000.0;
+      float nSigmaTOFPos1Pion = -5000.0;
+      float nSigmaRICHPos1Pion = -5000.0;
+      float nSigmaTOFPos2Pion = -5000.0;
+      float nSigmaRICHPos2Pion = -5000.0;
 
       if (trackPos1.hasTOF()) {
-        nsigmaTOFPos1Proton = trackPos1.tofNSigmaPr();
-        nsigmaTOFPos1Pion = trackPos1.tofNSigmaPi();
+        nSigmaTOFPos1Proton = trackPos1.tofNSigmaPr();
+        nSigmaTOFPos1Pion = trackPos1.tofNSigmaPi();
       }
       if (trackPos2.hasTOF()) {
-        nsigmaTOFPos2Pion = trackPos2.tofNSigmaPi();
-        nsigmaTOFPos2Proton = trackPos2.tofNSigmaPr();
+        nSigmaTOFPos2Pion = trackPos2.tofNSigmaPi();
+        nSigmaTOFPos2Proton = trackPos2.tofNSigmaPr();
       }
       if (trackNeg.hasTOF()) {
-        nsigmaTOFNegKaon = trackNeg.tofNSigmaKa();
+        nSigmaTOFNegKaon = trackNeg.tofNSigmaKa();
       }
 
       if (trackPos1.has_rich()) {
-        nsigmaRICHPos1Proton = trackPos1.rich().richNsigmaPr();
-        nsigmaRICHPos1Pion = trackPos1.rich().richNsigmaPi();
+        nSigmaRICHPos1Proton = trackPos1.rich().richNsigmaPr();
+        nSigmaRICHPos1Pion = trackPos1.rich().richNsigmaPi();
       }
       if (trackPos2.has_rich()) {
-        nsigmaRICHPos2Pion = trackPos2.rich().richNsigmaPi();
-        nsigmaRICHPos2Proton = trackPos2.rich().richNsigmaPr();
+        nSigmaRICHPos2Pion = trackPos2.rich().richNsigmaPi();
+        nSigmaRICHPos2Proton = trackPos2.rich().richNsigmaPr();
       }
       if (trackNeg.has_rich()) {
-        nsigmaRICHNegKaon = trackNeg.rich().richNsigmaKa();
+        nSigmaRICHNegKaon = trackNeg.rich().richNsigmaKa();
       }
 
       bool selectProtonPos1TOFplusRICH = false;
@@ -251,47 +251,58 @@ struct HFLcCandidateSelectorALICE3 {
       bool selectPionPos2TOFplusRICH = false;
       bool selectKaonTOFplusRICH = false;
 
-      if ((momentumPos1Track < 4.0 && std::abs(nsigmaTOFPos1Proton) < 3.0))
+      if ((momentumPos1Track < 4.0 && std::abs(nSigmaTOFPos1Proton) < 3.0)) {
         selectProtonPos1TOFplusRICH = true;
-      if ((momentumPos1Track > 4.0 && trackPos1.has_rich() && std::sqrt(nsigmaRICHPos1Proton * nsigmaRICHPos1Proton + nsigmaTOFPos1Proton * nsigmaTOFPos1Proton) < 3.0))
+      } else if ((momentumPos1Track > 4.0 && trackPos1.has_rich() && (nSigmaRICHPos1Proton * nSigmaRICHPos1Proton + nSigmaTOFPos1Proton * nSigmaTOFPos1Proton) < 9.0)) {
         selectProtonPos1TOFplusRICH = true;
-      if ((momentumPos2Track < 4.0 && std::abs(nsigmaTOFPos2Proton) < 3.0))
+      }
+      if ((momentumPos2Track < 4.0 && std::abs(nSigmaTOFPos2Proton) < 3.0)) {
         selectProtonPos2TOFplusRICH = true;
-      if ((momentumPos2Track > 4.0 && trackPos2.has_rich() && std::sqrt(nsigmaRICHPos2Proton * nsigmaRICHPos2Proton + nsigmaTOFPos2Proton * nsigmaTOFPos2Proton) < 3.0))
+      } else if ((momentumPos2Track > 4.0 && trackPos2.has_rich() && (nSigmaRICHPos2Proton * nSigmaRICHPos2Proton + nSigmaTOFPos2Proton * nSigmaTOFPos2Proton) < 9.0)) {
         selectProtonPos2TOFplusRICH = true;
+      }
 
-      if ((momentumPos1Track < 0.6 && std::abs(nsigmaTOFPos1Pion) < 3.0))
+      if ((momentumPos1Track < 0.6 && std::abs(nSigmaTOFPos1Pion) < 3.0)) {
         selectPionPos1TOFplusRICH = true;
-      if ((momentumPos1Track > 0.6 && trackPos1.has_rich() && std::sqrt(nsigmaRICHPos1Pion * nsigmaRICHPos1Pion + nsigmaTOFPos1Pion * nsigmaTOFPos1Pion) < 3.0))
+      } else if ((momentumPos1Track > 0.6 && trackPos1.has_rich() && (nSigmaRICHPos1Pion * nSigmaRICHPos1Pion + nSigmaTOFPos1Pion * nSigmaTOFPos1Pion) < 9.0)) {
         selectPionPos1TOFplusRICH = true;
-      if ((momentumPos2Track < 0.6 && std::abs(nsigmaTOFPos2Pion) < 3.0))
+      }
+      if ((momentumPos2Track < 0.6 && std::abs(nSigmaTOFPos2Pion) < 3.0)) {
         selectPionPos2TOFplusRICH = true;
-      if ((momentumPos2Track > 0.6 && trackPos2.has_rich() && std::sqrt(nsigmaRICHPos2Pion * nsigmaRICHPos2Pion + nsigmaTOFPos2Pion * nsigmaTOFPos2Pion) < 3.0))
+      } else if ((momentumPos2Track > 0.6 && trackPos2.has_rich() && (nSigmaRICHPos2Pion * nSigmaRICHPos2Pion + nSigmaTOFPos2Pion * nSigmaTOFPos2Pion) < 9.0)) {
         selectPionPos2TOFplusRICH = true;
+      }
 
-      if ((momentumNegTrack < 2.0 && std::abs(nsigmaTOFNegKaon) < 3.0))
+      if ((momentumNegTrack < 2.0 && std::abs(nSigmaTOFNegKaon) < 3.0)) {
         selectKaonTOFplusRICH = true;
-      if ((momentumNegTrack > 2.0 && trackNeg.has_rich() && std::sqrt(nsigmaRICHNegKaon * nsigmaRICHNegKaon + nsigmaTOFNegKaon * nsigmaTOFNegKaon) < 3.0))
+      } else if ((momentumNegTrack > 2.0 && trackNeg.has_rich() && (nSigmaRICHNegKaon * nSigmaRICHNegKaon + nSigmaTOFNegKaon * nSigmaTOFNegKaon) < 9.0)) {
         selectKaonTOFplusRICH = true;
+      }
 
       if (topolLcpKpi) {
         statusLcPKPiNoPID = 1;
-        if (pdgPositive1 == 2212 && pdgPositive2 == 211 && pdgNegative == -321)
+        if (pdgPositive1 == 2212 && pdgPositive2 == 211 && pdgNegative == -321) {
           statusLcPKPiPerfectPID = 1;
-        if (std::abs(nsigmaTOFPos1Proton) < 3.0 && std::abs(nsigmaTOFPos2Pion) < 3.0 && std::abs(nsigmaTOFNegKaon) < 3.0)
+        }
+        if (std::abs(nSigmaTOFPos1Proton) < 3.0 && std::abs(nSigmaTOFPos2Pion) < 3.0 && std::abs(nSigmaTOFNegKaon) < 3.0) {
           statusLcPKPiTOFPID = 1;
-        if (selectProtonPos1TOFplusRICH && selectPionPos2TOFplusRICH && selectKaonTOFplusRICH)
+        }
+        if (selectProtonPos1TOFplusRICH && selectPionPos2TOFplusRICH && selectKaonTOFplusRICH) {
           statusLcPKPiTOFplusRICHPID = 1;
+        }
       }
 
       if (topolLcpiKp) {
         statusLcPiKPNoPID = 1;
-        if (pdgPositive2 == 2212 && pdgPositive1 == 211 && pdgNegative == -321)
+        if (pdgPositive2 == 2212 && pdgPositive1 == 211 && pdgNegative == -321) {
           statusLcPiKPPerfectPID = 1;
-        if (std::abs(nsigmaTOFPos2Proton) < 3.0 && std::abs(nsigmaTOFPos1Pion) < 3.0 && std::abs(nsigmaTOFNegKaon) < 3.0)
+        }
+        if (std::abs(nSigmaTOFPos2Proton) < 3.0 && std::abs(nSigmaTOFPos1Pion) < 3.0 && std::abs(nSigmaTOFNegKaon) < 3.0) {
           statusLcPiKPTOFPID = 1;
-        if (selectProtonPos2TOFplusRICH && selectPionPos1TOFplusRICH && selectKaonTOFplusRICH)
+        }
+        if (selectProtonPos2TOFplusRICH && selectPionPos1TOFplusRICH && selectKaonTOFplusRICH) {
           statusLcPiKPTOFplusRICHPID = 1;
+        }
       }
       //std::cout << "status = " << statusLcPKPiNoPID << "\t" << statusLcPiKPNoPID << "\n";
       hfSelLcCandidateALICE3(statusLcPKPiNoPID, statusLcPKPiPerfectPID, statusLcPKPiTOFPID, statusLcPKPiTOFplusRICHPID, statusLcPiKPNoPID, statusLcPiKPPerfectPID, statusLcPiKPTOFPID, statusLcPiKPTOFplusRICHPID);
