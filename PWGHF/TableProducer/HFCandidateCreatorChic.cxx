@@ -45,15 +45,15 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HFCandidateCreatorChic {
   Produces<aod::HfCandChicBase> rowCandidateBase;
 
-  Configurable<double> magneticField{"magneticField", 5., "magnetic field"};
+  Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> eneGammaMin{"eneGammaMin", 0.00, "minimum gamma energy threshold (GeV)"};
-  Configurable<double> etaGammaMin{"etaGammaMin", -100.00, "minimum gamma pseudorapidity"};
-  Configurable<double> etaGammaMax{"etaGammaMax", 100.00, "maximum gamma pseudorapidity"};
+  Configurable<double> eneGammaMin{"eneGammaMin", 0.4, "minimum gamma energy threshold (GeV)"};
+  Configurable<double> etaGammaMin{"etaGammaMin", -1.00, "minimum gamma pseudorapidity"};
+  Configurable<double> etaGammaMax{"etaGammaMax", 1.00, "maximum gamma pseudorapidity"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -231,7 +231,7 @@ struct HFCandidateCreatorChicMC {
       // chi_c → J/ψ gamma
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
       auto photon = candidate.index1();
-      double test=photon.px();
+      double test=photon.mcparticle();
       rowMCMatchRec(flag, origin, channel);
     }
 
