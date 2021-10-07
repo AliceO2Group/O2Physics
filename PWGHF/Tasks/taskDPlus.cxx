@@ -170,10 +170,10 @@ struct TaskDPlusMC {
         auto ptRec = candidate.pt();
         auto yRec = YDPlus(candidate);
         registry.fill(HIST("hPtvsYRecSig_RecoSkim"), ptRec, yRec);
-        if (TESTBIT(candidate.isSelDplusToPiKPi(), 1)) {
+        if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
           registry.fill(HIST("hPtvsYRecSig_RecoTopol"), ptRec, yRec);
         }
-        if (TESTBIT(candidate.isSelDplusToPiKPi(), 2)) {
+        if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
           registry.fill(HIST("hPtvsYRecSig_RecoPID"), ptRec, yRec);
         }
         if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
@@ -181,10 +181,10 @@ struct TaskDPlusMC {
         }
         if (candidate.originMCRec() == OriginType::Prompt) {
           registry.fill(HIST("hPtvsYRecSigPrompt_RecoSkim"), ptRec, yRec);
-          if (TESTBIT(candidate.isSelDplusToPiKPi(), 1)) {
+          if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
             registry.fill(HIST("hPtvsYRecSigPrompt_RecoTopol"), ptRec, yRec);
           }
-          if (TESTBIT(candidate.isSelDplusToPiKPi(), 2)) {
+          if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
             registry.fill(HIST("hPtvsYRecSigPrompt_RecoPID"), ptRec, yRec);
           }
           if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
@@ -192,10 +192,10 @@ struct TaskDPlusMC {
           }
         } else {
           registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoSkim"), ptRec, yRec);
-          if (TESTBIT(candidate.isSelDplusToPiKPi(), 1)) {
+          if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
             registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoTopol"), ptRec, yRec);
           }
-          if (TESTBIT(candidate.isSelDplusToPiKPi(), 2)) {
+          if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
             registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoPID"), ptRec, yRec);
           }
           if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
