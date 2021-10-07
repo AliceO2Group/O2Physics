@@ -20,7 +20,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,7 +46,7 @@ struct TaskLc {
      {"hptprong0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hptprong1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
      {"hptprong2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
+     {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}}}};
 
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
@@ -56,7 +57,7 @@ struct TaskLc {
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)bins;
-    registry.add("hmass", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; centrality", {HistType::kTH3F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
+    registry.add("hmass", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
     registry.add("hdeclength", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -72,10 +73,21 @@ struct TaskLc {
 
   // FIXME: Add ALICE 2/3 switch!
   //void process(aod::HfCandProng3 const& candidates)
-  void process(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksExtended>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
   {
-    float centrality = collision.centV0M();
-    registry.fill(HIST("hCentrality"), centrality);
+    int nTracks = 0;
+    if (collision.numContrib() > 1) {
+      for (const auto& track : tracks) {
+        if (track.eta() < -4.0 || track.eta() > 4.0) {
+          continue;
+        }
+        if (abs(track.dcaXY()) > 0.0025 || abs(track.dcaZ()) > 0.0025) {
+          continue;
+        }
+        nTracks++;
+      }
+    }
+    registry.fill(HIST("hMultiplicity"), nTracks);
 
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
@@ -85,10 +97,10 @@ struct TaskLc {
         continue;
       }
       if (candidate.isSelLcpKpi() >= d_selectionFlagLc) {
-        registry.fill(HIST("hmass"), InvMassLcpKpi(candidate), candidate.pt(), centrality);
+        registry.fill(HIST("hmass"), InvMassLcpKpi(candidate), candidate.pt(), nTracks);
       }
       if (candidate.isSelLcpiKp() >= d_selectionFlagLc) {
-        registry.fill(HIST("hmass"), InvMassLcpiKp(candidate), candidate.pt(), centrality);
+        registry.fill(HIST("hmass"), InvMassLcpiKp(candidate), candidate.pt(), nTracks);
       }
       registry.fill(HIST("hptcand"), candidate.pt());
       registry.fill(HIST("hptprong0"), candidate.ptProng0());
