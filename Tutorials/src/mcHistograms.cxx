@@ -90,6 +90,7 @@ struct AccessMcTruth {
 
 // Loop over MCColisions and get corresponding collisions (there can be more than one)
 // For each of them get the corresponding tracks
+// NOTE This does not work with the Run 3 data model at present. You will receive an exception about an unsorted index. Please use the next tutorial example.
 struct LoopOverMcMatched {
   OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
   void process(aod::McCollision const& mcCollision, soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
@@ -110,12 +111,42 @@ struct LoopOverMcMatched {
   }
 };
 
+// WORKAROUND of previous example for Run 3 data model (see remarks above)
+struct LoopOverMcMatchedRun3 {
+  OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
+  void process(aod::McCollisions const& mcCollisions, soa::Join<aod::McCollisionLabels, aod::Collisions> const& allCollisions,
+               soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& allMcParticles)
+  {
+    for (auto& mcCollision : mcCollisions) {
+
+      // Do grouping by hand
+      // NB. This line should work but gives a SEGV. (The following lines does the same but less efficient). auto collisions = allCollisions.select(aod::mccollisionlabel::mcCollisionId == mcCollision.globalIndex());
+      auto collisions = allCollisions.sliceBy(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex());
+      auto mcParticles = allMcParticles.sliceBy(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+
+      // access MC truth information with mcCollision() and mcParticle() methods
+      LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
+      for (auto& collision : collisions) {
+        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
+
+        // NOTE this will be replaced by a improved grouping in the future
+        auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+        LOGF(info, "  which has %d tracks", groupedTracks.size());
+        for (auto& track : groupedTracks) {
+          etaDiff->Fill(track.mcParticle().eta() - track.eta());
+        }
+      }
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<VertexDistribution>(cfgc),
     adaptAnalysisTask<AccessMcData>(cfgc),
     adaptAnalysisTask<AccessMcTruth>(cfgc),
-    adaptAnalysisTask<LoopOverMcMatched>(cfgc),
+    // adaptAnalysisTask<LoopOverMcMatched>(cfgc),
+    adaptAnalysisTask<LoopOverMcMatchedRun3>(cfgc),
   };
 }
