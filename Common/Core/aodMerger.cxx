@@ -135,8 +135,8 @@ int main(int argc, char* argv[])
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
 
-        printf("    Processing tree %s\n", treeName);
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
+        printf("    Processing tree %s with %lld entries\n", treeName, inputTree->GetEntries());
 
         if (trees.count(treeName) == 0) {
           // clone tree
