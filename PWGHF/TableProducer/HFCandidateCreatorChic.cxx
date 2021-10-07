@@ -227,11 +227,21 @@ struct HFCandidateCreatorChicMC {
       auto daughterPosJpsi = jpsiTrack.index0_as<aod::BigTracksMC>();
       auto daughterNegJpsi = jpsiTrack.index1_as<aod::BigTracksMC>();
       auto arrayJpsiDaughters = array{daughterPosJpsi, daughterNegJpsi};
+      //auto arrayDaughters = array{candidate.index1(),
+      //                            daughterPosJpsi,
+      //                            daughterNegJpsi};
 
       // chi_c → J/ψ gamma
-      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
+      indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayJpsiDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
+      //if (indexRec > -1) {
+      //  indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 20443, array{22, +kMuonPlus, -kMuonPlus}, true, &sign, 2);
+      //  if (indexRec > -1) {
+      //    flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+      //  }
+      //}
       auto photon = candidate.index1();
-      double test=photon.mcparticle();
+      auto photonmc = particlesMC.iteratorAt(photon.mcparticle().globalIndex());
+      std::cout<<"TEST"<<photonmc.pdgCode()<<std::endl;
       rowMCMatchRec(flag, origin, channel);
     }
 
