@@ -745,7 +745,6 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m1 = fgkElectronMass;
     m2 = fgkMuonMass;
   }
 
@@ -801,7 +800,6 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   }
 
   if (pairType == kElectronMuon) {
-    m1 = fgkElectronMass;
     m2 = fgkMuonMass;
   }
 
