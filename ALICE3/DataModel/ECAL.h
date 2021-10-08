@@ -29,10 +29,10 @@ namespace alice3ecal
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);   //! Index to travel from ECAL to collision
 DECLARE_SOA_INDEX_COLUMN(Track, track);           //! Index to travel from ECAL to track
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcparticle); //! Index to travel from ECAL to particle
-DECLARE_SOA_COLUMN(E, e, float);                  //! Signal in ECAL
-DECLARE_SOA_COLUMN(Px, px, float);                //! Px
-DECLARE_SOA_COLUMN(Py, py, float);                //! Py
-DECLARE_SOA_COLUMN(Pz, pz, float);                //! Pz
+DECLARE_SOA_COLUMN(E, e, double);                 //! Signal in ECAL
+DECLARE_SOA_COLUMN(Px, px, double);               //! Px
+DECLARE_SOA_COLUMN(Py, py, double);               //! Py
+DECLARE_SOA_COLUMN(Pz, pz, double);               //! Pz
 DECLARE_SOA_COLUMN(PosZ, posZ, float);            //! Position in Z
 DECLARE_SOA_COLUMN(PosPhi, posPhi, float);        //! Position in phi
 } // namespace alice3ecal
