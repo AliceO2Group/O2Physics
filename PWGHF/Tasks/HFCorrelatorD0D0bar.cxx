@@ -18,7 +18,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -78,8 +79,8 @@ struct HfCorrelatorD0D0bar {
      {"hEta", "D0,D0bar candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
      {"hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{32, 0., 2. * o2::constants::math::PI}}}},
      {"hY", "D0,D0bar candidates;candidate #it{#y};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
-     {"hCentralityPreSelection", "centrality prior to selection;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
-     {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
+     {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hDDbarVsEtaCut", "D0,D0bar pairs vs #eta cut;#eta_{max};entries", {HistType::kTH2F, {{(int)(maxEtaCut / incrementEtaCut), 0., maxEtaCut}, {(int)(ptThresholdForMaxEtaCut / incrementPtThreshold), 0., ptThresholdForMaxEtaCut}}}}}};
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -89,8 +90,8 @@ struct HfCorrelatorD0D0bar {
   Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
   Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> centMin{"centMin", -1., "minimum centrality accepted"};
-  Configurable<double> centMax{"centMax", 100., "maximum centrality accepted"};
+  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
 
   void init(o2::framework::InitContext&)
   {
@@ -101,14 +102,25 @@ struct HfCorrelatorD0D0bar {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
 
-  void process(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtended>& tracks, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>> const& candidates)
   {
-    float centrality = collision.centV0M();
-    registry.fill(HIST("hCentralityPreSelection"), centrality);
-    if (centrality < centMin || centrality > centMax) {
+    int nTracks = 0;
+    if (collision.numContrib() > 1) {
+      for (const auto& track : tracks) {
+        if (track.eta() < -4.0 || track.eta() > 4.0) {
+          continue;
+        }
+        if (abs(track.dcaXY()) > 0.0025 || abs(track.dcaZ()) > 0.0025) {
+          continue;
+        }
+        nTracks++;
+      }
+    }
+    registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
+    if (nTracks < multMin || nTracks > multMax) {
       return;
     }
-    registry.fill(HIST("hCentrality"), centrality);
+    registry.fill(HIST("hMultiplicity"), nTracks);
 
     for (auto& candidate1 : candidates) {
       if (cutYCandMax >= 0. && std::abs(YD0(candidate1)) > cutYCandMax) {
@@ -211,8 +223,8 @@ struct HfCorrelatorD0D0barMcRec {
      {"hEtaMCRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
      {"hPhiMCRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{32, 0., 2. * o2::constants::math::PI}}}},
      {"hYMCRec", "D0,D0bar candidates - MC reco;candidate #it{#y};entries", {HistType::kTH1F, {{100, -5., 5.}}}},
-     {"hCentralityPreSelectionMCRec", "centrality prior to selection;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
-     {"hCentralityMCRec", "centrality;centrality percentile;entries", {HistType::kTH1F, {{101, -1., 100.}}}},
+     {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hDDbarVsEtaCut", "D0,D0bar pairs vs #eta cut;#eta_{max};entries", {HistType::kTH2F, {{(int)(maxEtaCut / incrementEtaCut), 0., maxEtaCut}, {(int)(ptThresholdForMaxEtaCut / incrementPtThreshold), 0., ptThresholdForMaxEtaCut}}}}}};
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -222,8 +234,8 @@ struct HfCorrelatorD0D0barMcRec {
   Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_topik::pTBins_v}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
   Configurable<int> flagApplyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> centMin{"centMin", -1., "minimum centrality accepted"};
-  Configurable<double> centMax{"centMax", 100., "maximum centrality accepted"};
+  Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
 
   void init(o2::framework::InitContext&)
   {
@@ -237,14 +249,25 @@ struct HfCorrelatorD0D0barMcRec {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar);
 
-  void process(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates)
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtended>& tracks, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates)
   {
-    float centrality = collision.centV0M();
-    registry.fill(HIST("hCentralityPreSelectionMCRec"), centrality);
-    if (centrality < centMin || centrality > centMax) {
+    int nTracks = 0;
+    if (collision.numContrib() > 1) {
+      for (const auto& track : tracks) {
+        if (track.eta() < -4.0 || track.eta() > 4.0) {
+          continue;
+        }
+        if (abs(track.dcaXY()) > 0.0025 || abs(track.dcaZ()) > 0.0025) {
+          continue;
+        }
+        nTracks++;
+      }
+    }
+    registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
+    if (nTracks < multMin || nTracks > multMax) {
       return;
     }
-    registry.fill(HIST("hCentralityMCRec"), centrality);
+    registry.fill(HIST("hMultiplicity"), nTracks);
 
     //MC reco level
     bool flagD0Signal = false;
