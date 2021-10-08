@@ -323,6 +323,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <typename T1, typename T2>
+  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kJpsiToEE);
   template <typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr, PairCandidateType pairType = kJpsiToEE);
   template <typename T1, typename T2>
@@ -743,7 +745,6 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 
   if constexpr (pairType == kElectronMuon) {
-    m1 = fgkElectronMass;
     m2 = fgkMuonMass;
   }
 
@@ -782,6 +783,35 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAsigXY] = std::sqrt((dca1sig * dca1sig + dca2sig * dca2sig) / 2);
     }
   }
+}
+
+template <typename T1, typename T2>
+void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandidateType pairType)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1 = fgkElectronMass;
+  float m2 = fgkElectronMass;
+  if (pairType == kJpsiToMuMu) {
+    m1 = fgkMuonMass;
+    m2 = fgkMuonMass;
+  }
+
+  if (pairType == kElectronMuon) {
+    m2 = fgkMuonMass;
+  }
+
+  //TODO : implement resolution smearing.
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  values[kPhi] = v12.Phi();
+  values[kRap] = -v12.Rapidity();
 }
 
 template <typename C, typename T>

@@ -1,0 +1,97 @@
+name: PR self-approval
+
+on:
+  pull_request:
+    types:
+      - auto_merge_enabled
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out in order to get CODEOWNERS.
+      - uses: actions/checkout@v2
+        with:
+          # Always use the latest CODEOWNERS file, *not* the one from the PR!
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: pip install PyGithub
+
+      # First, parse filename patterns in CODEOWNERS using git-check-ignore(1)
+      # to get the applicable code owners for this PR.
+      - name: Parse CODEOWNERS
+        id: owners
+        shell: bash -exo pipefail {0}
+        run: |
+          git config --global init.defaultBranch master  # avoid annoying warning
+          git init ../tmp  # temporary repo for .gitignore parsing
+          awk '!/^[[:space:]]*(#|$)/ {print $1}' CODEOWNERS > ../tmp/.gitignore
+          # Find changed files in PR and which CODEOWNERS entries match them.
+          curl -fsSL "${{ github.event.pull_request.diff_url }}" |
+            sed -rn 's,^diff --git a/(.*) b/(.*)$,\1\n\2,p' | uniq |
+            git -C ../tmp check-ignore -v --no-index --stdin |
+            cut -d: -f2 |
+            sed 's/$/p/' > extract-lines.sed
+          # Extract user names applicable to this PR. Same format as CODEOWNERS,
+          # but without the leading pattern, so we just have usernames separated
+          # by spaces and newlines.
+          echo "::set-output name=owners::$(
+            grep -vE '^[[:space:]]*(#|$)' CODEOWNERS |
+              sed -nf extract-lines.sed |
+              sed 's/^[^[:space:]]*[[:space:]]*//' |
+              tr '\n' ';'
+          )"
+
+      # Finally, approve, if the author is only editing files owned by themselves.
+      - name: Check author is allowed to self-approve
+        shell: python
+        env:
+          submitter: ${{ github.event.sender.login }}
+          pr: ${{ github.event.pull_request.number }}
+          repo: ${{ github.event.repository.full_name }}
+          owners: ${{ steps.owners.outputs.owners }}
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
+        run: |
+          import functools, github, os
+
+          gh = github.Github(os.environ['github_token'])
+          submitter = os.environ['submitter']
+
+          @functools.lru_cache(maxsize=None)
+          def matches_owner(user_or_team):
+              user_or_team = user_or_team.lstrip('@')
+              org, is_team, team_name = user_or_team.partition('/')
+              if not is_team:
+                  return user_or_team == submitter
+              try:
+                  gh.get_organization(org) \
+                    .get_team_by_slug(team_name) \
+                    .get_team_membership(submitter)
+              except github.UnknownObjectException:
+                  return False
+              return True
+
+          def check_lines():
+              auto_approve = True
+              # owners is a string containing semicolon-separated records of
+              # space-separated usernames. At least one username per record must
+              # match the submitter (taking teams into account), and all lines
+              # must have a matching username.
+              for line in os.environ['owners'].strip(';').split(';'):
+                  line_owners = line.split()
+                  assert all(o.startswith('@') for o in line_owners), \
+                      'failed to parse CODEOWNERS'
+                  if not any(map(matches_owner, line_owners)):
+                      print('::warning::Not auto-approving as you are not one of',
+                            ', '.join(line_owners))
+                      auto_approve = False
+              return auto_approve
+
+          if check_lines():
+              gh.get_repo(os.environ['repo']) \
+                .get_pull(int(os.environ['pr'])) \
+                .create_review(event='APPROVE',
+                               body=f'Auto-approving on behalf of @{submitter}.')
