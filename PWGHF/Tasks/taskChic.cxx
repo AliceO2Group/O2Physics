@@ -55,6 +55,7 @@ struct TaskChic {
   void init(o2::framework::InitContext&)
   {
     registry.add("hMass", "2-prong candidates;inv. mass (J/#psi #gamma) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDeltaMass", "2-prong candidates;inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass^{PDG} (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hdeclength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hdeclengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -80,6 +81,7 @@ struct TaskChic {
       }
 
       registry.fill(HIST("hMass"), InvMassChicToJpsiGamma(candidate), candidate.pt());
+      registry.fill(HIST("hDeltaMass"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -125,8 +127,8 @@ struct TaskChicMC {
     registry.add("hPtGenProng0", "2-prong candidates (gen. matched);prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenProng1", "2-prong candidates (gen. matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    registry.add("hDeltaMassRecSig", "2-prong candidates (rec. matched);inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDeltaMassRecBkg", "2-prong candidates (rec. unmatched);inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDeltaMassRecSig", "2-prong candidates (rec. matched);inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass^{PDG} (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDeltaMassRecBg", "2-prong candidates (rec. unmatched);inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass^{PDG} (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassRecSig", "2-prong candidates (rec. matched);inv. mass (J/#psi #gamma) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassRecBg", "2-prong candidates (rec. unmatched);inv. mass (J/#psi #gamma) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0RecSig", "2-prong candidates (rec. matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -147,8 +149,7 @@ struct TaskChicMC {
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= d_selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= d_selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate, aod::HfCandChicMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks,
-               soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>)
+               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -160,7 +161,6 @@ struct TaskChicMC {
       if (cutYCandMax >= 0. && std::abs(YChic(candidate)) > cutYCandMax) {
         continue;
       }
-      auto candJpsi = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>>();
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
 	//FIXME the access to the MC particle gen not yet functional
 	//int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
@@ -169,9 +169,8 @@ struct TaskChicMC {
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
-
         registry.fill(HIST("hDeclengthRecSig"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - InvMassJpsiToMuMu(candJpsi) + RecoDecay::getMassPDG(pdg::Code::kJpsi));
+        registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
         registry.fill(HIST("hMassRecSig"), InvMassChicToJpsiGamma(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
@@ -184,8 +183,8 @@ struct TaskChicMC {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
-
         registry.fill(HIST("hDeclengthRecBg"), candidate.decayLength(), candidate.pt());
+        registry.fill(HIST("hDeltaMassRecBg"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
         registry.fill(HIST("hMassRecBg"), InvMassChicToJpsiGamma(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());

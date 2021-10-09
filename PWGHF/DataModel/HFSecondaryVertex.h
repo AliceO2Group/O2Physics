@@ -1007,6 +1007,7 @@ DECLARE_SOA_COLUMN(OriginMCRec, originMCRec, int8_t);               // particle 
 DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);               // particle origin, generator level
 DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
+DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
 // mapping of decay types
 enum DecayType { ChicToJpsiToEEGamma = 0,
                  ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
@@ -1022,7 +1023,7 @@ DECLARE_SOA_TABLE(HfCandChicBase, "AOD", "HFCANDCHICBASE",
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
                   hf_cand_chic::Index0Id, hf_cand_chic::Index1Id,
-                  hf_track_index::HFflag,
+                  hf_track_index::HFflag, hf_cand_chic::JpsiToMuMuMass,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,

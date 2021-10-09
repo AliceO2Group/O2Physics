@@ -177,7 +177,7 @@ struct HFCandidateCreatorChic {
                          impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
                          std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
                          jpsiCand.globalIndex(), ecal.globalIndex(),
-                         hfFlag);
+                         hfFlag, InvMassJpsiToMuMu(jpsiCand));
 
         // calculate invariant mass
         auto arrayMomenta = array{pvecJpsi, pvecGamma};
