@@ -171,7 +171,7 @@ struct HFCandidateCreatorChic {
                          collision.posX(), collision.posY(), collision.posZ(),
                          0.f, 0.f, 0.f, //    ChicsecondaryVertex[0], ChicsecondaryVertex[1], ChicsecondaryVertex[2],
                          0.f, 0.f,      // errorDecayLength, errorDecayLengthXY,
-                         0.f,           //chi2PCA,
+                         df2.getChi2AtPCACandidate(),           //chi2PCA of Jpsi
                          pvecJpsi[0], pvecJpsi[1], pvecJpsi[2],
                          pvecGamma[0], pvecGamma[1], pvecGamma[2],
                          impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),

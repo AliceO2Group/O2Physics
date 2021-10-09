@@ -15,6 +15,7 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
+#include <iostream>
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
@@ -124,6 +125,8 @@ struct TaskChicMC {
     registry.add("hPtGenProng0", "2-prong candidates (gen. matched);prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenProng1", "2-prong candidates (gen. matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
 
+    registry.add("hDeltaMassRecSig", "2-prong candidates (rec. matched);inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDeltaMassRecBkg", "2-prong candidates (rec. unmatched);inv. mass (J/#psi #gamma) - inv. mass (J/#psi) + mass (J/#psi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassRecSig", "2-prong candidates (rec. matched);inv. mass (J/#psi #gamma) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassRecBg", "2-prong candidates (rec. unmatched);inv. mass (J/#psi #gamma) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0RecSig", "2-prong candidates (rec. matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -133,18 +136,19 @@ struct TaskChicMC {
     registry.add("hDeclengthRecSig", "2-prong candidates (rec. matched);decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeclengthRecBg", "2-prong candidates (rec. unmatched);decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    registry.add("hChi2PCASig", "2-prong candidates (rec. matched);chi2 PCA (cm);entries", {HistType::kTH2F, {{1000, 0., 0.0001}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hChi2PCABg", "2-prong candidates (rec. unmatched);chi2 PCA (cm);entries", {HistType::kTH2F, {{1000, 0., 0.0001}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCtSig", "2-prong candidates (rec. matched);proper lifetime chi_c * #it{c} (cm);entries", {HistType::kTH2F, {{400, 0., 0.001}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCtBg", "2-prong candidates (rec. unmatched);proper lifetime chi_c * #it{c} (cm);entries", {HistType::kTH2F, {{400, 0., 0.001}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYSig", "2-prong candidates (rec. matched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYBg", "2-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hChi2PCARecSig", "2-prong candidates (rec. matched);chi2 PCA (J/#psi)(cm);entries", {HistType::kTH2F, {{5000, 0., 5e-6}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hChi2PCARecBg", "2-prong candidates (rec. unmatched);chi2 PCA (J/#psi)(cm);entries", {HistType::kTH2F, {{5000, 0., 5e-6}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCtRecSig", "2-prong candidates (rec. matched);proper lifetime chi_c * #it{c} (cm);entries", {HistType::kTH2F, {{400, 0., 0.001}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCtRecBg", "2-prong candidates (rec. unmatched);proper lifetime chi_c * #it{c} (cm);entries", {HistType::kTH2F, {{400, 0., 0.001}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYRecSig", "2-prong candidates (rec. matched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYRecBg", "2-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= d_selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= d_selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate, aod::HfCandChicMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks,
+               soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -156,6 +160,7 @@ struct TaskChicMC {
       if (cutYCandMax >= 0. && std::abs(YChic(candidate)) > cutYCandMax) {
         continue;
       }
+      auto candJpsi = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate>>();
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
 	//FIXME the access to the MC particle gen not yet functional
 	//int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
@@ -166,14 +171,15 @@ struct TaskChicMC {
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
 
         registry.fill(HIST("hDeclengthRecSig"), candidate.decayLength(), candidate.pt());
+        registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - InvMassJpsiToMuMu(candJpsi) + RecoDecay::getMassPDG(pdg::Code::kJpsi));
         registry.fill(HIST("hMassRecSig"), InvMassChicToJpsiGamma(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hPtProng0RecSig"), candidate.ptProng0(), candidate.pt());
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), candidate.pt());
-        registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtSig"), CtChic(candidate), candidate.pt());
-        registry.fill(HIST("hYSig"), YChic(candidate), candidate.pt());
+        registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), candidate.pt());
+        registry.fill(HIST("hCtRecSig"), CtChic(candidate), candidate.pt());
+        registry.fill(HIST("hYRecSig"), YChic(candidate), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
@@ -185,9 +191,9 @@ struct TaskChicMC {
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0(), candidate.pt());
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), candidate.pt());
-        registry.fill(HIST("hChi2PCABg"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtBg"), CtChic(candidate), candidate.pt());
-        registry.fill(HIST("hYBg"), YChic(candidate), candidate.pt());
+        registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), candidate.pt());
+        registry.fill(HIST("hCtRecBg"), CtChic(candidate), candidate.pt());
+        registry.fill(HIST("hYRecBg"), YChic(candidate), candidate.pt());
       }
     } // rec
     // MC gen.
