@@ -157,9 +157,10 @@ struct TaskChicMC {
         continue;
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandChicMCGen>>(), 20443, true);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
-        registry.fill(HIST("hPtGenSig"), particleMother.pt());
+	//FIXME the access to the MC particle gen not yet functional
+	//int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
+        //auto particleMother = particlesMC.iteratorAt(indexMother);
+        //registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
@@ -198,6 +199,7 @@ struct TaskChicMC {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
         }
+
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta(), particle.pt());
 
@@ -208,6 +210,7 @@ struct TaskChicMC {
           ptProngs[counter] = particlesMC.iteratorAt(iD).pt();
           counter++;
         }
+
         registry.fill(HIST("hPtGenProng0"), ptProngs[0], particle.pt());
         registry.fill(HIST("hPtGenProng1"), ptProngs[1], particle.pt());
       }
