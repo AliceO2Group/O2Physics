@@ -56,7 +56,7 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, 
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                  aod::McTrackLabels>;
-//using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Cents, aod::McCollisionLabels>;
+//using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::McCollisionLabels>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>; // TODO: remove centrality temporarily
 
 // HACK: In order to be able to deduce which kind of aod object is transmitted to the templated VarManager::Fill functions

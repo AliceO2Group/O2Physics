@@ -13,7 +13,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality_new.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/MC.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"

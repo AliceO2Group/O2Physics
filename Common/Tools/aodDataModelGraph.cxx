@@ -72,7 +72,7 @@ static std::vector<std::pair<std::string, StyleType>> tableStyles = {
   {"HfCandProng", StyleType::BLUE},
   {"pidResp", StyleType::GREEN},
   {"Mults", StyleType::GREEN},
-  {"Cents", StyleType::GREEN},
+  {"CentV0Ms", StyleType::GREEN},
   {"Timestamps", StyleType::GREEN},
   {"Jet", StyleType::BLUE},
   {"Mc", StyleType::RED},
@@ -247,7 +247,7 @@ int main(int, char**)
   displayEntity<FDDs>();
   displayEntity<HMPIDs>();
 
-  displayEntities<Collisions, Cents, Mults, Timestamps>();
+  displayEntities<Collisions, CentV0Ms, Mults, Timestamps>();
   displayEntity<McCollisions>();
   displayEntity<McCollisionLabels>();
 

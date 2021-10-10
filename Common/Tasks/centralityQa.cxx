@@ -20,7 +20,7 @@ using namespace o2::framework;
 
 struct CentralityQaTask {
   OutputObj<TH1F> hCentV0M{TH1F("hCentV0M", "", 21, 0, 105.)};
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Cents>::iterator const& col)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& col)
   {
     if (!col.alias()[kINT7]) {
       return;
