@@ -125,16 +125,17 @@ struct HfFilter {
   std::array<LabeledArray<double>, 2> cutsSingleTrackBeauty;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  std::shared_ptr<TH1> hProcessedEvents;
 
   void init(o2::framework::InitContext&)
   {
 
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
-    registry.add("fProcessedEvents", "HF - event filtered;;events", HistType::kTH1F, {{5, -0.5, 4.5}});
+    hProcessedEvents = std::get<std::shared_ptr<TH1>>(registry.add("fProcessedEvents", "HF - event filtered;;events", HistType::kTH1F, {{5, -0.5, 4.5}}));
     std::array<std::string, 5> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} candidate", "w/ beauty candidate", "w/ femto candidate"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
-      registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+      hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
   }
 
@@ -344,11 +345,11 @@ struct HfFilter {
     tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto]);
 
     if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto]) {
-      registry.get<TH1>(HIST("fProcessedEvents"))->Fill(1);
+      hProcessedEvents->Fill(1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersHF; iTrigger++) {
         if (keepEvent[iTrigger]) {
-          registry.get<TH1>(HIST("fProcessedEvents"))->Fill(iTrigger + 2);
+          hProcessedEvents->Fill(iTrigger + 2);
         }
       }
     }
