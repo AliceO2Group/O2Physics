@@ -23,11 +23,6 @@ namespace o2::analysis
 {
 namespace femtoDream
 {
-namespace
-{
-static std::array<std::array<std::shared_ptr<TH2>, 2>, 2> histdetadpi{};
-static std::array<std::array<std::shared_ptr<TH2>, 9>, 2> histdetadpiRadii{};
-} // namespace
 
 /// \class FemtoDreamDetaDphiStar
 /// \brief Class to check particles for the close pair rejection.
@@ -50,21 +45,23 @@ class FemtoDreamDetaDphiStar
     mHistogramRegistryQA = registryQA;
 
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((static_cast<std::string>(histNames[0][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -2.5, 2.5}, {100, -2.5, 2.5}});
-      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((static_cast<std::string>(histNames[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -2.5, 2.5}, {100, -2.5, 2.5}});
+      std::string dirName = static_cast<std::string>(dirNames[0]);
+      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       if (plotForEveryRadii) {
         for (int i = 0; i < 9; i++) {
-          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((static_cast<std::string>(histNamesRadii[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -2.5, 2.5}, {100, -2.5, 2.5}});
+          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         }
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       for (int i = 0; i < 2; i++) {
-        histdetadpi[0][i] = mHistogramRegistry->add<TH2>((static_cast<std::string>(histNames[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -2.5, 2.5}, {100, -2.5, 2.5}});
-        histdetadpi[1][i] = mHistogramRegistry->add<TH2>((static_cast<std::string>(histNames[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -2.5, 2.5}, {100, -2.5, 2.5}});
+        std::string dirName = static_cast<std::string>(dirNames[1]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((static_cast<std::string>(histNamesRadii[i][j])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -2.5, 2.5}, {100, -2.5, 2.5}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
       }
@@ -102,14 +99,13 @@ class FemtoDreamDetaDphiStar
       bool pass = true;
       for (int i = 0; i < 2; i++) {
         auto daughter = particles.begin() + part2.indices()[i];
-        auto deta = part1.eta() - part2.eta();
-        auto dphiAvg = AveragePhiStar(part1, daughter, i);
+        auto deta = part1.eta() - daughter.eta();
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i);
         histdetadpi[i][0]->Fill(deta, dphiAvg);
         if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          return false;
+          pass = false;
         } else {
           histdetadpi[i][1]->Fill(deta, dphiAvg);
-          return true;
         }
       }
       return pass;
@@ -122,6 +118,8 @@ class FemtoDreamDetaDphiStar
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
+  static constexpr std::string_view dirNames[2] = {"kTrack_kTrack/", "kTrack_kV0/"};
+
   static constexpr std::string_view histNames[2][2] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1"},
                                                        {"detadphidetadphi0After_0", "detadphidetadphi0After_1"}};
   static constexpr std::string_view histNamesRadii[2][9] = {{"detadphidetadphi0Before_0_0", "detadphidetadphi0Before_0_1", "detadphidetadphi0Before_0_2",
@@ -144,6 +142,9 @@ class FemtoDreamDetaDphiStar
   float deltaEtaMax;
   float magfield;
   bool plotForEveryRadii = false;
+
+  std::array<std::array<std::shared_ptr<TH2>, 2>, 2> histdetadpi{};
+  std::array<std::array<std::shared_ptr<TH2>, 9>, 2> histdetadpiRadii{};
 
   ///  Calculate phi at all required radii stored in tmpRadiiTPC
   template <typename T>
@@ -170,8 +171,8 @@ class FemtoDreamDetaDphiStar
   }
 
   ///  Calculate average phi
-  template <typename T>
-  float AveragePhiStar(const T& part1, const T& part2, int iHist)
+  template <typename T1, typename T2>
+  float AveragePhiStar(const T1& part1, const T2& part2, int iHist)
   {
     std::vector<float> tmpVec1;
     std::vector<float> tmpVec2;
