@@ -30,26 +30,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-// FIXME: we should put this function in some common header so it has to be defined only once
-template <typename T>
-void makelogaxis(T h)
-{
-  const int nbins = h->GetNbinsX();
-  double binp[nbins + 1];
-  double max = h->GetXaxis()->GetBinUpEdge(nbins);
-  double min = h->GetXaxis()->GetBinLowEdge(1);
-  if (min <= 0) {
-    min = 0.00001;
-  }
-  double lmin = TMath::Log10(min);
-  double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-  for (int i = 0; i < nbins; i++) {
-    binp[i] = TMath::Exp(TMath::Log(10) * (lmin + i * ldelta));
-  }
-  binp[nbins] = max + 1;
-  h->GetXaxis()->Set(nbins, binp);
-}
-
 constexpr int Np = 9;
 struct TPCSpectraReferenceTask {
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
