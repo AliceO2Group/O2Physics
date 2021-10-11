@@ -27,6 +27,17 @@ using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace
+{
+static constexpr int nPart = 2;
+static constexpr int nCuts = 5;
+static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
+static const std::vector<std::string> cutNames{"MinPt", "MaxPt", "MaxEta", "MaxDCAxy", "PIDthr"};
+static const float cutsTable[nPart][nCuts]{
+  {0.4f, 4.05f, 0.4f, 0.1f, 0.75f},
+  {0.4f, 4.05f, 0.4f, 0.1f, 0.75f}};
+} // namespace
+
 struct femtoDreamPairTaskTrackTrack {
 
   /// Particle selection part
@@ -34,24 +45,22 @@ struct femtoDreamPairTaskTrackTrack {
   // \todo checky why is the enum not working in the partition
   uint8_t Track = 0; // Track
 
+  /// Table for both particles
+  Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
+
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 1040230, "Particle 1 - Selection bit"};
-  Configurable<float> ConfPtMinPartOne{"ConfPtMinPartOne", 0.4f, "Particle 1 - min. pT selection (GeV/c)"};
-  Configurable<float> ConfPtMaxPartOne{"ConfPtMaxPartOne", 4.05f, "Particle 1 - max. pT selection (GeV/c)"};
-  Configurable<float> ConfEtaMaxPartOne{"ConfEtaMaxPartOne", 0.8f, "Particle 1 - max. eta selection"};
-  Configurable<float> ConfDCAxyMaxPartOne{"ConfDCAxyMaxPartOne", 0.1f, "Particle 1 - max. DCA_xy selection (cm)"};
-  Configurable<float> ConfPIDThreshPartOne{"ConfPIDThreshPartOne", 0.75f, "Particle 1 - TPC / TPC+TOF PID momentum threshold"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 693386, "Particle 1 - Selection bit"};
   Configurable<std::vector<int>> ConfTPCPIDPartOne{"ConfTPCPIDPartOne", std::vector<int>{13}, "Particle 1 - TPC PID bits"};        // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
   Configurable<std::vector<int>> ConfCombPIDPartOne{"ConfCombPIDPartOne", std::vector<int>{12}, "Particle 1 - Combined PID bits"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == Track) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) && // not working, need for bit-mask
-                                                 (aod::femtodreamparticle::pt > ConfPtMinPartOne) &&
-                                                 (aod::femtodreamparticle::pt < ConfPtMaxPartOne) &&
-                                                 (nabs(aod::femtodreamparticle::tempFitVar) < ConfDCAxyMaxPartOne) &&
-                                                 (nabs(aod::femtodreamparticle::eta) < ConfEtaMaxPartOne);
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) &&
+                                                 (aod::femtodreamparticle::pt > cfgCutTable->get("PartOne", "MinPt")) &&
+                                                 (aod::femtodreamparticle::pt < cfgCutTable->get("PartOne", "MaxPt")) &&
+                                                 (nabs(aod::femtodreamparticle::tempFitVar) < cfgCutTable->get("PartOne", "MaxDCAxy")) &&
+                                                 (nabs(aod::femtodreamparticle::eta) < cfgCutTable->get("PartOne", "MaxEta"));
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -59,22 +68,17 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 1040230, "Particle 2 - Selection bit"};
-  Configurable<float> ConfPtMinPartTwo{"ConfPtMinPartTwo", 0.4f, "Particle 2 - min. pT selection (GeV/c)"};
-  Configurable<float> ConfPtMaxPartTwo{"ConfPtMaxPartTwo", 4.05f, "Particle 2 - max. pT selection (GeV/c)"};
-  Configurable<float> ConfEtaMaxPartTwo{"ConfEtaMaxPartTwo", 0.8f, "Particle 2 - max. eta selection"};
-  Configurable<float> ConfDCAxyMaxPartTwo{"ConfDCAxyMaxPartTwo", 0.1f, "Particle 2 - max. DCA_xy selection (cm)"};
-  Configurable<float> ConfPIDThreshPartTwo{"ConfPIDThreshPartTwo", 0.75f, "Particle 2 - TPC / TPC+TOF PID momentum threshold"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 693386, "Particle 2 - Selection bit"};
   Configurable<std::vector<int>> ConfTPCPIDPartTwo{"ConfTPCPIDPartTwo", std::vector<int>{13}, "Particle 2 - TPC PID bits"};        // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
   Configurable<std::vector<int>> ConfCombPIDPartTwo{"ConfCombPIDPartTwo", std::vector<int>{12}, "Particle 2 - Combined PID bits"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == Track) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) && // not working, need for bit-mask
-                                                 (aod::femtodreamparticle::pt > ConfPtMinPartTwo) &&
-                                                 (aod::femtodreamparticle::pt < ConfPtMaxPartTwo) &&
-                                                 (nabs(aod::femtodreamparticle::tempFitVar) < ConfDCAxyMaxPartTwo) &&
-                                                 (nabs(aod::femtodreamparticle::eta) < ConfEtaMaxPartTwo);
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) &&
+                                                 (aod::femtodreamparticle::pt > cfgCutTable->get("PartTwo", "MinPt")) &&
+                                                 (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
+                                                 (nabs(aod::femtodreamparticle::tempFitVar) < cfgCutTable->get("PartTwo", "MaxDCAxy")) &&
+                                                 (nabs(aod::femtodreamparticle::eta) < cfgCutTable->get("PartTwo", "MaxEta"));
 
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -161,14 +165,14 @@ struct femtoDreamPairTaskTrackTrack {
     const int multCol = col.multV0M();
     /// Histogramming same event
     for (auto& part : partsOne) {
-      if (!isFullPIDSelected(part.pidcut(), part.p(), ConfPIDThreshPartOne, vecTPCPIDPartOne, vecCombPIDPartOne)) {
+      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne)) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
     }
     if (!ConfIsSame) {
       for (auto& part : partsTwo) {
-        if (!isFullPIDSelected(part.pidcut(), part.p(), ConfPIDThreshPartTwo, vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+        if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
           continue;
         }
         trackHistoPartTwo.fillQA(part);
@@ -176,7 +180,7 @@ struct femtoDreamPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
-      if (!isFullPIDSelected(p1.pidcut(), p1.p(), ConfPIDThreshPartOne, vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), ConfPIDThreshPartTwo, vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
         continue;
       }
 
@@ -241,7 +245,7 @@ struct femtoDreamPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
-        if (!isFullPIDSelected(p1.pidcut(), p1.p(), ConfPIDThreshPartOne, vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), ConfPIDThreshPartTwo, vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
           continue;
         }
         mixedEventCont.setPair(p1, p2, collision1.multV0M()); // < \todo dirty trick, the multiplicity will be of course within the bin width used for the hashes
