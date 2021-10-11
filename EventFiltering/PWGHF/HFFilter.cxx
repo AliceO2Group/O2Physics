@@ -495,14 +495,12 @@ struct ProduceTrainingSamples { // Struct for training samples
       if (indexRec > -1) {
         auto particle = particlesMC.iteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-        if(origin == OriginType::NonPrompt) {
+        if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
-        }
-        else {
+        } else {
           flag = kPrompt;
         }
-      }
-      else {
+      } else {
         flag = kBkg;
       }
 
@@ -513,9 +511,9 @@ struct ProduceTrainingSamples { // Struct for training samples
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
 
-      auto trackFirst = cand3Prong.index0_as<BigTracksMCPID>(); // first daughter
+      auto trackFirst = cand3Prong.index0_as<BigTracksMCPID>();  // first daughter
       auto trackSecond = cand3Prong.index1_as<BigTracksMCPID>(); // second daughter
-      auto trackThird = cand3Prong.index2_as<BigTracksMCPID>(); // third daughter
+      auto trackThird = cand3Prong.index2_as<BigTracksMCPID>();  // third daughter
       auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
 
       int8_t sign = 0;
@@ -528,15 +526,13 @@ struct ProduceTrainingSamples { // Struct for training samples
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign); //TODO: replace hard coded pdg code
-      }
-      else {
+      } else {
         channel = kDplus;
       }
       if (indexRec < 0) {
         // Λc± → p± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-      }
-      else {
+      } else {
         channel = kDs;
       }
       if (indexRec < 0) {
@@ -545,22 +541,19 @@ struct ProduceTrainingSamples { // Struct for training samples
         if (indexRec > -1) {
           channel = kXic;
         }
-      }
-      else {
+      } else {
         channel = kLc;
       }
 
       if (indexRec > -1) {
         auto particle = particlesMC.iteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-        if(origin == OriginType::NonPrompt) {
+        if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
-        }
-        else {
+        } else {
           flag = kPrompt;
         }
-      }
-      else {
+      } else {
         flag = kBkg;
       }
 
