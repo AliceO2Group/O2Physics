@@ -987,24 +987,22 @@ DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float);          // Jpsi mass
 enum DecayType { ChicToJpsiToEEGamma = 0,
                  ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
 // chic → Jpsi gamma
-float massChic = RecoDecay::getMassPDG(pdg::Code::kChic1); // chi_c1(1P)
-
 template <typename T>
 auto CtChic(const T& candidate)
 {
-  return candidate.ct(massChic);
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kChic1));
 }
 
 template <typename T>
 auto YChic(const T& candidate)
 {
-  return candidate.y(massChic);
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kChic1));
 }
 
 template <typename T>
 auto EChic(const T& candidate)
 {
-  return candidate.e(massChic);
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kChic1));
 }
 template <typename T>
 auto InvMassChicToJpsiGamma(const T& candidate)

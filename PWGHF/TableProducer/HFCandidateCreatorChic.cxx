@@ -237,7 +237,6 @@ struct HFCandidateCreatorChicMC {
           auto particleMother = particlesMC.iteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.index1().e());
           hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
-          std::cout << particleMother.pdgCode() << std::endl;
           int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
           int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
           if ((indexDaughterFirst > -1 && indexDaughterLast > -1)) {
