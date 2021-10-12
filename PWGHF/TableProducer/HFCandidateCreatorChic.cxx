@@ -52,8 +52,8 @@ struct HFCandidateCreatorChic {
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> eneGammaMin{"eneGammaMin", 0.4, "minimum gamma energy threshold (GeV)"};
-  Configurable<double> etaGammaMin{"etaGammaMin", -0.33, "minimum gamma pseudorapidity"};
-  Configurable<double> etaGammaMax{"etaGammaMax",  0.33, "maximum gamma pseudorapidity"};
+  Configurable<double> etaGammaMin{"etaGammaMin", -1, "minimum gamma pseudorapidity"};
+  Configurable<double> etaGammaMax{"etaGammaMax",  1, "maximum gamma pseudorapidity"};
 //  Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -274,7 +274,7 @@ struct HFCandidateCreatorChicMC {
         auto particle = particlesMC.iteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
-      
+
       rowMCMatchRec(flag, origin, channel);
     }
 
