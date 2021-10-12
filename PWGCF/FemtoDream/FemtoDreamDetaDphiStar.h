@@ -82,10 +82,10 @@ class FemtoDreamDetaDphiStar
       auto dphiAvg = AveragePhiStar(part1, part2, 0);
       histdetadpi[0][0]->Fill(deta, dphiAvg);
       if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-        return false;
+        return true;
       } else {
         histdetadpi[0][1]->Fill(deta, dphiAvg);
-        return true;
+        return false;
       }
 
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
@@ -103,7 +103,7 @@ class FemtoDreamDetaDphiStar
         auto dphiAvg = AveragePhiStar(part1, *daughter, i);
         histdetadpi[i][0]->Fill(deta, dphiAvg);
         if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          pass = false;
+          pass = true;
         } else {
           histdetadpi[i][1]->Fill(deta, dphiAvg);
         }
