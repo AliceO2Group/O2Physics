@@ -201,7 +201,7 @@ struct TaskChicMC {
     //Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (particle.flagMCMatchGen() == 1 << decayMode) {
-        auto mchic = RecoDecay::getMassPDG(pdg::Code::kChic); // chi_c1(1p)
+        auto mchic = RecoDecay::getMassPDG(pdg::Code::kChic1); // chi_c1(1p)
         if (cutYCandMax >= 0. && std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, mchic)) > cutYCandMax) {
           // Printf("MC Gen.: Y rejection: %g", RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, 3.87168));
           continue;
