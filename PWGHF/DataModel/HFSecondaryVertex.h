@@ -315,31 +315,6 @@ auto InvMassJpsiToMuMu(const T& candidate)
   return candidate.m(array{RecoDecay::getMassPDG(kMuonPlus), RecoDecay::getMassPDG(kMuonMinus)});
 }
 
-// chic → Jpsi gamma
-float massChic = RecoDecay::getMassPDG(20443); // chi_c1(1P)
-
-template <typename T>
-auto CtChic(const T& candidate)
-{
-  return candidate.ct(massChic);
-}
-
-template <typename T>
-auto YChic(const T& candidate)
-{
-  return candidate.y(massChic);
-}
-
-template <typename T>
-auto EChic(const T& candidate)
-{
-  return candidate.e(massChic);
-}
-template <typename T>
-auto InvMassChicToJpsiGamma(const T& candidate)
-{
-  return candidate.m(array{RecoDecay::getMassPDG(443), 0.});
-}
 } // namespace hf_cand_prong2
 
 // general columns
@@ -1011,6 +986,32 @@ DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float); // Jpsi mass
 // mapping of decay types
 enum DecayType { ChicToJpsiToEEGamma = 0,
                  ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
+// chic → Jpsi gamma
+float massChic = RecoDecay::getMassPDG(pdg::Code::kChic1); // chi_c1(1P)
+
+template <typename T>
+auto CtChic(const T& candidate)
+{
+  return candidate.ct(massChic);
+}
+
+template <typename T>
+auto YChic(const T& candidate)
+{
+  return candidate.y(massChic);
+}
+
+template <typename T>
+auto EChic(const T& candidate)
+{
+  return candidate.e(massChic);
+}
+template <typename T>
+auto InvMassChicToJpsiGamma(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kJpsi), 0.});
+}
+
 } // namespace hf_cand_chic
 
 // declare dedicated chi_c candidate table
