@@ -65,8 +65,8 @@ struct TaskChic {
     registry.add("hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)pTBins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)pTBins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)pTBins, "#it{p}_{T} (GeV/#it{c})"}}});
-//    registry.add("hEGamma", "Photon energy", {HistType::kTH1F, {{200, 0., 10.}}});
-   }
+    //    registry.add("hEGamma", "Photon energy", {HistType::kTH1F, {{200, 0., 10.}}});
+  }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
@@ -96,7 +96,7 @@ struct TaskChic {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-//      registry.fill(HIST("hEGamma"), candidate.index1().e());
+      //      registry.fill(HIST("hEGamma"), candidate.index1().e());
     } // candidate loop
   }   // process
 };    // struct
@@ -164,8 +164,8 @@ struct TaskChicMC {
         continue;
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
-	//FIXME the access to the MC particle gen not yet functional
-	//int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
+        //FIXME the access to the MC particle gen not yet functional
+        //int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), 20443);
         //auto particleMother = particlesMC.iteratorAt(indexMother);
         //registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
@@ -213,7 +213,7 @@ struct TaskChicMC {
         // properties of gen matched chic, to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (int iD = particle.daughter0Id(); iD <= particle.daughter1Id(); ++iD) { 
+        for (int iD = particle.daughter0Id(); iD <= particle.daughter1Id(); ++iD) {
           ptProngs[counter] = particlesMC.iteratorAt(iD).pt();
           counter++;
         }
