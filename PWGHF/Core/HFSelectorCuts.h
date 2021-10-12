@@ -31,6 +31,7 @@ enum Code {
   kXiCPlus = 4232,
   kXiCCPlusPlus = 4422,
   kJpsi = 443,
+  kChic1 = 20443,
   kBPlus = 521,
   kX3872 = 9920443
 };
@@ -580,6 +581,54 @@ static const std::vector<std::string> pTBinLabels = {
 // column labels
 static const std::vector<std::string> cutVarLabels = {"m", "CPA", "d0 Jpsi", "d0 Pi", "pT Jpsi", "pT Pi", "chi2PCA"};
 } // namespace hf_cuts_x_tojpsipipi
+
+namespace hf_cuts_chic_tojpsigamma
+{
+// dummy selections for chic --> TO BE IMPLEMENTED
+static constexpr int npTBins = 9;
+static constexpr int nCutVars = 7;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double pTBins[npTBins + 1] = {
+  0,
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  7.0,
+  10.0,
+  15.0,
+};
+auto pTBins_v = std::vector<double>{pTBins, pTBins + npTBins + 1};
+
+// default values for the cuts
+//                                            m   CPA  d0Jpsi  d0gamma pTJpsi pTgamma chi2PCA
+constexpr double cuts[npTBins][nCutVars] = {{3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 0<pt<0.5 */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 0.5<pt<1 */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 1<pt<2   */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 2<pt<3   */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 3<pt<4   */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 4<pt<5   */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 5<pt<7   */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.},  /* 7<pt<10  */
+                                            {3.0, -1., 0.001, 0.001, 0.5, 0.15, 1.}}; /* 10<pt<15 */
+// row labels
+static const std::vector<std::string> pTBinLabels = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8"};
+// column labels
+static const std::vector<std::string> cutVarLabels = {"m", "CPA", "d0 Jpsi", "d0 Gamma", "pT Jpsi", "pT Gamma", "chi2PCA"};
+} // namespace hf_cuts_chic_tojpsigamma
+
 } // namespace o2::analysis
 
 #endif // HF_SELECTOR_CUTS_H_
