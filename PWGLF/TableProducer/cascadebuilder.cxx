@@ -77,7 +77,7 @@ struct cascadebuilder {
 
   //Configurables
   Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
-  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
+  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
   Configurable<int> mincrossedrows{"mincrossedrows", -1, "min crossed rows"};
   Configurable<float> dcav0topv{"dcav0topv", .1, "DCA V0 To PV"};
@@ -87,7 +87,7 @@ struct cascadebuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
-  Configurable<bool> tpcrefit{"tpcrefit", 1, "demand TPC refit"};
+  Configurable<bool> tpcrefit{"tpcrefit", true, "demand TPC refit"};
   Configurable<double> v0radius{"v0radius", 0.9, "v0radius"};
 
   void process(aod::MatchedV0Cascades const& MatchedV0Cascades, aod::V0Datas const&, aod::Cascades const&, aod::Collisions const&, soa::Join<aod::FullTracks, aod::TracksExtended> const&)
