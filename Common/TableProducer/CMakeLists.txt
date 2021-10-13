@@ -46,6 +46,6 @@ o2physics_add_dpl_workflow(weak-decay-indices
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(ft0-table
-                    SOURCES infoTableFT0producer.cxx
+                    SOURCES FT0Table.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore  O2Physics::AnalysisCCDB O2::DetectorsBase O2::CCDB O2::CommonConstants
                     COMPONENT_NAME Analysis)

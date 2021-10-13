@@ -45,12 +45,12 @@ struct FT0InfoQaTask {
     int64_t foundFT0 = col.foundFT0();
     if (foundFT0 != -1) {
       LOGF(info, "multV0A=%5.0f;  multT0A=%5.0f; PV=%f; T0vertex=%f;T0A=%f; T0C=%f; T0AC=%f ", col.multV0A(), col.multT0A(), col.posZ(), col.t0A(), col.t0C(), col.t0AC(), col.t0vertex());
-      /*      hT0A->Fill(col.t0A());
+      hT0A->Fill(col.t0A());
       hT0C->Fill(col.t0C());
       hT0AC->Fill(col.t0AC());
       hT0Vertex->Fill(col.t0vertex());
       hVertex_T0_PV->Fill(col.t0vertex(), col.posZ());
-      hT0res->Fill((col.t0A()-col.t0C())/2.);*/
+      hT0res->Fill((col.t0A() - col.t0C()) / 2.);
     }
   }
 };

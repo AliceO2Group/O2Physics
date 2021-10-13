@@ -17,10 +17,10 @@ namespace o2::aod
 {
 namespace infoFT0
 {
-DECLARE_SOA_COLUMN(T0A, t0A, float);
-DECLARE_SOA_COLUMN(T0C, t0C, float);
-DECLARE_SOA_COLUMN(T0AC, t0AC, float);
-DECLARE_SOA_COLUMN(T0vertex, t0vertex, float);
+DECLARE_SOA_COLUMN(T0A, t0A, float);           //! Collision time A-side, corrected with primary vertex
+DECLARE_SOA_COLUMN(T0C, t0C, float);           //! Collision time A-side, corrected with primary vertex
+DECLARE_SOA_COLUMN(T0AC, t0AC, float);         //! Collision time (A+C)/2
+DECLARE_SOA_COLUMN(T0vertex, t0vertex, float); //! FT0 vertex
 } // namespace infoFT0
 DECLARE_SOA_TABLE(T0info, "AOD", "T0info",
                   infoFT0::T0A, infoFT0::T0C,
