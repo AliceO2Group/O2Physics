@@ -319,7 +319,7 @@ struct CorrelationTask {
       LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
-      // TODO not correct because event-level histograms on collision1 are filled for each pair
+      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
       if (fillCollisionAOD(mixed, collision1, collision1.centV0M()) == false) {
         continue;
       }
