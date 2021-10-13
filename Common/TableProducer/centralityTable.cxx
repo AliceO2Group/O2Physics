@@ -26,15 +26,15 @@ using namespace o2::framework;
 
 struct CentralityTableTask {
   Produces<aod::CentV0Ms> centVOM;
-  Produces<aod::CentSPDs> centSPD;
-  Produces<aod::CentCL0s> centCL1;
-  Produces<aod::CentCL1s> centCL2;
+  Produces<aod::CentRun2SPDs> centRun2SPD;
+  Produces<aod::CentRun2CL0s> centRun2CL1;
+  Produces<aod::CentRun2CL1s> centRun2CL2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<int> estV0M{"estV0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estSPD{"estSPD", -1, {"Produces centrality percentiles using SPD tracklets multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estCL0{"estCL0", -1, {"Produces centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estCL1{"estCL1", -1, {"Produces centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2SPD{"estRun2SPD", -1, {"Produces Run2 centrality percentiles using SPD tracklets multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2CL0{"estRun2CL0", -1, {"Produces Run2 centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2CL1{"estRun2CL1", -1, {"Produces Run2 centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   int mRunNumber;
   bool mV0MCalibrationStored;
@@ -63,12 +63,12 @@ struct CentralityTableTask {
           }
         };
         enable("V0M", estV0M);
-        enable("SPD", estSPD);
-        enable("CL0", estCL0);
-        enable("CL1", estCL1);
+        enable("Run2SPD", estRun2SPD);
+        enable("Run2CL0", estRun2CL0);
+        enable("Run2CL1", estRun2CL1);
       }
     }
-    ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     mRunNumber = 0;
@@ -84,7 +84,7 @@ struct CentralityTableTask {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (bc.runNumber() != mRunNumber) {
       LOGF(debug, "timestamp=%llu", bc.timestamp());
-      TList* callst = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality", bc.timestamp());
+      TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
 
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname, const char* hname) {
@@ -101,14 +101,14 @@ struct CentralityTableTask {
             LOGF(fatal, "Calibration information from V0M for run %d corrupted");
           }
         }
-        if (estSPD == 1) {
-          LOGF(fatal, "Calibration information estimated from SPD tracklets still not available");
+        if (estRun2SPD == 1) {
+          LOGF(fatal, "Run2 calibration information estimated from SPD tracklets still not available");
         }
-        if (estCL0 == 1) {
-          LOGF(fatal, "Calibration information estimated from CL0 still not available");
+        if (estRun2CL0 == 1) {
+          LOGF(fatal, "Run2 calibration information estimated from CL0 still not available");
         }
-        if (estCL1 == 1) {
-          LOGF(fatal, "Calibration information estimated from CL1 still not available");
+        if (estRun2CL1 == 1) {
+          LOGF(fatal, "Run2 calibration information estimated from CL1 still not available");
         }
         if (mV0MCalibrationStored) {
           mRunNumber = bc.runNumber();
@@ -126,7 +126,7 @@ struct CentralityTableTask {
                     collision.multV0C() * mhVtxAmpCorrV0C->GetBinContent(mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
         centV0M = mhMultSelCalibV0M->GetBinContent(mhMultSelCalibV0M->FindFixBin(v0m));
       }
-      LOGF(info, "centV0M=%.0f", centV0M);
+      LOGF(debug, "centV0M=%.0f", centV0M);
       // fill centrality columns
       centVOM(centV0M);
     }
