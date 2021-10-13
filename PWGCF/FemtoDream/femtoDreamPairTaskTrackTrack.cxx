@@ -17,6 +17,7 @@
 #include "FemtoDreamParticleHisto.h"
 #include "FemtoDreamPairCleaner.h"
 #include "FemtoDreamContainer.h"
+#include "FemtoDreamDetaDphiStar.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -34,8 +35,8 @@ static constexpr int nCuts = 5;
 static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
 static const std::vector<std::string> cutNames{"MinPt", "MaxPt", "MaxEta", "MaxDCAxy", "PIDthr"};
 static const float cutsTable[nPart][nCuts]{
-  {0.4f, 4.05f, 0.4f, 0.1f, 0.75f},
-  {0.4f, 4.05f, 0.4f, 0.1f, 0.75f}};
+  {0.5f, 4.05f, 0.8f, 0.1f, 0.75f},
+  {0.5f, 4.05f, 0.8f, 0.1f, 0.75f}};
 } // namespace
 
 struct femtoDreamPairTaskTrackTrack {
@@ -50,7 +51,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 693386, "Particle 1 - Selection bit"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 693318, "Particle 1 - Selection bit"};
   Configurable<std::vector<int>> ConfTPCPIDPartOne{"ConfTPCPIDPartOne", std::vector<int>{13}, "Particle 1 - TPC PID bits"};        // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
   Configurable<std::vector<int>> ConfCombPIDPartOne{"ConfCombPIDPartOne", std::vector<int>{12}, "Particle 1 - Combined PID bits"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
@@ -68,7 +69,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 693386, "Particle 2 - Selection bit"};
+  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 693318, "Particle 2 - Selection bit"};
   Configurable<std::vector<int>> ConfTPCPIDPartTwo{"ConfTPCPIDPartTwo", std::vector<int>{13}, "Particle 2 - TPC PID bits"};        // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
   Configurable<std::vector<int>> ConfCombPIDPartTwo{"ConfCombPIDPartTwo", std::vector<int>{12}, "Particle 2 - Combined PID bits"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
@@ -92,11 +93,13 @@ struct femtoDreamPairTaskTrackTrack {
   ConfigurableAxis CfgkTBins{"CfgkTBins", {70, 0., 7.}, "binning kT"};
   ConfigurableAxis CfgmTBins{"CfgmTBins", {70, 0., 7.}, "binning mT"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
+  Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
+  Configurable<float> ConfBField{"ConfBField", +0.5, "Magnetic Field"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleaner;
-
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejection;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -113,6 +116,9 @@ struct femtoDreamPairTaskTrackTrack {
     mixedEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins);
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
+    if (ConfIsCPR) {
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfBField, false); /// \todo add config for Δη and ΔΦ cut values
+    }
 
     vecTPCPIDPartOne = ConfTPCPIDPartOne;
     vecTPCPIDPartTwo = ConfTPCPIDPartTwo;
@@ -184,6 +190,13 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
+      ///close pair rejection
+      if (ConfIsCPR) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+          continue;
+        }
+      }
+
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
@@ -247,6 +260,11 @@ struct femtoDreamPairTaskTrackTrack {
       for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
         if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
           continue;
+        }
+        if (ConfIsCPR) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+            continue;
+          }
         }
         mixedEventCont.setPair(p1, p2, collision1.multV0M()); // < \todo dirty trick, the multiplicity will be of course within the bin width used for the hashes
       }
