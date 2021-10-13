@@ -137,7 +137,7 @@ struct HFCandidateCreatorChic {
           continue;
         }
 
-        array<float, 3> pvecGamma{ecal.px(), ecal.py(), ecal.pz()};
+        array<float, 3> pvecGamma{(float)ecal.px(), (float)ecal.py(), (float)ecal.pz()};
 
         // get track impact parameters
         // This modifies track momenta!
