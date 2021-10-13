@@ -77,7 +77,7 @@ struct cascadebuilder {
 
   //Configurables
   Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
-  Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
+  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
 
   Configurable<int> mincrossedrows{"mincrossedrows", -1, "min crossed rows"};
   Configurable<float> dcav0topv{"dcav0topv", .1, "DCA V0 To PV"};
