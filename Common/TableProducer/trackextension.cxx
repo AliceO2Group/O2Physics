@@ -44,9 +44,9 @@ struct TrackExtension {
   {
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     if ((cfgDcaMethod == 1) or (cfgDcaMethod == 2)) {
-      o2::base::GeometryManager::loadGeometry();
-      o2::base::Propagator::initFieldFromGRP();
-      if (cfgDcaMethod == 2) {
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        o2::base::GeometryManager::loadGeometry();
+        o2::base::Propagator::initFieldFromGRP();
         auto matLUTFile = o2::base::NameConf::getMatLUTFileName();
         if (o2::utils::Str::pathExists(matLUTFile)) {
           auto* lut = o2::base::MatLayerCylSet::loadFromFile(matLUTFile);
@@ -65,10 +65,10 @@ struct TrackExtension {
           if (cfgDcaMethod == 1) {
             trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, o2::base::Propagator::Instance()->getNominalBz(), &dca);
           } else if (cfgDcaMethod == 2) {
-            o2::dataformats::DCA dcaInfo;
-            if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2., matCorr, &dca)) {
-              dca[0] = dcaInfo.getY();
-              dca[1] = dcaInfo.getZ();
+            gpu::gpustd::array<float, 2> dcaInfo;
+            if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+              dca[0] = dcaInfo[0];
+              dca[1] = dcaInfo[1];
             }
           } else {
             float magField = 5.0; // in kG (FIXME: get this from CCDB)
