@@ -23,3 +23,8 @@ o2physics_add_dpl_workflow(alice3-pid-tof
                     SOURCES alice3-pidTOF.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-centrality
+                    SOURCES alice3-centrality.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

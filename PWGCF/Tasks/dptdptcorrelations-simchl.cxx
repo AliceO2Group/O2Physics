@@ -195,6 +195,13 @@ TH2F* fhEtaVsPhiA = nullptr;
 TH2F* fhPtVsEtaB = nullptr;
 TH2F* fhPtVsEtaA = nullptr;
 
+TH1F* fhDCAxyB = nullptr;
+TH1F* fhDCAxyA = nullptr;
+TH1F* fhFineDCAxyA = nullptr;
+TH1F* fhDCAzB = nullptr;
+TH1F* fhDCAzA = nullptr;
+TH1F* fhFineDCAzA = nullptr;
+
 TH1F* fhTrueCentMultB = nullptr;
 TH1F* fhTrueCentMultA = nullptr;
 TH1F* fhTrueVertexZB = nullptr;
@@ -217,6 +224,11 @@ TH2F* fhTrueEtaVsPhiA = nullptr;
 
 TH2F* fhTruePtVsEtaB = nullptr;
 TH2F* fhTruePtVsEtaA = nullptr;
+
+TH1F* fhTrueDCAxyB = nullptr;
+TH1F* fhTrueDCAxyA = nullptr;
+TH1F* fhTrueDCAzB = nullptr;
+TH1F* fhTrueDCAzA = nullptr;
 } // namespace filteranalysistask
 
 namespace filteranalysistaskqa
@@ -294,6 +306,7 @@ template <typename CollisionObject>
 bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 {
   using namespace filteranalysistask;
+  using namespace dptdptcorrelations;
 
   bool trigsel = false;
   if (fDataType != kData) {
@@ -328,6 +341,7 @@ template <typename CollisionObject>
 bool IsEvtSelectedNoCentMult(CollisionObject const& collision, float& centormult)
 {
   using namespace filteranalysistask;
+  using namespace dptdptcorrelations;
 
   bool trigsel = false;
   if (fDataType != kData) {
@@ -360,6 +374,7 @@ template <typename CollisionObject>
 bool IsTrueEvtSelected(CollisionObject const& collision, float centormult)
 {
   using namespace filteranalysistask;
+  using namespace dptdptcorrelations;
 
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
@@ -388,8 +403,12 @@ bool matchTrackType(TrackObject const& track)
         return false;
       }
       break;
-    case 3:        /* Run3 track */
-      return true; // so far we accept every kind of Run3 tracks
+    case 3: /* Run3 track */
+      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+        return true;
+      } else {
+        return false;
+      }
       break;
     default:
       return false;
@@ -455,6 +474,8 @@ void fillTrackHistosBeforeSelection(TrackObject const& track)
   } else {
     fhPtNegB->Fill(track.pt());
   }
+  fhDCAxyB->Fill(track.dcaXY());
+  fhDCAzB->Fill(track.dcaZ());
 }
 
 template <typename TrackObject>
@@ -472,10 +493,18 @@ void fillTrackHistosAfterSelection(TrackObject const& track)
   } else {
     fhPtNegA->Fill(track.pt());
   }
+  fhDCAxyA->Fill(track.dcaXY());
+  fhDCAzA->Fill(track.dcaZ());
+  if (track.dcaXY() < 1.0) {
+    fhFineDCAxyA->Fill(track.dcaXY());
+  }
+  if (track.dcaZ() < 1.0) {
+    fhFineDCAzA->Fill(track.dcaZ());
+  }
 }
 
-template <typename ParticleObject>
-void fillParticleHistosBeforeSelection(ParticleObject const& particle, float charge)
+template <typename ParticleObject, typename MCCollisionObject>
+void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
 {
   using namespace filteranalysistask;
 
@@ -489,10 +518,14 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, float cha
   } else if (charge < 0) {
     fhTruePtNegB->Fill(particle.pt());
   }
+
+  fhTrueDCAxyB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
 }
 
-template <typename ParticleObject>
-void fillParticleHistosAfterSelection(ParticleObject const& particle, float charge)
+template <typename ParticleObject, typename MCCollisionObject>
+void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
 {
   using namespace filteranalysistask;
 
@@ -506,6 +539,10 @@ void fillParticleHistosAfterSelection(ParticleObject const& particle, float char
   } else {
     fhTruePtNegA->Fill(particle.pt());
   }
+
+  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
 }
 
 } /* end namespace dptdptcorrelations */
@@ -519,7 +556,7 @@ using namespace dptdptcorrelations;
 struct DptDptCorrelationsFilterAnalysisTask {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
   Configurable<bool> cfgProcessPairs{"processpairs", true, "Process pairs: false = no, just singles, true = yes, process pairs"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: default V0M"};
+  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe. Default PbPb"};
 
@@ -553,8 +590,8 @@ struct DptDptCorrelationsFilterAnalysisTask {
         /* the track has been accepted */
         fillTrackHistosAfterSelection(track);
         acceptedtracks++;
+        scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
       }
-      scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
     }
     LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
   }
@@ -581,15 +618,15 @@ struct DptDptCorrelationsFilterAnalysisTask {
           /* the track has been accepted */
           fillTrackHistosAfterSelection(track);
           acceptedtracks++;
+          scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
         }
       }
-      scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
     }
     LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
   }
 
-  template <typename ParticleListObject, typename CollisionIndex>
-  void filterParticles(ParticleListObject const& particles, CollisionIndex colix)
+  template <typename ParticleListObject, typename MCCollisionObject, typename CollisionIndex>
+  void filterParticles(ParticleListObject const& particles, MCCollisionObject const& mccollision, CollisionIndex colix)
   {
     using namespace filteranalysistask;
 
@@ -606,18 +643,18 @@ struct DptDptCorrelationsFilterAnalysisTask {
       bool astwo = false;
       if (charge != 0) {
         /* before particle selection */
-        fillParticleHistosBeforeSelection(particle, charge);
+        fillParticleHistosBeforeSelection(particle, mccollision, charge);
 
         /* track selection */
         /* tricky because the boolean columns issue */
         AcceptParticle(particle, particles, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
-          fillParticleHistosAfterSelection(particle, charge);
+          fillParticleHistosAfterSelection(particle, mccollision, charge);
           acceptedparticles++;
+          scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
         }
       }
-      scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
     }
     LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
   }
@@ -693,6 +730,12 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhEtaVsPhiA = new TH2F(TString::Format("CSTaskEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi;#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
       fhPtVsEtaB = new TH2F(TString::Format("fhPtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
       fhPtVsEtaA = new TH2F(TString::Format("fhPtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
+      fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
+      fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
+      fhFineDCAxyA = new TH1F("FineDCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 4000, -1.0, 1.0);
+      fhDCAzB = new TH1F("DCAzB", "DCA_{z} distribution for reconstructed before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+      fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+      fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhCentMultB);
@@ -713,6 +756,12 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fOutputList->Add(fhEtaVsPhiA);
       fOutputList->Add(fhPtVsEtaB);
       fOutputList->Add(fhPtVsEtaA);
+      fOutputList->Add(fhDCAxyB);
+      fOutputList->Add(fhDCAxyA);
+      fOutputList->Add(fhFineDCAxyA);
+      fOutputList->Add(fhDCAzB);
+      fOutputList->Add(fhDCAzA);
+      fOutputList->Add(fhFineDCAzA);
     }
 
     if (fDataType != kData) {
@@ -743,6 +792,10 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTrueEtaVsPhiA = new TH2F(TString::Format("CSTaskTrueEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi (truth);#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
       fhTruePtVsEtaB = new TH2F(TString::Format("fhTruePtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
       fhTruePtVsEtaA = new TH2F(TString::Format("fhTruePtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
+      fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
+      fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
+      fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+      fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhTrueCentMultB);
@@ -763,6 +816,10 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fOutputList->Add(fhTrueEtaVsPhiA);
       fOutputList->Add(fhTruePtVsEtaB);
       fOutputList->Add(fhTruePtVsEtaA);
+      fOutputList->Add(fhTrueDCAxyB);
+      fOutputList->Add(fhTrueDCAxyA);
+      fOutputList->Add(fhTrueDCAzB);
+      fOutputList->Add(fhTrueDCAzA);
     }
   }
 
@@ -909,7 +966,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
         fhTrueVertexZA->Fill(mccollision.posZ());
         acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
 
-        filterParticles(mcparticles, acceptedtrueevents.lastIndex());
+        filterParticles(mcparticles, collision, acceptedtrueevents.lastIndex());
       } else {
         acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
         for (auto& particle : mcparticles) {
@@ -942,7 +999,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTrueVertexZA->Fill(mccollision.posZ());
       acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
 
-      filterParticles(mcparticles, acceptedtrueevents.lastIndex());
+      filterParticles(mcparticles, mccollision, acceptedtrueevents.lastIndex());
     } else {
       acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
       for (auto& particle : mcparticles) {
@@ -1589,13 +1646,56 @@ struct TracksAndEventClassificationQAGen {
   }
 };
 
+namespace recogenmap
+{
+std::vector<std::vector<int64_t>> mclabelpos[2];
+std::vector<std::vector<int64_t>> mclabelneg[2];
+} // namespace recogenmap
+
 /// \brief Checks the correspondence generator level <=> detector level
 struct CheckGeneratorLevelVsDetectorLevel {
+  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
+  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
+  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
+                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
+                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
+
   HistogramRegistry histos{"RecoGenHistograms", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   TDatabasePDG* fPDG;
+  typedef enum { kBEFORE = 0,
+                 kAFTER } beforeafterselection;
+  typedef enum { kPOSITIVE = 0,
+                 kNEGATIVE } colllabelsign;
 
   void init(InitContext const& context)
   {
+    using namespace dptdptcorrelations;
+    using namespace dptdptcorrelations::filteranalysistask;
+
+    /* update with the configurable values */
+    /* the binning */
+    ptbins = cfgBinning->mPTbins;
+    ptlow = cfgBinning->mPTmin;
+    ptup = cfgBinning->mPTmax;
+    etabins = cfgBinning->mEtabins;
+    etalow = cfgBinning->mEtamin;
+    etaup = cfgBinning->mEtamax;
+    zvtxbins = cfgBinning->mZVtxbins;
+    zvtxlow = cfgBinning->mZVtxmin;
+    zvtxup = cfgBinning->mZVtxmax;
+    /* the track types and combinations */
+    tracktype = cfgTrackType.value;
+    /* the centrality/multiplicity estimation */
+    if (cfgCentMultEstimator->compare("V0M") == 0) {
+      fCentMultEstimator = kV0M;
+    } else if (cfgCentMultEstimator->compare("NOCM") == 0) {
+      fCentMultEstimator = kNOCM;
+    } else {
+      LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
+    }
+    fDataType = getGenType(cfgDataType);
+
     constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
     fPDG = TDatabasePDG::Instance();
 
@@ -1603,33 +1703,156 @@ struct CheckGeneratorLevelVsDetectorLevel {
     AxisSpec deltaPhi = {100, 0, TWOPI, "#Delta#varphi (rad)"};
     AxisSpec deltaPt = {1000, 0, 4, "#Delta#it{p}_{T} (GeV/#it{c})"};
     AxisSpec mrectimes = {11, -0.5f, 10.5f, "##/particle"};
+    AxisSpec detectors = {32, -0.5, 31.5, "Detectors"};
+    std::vector<std::string> detectorlbls = {"", "ITS", "TPC", "ITS+TPC", "TRD", "ITS+TRD", "TPC+TRD", "ITS+TPC+TRD",
+                                             "TOF", "ITS+TOF", "TPC+TOF", "ITS+TPC+TOF", "TRD+TOF", "ITS+TRD+TOF", "TPC+TRD+TOF", "ITS+TPC+TRD+TOF",
+                                             "UNKN", "ITS+UNKN", "TPC+UNKN", "ITS+TPC+UNKN", "TRD+UNKN", "ITS+TRD+UNKN", "TPC+TRD+UNKN", "ITS+TPC+TRD+UNKN",
+                                             "TOF+UNKN", "ITS+TOF+UNKN", "TPC+TOF+UNKN", "ITS+TPC+TOF+UNKN", "TRD+TOF+UNKN", "ITS+TRD+TOF+UNKN", "TPC+TRD+TOF+UNKN", "ITS+TPC+TRD+TOF+UNKN"};
 
-    histos.add("positivecolid/mrDeltaEta", "#Delta#eta multirec tracks", kTH1F, {deltaEta});
-    histos.add("positivecolid/mrDeltaPhi", "#Delta#varphi multirec tracks", kTH1F, {deltaPhi});
-    histos.add("positivecolid/mrDeltaPt", "#Delta#it{p}_{T} multirec tracks", kTH1F, {deltaPt});
-    histos.add("positivecolid/multirec", "Multiple reconstruction", kTH1F, {mrectimes});
-    histos.add("positivecolid/genrecoeta", "#eta Generated vs reconstructed", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
-    histos.add("positivecolid/genrecophi", "#varphi Generated vs reconstructed", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
-    histos.add("positivecolid/genrecopt", "#it{p}_{T} Generated vs reconstructed", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
-    histos.add("positivecolid/tracktype", "Type of track", kTH1F, {{25, -0.5, 24.5, "TrackType"}});
-    histos.add("positivecolid/genrecomreta", "#eta Generated vs reconstructed (mr)", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
-    histos.add("positivecolid/genrecomrphi", "#varphi Generated vs reconstructed (mr)", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
-    histos.add("positivecolid/genrecomrpt", "#it{p}_{T} Generated vs reconstructed (mr)", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
-    histos.add("positivecolid/recomreta", "#eta Reconstructed (mr)", kTH1F, {{100, -1.0, 1.0, "#eta"}});
-    histos.add("positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, TWOPI, "#varphi (rad)"}});
-    histos.add("positivecolid/recomrpt", "#it{p}_{T} Reconstructed (mr)", kTH1F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    histos.add("positivecolid/tracktypemr", "Type of track (mr)", kTH1F, {{25, -0.5, 24.5, "TrackType"}});
-    histos.addClone("positivecolid/", "negativecolid/");
+    histos.add("before/positivecolid/mrDeltaEta", "#Delta#eta multirec tracks", kTH1F, {deltaEta});
+    histos.add("before/positivecolid/mrDeltaPhi", "#Delta#varphi multirec tracks", kTH1F, {deltaPhi});
+    histos.add("before/positivecolid/mrDeltaPt", "#Delta#it{p}_{T} multirec tracks", kTH1F, {deltaPt});
+    histos.add("before/positivecolid/multirec", "Multiple reconstruction", kTH1F, {mrectimes});
+    histos.add("before/positivecolid/genrecoeta", "#eta Generated vs reconstructed", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
+    histos.add("before/positivecolid/genrecophi", "#varphi Generated vs reconstructed", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
+    histos.add("before/positivecolid/genrecopt", "#it{p}_{T} Generated vs reconstructed", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
+    histos.add("before/positivecolid/detectormap", "Active detectors", kTH1F, {detectors});
+    histos.add("before/positivecolid/genrecomreta", "#eta Generated vs reconstructed (mr)", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
+    histos.add("before/positivecolid/genrecomrphi", "#varphi Generated vs reconstructed (mr)", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
+    histos.add("before/positivecolid/genrecomrpt", "#it{p}_{T} Generated vs reconstructed (mr)", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
+    histos.add("before/positivecolid/recomreta", "#eta Reconstructed (mr)", kTH1F, {{100, -1.0, 1.0, "#eta"}});
+    histos.add("before/positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, TWOPI, "#varphi (rad)"}});
+    histos.add("before/positivecolid/recomrpt", "#it{p}_{T} Reconstructed (mr)", kTH1F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    histos.add("before/positivecolid/detectormapmr", "Active detectors (mr)", kTH1F, {detectors});
+    histos.add("before/positivecolid/dcaxy", "DCA_{xy} Reconstructed", kTH1F, {{1000, -4.0, 4.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/dcaz", "DCA_{z} Reconstructed", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
+    histos.add("before/positivecolid/finedcaxy", "DCA_{xy} Reconstructed", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/finedcaz", "DCA_{z} Reconstructed", kTH1F, {{2000, -1.0, 1.0, "DCA_{z} (cm)"}});
+    histos.add("before/positivecolid/dcaxymr", "DCA_{xy} Reconstructed (mr)", kTH1F, {{1000, -4.0, 4.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/dcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
+    histos.add("before/positivecolid/finedcaxymr", "DCA_{xy} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
+    histos.add("before/positivecolid/finedcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{z} (cm)"}});
+    for (int i = 0; i < detectorlbls.size(); ++i) {
+      histos.get<TH1>(HIST("before/positivecolid/detectormap"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
+      histos.get<TH1>(HIST("before/positivecolid/detectormapmr"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
+    }
+    /* clone the set for the other cases */
+    histos.addClone("before/positivecolid/", "after/positivecolid/");
+    histos.addClone("before/positivecolid/", "before/negativecolid/");
+    histos.addClone("before/positivecolid/", "after/negativecolid/");
   }
 
-  void processMapChecks(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  template <beforeafterselection ba, colllabelsign collsign, typename TracskListObject, typename ParticlesListObject>
+  void collectData(TracskListObject const& tracks, ParticlesListObject const& mcParticles)
   {
+    using namespace recogenmap;
+
+    static constexpr std::string_view dir[] = {"before/", "after/"};
+    static constexpr std::string_view colldir[] = {"positivecolid/", "negativecolid/"};
     constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
 
-    std::vector<std::vector<int64_t>> mclabelpos(mcParticles.size());
-    std::vector<std::vector<int64_t>> mclabelneg(mcParticles.size());
-    std::vector<std::vector<int64_t>> mclabelpos_negcoll(mcParticles.size());
-    std::vector<std::vector<int64_t>> mclabelneg_negcoll(mcParticles.size());
+    int nrec_poslabel = 0;
+    int nrec_neglabel = 0;
+    int nrec_poslabel_crosscoll = 0;
+
+    for (int ixpart = 0; ixpart < mcParticles.size(); ++ixpart) {
+      auto particle = mcParticles.iteratorAt(ixpart);
+      /* multireconstructed tracks only for positive labels */
+      int nrec = mclabelpos[collsign][ixpart].size();
+      nrec_poslabel += mclabelpos[collsign][ixpart].size();
+      nrec_neglabel += mclabelneg[collsign][ixpart].size();
+
+      if (nrec > 1) {
+        /* multireconstruction only from positive labels */
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("multirec"), nrec);
+
+        if (collsign == kPOSITIVE) {
+          /* check the cross collision reconstruction */
+          bool crosscollfound = false;
+          for (int i = 0; (i < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++i) {
+            for (int j = i + 1; (j < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++j) {
+              auto track1 = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
+              auto track2 = tracks.iteratorAt(mclabelpos[collsign][ixpart][j]);
+
+              if (track1.collisionId() != track2.collisionId()) {
+                nrec_poslabel_crosscoll++;
+                crosscollfound = true;
+              }
+            }
+          }
+        }
+
+        for (int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
+          auto track1 = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
+          for (int j = i + 1; j < mclabelpos[collsign][ixpart].size(); ++j) {
+            auto track2 = tracks.iteratorAt(mclabelpos[collsign][ixpart][j]);
+
+            float deltaeta = track1.eta() - track2.eta();
+            float deltaphi = track1.phi() - track2.phi();
+            if (deltaphi < 0) {
+              deltaphi += TWOPI;
+            }
+            if (deltaphi > TWOPI) {
+              deltaphi -= TWOPI;
+            }
+            float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
+
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("mrDeltaEta"), deltaeta);
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("mrDeltaPhi"), deltaphi);
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("mrDeltaPt"), deltapt);
+          }
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomreta"), track1.eta());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomrphi"), track1.phi());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomrpt"), track1.pt());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("detectormapmr"), track1.detectorMap());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaxymr"), track1.dcaXY());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcazmr"), track1.dcaZ());
+          if (track1.dcaXY() < 1.0) {
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaxymr"), track1.dcaXY());
+          }
+          if (track1.dcaZ() < 1.0) {
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcazmr"), track1.dcaZ());
+          }
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomreta"), track1.eta(), particle.eta());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrphi"), track1.phi(), particle.phi());
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrpt"), track1.pt(), particle.pt());
+        }
+      } else if (nrec > 0) {
+        auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][0]);
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecoeta"), track.eta(), particle.eta());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecophi"), track.phi(), particle.phi());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecopt"), track.pt(), particle.pt());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("detectormap"), track.detectorMap());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaxy"), track.dcaXY());
+        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaz"), track.dcaZ());
+        if (track.dcaXY() < 1.0) {
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaxy"), track.dcaXY());
+        }
+        if (track.dcaZ() < 1.0) {
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
+        }
+      }
+    }
+
+    if (collsign == kPOSITIVE) {
+      LOGF(info, "Reconstructed tracks (%s) with positive collision ID: %d with positive label, %d with negative label, %d with cross collision",
+           ba == kAFTER ? "after" : "before", nrec_poslabel, nrec_neglabel, nrec_poslabel_crosscoll);
+    } else {
+      LOGF(info, "Reconstructed tracks (%s) with negative collision ID: %d with positive label, %d with negative label",
+           ba == kAFTER ? "after" : "before", nrec_poslabel, nrec_neglabel);
+    }
+  }
+
+  void processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  {
+    using namespace recogenmap;
+
+    for (int i = 0; i < 2; ++i) {
+      mclabelpos[i].clear();
+      mclabelneg[i].clear();
+      mclabelpos[i].resize(mcParticles.size());
+      mclabelneg[i].resize(mcParticles.size());
+    }
 
     size_t nreco = tracks.size();
     size_t ngen = 0;
@@ -1655,128 +1878,133 @@ struct CheckGeneratorLevelVsDetectorLevel {
       LOGF(DPTDPTLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
       if (track.collisionId() < 0) {
         if (label >= 0) {
-          mclabelpos_negcoll[label].push_back(recix);
+          mclabelpos[kNEGATIVE][label].push_back(recix);
         } else {
-          mclabelneg_negcoll[-label].push_back(recix);
+          mclabelneg[kNEGATIVE][-label].push_back(recix);
         }
       } else {
         if (label >= 0) {
-          mclabelpos[label].push_back(recix);
+          mclabelpos[kPOSITIVE][label].push_back(recix);
         } else {
-          mclabelneg[-label].push_back(recix);
+          mclabelneg[kPOSITIVE][-label].push_back(recix);
         }
       }
     }
 
-    /* let's provide information on a per DF level */
-    int nrec_poslabel = 0;
-    int nrec_neglabel = 0;
-    int nrec_poslabel_nc = 0;
-    int nrec_neglabel_nc = 0;
-    int nrec_poslabel_crosscoll = 0;
-    for (int il = 0; il < mcParticles.size(); ++il) {
-      auto particle = mcParticles.iteratorAt(il);
-      /* multireconstructed tracks only for positive labels */
-      int nrec = mclabelpos[il].size();
-      nrec_poslabel += mclabelpos[il].size();
-      nrec_neglabel += mclabelneg[il].size();
-
-      if (nrec > 1) {
-        histos.fill(HIST("positivecolid/multirec"), nrec);
-        bool crosscollfound = false;
-        for (int i = 0; (i < mclabelpos[il].size()) and not crosscollfound; ++i) {
-          for (int j = i + 1; (j < mclabelpos[il].size()) and not crosscollfound; ++j) {
-            auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
-            auto track2 = tracks.iteratorAt(mclabelpos[il][j]);
-
-            if (track1.collisionId() != track2.collisionId()) {
-              nrec_poslabel_crosscoll++;
-              crosscollfound = true;
-            }
-          }
-        }
-
-        for (int i = 0; i < mclabelpos[il].size(); ++i) {
-          auto track1 = tracks.iteratorAt(mclabelpos[il][i]);
-          for (int j = i + 1; j < mclabelpos[il].size(); ++j) {
-            auto track2 = tracks.iteratorAt(mclabelpos[il][j]);
-
-            float deltaeta = track1.eta() - track2.eta();
-            float deltaphi = track1.phi() - track2.phi();
-            if (deltaphi < 0) {
-              deltaphi += TWOPI;
-            }
-            if (deltaphi > TWOPI) {
-              deltaphi -= TWOPI;
-            }
-            float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
-
-            histos.fill(HIST("positivecolid/mrDeltaEta"), deltaeta);
-            histos.fill(HIST("positivecolid/mrDeltaPhi"), deltaphi);
-            histos.fill(HIST("positivecolid/mrDeltaPt"), deltapt);
-          }
-          histos.fill(HIST("positivecolid/recomreta"), track1.eta());
-          histos.fill(HIST("positivecolid/recomrphi"), track1.phi());
-          histos.fill(HIST("positivecolid/recomrpt"), track1.pt());
-          histos.fill(HIST("positivecolid/tracktypemr"), track1.trackType());
-          histos.fill(HIST("positivecolid/genrecomreta"), track1.eta(), particle.eta());
-          histos.fill(HIST("positivecolid/genrecomrphi"), track1.phi(), particle.phi());
-          histos.fill(HIST("positivecolid/genrecomrpt"), track1.pt(), particle.pt());
-        }
-      } else if (nrec > 0) {
-        auto track = tracks.iteratorAt(mclabelpos[il][0]);
-        histos.fill(HIST("positivecolid/genrecoeta"), track.eta(), particle.eta());
-        histos.fill(HIST("positivecolid/genrecophi"), track.phi(), particle.phi());
-        histos.fill(HIST("positivecolid/genrecopt"), track.pt(), particle.pt());
-        histos.fill(HIST("positivecolid/tracktype"), track.trackType());
-      }
-
-      /* multireconstructed tracks only for positive labels */
-      int nrec_nc = mclabelpos_negcoll[il].size();
-      nrec_poslabel_nc += mclabelpos_negcoll[il].size();
-      nrec_neglabel_nc += mclabelneg_negcoll[il].size();
-
-      if (nrec_nc > 1) {
-        histos.fill(HIST("negativecolid/multirec"), nrec_nc);
-        for (int i = 0; i < mclabelpos_negcoll[il].size(); ++i) {
-          auto track1 = tracks.iteratorAt(mclabelpos_negcoll[il][i]);
-          for (int j = i + 1; j < mclabelpos_negcoll[il].size(); ++j) {
-            auto track2 = tracks.iteratorAt(mclabelpos_negcoll[il][j]);
-
-            float deltaeta = track1.eta() - track2.eta();
-            float deltaphi = track1.phi() - track2.phi();
-            if (deltaphi < 0) {
-              deltaphi += TWOPI;
-            }
-            if (deltaphi > TWOPI) {
-              deltaphi -= TWOPI;
-            }
-            float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
-
-            histos.fill(HIST("negativecolid/mrDeltaEta"), deltaeta);
-            histos.fill(HIST("negativecolid/mrDeltaPhi"), deltaphi);
-            histos.fill(HIST("negativecolid/mrDeltaPt"), deltapt);
-          }
-          histos.fill(HIST("negativecolid/recomreta"), track1.eta());
-          histos.fill(HIST("negativecolid/recomrphi"), track1.phi());
-          histos.fill(HIST("negativecolid/recomrpt"), track1.pt());
-          histos.fill(HIST("negativecolid/tracktypemr"), track1.trackType());
-          histos.fill(HIST("negativecolid/genrecomreta"), track1.eta(), particle.eta());
-          histos.fill(HIST("negativecolid/genrecomrphi"), track1.phi(), particle.phi());
-          histos.fill(HIST("negativecolid/genrecomrpt"), track1.pt(), particle.pt());
-        }
-      } else if (nrec_nc > 0) {
-        auto track = tracks.iteratorAt(mclabelpos_negcoll[il][0]);
-        histos.fill(HIST("negativecolid/genrecoeta"), track.eta(), particle.eta());
-        histos.fill(HIST("negativecolid/genrecophi"), track.phi(), particle.phi());
-        histos.fill(HIST("negativecolid/genrecopt"), track.pt(), particle.pt());
-        histos.fill(HIST("negativecolid/tracktype"), track.trackType());
-      }
-    }
-    LOGF(info, "Reconstructed tracks with positive collision ID: %d with positive label, %d with negative label, %d with cross collision", nrec_poslabel, nrec_neglabel, nrec_poslabel_crosscoll);
-    LOGF(info, "Reconstructed tracks with negative collision ID: %d with positive label, %d with negative label", nrec_poslabel_nc, nrec_neglabel_nc);
+    collectData<kBEFORE, kPOSITIVE>(tracks, mcParticles);
+    collectData<kBEFORE, kNEGATIVE>(tracks, mcParticles);
   }
-  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecks, "Process detector <=> generator levels mapping checks", false);
+  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksBeforeCuts, "Process detector <=> generator levels mapping checks before selection cuts", false);
+
+  void processMapChecksCutsWithCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+                                    aod::CollisionsEvSelCent const& collisions,
+                                    aod::McParticles const& mcParticles)
+  {
+    using namespace recogenmap;
+
+    for (int i = 0; i < 2; ++i) {
+      mclabelpos[i].clear();
+      mclabelneg[i].clear();
+      mclabelpos[i].resize(mcParticles.size());
+      mclabelneg[i].resize(mcParticles.size());
+    }
+
+    size_t nreco = 0;
+    size_t ngen = 0;
+
+    for (auto& part : mcParticles) {
+      auto pdgpart = fPDG->GetParticle(part.pdgCode());
+      if (pdgpart != nullptr) {
+        float charge = (pdgpart->Charge() >= 3) ? 1.0 : ((pdgpart->Charge() <= -3) ? -1.0 : 0.0);
+        if (charge != 0.0) {
+          ngen++;
+        }
+      }
+    }
+
+    // Let's go through the reco-gen mapping to detect multi-reconstructed particles
+    for (auto& track : tracks) {
+      int64_t recix = track.globalIndex();
+      int32_t label = track.mcParticleId();
+      if (not(track.collisionId() < 0)) {
+        auto coll = collisions.iteratorAt(track.collisionId());
+        float centormult = -100.0f;
+        if (IsEvtSelected(coll, centormult)) {
+          if (not(label < 0)) {
+            bool asone = false;
+            bool astwo = false;
+
+            AcceptTrack(track, asone, astwo);
+            if (asone or astwo) {
+              /* the track has been accepted */
+              nreco++;
+              LOGF(DPTDPTLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              mclabelpos[kPOSITIVE][label].push_back(recix);
+            }
+          }
+        }
+      }
+    }
+    LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed accepted tracks", ngen, nreco);
+
+    collectData<kAFTER, kPOSITIVE>(tracks, mcParticles);
+  }
+  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksCutsWithCent, "Process detector <=> generator levels mapping checks after selection cuts", false);
+
+  void processMapChecksCutsWithoutCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+                                       aod::CollisionsEvSel const& collisions,
+                                       aod::McParticles const& mcParticles)
+  {
+    using namespace recogenmap;
+
+    for (int i = 0; i < 2; ++i) {
+      mclabelpos[i].clear();
+      mclabelneg[i].clear();
+      mclabelpos[i].resize(mcParticles.size());
+      mclabelneg[i].resize(mcParticles.size());
+    }
+
+    size_t nreco = 0;
+    size_t ngen = 0;
+
+    for (auto& part : mcParticles) {
+      auto pdgpart = fPDG->GetParticle(part.pdgCode());
+      if (pdgpart != nullptr) {
+        float charge = (pdgpart->Charge() >= 3) ? 1.0 : ((pdgpart->Charge() <= -3) ? -1.0 : 0.0);
+        if (charge != 0.0) {
+          ngen++;
+        }
+      }
+    }
+
+    // Let's go through the reco-gen mapping to detect multi-reconstructed particles
+    for (auto& track : tracks) {
+      int64_t recix = track.globalIndex();
+      int32_t label = track.mcParticleId();
+      if (not(label < 0)) {
+        if (not(track.collisionId() < 0)) {
+          auto coll = collisions.iteratorAt(track.collisionId());
+          float centormult = -100.0f;
+          if (IsEvtSelectedNoCentMult(coll, centormult)) {
+            bool asone = false;
+            bool astwo = false;
+
+            AcceptTrack(track, asone, astwo);
+            if (asone or astwo) {
+              /* the track has been accepted */
+              nreco++;
+              LOGF(DPTDPTLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              mclabelpos[kPOSITIVE][label].push_back(recix);
+            }
+          }
+        }
+      }
+    }
+    LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed accepted tracks", ngen, nreco);
+
+    collectData<kAFTER, kPOSITIVE>(tracks, mcParticles);
+  }
+  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksCutsWithoutCent, "Process detector <=> generator levels mapping checks after selection cuts", false);
 
   void processDummy(aod::Collisions const& colls)
   {
@@ -1793,6 +2021,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processCleaner", false}}}),
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processCleaner", false}}}),
-    adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc, SetDefaultProcesses{{{"processMapChecks", false}}})};
+    adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc, SetDefaultProcesses{{{"processMapChecksCutsWithCent", false}}})};
+  //  adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc, SetDefaultProcesses{{{"processMapChecksBeforeCuts", false}, {"processMapChecksCutsWithCent", false}, {"processMapChecksCutsWithoutCent", false}, {"processDummy", true}}})};
   return workflow;
 }

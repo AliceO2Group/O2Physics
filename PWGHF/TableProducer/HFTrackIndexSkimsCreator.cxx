@@ -102,7 +102,7 @@ struct HfTagSelCollisions {
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
   int triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
-  HistogramRegistry registry{"registry", {}};
+  HistogramRegistry registry{"registry", {{"hNContributors", "Number of vertex contributors;entries", {HistType::kTH1F, {{20001, -0.5, 20000.5}}}}}};
 
   void init(InitContext const&)
   {
@@ -129,6 +129,7 @@ struct HfTagSelCollisions {
   template <typename Col>
   void selectVertex(const Col& collision, int& statusCollision)
   {
+    registry.fill(HIST("hNContributors"), collision.numContrib());
     // x position
     if (collision.posX() < xVertexMin || collision.posX() > xVertexMax) {
       SETBIT(statusCollision, EventRejection::PositionX);

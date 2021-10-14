@@ -60,7 +60,7 @@ struct Alice3CDeuteron {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
 
-    const AxisSpec axisInvMass{100, 2.5, 4, "Inv. Mass_{c-d}"};
+    const AxisSpec axisInvMass{1000, 2.5, 4, "Inv. Mass_{c-d}"};
     const AxisSpec axisDecayRadius{2000, 0, 0.1, "Decay radius"};
     const AxisSpec axisDecayRadiusReso{2000, -0.01, 0.01, "Decay radius resolution"};
     const AxisSpec axisPionProdRadiusXY{2000, 0, 0.01, "Pion production radius in xy"};
@@ -86,18 +86,6 @@ struct Alice3CDeuteron {
 
     histos.add("event/candcuts", "cuts", kTH1D, {{10, 0, 10}});
     auto h = histos.get<TH1>(HIST("event/candcuts"));
-    h->GetXaxis()->SetBinLabel(1, "magField");
-    h->GetXaxis()->SetBinLabel(2, "minRadius");
-    h->GetXaxis()->SetBinLabel(3, "maxRadius");
-    h->GetXaxis()->SetBinLabel(4, "minMomPt");
-    h->GetXaxis()->SetBinLabel(5, "minKaonPt");
-    h->GetXaxis()->SetBinLabel(6, "minPionPt");
-    h->GetXaxis()->SetBinLabel(7, "minVtxContrib");
-    h->GetXaxis()->SetBinLabel(8, "minDca");
-    h->GetXaxis()->SetBinLabel(9, "maxDca");
-
-    histos.add("event/cuts", "cuts", kTH1D, {{10, 0, 10}});
-    h = histos.get<TH1>(HIST("event/cuts"));
     h->GetXaxis()->SetBinLabel(1, "magField");
     h->GetXaxis()->SetBinLabel(2, "minRadius");
     h->GetXaxis()->SetBinLabel(3, "maxRadius");
@@ -138,16 +126,19 @@ struct Alice3CDeuteron {
     histos.add("event/track1dcaxy", "track1dcaxy Deuteron", kTH1D, {axisDcaXY});
     histos.add("event/track1dcaz", "track1dcaz Deuteron", kTH1D, {axisDcaZ});
     histos.add("event/candperdeuteron", "candperdeuteron", kTH1D, {{1000, 0, 10000}});
-    histos.add("event/trackspdg", "trackspdg", kTH1D, {{3, 0.5, 3.5}});
+    histos.add("event/particlespdg", "particlespdg", kTH1D, {{100, 0, 100}});
+    histos.add("event/trackspdg", "trackspdg", kTH1D, {{4, 0.5, 4.5}});
     h = histos.get<TH1>(HIST("event/trackspdg"));
     h->GetXaxis()->SetBinLabel(1, "d");
     h->GetXaxis()->SetBinLabel(2, "K");
     h->GetXaxis()->SetBinLabel(3, "#pi");
+    h->GetXaxis()->SetBinLabel(4, "Rest");
     histos.add("event/multiplicity", "multiplicity", kTH1D, {{1000, 0, 10000}});
 
 #define MakeHistos(tag)                                                                        \
   histos.add(tag "/cpa", "cpa" + tit, kTH1D, {axisCPA});                                       \
   histos.add(tag "/invmass", "invmass" + tit, kTH1D, {axisInvMass});                           \
+  histos.add(tag "/invmassVsPt", "invmassVsPt" + tit, kTH2D, {axisPt, axisInvMass});           \
   histos.add(tag "/decayradius", "decayradius" + tit, kTH1D, {axisDecayRadius});               \
   histos.add(tag "/decayradiusResoX", "decayradiusResoX" + tit, kTH1D, {axisDecayRadiusReso}); \
   histos.add(tag "/decayradiusResoY", "decayradiusResoY" + tit, kTH1D, {axisDecayRadiusReso}); \
@@ -190,6 +181,7 @@ struct Alice3CDeuteron {
   {
     const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, coll.mcCollision().globalIndex());
     for (const auto& i : particlesInCollision) {
+      histos.get<TH1>(HIST("event/particlespdg"))->Fill(Form("%i", i.pdgCode()), 1);
       if (i.pdgCode() != 12345) {
         continue;
       }
@@ -221,6 +213,8 @@ struct Alice3CDeuteron {
         histos.fill(HIST("event/trackspdg"), 2);
       } else if (t.mcParticle().pdgCode() == 211) {
         histos.fill(HIST("event/trackspdg"), 3);
+      } else {
+        histos.fill(HIST("event/trackspdg"), 4);
       }
       ntrks++;
     }
@@ -395,6 +389,7 @@ struct Alice3CDeuteron {
 #define FillHistos(tag)                                                              \
   histos.fill(HIST(tag "/cpa"), CPA);                                                \
   histos.fill(HIST(tag "/invmass"), v1.M());                                         \
+  histos.fill(HIST(tag "/invmassVsPt"), v1.Pt(), v1.M());                            \
   histos.fill(HIST(tag "/decayradius"), decay_radius);                               \
   histos.fill(HIST(tag "/decayradiusResoX"), secVtx[0] - vx);                        \
   histos.fill(HIST(tag "/decayradiusResoY"), secVtx[1] - vy);                        \

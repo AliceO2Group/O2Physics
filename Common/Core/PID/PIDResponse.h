@@ -127,6 +127,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,     //! Nsigma separation with 
                                  return He;
                                case o2::track::PID::Alpha:
                                  return Al;
+                               default:
+                                 return -999.f;
                              }
                            });
 } // namespace pidtof
@@ -189,6 +191,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,       //! Nsigma separation wit
                                  return bin_width * static_cast<float>(He);
                                case o2::track::PID::Alpha:
                                  return bin_width * static_cast<float>(Al);
+                               default:
+                                 return -999.f;
                              }
                            });
 
@@ -314,6 +318,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,     //! Nsigma separation with 
                                  return He;
                                case o2::track::PID::Alpha:
                                  return Al;
+                               default:
+                                 return -999.f;
                              }
                            });
 
@@ -372,6 +378,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,       //! Nsigma separation wit
                                  return bin_width * static_cast<float>(He);
                                case o2::track::PID::Alpha:
                                  return bin_width * static_cast<float>(Al);
+                               default:
+                                 return -999.f;
                              }
                            });
 } // namespace pidtpc_tiny

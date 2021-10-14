@@ -68,6 +68,11 @@ struct HfXiccToPKPiPiCandidateSelector {
       return false;
     }
 
+    // impact parameter product
+    if (hfCandXicc.impactParameterProduct() > cuts->get(pTBin, "d0d0")) {
+      return false;
+    }
+
     // cosine of pointing angle
     if (hfCandXicc.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
       return false;
@@ -97,9 +102,17 @@ struct HfXiccToPKPiPiCandidateSelector {
     if (hfCandXicc.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
       return false;
     }
-    if ((std::abs(hfCandXicc.impactParameter0()) > cuts->get(pTBin, "d0 Xic")) ||
-        (std::abs(hfCandXicc.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))) {
-      return false; // DCA check on daughters
+
+    // minimum DCA of daughters
+    if ((std::abs(hfCandXicc.impactParameter0()) <= cuts->get(pTBin, "min d0 Xic")) ||
+        (std::abs(hfCandXicc.impactParameter1()) <= cuts->get(pTBin, "min d0 Pi"))) {
+      return false;
+    }
+
+    // maximum DCA of daughters
+    if ((std::abs(hfCandXicc.impactParameter0()) > cuts->get(pTBin, "max d0 Xic")) ||
+        (std::abs(hfCandXicc.impactParameter1()) > cuts->get(pTBin, "max d0 Pi"))) {
+      return false;
     }
 
     // cut on daughter pT

@@ -126,7 +126,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processGen, "Process generator-level info", false);
+  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processGen, "Process generator-level info", true);
 
   void processMatching(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks, aod::McCollisions const&)
   {
@@ -138,7 +138,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processMatching, "Process generator-level info matched to reco", false);
+  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processMatching, "Process generator-level info matched to reco", true);
 };
 } // namespace o2::pwgmm::multiplicity
 

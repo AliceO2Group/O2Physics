@@ -31,7 +31,13 @@
 using std::array;
 using namespace o2::constants::math;
 
-/// Base class for calculating properties of reconstructed decays.
+/// Base class for calculating properties of reconstructed decays
+///
+/// Provides static helper functions for:
+/// - useful arithmetic operations and basic vector algebra
+/// - calculation of kinematic quantities
+/// - calculation of topological properties of secondary vertices
+/// - Monte Carlo matching of decays at track and particle level
 
 class RecoDecay
 {
@@ -509,6 +515,14 @@ class RecoDecay
     return maxNormDeltaIP;
   }
 
+  /// Adds particle mass in the list.
+  /// \param pdg  PDG code
+  /// \param mass  particle mass
+  static void addMassPDG(int pdg, double mass)
+  {
+    mListMass.push_back(std::make_tuple(pdg, mass));
+  }
+
   /// Returns particle mass based on PDG code.
   /// \param pdg  PDG code
   /// \return particle mass
@@ -521,14 +535,29 @@ class RecoDecay
       }
     }
     // Get the mass of the new particle and add it in the list.
-    const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
-    if (!particle) { // Check that it's there
-      LOGF(fatal, "Cannot find particle mass for PDG code %i", pdg);
-      return 999.;
+    double mass = 0.;
+    switch (pdg) {
+      // Particles that cannot be taken from ROOT ($ROOTSYS/etc/pdg_table.txt)
+      case 4422: {      // Ξcc (wrong mass in ROOT)
+        mass = 3.62155; // https://pdg.lbl.gov/ (2021)
+        break;
+      }
+      case 9920443: {   // χc1 aka X(3872)
+        mass = 3.87165; // https://pdg.lbl.gov/ (2021)
+        break;
+      }
+      // Take the rest from ROOT.
+      default: {
+        const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
+        if (!particle) { // Check that it's there.
+          LOGF(fatal, "Cannot find particle mass for PDG code %i", pdg);
+          return 999.;
+        }
+        mass = particle->Mass();
+      }
     }
-    auto newMass = particle->Mass();
-    mListMass.push_back(std::make_tuple(pdg, newMass));
-    return newMass;
+    addMassPDG(pdg, mass);
+    return mass;
   }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
