@@ -69,7 +69,7 @@ struct TaskChicPCM {
     //    registry.add("hEGamma", "Photon energy", {HistType::kTH1F, {{200, 0., 10.}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_chicPCM::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chicPCM::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChicPCM, aod::HFSelChicToJpsiGammaPCMCandidate>> const& candidates)
   {
@@ -149,10 +149,10 @@ struct TaskChicPCMMC {
     registry.add("hYRecBg", "2-prong candidates (rec. unmatched);candidate rapidity;entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)pTBins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_chicPCM::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chicPCM::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
-  void process(soa::Filtered<soa::Join<aod::HfCandChicPCM, aod::HFSelChicToJpsiGammaPCMCandidate, aod::HfCandChicPCMMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandChicPCMMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandChicPCM, aod::HFSelChicToJpsiGammaPCMCandidate, aod::HfCandChicCMCRec>> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandChicCMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -229,10 +229,10 @@ struct TaskChicPCMMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TaskChic>(cfgc, TaskName{"hf-task-chicPCM"})};
+    adaptAnalysisTask<TaskChicPCM>(cfgc, TaskName{"hf-task-chicPCM"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskChicMC>(cfgc, TaskName{"hf-task-chicPCM-mc"}));
+    workflow.push_back(adaptAnalysisTask<TaskChicPCM>(cfgc, TaskName{"hf-task-chicPCM-mc"}));
   }
   return workflow;
 }

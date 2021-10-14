@@ -46,7 +46,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Reconstruction of chic candidates
 struct HFCandidateCreatorChicPCM {
-  Produces<aod::HfCandChicPCMBase> rowCandidateBase;
+  Produces<aod::HfCandChicCBase> rowCandidateBase;
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
@@ -80,7 +80,7 @@ struct HFCandidateCreatorChicPCM {
                  aod::HfCandProng2,
                  aod::HFSelJpsiCandidate>> const& jpsiCands,
                aod::BigTracks const& tracks,
-               aod::PHOTONs const& photonss)
+               aod::PHOTONs const& photons)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
     o2::vertexing::DCAFitterN<2> df2;
@@ -132,9 +132,7 @@ struct HFCandidateCreatorChicPCM {
 
       for (auto& photon : photons) {
 
-        if (ecal.e() < eneGammaMin) {
-          continue;
-        }
+
         auto etagamma = RecoDecay::Eta(array{photon.px(), photon.py(), photon.pz()});
         if (etagamma < etaGammaMin || etagamma > etaGammaMax) { // calcolare la pseudorapidità da posz
           continue;
@@ -176,7 +174,7 @@ struct HFCandidateCreatorChicPCM {
                          pvecGamma[0], pvecGamma[1], pvecGamma[2],
                          impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
                          std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
-                         jpsiCand.globalIndex(), ecal.globalIndex(),
+                         jpsiCand.globalIndex(), photon.globalIndex(),
                          hfFlag, InvMassJpsiToMuMu(jpsiCand));
 
         // calculate invariant mass
@@ -195,14 +193,14 @@ struct HFCandidateCreatorChicPCM {
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreatorChicPCMExpressions {
-  Spawns<aod::HfCandChicPCMExt> rowCandidateChicPCM;
+  Spawns<aod::HfCandChicCExt> rowCandidateChicPCM;
   void init(InitContext const&) {}
 };
 
 /// Performs MC matching.
 struct HFCandidateCreatorChicPCMMC {
-  Produces<aod::HfCandChicPCMMCRec> rowMCMatchRec;
-  Produces<aod::HfCandChicPCMMCGen> rowMCMatchGen;
+  Produces<aod::HfCandChicCMCRec> rowMCMatchRec;
+  Produces<aod::HfCandChicCMCGen> rowMCMatchGen;
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -238,7 +236,7 @@ struct HFCandidateCreatorChicPCMMC {
         int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), pdg::Code::kChic1);
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.iteratorAt(indexMother);
-          hEphotonMatched->Fill(candidate.index1().e());
+	  //  hEphotonMatched->Fill(candidate.index1().p());
           hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
           int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
           int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
@@ -295,7 +293,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<HFCandidateCreatorChicPCMExpressions>(cfgc, TaskName{"hf-cand-creator-chicPCM-expressions"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorChicMC>(cfgc, TaskName{"hf-cand-creator-chicPCM-mc"}));
+    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorChicPCM>(cfgc, TaskName{"hf-cand-creator-chicPCM-mc"}));
   }
   return workflow;
 }

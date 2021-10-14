@@ -65,9 +65,9 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
   /// \param trackNeutral is the track with the pi+ hypothesis
   /// \return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
-  bool selectionTopol(const T1& hfCandChic, const T2& hfCandJpsi, const T3& photon)
+  bool selectionTopol(const T1& hfCandChicPCM, const T2& hfCandJpsi, const T3& photon)
   {
-    auto candpT = hfCandChic.pt();
+    auto candpT = hfCandChicPCM.pt();
     int pTBin = findBin(pTBins, candpT);
     if (pTBin == -1) {
       return false;
@@ -78,7 +78,7 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
     }
 
     auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
-    if (TMath::Abs(InvMassChicToJpsiGamma(hfCandChic) - mchic) > cuts->get(pTBin, "m")) {
+    if (TMath::Abs(InvMassChicToJpsiGamma(hfCandChicPCM) - mchic) > cuts->get(pTBin, "m")) {
       // Printf("Chic topol selection failed at mass diff check");
       return false; //check that mass difference is within bounds
     }
@@ -91,11 +91,11 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
     //   return false; //cut on daughter pT
     // }
 
-    if (hfCandChic.cpa() < cuts->get(pTBin, "CPA")) {
+    if (hfCandChicPCM.cpa() < cuts->get(pTBin, "CPA")) {
       return false; // CPA check
     }
 
-    if ((TMath::Abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
+    if ((TMath::Abs(hfCandChicPCM.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
       return false;                                                                  // DCA check on daughters
     }
 
@@ -191,39 +191,39 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
       int selJpsiToMuMu = 1;
 
       // check if flagged as chic --> Jpsi gamma
-      if (!(hfCandChic.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma)) {
+      if (!(hfCandChicPCM.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma)) {
         selJpsiToEE = 0;
       }
 
-      if (!(hfCandChic.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma)) {
+      if (!(hfCandChicPCM.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma)) {
         selJpsiToMuMu = 0;
       }
 
       if (selJpsiToEE == 0 && selJpsiToMuMu == 0) {
-        hfSelChicToJpsiGammaCandidate(0, 0);
+        hfSelChicToJpsiGammaPCMCandidate(0, 0);
         continue;
       }
 
       // daughter track validity selection
       if (!daughterSelection(gamma)) { // no selection at present
-        hfSelChicToJpsiGammaCandidate(0, 0);
+        hfSelChicToJpsiGammaPCMCandidate(0, 0);
         continue;
       }
 
       //implement filter bit 4 cut - should be done before this task at the track selection level
       //need to add special cuts (additional cuts on decay length and d0 norm)
 
-      if (!selectionTopol(hfCandChic, candJpsi, gamma)) { // check selections
-        hfSelChicToJpsiGammaCandidate(0, 0);
+      if (!selectionTopol(hfCandChicPCM, candJpsi, gamma)) { // check selections
+        hfSelChicToJpsiGammaPCMCandidate(0, 0);
         continue;
       }
 
       if (selectionPID(gamma) == 0) { // no selection at present
-        hfSelChicToJpsiGammaCandidate(0, 0);
+        hfSelChicToJpsiGammaPCMCandidate(0, 0);
         continue;
       }
 
-      hfSelChicToJpsiGammaCandidate(selJpsiToEE, selJpsiToMuMu);
+      hfSelChicToJpsiGammaPCMCandidate(selJpsiToEE, selJpsiToMuMu);
       // Printf("Chi_c candidate selection successful, candidate should be selected");
     }
   }
