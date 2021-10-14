@@ -18,7 +18,7 @@ namespace o2::aod
 namespace infoFT0
 {
 DECLARE_SOA_COLUMN(T0A, t0A, float);           //! Collision time A-side, corrected with primary vertex
-DECLARE_SOA_COLUMN(T0C, t0C, float);           //! Collision time A-side, corrected with primary vertex
+DECLARE_SOA_COLUMN(T0C, t0C, float);           //! Collision time C-side, corrected with primary vertex
 DECLARE_SOA_COLUMN(T0AC, t0AC, float);         //! Collision time (A+C)/2
 DECLARE_SOA_COLUMN(T0vertex, t0vertex, float); //! FT0 vertex
 } // namespace infoFT0
