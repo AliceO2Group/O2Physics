@@ -43,3 +43,9 @@ o2physics_add_dpl_workflow(alice3-cdeuteron
                     SOURCES alice3-cdeuteron.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
+
+
+o2physics_add_dpl_workflow(alice3-photon-qa
+                    SOURCES PHOTONqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
