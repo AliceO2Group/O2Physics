@@ -19,6 +19,7 @@
 #define O2_ANALYSIS_HFSECONDARYVERTEX_H_
 
 #include "ALICE3/DataModel/ECAL.h"
+#include "ALICE3/DataModel/PHOTON.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
@@ -1118,6 +1119,7 @@ DECLARE_SOA_TABLE(HfCandChicMCGen, "AOD", "HFCANDCHICMCGEN", //!
                   hf_cand_chic::OriginMCGen,
                   hf_cand_chic::FlagMCDecayChanGen);
 
+<<<<<<< HEAD
 // specific Lb candidate properties
 namespace hf_cand_lb
 {
@@ -1162,16 +1164,79 @@ DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   // general columns
                   HFCAND_COLUMNS,
                   // 3-prong specific columns
+=======
+
+
+// specific chic candidate properties with PCM
+namespace hf_cand_chicPCM
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // Jpsi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, PHOTONs, "_1");
+// MC matching result:
+DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t);         // reconstruction level
+DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t);         // generator level
+DECLARE_SOA_COLUMN(OriginMCRec, originMCRec, int8_t);               // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);               // particle origin, generator level
+DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
+DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
+DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float);          // Jpsi mass
+// mapping of decay types
+enum DecayType { ChicToJpsiToEEGamma = 0,
+                 ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
+// chic → Jpsi gamma
+template <typename T>
+auto CtChic(const T& candidate)
+{
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kChic1));
+}
+
+template <typename T>
+auto YChic(const T& candidate)
+{
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kChic1));
+}
+
+template <typename T>
+auto EChic(const T& candidate)
+{
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kChic1));
+}
+template <typename T>
+auto InvMassChicToJpsiGamma(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kJpsi), 0.});
+}
+
+} // namespace hf_cand_chicPCM
+
+// declare dedicated chi_cPCM candidate table
+DECLARE_SOA_TABLE(HfCandChicCBase, "AOD", "HFCANDCHICCBASE",
+                  // general columns
+                  HFCAND_COLUMNS,
+                  // 2-prong specific columns
+>>>>>>> chicC with conversions
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+<<<<<<< HEAD
                   hf_cand_lb::Index0Id, hf_track_index::Index1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+=======
+                  hf_cand_chicPCM::Index0Id, hf_cand_chicPCM::Index1Id,
+                  hf_track_index::HFflag, hf_cand_chicPCM::JpsiToMuMuMass,
+                  /* dynamic columns */
+                  hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  /* prong 2 */
+                  //                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  //                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  //                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+>>>>>>> chicC with conversions
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
                   hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
@@ -1190,6 +1255,7 @@ DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   hf_cand::E2<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
+<<<<<<< HEAD
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandLbExt, HfCandLbBase, "HFCANDLBEXT",
                                 hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz);
 
@@ -1205,6 +1271,26 @@ DECLARE_SOA_TABLE(HfCandLbMCRec, "AOD", "HFCANDLBMCREC", //!
 DECLARE_SOA_TABLE(HfCandLbMCGen, "AOD", "HFCANDLBMCGEN", //!
                   hf_cand_lb::FlagMCMatchGen,
                   hf_cand_lb::OriginMCGen);
+=======
+DECLARE_SOA_EXTENDED_TABLE_USER(HfCandChicCExt, HfCandChicCBase, "HFCANDCHICCEXT",
+                                hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz);
+
+using HfCandChicPCM = HfCandChicCExt;
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfCandChicCMCRec, "AOD", "HFCANDCHICMCREC", //!
+                  hf_cand_chicPCM::FlagMCMatchRec,
+                  hf_cand_chicPCM::OriginMCRec,
+                  hf_cand_chicPCM::FlagMCDecayChanRec);
+
+// table with results of generator level MC matching
+DECLARE_SOA_TABLE(HfCandChicCMCGen, "AOD", "HFCANDCHICMCGEN", //!
+                  hf_cand_chicPCM::FlagMCMatchGen,
+                  hf_cand_chicPCM::OriginMCGen,
+                  hf_cand_chicPCM::FlagMCDecayChanGen);
+
+
+>>>>>>> chicC with conversions
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_HFSECONDARYVERTEX_H_
