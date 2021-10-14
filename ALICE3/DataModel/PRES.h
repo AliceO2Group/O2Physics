@@ -26,10 +26,10 @@ namespace o2::aod
 {
 namespace alice3pres
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);    //!
-DECLARE_SOA_INDEX_COLUMN(Track, track);            //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);                      //!
 DECLARE_SOA_COLUMN(PRESIsElectron, presIsElectron, uint8_t); //! FIXME: To be changed to bool once bool columns are groupable.
-} // namespace alice3mid
+} // namespace alice3pres
 
 DECLARE_SOA_TABLE(PRESs, "AOD", "PRES", //!
                   o2::soa::Index<>,

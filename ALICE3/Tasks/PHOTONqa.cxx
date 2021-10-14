@@ -85,13 +85,11 @@ struct photonQaMc {
       histos.fill(HIST("photonpzVspz"), particle.photon().pz(), particle.pz());
       histos.get<TH1>(HIST("PDGs"))->Fill(Form("%i", particle.pdgCode()), 1.f);
     }
-    for (auto & photon : photons){
+    for (auto& photon : photons) {
       const float photonp = std::sqrt(photon.px() * photon.px() + photon.py() * photon.py() + photon.pz() * photon.pz());
-//      std::cout<< photonp << std::endl;
+      //      std::cout<< photonp << std::endl;
       histos.fill(HIST("photonp"), photonp);
     }
- 	
-
   }
 };
 
