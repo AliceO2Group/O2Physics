@@ -71,9 +71,9 @@ struct HfLbToLcPiCandidateSelector {
     }
 
     //d0(Lc)xd0(pi) ==> removed temporarily
-    //if (hfCandLb.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
-    //return false;
-    //}
+    if (hfCandLb.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+      return false;
+    }
 
     //Lc mass ==> removed temporarily
     //if (trackPi.sign() < 0) {
@@ -134,7 +134,7 @@ struct HfLbToLcPiCandidateSelector {
       }
 
       // Lc is always index0 and pi is index1 by default
-      auto candLc = hfCandLb.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelLcCandidate>>();
+      auto candLc = hfCandLb.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
       auto trackPi = hfCandLb.index1_as<aod::BigTracksPID>();
 
       //topological cuts

@@ -85,7 +85,7 @@ struct HfTaskLb {
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      //registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), candidate.pt());
+      registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), candidate.pt());
       registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
@@ -193,7 +193,7 @@ struct HfTaskLbMc {
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hPtProng0RecSig"), candidate.ptProng0(), candidate.pt());
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), candidate.pt());
-        //registry.fill(HIST("hImpParProdLbRecSig"), candidate.impactParameterProduct(), candidate.pt());
+        registry.fill(HIST("hImpParProdLbRecSig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), candidate.pt());
         registry.fill(HIST("hCPARecSigD0"), candLc.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthD0RecSig"), candLc.decayLength(), candidate.pt());
@@ -210,7 +210,7 @@ struct HfTaskLbMc {
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0(), candidate.pt());
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), candidate.pt());
-        //registry.fill(HIST("hImpParProdLbRecBg"), candidate.impactParameterProduct(), candidate.pt());
+        registry.fill(HIST("hImpParProdLbRecBg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), candidate.pt());
         registry.fill(HIST("hCPARecBgD0"), candLc.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthD0RecBg"), candLc.decayLength(), candidate.pt());
