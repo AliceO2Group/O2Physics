@@ -334,7 +334,7 @@ struct DQQuarkoniumPairing {
         continue;
       }
       VarManager::FillPair<pairType>(t1, t2, fValues);
-      VarManager::FillPairVertexing(event, t1, t2, fValues);
+      VarManager::FillPairVertexing<pairType>(event, t1, t2, fValues);
       for (int i = 0; i < fCutNames.size(); ++i) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
           if (t1.sign() * t2.sign() < 0) {

@@ -517,6 +517,7 @@ struct DQTableReader {
     fOutputList.setObject(fHistMan->GetMainHistogramList());
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
+    VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
 
   void process(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
@@ -538,7 +539,7 @@ struct DQTableReader {
       }
       dileptonFilterMap = uint32_t(twoTrackFilter);
       VarManager::FillPair<pairTypeEE>(t1, t2, fValues);
-      VarManager::FillPairVertexing(event, t1, t2, fValues);
+      VarManager::FillPairVertexing<pairTypeEE>(event, t1, t2, fValues);
       dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
       for (int i = 0; i < fCutNames.size(); ++i) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
@@ -566,6 +567,7 @@ struct DQTableReader {
       // TBD:  Other implementations may be possible, for example add a column to the dilepton table to specify the pair type (dielectron, dimuon, electron-muon, etc.)
       dileptonFilterMap = uint32_t(twoTrackFilter) << 8;
       VarManager::FillPair<pairTypeMuMu>(muon1, muon2, fValues);
+      VarManager::FillPairVertexing<pairTypeMuMu>(event, muon1, muon2, fValues);
       dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], muon1.sign() + muon2.sign(), dileptonFilterMap);
       if (muon1.sign() * muon2.sign() < 0) {
         fHistMan->FillHistClass("PairsMuonSEPM", fValues);
@@ -727,7 +729,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
       }
       if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
       }
       if (classStr.Contains("EleMu")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_electronmuon");
