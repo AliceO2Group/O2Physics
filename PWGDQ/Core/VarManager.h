@@ -330,7 +330,7 @@ class VarManager : public TObject
     fgFitterTwoProng.setUseAbsDCA(useAbsDCA);
   }
 
-    // Setup the 2 prong FwdDCAFitterN
+  // Setup the 2 prong FwdDCAFitterN
   static void SetupTwoProngFwdDCAFitter(float magField, bool propagateToPCA, float maxR, float minParamChange, float minRelChi2Change, bool useAbsDCA)
   {
     FwdfgFitterTwoProng.setBz(magField);
@@ -340,7 +340,6 @@ class VarManager : public TObject
     FwdfgFitterTwoProng.setMinRelChi2Change(minRelChi2Change);
     FwdfgFitterTwoProng.setUseAbsDCA(useAbsDCA);
   }
-
 
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
@@ -847,7 +846,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     values = fgValues;
   }
 
-    int procCode = 0;
+  int procCode = 0;
 
   // TODO: use trackUtilities functions to initialize the various matrices to avoid code duplication
   //auto pars1 = getTrackParCov(t1);
@@ -955,7 +954,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     trackParVar0.propagateToZlinear(primaryVertex.getZ());
     trackParVar1.propagateToZlinear(primaryVertex.getZ());
   }
-    // get uncertainty of the decay length
+  // get uncertainty of the decay length
   //double phi, theta;
   //getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
   double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
@@ -984,7 +983,6 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
   values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (v12.Pz() * o2::constants::physics::LightSpeedCm2NS);
   values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
-
 }
 
 template <typename T1, typename T2>
