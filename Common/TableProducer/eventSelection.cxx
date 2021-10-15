@@ -88,6 +88,10 @@ struct EvSelParameters {
   bool applySelection[kNsel] = {0};
 };
 
+using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
+using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
+using BCsWithBcSels = soa::Join<aod::BCs, aod::BcSels>;
+
 struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -99,9 +103,7 @@ struct BcSelectionTask {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
-
-  void process(
+  void processRun2(
     BCsWithRun2InfosTimestampsAndMatches const& bcs,
     aod::Zdcs const&,
     aod::FV0As const&,
@@ -220,17 +222,13 @@ struct BcSelectionTask {
             multRingV0A, multRingV0C, spdClusters, foundFT0);
     }
   }
-};
+  PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
 
-struct BcSelectionTaskRun3 {
-  Produces<aod::BcSels> bcsel;
-  EvSelParameters par;
-  using BCsWithMatchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
-  void process(BCsWithMatchings const& bcs,
-               aod::Zdcs const&,
-               aod::FV0As const&,
-               aod::FT0s const&,
-               aod::FDDs const&)
+  void processRun3(BCsWithRun3Matchings const& bcs,
+                   aod::Zdcs const&,
+                   aod::FV0As const&,
+                   aod::FT0s const&,
+                   aod::FDDs const&)
   {
     for (auto& bc : bcs) {
       // TODO: fill fired aliases for run3
@@ -284,7 +282,7 @@ struct BcSelectionTaskRun3 {
       uint32_t spdClusters = 0;
 
       int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
-      LOGP(INFO, "foundFT0={}\n", foundFT0);
+      LOGP(debug, "foundFT0={}\n", foundFT0);
       // Fill bc selection columns
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
@@ -292,9 +290,8 @@ struct BcSelectionTaskRun3 {
             multRingV0A, multRingV0C, spdClusters, foundFT0);
     }
   }
+  PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
 };
-
-using BCsWithBcSels = soa::Join<aod::BCs, aod::BcSels>;
 
 struct EventSelectionTask {
   Produces<aod::EvSels> evsel;
@@ -371,7 +368,7 @@ struct EventSelectionTask {
     }
   }
 
-  void process(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
+  void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
     int64_t foundFT0 = bc.foundFT0();
@@ -432,12 +429,9 @@ struct EventSelectionTask {
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
           foundFT0);
   }
-};
+  PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-struct EventSelectionTaskRun3 {
-  Produces<aod::EvSels> evsel;
-
-  void process(aod::Collision const& col, BCsWithBcSels const& bcs)
+  void processRun3(aod::Collision const& col, BCsWithBcSels const& bcs)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
     int64_t foundFT0 = bc.foundFT0();
@@ -471,7 +465,7 @@ struct EventSelectionTaskRun3 {
         bc.moveByIndex(-backwardMoveCount + forwardMoveCount); // move forward
       }
     }
-    LOGP(INFO, "{}", bc.foundFT0());
+    LOGP(debug, "{}", bc.foundFT0());
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -522,17 +516,12 @@ struct EventSelectionTaskRun3 {
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
           foundFT0);
   }
+  PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  if (cfgc.options().get<int>("selection-run") == 2 || cfgc.options().get<int>("selection-run") == 0) {
-    return WorkflowSpec{
-      adaptAnalysisTask<BcSelectionTask>(cfgc),
-      adaptAnalysisTask<EventSelectionTask>(cfgc)};
-  } else {
-    return WorkflowSpec{
-      adaptAnalysisTask<BcSelectionTaskRun3>(cfgc),
-      adaptAnalysisTask<EventSelectionTaskRun3>(cfgc)};
-  }
+  return WorkflowSpec{
+    adaptAnalysisTask<BcSelectionTask>(cfgc),
+    adaptAnalysisTask<EventSelectionTask>(cfgc)};
 }
