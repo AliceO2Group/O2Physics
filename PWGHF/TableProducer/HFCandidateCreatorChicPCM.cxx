@@ -193,7 +193,7 @@ struct HFCandidateCreatorChicPCM {
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreatorChicPCMExpressions {
-  Spawns<aod::HfCandChicCExt> rowCandidateChicPCM;
+  Spawns<aod::HfCandChicCExt> rowCandidateChic;
   void init(InitContext const&) {}
 };
 
@@ -205,6 +205,8 @@ struct HFCandidateCreatorChicPCMMC {
   OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGammaMatched{TH1F("hMassChicToJpsiToMuMuGammaMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  
+  OutputObj<TH2F> hMassChicToJpsiToMuMuGammaVSPtMatched{TH2F("hMassChicToJpsiToMuMuGammaVSPtMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.,500,0.,10.)};
   void process(aod::HfCandChicPCM const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
@@ -244,8 +246,9 @@ struct HFCandidateCreatorChicPCMMC {
             std::vector<int> arrAllDaughtersIndex;
             RecoDecay::getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, array{(int)(kGamma), (int)(pdg::Code::kJpsi)}, 1);
             if (arrAllDaughtersIndex.size() == 2) {
-              flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+              flag = 1 << hf_cand_chicPCM::DecayType::ChicToJpsiToMuMuGamma;
               hMassChicToJpsiToMuMuGammaMatched->Fill(InvMassChicToJpsiGamma(candidate));
+	      hMassChicToJpsiToMuMuGammaVSPtMatched->Fill(InvMassChicToJpsiGamma(candidate),RecoDecay::Pt(candidate.px(), candidate.py()));
             }
           }
         }
@@ -271,12 +274,12 @@ struct HFCandidateCreatorChicPCMMC {
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{(int)(pdg::Code::kJpsi)}, 1);
         auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true)) {
-          flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
+          flag = 1 << hf_cand_chicPCM::DecayType::ChicToJpsiToEEGamma;
         }
 
         if (flag == 0) {
           if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true)) {
-            flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
+            flag = 1 << hf_cand_chicPCM::DecayType::ChicToJpsiToMuMuGamma;
           }
         }
       }
@@ -293,7 +296,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<HFCandidateCreatorChicPCMExpressions>(cfgc, TaskName{"hf-cand-creator-chicPCM-expressions"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorChicPCM>(cfgc, TaskName{"hf-cand-creator-chicPCM-mc"}));
+    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorChicPCMMC>(cfgc, TaskName{"hf-cand-creator-chicPCM-mc"}));
   }
   return workflow;
 }

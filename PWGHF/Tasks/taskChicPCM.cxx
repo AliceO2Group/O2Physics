@@ -232,7 +232,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<TaskChicPCM>(cfgc, TaskName{"hf-task-chicPCM"})};
   const bool doMC = cfgc.options().get<bool>("doMC");
   if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskChicPCM>(cfgc, TaskName{"hf-task-chicPCM-mc"}));
+    workflow.push_back(adaptAnalysisTask<TaskChicPCMMC>(cfgc, TaskName{"hf-task-chicPCM-mc"}));
   }
   return workflow;
 }
