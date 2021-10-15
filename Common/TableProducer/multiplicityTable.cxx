@@ -29,8 +29,6 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 struct MultiplicityTableTaskIndexed {
   Produces<aod::Mults> mult;
   Partition<aod::Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
-  /* the Run3 tracklets type needs to be properly incorporated when defined */
-  Partition<aod::Tracks> run3tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision, aod::Tracks const& tracks, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
   {
@@ -71,7 +69,7 @@ struct MultiplicityTableTaskIndexed {
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i", multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets);
     mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets);
   }
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Process Run2 multipliciyt", true);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
   {
@@ -82,7 +80,7 @@ struct MultiplicityTableTaskIndexed {
       float multT0C = -1.f;
       float multZNA = -1.f;
       float multZNC = -1.f;
-      int multTracklets = run3tracklets.size();
+      int multTracklets = -1;
 
       const float* aAmplitudesA;
       const float* aAmplitudesC;
@@ -106,7 +104,7 @@ struct MultiplicityTableTaskIndexed {
       mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets);
     }
   }
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Process Run3 multipliciyt", false);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
