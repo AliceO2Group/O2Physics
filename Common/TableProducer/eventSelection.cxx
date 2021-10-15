@@ -89,7 +89,7 @@ struct EvSelParameters {
 };
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
-using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
+using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using BCsWithBcSels = soa::Join<aod::BCs, aod::BcSels>;
 
 struct BcSelectionTask {
