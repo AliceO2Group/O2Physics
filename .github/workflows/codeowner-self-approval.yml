@@ -49,7 +49,7 @@ jobs:
       - name: Check author is allowed to self-approve
         shell: python
         env:
-          submitter: ${{ github.event.sender.login }}
+          submitter: ${{ github.event.pull_request.user.login }}
           pr: ${{ github.event.pull_request.number }}
           repo: ${{ github.event.repository.full_name }}
           owners: ${{ steps.owners.outputs.owners }}
