@@ -8,41 +8,128 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file centrality.cxx
+/// \brief Task to produce the centrality tables associated to each of the required centrality estimators
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "TH1F.h"
+#include <TH1F.h>
 
 using namespace o2;
 using namespace o2::framework;
 
 struct CentralityTableTask {
-  Produces<aod::Cents> cent;
+  Produces<aod::CentV0Ms> centVOM;
+  Produces<aod::CentRun2SPDs> centRun2SPD;
+  Produces<aod::CentRun2CL0s> centRun2CL1;
+  Produces<aod::CentRun2CL1s> centRun2CL2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  void init(InitContext&)
+  Configurable<int> estV0M{"estV0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2SPD{"estRun2SPD", -1, {"Produces Run2 centrality percentiles using SPD tracklets multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2CL0{"estRun2CL0", -1, {"Produces Run2 centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2CL1{"estRun2CL1", -1, {"Produces Run2 centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+
+  int mRunNumber;
+  bool mV0MCalibrationStored;
+  TH1* mhVtxAmpCorrV0A;
+  TH1* mhVtxAmpCorrV0C;
+  TH1* mhMultSelCalibV0M;
+
+  void init(InitContext& context)
   {
+    /* Checking the tables which are requested in the workflow and enabling them */
+    auto& workflows = context.services().get<RunningWorkflowInfo const>();
+    for (DeviceSpec device : workflows.devices) {
+      for (auto input : device.inputs) {
+        auto enable = [&input](const std::string detector, Configurable<int>& flag) {
+          const std::string table = "Cent" + detector + "s";
+          if (input.matcher.binding == table) {
+            if (flag < 0) {
+              flag.value = 1;
+              LOGF(info, "Auto-enabling table: %s", table.c_str());
+            } else if (flag > 0) {
+              flag.value = 1;
+              LOGF(info, "Table %s already enabled", table.c_str());
+            } else {
+              LOGF(info, "Table %s disabled", table.c_str());
+            }
+          }
+        };
+        enable("V0M", estV0M);
+        enable("Run2SPD", estRun2SPD);
+        enable("Run2CL0", estRun2CL0);
+        enable("Run2CL1", estRun2CL1);
+      }
+    }
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    mRunNumber = 0;
+    mV0MCalibrationStored = false;
+    mhVtxAmpCorrV0A = nullptr;
+    mhVtxAmpCorrV0C = nullptr;
+    mhMultSelCalibV0M = nullptr;
   }
 
-  void process(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, aod::BCsWithTimestamps const&)
+  void process(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, aod::BCsWithTimestamps const&, aod::Tracks const& tracks)
   {
+    /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    LOGF(debug, "timestamp=%llu", bc.timestamp());
-    TH1F* hCumMultV0M = ccdb->getForTimeStamp<TH1F>("Centrality/CumMultV0M", bc.timestamp());
-    if (!hCumMultV0M) {
-      LOGF(fatal, "V0M centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-    }
-    float centV0M = hCumMultV0M->GetBinContent(hCumMultV0M->FindFixBin(collision.multV0M()));
+    if (bc.runNumber() != mRunNumber) {
+      LOGF(debug, "timestamp=%llu", bc.timestamp());
+      TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
 
-    LOGF(debug, "centV0M=%.0f", centV0M);
-    // fill centrality columns
-    cent(centV0M);
+      if (callst != nullptr) {
+        auto getccdb = [callst](const char* ccdbhname, const char* hname) {
+          TH1* h = (TH1*)callst->FindObject(ccdbhname)->Clone(hname);
+          return h;
+        };
+        if (estV0M == 1) {
+          mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized", "zvtxCalibV0A");
+          mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized", "zvtxCalibV0C");
+          mhMultSelCalibV0M = getccdb("hMultSelCalib_V0M", "MultSelCalibV0M");
+          if ((mhVtxAmpCorrV0A != nullptr) and (mhVtxAmpCorrV0C != nullptr) and (mhMultSelCalibV0M != nullptr)) {
+            mV0MCalibrationStored = true;
+          } else {
+            LOGF(fatal, "Calibration information from V0M for run %d corrupted");
+          }
+        }
+        if (estRun2SPD == 1) {
+          LOGF(fatal, "Run2 calibration information estimated from SPD tracklets still not available");
+        }
+        if (estRun2CL0 == 1) {
+          LOGF(fatal, "Run2 calibration information estimated from CL0 still not available");
+        }
+        if (estRun2CL1 == 1) {
+          LOGF(fatal, "Run2 calibration information estimated from CL1 still not available");
+        }
+        if (mV0MCalibrationStored) {
+          mRunNumber = bc.runNumber();
+        }
+      } else {
+        /* we dont change the run number to keep trying */
+        mV0MCalibrationStored = false;
+        LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+    }
+    if (estV0M == 1) {
+      float centV0M = 105.0f;
+      if (mV0MCalibrationStored) {
+        float v0m = collision.multV0A() * mhVtxAmpCorrV0A->GetBinContent(mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
+                    collision.multV0C() * mhVtxAmpCorrV0C->GetBinContent(mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+        centV0M = mhMultSelCalibV0M->GetBinContent(mhMultSelCalibV0M->FindFixBin(v0m));
+      }
+      LOGF(debug, "centV0M=%.0f", centV0M);
+      // fill centrality columns
+      centVOM(centV0M);
+    }
   }
 };
 

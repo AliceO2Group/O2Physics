@@ -241,7 +241,7 @@ struct lambdakzerofinderQA {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   ///Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Cents>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision,
                soa::Filtered<aod::V0Datas> const& fullV0s)
   {
     if (!collision.alias()[kINT7]) {
