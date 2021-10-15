@@ -36,8 +36,15 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
 
+#include "Math/SMatrix.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "DetectorsVertexing/FwdDCAFitterN.h"
+
 using std::cout;
 using std::endl;
+using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+using SMatrix5 = ROOT::Math::SVector<double, 5>;
+using Vec3D = ROOT::Math::SVector<double, 3>;
 
 // TODO: create an array holding these constants for all needed particles or check for a place where these are already defined
 static const float fgkElectronMass = 0.000511; // GeV
@@ -240,6 +247,12 @@ class VarManager : public TObject
     kVertexingLxyErr,
     kVertexingLxyz,
     kVertexingLxyzErr,
+    kVertexingLz,
+    kVertexingLzErr,
+    kVertexingTauxy,
+    kVertexingTauxyErr,
+    kVertexingTauz,
+    kVertexingTauzErr,
     kVertexingProcCode,
     kVertexingChi2PCA,
     kCosThetaHE,
@@ -317,6 +330,17 @@ class VarManager : public TObject
     fgFitterTwoProng.setUseAbsDCA(useAbsDCA);
   }
 
+  // Setup the 2 prong FwdDCAFitterN
+  static void SetupTwoProngFwdDCAFitter(float magField, bool propagateToPCA, float maxR, float minParamChange, float minRelChi2Change, bool useAbsDCA)
+  {
+    FwdfgFitterTwoProng.setBz(magField);
+    FwdfgFitterTwoProng.setPropagateToPCA(propagateToPCA);
+    FwdfgFitterTwoProng.setMaxR(maxR);
+    FwdfgFitterTwoProng.setMinParamChange(minParamChange);
+    FwdfgFitterTwoProng.setMinRelChi2Change(minRelChi2Change);
+    FwdfgFitterTwoProng.setUseAbsDCA(useAbsDCA);
+  }
+
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -325,8 +349,8 @@ class VarManager : public TObject
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2>
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kJpsiToEE);
-  template <typename C, typename T>
-  static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr, PairCandidateType pairType = kJpsiToEE);
+  template <int pairType, typename C, typename T>
+  static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
 
@@ -351,6 +375,7 @@ class VarManager : public TObject
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
 
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProng;
+  static o2::vertexing::FwdDCAFitterN<2> FwdfgFitterTwoProng;
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -814,53 +839,80 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   values[kRap] = -v12.Rapidity();
 }
 
-template <typename C, typename T>
-void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values, PairCandidateType pairType)
+template <int pairType, typename C, typename T>
+void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values)
 {
   if (!values) {
     values = fgValues;
   }
 
+  int procCode = 0;
+
   // TODO: use trackUtilities functions to initialize the various matrices to avoid code duplication
   //auto pars1 = getTrackParCov(t1);
   //auto pars2 = getTrackParCov(t2);
-  std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
-  std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
-                                  t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
-                                  t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
-  o2::track::TrackParCov pars1{t1.x(), t1.alpha(), t1pars, t1covs};
-  std::array<float, 5> t2pars = {t2.y(), t2.z(), t2.snp(), t2.tgl(), t2.signed1Pt()};
-  std::array<float, 15> t2covs = {t2.cYY(), t2.cZY(), t2.cZZ(), t2.cSnpY(), t2.cSnpZ(),
-                                  t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(),
-                                  t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
-  o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
+  if constexpr (pairType == kJpsiToEE) {
+    std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
+    std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
+                                    t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
+                                    t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
+    o2::track::TrackParCov pars1{t1.x(), t1.alpha(), t1pars, t1covs};
+    std::array<float, 5> t2pars = {t2.y(), t2.z(), t2.snp(), t2.tgl(), t2.signed1Pt()};
+    std::array<float, 15> t2covs = {t2.cYY(), t2.cZY(), t2.cZZ(), t2.cSnpY(), t2.cSnpZ(),
+                                    t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(),
+                                    t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
+    o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
+    procCode = fgFitterTwoProng.process(pars1, pars2);
+  } else if constexpr (pairType == kJpsiToMuMu) {
+    //Initialize track parameters for forward
+    double chi21 = t1.chi2();
+    double chi22 = t2.chi2();
+    SMatrix5 t1pars(t1.x(), t1.y(), t1.phi(), t1.tgl(), t1.signed1Pt());
+    std::vector<double> v1{t1.cXX(), t1.cXY(), t1.cYY(), t1.cPhiX(), t1.cPhiY(),
+                           t1.cPhiPhi(), t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(),
+                           t1.c1PtX(), t1.c1PtY(), t1.c1PtPhi(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
+    SMatrix55 t1covs(v1.begin(), v1.end());
+    o2::track::TrackParCovFwd pars1{t1.z(), t1pars, t1covs, chi21};
+    SMatrix5 t2pars(t2.x(), t2.y(), t2.phi(), t2.tgl(), t2.signed1Pt());
+    std::vector<double> v2{t2.cXX(), t2.cXY(), t2.cYY(), t2.cPhiX(), t2.cPhiY(),
+                           t2.cPhiPhi(), t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(),
+                           t2.c1PtX(), t2.c1PtY(), t2.c1PtPhi(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
+    SMatrix55 t2covs(v2.begin(), v2.end());
+    o2::track::TrackParCovFwd pars2{t2.z(), t2pars, t2covs, chi22};
+    procCode = FwdfgFitterTwoProng.process(pars1, pars2);
+  }
 
-  // reconstruct the 2-prong secondary vertex
-  int procCode = fgFitterTwoProng.process(pars1, pars2);
   values[kVertexingProcCode] = procCode;
   if (procCode == 0) {
     // TODO: set the other variables to appropriate values and return
     values[kVertexingChi2PCA] = -999.;
     values[kVertexingLxy] = -999.;
     values[kVertexingLxyz] = -999.;
+    values[kVertexingLz] = -999.;
     values[kVertexingLxyErr] = -999.;
     values[kVertexingLxyzErr] = -999.;
+    values[kVertexingLzErr] = -999.;
+
+    values[kVertexingTauxy] = -999.;
+    values[kVertexingTauz] = -999.;
+    values[kVertexingTauxyErr] = -999.;
+    values[kVertexingTauzErr] = -999.;
+
     return;
   }
 
-  const auto& secondaryVertex = fgFitterTwoProng.getPCACandidate();
-  auto chi2PCA = fgFitterTwoProng.getChi2AtPCACandidate();
-  auto covMatrixPCA = fgFitterTwoProng.calcPCACovMatrix().Array();
-  auto trackParVar0 = fgFitterTwoProng.getTrack(0);
-  auto trackParVar1 = fgFitterTwoProng.getTrack(1);
-  values[kVertexingChi2PCA] = chi2PCA;
+  float m1 = fgkElectronMass;
+  float m2 = fgkElectronMass;
 
-  // get track momenta
+  Vec3D secondaryVertex;
+  float bz = 0;
   std::array<float, 3> pvec0;
   std::array<float, 3> pvec1;
-  trackParVar0.getPxPyPzGlo(pvec0);
-  trackParVar1.getPxPyPzGlo(pvec1);
 
+  double* covMatrixPCA;
+
+  o2::dataformats::DCA impactParameter0;
+  o2::dataformats::DCA impactParameter1;
   // get track impact parameters
   // This modifies track momenta!
   o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
@@ -868,11 +920,40 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
   //auto primaryVertex = getPrimaryVertex(collision);
   auto covMatrixPV = primaryVertex.getCov();
-  o2::dataformats::DCA impactParameter0;
-  o2::dataformats::DCA impactParameter1;
-  trackParVar0.propagateToDCA(primaryVertex, fgFitterTwoProng.getBz(), &impactParameter0);
-  trackParVar1.propagateToDCA(primaryVertex, fgFitterTwoProng.getBz(), &impactParameter1);
 
+  if constexpr (pairType == kJpsiToEE) {
+    secondaryVertex = fgFitterTwoProng.getPCACandidate();
+    bz = fgFitterTwoProng.getBz();
+    covMatrixPCA = fgFitterTwoProng.calcPCACovMatrix().Array();
+    auto chi2PCA = fgFitterTwoProng.getChi2AtPCACandidate();
+    auto trackParVar0 = fgFitterTwoProng.getTrack(0);
+    auto trackParVar1 = fgFitterTwoProng.getTrack(1);
+    values[kVertexingChi2PCA] = chi2PCA;
+    trackParVar0.getPxPyPzGlo(pvec0);
+    trackParVar1.getPxPyPzGlo(pvec1);
+    trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
+    trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
+  } else if constexpr (pairType == kJpsiToMuMu) {
+    //Get pca candidate from forward DCA fitter
+    m1 = fgkMuonMass;
+    m2 = fgkMuonMass;
+
+    secondaryVertex = FwdfgFitterTwoProng.getPCACandidate();
+    bz = FwdfgFitterTwoProng.getBz();
+    covMatrixPCA = FwdfgFitterTwoProng.calcPCACovMatrix().Array();
+    auto chi2PCA = FwdfgFitterTwoProng.getChi2AtPCACandidate();
+    auto trackParVar0 = FwdfgFitterTwoProng.getTrack(0);
+    auto trackParVar1 = FwdfgFitterTwoProng.getTrack(1);
+    values[kVertexingChi2PCA] = chi2PCA;
+    pvec0[0] = trackParVar0.getPx();
+    pvec0[1] = trackParVar0.getPy();
+    pvec0[2] = trackParVar0.getPz();
+    pvec1[0] = trackParVar1.getPx();
+    pvec1[1] = trackParVar1.getPy();
+    pvec1[2] = trackParVar1.getPz();
+    trackParVar0.propagateToZlinear(primaryVertex.getZ());
+    trackParVar1.propagateToZlinear(primaryVertex.getZ());
+  }
   // get uncertainty of the decay length
   //double phi, theta;
   //getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
@@ -883,12 +964,25 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
   values[kVertexingLxyzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
   values[kVertexingLxyErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+  values[kVertexingLzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, 0, theta) + getRotatedCovMatrixXX(covMatrixPCA, 0, theta));
 
   values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                           (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
-  values[kVertexingLxyz] = values[kVertexingLxy] + (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
+  values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
+  values[kVertexingLxyz] = values[kVertexingLxy] + values[kVertexingLz];
   values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
+  values[kVertexingLz] = std::sqrt(values[kVertexingLz]);
   values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
+
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+  values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v12.M() / (v12.Pz() * o2::constants::physics::LightSpeedCm2NS);
+  values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
+
+  values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (v12.Pz() * o2::constants::physics::LightSpeedCm2NS);
+  values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
 }
 
 template <typename T1, typename T2>

@@ -22,6 +22,7 @@ float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProng;
+o2::vertexing::FwdDCAFitterN<2> VarManager::FwdfgFitterTwoProng;
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -296,12 +297,24 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairType] = "";
   fgVariableNames[kVertexingLxy] = "Pair Lxy";
   fgVariableUnits[kVertexingLxy] = "cm";
+  fgVariableNames[kVertexingLz] = "Pair Lz";
+  fgVariableUnits[kVertexingLz] = "cm";
   fgVariableNames[kVertexingLxyz] = "Pair Lxyz";
   fgVariableUnits[kVertexingLxyz] = "cm";
   fgVariableNames[kVertexingLxyErr] = "Pair Lxy err.";
   fgVariableUnits[kVertexingLxyErr] = "cm";
+  fgVariableNames[kVertexingLzErr] = "Pair Lz err.";
+  fgVariableUnits[kVertexingLzErr] = "cm";
   fgVariableNames[kVertexingLxyzErr] = "Pair Lxyz err.";
   fgVariableUnits[kVertexingLxyzErr] = "cm";
+  fgVariableNames[kVertexingTauz] = "Pair pseudo-proper Tauz";
+  fgVariableUnits[kVertexingTauz] = "ns";
+  fgVariableNames[kVertexingTauxy] = "Pair pseudo-proper Tauxy";
+  fgVariableUnits[kVertexingTauxy] = "ns";
+  fgVariableNames[kVertexingTauzErr] = "Pair pseudo-proper Tauz err.";
+  fgVariableUnits[kVertexingTauzErr] = "ns";
+  fgVariableNames[kVertexingTauxyErr] = "Pair pseudo-proper Tauxy err.";
+  fgVariableUnits[kVertexingTauxyErr] = "ns";
   fgVariableNames[kVertexingProcCode] = "DCAFitterN<2> processing code";
   fgVariableUnits[kVertexingProcCode] = "";
   fgVariableNames[kVertexingChi2PCA] = "Pair #chi^{2} at PCA";
