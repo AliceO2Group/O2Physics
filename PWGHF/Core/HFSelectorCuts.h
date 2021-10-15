@@ -32,7 +32,9 @@ enum Code {
   kXiCCPlusPlus = 4422,
   kLambdaB0 = 5122,
   kJpsi = 443,
+  kChic0 = 10441,
   kChic1 = 20443,
+  kChic2 = 445,
   kBPlus = 521,
   kX3872 = 9920443
 };
