@@ -47,7 +47,7 @@ struct HfTaskLb {
      {"hPtCand", "Lb candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
 
   Configurable<int> selectionFlagLb{"selectionFlagLb", 1, "Selection Flag for Lb"};
-  Configurable<double> cutYCandMax{"cutYCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<double> cutYCandMax{"cutYCandMax", 1.44, "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
