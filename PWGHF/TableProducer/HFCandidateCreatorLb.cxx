@@ -50,19 +50,19 @@ struct HFCandidateCreatorLb {
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any Lb is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> ptPionMin{"ptPionMin", 0.15, "minimum pion pT threshold (GeV/c)"};
+  Configurable<double> ptPionMin{"ptPionMin", 0.2, "minimum pion pT threshold (GeV/c)"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
   
-  OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "Lc+ candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hPtLc{TH1F("hPtLc", "J/#psi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hCPALc{TH1F("hCPALc", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
-  OutputObj<TH1F> hMassLbToLcPi{TH1F("hMassLbToLcPi", "3-prong candidates;inv. mass (Lc+ (#rightarrow pKpi) #pi-) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "Lc+ candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#minus} candidates;#pi^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hCPALc{TH1F("hCPALc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
+  OutputObj<TH1F> hMassLbToLcPi{TH1F("hMassLbToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
   
   double massPi = RecoDecay::getMassPDG(kPiMinus);
-  double massLc = RecoDecay::getMassPDG(4122);
+  double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double massLcPi;
   
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
@@ -75,7 +75,7 @@ struct HFCandidateCreatorLb {
                aod::HFSelLcCandidate>> const& lcCands,
                aod::BigTracks const& tracks)
   {
-    // 3-prong vertex fitter (to rebuild Lc vertex)
+    // 2-prong vertex fitter 
     o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(magneticField);
     df2.setPropagateToPCA(b_propdca);
@@ -85,7 +85,7 @@ struct HFCandidateCreatorLb {
     df2.setMinRelChi2Change(d_minrelchi2change);
     df2.setUseAbsDCA(true);
 
-    // 3-prong vertex fitter
+    // 3-prong vertex fitter (to rebuild Lc vertex)
     o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(magneticField);
     df3.setPropagateToPCA(b_propdca);
@@ -111,6 +111,9 @@ struct HFCandidateCreatorLb {
       //}
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());
+
+      //Printf("(Panos) Inside the Lc candidate loop (y = %lf)",YLc(lcCand));
+      
       // create Lc track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexLc = {lcCand.xSecondaryVertex(), lcCand.ySecondaryVertex(), lcCand.zSecondaryVertex()};
       array<float, 3> pvecLc = {lcCand.px(), lcCand.py(), lcCand.pz()};
@@ -159,6 +162,8 @@ struct HFCandidateCreatorLb {
 	  continue;
 	}
 
+	//Printf("(Panos) Inside the pi- candidate loop (y = %lf)",trackNeg.pt());
+	
 	// calculate relevant properties
 	const auto& LbsecondaryVertex = df2.getPCACandidate();
 	auto chi2PCA = df2.getChi2AtPCACandidate();
@@ -234,8 +239,8 @@ struct HFCandidateCreatorLbMC {
   {
     int indexRec = -1;
     int indexRecLc = -1;
-    int pdgCodeLb = 4122;
-    int pdgCodeLc = 5122;
+    int pdgCodeLb = pdg::Code::kLambdaCPlus;
+    int pdgCodeLc = pdg::Code::kLambdaB0;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
@@ -247,8 +252,8 @@ struct HFCandidateCreatorLbMC {
       flag = 0;
       origin = 0;
       channel = 0;
-      //auto lcTrack = candidate.index0();
-      auto lcTrack = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
+      auto lcTrack = candidate.index0();
+      //auto lcTrack = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
       auto daughter0Lc = lcTrack.index0_as<aod::BigTracksMC>();
       auto daughter1Lc = lcTrack.index1_as<aod::BigTracksMC>();
       auto daughter2Lc = lcTrack.index2_as<aod::BigTracksMC>();
@@ -257,18 +262,13 @@ struct HFCandidateCreatorLbMC {
 	                          daughter0Lc,
 				  daughter1Lc,
                                   daughter2Lc};
-      /*auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(),
-                                  candidate.index1_as<aod::BigTracksMC>(),
-				  daughter0Lc,
-				  daughter1Lc,
-                                  daughter2Lc};*/
-      Printf("%d",kProton);
+      
       //Fix this part
       // Λb → Λc+ π-
       //Printf("Checking Λb → Λc+ π-");
-      indexRecLc = RecoDecay::getMatchedMCRec(particlesMC, arrayLcDaughters, pdg::Code::kLambdaCPlus, array{2212, 321, -211}, true);
+      indexRecLc = RecoDecay::getMatchedMCRec(particlesMC, arrayLcDaughters, pdg::Code::kLambdaCPlus, array{2212, -321, +211}, true);
       if (indexRecLc > -1) {
-      	indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{-211, 2212, 321, -211}, true, &sign, 2);
+      	indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{-211, 2212, -321, +211}, true, &sign, 2);
 	if (indexRec > -1) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
         }
@@ -297,8 +297,9 @@ struct HFCandidateCreatorLbMC {
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{4122}, 1);
         auto lcCandMC = particlesMC.iteratorAt(arrDaughter[0]);
-        if (RecoDecay::isMatchedMCGen(particlesMC, lcCandMC, pdg::Code::kLambdaCPlus, array{2212, 321, -211}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMC, lcCandMC, pdg::Code::kLambdaCPlus, array{2212, -321, 211}, true)) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
+	  //Printf("(Panos) Reco matched with Gen");
         }
       }
 

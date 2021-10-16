@@ -120,7 +120,7 @@ struct HfLbToLcPiCandidateSelector {
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCandProng2, aod::HFSelLcCandidate>, aod::BigTracksPID const& tracks)
+  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracksPID const& tracks)
   {
     for (auto& hfCandLb : hfCandLbs) { //looping over Lb candidates
 
@@ -129,12 +129,13 @@ struct HfLbToLcPiCandidateSelector {
       // check if flagged as Λb --> Λc+ π-
       if (!(hfCandLb.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
         hfSelLbToLcPiCandidate(statusLb);
-        // Printf("Lb candidate selection failed at hfflag check");
+        //Printf("Lb candidate selection failed at hfflag check");
         continue;
       }
 
       // Lc is always index0 and pi is index1 by default
-      auto candLc = hfCandLb.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
+      auto candLc = hfCandLb.index0();
+      //auto candLc = hfCandLb.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
       auto trackPi = hfCandLb.index1_as<aod::BigTracksPID>();
 
       //topological cuts
@@ -145,7 +146,7 @@ struct HfLbToLcPiCandidateSelector {
       }
 
       hfSelLbToLcPiCandidate(1);
-      // Printf("Lb candidate selection successful, candidate should be selected");
+      //Printf("Lb candidate selection successful, candidate should be selected");
     }
   }
 };
