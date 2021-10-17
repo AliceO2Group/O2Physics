@@ -40,8 +40,8 @@ struct FT0Table {
       int64_t foundFT0 = collision.foundFT0();
       float vertexPV = collision.posZ();
       float vertex_corr = vertexPV / o2::constants::physics::LightSpeedCm2NS;
-      float t0A, t0C, t0AC, vertexT0;
-      t0A = t0C = t0AC = vertexT0 = 32000;
+      float t0A, t0C;
+      t0A = t0C = 32000;
       if (foundFT0 != -1) {
         auto ft0 = ft0s.iteratorAt(foundFT0);
         t0A = ft0.timeA();
@@ -49,13 +49,8 @@ struct FT0Table {
         int triggersignals = ft0.triggerMask();
         bool ora = (triggersignals & (1 << 0)) != 0;
         bool orc = (triggersignals & (1 << 1)) != 0;
-        bool vertexTrigger = (triggersignals & (1 << 2)) != 0;
-        LOGF(debug, "triggers OrA %i OrC %i vertexTrigger %i", ora, orc, vertexTrigger);
+        LOGF(debug, "triggers OrA %i OrC %i ", ora, orc);
         LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f, triggersignals %i", t0A, t0C, vertex_corr, triggersignals);
-        if (vertexTrigger) {
-          vertexT0 = o2::constants::physics::LightSpeedCm2NS * (t0C - t0A) / 2;
-          t0AC = (t0A + t0C) / 2;
-        }
         if (ora) {
           t0A += vertex_corr;
         }
@@ -63,8 +58,8 @@ struct FT0Table {
           t0C -= vertex_corr;
         }
       }
-      LOGF(debug, " T0 collision time = %f, T0A = %f, T0C = %f, T0 vertex = %f PV = %f", t0A, t0C, t0AC, vertexT0, vertexPV);
-      table(t0A, t0C, t0AC, vertexT0);
+      LOGF(debug, " T0 collision time T0A = %f, T0C = %f", t0A, t0C);
+      table(t0A, t0C);
     }
   }
 };

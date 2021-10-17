@@ -1,3 +1,4 @@
+
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -40,17 +41,27 @@ struct FT0InfoQaTask {
 
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::T0info>::iterator const& col /*, aod::T0info const &ft0s*/)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::T0info>::iterator const& col, aod::FT0s const& ft0s)
   {
     int64_t foundFT0 = col.foundFT0();
     if (foundFT0 != -1) {
-      LOGF(info, "multV0A=%5.0f;  multT0A=%5.0f; PV=%f; T0vertex=%f;T0A=%f; T0C=%f; T0AC=%f ", col.multV0A(), col.multT0A(), col.posZ(), col.t0A(), col.t0C(), col.t0AC(), col.t0vertex());
-      hT0A->Fill(col.t0A());
-      hT0C->Fill(col.t0C());
-      hT0AC->Fill(col.t0AC());
-      hT0Vertex->Fill(col.t0vertex());
-      hVertex_T0_PV->Fill(col.t0vertex(), col.posZ());
-      hT0res->Fill((col.t0A() - col.t0C()) / 2.);
+      auto ft0 = ft0s.iteratorAt(foundFT0);
+      int8_t triggersignals = ft0.triggerMask();
+      bool ora = (triggersignals & (1 << 0)) != 0;
+      bool orc = (triggersignals & (1 << 1)) != 0;
+      LOGF(debug, "multV0A=%5.0f;  multT0A=%5.0f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ", col.multV0A(), col.multT0A(), col.posZ(), col.t0A(), col.t0C(), col.t0AC(), ft0.posZ());
+      if (ora) {
+        hT0A->Fill(col.t0A());
+      }
+      if (orc) {
+        hT0C->Fill(col.t0C());
+      }
+      if (ora && orc) {
+        hT0AC->Fill(col.t0AC());
+        hT0Vertex->Fill(ft0.posZ());
+        hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
+        hT0res->Fill((col.t0A() - col.t0C()) / 2.);
+      }
     }
   }
 };
