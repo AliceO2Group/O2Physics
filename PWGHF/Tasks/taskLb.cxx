@@ -19,6 +19,7 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -70,10 +71,9 @@ struct HfTaskLb {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
-  //void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
-  void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
+  void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
   {
-    float centrality = 0;//collision.centV0M();
+    float centrality = collision.centV0M();
     registry.fill(HIST("hCentrality"), centrality);
 
     for (auto& candidate : candidates) {
