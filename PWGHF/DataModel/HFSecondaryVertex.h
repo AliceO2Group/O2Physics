@@ -1063,8 +1063,6 @@ DECLARE_SOA_TABLE(HfCandChicMCGen, "AOD", "HFCANDCHICMCGEN", //!
                   hf_cand_chic::OriginMCGen,
                   hf_cand_chic::FlagMCDecayChanGen);
 
-
-
 // specific Lb candidate properties
 namespace hf_cand_lb
 {
@@ -1080,7 +1078,7 @@ DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant 
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_lb
 
-// Λb → Λc+ π- → p K- π+ π- 
+// Λb → Λc+ π- → p K- π+ π-
 float massLb = RecoDecay::getMassPDG(5122); // replace this with: "RecoDecay::getMassPDG(9920443)" when pdg is added
 template <typename T>
 auto CtLb(const T& candidate)
@@ -1112,14 +1110,14 @@ DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   // 3-prong specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
-                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, 
-                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, 
-                  hf_cand_lb::Index0Id, hf_track_index::Index1Id, 
+                  hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
+                  hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand_lb::Index0Id, hf_track_index::Index1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
-		  hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-		  hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
                   hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
@@ -1156,7 +1154,5 @@ DECLARE_SOA_TABLE(HfCandLbMCGen, "AOD", "HFCANDLBMCGEN", //!
                   hf_cand_lb::FlagMCDecayChanGen);
 
 } // namespace o2::aod
-
-
 
 #endif // O2_ANALYSIS_HFSECONDARYVERTEX_H_
