@@ -279,6 +279,7 @@ struct lambdakzerobuilder {
         V0.posTrack_as<MyTracks>().globalIndex(),
         V0.negTrack_as<MyTracks>().globalIndex(),
         V0.negTrack_as<MyTracks>().collisionId(),
+        V0.globalIndex(),
         fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
         pos[0], pos[1], pos[2],
         pvec0[0], pvec0[1], pvec0[2],
