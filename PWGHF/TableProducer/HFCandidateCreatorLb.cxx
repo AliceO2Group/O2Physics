@@ -231,8 +231,7 @@ struct HFCandidateCreatorLbMC {
 
   void process(aod::HfCandLb const& candidates,
                aod::HfCandProng3,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+	       aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int indexRecLc = -1;
