@@ -580,6 +580,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
     workflow.push_back(adaptAnalysisTask<AddCollisionId>(cfg));
     workflow.push_back(adaptAnalysisTask<HfFilter>(cfg));
   }
- 
+
   return workflow;
 }
