@@ -52,7 +52,6 @@ struct HfLbToLcPiCandidateSelector {
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_lb_tolcpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lb_to_lcpi_cuts", {hf_cuts_lb_tolcpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
-  //Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
 
   // Apply topological cuts as defined in HFSelectorCuts.h; return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
@@ -81,7 +80,7 @@ struct HfLbToLcPiCandidateSelector {
     //  return false;
     //}
     //}
-    
+
     //Lb Decay length
     if (hfCandLb.decayLength() < cuts->get(pTBin, "Lb decLen")) {
       return false;
@@ -113,6 +112,7 @@ struct HfLbToLcPiCandidateSelector {
     //    (std::abs(hfCandBPlus.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))){
     //  return false;
     //}
+
     //D0 CPA
     // if (std::abs(hfCandD0.cpa()) < cuts->get(pTBin, "CPA D0")){
     //  return false;

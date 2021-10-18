@@ -193,9 +193,6 @@ struct HFCandidateCreatorLb {
 	if (TESTBIT(lcCand.hfflag(), hf_cand_prong3::DecayType::LcToPKPi)) {
             SETBIT(hfFlag, hf_cand_lb::DecayType::LbToLcPi); 
 	}
-	/* if (TESTBIT(jpsiCand.hfflag(), hf_cand_prong2::DecayType::LcToEE)) {
-            SETBIT(hfFlag, hf_cand_x::DecayType::XToLcToEEPiPi); // dielectron channel
-	    }*/
 
 	// fill the candidate table for the Lb here:
 	rowCandidateBase(collision.globalIndex(),
@@ -253,37 +250,31 @@ struct HFCandidateCreatorLbMC {
       origin = 0;
       channel = 0;
       auto lcTrack = candidate.index0();
-      //auto lcTrack = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
       auto daughter0Lc = lcTrack.index0_as<aod::BigTracksMC>();
       auto daughter1Lc = lcTrack.index1_as<aod::BigTracksMC>();
       auto daughter2Lc = lcTrack.index2_as<aod::BigTracksMC>();
       auto arrayLcDaughters = array{daughter0Lc, daughter1Lc, daughter2Lc};
-      auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),
-	                          daughter0Lc,
-				  daughter1Lc,
-                                  daughter2Lc};
-      
-      //Fix this part
+      auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),daughter0Lc,daughter1Lc,daughter2Lc};
+
       // Λb → Λc+ π-
       //Printf("Checking Λb → Λc+ π-");
       indexRecLc = RecoDecay::getMatchedMCRec(particlesMC, arrayLcDaughters, pdg::Code::kLambdaCPlus, array{2212, -321, +211}, true);
       if (indexRecLc > -1) {
-      	indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{-211, 2212, -321, +211}, true, &sign, 2);
-	if (indexRec > -1) {
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{-211, 2212, -321, +211}, true, &sign, 2);
+        if (indexRec > -1) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
         }
       }
 
-      // Check whether the particle is non-prompt (from a b quark).
+      //Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.iteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
-
       rowMCMatchRec(flag, origin, channel);
     }
 
-    // Match generated particles.
+    //Match generated particles.
     for (auto& particle : particlesMC) {
       //Printf("New gen. candidate");
       flag = 0;
@@ -299,7 +290,6 @@ struct HFCandidateCreatorLbMC {
         auto lcCandMC = particlesMC.iteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, lcCandMC, pdg::Code::kLambdaCPlus, array{2212, -321, 211}, true)) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
-	  //Printf("(Panos) Reco matched with Gen");
         }
       }
 
@@ -307,7 +297,7 @@ struct HFCandidateCreatorLbMC {
       if (flag != 0) {
         origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
-
+      
       rowMCMatchGen(flag, origin, channel);
     } // candidate loop
   }   // process

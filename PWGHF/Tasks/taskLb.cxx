@@ -105,9 +105,7 @@ struct HfTaskLb {
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
       if (candPi.sign() < 0) {
         registry.fill(HIST("hInvMassLc"), InvMassLcpKpi(candLc), candidate.pt());
-      } /*else {
-        registry.fill(HIST("hInvMassD0"), InvMassD0(candD0), candidate.pt());
-	}*/
+      }
     } // candidate loop
   }   // process
 };    // struct
@@ -180,7 +178,7 @@ struct HfTaskLbMc {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YLb(candidate)) > cutYCandMax) {
-        continue;
+         continue;
       }
       auto candLc = candidate.index0_as<aod::HfCandProng3>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
