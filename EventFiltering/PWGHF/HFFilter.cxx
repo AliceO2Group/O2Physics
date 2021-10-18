@@ -40,7 +40,7 @@ using namespace hf_cuts_single_track;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   ConfigParamSpec optionTrigger{"doTrigger", VariantType::Bool, true, {"Perform trigger selection"}};
-  ConfigParamSpec optionTraining{"doTrainSamples", VariantType::Bool, false, {"Produce training samples"}};
+  ConfigParamSpec optionTraining{"doTrainSamples", VariantType::Bool, true, {"Produce training samples"}};
   workflowOptions.push_back(optionTrigger);
   workflowOptions.push_back(optionTraining);
 }
