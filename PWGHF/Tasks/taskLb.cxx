@@ -54,7 +54,7 @@ struct HfTaskLb {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("hMass", "#Lambda_{b}^{0} candidates;inv. mass #Lambda_{c}^{#plus}#pi^{#minus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"},{100, 0., 100.}}});
+    registry.add("hMass", "#Lambda_{b}^{0} candidates;inv. mass #Lambda_{c}^{#plus}#pi^{#minus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
     registry.add("hDecLength", "#Lambda_{b}^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXY", "#Lambda_{b}^{0} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "#Lambda_{b}^{0} candidates;prong 0 (#Lambda_{c}^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -87,7 +87,7 @@ struct HfTaskLb {
       auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>>();
       auto candPi = candidate.index1_as<aod::BigTracks>();
 
-      registry.fill(HIST("hMass"), InvMassLbToLcPi(candidate), candidate.pt(),centrality);
+      registry.fill(HIST("hMass"), InvMassLbToLcPi(candidate), candidate.pt(), centrality);
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -178,7 +178,7 @@ struct HfTaskLbMc {
         continue;
       }
       if (cutYCandMax >= 0. && std::abs(YLb(candidate)) > cutYCandMax) {
-         continue;
+        continue;
       }
       auto candLc = candidate.index0_as<aod::HfCandProng3>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {

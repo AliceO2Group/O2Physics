@@ -52,7 +52,7 @@ struct HFCandidateCreatorLb {
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> ptPionMin{"ptPionMin", 0.2, "minimum pion pT threshold (GeV/c)"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
-  
+
   OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "Lc+ candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#minus} candidates;#pi^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
@@ -60,22 +60,22 @@ struct HFCandidateCreatorLb {
   OutputObj<TH1F> hMassLbToLcPi{TH1F("hMassLbToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
-  
+
   double massPi = RecoDecay::getMassPDG(kPiMinus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double massLcPi;
-  
+
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
   Filter filterSelectCandidates = (aod::hf_selcandidate_lc::isSelLcpKpi >= d_selectionFlagLc || aod::hf_selcandidate_lc::isSelLcpiKp >= d_selectionFlagLc);
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
-               aod::HfCandProng3,
-               aod::HFSelLcCandidate>> const& lcCands,
+                 aod::HfCandProng3,
+                 aod::HFSelLcCandidate>> const& lcCands,
                aod::BigTracks const& tracks)
   {
-    // 2-prong vertex fitter 
+    // 2-prong vertex fitter
     o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(magneticField);
     df2.setPropagateToPCA(b_propdca);
@@ -107,13 +107,13 @@ struct HFCandidateCreatorLb {
         hMassLcToPKPi->Fill(InvMassLcpKpi(lcCand));
       }
       //if (jpsiCand.isSelLcToPiKP() > 0) {
-        //hMassLcToPKPi->Fill(InvMassLcToMuMu(jpsiCand));
+      //hMassLcToPKPi->Fill(InvMassLcToMuMu(jpsiCand));
       //}
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());
 
       //Printf("(Panos) Inside the Lc candidate loop (y = %lf)",YLc(lcCand));
-      
+
       // create Lc track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexLc = {lcCand.xSecondaryVertex(), lcCand.ySecondaryVertex(), lcCand.zSecondaryVertex()};
       array<float, 3> pvecLc = {lcCand.px(), lcCand.py(), lcCand.pz()};
@@ -143,80 +143,80 @@ struct HFCandidateCreatorLb {
 
       // loop over pi- candidates
       for (auto& trackNeg : tracks) {
-	if (trackNeg.sign() > 0) { // select only negative tracks - use partitions?
-	  continue;
-	}
-	if (trackNeg.globalIndex() == index2Lc) {
-	  continue;
-	}
-	if (trackNeg.pt() < ptPionMin) {
-	  continue;
-	}
-	hPtPion->Fill(trackNeg.pt());
+        if (trackNeg.sign() > 0) { // select only negative tracks - use partitions?
+          continue;
+        }
+        if (trackNeg.globalIndex() == index2Lc) {
+          continue;
+        }
+        if (trackNeg.pt() < ptPionMin) {
+          continue;
+        }
+        hPtPion->Fill(trackNeg.pt());
 
-	auto trackParVarNeg = getTrackParCov(trackNeg);
-	array<float, 3> pvecNeg;
+        auto trackParVarNeg = getTrackParCov(trackNeg);
+        array<float, 3> pvecNeg;
 
-	// reconstruct the 3-prong X vertex
-	if (df2.process(trackLc, trackParVarNeg) == 0) {
-	  continue;
-	}
+        // reconstruct the 3-prong X vertex
+        if (df2.process(trackLc, trackParVarNeg) == 0) {
+          continue;
+        }
 
-	//Printf("(Panos) Inside the pi- candidate loop (y = %lf)",trackNeg.pt());
-	
-	// calculate relevant properties
-	const auto& LbsecondaryVertex = df2.getPCACandidate();
-	auto chi2PCA = df2.getChi2AtPCACandidate();
-	auto covMatrixPCA = df2.calcPCACovMatrix().Array();
-	hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+        //Printf("(Panos) Inside the pi- candidate loop (y = %lf)",trackNeg.pt());
 
-	df2.propagateTracksToVertex();          // propagate the pions and Lc to the X vertex
-	df2.getTrack(0).getPxPyPzGlo(pvecLc); // update momentum of Lc at the Lb vertex
-	df2.getTrack(1).getPxPyPzGlo(pvecNeg);  // momentum of pi- at the Lb vertex
+        // calculate relevant properties
+        const auto& LbsecondaryVertex = df2.getPCACandidate();
+        auto chi2PCA = df2.getChi2AtPCACandidate();
+        auto covMatrixPCA = df2.calcPCACovMatrix().Array();
+        hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
 
-	// get track impact parameters
-	// This modifies track momenta!
-	auto primaryVertex = getPrimaryVertex(collision);
-	auto covMatrixPV = primaryVertex.getCov();
-	hCovPVXX->Fill(covMatrixPV[0]);
-	o2::dataformats::DCA impactParameter0;
-	o2::dataformats::DCA impactParameter1;
-	trackParVarNeg.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
+        df2.propagateTracksToVertex();         // propagate the pions and Lc to the X vertex
+        df2.getTrack(0).getPxPyPzGlo(pvecLc);  // update momentum of Lc at the Lb vertex
+        df2.getTrack(1).getPxPyPzGlo(pvecNeg); // momentum of pi- at the Lb vertex
 
-	// get uncertainty of the decay length
-	double phi, theta;
-	getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, LbsecondaryVertex, phi, theta);
-	auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-	auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+        // get track impact parameters
+        // This modifies track momenta!
+        auto primaryVertex = getPrimaryVertex(collision);
+        auto covMatrixPV = primaryVertex.getCov();
+        hCovPVXX->Fill(covMatrixPV[0]);
+        o2::dataformats::DCA impactParameter0;
+        o2::dataformats::DCA impactParameter1;
+        trackParVarNeg.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
 
-	int hfFlag = 0;
-	if (TESTBIT(lcCand.hfflag(), hf_cand_prong3::DecayType::LcToPKPi)) {
-            SETBIT(hfFlag, hf_cand_lb::DecayType::LbToLcPi); 
-	}
+        // get uncertainty of the decay length
+        double phi, theta;
+        getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, LbsecondaryVertex, phi, theta);
+        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-	// fill the candidate table for the Lb here:
-	rowCandidateBase(collision.globalIndex(),
-			 collision.posX(), collision.posY(), collision.posZ(),
-			 LbsecondaryVertex[0], LbsecondaryVertex[1], LbsecondaryVertex[2],
-			 errorDecayLength, errorDecayLengthXY,
-			 chi2PCA,
-			 pvecLc[0], pvecLc[1], pvecLc[2],
-			 pvecNeg[0], pvecNeg[1], pvecNeg[2],
-			 impactParameter0.getY(), impactParameter1.getY(), 
-			 std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), 
-			 lcCand.globalIndex(), trackNeg.globalIndex(),
-			 hfFlag);
-	
-	// calculate invariant mass
-	auto arrayMomenta = array{pvecLc, pvecNeg};
-	massLcPi = RecoDecay::M(std::move(arrayMomenta), array{massLc, massPi});
-	if (lcCand.isSelLcpKpi() > 0) {
-	  hMassLbToLcPi->Fill(massLcPi);
-	}
+        int hfFlag = 0;
+        if (TESTBIT(lcCand.hfflag(), hf_cand_prong3::DecayType::LcToPKPi)) {
+          SETBIT(hfFlag, hf_cand_lb::DecayType::LbToLcPi);
+        }
+
+        // fill the candidate table for the Lb here:
+        rowCandidateBase(collision.globalIndex(),
+                         collision.posX(), collision.posY(), collision.posZ(),
+                         LbsecondaryVertex[0], LbsecondaryVertex[1], LbsecondaryVertex[2],
+                         errorDecayLength, errorDecayLengthXY,
+                         chi2PCA,
+                         pvecLc[0], pvecLc[1], pvecLc[2],
+                         pvecNeg[0], pvecNeg[1], pvecNeg[2],
+                         impactParameter0.getY(), impactParameter1.getY(),
+                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                         lcCand.globalIndex(), trackNeg.globalIndex(),
+                         hfFlag);
+
+        // calculate invariant mass
+        auto arrayMomenta = array{pvecLc, pvecNeg};
+        massLcPi = RecoDecay::M(std::move(arrayMomenta), array{massLc, massPi});
+        if (lcCand.isSelLcpKpi() > 0) {
+          hMassLbToLcPi->Fill(massLcPi);
+        }
       } // pi- loop
-    }     // Lc loop
-  }       // process
-};        // struct
+    }   // Lc loop
+  }     // process
+};      // struct
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreatorLbExpressions {
@@ -254,7 +254,7 @@ struct HFCandidateCreatorLbMC {
       auto daughter1Lc = lcTrack.index1_as<aod::BigTracksMC>();
       auto daughter2Lc = lcTrack.index2_as<aod::BigTracksMC>();
       auto arrayLcDaughters = array{daughter0Lc, daughter1Lc, daughter2Lc};
-      auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(),daughter0Lc,daughter1Lc,daughter2Lc};
+      auto arrayDaughters = array{candidate.index1_as<aod::BigTracksMC>(), daughter0Lc, daughter1Lc, daughter2Lc};
 
       // Λb → Λc+ π-
       //Printf("Checking Λb → Λc+ π-");
@@ -297,7 +297,7 @@ struct HFCandidateCreatorLbMC {
       if (flag != 0) {
         origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
-      
+
       rowMCMatchGen(flag, origin, channel);
     } // candidate loop
   }   // process
