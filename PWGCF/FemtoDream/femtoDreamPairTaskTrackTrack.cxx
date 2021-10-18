@@ -135,7 +135,7 @@ struct femtoDreamPairTaskTrackTrack {
     bool pidSelection = true;
     for (auto it : vec) {
       //\todo we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-      //if (!((pidcut >> it.first) & it.second)) {
+      // if (!((pidcut >> it.first) & it.second)) {
       if (!((pidcut >> it) & 1)) {
         pidSelection = false;
       }
@@ -190,7 +190,7 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      ///close pair rejection
+      /// close pair rejection
       if (ConfIsCPR) {
         if (pairCloseRejection.isClosePair(p1, p2, parts)) {
           continue;

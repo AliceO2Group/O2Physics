@@ -26,16 +26,7 @@ int main(int argc, char* argv[])
 {
   FemtoDreamCutculator cut;
   cut.init(argv[1]);
-
-  cut.setTrackSelection(femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kpTMax, femtoDreamSelection::kUpperLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kTPCsClsMax, femtoDreamSelection::kUpperLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
-  cut.setTrackSelection(femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
+  cut.setTrackSelectionFromFile("ConfTrk");
 
   /// \todo factor out the pid here
   // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
