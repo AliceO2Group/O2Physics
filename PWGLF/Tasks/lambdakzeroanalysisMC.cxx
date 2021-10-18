@@ -160,15 +160,13 @@ struct lambdakzeroanalysisMC {
             registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
             registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
 
-            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122){
+            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) {
               registry.fill(HIST("h3dMassLambda_MCportion"), collision.centV0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("MCmomID_Lambda"), mcnegtrack.mother0Id());
-              
             }
-            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122){
+            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) {
               registry.fill(HIST("h3dMassAntiLambda_MCportion"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
               registry.fill(HIST("MCmomID_AntiLambda"), mcnegtrack.mother0Id());
-
             }
             if (saveDcaHist == 1) {
               registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
@@ -231,19 +229,19 @@ struct lambdakzeroParticleCountMC {
     for (auto& mcparticle : mcParticles) {
       if (mcparticle.pdgCode() == 310) {
         registry.fill(HIST("hK0ShortCount"), 0.5);
-        if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211 )) {
+        if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
           registry.fill(HIST("hK0ShortCount"), 1.5);
         }
       }
       if (mcparticle.pdgCode() == 3122) {
         registry.fill(HIST("hLambdaCount"), 0.5);
-        if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211 )) {
+        if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
           registry.fill(HIST("hLambdaCount"), 1.5);
         }
       }
       if (mcparticle.pdgCode() == -3122) {
         registry.fill(HIST("hAntiLambdaCount"), 0.5);
-        if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211 )) {
+        if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211)) {
           registry.fill(HIST("hAntiLambdaCount"), 1.5);
         }
       }
