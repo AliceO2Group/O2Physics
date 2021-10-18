@@ -14,6 +14,14 @@
 
 namespace o2::aod
 {
+// selection steps
+enum SelectionStep {
+  RecoSkims = 0,
+  RecoTopol,
+  RecoPID,
+  NSelectionSteps
+};
+
 namespace hf_selcandidate_d0
 {
 DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);           //!
