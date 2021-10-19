@@ -80,12 +80,12 @@ struct HfLbToLcPiCandidateSelector {
       return false;
     }
 
-    //d0(Lc)xd0(pi) 
+    //d0(Lc)xd0(pi)
     if (hfCandLb.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
       return false;
     }
 
-    //Lc mass 
+    //Lc mass
     //if (trackPi.sign() < 0) {
     //if (std::abs(InvMassLcpKpi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
     //return false;
@@ -109,7 +109,7 @@ struct HfLbToLcPiCandidateSelector {
 
     //d0 of Lc and pi
     if ((std::abs(hfCandLb.impactParameter0()) > cuts->get(pTBin, "d0 Lc+")) ||
-        (std::abs(hfCandLb.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))){
+        (std::abs(hfCandLb.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))) {
       return false;
     }
 
