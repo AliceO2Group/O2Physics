@@ -347,4 +347,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAresXY] = "cm";
   fgVariableNames[kTrackDCAresZ] = "#Delta DCA_{z}";
   fgVariableUnits[kTrackDCAresZ] = "cm";
+  fgVariableNames[kBitMapIndex] = " ";
+  fgVariableUnits[kBitMapIndex] = "";
 }

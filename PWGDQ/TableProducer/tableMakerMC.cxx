@@ -68,8 +68,10 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>
 //           to automatically detect the object types transmitted to the VarManager
 //constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkEventFillMapReduced = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapReduced = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
 struct TableMakerMC {
@@ -111,7 +113,7 @@ struct TableMakerMC {
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
   //Filter barrelSelectedTracks = aod::track::trackType == uint8_t(aod::track::Run2Track) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 70.0f && o2::aod::track::tpcSignal <= 100.0f && o2::aod::track::tpcChi2NCl < 4.0f;
-  Filter barrelSelectedTracks = o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 70.0f && o2::aod::track::tpcSignal <= 100.0f && o2::aod::track::tpcChi2NCl < 4.0f;
+  Filter barrelSelectedTracks = o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 30.0f && o2::aod::track::tpcSignal <= 200.0f && o2::aod::track::tpcChi2NCl < 4.0f;
 
   void init(o2::framework::InitContext&)
   {
@@ -127,7 +129,7 @@ struct TableMakerMC {
     fMCFlags.clear();
     fEventIdx.clear();
 
-    TString histClasses = "Event_BeforeCuts;Event_AfterCuts;TrackBarrel_BeforeCuts;TrackBarrel_AfterCuts;";
+    TString histClasses = "Event_BeforeCuts;Event_AfterCuts;Event_processEvents;Event_processEventsMC;TrackBarrel_BeforeCuts;TrackBarrel_AfterCuts;TrackBarrel_processTracksBarrel;";
 
     TString configNamesStr = fConfigMCSignals.value;
     if (!configNamesStr.IsNull()) {
@@ -136,7 +138,7 @@ struct TableMakerMC {
         MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objArray->At(isig)->GetName());
         if (sig) {
           fMCSignals.push_back(*sig);
-          histClasses += Form("TrackBarrel_AfterCuts_%s;MCtruth_%s;", objArray->At(isig)->GetName(), objArray->At(isig)->GetName());
+          histClasses += Form("TrackBarrel_AfterCuts_%s;MCtruth_%s;MCtruthProcessMC_%s;", objArray->At(isig)->GetName(), objArray->At(isig)->GetName(), objArray->At(isig)->GetName());
         }
       }
     }
@@ -192,7 +194,7 @@ struct TableMakerMC {
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
     eventMC(collision.mcCollision().generatorsID(), collision.mcCollision().posX(), collision.mcCollision().posY(),
             collision.mcCollision().posZ(), collision.mcCollision().t(), collision.mcCollision().weight(), collision.mcCollision().impactParameter());
-
+    cout << "event ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
     // loop over the MC truth tracks and find those that need to be written
     uint16_t mcflags = 0;
     for (auto& mctrack : mcTracks) {
@@ -220,6 +222,9 @@ struct TableMakerMC {
           }
         }
 
+        cout << "mctrack idx/globalIdx " << mctrack.index() << "/" << mctrack.globalIndex() << ", mcflags ";
+        PrintBits(mcflags, 2);
+        cout << ", mcCollIdx " << collision.mcCollision().globalIndex() << endl;
         fNewLabels[mctrack.index()] = fCounter;
         fNewLabelsReversed[fCounter] = mctrack.index();
         fMCFlags[mctrack.index()] = mcflags;
@@ -247,7 +252,8 @@ struct TableMakerMC {
       VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
       fHistMan->FillHistClass("TrackBarrel_AfterCuts", fValues);
 
-      //cout << "track pt (rec/gen): " << track.pt() << " / " << mctrack.pt() << endl;
+      cout << "track pt (rec/gen): " << track.pt() << " / " << mctrack.pt() << endl;
+      cout << "    collision id (rec/mcFromRecEv/mcFromTrack) :: " << collision.globalIndex() << " / " << collision.mcCollision().globalIndex() << " / " << mctrack.mcCollision().globalIndex() << endl;
       // if the MC truth particle corresponding to this reconstructed track is not already written,
       //   add it to the skimmed stack
       mcflags = 0;
@@ -338,6 +344,46 @@ struct TableMakerMC {
     fEventIdx.clear();
   }
 
+  void processEvents(MyEvents const& collisions, aod::BCs const& bcs)
+  {
+    for (auto& coll : collisions) {
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
+      VarManager::FillEvent<gkEventFillMap>(coll, fValues);    // extract event information and place it in the fValues array
+      fHistMan->FillHistClass("Event_processEvents", fValues); // automatically fill all the histograms in the class Event
+    }
+  }
+
+  void processEventsMC(aod::McCollisions const& mcEvents)
+  {
+    for (auto& coll : mcEvents) {
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
+      VarManager::FillEvent<gkEventMCFillMap>(coll, fValues);
+      fHistMan->FillHistClass("Event_processEventsMC", fValues); // automatically fill all the histograms in the class Event
+    }
+  }
+
+  void processTracksBarrel(soa::Filtered<MyBarrelTracks> const& tracksBarrel)
+  {
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
+    for (auto& track : tracksBarrel) {
+      VarManager::FillTrack<gkTrackFillMap>(track, fValues);
+      fHistMan->FillHistClass("TrackBarrel_processTracksBarrel", fValues);
+    }
+  }
+
+  void processTracksMC(aod::McParticles const& mcTracks)
+  {
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
+    for (auto& track : mcTracks) {
+      VarManager::FillTrack<gkParticleMCFillMap>(track, fValues);
+      for (auto& sig : fMCSignals) {
+        if (sig.CheckSignal(true, mcTracks, track)) {
+          fHistMan->FillHistClass(Form("MCtruthProcessMC_%s", sig.GetName()), fValues); // fill the generated truth
+        }
+      }
+    }
+  }
+
   void DefineHistograms(TString histClasses)
   {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
@@ -373,8 +419,71 @@ struct TableMakerMC {
     }
   };
 
+  PROCESS_SWITCH(TableMakerMC, processEvents, "Process events", true);
+  PROCESS_SWITCH(TableMakerMC, processEventsMC, "Process MC events", true);
+  PROCESS_SWITCH(TableMakerMC, processTracksBarrel, "Process barrel tracks (no grouping)", true);
+  PROCESS_SWITCH(TableMakerMC, processTracksMC, "Process MC tracks (no grouping, no matching)", true);
   PROCESS_SWITCH(TableMakerMC, processRec, "Process reco level", true);
   PROCESS_SWITCH(TableMakerMC, processWriteStack, "Write the skimmed MC stack", true);
+};
+
+struct MakePairing {
+  OutputObj<THashList> fOutputList{"output"};
+  HistogramManager* fHistMan;
+
+  float* fValues;
+
+  void init(o2::framework::InitContext&)
+  {
+    fValues = new float[VarManager::kNVars];
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    TString histNames = "Event;PairsBarrelSEPM;";
+
+    DefineHistograms(histNames.Data());              // define all histograms
+    VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
+  }
+
+  void process(soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>::iterator const& event, soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars, fValues);
+    VarManager::FillEvent<gkEventFillMapReduced>(event, fValues);
+    fHistMan->FillHistClass("Event", fValues);
+
+    // Run the same event pairing for barrel tracks
+    for (auto& [t1, t2] : combinations(tracks, tracks)) {
+      if (t1.sign() == t2.sign()) {
+        continue;
+      }
+      VarManager::FillPair<VarManager::kJpsiToEE>(t1, t2, fValues);
+      fHistMan->FillHistClass("PairsBarrelSEPM", fValues);
+    } // end loop over barrel track pairs
+  }
+
+  void DefineHistograms(TString histClasses)
+  {
+    std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
+    for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+      TString classStr = objArray->At(iclass)->GetName();
+      fHistMan->AddHistClass(classStr.Data());
+
+      // NOTE: The level of detail for histogramming can be controlled via configurables
+      if (classStr.Contains("Event")) {
+        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event");
+      }
+
+      if (classStr.Contains("PairsBarrelSEPM")) {
+        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "pair_barrel");
+      }
+    }
+  }
+
+  PROCESS_SWITCH(MakePairing, process, "Process function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -382,5 +491,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   // TODO: For now TableMakerMC works just for PbPb (cent table is present)
   //      Implement workflow arguments for pp/PbPb and possibly merge the task with tableMaker.cxx
   return WorkflowSpec{
-    adaptAnalysisTask<TableMakerMC>(cfgc)};
+    adaptAnalysisTask<TableMakerMC>(cfgc)
+    //  adaptAnalysisTask<MakePairing>(cfgc)
+  };
 }

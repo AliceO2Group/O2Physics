@@ -39,6 +39,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive electrons", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("kaonFromPhi")) {
+    MCProng prong(2, {321, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // define 2-generation prong using the full constructor
+    signal = new MCSignal(name, "Kaons from phi-mesons", {prong}, {-1});                        // define the signal using the full constructor
+    return signal;
+  }
+  if (!nameStr.compare("phiMeson")) {
+    MCProng prong(1, {333}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
+    signal = new MCSignal(name, "phi meson", {prong}, {-1});     // define the signal using the full constructor
+    return signal;
+  }
   if (!nameStr.compare("muon")) {
     MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Inclusive muons", {prong}, {-1});
