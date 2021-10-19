@@ -71,10 +71,10 @@ struct HfTaskLb {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
-//void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
+  //void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
   void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
   {
-    float centrality = 10.;//collision.centV0M();//FIXME: Add centrality properly;removed for the time being (taking forever to run) 
+    float centrality = 10.; //collision.centV0M();//FIXME: Add centrality properly;removed for the time being (taking forever to run)
     registry.fill(HIST("hCentrality"), centrality);
 
     for (auto& candidate : candidates) {
