@@ -304,8 +304,8 @@ struct QaImpactParMC {
 
       /// propagation ok! Retrieve impact parameter
       // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
-      impParRPhi = toMicrometers * track.dcaXY(); /*dca.getY()*/
-      
+      impParRPhi = toMicrometers * track.dcaXY(); //dca.getY()
+
       /// MC matching - physical primaries
       const auto mcparticle = track.mcParticle();
       if (MC::isPhysicalPrimary(mcparticle)) {
