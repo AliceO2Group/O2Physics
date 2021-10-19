@@ -63,7 +63,7 @@ struct HFCandidateCreatorLb {
 
   double massPi = RecoDecay::getMassPDG(kPiMinus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
-  double massLcPi;
+  double massLcPi = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);;
 
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
@@ -231,6 +231,7 @@ struct HFCandidateCreatorLbMC {
 
   void process(aod::HfCandLb const& candidates,
                aod::HfCandProng3,
+	       aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
@@ -268,7 +269,7 @@ struct HFCandidateCreatorLbMC {
       //Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.iteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
+        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
       rowMCMatchRec(flag, origin, channel);
     }
@@ -294,7 +295,7 @@ struct HFCandidateCreatorLbMC {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
+        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
       rowMCMatchGen(flag, origin, channel);

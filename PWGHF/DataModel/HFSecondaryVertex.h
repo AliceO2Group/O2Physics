@@ -1076,32 +1076,32 @@ DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant 
 DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
 // mapping of decay types
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
-} // namespace hf_cand_lb
 
 // Λb → Λc+ π- → p K- π+ π-
-float massLb = RecoDecay::getMassPDG(5122); // replace this with: "RecoDecay::getMassPDG(9920443)" when pdg is added
+//float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
 template <typename T>
 auto CtLb(const T& candidate)
 {
-  return candidate.ct(massLb);
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
 }
 
 template <typename T>
 auto YLb(const T& candidate)
 {
-  return candidate.y(massLb);
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
 }
 
 template <typename T>
 auto ELb(const T& candidate)
 {
-  return candidate.e(massLb);
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
 }
 template <typename T>
 auto InvMassLbToLcPi(const T& candidate)
 {
-  return candidate.m(array{RecoDecay::getMassPDG(4122), RecoDecay::getMassPDG(kPiPlus)});
+  return candidate.m(array{RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
+} // namespace hf_cand_lb
 
 // declare dedicated Lb candidate table
 DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
