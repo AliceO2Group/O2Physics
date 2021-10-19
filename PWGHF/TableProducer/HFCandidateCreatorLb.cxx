@@ -63,7 +63,8 @@ struct HFCandidateCreatorLb {
 
   double massPi = RecoDecay::getMassPDG(kPiMinus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
-  double massLcPi = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);;
+  double massLcPi = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
+  ;
 
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
@@ -231,7 +232,7 @@ struct HFCandidateCreatorLbMC {
 
   void process(aod::HfCandLb const& candidates,
                aod::HfCandProng3,
-	       aod::BigTracksMC const& tracks,
+               aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
