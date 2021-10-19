@@ -57,7 +57,7 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
-using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::Cents>;
+using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
