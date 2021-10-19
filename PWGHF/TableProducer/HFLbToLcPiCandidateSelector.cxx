@@ -64,20 +64,31 @@ struct HfLbToLcPiCandidateSelector {
       return false;
     }
 
-    //pi pt
+    // check that the candidate pT is within the analysis range
+    if (candpT < pTCandMin || candpT >= pTCandMax) {
+      return false;
+    }
+
+    //Λb0 mass cut
+    if (std::abs(InvMassLbToLcPi(hfCandLb) - RecoDecay::getMassPDG(pdg::Code::kLambdaB0)) > cuts->get(pTBin, "m")) {
+      //Printf("Lb topol selection failed at mass diff check");
+      return false;
+    }
+
+    //pion pt
     if (trackPi.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
 
-    //d0(Lc)xd0(pi) ==> removed temporarily
+    //d0(Lc)xd0(pi) 
     if (hfCandLb.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
       return false;
     }
 
-    //Lc mass ==> removed temporarily
+    //Lc mass 
     //if (trackPi.sign() < 0) {
     //if (std::abs(InvMassLcpKpi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
-    //  return false;
+    //return false;
     //}
     //}
 
@@ -92,35 +103,20 @@ struct HfLbToLcPiCandidateSelector {
     }
 
     //Lb CPA cut
-    if (hfCandLb.cpa() < cuts->get(pTBin, "CPA")) {
+    //if (hfCandLb.cpa() < cuts->get(pTBin, "CPA")) {
+    //return false;
+    //}
+
+    //d0 of Lc and pi
+    if ((std::abs(hfCandLb.impactParameter0()) > cuts->get(pTBin, "d0 Lc+")) ||
+        (std::abs(hfCandLb.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))){
       return false;
     }
 
-    //if (candpT < pTCandMin || candpT >= pTCandMax) {
-    // Printf("B+ topol selection failed at cand pT check");
-    // return false;
-    // }
-
-    //B+ mass cut
-    //if (std::abs(InvMassBPlus(hfCandBPlus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
-    // Printf("B+ topol selection failed at mass diff check");
-    //  return false;
-    // }
-
-    //d0 of D0 and pi
-    //if ((std::abs(hfCandBPlus.impactParameter0()) > cuts->get(pTBin, "d0 D0")) ||
-    //    (std::abs(hfCandBPlus.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))){
-    //  return false;
-    //}
-
-    //D0 CPA
-    // if (std::abs(hfCandD0.cpa()) < cuts->get(pTBin, "CPA D0")){
-    //  return false;
-    //}
     return true;
   }
 
-  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>)
+  void process(aod::HfCandLb const& hfCandLbs, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracksPID const&)
   {
     for (auto& hfCandLb : hfCandLbs) { //looping over Lb candidates
 
