@@ -87,14 +87,15 @@ struct CentralityTableTask {
       TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
 
       if (callst != nullptr) {
-        auto getccdb = [callst](const char* ccdbhname, const char* hname) {
-          TH1* h = (TH1*)callst->FindObject(ccdbhname)->Clone(hname);
+        auto getccdb = [callst](const char* ccdbhname) {
+          TH1* h = (TH1*)callst->FindObject(ccdbhname);
           return h;
         };
         if (estV0M == 1) {
-          mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized", "zvtxCalibV0A");
-          mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized", "zvtxCalibV0C");
-          mhMultSelCalibV0M = getccdb("hMultSelCalib_V0M", "MultSelCalibV0M");
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+          mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
+          mhMultSelCalibV0M = getccdb("hMultSelCalib_V0M");
           if ((mhVtxAmpCorrV0A != nullptr) and (mhVtxAmpCorrV0C != nullptr) and (mhMultSelCalibV0M != nullptr)) {
             mV0MCalibrationStored = true;
           } else {
