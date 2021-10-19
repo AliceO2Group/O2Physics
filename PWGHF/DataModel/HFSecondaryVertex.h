@@ -1072,8 +1072,7 @@ DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t);         // reconstru
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t);         // generator level
 DECLARE_SOA_COLUMN(OriginMCRec, originMCRec, int8_t);               // particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);               // particle origin, generator level
-DECLARE_SOA_COLUMN(FlagMCDecayChanRec, flagMCDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
-DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); // resonant decay channel flag, generator level
+DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);                 // debug flag for mis-association reconstruction level
 // mapping of decay types
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
 
@@ -1142,17 +1141,15 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandLbExt, HfCandLbBase, "HFCANDLBEXT",
 using HfCandLb = HfCandLbExt;
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfCandLbMCRec, "AOD", "HFCANDLbMCREC", //!
+DECLARE_SOA_TABLE(HfCandLbMCRec, "AOD", "HFCANDLBMCREC", //!
                   hf_cand_lb::FlagMCMatchRec,
                   hf_cand_lb::OriginMCRec,
-                  hf_cand_lb::FlagMCDecayChanRec);
+                  hf_cand_lb::DebugMCRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandLbMCGen, "AOD", "HFCANDLBMCGEN", //!
                   hf_cand_lb::FlagMCMatchGen,
-                  hf_cand_lb::OriginMCGen,
-                  hf_cand_lb::FlagMCDecayChanGen);
-
+                  hf_cand_lb::OriginMCGen);
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_HFSECONDARYVERTEX_H_
