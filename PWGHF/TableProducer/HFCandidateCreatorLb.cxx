@@ -51,7 +51,6 @@ struct HFCandidateCreatorLb {
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any Lb is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
-  Configurable<bool> b_dovalplots{"b_dovalplots", false, "do validation plots"};
 
   OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
@@ -63,8 +62,7 @@ struct HFCandidateCreatorLb {
 
   double massPi = RecoDecay::getMassPDG(kPiMinus);
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
-  double massLcPi = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
-  ;
+  double massLcPi = 0.;
 
   Configurable<int> d_selectionFlagLc{"d_selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
@@ -98,7 +96,7 @@ struct HFCandidateCreatorLb {
 
     // loop over Lc candidates
     for (auto& lcCand : lcCands) {
-      if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_prong3::LcToPKPi)) {
+      if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_prong3::DecayType::LcToPKPi)) {
         continue;
       }
       if (lcCand.isSelLcpKpi() >= d_selectionFlagLc) {
