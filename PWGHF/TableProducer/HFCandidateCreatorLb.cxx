@@ -72,8 +72,8 @@ struct HFCandidateCreatorLb {
 
   void process(aod::Collision const& collision,
                soa::Filtered<soa::Join<
-               aod::HfCandProng3,
-               aod::HFSelLcCandidate>> const& lcCands,
+                 aod::HfCandProng3,
+                 aod::HFSelLcCandidate>> const& lcCands,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -129,7 +129,7 @@ struct HFCandidateCreatorLb {
       auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(),
                                          trackParVar0, trackParVar1, {0, 0}, {0, 0});
       auto trackLc = o2::dataformats::V0(df3.getPCACandidatePos(), pvecLc, df3.calcPCACovMatrixFlat(),
-                                          trackpK, trackParVar2, {0, 0}, {0, 0});
+                                         trackpK, trackParVar2, {0, 0}, {0, 0});
 
       int index0Lc = track0.globalIndex();
       int index1Lc = track1.globalIndex();
@@ -245,8 +245,8 @@ struct HFCandidateCreatorLbMC {
       //Printf("Checking Λb → Λc+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaB0, array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
-      // Λb → Λc+ π-
-      //Printf("Checking Λb → Λc+ π-");
+        // Λb → Λc+ π-
+        //Printf("Checking Λb → Λc+ π-");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersLc, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
