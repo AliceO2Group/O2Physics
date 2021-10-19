@@ -41,6 +41,7 @@ struct QaImpactPar {
   /// Input parameters
   //Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
+  Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum track pt [GeV/c]"};
   Configurable<float> nSigmaTPCPionMin{"nSigmaTPCPionMin", -99999.f, "Minimum nSigma value in TPC, pion hypothesis"};
   Configurable<float> nSigmaTPCPionMax{"nSigmaTPCPionMax", 99999.f, "Maximum nSigma value in TPC, pion hypothesis"};
@@ -59,7 +60,7 @@ struct QaImpactPar {
   // Primary vertex |z_vtx|<XXX cm
   Filter collisionZVtxFilter = nabs(o2::aod::collision::posZ) < zVtxMax;
   // Global tracks
-  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections
+  //Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 
@@ -113,9 +114,9 @@ struct QaImpactPar {
   /// [240108:bc-selection-task]: [17:22:28][FATAL] Trigger aliases are not available in CCDB for run=282341 at timestamp=1511123421601
   //void process(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>>::iterator& collision,
   void process(o2::soa::Filtered<o2::aod::Collisions>::iterator& collision,
-               o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks)
+               o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks)
   {
-    o2::dataformats::DCA dca;
+    //o2::dataformats::DCA dca;
     // FIXME: get this from CCDB
     constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
@@ -148,6 +149,11 @@ struct QaImpactPar {
     float tofNSigmaProton = -999.f;
     for (const auto& track : tracks) {
 
+      if ((keepOnlyGlobalTracks) && (!track.isGlobalTrack())) {
+        /// not a global track (FB 4)
+        continue;
+      }
+
       pt = track.pt();
       tpcNSigmaPion = track.tpcNSigmaPi();
       tpcNSigmaKaon = track.tpcNSigmaKa();
@@ -165,33 +171,35 @@ struct QaImpactPar {
       histograms.fill(HIST("hNSigmaTOFProton"), pt, tofNSigmaProton);
 
       // propagation to primary vertex for DCA
-      if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) {
+      // "crude" method not working with Run 3 MC productions
+      //if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) {
 
-        /// propagation ok! Retrieve impact parameter
-        impParRPhi = toMicrometers * dca.getY();
+      /// propagation ok! Retrieve impact parameter
+      // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
+      impParRPhi = toMicrometers * track.dcaXY(); //dca.getY();
 
-        /// all tracks
-        histograms.fill(HIST("h4ImpPar"), pt, impParRPhi, track.eta(), track.phi());
+      /// all tracks
+      histograms.fill(HIST("h4ImpPar"), pt, impParRPhi, track.eta(), track.phi());
 
-        if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
-          /// PID selected pions
-          histograms.fill(HIST("h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi());
-          histograms.fill(HIST("hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
-          histograms.fill(HIST("hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
-        }
-        if (isPIDKaonApplied && nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax && nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax) {
-          /// PID selected kaons
-          histograms.fill(HIST("h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi());
-          histograms.fill(HIST("hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
-          histograms.fill(HIST("hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
-        }
-        if (isPIDProtonApplied && nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax && nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax) {
-          /// PID selected Protons
-          histograms.fill(HIST("h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi());
-          histograms.fill(HIST("hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
-          histograms.fill(HIST("hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
-        }
+      if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
+        /// PID selected pions
+        histograms.fill(HIST("h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi());
+        histograms.fill(HIST("hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
+        histograms.fill(HIST("hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
       }
+      if (isPIDKaonApplied && nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax && nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax) {
+        /// PID selected kaons
+        histograms.fill(HIST("h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi());
+        histograms.fill(HIST("hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
+        histograms.fill(HIST("hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
+      }
+      if (isPIDProtonApplied && nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax && nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax) {
+        /// PID selected Protons
+        histograms.fill(HIST("h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi());
+        histograms.fill(HIST("hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
+        histograms.fill(HIST("hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
+      }
+      //}
     }
   }
 };
@@ -200,14 +208,15 @@ struct QaImpactPar {
 struct QaImpactParMC {
   /// Input parameters
   //Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
-  Configurable<float> zVtxMaxMC{"zVtxMaxMC", 10.f, "Maximum value for |z_vtx|"};
-  Configurable<float> ptMinMC{"ptMinMC", 0.1f, "Minimum track pt [GeV/c]"};
+  Configurable<float> zVtxMaxMC{"zVtxMaxMC", 10.f, "Maximum value for |z_vtx| (MC)"};
+  Configurable<int> keepOnlyGlobalTracksMC{"keepOnlyGlobalTracksMC", 1, "Keep only global tracks or not (MC)"};
+  Configurable<float> ptMinMC{"ptMinMC", 0.1f, "Minimum track pt [GeV/c] (MC)"};
 
   /// Selections with Filter (from o2::framework::expressions)
   // Primary vertex |z_vtx|<XXX cm
   Filter collisionZVtxFilter = nabs(o2::aod::collision::posZ) < zVtxMaxMC;
   // Global tracks
-  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections
+  //Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMinMC;
 
@@ -238,11 +247,11 @@ struct QaImpactParMC {
 
   //void process(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>>::iterator& collision,
   void process(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>>::iterator& collision,
-               const o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::McTrackLabels>>& tracks,
+               const o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::McTrackLabels>>& tracks,
                const o2::aod::McCollisions&,
                const o2::aod::McParticles& mcParticles) // this Join should ensure to run over all the MC matched tracks
   {
-    o2::dataformats::DCA dca;
+    //o2::dataformats::DCA dca;
     // FIXME: get this from CCDB
     constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
@@ -281,21 +290,28 @@ struct QaImpactParMC {
     float impParRPhi = -999.f;
     for (const auto& track : tracks) {
 
+      if ((keepOnlyGlobalTracksMC) && (!track.isGlobalTrack())) {
+        /// not a global track (FB 4)
+        continue;
+      }
+
       histograms.fill(HIST("pt"), track.pt());
 
       // propagation to primary vertex for DCA
       // NB: do not use 'track.collisions()' if the o2::aod::Collisions are joined with McCollisionLabels
-      if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(/*track.collision()*/ collision), magneticField, &dca, 100.)) {
+      // "crude" method not working with Run 3 MC productions
+      //if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(/*track.collision()*/ collision), magneticField, &dca, 100.)) {
 
-        /// propagation ok! Retrieve impact parameter
-        impParRPhi = toMicrometers * dca.getY();
-
-        /// MC matching - physical primaries
-        const auto mcparticle = track.mcParticle();
-        if (MC::isPhysicalPrimary(mcparticle)) {
-          histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
-        }
+      /// propagation ok! Retrieve impact parameter
+      // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
+      impParRPhi = toMicrometers * track.dcaXY(); /*dca.getY()*/
+      
+      /// MC matching - physical primaries
+      const auto mcparticle = track.mcParticle();
+      if (MC::isPhysicalPrimary(mcparticle)) {
+        histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
       }
+      //}
     }
   }
 };
