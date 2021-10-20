@@ -798,36 +798,40 @@ auto EX(const T& candidate)
 {
   return candidate.e(massX);
 }
+
 template <typename T>
 auto InvMassXToJpsiPiPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
+
+// Difference between the X mass and the sum of the J/psi and di-pion masses
 template <typename T>
 auto QX(const T& candidate)
 {
-  array<float, 3> piVec0;
-  array<float, 3> piVec1;
+  //array<float, 3> piVec1;
+  //array<float, 3> piVec2;
 
-  piVec0[0] = candidate.pxProng1();
-  piVec0[1] = candidate.pyProng1();
-  piVec0[2] = candidate.pzProng1();
+  //piVec1[0] = candidate.pxProng1();
+  //piVec1[1] = candidate.pyProng1();
+  //piVec1[2] = candidate.pzProng1();
 
-  piVec1[0] = candidate.pxProng2();
-  piVec1[1] = candidate.pyProng2();
-  piVec1[2] = candidate.pzProng2();
+  //piVec2[0] = candidate.pxProng2();
+  //piVec2[1] = candidate.pyProng2();
+  //piVec2[2] = candidate.pzProng2();
 
+  auto piVec1 = array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
+  auto piVec2 = array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
   double massPi = RecoDecay::getMassPDG(kPiPlus);
 
-  auto arrayMomenta = array{piVec0, piVec1};
+  auto arrayMomenta = array{piVec1, piVec2};
   double massPiPi = RecoDecay::M(arrayMomenta, array{massPi, massPi});
 
   // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
-  double massMuMu = RecoDecay::getMassPDG(o2::analysis::pdg::kJpsi);
+  double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJpsi);
 
-  double massMuMuPiPi = InvMassXToJpsiPiPi(candidate);
-  //printf("mass MuMuPiPi = %f, mass MuMu = %f, mass PiPi = %f\n", massMuMuPiPi, massMuMu, massPiPi);
-  return std::abs(massMuMuPiPi - massMuMu - massPiPi);
+  double massX = InvMassXToJpsiPiPi(candidate);
+  return std::abs(massX - massJpsi - massPiPi);
 }
 template <typename T>
 auto DRX(const T& candidate, int numPi)
@@ -846,13 +850,13 @@ auto DRX(const T& candidate, int numPi)
   }
 
   double deltaEta = etaJpsi - etaPi;
-  double deltaPhi = std::abs(phiJpsi - phiPi);
-  if (deltaPhi > M_PI) {
-    deltaPhi = 2 * M_PI - deltaPhi;
-  }
+  double deltaPhi = RecoDecay::constrainAngle(pphiJpsi - phiPi, -o2::constants::math::PI);
+  //double deltaPhi = std::abs(phiJpsi - phiPi);
+  //if (deltaPhi > M_PI) {
+  //deltaPhi = 2 * M_PI - deltaPhi;
+  //}
 
-  double deltaR = std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
-  return deltaR;
+  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 }
 template <typename T>
 auto PiBalanceX(const T& candidate)
