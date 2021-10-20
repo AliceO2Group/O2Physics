@@ -11,8 +11,9 @@
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, Padova University and INFN
 ///
 /// Event selection: o2-analysis-timestamp --aod-file AO2D.root -b | o2-analysis-event-selection -b | ---> not working with Run2 converted data/MC
-/// Track selection: o2-analysis-trackextension | o2-analysis-trackselection |
+/// Track selection: o2-analysis-trackextension | o2-analysis-trackselection | ---> add --isRun3 1 with Run 3 data/MC (then global track selection works)
 /// PID: o2-analysis-pid-tpc-full | o2-analysis-pid-tof-full
+/// Working configuration (2021 Oct 20th): o2-analysis-trackextension -b --aod-file ./AO2D.root | o2-analysis-trackselection -b --isRun3 1 | o2-analysis-pid-tpc-full -b | o2-analysis-pid-tof-full -b | o2-analysis-pp-qa-impact-parameter -b
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -41,7 +42,7 @@ struct QaImpactPar {
   /// Input parameters
   //Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
-  Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
+  //Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum track pt [GeV/c]"};
   Configurable<float> nSigmaTPCPionMin{"nSigmaTPCPionMin", -99999.f, "Minimum nSigma value in TPC, pion hypothesis"};
   Configurable<float> nSigmaTPCPionMax{"nSigmaTPCPionMax", 99999.f, "Maximum nSigma value in TPC, pion hypothesis"};
@@ -60,7 +61,8 @@ struct QaImpactPar {
   // Primary vertex |z_vtx|<XXX cm
   Filter collisionZVtxFilter = nabs(o2::aod::collision::posZ) < zVtxMax;
   // Global tracks
-  //Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections
+  // with Run 3 data/MC enable '--isRun3 1' option
+  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 
@@ -149,10 +151,11 @@ struct QaImpactPar {
     float tofNSigmaProton = -999.f;
     for (const auto& track : tracks) {
 
-      if ((keepOnlyGlobalTracks) && (!track.isGlobalTrack())) {
-        /// not a global track (FB 4)
-        continue;
-      }
+      /// Using the Filter instead
+      ///if ((keepOnlyGlobalTracks) && (!track.isGlobalTrack())) {
+      ///  /// not a global track (FB 4 with tight DCA cuts)
+      ///  continue;
+      ///}
 
       pt = track.pt();
       tpcNSigmaPion = track.tpcNSigmaPi();
@@ -209,14 +212,15 @@ struct QaImpactParMC {
   /// Input parameters
   //Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<float> zVtxMaxMC{"zVtxMaxMC", 10.f, "Maximum value for |z_vtx| (MC)"};
-  Configurable<int> keepOnlyGlobalTracksMC{"keepOnlyGlobalTracksMC", 1, "Keep only global tracks or not (MC)"};
+  //Configurable<int> keepOnlyGlobalTracksMC{"keepOnlyGlobalTracksMC", 1, "Keep only global tracks or not (MC)"};
   Configurable<float> ptMinMC{"ptMinMC", 0.1f, "Minimum track pt [GeV/c] (MC)"};
 
   /// Selections with Filter (from o2::framework::expressions)
   // Primary vertex |z_vtx|<XXX cm
   Filter collisionZVtxFilter = nabs(o2::aod::collision::posZ) < zVtxMaxMC;
   // Global tracks
-  //Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections
+  // with Run 3 data/MC enable the '--isRun3 1' option
+  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMinMC;
 
@@ -290,10 +294,11 @@ struct QaImpactParMC {
     float impParRPhi = -999.f;
     for (const auto& track : tracks) {
 
-      if ((keepOnlyGlobalTracksMC) && (!track.isGlobalTrack())) {
-        /// not a global track (FB 4)
-        continue;
-      }
+      /// Using the Filter instead
+      ///if ((keepOnlyGlobalTracksMC) && (!track.isGlobalTrack())) {
+      ///  /// not a global track (FB 4 + tight DCA cuts)
+      ///  continue;
+      ///}
 
       histograms.fill(HIST("pt"), track.pt());
 
