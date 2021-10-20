@@ -268,7 +268,7 @@ struct TableMaker {
         if (track.isGlobalTrackSDD()) {
           trackFilteringTag |= (uint64_t(1) << 1); // BIT1: global track SSD
         }
-        if constexpr (static_cast<bool>(TTrackFillMap) & VarManager::ObjTypes::TrackV0Bits) { // BIT2-6: V0Bits
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT2-6: V0Bits
           trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
         }
         trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
