@@ -73,17 +73,18 @@ class VarManager : public TObject
     TrackPID = BIT(3),
     TrackDCA = BIT(4),
     TrackSelection = BIT(5),
-    ReducedTrack = BIT(6),
-    ReducedTrackBarrel = BIT(7),
-    ReducedTrackBarrelCov = BIT(8),
-    ReducedTrackBarrelPID = BIT(9),
-    Muon = BIT(10),
-    MuonCov = BIT(11),
-    ReducedMuon = BIT(12),
-    ReducedMuonExtra = BIT(13),
-    ReducedMuonCov = BIT(14),
-    ParticleMC = BIT(15),
-    Pair = BIT(16) // TODO: check whether we really need the Pair member here
+    TrackV0Bits = BIT(6),
+    ReducedTrack = BIT(7),
+    ReducedTrackBarrel = BIT(8),
+    ReducedTrackBarrelCov = BIT(9),
+    ReducedTrackBarrelPID = BIT(10),
+    Muon = BIT(11),
+    MuonCov = BIT(12),
+    ReducedMuon = BIT(13),
+    ReducedMuonExtra = BIT(14),
+    ReducedMuonCov = BIT(15),
+    ParticleMC = BIT(16),
+    Pair = BIT(17) // TODO: check whether we really need the Pair member here
   };
 
   enum PairCandidateType {
@@ -269,6 +270,9 @@ class VarManager : public TObject
     kDeltaPhi,
     kDeltaPhiSym,
     kNCorrelationVariables,
+
+    // Index used to scan bit maps
+    kBitMapIndex,
 
     kNVars
   }; // end of Variables enumeration
