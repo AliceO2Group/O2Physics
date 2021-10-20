@@ -165,6 +165,7 @@ DECLARE_SOA_COLUMN(NsigmaKaTOF3, nsigmaKaTOF3, float); //!
 DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float); //!
 DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);    //!
 DECLARE_SOA_COLUMN(Channel, channel, int8_t);          //!
+DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);        //!
 } // namespace hftraining3p
 DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::DCAPrimXY1,
@@ -192,7 +193,8 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::NsigmaKaTOF3,
                   hftraining3p::NsigmaPrTOF3,
                   hftraining3p::FlagOrigin,
-                  hftraining3p::Channel);
+                  hftraining3p::Channel,
+                  hftraining3p::HFSelBit);
 } // namespace o2::aod
 
 struct AddCollisionId {
@@ -245,7 +247,7 @@ struct HfFilter { // Main struct for HF triggers
 
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
-    hProcessedEvents = std::get<std::shared_ptr<TH1>>(registry.add("fProcessedEvents", "HF - event filtered;;events", HistType::kTH1F, {{5, -0.5, 4.5}}));
+    hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;events", HistType::kTH1F, {{5, -0.5, 4.5}});
     std::array<std::string, 5> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} candidate", "w/ beauty candidate", "w/ femto candidate"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
@@ -335,7 +337,7 @@ struct HfFilter { // Main struct for HF triggers
                HfTrackIndexProng3withColl const& cand3Prongs,
                BigTracksWithProtonPID const& tracks)
   {
-    registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
+    hProcessedEvents->Fill(0);
 
     // collision process loop
     bool keepEvent[kNtriggersHF]{false};
@@ -518,7 +520,7 @@ struct ProduceTrainingSamples { // Struct for training samples
 
       int8_t sign = 0;
       int8_t flag = 0;
-      int8_t channel = 0;
+      int8_t channel = -1;
       int8_t origin = 0;
 
       // D± → π± K∓ π±
@@ -560,7 +562,7 @@ struct ProduceTrainingSamples { // Struct for training samples
       train3P(trackFirst.dcaPrim0(), trackFirst.dcaPrim1(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
               trackSecond.dcaPrim0(), trackSecond.dcaPrim1(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
               trackThird.dcaPrim0(), trackThird.dcaPrim1(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
-              flag, channel);
+              flag, channel, cand3Prong.hfflag());
     } // end loop over 3-prong candidates
   }
 };
