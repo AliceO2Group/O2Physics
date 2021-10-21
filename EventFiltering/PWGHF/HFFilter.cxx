@@ -525,26 +525,29 @@ struct ProduceTrainingSamples { // Struct for training samples
 
       // D± → π± K∓ π±
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign);
+      if (indexRec >= 0) {
+        channel = kDplus;
+      }
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign); //TODO: replace hard coded pdg code
-      } else {
-        channel = kDplus;
+        if (indexRec >= 0) {
+          channel = kDs;
+        }
       }
       if (indexRec < 0) {
         // Λc± → p± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-      } else {
-        channel = kDs;
+        if (indexRec >= 0) {
+          channel = kLc;
+        }
       }
       if (indexRec < 0) {
         // Ξc± → p± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign);
-        if (indexRec > -1) {
+        if (indexRec >= 0) {
           channel = kXic;
         }
-      } else {
-        channel = kLc;
       }
 
       if (indexRec > -1) {
