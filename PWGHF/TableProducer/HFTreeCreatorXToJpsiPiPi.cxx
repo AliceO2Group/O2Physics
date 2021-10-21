@@ -55,12 +55,12 @@ DECLARE_SOA_COLUMN(Q, q, float);
 DECLARE_SOA_COLUMN(DR1, dr1, float);
 DECLARE_SOA_COLUMN(DR2, dr2, float);
 DECLARE_SOA_COLUMN(PiBalance, piBalance, float);
-DECLARE_SOA_COLUMN(NSigTOFPi1, nSigmaTOFPi1, float);
-DECLARE_SOA_COLUMN(NSigTOFKa1, nSigmaTOFKa1, float);
-DECLARE_SOA_COLUMN(NSigTOFPr1, nSigmaTOFPr1, float);
-DECLARE_SOA_COLUMN(NSigTOFPi2, nSigmaTOFPi2, float);
-DECLARE_SOA_COLUMN(NSigTOFKa2, nSigmaTOFKa2, float);
-DECLARE_SOA_COLUMN(NSigTOFPr2, nSigmaTOFPr2, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPi1, nSigmaTOFPi1, float);
+DECLARE_SOA_COLUMN(NSigmaTOFKa1, nSigmaTOFKa1, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPr1, nSigmaTOFPr1, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPi2, nSigmaTOFPi2, float);
+DECLARE_SOA_COLUMN(NSigmaTOFKa2, nSigmaTOFKa2, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPr2, nSigmaTOFPr2, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -91,12 +91,12 @@ DECLARE_SOA_TABLE(HfCandXFull, "AOD", "HFCANDXFull",
                   full::PProng1,
                   full::PtProng2,
                   full::PProng2,
-                  full::NSigTOFPi1,
-                  full::NSigTOFKa1,
-                  full::NSigTOFPr1,
-                  full::NSigTOFPi2,
-                  full::NSigTOFKa2,
-                  full::NSigTOFPr2,
+                  full::NSigmaTOFPi1,
+                  full::NSigmaTOFKa1,
+                  full::NSigmaTOFPr1,
+                  full::NSigmaTOFPi2,
+                  full::NSigmaTOFKa2,
+                  full::NSigmaTOFPr2,
                   hf_cand::Chi2PCA,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
