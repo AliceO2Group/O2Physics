@@ -63,8 +63,8 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandChicFull, "AOD", "HFCANDChicFull",
-                  // collision::BCId,
-                  // collision::NumContrib,
+                  collision::BCId,
+                  collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -78,7 +78,6 @@ DECLARE_SOA_TABLE(HfCandChicFull, "AOD", "HFCANDChicFull",
                   full::PProng1,
                   hf_cand::Chi2PCA,
                   hf_cand::ImpactParameter0,
-                  // hf_cand::ImpactParameter1,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -89,7 +88,7 @@ DECLARE_SOA_TABLE(HfCandChicFull, "AOD", "HFCANDChicFull",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  // full::MJPsi,
+                  hf_cand_chic::JpsiToMuMuMass,
                   full::MCflag);
 
 DECLARE_SOA_TABLE(HfCandChicFullEvents, "AOD", "HFCANDChicFullE",
@@ -107,6 +106,7 @@ DECLARE_SOA_TABLE(HfCandChicFullParticles, "AOD", "HFCANDChicFullP",
                   full::Eta,
                   full::Phi,
                   full::Y,
+                  hf_cand_chic::JpsiToMuMuMass,
                   full::MCflag);
 
 } // namespace o2::aod
@@ -150,49 +150,47 @@ struct HfTreeCreatorChicToJpsiGamma {
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
-                           float FunctionY//,
-                  			   // float FunctionInvMassJPsi
+                           float FunctionY //, float FunctionInvMassJPsi
          ) { 
         if (FunctionSelection >= 1) {
           //auto jpsi = candidate.index0();
           rowCandidateFull(
-//          candidate.index1_as<aod::BigTracksPID>().collision().bcId(),
-//          candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
-	        // candidate.index0().index1_as<aod::BigTracksPID>().collision().bcId(),
-          candidate.posX(),
-          candidate.posY(),
-          candidate.posZ(),
-          candidate.chi2PCA(),
-          candidate.rSecondaryVertex(),
-          candidate.decayLength(),
-          candidate.decayLengthXY(),
-          candidate.impactParameterNormalised0(),
-          candidate.ptProng0(),
-          RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-          candidate.ptProng1(),
-          RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),            
-          candidate.impactParameter0(),
-          // candidate.impactParameter1(),
-          // candidate.impactParameter2(),
-          1 << CandFlag,
-          FunctionInvMass,
-          candidate.pt(),
-          candidate.p(),    
-          candidate.cpa(),
-          candidate.cpaXY(),
-          FunctionCt,
-          candidate.eta(),
-          candidate.phi(),
-          FunctionY,
-      	  // FunctionInvMassJPsi,
-          candidate.flagMCMatchRec());
+	          0, //          candidate.index1_as<aod::BigTracksPID>().collision().bcId(),
+            0, //          candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.posX(),
+            candidate.posY(),
+            candidate.posZ(),
+            candidate.chi2PCA(),
+            candidate.rSecondaryVertex(),
+            candidate.decayLength(),
+            candidate.decayLengthXY(),
+            candidate.impactParameterNormalised0(),
+            candidate.ptProng0(),
+            RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            candidate.ptProng1(),
+            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),            
+            candidate.impactParameter0(),
+            1 << CandFlag,
+            FunctionInvMass,
+            candidate.pt(),
+            candidate.p(),    
+            candidate.cpa(),
+            candidate.cpaXY(),
+            FunctionCt,
+            candidate.eta(),
+            candidate.phi(),
+            FunctionY,
+            0., //FunctionInvMassJPsi,
+            candidate.flagMCMatchRec()
+          );
         }
       };
       fillTable(0, candidate.isSelChicToJpsiToEEGamma(),   InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
       fillTable(1, candidate.isSelChicToJpsiToMuMuGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
       // fillTable(0, candidate.isSelChicToJpsiToEEGamma(), 
       //           InvMassChicToJpsiGamma(candidate), 
-      //           CtChic(candidate), YChic(candidate), 
+      //           CtChic(candidate), 
+      //           YChic(candidate), 
       //           InvMassJpsiToEE(candidate.index0()));
       // fillTable(1, candidate.isSelChicToJpsiToMuMuGamma(), 
       //           InvMassChicToJpsiGamma(candidate), 
@@ -212,6 +210,7 @@ struct HfTreeCreatorChicToJpsiGamma {
           particle.eta(),
           particle.phi(),
           RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, massChic),
+          0., // put here the jpsi mass
           particle.flagMCMatchGen());
       }
     }
