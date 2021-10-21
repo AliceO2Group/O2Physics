@@ -864,7 +864,7 @@ struct HfTrackIndexSkimsCreator {
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
-  void process( //soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+  void process( //soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
     SelectedCollisions::iterator const& collision,
     aod::BCs const& bcs,
     SelectedTracks const& tracks)

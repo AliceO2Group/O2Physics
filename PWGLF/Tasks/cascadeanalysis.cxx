@@ -121,7 +121,7 @@ struct cascadeanalysis {
                                                                            aod::cascdata::dcabachtopv > dcabachtopv&&
                                                                                                           aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Cents>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
     if (!collision.alias()[kINT7]) {
       return;

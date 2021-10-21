@@ -72,6 +72,33 @@ enum EventSelectionFlags {
   kNsel
 };
 
+static const char* eventSelectionLabels[kNsel] = {
+  "kIsBBV0A",
+  "kIsBBV0C",
+  "kIsBBFDA",
+  "kIsBBFDC",
+  "kNoBGV0A",
+  "kNoBGV0C",
+  "kNoBGFDA",
+  "kNoBGFDC",
+  "kIsBBT0A",
+  "kIsBBT0C",
+  "kIsBBZNA",
+  "kIsBBZNC",
+  "kNoBGZNA",
+  "kNoBGZNC",
+  "kNoV0MOnVsOfPileup",
+  "kNoSPDOnVsOfPileup",
+  "kNoV0Casymmetry",
+  "kIsGoodTimeRange",
+  "kNoIncompleteDAQ",
+  "kNoTPCLaserWarmUp",
+  "kNoTPCHVdip",
+  "kNoPileupFromSPD",
+  "kNoV0PFPileup",
+  "kNoSPDClsVsTklBG",
+  "kNoV0C012vsTklBG"};
+
 // collision-joinable event selection decisions
 namespace evsel
 {

@@ -80,6 +80,27 @@ class FemtoDreamCutculator
     }
   }
 
+  /// Retrieves automatically The selection passed to the function is retrieves from the dpl-config.json
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setTrackSelectionFromFile(const char* prefix)
+  {
+    for (const auto& sel : mConfigTree) {
+      std::string sel_name = sel.first;
+      femtoDreamTrackSelection::TrackSel obs;
+      if (sel_name.find(prefix) != std::string::npos) {
+        int index = FemtoDreamTrackSelection::findSelectionIndex(std::string_view(sel_name), prefix);
+        if (index >= 0) {
+          obs = femtoDreamTrackSelection::TrackSel(index);
+        } else {
+          continue;
+        }
+        if (obs == femtoDreamTrackSelection::TrackSel::kPIDnSigmaMax)
+          continue; // kPIDnSigmaMax is a special case
+        setTrackSelection(obs, FemtoDreamTrackSelection::getSelectionType(obs), prefix);
+      }
+    }
+  }
+
   /// This function investigates a given selection criterion. The available options are displayed in the terminal and the bit-wise container is put together according to the user input
   /// \tparam T1 Selection class under investigation
   /// \param T2  Selection type under investigation
@@ -171,9 +192,9 @@ class FemtoDreamCutculator
     if (in.compare("T") == 0) {
       output = iterateSelection(mTrackSel);
     } else if (in.compare("V") == 0) {
-      //output=  iterateSelection<nBins>(mV0Sel);
+      // output=  iterateSelection<nBins>(mV0Sel);
     } else if (in.compare("C") == 0) {
-      //output =  iterateSelection<nBins>(mCascadeSel);
+      // output =  iterateSelection<nBins>(mCascadeSel);
     } else {
       std::cout << "Option " << in << " not recognized - available options are (T/V/C) \n";
       analyseCuts();

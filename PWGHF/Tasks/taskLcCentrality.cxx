@@ -71,8 +71,8 @@ struct TaskLcCentrality {
   }
 
   // FIXME: Add ALICE 2/3 switch!
-  //void process(aod::HfCandProng3 const& candidates)
-  void process(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
+  // void process(aod::HfCandProng3 const& candidates)
+  void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
   {
     float centrality = collision.centV0M();
     registry.fill(HIST("hCentrality"), centrality);
@@ -145,7 +145,7 @@ struct TaskLcCentralityMC {
                soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
-    //Printf("MC Candidates: %d", candidates.size());
+    // Printf("MC Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {
         continue;
@@ -174,7 +174,7 @@ struct TaskLcCentralityMC {
       }
     }
     // MC gen.
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::LcToPKPi) {
         if (cutYCandMax >= 0. && std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > cutYCandMax) {
