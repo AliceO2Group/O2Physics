@@ -45,6 +45,7 @@ struct TimestampTask {
   Configurable<std::string> rct_path{"rct-path", "RCT/RunInformation/", "path to the ccdb RCT objects for the SOR timestamps"};
   Configurable<std::string> start_orbit_path{"start-orbit-path", "GRP/StartOrbit", "path to the ccdb SOR orbit objects"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
+  Configurable<bool> isRun2MC{"isRun2MC", false, "Running mode: enable only for Run 2 MC. The timestamp of the BC is computed from initialBC and initialOrbit and does not use the global BC."};
 
   void init(o2::framework::InitContext&)
   {
@@ -108,8 +109,8 @@ struct TimestampTask {
     if (verbose.value) {
       LOGF(info, "Run-number to timestamp found! %i %llu ms", bc.runNumber(), runNumberTimeStamp);
     }
-    const uint16_t currentBC = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
-    const uint32_t currentOrbit = bc.globalBC() / o2::constants::lhc::LHCMaxBunches;
+    const uint16_t currentBC = isRun2MC ? initialBC : (bc.globalBC() % o2::constants::lhc::LHCMaxBunches);
+    const uint32_t currentOrbit = isRun2MC ? initialOrbit : (bc.globalBC() / o2::constants::lhc::LHCMaxBunches);
     const InteractionRecord currentIR(currentBC, currentOrbit);
     timestampTable(runNumberTimeStamp + (currentIR - initialIR).bc2ns() * 1e-6);
   }
