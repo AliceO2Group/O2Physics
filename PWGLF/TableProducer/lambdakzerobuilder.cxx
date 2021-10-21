@@ -96,7 +96,7 @@ struct lambdakzeroprefilterpairs {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"}; 
+  Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"};
 
   // for debugging
 #ifdef MY_DEBUG
