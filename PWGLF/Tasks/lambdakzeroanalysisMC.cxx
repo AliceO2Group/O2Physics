@@ -139,6 +139,7 @@ struct lambdakzeroanalysisMC {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+//   void process(aod::Collision const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     // if (!collision.alias()[kINT7]) { //should not use if looking at MC
     //   return;
@@ -148,7 +149,7 @@ struct lambdakzeroanalysisMC {
     }
 
     for (auto& v0 : fullV0s) {
-      //FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
+    //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
 
         auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
@@ -210,6 +211,9 @@ struct lambdakzeroParticleCountMC {
       {"hK0ShortCount", "hK0ShortCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hLambdaCount", "hLambdaCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hAntiLambdaCount", "hAntiLambdaCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hK0ShortCount_PtDiff", "hK0ShortCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hLambdaCount_PtDiff", "hLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hAntiLambdaCount_PtDiff", "hAntiLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
     },
   };
 
@@ -229,20 +233,26 @@ struct lambdakzeroParticleCountMC {
     for (auto& mcparticle : mcParticles) {
       if (mcparticle.pdgCode() == 310) {
         registry.fill(HIST("hK0ShortCount"), 0.5);
+        registry.fill(HIST("hK0ShortCount_PtDiff"),mcparticle.pt());
         if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
           registry.fill(HIST("hK0ShortCount"), 1.5);
+          registry.fill(HIST("hK0ShortCount_PtDiff"),mcparticle.pt());
         }
       }
       if (mcparticle.pdgCode() == 3122) {
         registry.fill(HIST("hLambdaCount"), 0.5);
+        registry.fill(HIST("hLambdaCount_PtDiff"),mcparticle.pt());
         if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211)) {
           registry.fill(HIST("hLambdaCount"), 1.5);
+          registry.fill(HIST("hLambdaCount_PtDiff"),mcparticle.pt());
         }
       }
       if (mcparticle.pdgCode() == -3122) {
         registry.fill(HIST("hAntiLambdaCount"), 0.5);
+        registry.fill(HIST("hAntiLambdaCount_PtDiff"),mcparticle.pt());
         if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
           registry.fill(HIST("hAntiLambdaCount"), 1.5);
+          registry.fill(HIST("hAntiLambdaCount_PtDiff"),mcparticle.pt());
         }
       }
     }
