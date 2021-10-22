@@ -162,23 +162,27 @@ struct lambdakzeroanalysisMC {
             registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
             registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
 
-            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) {
-              registry.fill(HIST("h3dMassLambda_MCportion"), collision.centV0M(), v0.pt(), v0.mLambda());
-              registry.fill(HIST("MCmomID_Lambda"), mcnegtrack.mother0Id());
-            }
-            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) {
-              registry.fill(HIST("h3dMassAntiLambda_MCportion"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
-              registry.fill(HIST("MCmomID_AntiLambda"), mcnegtrack.mother0Id());
+            if (MC::isPhysicalPrimary(particleMotherOfNeg)) {
+              if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) {
+                registry.fill(HIST("h3dMassLambda_MCportion"), collision.centV0M(), v0.pt(), v0.mLambda());
+                registry.fill(HIST("MCmomID_Lambda"), mcnegtrack.mother0Id());
+              }
+              if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) {
+                registry.fill(HIST("h3dMassAntiLambda_MCportion"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
+                registry.fill(HIST("MCmomID_AntiLambda"), mcnegtrack.mother0Id());
+              }
             }
             if (saveDcaHist == 1) {
               registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
               registry.fill(HIST("h3dMassAntiLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiLambda());
 
-              if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) {
-                registry.fill(HIST("h3dMassLambdaDca_MCportion"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
-              }
-              if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) {
-                registry.fill(HIST("h3dMassAntiLambdaDca_MCportion"), v0.dcaV0daughters(), v0.pt(), v0.mAntiLambda());
+              if (MC::isPhysicalPrimary(particleMotherOfNeg)) {
+                if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) {
+                  registry.fill(HIST("h3dMassLambdaDca_MCportion"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
+                }
+                if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) {
+                  registry.fill(HIST("h3dMassAntiLambdaDca_MCportion"), v0.dcaV0daughters(), v0.pt(), v0.mAntiLambda());
+                }
               }
             }
           }
@@ -187,14 +191,18 @@ struct lambdakzeroanalysisMC {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
             registry.fill(HIST("h3dMassK0Short"), collision.centV0M(), v0.pt(), v0.mK0Short());
 
-            if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
-              registry.fill(HIST("h3dMassK0Short_MCportion"), collision.centV0M(), v0.pt(), v0.mK0Short());
-              registry.fill(HIST("MCmomID_K0Short"), mcnegtrack.mother0Id());
+            if (MC::isPhysicalPrimary(particleMotherOfNeg)) {
+              if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
+                registry.fill(HIST("h3dMassK0Short_MCportion"), collision.centV0M(), v0.pt(), v0.mK0Short());
+                registry.fill(HIST("MCmomID_K0Short"), mcnegtrack.mother0Id());
+              }
             }
             if (saveDcaHist == 1) {
               registry.fill(HIST("h3dMassK0ShortDca"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
-              if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
-                registry.fill(HIST("h3dMassK0ShortDca_MCportion"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
+              if (MC::isPhysicalPrimary(particleMotherOfNeg)) {
+                if (mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
+                  registry.fill(HIST("h3dMassK0ShortDca_MCportion"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
+                }
               }
             }
           }
