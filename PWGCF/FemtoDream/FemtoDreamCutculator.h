@@ -221,8 +221,9 @@ class FemtoDreamCutculator
     std::cout << bitOutput << " (bitwise)\n";
     std::cout << output << " (number representation)\n";
     std::cout << "PID for these species is stored:\n";
+    int index = 0;
     for (auto id : mPIDspecies) {
-      std::cout << o2::track::PID::getName(id) << " : " << int(id) << std::endl;
+      std::cout << o2::track::PID::getName(id) << " : " << index++ << std::endl;
     }
   }
 
