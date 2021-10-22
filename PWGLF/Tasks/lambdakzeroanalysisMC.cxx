@@ -234,7 +234,7 @@ struct lambdakzeroParticleCountMC {
   {
     for (auto& mcparticle : mcParticles) {
       if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
-        if (isPhysicalPrimary(mcparticle)) {
+        if (MC::isPhysicalPrimary(mcparticle)) {
           if (mcparticle.pdgCode() == 310) {
             registry.fill(HIST("hK0ShortCount"), 0.5);
             registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
