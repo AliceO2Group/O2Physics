@@ -13,6 +13,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/RuntimeError.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
@@ -35,36 +36,41 @@ inline auto collisionSelector(C const& collision)
   } else if constexpr (TRACKTYPE == o2::dataformats::GlobalTrackID::ITS) {
     return collision.sel8();
   } else {
-    return false;
+    throw framework::runtime_error("Unsupported track selection!");
   }
 }
 } // namespace
 
 using namespace o2::framework;
+
+std::vector<double> defaultBinning = {0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100};
+
 template <uint8_t TRACKTYPE>
 struct PseudorapidityDensity {
-  o2::framework::Service<TDatabasePDG> pdg;
+  Service<TDatabasePDG> pdg;
 
-  o2::framework::Configurable<float> etaMax{"etaMax", 2.0, "max eta value"};
-  o2::framework::Configurable<float> etaMin{"etaMin", -2.0, "min eta value"};
-  o2::framework::Configurable<float> vtxZMax{"vtxZMax", 15, "max z vertex"};
-  o2::framework::Configurable<float> vtxZMin{"vtxZMin", -15, "min z vertex"};
+  Configurable<float> etaMax{"etaMax", 2.0, "max eta value"};
+  Configurable<float> etaMin{"etaMin", -2.0, "min eta value"};
+  Configurable<float> vtxZMax{"vtxZMax", 15, "max z vertex"};
+  Configurable<float> vtxZMin{"vtxZMin", -15, "min z vertex"};
 
-  o2::framework::HistogramRegistry registry{
+  Configurable<std::vector<double>> percentileBinning{"pBins", std::move(defaultBinning), "Centrality/multiplicity percentile binning"};
+
+  HistogramRegistry registry{
     "registry",
     {
-      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {o2::framework::HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},    //
-      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {o2::framework::HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},           //
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {o2::framework::HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},            //
-      {"EventSelection", ";status;events", {o2::framework::HistType::kTH1F, {{3, 0.5, 3.5}}}},                                         //
-      {"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {o2::framework::HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
-      {"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {o2::framework::HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},        //
-      {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {o2::framework::HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},         //
-      {"EventEfficiency", "; status; events", {o2::framework::HistType::kTH1F, {{3, 0.5, 3.5}}}}                                       //
-    }                                                                                                                                  //
+      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},    //
+      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},           //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},            //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{3, 0.5, 3.5}}}},                                         //
+      {"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
+      {"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},        //
+      {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},         //
+      {"EventEfficiency", "; status; events", {HistType::kTH1F, {{3, 0.5, 3.5}}}}                                       //
+    }                                                                                                                   //
   };
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
@@ -77,6 +83,21 @@ struct PseudorapidityDensity {
     x->SetBinLabel(1, "Generated");
     x->SetBinLabel(2, "Reconstructed");
     x->SetBinLabel(3, "Selected");
+
+    if (doprocessBinned) {
+      auto bins = (std::vector<double>)percentileBinning;
+      AxisSpec pAxis = {bins, "Percentile (%)"};
+      registry.add({"EventsNtrkZvtxBin", "; N_{trk}; Z_{vtx}; Percentile", {HistType::kTH3F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}, pAxis}}});
+      registry.add({"TracksEtaZvtxBin", "; #eta; Z_{vtx}; Percentile", {HistType::kTH3F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}, pAxis}}});
+      registry.add({"TracksPhiEtaBin", "; #varphi; #eta; Percentile", {HistType::kTH3F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}, pAxis}}});
+      registry.add({"EventSelectionBin", "; status; Percentile; events", {HistType::kTH2F, {{3, 0.5, 3.5}, pAxis}}});
+
+      hstat = registry.get<TH2>(HIST("EventSelectionBin"));
+      x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All");
+      x->SetBinLabel(2, "Selected");
+      x->SetBinLabel(3, "Rejected");
+    }
   }
 
   template <typename C>
@@ -85,10 +106,10 @@ struct PseudorapidityDensity {
     return collisionSelector<C, TRACKTYPE>(collision);
   }
 
-  o2::framework::expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
-  o2::framework::expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
-  o2::framework::expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
-  o2::framework::expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
+  expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
+  expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
+  expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
+  expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
   {
@@ -106,6 +127,25 @@ struct PseudorapidityDensity {
     }
   }
 
+  void processBinned(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
+  {
+    auto p = collision.centV0M();
+    registry.fill(HIST("EventSelectionBin"), 1., p);
+    if (select(collision)) {
+      registry.fill(HIST("EventSelectionBin"), 2., p);
+      auto z = collision.posZ();
+      registry.fill(HIST("EventsNtrkZvtxBin"), tracks.size(), z, p);
+      for (auto& track : tracks) {
+        registry.fill(HIST("TracksEtaZvtxBin"), track.eta(), z, p);
+        registry.fill(HIST("TracksPhiEtaBin"), track.phi(), track.eta(), p);
+      }
+    } else {
+      registry.fill(HIST("EventSelectionBin"), 3., p);
+    }
+  }
+
+  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processBinned, "Process centrality/mult. percentile binned", false);
+
   using Particles = aod::McParticles;
 
   void processGen(soa::Filtered<aod::McCollisions>::iterator const& collision, Particles const& particles)
@@ -115,7 +155,13 @@ struct PseudorapidityDensity {
       auto p = pdg->GetParticle(particle.pdgCode());
       int charge = 0;
       if (p == nullptr) {
-        LOGF(WARN, "[%d] Unknown particle with PDG code %d", particle.globalIndex(), particle.pdgCode());
+        if (particle.pdgCode() > 1000000000) {
+          auto x = (std::trunc(particle.pdgCode() / 10000) - 100000);
+          charge = x - std::trunc(x / 1000) * 1000;
+          LOGF(DEBUG, "[%d] Nucleus with PDG code %d (charge %f)", particle.globalIndex(), particle.pdgCode(), charge);
+        } else {
+          LOGF(DEBUG, "[%d] Unknown particle with PDG code %d", particle.globalIndex(), particle.pdgCode());
+        }
       } else {
         charge = p->Charge();
       }
@@ -126,7 +172,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processGen, "Process generator-level info", true);
+  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processGen, "Process generator-level info", false);
 
   void processMatching(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks, aod::McCollisions const&)
   {
@@ -138,7 +184,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processMatching, "Process generator-level info matched to reco", true);
+  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processMatching, "Process generator-level info matched to reco", false);
 };
 } // namespace o2::pwgmm::multiplicity
 

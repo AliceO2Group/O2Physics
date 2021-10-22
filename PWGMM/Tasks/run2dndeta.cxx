@@ -15,19 +15,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::pwgmm::multiplicity;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Use MC information"}};
-  workflowOptions.push_back(optionDoMC);
-}
-// always should be after customize() function
 #include "Framework/runDataProcessing.h"
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (!doMC) {
-    return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensity<aod::track::TrackTypeEnum::Run2Tracklet>>(cfgc, TaskName{"pseudorapidity-density"})};
-  }
-  return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensity<aod::track::TrackTypeEnum::Run2Tracklet>>(cfgc, TaskName{"pseudorapidity-density"}, SetDefaultProcesses{{{"processGen", true}, {"processMatching", true}}})};
+  return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensity<aod::track::TrackTypeEnum::Run2Tracklet>>(cfgc, TaskName{"pseudorapidity-density"})};
 }
