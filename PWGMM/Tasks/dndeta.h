@@ -152,12 +152,11 @@ struct PseudorapidityDensity {
   {
     registry.fill(HIST("EventEfficiency"), 1.);
     for (auto& collision : collisions) {
-      auto stracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
       registry.fill(HIST("EventEfficiency"), 2.);
       if (select(collision)) {
         registry.fill(HIST("EventEfficiency"), 3.);
-        auto z = mcCollision.posZ();
-        registry.fill(HIST("EventsNtrkZvtxGen"), stracks.size(), z);
+        auto stracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+        registry.fill(HIST("EventsNtrkZvtxGen"), stracks.size(), mcCollision.posZ());
       }
     }
     for (auto& particle : particles) {
