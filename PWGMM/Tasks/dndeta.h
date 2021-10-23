@@ -148,9 +148,17 @@ struct PseudorapidityDensity {
 
   using Particles = aod::McParticles;
 
-  void processGen(soa::Filtered<aod::McCollisions>::iterator const& collision, Particles const& particles)
+  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<aod::Tracks> const& tracks)
   {
     registry.fill(HIST("EventEfficiency"), 1.);
+    for (auto& collision : collisions) {
+      registry.fill(HIST("EventEfficiency"), 2.);
+      if (select(collision)) {
+        registry.fill(HIST("EventEfficiency"), 3.);
+        auto stracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+        registry.fill(HIST("EventsNtrkZvtxGen"), stracks.size(), mcCollision.posZ());
+      }
+    }
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       int charge = 0;
@@ -158,7 +166,7 @@ struct PseudorapidityDensity {
         if (particle.pdgCode() > 1000000000) {
           auto x = (std::trunc(particle.pdgCode() / 10000) - 100000);
           charge = x - std::trunc(x / 1000) * 1000;
-          LOGF(DEBUG, "[%d] Nucleus with PDG code %d (charge %f)", particle.globalIndex(), particle.pdgCode(), charge);
+          LOGF(DEBUG, "[%d] Nucleus with PDG code %d (charge %d)", particle.globalIndex(), particle.pdgCode(), charge);
         } else {
           LOGF(DEBUG, "[%d] Unknown particle with PDG code %d", particle.globalIndex(), particle.pdgCode());
         }
@@ -166,25 +174,13 @@ struct PseudorapidityDensity {
         charge = p->Charge();
       }
       if (charge != 0 && MC::isPhysicalPrimary(particle) && (particle.eta() < etaMax) && (particle.eta() > etaMin)) {
-        registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), collision.posZ());
+        registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
         registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
       }
     }
   }
 
   PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processGen, "Process generator-level info", false);
-
-  void processMatching(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks, aod::McCollisions const&)
-  {
-    registry.fill(HIST("EventEfficiency"), 2.);
-    if (select(collision)) {
-      registry.fill(HIST("EventEfficiency"), 3.);
-      auto z = collision.mcCollision().posZ();
-      registry.fill(HIST("EventsNtrkZvtxGen"), tracks.size(), z);
-    }
-  }
-
-  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processMatching, "Process generator-level info matched to reco", false);
 };
 } // namespace o2::pwgmm::multiplicity
 
