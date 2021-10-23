@@ -96,7 +96,7 @@ struct lambdakzeroprefilterpairs {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  Configurable<int> tpcrefit{"tpcrefit", 1, "demand TPC refit"};
+  Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -131,7 +131,7 @@ struct lambdakzeroprefilterpairs {
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
       registry.fill(HIST("hGoodIndices"), 0.5);
-      if (tpcrefit) {
+      if (isRun2) {
         if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
           continue; //TPC refit
