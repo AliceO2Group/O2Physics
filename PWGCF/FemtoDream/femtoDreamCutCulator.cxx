@@ -27,6 +27,7 @@ int main(int argc, char* argv[])
   FemtoDreamCutculator cut;
   cut.init(argv[1]);
   cut.setTrackSelectionFromFile("ConfTrk");
+  cut.setPIDSelectionFromFile("ConfTrk");
 
   /// \todo factor out the pid here
   // cut.setTrackSelection(femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit, "ConfTrk");
