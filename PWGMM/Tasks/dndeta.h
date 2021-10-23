@@ -148,7 +148,7 @@ struct PseudorapidityDensity {
 
   using Particles = aod::McParticles;
 
-  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<aod::Tracks> const& tracks)
+  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<aod::Tracks> const& tracks)
   {
     registry.fill(HIST("EventEfficiency"), 1.);
     for (auto& collision : collisions) {
