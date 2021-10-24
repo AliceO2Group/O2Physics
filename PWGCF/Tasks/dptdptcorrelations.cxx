@@ -60,7 +60,7 @@ DECLARE_SOA_COLUMN(TrackacceptedAsTwo, trackacceptedastwo, uint8_t);
 DECLARE_SOA_TABLE(AcceptedEvents, "AOD", "ACCEPTEDEVENTS", dptdptcorrelations::EventAccepted, dptdptcorrelations::EventCentMult);
 DECLARE_SOA_TABLE(ScannedTracks, "AOD", "SCANNEDTRACKS", dptdptcorrelations::TrackacceptedAsOne, dptdptcorrelations::TrackacceptedAsTwo);
 
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::Cents>::iterator;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
 using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::ScannedTracks>>;
 using FilteredTrackData = Partition<aod::FilteredTracks>::filtered_iterator;
@@ -651,7 +651,7 @@ struct DptDptCorrelationsTask {
     TH1::AddDirectory(oldstatus);
   }
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents, aod::AcceptedEvents>>::iterator const& collision,
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::AcceptedEvents>>::iterator const& collision,
                aod::FilteredTracks const& tracks)
   {
     using namespace correlationstask;
@@ -793,7 +793,7 @@ struct TracksAndEventClassificationQA {
   Filter onlyacceptedevents = (aod::dptdptcorrelations::eventaccepted == (uint8_t) true);
   Filter onlyacceptedtracks = ((aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true) or (aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true));
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents, aod::AcceptedEvents>>::iterator const& collision,
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::AcceptedEvents>>::iterator const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::ScannedTracks>> const& tracks)
   {
     if (collision.eventaccepted() != (uint8_t) true) {

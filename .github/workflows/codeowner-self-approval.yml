@@ -8,6 +8,8 @@ on:
 jobs:
   approve:
     runs-on: ubuntu-latest
+    # Only run if the PR author enabled auto-merge, not someone else.
+    if: github.event.sender.login == github.event.pull_request.user.login
 
     steps:
       # Check out in order to get CODEOWNERS.

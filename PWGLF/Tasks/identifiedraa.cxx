@@ -278,7 +278,7 @@ struct identifiedraaTask {
     }
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Cents>::iterator const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision,
                    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
                              aod::pidTOFFullPi, aod::pidTOFFullKa,
                              aod::pidTOFFullPr, aod::pidTPCFullPi,

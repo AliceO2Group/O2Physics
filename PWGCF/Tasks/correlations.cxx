@@ -255,7 +255,7 @@ struct CorrelationTask {
   }
 
   // Version with explicit nested loop
-  void processSameAOD(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents>>::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void processSameAOD(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     // TODO will go to CCDBConfigurable
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -303,7 +303,7 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
-  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::Cents>>& collisions, aodTracks const& tracks)
+  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentV0Ms>>& collisions, aodTracks const& tracks)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
@@ -399,7 +399,7 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
 
   // Version with combinations
-  void processWithCombinations(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
+  void processWithCombinations(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
   {
     LOGF(info, "Tracks for collision (Combination run): %d", tracks.size());
 
@@ -545,7 +545,7 @@ struct CorrelationHashTask {
     return -1;
   }
 
-  void processAOD(soa::Join<aod::Collisions, aod::Cents> const& collisions)
+  void processAOD(soa::Join<aod::Collisions, aod::CentV0Ms> const& collisions)
   {
     for (auto& collision : collisions) {
       int hash = getHash(collision.posZ(), collision.centV0M());

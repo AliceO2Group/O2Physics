@@ -51,7 +51,7 @@ DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event informa
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib);
 
 DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information
-                  bc::GlobalBC, bc::TriggerMask, timestamp::Timestamp, reducedevent::TriggerAlias, cent::CentV0M);
+                  bc::GlobalBC, bc::TriggerMask, timestamp::Timestamp, reducedevent::TriggerAlias, cent::CentEstV0M);
 
 DECLARE_SOA_TABLE(ReducedEventsVtxCov, "AOD", "REVTXCOV", //!    Event vertex covariance matrix
                   collision::CovXX, collision::CovXY, collision::CovXZ,
@@ -222,7 +222,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
-DECLARE_SOA_COLUMN(RawPhi, rawPhi, float); //!
+DECLARE_SOA_COLUMN(RawPhi, rawPhi, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh1, midBoardCh1, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>(midBoards & 0xFF); });
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh2, midBoardCh2, //!

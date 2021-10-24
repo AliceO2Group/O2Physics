@@ -46,7 +46,7 @@ struct FilterCF {
   Produces<aod::CFCollisions> outputCollisions;
   Produces<aod::CFTracks> outputTracks;
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
     LOGF(info, "Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.centV0M());
 

@@ -90,8 +90,8 @@ DECLARE_SOA_TABLE(ScannedTrueTracks, "AOD", "SCANTRUETRACKS", //! The generated 
                   dptdptcorrelations::Eta,
                   dptdptcorrelations::Phi);
 
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::Cents>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::Cents>::iterator;
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 using CollisionEvSel = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
@@ -936,7 +936,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
 
   void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
-                                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Cents> const& collisions,
+                                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentV0Ms> const& collisions,
                                      aod::McParticles const& mcparticles)
   {
     using namespace filteranalysistask;

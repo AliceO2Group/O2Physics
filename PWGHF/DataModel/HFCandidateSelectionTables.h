@@ -14,6 +14,14 @@
 
 namespace o2::aod
 {
+// selection steps
+enum SelectionStep {
+  RecoSkims = 0,
+  RecoTopol,
+  RecoPID,
+  NSelectionSteps
+};
+
 namespace hf_selcandidate_d0
 {
 DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);           //!
@@ -30,6 +38,23 @@ DECLARE_SOA_TABLE(HFSelD0Candidate, "AOD", "HFSELD0CAND", //!
                   hf_selcandidate_d0::IsRecoTopol,
                   hf_selcandidate_d0::IsRecoCand,
                   hf_selcandidate_d0::IsRecoPID);
+
+namespace hf_selcandidate_d0_parametrizedPID
+{
+DECLARE_SOA_COLUMN(IsSelD0NoPID, isSelD0NoPID, int);                 //!
+DECLARE_SOA_COLUMN(IsSelD0PerfectPID, isSelD0PerfectPID, int);       //!
+DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);                           //!
+DECLARE_SOA_COLUMN(IsSelD0barNoPID, isSelD0barNoPID, int);           //!
+DECLARE_SOA_COLUMN(IsSelD0barPerfectPID, isSelD0barPerfectPID, int); //!
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int);                     //!
+} // namespace hf_selcandidate_d0_parametrizedPID
+DECLARE_SOA_TABLE(HFSelD0CandidateparametrizedPID, "AOD", "HFSELD0CANDP", //!
+                  hf_selcandidate_d0_parametrizedPID::IsSelD0NoPID,
+                  hf_selcandidate_d0_parametrizedPID::IsSelD0PerfectPID,
+                  hf_selcandidate_d0_parametrizedPID::IsSelD0,
+                  hf_selcandidate_d0_parametrizedPID::IsSelD0barNoPID,
+                  hf_selcandidate_d0_parametrizedPID::IsSelD0barPerfectPID,
+                  hf_selcandidate_d0_parametrizedPID::IsSelD0bar);
 
 namespace hf_selcandidate_d0_ALICE3_Barrel
 {
@@ -97,6 +122,23 @@ DECLARE_SOA_TABLE(HFSelLcCandidateALICE3, "AOD", "HFSELLCCANDA3B", //!
                   hf_selcandidate_lc_ALICE3::IsSelLcPiKPTOFPID,
                   hf_selcandidate_lc_ALICE3::IsSelLcPiKPTOFplusRICHPID);
 
+namespace hf_selcandidate_lc_parametrizedPID
+{
+DECLARE_SOA_COLUMN(IsSelLcPKPiNoPID, isSelLcPKPiNoPID, int);           //!
+DECLARE_SOA_COLUMN(IsSelLcPKPiPerfectPID, isSelLcPKPiPerfectPID, int); //!
+DECLARE_SOA_COLUMN(IsSelLcPKPi, isSelLcPKPi, int);                     //!
+DECLARE_SOA_COLUMN(IsSelLcPiKPNoPID, isSelLcPiKPNoPID, int);           //!
+DECLARE_SOA_COLUMN(IsSelLcPiKPPerfectPID, isSelLcPiKPPerfectPID, int); //!
+DECLARE_SOA_COLUMN(IsSelLcPiKP, isSelLcPiKP, int);                     //!
+} // namespace hf_selcandidate_lc_parametrizedPID
+DECLARE_SOA_TABLE(HFSelLcCandidateparametrizedPID, "AOD", "HFSELLCCANDP", //!
+                  hf_selcandidate_lc_parametrizedPID::IsSelLcPKPiNoPID,
+                  hf_selcandidate_lc_parametrizedPID::IsSelLcPKPiPerfectPID,
+                  hf_selcandidate_lc_parametrizedPID::IsSelLcPKPi,
+                  hf_selcandidate_lc_parametrizedPID::IsSelLcPiKPNoPID,
+                  hf_selcandidate_lc_parametrizedPID::IsSelLcPiKPPerfectPID,
+                  hf_selcandidate_lc_parametrizedPID::IsSelLcPiKP);
+
 namespace hf_selcandidate_jpsi
 {
 DECLARE_SOA_COLUMN(IsSelJpsiToEE, isSelJpsiToEE, int);               //!
@@ -133,6 +175,13 @@ DECLARE_SOA_COLUMN(IsSelBPlusToD0Pi, isSelBPlusToD0Pi, int); //!
 } // namespace hf_selcandidate_bplus
 DECLARE_SOA_TABLE(HFSelBPlusToD0PiCandidate, "AOD", "HFSELBPLUSCAND", //!
                   hf_selcandidate_bplus::IsSelBPlusToD0Pi);
+
+namespace hf_selcandidate_lb
+{
+DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int); //!
+} // namespace hf_selcandidate_lb
+DECLARE_SOA_TABLE(HFSelLbToLcPiCandidate, "AOD", "HFSELLBCAND", //!
+                  hf_selcandidate_lb::IsSelLbToLcPi);
 
 namespace hf_selcandidate_x
 {
