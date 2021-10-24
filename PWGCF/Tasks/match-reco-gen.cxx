@@ -228,6 +228,7 @@ TH2F* fhTruePtVsEtaA = nullptr;
 TH1F* fhTrueDCAxyB = nullptr;
 TH1F* fhTrueDCAxyA = nullptr;
 TH1F* fhTrueDCAzB = nullptr;
+TH1F* fhTrueDCAxyBid = nullptr;
 TH1F* fhTrueDCAzA = nullptr;
 } // namespace filteranalysistask
 
@@ -519,6 +520,12 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisi
     fhTruePtNegB->Fill(particle.pt());
   }
 
+  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  if ((1.8 < dcaxy) and (dcaxy < 2.0)) {
+    fhTrueDCAxyBid->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
+  }
+
   fhTrueDCAxyB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
@@ -538,6 +545,14 @@ void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisio
     fhTruePtPosA->Fill(particle.pt());
   } else {
     fhTruePtNegA->Fill(particle.pt());
+  }
+
+  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  if ((1.0 < dcaxy) and (dcaxy < 3.0)) {
+    LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+         particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+    LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
   }
 
   fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
@@ -619,6 +634,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
           fillTrackHistosAfterSelection(track);
           acceptedtracks++;
           scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
+          LOGF(DPTDPTLOGTRACKS, "Accepted track with global Id %d and with assigned collision Id %d", track.globalIndex(), track.collisionId());
         }
       }
     }
@@ -793,6 +809,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTruePtVsEtaB = new TH2F(TString::Format("fhTruePtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
       fhTruePtVsEtaA = new TH2F(TString::Format("fhTruePtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
       fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
+      fhTrueDCAxyBid = new TH1F("PDGCodeDCAxyB", "PDG code within 1.8<|DCA_{#it{xy}}|<2.0; PDG code", 100, 0.5, 100.5);
       fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
       fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
@@ -817,6 +834,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fOutputList->Add(fhTruePtVsEtaB);
       fOutputList->Add(fhTruePtVsEtaA);
       fOutputList->Add(fhTrueDCAxyB);
+      fOutputList->Add(fhTrueDCAxyBid);
       fOutputList->Add(fhTrueDCAxyA);
       fOutputList->Add(fhTrueDCAzB);
       fOutputList->Add(fhTrueDCAzA);
@@ -855,7 +873,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
     LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCent(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
 
-    /* the task does not have access to either centrality nor multiplicity 
+    /* the task does not have access to either centrality nor multiplicity
        classes information, so it has to live without it.
        For the time being we assign a value of 50% */
     fhCentMultB->Fill(50.0);
@@ -912,7 +930,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
     LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentDetectorLevel(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
 
-    /* the task does not have access to either centrality nor multiplicity 
+    /* the task does not have access to either centrality nor multiplicity
        classes information, so it has to live without it.
        For the time being we assign a value of 50% */
     fhCentMultB->Fill(50.0);
@@ -925,6 +943,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhVertexZA->Fill(collision.posZ());
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
 
+      LOGF(DPTDPTLOGCOLLISIONS, "Accepted collision with BC id %d and collision Id %d", collision.bcId(), collision.globalIndex());
       filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
     } else {
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
@@ -985,7 +1004,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
     LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentGeneratorLevel(). New generated collision with %d particles", mcparticles.size());
 
-    /* the task does not have access to either centrality nor multiplicity 
+    /* the task does not have access to either centrality nor multiplicity
        classes information, so it has to live without it.
        For the time being we assign a value of 50% */
     fhTrueCentMultB->Fill(50.0);
@@ -1008,516 +1027,6 @@ struct DptDptCorrelationsFilterAnalysisTask {
     }
   }
   PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
-};
-
-// Task for building <dpt,dpt> correlations
-struct DptDptCorrelationsTask {
-
-  /* the data collecting engine */
-  struct DataCollectingEngine {
-    //============================================================================================
-    // The DptDptCorrelationsAnalysisTask output objects
-    //============================================================================================
-    /* histograms */
-    TH1F* fhN1_vsPt[2];               //!<! weighted single particle distribution vs \f$p_T\f$, track 1 and 2
-    TH2F* fhN1_vsEtaPhi[2];           //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, track 1 and 2
-    TH2F* fhSum1Pt_vsEtaPhi[2];       //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, track 1 and 2
-    TH3F* fhN1_vsZEtaPhiPt[2];        //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, track 1 and 2
-    TH3F* fhSum1Pt_vsZEtaPhiPt[2];    //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, track 1 and 2
-    TH2F* fhN2_vsPtPt[4];             //!<! track 1 and 2 weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$
-    TH2F* fhN2_vsDEtaDPhi[4];         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
-    TH2F* fhSum2PtPt_vsDEtaDPhi[4];   //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
-    TH2F* fhSum2DptDpt_vsDEtaDPhi[4]; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
-    /* versus centrality/multiplicity  profiles */
-    TProfile* fhN1_vsC[2];           //!<! weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
-    TProfile* fhSum1Pt_vsC[2];       //!<! accumulated sum of weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2
-    TProfile* fhN1nw_vsC[2];         //!<! un-weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
-    TProfile* fhSum1Ptnw_vsC[2];     //!<! accumulated sum of un-weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2
-    TProfile* fhN2_vsC[4];           //!<! weighted accumulated two particle distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
-    TProfile* fhSum2PtPt_vsC[4];     //!<! weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
-    TProfile* fhSum2DptDpt_vsC[4];   //!<! weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
-    TProfile* fhN2nw_vsC[4];         //!<! un-weighted accumulated two particle distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
-    TProfile* fhSum2PtPtnw_vsC[4];   //!<! un-weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
-    TProfile* fhSum2DptDptnw_vsC[4]; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
-
-    const char* tname[2] = {"1", "2"}; ///< the external track names, one and two, for histogram creation
-    const char* trackPairsNames[4] = {"OO", "OT", "TO", "TT"};
-
-    /// \brief Returns the potentially phi origin shifted phi
-    /// \param phi the track azimuthal angle
-    /// \return the track phi origin shifted azimuthal angle
-    float GetShiftedPhi(float phi)
-    {
-      if (not(phi < phiup)) {
-        return phi - M_PI * 2;
-      } else {
-        return phi;
-      }
-    }
-
-    /// \brief Returns the zero based bin index of the eta phi passed track
-    /// \param t the intended track
-    /// \return the zero based bin index
-    ///
-    /// According to the bining structure, to the track eta will correspond
-    /// a zero based bin index and similarlly for the track phi
-    /// The returned index is the composition of both considering eta as
-    /// the first index component
-    /// WARNING: for performance reasons no checks are done about the consistency
-    /// of track's eta and phin with the corresponding ranges so, it is suppossed
-    /// the track has been accepted and it is within that ranges
-    /// IF THAT IS NOT THE CASE THE ROUTINE WILL PRODUCE NONSENSE RESULTS
-    template <typename TrackObject>
-    int GetEtaPhiIndex(TrackObject const& t)
-    {
-      int etaix = int((t.eta() - etalow) / etabinwidth);
-      /* consider a potential phi origin shift */
-      float phi = GetShiftedPhi(t.phi());
-      int phiix = int((phi - philow) / phibinwidth);
-      return etaix * phibins + phiix;
-    }
-
-    /// \brief Returns the TH2 global index for the differential histograms
-    /// \param t1 the intended track one
-    /// \param t2 the intended track two
-    /// \return the globl TH2 bin for delta eta delta phi
-    ///
-    /// WARNING: for performance reasons no checks are done about the consistency
-    /// of tracks' eta and phi within the corresponding ranges so, it is suppossed
-    /// the tracks have been accepted and they are within that ranges
-    /// IF THAT IS NOT THE CASE THE ROUTINE WILL PRODUCE NONSENSE RESULTS
-    template <typename TrackObject>
-    int GetDEtaDPhiGlobalIndex(TrackObject const& t1, TrackObject const& t2)
-    {
-      using namespace correlationstask;
-
-      /* rule: ix are always zero based while bins are always one based */
-      int etaix_1 = int((t1.eta() - etalow) / etabinwidth);
-      /* consider a potential phi origin shift */
-      float phi = GetShiftedPhi(t1.phi());
-      int phiix_1 = int((phi - philow) / phibinwidth);
-      int etaix_2 = int((t2.eta() - etalow) / etabinwidth);
-      /* consider a potential phi origin shift */
-      phi = GetShiftedPhi(t2.phi());
-      int phiix_2 = int((phi - philow) / phibinwidth);
-
-      int deltaeta_ix = etaix_1 - etaix_2 + etabins - 1;
-      int deltaphi_ix = phiix_1 - phiix_2;
-      if (deltaphi_ix < 0) {
-        deltaphi_ix += phibins;
-      }
-
-      return fhN2_vsDEtaDPhi[kOO]->GetBin(deltaeta_ix + 1, deltaphi_ix + 1);
-    }
-
-    /// \brief fills the singles histograms in singles execution mode
-    /// \param passedtracks filtered table with the tracks associated to the passed index
-    /// \param tix index, in the singles histogram bank, for the passed filetered track table
-    template <typename TrackListObject>
-    void processSingles(TrackListObject const& passedtracks, int tix, float zvtx)
-    {
-      for (auto& track : passedtracks) {
-        double corr = 1.0; /* TODO: track correction  weights */
-        fhN1_vsPt[tix]->Fill(track.pt(), corr);
-        fhN1_vsZEtaPhiPt[tix]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
-        fhSum1Pt_vsZEtaPhiPt[tix]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
-      }
-    }
-
-    /// \brief fills the singles histograms in pair execution mode
-    /// \param passedtracks filtered table with the tracks associated to the passed index
-    /// \param tix index, in the singles histogram bank, for the passed filetered track table
-    /// \param cmul centrality - multiplicity for the collision being analyzed
-    template <typename TrackListObject>
-    void processTracks(TrackListObject const& passedtracks, int tix, float cmul)
-    {
-      LOGF(DPTDPTLOGCOLLISIONS, "Processing %d tracks of type %d in a collision with cent/mult %f ", passedtracks.size(), tix, cmul);
-
-      /* process magnitudes */
-      double n1 = 0;       ///< weighted number of track 1 tracks for current collision
-      double sum1Pt = 0;   ///< accumulated sum of weighted track 1 \f$p_T\f$ for current collision
-      double n1nw = 0;     ///< not weighted number of track 1 tracks for current collision
-      double sum1Ptnw = 0; ///< accumulated sum of not weighted track 1 \f$p_T\f$ for current collision
-      for (auto& track : passedtracks) {
-        double corr = 1.0; /* TODO: track correction  weights */
-        n1 += corr;
-        sum1Pt += track.pt() * corr;
-        n1nw += 1;
-        sum1Ptnw += track.pt();
-
-        fhN1_vsEtaPhi[tix]->Fill(track.eta(), GetShiftedPhi(track.phi()), corr);
-        fhSum1Pt_vsEtaPhi[tix]->Fill(track.eta(), GetShiftedPhi(track.phi()), track.pt() * corr);
-      }
-      fhN1_vsC[tix]->Fill(cmul, n1);
-      fhSum1Pt_vsC[tix]->Fill(cmul, sum1Pt);
-      fhN1nw_vsC[tix]->Fill(cmul, n1nw);
-      fhSum1Ptnw_vsC[tix]->Fill(cmul, sum1Ptnw);
-    }
-
-    /// \brief fills the pair histograms in pair execution mode
-    /// \param trks1 filtered table with the tracks associated to the first track in the pair
-    /// \param trks2 filtered table with the tracks associated to the second track in the pair
-    /// \param pix index, in the track combination histogram bank, for the passed filetered track tables
-    /// \param cmul centrality - multiplicity for the collision being analyzed
-    /// Be aware that at least in half of the cases traks1 and trks2 will have the same content
-    template <typename TrackOneListObject, typename TrackTwoListObject>
-    void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, int pix, float cmul)
-    {
-      /* process pair magnitudes */
-      double n2 = 0;           ///< weighted number of track 1 track 2 pairs for current collision
-      double sum2PtPt = 0;     ///< accumulated sum of weighted track 1 track 2 \f${p_T}_1 {p_T}_2\f$ for current collision
-      double sum2DptDpt = 0;   ///< accumulated sum of weighted number of track 1 tracks times weighted track 2 \f$p_T\f$ for current collision
-      double n2nw = 0;         ///< not weighted number of track1 track 2 pairs for current collision
-      double sum2PtPtnw = 0;   ///< accumulated sum of not weighted track 1 track 2 \f${p_T}_1 {p_T}_2\f$ for current collision
-      double sum2DptDptnw = 0; ///< accumulated sum of not weighted number of track 1 tracks times not weighted track 2 \f$p_T\f$ for current collision
-      for (auto& track1 : trks1) {
-        double ptavg_1 = 0.0; /* TODO: load ptavg_1 for eta1, phi1 bin */
-        double corr1 = 1.0;   /* TODO: track correction  weights */
-        for (auto& track2 : trks2) {
-          /* checkiing the same track id condition */
-          if (track1 == track2) {
-            /* exclude autocorrelations */
-            continue;
-          } else {
-            /* process pair magnitudes */
-            double ptavg_2 = 0.0; /* TODO: load ptavg_2 for eta2, phi2 bin */
-            double corr2 = 1.0;   /* TODO: track correction  weights */
-            double corr = corr1 * corr2;
-            double dptdpt = (track1.pt() - ptavg_1) * (track2.pt() - ptavg_2);
-            n2 += corr;
-            sum2PtPt += track1.pt() * track2.pt() * corr;
-            sum2DptDpt += corr * dptdpt;
-            n2nw += 1;
-            sum2PtPtnw += track1.pt() * track2.pt();
-            sum2DptDptnw += dptdpt;
-            /* get the global bin for filling the differential histograms */
-            int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
-            fhN2_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr);
-            fhSum2DptDpt_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr * dptdpt);
-            fhSum2PtPt_vsDEtaDPhi[pix]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
-            fhN2_vsPtPt[pix]->Fill(track1.pt(), track2.pt(), corr);
-          }
-        }
-      }
-      fhN2_vsC[pix]->Fill(cmul, n2);
-      fhSum2PtPt_vsC[pix]->Fill(cmul, sum2PtPt);
-      fhSum2DptDpt_vsC[pix]->Fill(cmul, sum2DptDpt);
-      fhN2nw_vsC[pix]->Fill(cmul, n2nw);
-      fhSum2PtPtnw_vsC[pix]->Fill(cmul, sum2PtPtnw);
-      fhSum2DptDptnw_vsC[pix]->Fill(cmul, sum2DptDptnw);
-      /* let's also update the number of entries in the differential histograms */
-      fhN2_vsDEtaDPhi[pix]->SetEntries(fhN2_vsDEtaDPhi[pix]->GetEntries() + n2);
-      fhSum2DptDpt_vsDEtaDPhi[pix]->SetEntries(fhSum2DptDpt_vsDEtaDPhi[pix]->GetEntries() + n2);
-      fhSum2PtPt_vsDEtaDPhi[pix]->SetEntries(fhSum2PtPt_vsDEtaDPhi[pix]->GetEntries() + n2);
-    }
-
-    template <typename TrackOneListObject, typename TrackTwoListObject>
-    void processCollision(TrackOneListObject const& Tracks1, TrackTwoListObject const& Tracks2, float zvtx, float centmult)
-    {
-      using namespace correlationstask;
-
-      if (not processpairs) {
-        /* process single tracks */
-        processSingles(Tracks1, 0, zvtx); /* track one */
-        processSingles(Tracks2, 1, zvtx); /* track two */
-      } else {
-        /* process track magnitudes */
-        /* TODO: the centrality should be chosen non detector dependent */
-        processTracks(Tracks1, 0, centmult); /* track one */
-        processTracks(Tracks2, 1, centmult); /* track one */
-        /* process pair magnitudes */
-        processTrackPairs(Tracks1, Tracks1, kOO, centmult);
-        processTrackPairs(Tracks1, Tracks2, kOT, centmult);
-        processTrackPairs(Tracks2, Tracks1, kTO, centmult);
-        processTrackPairs(Tracks2, Tracks2, kTT, centmult);
-      }
-    }
-
-    void init(TList* fOutputList)
-    {
-      using namespace correlationstask;
-
-      /* create the histograms */
-      Bool_t oldstatus = TH1::AddDirectoryStatus();
-      TH1::AddDirectory(kFALSE);
-
-      if (!processpairs) {
-        for (int i = 0; i < 2; ++i) {
-          /* histograms for each track, one and two */
-          fhN1_vsPt[i] = new TH1F(TString::Format("n1_%s_vsPt", tname[i]).Data(),
-                                  TString::Format("#LT n_{1} #GT;p_{t,%s} (GeV/c);#LT n_{1} #GT", tname[i]).Data(),
-                                  ptbins, ptlow, ptup);
-          /* we don't want the Sumw2 structure being created here */
-          bool defSumw2 = TH1::GetDefaultSumw2();
-          TH1::SetDefaultSumw2(false);
-          fhN1_vsZEtaPhiPt[i] = new TH3F(TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", tname[i]).Data(),
-                                         TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)", tname[i], tname[i], tname[i]).Data(),
-                                         zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, double(etabins * phibins), ptbins, ptlow, ptup);
-          fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i]).Data(),
-                                             TString::Format("#LT #Sigma p_{t,%s}#GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)", tname[i], tname[i], tname[i], tname[i]).Data(),
-                                             zvtxbins, zvtxlow, zvtxup, etabins * phibins, 0.0, double(etabins * phibins), ptbins, ptlow, ptup);
-          /* we return it back to previuos state */
-          TH1::SetDefaultSumw2(defSumw2);
-
-          /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
-          fhN1_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
-          fhN1_vsZEtaPhiPt[i]->Sumw2(false);
-          fhSum1Pt_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
-          fhSum1Pt_vsZEtaPhiPt[i]->Sumw2(false);
-
-          fOutputList->Add(fhN1_vsPt[i]);
-          fOutputList->Add(fhN1_vsZEtaPhiPt[i]);
-          fOutputList->Add(fhSum1Pt_vsZEtaPhiPt[i]);
-        }
-      } else {
-        for (int i = 0; i < 2; ++i) {
-          /* histograms for each track, one and two */
-          fhN1_vsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tname[i]).Data(),
-                                      TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tname[i], tname[i]).Data(),
-                                      etabins, etalow, etaup, phibins, philow, phiup);
-          fhSum1Pt_vsEtaPhi[i] = new TH2F(TString::Format("sumPt_%s_vsEtaPhi", tname[i]).Data(),
-                                          TString::Format("#LT #Sigma p_{t,%s} #GT;#eta_{%s};#varphi_{%s} (radian);#LT #Sigma p_{t,%s} #GT (GeV/c)",
-                                                          tname[i], tname[i], tname[i], tname[i])
-                                            .Data(),
-                                          etabins, etalow, etaup, phibins, philow, phiup);
-          fhN1_vsC[i] = new TProfile(TString::Format("n1_%s_vsM", tname[i]).Data(),
-                                     TString::Format("#LT n_{1} #GT (weighted);Centrality/Multiplicity (%%);#LT n_{1} #GT").Data(),
-                                     100, 0.0, 100.0);
-          fhSum1Pt_vsC[i] = new TProfile(TString::Format("sumPt_%s_vsM", tname[i]),
-                                         TString::Format("#LT #Sigma p_{t,%s} #GT (weighted);Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tname[i], tname[i]).Data(),
-                                         100, 0.0, 100.0);
-          fhN1nw_vsC[i] = new TProfile(TString::Format("n1Nw_%s_vsM", tname[i]).Data(),
-                                       TString::Format("#LT n_{1} #GT;Centrality/Multiplicity (%%);#LT n_{1} #GT").Data(),
-                                       100, 0.0, 100.0);
-          fhSum1Ptnw_vsC[i] = new TProfile(TString::Format("sumPtNw_%s_vsM", tname[i]).Data(),
-                                           TString::Format("#LT #Sigma p_{t,%s} #GT;Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tname[i], tname[i]).Data(), 100, 0.0, 100.0);
-          fOutputList->Add(fhN1_vsEtaPhi[i]);
-          fOutputList->Add(fhSum1Pt_vsEtaPhi[i]);
-          fOutputList->Add(fhN1_vsC[i]);
-          fOutputList->Add(fhSum1Pt_vsC[i]);
-          fOutputList->Add(fhN1nw_vsC[i]);
-          fOutputList->Add(fhSum1Ptnw_vsC[i]);
-        }
-
-        for (int i = 0; i < nTrackPairs; ++i) {
-          /* histograms for each track pair combination */
-          /* we don't want the Sumw2 structure being created here */
-          bool defSumw2 = TH1::GetDefaultSumw2();
-          TH1::SetDefaultSumw2(false);
-          const char* pname = trackPairsNames[i];
-          fhN2_vsDEtaDPhi[i] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
-                                        deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-          fhSum2PtPt_vsDEtaDPhi[i] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
-                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-          fhSum2DptDpt_vsDEtaDPhi[i] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
-                                                deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-          /* we return it back to previuos state */
-          TH1::SetDefaultSumw2(defSumw2);
-
-          fhN2_vsPtPt[i] = new TH2F(TString::Format("n2_12_vsPtVsPt_%s", pname), TString::Format("#LT n_{2} #GT (%s);p_{t,1} (GeV/c);p_{t,2} (GeV/c);#LT n_{2} #GT", pname),
-                                    ptbins, ptlow, ptup, ptbins, ptlow, ptup);
-
-          fhN2_vsC[i] = new TProfile(TString::Format("n2_12_vsM_%s", pname), TString::Format("#LT n_{2} #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT n_{2} #GT", pname), 100, 0.0, 100.0);
-          fhSum2PtPt_vsC[i] = new TProfile(TString::Format("sumPtPt_12_vsM_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname), 100, 0.0, 100.0);
-          fhSum2DptDpt_vsC[i] = new TProfile(TString::Format("sumDptDpt_12_vsM_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname), 100, 0.0, 100.0);
-          fhN2nw_vsC[i] = new TProfile(TString::Format("n2Nw_12_vsM_%s", pname), TString::Format("#LT n_{2} #GT (%s);Centrality/Multiplicity (%%);#LT n_{2} #GT", pname), 100, 0.0, 100.0);
-          fhSum2PtPtnw_vsC[i] = new TProfile(TString::Format("sumPtPtNw_12_vsM_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);Centrality/Multiplicity (%%);#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname), 100, 0.0, 100.0);
-          fhSum2DptDptnw_vsC[i] = new TProfile(TString::Format("sumDptDptNw_12_vsM_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);Centrality/Multiplicity (%%);#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname), 100, 0.0, 100.0);
-
-          /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
-          fhN2_vsDEtaDPhi[i]->SetBit(TH1::kIsNotW);
-          fhN2_vsDEtaDPhi[i]->Sumw2(false);
-          fhSum2PtPt_vsDEtaDPhi[i]->SetBit(TH1::kIsNotW);
-          fhSum2PtPt_vsDEtaDPhi[i]->Sumw2(false);
-          fhSum2DptDpt_vsDEtaDPhi[i]->SetBit(TH1::kIsNotW);
-          fhSum2DptDpt_vsDEtaDPhi[i]->Sumw2(false);
-
-          fOutputList->Add(fhN2_vsDEtaDPhi[i]);
-          fOutputList->Add(fhSum2PtPt_vsDEtaDPhi[i]);
-          fOutputList->Add(fhSum2DptDpt_vsDEtaDPhi[i]);
-          fOutputList->Add(fhN2_vsPtPt[i]);
-          fOutputList->Add(fhN2_vsC[i]);
-          fOutputList->Add(fhSum2PtPt_vsC[i]);
-          fOutputList->Add(fhSum2DptDpt_vsC[i]);
-          fOutputList->Add(fhN2nw_vsC[i]);
-          fOutputList->Add(fhSum2PtPtnw_vsC[i]);
-          fOutputList->Add(fhSum2DptDptnw_vsC[i]);
-        }
-      }
-      TH1::AddDirectory(oldstatus);
-    }
-  }; // DataCollectingEngine
-
-  /* the data memebers for this task */
-  /* the centrality / multiplicity limits for collecting data in this task instance */
-  int ncmranges = 0;
-  float* fCentMultMin = nullptr;
-  float* fCentMultMax = nullptr;
-
-  /* the data collecting engine instances */
-  DataCollectingEngine** dataCE;
-
-  Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
-  Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
-
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
-                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-
-  OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject};
-
-  void init(InitContext const&)
-  {
-    using namespace correlationstask;
-
-    /* update with the configurable values */
-    ptbins = cfgBinning->mPTbins;
-    ptlow = cfgBinning->mPTmin;
-    ptup = cfgBinning->mPTmax;
-    etabins = cfgBinning->mEtabins;
-    etalow = cfgBinning->mEtamin;
-    etaup = cfgBinning->mEtamax;
-    zvtxbins = cfgBinning->mZVtxbins;
-    zvtxlow = cfgBinning->mZVtxmin;
-    zvtxup = cfgBinning->mZVtxmax;
-    phibins = cfgBinning->mPhibins;
-    philow = 0.0f;
-    phiup = M_PI * 2;
-    phibinshift = cfgBinning->mPhibinshift;
-    processpairs = cfgProcessPairs.value;
-    /* update the potential binning change */
-    etabinwidth = (etaup - etalow) / float(etabins);
-    phibinwidth = (phiup - philow) / float(phibins);
-
-    /* the differential bining */
-    deltaetabins = etabins * 2 - 1;
-    deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
-    deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
-    deltaphibins = phibins;
-    deltaphibinwidth = M_PI * 2 / deltaphibins;
-    deltaphilow = 0.0 - deltaphibinwidth / 2.0;
-    deltaphiup = M_PI * 2 - deltaphibinwidth / 2.0;
-
-    /* create the output directory which will own the task output */
-    TList* fGlobalOutputList = new TList();
-    fGlobalOutputList->SetName("CorrelationsDataReco");
-    fGlobalOutputList->SetOwner(true);
-    fOutput.setObject(fGlobalOutputList);
-
-    /* incorporate configuration parameters to the output */
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsVertexZ", zvtxbins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsPt", ptbins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsEta", etabins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Int_t>("NoBinsPhi", phibins, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinVertexZ", zvtxlow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxVertexZ", zvtxup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinPt", ptlow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxPt", ptup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinEta", etalow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxEta", etaup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MinPhi", philow, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("MaxPhi", phiup, 'f'));
-    fGlobalOutputList->Add(new TParameter<Double_t>("PhiBinShift", phibinshift, 'f'));
-    fGlobalOutputList->Add(new TParameter<Bool_t>("DifferentialOutput", true, 'f'));
-
-    /* after the parameters dump the proper phi limits are set according to the phi shift */
-    phiup = phiup - phibinwidth * phibinshift;
-    philow = philow - phibinwidth * phibinshift;
-
-    /* create the data collecting engine instances according to the configured centrality/multiplicity ranges */
-    {
-      TObjArray* tokens = TString(cfgCentSpec.value.c_str()).Tokenize(",");
-      ncmranges = tokens->GetEntries();
-      fCentMultMin = new float[ncmranges];
-      fCentMultMax = new float[ncmranges];
-      dataCE = new DataCollectingEngine*[ncmranges];
-
-      for (int i = 0; i < ncmranges; ++i) {
-        float cmmin = 0.0f;
-        float cmmax = 0.0f;
-        sscanf(tokens->At(i)->GetName(), "%f-%f", &cmmin, &cmmax);
-        fCentMultMin[i] = cmmin;
-        fCentMultMax[i] = cmmax;
-        dataCE[i] = new DataCollectingEngine();
-
-        /* crete the output list for the current centrality range */
-        TList* fOutputList = new TList();
-        fOutputList->SetName(TString::Format("DptDptCorrelationsData-%s", tokens->At(i)->GetName()));
-        fOutputList->SetOwner(true);
-        /* init the data collection instance */
-        dataCE[i]->init(fOutputList);
-        fGlobalOutputList->Add(fOutputList);
-      }
-      delete tokens;
-      for (int i = 0; i < ncmranges; ++i) {
-        LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
-      }
-    }
-  }
-
-  /// \brief Get the data collecting engine index corresponding to the passed collision
-  template <typename FilteredCollision>
-  int getDCEindex(FilteredCollision collision)
-  {
-    int ixDCE = -1;
-    float cm = collision.centmult();
-    for (int i = 0; i < ncmranges; ++i) {
-      if (cm < fCentMultMax[i]) {
-        ixDCE = i;
-        break;
-      }
-    }
-    return ixDCE;
-  }
-
-  Filter onlyacceptedevents = (aod::dptdptcorrelations::eventaccepted == (uint8_t) true);
-  Filter onlyacceptedtracks = ((aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true) or (aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true));
-
-  void processRecLevel(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
-  {
-    using namespace correlationstask;
-
-    /* locate the data collecting engine for the collision centrality/multiplicity */
-    int ixDCE = getDCEindex(collision);
-    if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true;
-      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true;
-      TracksOne.bindTable(tracks);
-      TracksTwo.bindTable(tracks);
-
-      LOGF(DPTDPTLOGCOLLISIONS, "Accepted BC id %d collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
-      LOGF(DPTDPTLOGCOLLISIONS, "Accepted new collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
-      dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult());
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
-
-  void processGenLevel(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks>& tracks)
-  {
-    using namespace correlationstask;
-
-    /* locate the data collecting engine for the collision centrality/multiplicity */
-    int ixDCE = getDCEindex(collision);
-    if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true;
-      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true;
-      TracksOne.bindTable(tracks);
-      TracksTwo.bindTable(tracks);
-
-      LOGF(DPTDPTLOGCOLLISIONS, "Accepted BC id %d generated collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
-      LOGF(DPTDPTLOGCOLLISIONS, "Accepted new generated collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
-      dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult());
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevel, "Process generator level correlations", false);
-
-  /// cleans the output object when the task is not used
-  void processCleaner(aod::Collisions const& colls)
-  {
-    LOGF(DPTDPTLOGCOLLISIONS, "Got %d new collisions", colls.size());
-    fOutput->Clear();
-  }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processCleaner, "Cleaner process for not used output", false);
 };
 
 // Checking the filtered tables
@@ -1622,7 +1131,7 @@ struct TracksAndEventClassificationQARec {
 };
 
 /* it seems we cannot use a base class task */
-//struct TracksAndEventClassificationQAGen : TracksAndEventClassificationQABase {
+// struct TracksAndEventClassificationQAGen : TracksAndEventClassificationQABase {
 struct TracksAndEventClassificationQAGen {
   OutputObj<TList> fOutput{"FliterTaskGenQA", OutputObjHandlingPolicy::AnalysisObject};
 
@@ -1662,11 +1171,13 @@ struct CheckGeneratorLevelVsDetectorLevel {
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
 
   HistogramRegistry histos{"RecoGenHistograms", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  TDatabasePDG* fPDG;
+  TDatabasePDG* fPDG = nullptr;
   typedef enum { kBEFORE = 0,
                  kAFTER } beforeafterselection;
   typedef enum { kPOSITIVE = 0,
                  kNEGATIVE } colllabelsign;
+  enum { kMATCH = 0,
+         kDONTMATCH };
 
   void init(InitContext const& context)
   {
@@ -1696,7 +1207,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
     fDataType = getGenType(cfgDataType);
 
-    constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
+    constexpr float TWOPI = 2.0f * static_cast<float>(M_PI);
     fPDG = TDatabasePDG::Instance();
 
     AxisSpec deltaEta = {100, -2, 2, "#Delta#eta"};
@@ -1708,6 +1219,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
                                              "TOF", "ITS+TOF", "TPC+TOF", "ITS+TPC+TOF", "TRD+TOF", "ITS+TRD+TOF", "TPC+TRD+TOF", "ITS+TPC+TRD+TOF",
                                              "UNKN", "ITS+UNKN", "TPC+UNKN", "ITS+TPC+UNKN", "TRD+UNKN", "ITS+TRD+UNKN", "TPC+TRD+UNKN", "ITS+TPC+TRD+UNKN",
                                              "TOF+UNKN", "ITS+TOF+UNKN", "TPC+TOF+UNKN", "ITS+TPC+TOF+UNKN", "TRD+TOF+UNKN", "ITS+TRD+TOF+UNKN", "TPC+TRD+TOF+UNKN", "ITS+TPC+TRD+TOF+UNKN"};
+    std::vector<std::string> matchlbs = {"match", "don't match"};
 
     histos.add("before/positivecolid/mrDeltaEta", "#Delta#eta multirec tracks", kTH1F, {deltaEta});
     histos.add("before/positivecolid/mrDeltaPhi", "#Delta#varphi multirec tracks", kTH1F, {deltaPhi});
@@ -1717,6 +1229,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     histos.add("before/positivecolid/genrecophi", "#varphi Generated vs reconstructed", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
     histos.add("before/positivecolid/genrecopt", "#it{p}_{T} Generated vs reconstructed", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
     histos.add("before/positivecolid/detectormap", "Active detectors", kTH1F, {detectors});
+    histos.add("before/positivecolid/matchcollid", "particle MC coll Id <=> track coll MC coll Id", kTH1F, {{2, 0.0, 2.0}});
     histos.add("before/positivecolid/genrecomreta", "#eta Generated vs reconstructed (mr)", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
     histos.add("before/positivecolid/genrecomrphi", "#varphi Generated vs reconstructed (mr)", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
     histos.add("before/positivecolid/genrecomrpt", "#it{p}_{T} Generated vs reconstructed (mr)", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
@@ -1724,6 +1237,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     histos.add("before/positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, TWOPI, "#varphi (rad)"}});
     histos.add("before/positivecolid/recomrpt", "#it{p}_{T} Reconstructed (mr)", kTH1F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     histos.add("before/positivecolid/detectormapmr", "Active detectors (mr)", kTH1F, {detectors});
+    histos.add("before/positivecolid/matchcollidmr", "particle MC coll Id <=> track coll MC coll Id (mr)", kTH1F, {{2, 0.0, 2.0}});
     histos.add("before/positivecolid/dcaxy", "DCA_{xy} Reconstructed", kTH1F, {{1000, -4.0, 4.0, "DCA_{xy} (cm)"}});
     histos.add("before/positivecolid/dcaz", "DCA_{z} Reconstructed", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
     histos.add("before/positivecolid/finedcaxy", "DCA_{xy} Reconstructed", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
@@ -1736,14 +1250,20 @@ struct CheckGeneratorLevelVsDetectorLevel {
       histos.get<TH1>(HIST("before/positivecolid/detectormap"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
       histos.get<TH1>(HIST("before/positivecolid/detectormapmr"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
     }
+    for (int i = 0; i < matchlbs.size(); ++i) {
+      histos.get<TH1>(HIST("before/positivecolid/matchcollid"))->GetXaxis()->SetBinLabel(i + 1, matchlbs[i].c_str());
+      histos.get<TH1>(HIST("before/positivecolid/matchcollidmr"))->GetXaxis()->SetBinLabel(i + 1, matchlbs[i].c_str());
+    }
+
     /* clone the set for the other cases */
     histos.addClone("before/positivecolid/", "after/positivecolid/");
     histos.addClone("before/positivecolid/", "before/negativecolid/");
     histos.addClone("before/positivecolid/", "after/negativecolid/");
+    histos.add("after/positivecolid/pdgcodemr", "PDG code x-collision multi-reconstructed", kTH1F, {{100, 0.5, 100.5, "PDG code"}});
   }
 
-  template <beforeafterselection ba, colllabelsign collsign, typename TracskListObject, typename ParticlesListObject>
-  void collectData(TracskListObject const& tracks, ParticlesListObject const& mcParticles)
+  template <beforeafterselection ba, colllabelsign collsign, typename TracskListObject, typename ParticlesListObject, typename CollisionsListObject>
+  void collectData(TracskListObject const& tracks, ParticlesListObject const& mcParticles, CollisionsListObject const& colls)
   {
     using namespace recogenmap;
 
@@ -1779,6 +1299,20 @@ struct CheckGeneratorLevelVsDetectorLevel {
                 crosscollfound = true;
               }
             }
+          }
+          if (crosscollfound and (ba == kAFTER)) {
+            LOGF(info, "BEGIN multi-reconstructed: ==================================================================");
+            LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+                 particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+            LOGF(info, "With status %d and flags %0X and multi-reconstructed as: ==================================", particle.statusCode(), particle.flags());
+            for (int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
+              auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
+              auto coll = colls.iteratorAt(track.collisionId());
+              LOGF(info, "Track with index %d and label %d assigned to collision %d, with associated MC collision %d",
+                   track.globalIndex(), ixpart, track.collisionId(), coll.mcCollisionId());
+            }
+            LOGF(info, "END multi-reconstructed:   ==================================================================");
+            histos.get<TH1>(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("pdgcodemr"))->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
           }
         }
 
@@ -1816,6 +1350,11 @@ struct CheckGeneratorLevelVsDetectorLevel {
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomreta"), track1.eta(), particle.eta());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrphi"), track1.phi(), particle.phi());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrpt"), track1.pt(), particle.pt());
+          if (particle.mcCollisionId() != colls.iteratorAt(track1.collisionId()).mcCollisionId()) {
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), kDONTMATCH + 0.5f);
+          } else {
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), kMATCH + 0.5f);
+          }
         }
       } else if (nrec > 0) {
         auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][0]);
@@ -1831,6 +1370,18 @@ struct CheckGeneratorLevelVsDetectorLevel {
         if (track.dcaZ() < 1.0) {
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
         }
+        if (particle.mcCollisionId() != colls.iteratorAt(track.collisionId()).mcCollisionId()) {
+          if ((ba == kAFTER) and (collsign == kPOSITIVE)) {
+            LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+                 particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+            LOGF(info, "        with status %d and flags %0X and", particle.statusCode(), particle.flags());
+            LOGF(info, "        associated to track with index %d and label %d assigned to collision %d, with associated MC collision %d",
+                 track.globalIndex(), ixpart, track.collisionId(), colls.iteratorAt(track.collisionId()).mcCollisionId());
+          }
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), kDONTMATCH + 0.5f);
+        } else {
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), kMATCH + 0.5f);
+        }
       }
     }
 
@@ -1843,7 +1394,9 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
   }
 
-  void processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels> const& tracks,
+                                  soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                                  aod::McParticles const& mcParticles)
   {
     using namespace recogenmap;
 
@@ -1891,13 +1444,13 @@ struct CheckGeneratorLevelVsDetectorLevel {
       }
     }
 
-    collectData<kBEFORE, kPOSITIVE>(tracks, mcParticles);
-    collectData<kBEFORE, kNEGATIVE>(tracks, mcParticles);
+    collectData<kBEFORE, kPOSITIVE>(tracks, mcParticles, collisions);
+    collectData<kBEFORE, kNEGATIVE>(tracks, mcParticles, collisions);
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksBeforeCuts, "Process detector <=> generator levels mapping checks before selection cuts", false);
 
   void processMapChecksCutsWithCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
-                                    aod::CollisionsEvSelCent const& collisions,
+                                    soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels> const& collisions,
                                     aod::McParticles const& mcParticles)
   {
     using namespace recogenmap;
@@ -1947,12 +1500,12 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
     LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed accepted tracks", ngen, nreco);
 
-    collectData<kAFTER, kPOSITIVE>(tracks, mcParticles);
+    collectData<kAFTER, kPOSITIVE>(tracks, mcParticles, collisions);
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksCutsWithCent, "Process detector <=> generator levels mapping checks after selection cuts", false);
 
   void processMapChecksCutsWithoutCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
-                                       aod::CollisionsEvSel const& collisions,
+                                       soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels> const& collisions,
                                        aod::McParticles const& mcParticles)
   {
     using namespace recogenmap;
@@ -2002,7 +1555,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
     LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed accepted tracks", ngen, nreco);
 
-    collectData<kAFTER, kPOSITIVE>(tracks, mcParticles);
+    collectData<kAFTER, kPOSITIVE>(tracks, mcParticles, collisions);
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksCutsWithoutCent, "Process detector <=> generator levels mapping checks after selection cuts", false);
 
@@ -2019,9 +1572,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}, {"processWithoutCentMC", true}}}),
     adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
     adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processCleaner", false}}}),
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processCleaner", false}}}),
     adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc, SetDefaultProcesses{{{"processMapChecksCutsWithCent", false}}})};
-  //  adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc, SetDefaultProcesses{{{"processMapChecksBeforeCuts", false}, {"processMapChecksCutsWithCent", false}, {"processMapChecksCutsWithoutCent", false}, {"processDummy", true}}})};
   return workflow;
 }
