@@ -33,22 +33,20 @@ struct FT0CorrectedTable {
       int64_t foundFT0 = collision.foundFT0();
       float vertexPV = collision.posZ();
       float vertex_corr = vertexPV / o2::constants::physics::LightSpeedCm2NS;
-      float t0A, t0C;
-      t0A = t0C = 32000;
+      float t0A = 1e10;
+      float t0C = 1e10;
       if (foundFT0 != -1) {
         auto ft0 = ft0s.iteratorAt(foundFT0);
-        t0A = ft0.timeA();
-        t0C = ft0.timeC();
         int triggersignals = ft0.triggerMask();
         bool ora = (triggersignals & (1 << 0)) != 0;
         bool orc = (triggersignals & (1 << 1)) != 0;
         LOGF(debug, "triggers OrA %i OrC %i ", ora, orc);
-        LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f, triggersignals %i", t0A, t0C, vertex_corr, triggersignals);
+        LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f, triggersignals %i", ft0.timeA(), ft0.timeC(), vertex_corr, triggersignals);
         if (ora) {
-          t0A += vertex_corr;
+          t0A = ft0.timeA() + vertex_corr;
         }
         if (orc) {
-          t0C -= vertex_corr;
+          t0C = ft0.timeC() - vertex_corr;
         }
       }
       LOGF(debug, " T0 collision time T0A = %f, T0C = %f", t0A, t0C);
