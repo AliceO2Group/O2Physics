@@ -28,6 +28,7 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
 using namespace o2::framework;
+using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_chicPCM;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand_prong2;
@@ -50,7 +51,7 @@ struct TaskChicPCM {
 
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
   Configurable<double> cutYCandMax{"cutYCandMax", 1., "max. cand. rapidity"};
-  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", false, "Perform Jpsi to ee (if 0) or to mu+mu-(if 1) analysis"};
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -73,7 +74,7 @@ struct TaskChicPCM {
 
   void process(soa::Filtered<soa::Join<aod::HfCandChicPCM, aod::HFSelChicToJpsiGammaPCMCandidate>> const& candidates)
   {
-    int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
+    int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chicPCM::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chicPCM::DecayType::ChicToJpsiToEEGamma;
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
@@ -83,7 +84,10 @@ struct TaskChicPCM {
       }
 
       registry.fill(HIST("hMass"), InvMassChicToJpsiGamma(candidate), candidate.pt());
-      registry.fill(HIST("hDeltaMass"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
+
+      registry.fill(HIST("hDeltaMass"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());	    
+
+
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -112,7 +116,7 @@ struct TaskChicPCMMC {
 
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
   Configurable<double> cutYCandMax{"cutYCandMax", 1., "max. cand. rapidity"};
-  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", true, "Perform Jpsi to mu+mu- analysis"};
+  Configurable<bool> modeChicToJpsiToMuMuGamma{"modeChicToJpsiToMuMuGamma", false, "Perform Jpsi to ee(if 0 ) or mu+mu-(if 1) analysis"};
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_chic_tojpsigamma::pTBins_v}, "pT bin limits"};
 
   void init(o2::framework::InitContext&)
@@ -156,7 +160,7 @@ struct TaskChicPCMMC {
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
-    int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
+    int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chicPCM::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chicPCM::DecayType::ChicToJpsiToEEGamma;
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
@@ -173,7 +177,12 @@ struct TaskChicPCMMC {
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
+
+
+	registry.fill(HIST("hDeltaMassRecSig"), InvMassChicToJpsiGamma(candidate) - candidate.jpsiToMuMuMass() + RecoDecay::getMassPDG(pdg::Code::kJpsi), candidate.pt());
+	    
+	
+
         registry.fill(HIST("hMassRecSig"), InvMassChicToJpsiGamma(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());

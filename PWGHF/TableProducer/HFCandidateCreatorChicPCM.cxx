@@ -23,16 +23,13 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-//#include "ALICE3/DataModel/ECAL.h"
 #include "ALICE3/DataModel/PHOTON.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
-//using namespace o2::aod::alice3ecal;
 using namespace o2::aod::hf_cand_prong2;
-//using namespace o2::aod::hf_cand_chic;
 using namespace o2::aod::hf_cand_chicPCM;
 using namespace o2::framework::expressions;
 
@@ -64,6 +61,7 @@ struct HFCandidateCreatorChicPCM {
   OutputObj<TH1F> hCPAJpsi{TH1F("hCPAJpsi", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassChicToJpsiToEEGamma{TH1F("hMassChicToJpsiToEEGamma", "2-prong candidates;inv. mass (J/#psi (#rightarrow e+ e-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGamma{TH1F("hMassChicToJpsiToMuMuGamma", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+
 
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
@@ -164,8 +162,24 @@ struct HFCandidateCreatorChicPCM {
           SETBIT(hfFlag, hf_cand_chicPCM::DecayType::ChicToJpsiToEEGamma); // dielectron channel
         }
 
+
         // fill the candidate table for the chi_c here:
-        rowCandidateBase(collision.globalIndex(),
+	if (jpsiCand.isSelJpsiToEE() > 0) {
+          rowCandidateBase(collision.globalIndex(),
+                         collision.posX(), collision.posY(), collision.posZ(),
+                         0.f, 0.f, 0.f,               //    ChicsecondaryVertex[0], ChicsecondaryVertex[1], ChicsecondaryVertex[2],
+                         0.f, 0.f,                    // errorDecayLength, errorDecayLengthXY,
+                         df2.getChi2AtPCACandidate(), //chi2PCA of Jpsi
+                         pvecJpsi[0], pvecJpsi[1], pvecJpsi[2],
+                         pvecGamma[0], pvecGamma[1], pvecGamma[2],
+                         impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
+                         std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
+                         jpsiCand.globalIndex(), photon.globalIndex(),
+                         hfFlag, InvMassJpsiToEE(jpsiCand));
+	}
+
+	if (jpsiCand.isSelJpsiToMuMu() > 0) {
+          rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
                          0.f, 0.f, 0.f,               //    ChicsecondaryVertex[0], ChicsecondaryVertex[1], ChicsecondaryVertex[2],
                          0.f, 0.f,                    // errorDecayLength, errorDecayLengthXY,
@@ -176,15 +190,17 @@ struct HFCandidateCreatorChicPCM {
                          std::sqrt(impactParameter0.getSigmaY2()), 0.f, // std::sqrt(impactParameter1.getSigmaY2()),
                          jpsiCand.globalIndex(), photon.globalIndex(),
                          hfFlag, InvMassJpsiToMuMu(jpsiCand));
+	}
 
         // calculate invariant mass
         auto arrayMomenta = array{pvecJpsi, pvecGamma};
-        massJpsiGamma = RecoDecay::M(std::move(arrayMomenta), array{massJpsi, 0.});
+	massJpsiGamma = RecoDecay::M(std::move(arrayMomenta), array{massJpsi, 0.});
+
         if (jpsiCand.isSelJpsiToEE() > 0) {
           hMassChicToJpsiToEEGamma->Fill(massJpsiGamma);
         }
         if (jpsiCand.isSelJpsiToMuMu() > 0) {
-          hMassChicToJpsiToMuMuGamma->Fill(massJpsiGamma);
+	  hMassChicToJpsiToMuMuGamma->Fill(massJpsiGamma);
         }
       } // photon loop
     }   // Jpsi loop

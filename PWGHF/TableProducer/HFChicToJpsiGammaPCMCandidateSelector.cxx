@@ -191,11 +191,11 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
       int selJpsiToMuMu = 1;
 
       // check if flagged as chic --> Jpsi gamma
-      if (!(hfCandChicPCM.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma)) {
+      if (!(hfCandChicPCM.hfflag() & 1 << hf_cand_chicPCM::DecayType::ChicToJpsiToEEGamma)) {
         selJpsiToEE = 0;
       }
 
-      if (!(hfCandChicPCM.hfflag() & 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma)) {
+      if (!(hfCandChicPCM.hfflag() & 1 << hf_cand_chicPCM::DecayType::ChicToJpsiToMuMuGamma)) {
         selJpsiToMuMu = 0;
       }
 
