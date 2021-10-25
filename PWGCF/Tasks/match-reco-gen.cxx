@@ -16,6 +16,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/MC.h"
+#include "Common/Core/PID/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include <TROOT.h>
@@ -36,8 +37,8 @@ using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
 
-#define DPTDPTLOGCOLLISIONS debug
-#define DPTDPTLOGTRACKS debug
+#define MATCHRECGENLOGCOLLISIONS debug
+#define MATCHRECGENLOGTRACKS debug
 
 #include "Framework/runDataProcessing.h"
 
@@ -163,6 +164,23 @@ enum CentMultEstimatorType {
   knCentMultEstimators ///< number of centrality/mutiplicity estimator
 };
 
+/// \enum MatchRecoGenSpecies
+/// \brief The species considered by the matching tast
+enum MatchRecoGenSpecies {
+  kCharged = 0, ///< charged particle/track
+  kElectron,    ///< electron
+  kMuon,        ///< muon
+  kPion,        ///< pion
+  kKaon,        ///< kaon
+  kProton,      ///< proton
+  kNoOfSpecies, ///< the number of considered species
+  kWrongSpecies = -1
+};
+
+const char* speciesName[kNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
+
+const char* speciesTitle[kNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
+
 namespace filteranalysistask
 {
 //============================================================================================
@@ -171,29 +189,26 @@ namespace filteranalysistask
 SystemType fSystem = kNoSystem;
 GenType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
+analysis::CheckRangeCfg trackDCAOutliers;
 TDatabasePDG* fPDG = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
 TH1F* fhVertexZA = nullptr;
+TH1F* fhPB = nullptr;
+TH1F* fhPA[kNoOfSpecies] = {nullptr};
 TH1F* fhPtB = nullptr;
-TH1F* fhPtA = nullptr;
+TH1F* fhPtA[kNoOfSpecies] = {nullptr};
 TH1F* fhPtPosB = nullptr;
-TH1F* fhPtPosA = nullptr;
+TH1F* fhPtPosA[kNoOfSpecies] = {nullptr};
 TH1F* fhPtNegB = nullptr;
-TH1F* fhPtNegA = nullptr;
+TH1F* fhPtNegA[kNoOfSpecies] = {nullptr};
 
 TH1F* fhEtaB = nullptr;
 TH1F* fhEtaA = nullptr;
 
 TH1F* fhPhiB = nullptr;
 TH1F* fhPhiA = nullptr;
-
-TH2F* fhEtaVsPhiB = nullptr;
-TH2F* fhEtaVsPhiA = nullptr;
-
-TH2F* fhPtVsEtaB = nullptr;
-TH2F* fhPtVsEtaA = nullptr;
 
 TH1F* fhDCAxyB = nullptr;
 TH1F* fhDCAxyA = nullptr;
@@ -206,24 +221,20 @@ TH1F* fhTrueCentMultB = nullptr;
 TH1F* fhTrueCentMultA = nullptr;
 TH1F* fhTrueVertexZB = nullptr;
 TH1F* fhTrueVertexZA = nullptr;
+TH1F* fhTruePB = nullptr;
+TH1F* fhTruePA[kNoOfSpecies] = {nullptr};
 TH1F* fhTruePtB = nullptr;
-TH1F* fhTruePtA = nullptr;
+TH1F* fhTruePtA[kNoOfSpecies] = {nullptr};
 TH1F* fhTruePtPosB = nullptr;
-TH1F* fhTruePtPosA = nullptr;
+TH1F* fhTruePtPosA[kNoOfSpecies] = {nullptr};
 TH1F* fhTruePtNegB = nullptr;
-TH1F* fhTruePtNegA = nullptr;
+TH1F* fhTruePtNegA[kNoOfSpecies] = {nullptr};
 
 TH1F* fhTrueEtaB = nullptr;
 TH1F* fhTrueEtaA = nullptr;
 
 TH1F* fhTruePhiB = nullptr;
 TH1F* fhTruePhiA = nullptr;
-
-TH2F* fhTrueEtaVsPhiB = nullptr;
-TH2F* fhTrueEtaVsPhiA = nullptr;
-
-TH2F* fhTruePtVsEtaB = nullptr;
-TH2F* fhTruePtVsEtaA = nullptr;
 
 TH1F* fhTrueDCAxyB = nullptr;
 TH1F* fhTrueDCAxyA = nullptr;
@@ -465,11 +476,10 @@ void fillTrackHistosBeforeSelection(TrackObject const& track)
 {
   using namespace filteranalysistask;
 
+  fhPB->Fill(track.p());
   fhPtB->Fill(track.pt());
   fhEtaB->Fill(track.eta());
   fhPhiB->Fill(track.phi());
-  fhEtaVsPhiB->Fill(track.phi(), track.eta());
-  fhPtVsEtaB->Fill(track.eta(), track.pt());
   if (track.sign() > 0) {
     fhPtPosB->Fill(track.pt());
   } else {
@@ -480,19 +490,17 @@ void fillTrackHistosBeforeSelection(TrackObject const& track)
 }
 
 template <typename TrackObject>
-void fillTrackHistosAfterSelection(TrackObject const& track)
+void fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp)
 {
   using namespace filteranalysistask;
-
-  fhPtA->Fill(track.pt());
+  fhPA[sp]->Fill(track.p());
+  fhPtA[sp]->Fill(track.pt());
   fhEtaA->Fill(track.eta());
   fhPhiA->Fill(track.phi());
-  fhEtaVsPhiA->Fill(track.phi(), track.eta());
-  fhPtVsEtaA->Fill(track.eta(), track.pt());
   if (track.sign() > 0) {
-    fhPtPosA->Fill(track.pt());
+    fhPtPosA[sp]->Fill(track.pt());
   } else {
-    fhPtNegA->Fill(track.pt());
+    fhPtNegA[sp]->Fill(track.pt());
   }
   fhDCAxyA->Fill(track.dcaXY());
   fhDCAzA->Fill(track.dcaZ());
@@ -509,11 +517,10 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisi
 {
   using namespace filteranalysistask;
 
+  fhTruePB->Fill(particle.p());
   fhTruePtB->Fill(particle.pt());
   fhTrueEtaB->Fill(particle.eta());
   fhTruePhiB->Fill(particle.phi());
-  fhTrueEtaVsPhiB->Fill(particle.phi(), particle.eta());
-  fhTruePtVsEtaB->Fill(particle.eta(), particle.pt());
   if (charge > 0) {
     fhTruePtPosB->Fill(particle.pt());
   } else if (charge < 0) {
@@ -522,7 +529,7 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisi
 
   float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                             (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-  if ((1.8 < dcaxy) and (dcaxy < 2.0)) {
+  if (trackDCAOutliers.mDoIt and (trackDCAOutliers.mLowValue < dcaxy) and (dcaxy < trackDCAOutliers.mUpValue)) {
     fhTrueDCAxyBid->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
   }
 
@@ -532,24 +539,23 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisi
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
-void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
+void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge, MatchRecoGenSpecies sp)
 {
   using namespace filteranalysistask;
 
-  fhTruePtA->Fill(particle.pt());
+  fhTruePA[sp]->Fill(particle.p());
+  fhTruePtA[sp]->Fill(particle.pt());
   fhTrueEtaA->Fill(particle.eta());
   fhTruePhiA->Fill(particle.phi());
-  fhTrueEtaVsPhiA->Fill(particle.phi(), particle.eta());
-  fhTruePtVsEtaA->Fill(particle.eta(), particle.pt());
   if (charge > 0) {
-    fhTruePtPosA->Fill(particle.pt());
+    fhTruePtPosA[sp]->Fill(particle.pt());
   } else {
-    fhTruePtNegA->Fill(particle.pt());
+    fhTruePtNegA[sp]->Fill(particle.pt());
   }
 
   float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                             (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-  if ((1.0 < dcaxy) and (dcaxy < 3.0)) {
+  if (trackDCAOutliers.mDoIt and (trackDCAOutliers.mLowValue < dcaxy) and (dcaxy < trackDCAOutliers.mUpValue)) {
     LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
          particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
     LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
@@ -558,6 +564,97 @@ void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisio
   fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
+}
+
+template <typename TrackObject>
+inline MatchRecoGenSpecies IdentifyTrack(TrackObject const& track)
+{
+  float nsigmas[kNoOfSpecies];
+  if (track.p() < 0.8) {
+    nsigmas[kCharged] = 999.0f;
+    nsigmas[kElectron] = track.tpcNSigmaEl();
+    nsigmas[kMuon] = track.tpcNSigmaMu();
+    nsigmas[kPion] = track.tpcNSigmaPi();
+    nsigmas[kKaon] = track.tpcNSigmaKa();
+    nsigmas[kProton] = track.tpcNSigmaPr();
+  } else {
+    /* introduce require TOF flag */
+    if (track.hasTOF()) {
+      nsigmas[kCharged] = 999.0f;
+      nsigmas[kElectron] = sqrtf(track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl());
+      nsigmas[kMuon] = sqrtf(track.tpcNSigmaMu() * track.tpcNSigmaMu() + track.tofNSigmaMu() * track.tofNSigmaMu());
+      nsigmas[kPion] = sqrtf(track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi());
+      nsigmas[kKaon] = sqrtf(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa());
+      nsigmas[kProton] = sqrtf(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr());
+    } else {
+      nsigmas[kCharged] = 999.0f;
+      nsigmas[kElectron] = track.tpcNSigmaEl();
+      nsigmas[kMuon] = track.tpcNSigmaMu();
+      nsigmas[kPion] = track.tpcNSigmaPi();
+      nsigmas[kKaon] = track.tpcNSigmaKa();
+      nsigmas[kProton] = track.tpcNSigmaPr();
+    }
+  }
+  float min_nsigma = 999.0f;
+  MatchRecoGenSpecies sp_min_nsigma;
+  for (int sp = 0; sp < kNoOfSpecies; ++sp) {
+    if (nsigmas[sp] < min_nsigma) {
+      min_nsigma = nsigmas[sp];
+      sp_min_nsigma = MatchRecoGenSpecies(sp);
+    }
+  }
+  bool doublematch = false;
+  if (min_nsigma < 3.0) {
+    for (int sp = 0; (sp < kNoOfSpecies) and not doublematch; ++sp) {
+      if (sp != sp_min_nsigma) {
+        if (nsigmas[sp] < 3.0) {
+          doublematch = true;
+        }
+      }
+    }
+    if (doublematch) {
+      return kWrongSpecies;
+    } else {
+      return sp_min_nsigma;
+    }
+  } else {
+    return kWrongSpecies;
+  }
+}
+
+template <typename ParticleObject>
+inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle)
+{
+  using namespace filteranalysistask;
+  constexpr int pdgcodeEl = 11L;
+  constexpr int pdgcodeMu = 13L;
+  constexpr int pdgcodePi = 211L;
+  constexpr int pdgcodeKa = 321L;
+  constexpr int pdgcodePr = 2212L;
+
+  int pdgcode = abs(particle.pdgCode());
+
+  switch (pdgcode) {
+    case pdgcodeEl:
+      return kElectron;
+      break;
+    case pdgcodeMu:
+      return kMuon;
+      break;
+    case pdgcodePi:
+      return kPion;
+      break;
+    case pdgcodeKa:
+      return kKaon;
+      break;
+    case pdgcodePr:
+      return kProton;
+      break;
+
+    default:
+      return kWrongSpecies;
+      break;
+  }
 }
 
 } /* end namespace dptdptcorrelations */
@@ -570,46 +667,19 @@ using namespace dptdptcorrelations;
 
 struct DptDptCorrelationsFilterAnalysisTask {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
-  Configurable<bool> cfgProcessPairs{"processpairs", true, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe. Default PbPb"};
-
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
+  Configurable<o2::analysis::CheckRangeCfg> cfgTrackDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
 
-  OutputObj<TList> fOutput{"DptDptCorrelationsGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
 
   Produces<aod::AcceptedEvents> acceptedevents;
   Produces<aod::ScannedTracks> scannedtracks;
   Produces<aod::AcceptedTrueEvents> acceptedtrueevents;
   Produces<aod::ScannedTrueTracks> scannedtruetracks;
-
-  template <typename TrackListObject, typename CollisionIndex>
-  void filterTracks(TrackListObject const& ftracks, CollisionIndex colix)
-  {
-    using namespace filteranalysistask;
-
-    int acceptedtracks = 0;
-
-    for (auto& track : ftracks) {
-      /* before track selection */
-      fillTrackHistosBeforeSelection(track);
-
-      /* track selection */
-      /* tricky because the boolean columns issue */
-      bool asone, astwo;
-      AcceptTrack(track, asone, astwo);
-      if (asone or astwo) {
-        /* the track has been accepted */
-        fillTrackHistosAfterSelection(track);
-        acceptedtracks++;
-        scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
-      }
-    }
-    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
-  }
 
   template <typename TrackListObject, typename CollisionIndex>
   void filterDetectorLevelTracks(TrackListObject const& ftracks, CollisionIndex colix)
@@ -631,14 +701,21 @@ struct DptDptCorrelationsFilterAnalysisTask {
         AcceptTrack(track, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
-          fillTrackHistosAfterSelection(track);
+          /* fill the charged tracks histograms */
+          fillTrackHistosAfterSelection(track, kCharged);
+          /* let's identify it */
+          MatchRecoGenSpecies sp = IdentifyTrack(track);
+          if (sp != kWrongSpecies) {
+            /* fill the species histograms */
+            fillTrackHistosAfterSelection(track, sp);
+          }
           acceptedtracks++;
           scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
-          LOGF(DPTDPTLOGTRACKS, "Accepted track with global Id %d and with assigned collision Id %d", track.globalIndex(), track.collisionId());
+          LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and with assigned collision Id %d", track.globalIndex(), track.collisionId());
         }
       }
     }
-    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
+    LOGF(MATCHRECGENLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
   }
 
   template <typename ParticleListObject, typename MCCollisionObject, typename CollisionIndex>
@@ -666,13 +743,19 @@ struct DptDptCorrelationsFilterAnalysisTask {
         AcceptParticle(particle, particles, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
-          fillParticleHistosAfterSelection(particle, mccollision, charge);
+          /* fill the charged particle histograms */
+          fillParticleHistosAfterSelection(particle, mccollision, charge, kCharged);
+          /* let's identify the particle */
+          MatchRecoGenSpecies sp = IdentifyParticle(particle);
+          if (sp != kWrongSpecies) {
+            fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
+          }
           acceptedparticles++;
           scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
         }
       }
     }
-    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
+    LOGF(MATCHRECGENLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
   }
 
   void init(InitContext const&)
@@ -702,10 +785,11 @@ struct DptDptCorrelationsFilterAnalysisTask {
     } else {
       LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
     }
+    trackDCAOutliers = cfgTrackDCAOutliers;
 
     /* if the system type is not known at this time, we have to put the initalization somewhere else */
     fSystem = getSystemType(cfgSystem);
-    fDataType = getGenType(cfgDataType);
+    fDataType = kMC;
     fPDG = TDatabasePDG::Instance();
 
     /* create the output list which will own the task histograms */
@@ -732,20 +816,14 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhVertexZB = new TH1F("VertexZB", "Vertex Z; z_{vtx}", 60, -15, 15);
       fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
+      fhPB = new TH1F("fHistPB", "p distribution for reconstructed before;p (GeV/c);dN/dp (c/GeV)", 100, 0.0, 15.0);
       fhPtB = new TH1F("fHistPtB", "p_{T} distribution for reconstructed before;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhPtA = new TH1F("fHistPtA", "p_{T} distribution for reconstructed;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
       fhPtPosB = new TH1F("fHistPtPosB", "P_{T} distribution for reconstructed (#plus) before;P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhPtPosA = new TH1F("fHistPtPosA", "P_{T} distribution for reconstructed (#plus);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
       fhPtNegB = new TH1F("fHistPtNegB", "P_{T} distribution for reconstructed (#minus) before;P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhPtNegA = new TH1F("fHistPtNegA", "P_{T} distribution for reconstructed (#minus);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
       fhEtaB = new TH1F("fHistEtaB", "#eta distribution for reconstructed before;#eta;counts", 40, -2.0, 2.0);
       fhEtaA = new TH1F("fHistEtaA", "#eta distribution for reconstructed;#eta;counts", etabins, etalow, etaup);
       fhPhiB = new TH1F("fHistPhiB", "#phi distribution for reconstructed before;#phi;counts", 360, 0.0, 2 * M_PI);
       fhPhiA = new TH1F("fHistPhiA", "#phi distribution for reconstructed;#phi;counts", 360, 0.0, 2 * M_PI);
-      fhEtaVsPhiB = new TH2F(TString::Format("CSTaskEtaVsPhiB_%s", fTaskConfigurationString.c_str()), "#eta vs #phi before;#phi;#eta", 360, 0.0, 2 * M_PI, 100, -2.0, 2.0);
-      fhEtaVsPhiA = new TH2F(TString::Format("CSTaskEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi;#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
-      fhPtVsEtaB = new TH2F(TString::Format("fhPtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
-      fhPtVsEtaA = new TH2F(TString::Format("fhPtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
       fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
       fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
       fhFineDCAxyA = new TH1F("FineDCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 4000, -1.0, 1.0);
@@ -753,31 +831,47 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
 
+      for (int sp = 0; sp < kNoOfSpecies; ++sp) {
+        fhPA[sp] = new TH1F(TString::Format("fHistPA_%s", speciesName[sp]).Data(),
+                            TString::Format("p distribution for reconstructed %s;p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
+                            ptbins, ptlow, ptup);
+        fhPtA[sp] = new TH1F(TString::Format("fHistPtA_%s", speciesName[sp]),
+                             TString::Format("p_{T} distribution for reconstructed %s;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                             ptbins, ptlow, ptup);
+        fhPtPosA[sp] = new TH1F(TString::Format("fHistPtPosA_%s", speciesName[sp]),
+                                TString::Format("P_{T} distribution for reconstructed  %s^{#plus};P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                ptbins, ptlow, ptup);
+        fhPtNegA[sp] = new TH1F(TString::Format("fHistPtNegA_%s", speciesName[sp]),
+                                TString::Format("P_{T} distribution for reconstructed  %s^{#minus};P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                ptbins, ptlow, ptup);
+      }
+
       /* add the hstograms to the output list */
       fOutputList->Add(fhCentMultB);
       fOutputList->Add(fhCentMultA);
       fOutputList->Add(fhVertexZB);
       fOutputList->Add(fhVertexZA);
+      fOutputList->Add(fhPB);
       fOutputList->Add(fhPtB);
-      fOutputList->Add(fhPtA);
       fOutputList->Add(fhPtPosB);
-      fOutputList->Add(fhPtPosA);
       fOutputList->Add(fhPtNegB);
-      fOutputList->Add(fhPtNegA);
       fOutputList->Add(fhEtaB);
       fOutputList->Add(fhEtaA);
       fOutputList->Add(fhPhiB);
       fOutputList->Add(fhPhiA);
-      fOutputList->Add(fhEtaVsPhiB);
-      fOutputList->Add(fhEtaVsPhiA);
-      fOutputList->Add(fhPtVsEtaB);
-      fOutputList->Add(fhPtVsEtaA);
       fOutputList->Add(fhDCAxyB);
       fOutputList->Add(fhDCAxyA);
       fOutputList->Add(fhFineDCAxyA);
       fOutputList->Add(fhDCAzB);
       fOutputList->Add(fhDCAzA);
       fOutputList->Add(fhFineDCAzA);
+
+      for (int sp = 0; sp < kNoOfSpecies; ++sp) {
+        fOutputList->Add(fhPA[sp]);
+        fOutputList->Add(fhPtA[sp]);
+        fOutputList->Add(fhPtPosA[sp]);
+        fOutputList->Add(fhPtNegA[sp]);
+      }
     }
 
     if (fDataType != kData) {
@@ -794,114 +888,76 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTrueVertexZB = new TH1F("TrueVertexZB", "Vertex Z before (truth); z_{vtx}", 60, -15, 15);
       fhTrueVertexZA = new TH1F("TrueVertexZA", "Vertex Z (truth); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
+      fhTruePB = new TH1F("fTrueHistPB", "p distribution before (truth);p (GeV/c);dN/dp (c/GeV)", 100, 0.0, 15.0);
       fhTruePtB = new TH1F("fTrueHistPtB", "p_{T} distribution before (truth);p_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhTruePtA = new TH1F("fTrueHistPtA", "p_{T} distribution (truth);p_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
       fhTruePtPosB = new TH1F("fTrueHistPtPosB", "P_{T} distribution (#plus) before (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhTruePtPosA = new TH1F("fTrueHistPtPosA", "P_{T} distribution (#plus) (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
       fhTruePtNegB = new TH1F("fTrueHistPtNegB", "P_{T} distribution (#minus) before (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhTruePtNegA = new TH1F("fTrueHistPtNegA", "P_{T} distribution (#minus) (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
       fhTrueEtaB = new TH1F("fTrueHistEtaB", "#eta distribution before (truth);#eta;counts", 40, -2.0, 2.0);
       fhTrueEtaA = new TH1F("fTrueHistEtaA", "#eta distribution (truth);#eta;counts", etabins, etalow, etaup);
       fhTruePhiB = new TH1F("fTrueHistPhiB", "#phi distribution before (truth);#phi;counts", 360, 0.0, 2 * M_PI);
       fhTruePhiA = new TH1F("fTrueHistPhiA", "#phi distribution (truth);#phi;counts", 360, 0.0, 2 * M_PI);
-      fhTrueEtaVsPhiB = new TH2F(TString::Format("CSTaskTrueEtaVsPhiB_%s", fTaskConfigurationString.c_str()), "#eta vs #phi before (truth);#phi;#eta", 360, 0.0, 2 * M_PI, 100, -2.0, 2.0);
-      fhTrueEtaVsPhiA = new TH2F(TString::Format("CSTaskTrueEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi (truth);#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
-      fhTruePtVsEtaB = new TH2F(TString::Format("fhTruePtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
-      fhTruePtVsEtaA = new TH2F(TString::Format("fhTruePtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
       fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
-      fhTrueDCAxyBid = new TH1F("PDGCodeDCAxyB", "PDG code within 1.8<|DCA_{#it{xy}}|<2.0; PDG code", 100, 0.5, 100.5);
+      if (trackDCAOutliers.mDoIt) {
+        fhTrueDCAxyBid = new TH1F("PDGCodeDCAxyB",
+                                  TString::Format("PDG code within %.2f<|DCA_{#it{xy}}|<%.2f; PDG code", trackDCAOutliers.mLowValue, trackDCAOutliers.mUpValue).Data(),
+                                  100, 0.5, 100.5);
+      }
       fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
       fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
+
+      for (int sp = 0; sp < kNoOfSpecies; ++sp) {
+        fhTruePA[sp] = new TH1F(TString::Format("fTrueHistPA_%s", speciesName[sp]).Data(),
+                                TString::Format("p distribution %s (truth);p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
+                                ptbins, ptlow, ptup);
+        fhTruePtA[sp] = new TH1F(TString::Format("fTrueHistPtA_%s", speciesName[sp]),
+                                 TString::Format("p_{T} distribution %s (truth);p_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                 ptbins, ptlow, ptup);
+        fhTruePtPosA[sp] = new TH1F(TString::Format("fTrueHistPtPosA_%s", speciesName[sp]),
+                                    TString::Format("P_{T} distribution %s^{#plus} (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                    ptbins, ptlow, ptup);
+        fhTruePtNegA[sp] = new TH1F(TString::Format("fTrueHistPtNegA_%s", speciesName[sp]),
+                                    TString::Format("P_{T} distribution %s^{#minus} (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                    ptbins, ptlow, ptup);
+      }
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhTrueCentMultB);
       fOutputList->Add(fhTrueCentMultA);
       fOutputList->Add(fhTrueVertexZB);
       fOutputList->Add(fhTrueVertexZA);
+      fOutputList->Add(fhTruePB);
       fOutputList->Add(fhTruePtB);
-      fOutputList->Add(fhTruePtA);
       fOutputList->Add(fhTruePtPosB);
-      fOutputList->Add(fhTruePtPosA);
       fOutputList->Add(fhTruePtNegB);
-      fOutputList->Add(fhTruePtNegA);
       fOutputList->Add(fhTrueEtaB);
       fOutputList->Add(fhTrueEtaA);
       fOutputList->Add(fhTruePhiB);
       fOutputList->Add(fhTruePhiA);
-      fOutputList->Add(fhTrueEtaVsPhiB);
-      fOutputList->Add(fhTrueEtaVsPhiA);
-      fOutputList->Add(fhTruePtVsEtaB);
-      fOutputList->Add(fhTruePtVsEtaA);
       fOutputList->Add(fhTrueDCAxyB);
-      fOutputList->Add(fhTrueDCAxyBid);
+      if (trackDCAOutliers.mDoIt) {
+        fOutputList->Add(fhTrueDCAxyBid);
+      }
       fOutputList->Add(fhTrueDCAxyA);
       fOutputList->Add(fhTrueDCAzB);
       fOutputList->Add(fhTrueDCAzA);
-    }
-  }
 
-  void processWithCent(aod::CollisionEvSelCent const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCent(). New collision with %d tracks", ftracks.size());
-
-    fhCentMultB->Fill(collision.centV0M());
-    fhVertexZB->Fill(collision.posZ());
-    bool acceptedevent = false;
-    float centormult = -100.0;
-    if (IsEvtSelected(collision, centormult)) {
-      acceptedevent = true;
-      fhCentMultA->Fill(collision.centV0M());
-      fhVertexZA->Fill(collision.posZ());
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterTracks(ftracks, acceptedevents.lastIndex());
-    } else {
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& track : ftracks) {
-        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
+      for (int sp = 0; sp < kNoOfSpecies; ++sp) {
+        fOutputList->Add(fhTruePA[sp]);
+        fOutputList->Add(fhTruePtA[sp]);
+        fOutputList->Add(fhTruePtPosA[sp]);
+        fOutputList->Add(fhTruePtNegA[sp]);
       }
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCent, "Process reco with centrality", false);
 
-  void processWithoutCent(aod::CollisionEvSel const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
+  using FullTracksPID = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+
+  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, FullTracksPID const& ftracks)
   {
     using namespace filteranalysistask;
 
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCent(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
-
-    /* the task does not have access to either centrality nor multiplicity
-       classes information, so it has to live without it.
-       For the time being we assign a value of 50% */
-    fhCentMultB->Fill(50.0);
-    fhVertexZB->Fill(collision.posZ());
-    bool acceptedevent = false;
-    float centormult = -100.0;
-    if (IsEvtSelectedNoCentMult(collision, centormult)) {
-      acceptedevent = true;
-      fhCentMultA->Fill(50.0);
-      fhVertexZA->Fill(collision.posZ());
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterTracks(ftracks, acceptedevents.lastIndex());
-    } else {
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& track : ftracks) {
-        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
-      }
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCent, "Process reco without centrality", false);
-
-  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision,
-                                    soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentDetectorLevel(). New collision with %d tracks", ftracks.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "FilterAnalysisTask::processWithCentDetectorLevel(). New collision with %d tracks", ftracks.size());
 
     fhCentMultB->Fill(collision.centV0M());
     fhVertexZB->Fill(collision.posZ());
@@ -923,12 +979,11 @@ struct DptDptCorrelationsFilterAnalysisTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
 
-  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision,
-                                       soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
+  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, FullTracksPID const& ftracks)
   {
     using namespace filteranalysistask;
 
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentDetectorLevel(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentDetectorLevel(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
 
     /* the task does not have access to either centrality nor multiplicity
        classes information, so it has to live without it.
@@ -943,7 +998,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhVertexZA->Fill(collision.posZ());
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
 
-      LOGF(DPTDPTLOGCOLLISIONS, "Accepted collision with BC id %d and collision Id %d", collision.bcId(), collision.globalIndex());
+      LOGF(MATCHRECGENLOGCOLLISIONS, "Accepted collision with BC id %d and collision Id %d", collision.bcId(), collision.globalIndex());
       filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
     } else {
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
@@ -960,7 +1015,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalysistask;
 
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentGeneratorLevel(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "FilterAnalysisTask::processWithCentGeneratorLevel(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
 
     /* TODO: in here we have to decide what to do in the following cases
        - On the fly production -> clearly we will need a different process
@@ -1002,7 +1057,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   {
     using namespace filteranalysistask;
 
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentGeneratorLevel(). New generated collision with %d particles", mcparticles.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentGeneratorLevel(). New generated collision with %d particles", mcparticles.size());
 
     /* the task does not have access to either centrality nor multiplicity
        classes information, so it has to live without it.
@@ -1125,7 +1180,7 @@ struct TracksAndEventClassificationQARec {
 
   void process(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
-    LOGF(DPTDPTLOGCOLLISIONS, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
     processQATask(collision, tracks);
   }
 };
@@ -1150,7 +1205,7 @@ struct TracksAndEventClassificationQAGen {
 
   void process(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {
-    LOGF(DPTDPTLOGCOLLISIONS, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
     processQATask(collision, tracks);
   }
 };
@@ -1169,6 +1224,8 @@ struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
+  Configurable<bool> cfgTrackMultiRec{"trackmultirec", false, "Track muli-reconstructed particles: true, false. Default false"};
+  Configurable<bool> cfgTrackCollAssoc{"trackcollassoc", false, "Track collision id association, track-mcparticle-mccollision vs. track-collision-mccollision: true, false. Default false"};
 
   HistogramRegistry histos{"RecoGenHistograms", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   TDatabasePDG* fPDG = nullptr;
@@ -1301,17 +1358,19 @@ struct CheckGeneratorLevelVsDetectorLevel {
             }
           }
           if (crosscollfound and (ba == kAFTER)) {
-            LOGF(info, "BEGIN multi-reconstructed: ==================================================================");
-            LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-                 particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
-            LOGF(info, "With status %d and flags %0X and multi-reconstructed as: ==================================", particle.statusCode(), particle.flags());
-            for (int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
-              auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
-              auto coll = colls.iteratorAt(track.collisionId());
-              LOGF(info, "Track with index %d and label %d assigned to collision %d, with associated MC collision %d",
-                   track.globalIndex(), ixpart, track.collisionId(), coll.mcCollisionId());
+            if (cfgTrackMultiRec) {
+              LOGF(info, "BEGIN multi-reconstructed: ==================================================================");
+              LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+                   particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+              LOGF(info, "With status %d and flags %0X and multi-reconstructed as: ==================================", particle.statusCode(), particle.flags());
+              for (int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
+                auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
+                auto coll = colls.iteratorAt(track.collisionId());
+                LOGF(info, "Track with index %d and label %d assigned to collision %d, with associated MC collision %d",
+                     track.globalIndex(), ixpart, track.collisionId(), coll.mcCollisionId());
+              }
+              LOGF(info, "END multi-reconstructed:   ==================================================================");
             }
-            LOGF(info, "END multi-reconstructed:   ==================================================================");
             histos.get<TH1>(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("pdgcodemr"))->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
           }
         }
@@ -1371,7 +1430,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
         }
         if (particle.mcCollisionId() != colls.iteratorAt(track.collisionId()).mcCollisionId()) {
-          if ((ba == kAFTER) and (collsign == kPOSITIVE)) {
+          if ((ba == kAFTER) and (collsign == kPOSITIVE) and cfgTrackCollAssoc) {
             LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
                  particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
             LOGF(info, "        with status %d and flags %0X and", particle.statusCode(), particle.flags());
@@ -1394,9 +1453,10 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
   }
 
-  void processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels> const& tracks,
-                                  soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
-                                  aod::McParticles const& mcParticles)
+  void
+    processMapChecksBeforeCuts(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels> const& tracks,
+                               soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                               aod::McParticles const& mcParticles)
   {
     using namespace recogenmap;
 
@@ -1428,7 +1488,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
 
-      LOGF(DPTDPTLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
       if (track.collisionId() < 0) {
         if (label >= 0) {
           mclabelpos[kNEGATIVE][label].push_back(recix);
@@ -1491,7 +1551,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
             if (asone or astwo) {
               /* the track has been accepted */
               nreco++;
-              LOGF(DPTDPTLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
             }
           }
@@ -1546,7 +1606,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
             if (asone or astwo) {
               /* the track has been accepted */
               nreco++;
-              LOGF(DPTDPTLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
             }
           }
@@ -1561,7 +1621,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
 
   void processDummy(aod::Collisions const& colls)
   {
-    LOGF(DPTDPTLOGCOLLISIONS, "Got a new set of %d collisions", colls.size());
+    LOGF(MATCHRECGENLOGCOLLISIONS, "Got a new set of %d collisions", colls.size());
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processDummy, "Dummy process of detector <=> generator levels mapping checks", true);
 };

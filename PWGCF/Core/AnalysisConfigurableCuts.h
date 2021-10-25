@@ -57,6 +57,16 @@ class DptDptBinningCuts
   ClassDefNV(DptDptBinningCuts, 1);
 };
 
+class CheckRangeCfg
+{
+ public:
+  bool mDoIt = false;    ///< do the actual check
+  float mLowValue = 0.0; ///< range lowest value
+  float mUpValue = 0.0;  ///< range upper value
+ private:
+  ClassDefNV(CheckRangeCfg, 1);
+};
+
 class SimpleInclusiveCut : public TNamed
 {
  public:
