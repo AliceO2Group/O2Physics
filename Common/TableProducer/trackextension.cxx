@@ -47,6 +47,7 @@ namespace trackextension
 constexpr long run3lut_timestamp = (1665695116725 + 1634159124442) / 2;
 constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
+const char* ccdbpath_geo = "GLO/Config/Geometry";
 const char* ccdbpath_grp = "Users/v/victor/GRP/GRP";
 const char* ccdburl = "http://alice-ccdb.cern.ch:8080"; /* production  "https://alice-ccdb.cern.ch"; */
 } // namespace trackextension
@@ -70,7 +71,7 @@ struct TrackExtension {
     auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbpath_lut, run3lut_timestamp));
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      o2::base::GeometryManager::loadGeometry();
+      auto* gm = ccdb->get<TGeoManager>(ccdbpath_geo);
       /* it seems this is needed at this level for the material LUT to work properly */
       /* but what happens if the run changes while doing the processing?             */
       o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, analysis::trackextension::run3grp_timestamp);
