@@ -105,6 +105,9 @@ struct HFCandidateCreatorLb {
       if (lcCand.isSelLcpiKp() >= d_selectionFlagLc) {
         hMassLcToPKPi->Fill(InvMassLcpiKp(lcCand), lcCand.pt());
       }
+      hPtLc->Fill(lcCand.pt());
+      hCPALc->Fill(lcCand.cpa());
+
       auto track0 = lcCand.index0_as<aod::BigTracks>();
       auto track1 = lcCand.index1_as<aod::BigTracks>();
       auto track2 = lcCand.index2_as<aod::BigTracks>();
@@ -138,12 +141,13 @@ struct HFCandidateCreatorLb {
         if (trackPion.pt() < ptPionMin) {
           continue;
         }
-        if (trackPion.sign() * charge < 0) {
+        if (trackPion.sign() > 0) {
           continue;
         }
         if (trackPion.globalIndex() == index0Lc || trackPion.globalIndex() == index1Lc || trackPion.globalIndex() == index2Lc) {
           continue;
         }
+        hPtPion->Fill(trackPion.pt());
         array<float, 3> pvecPion;
         auto trackParVarPi = getTrackParCov(trackPion);
 
@@ -167,6 +171,9 @@ struct HFCandidateCreatorLb {
         o2::dataformats::DCA impactParameter1;
         trackLc.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
         trackParVarPi.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
+
+        hCovSVXX->Fill(covMatrixPCA[0]);
+        hCovPVXX->Fill(covMatrixPV[0]);
 
         // get uncertainty of the decay length
         double phi, theta;
