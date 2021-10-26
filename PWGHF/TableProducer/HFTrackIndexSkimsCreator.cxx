@@ -321,15 +321,18 @@ struct HfTagSelTracks {
 #endif
   )
   {
+    auto prevColId = -1;
     math_utils::Point3D<float> vtxXYZ;
     for (auto& track : tracks) {
-      // reset to origin
-      // FIXME: use some other definitely incorrect value?
-      vtxXYZ = {0, 0, 0};
-
       if (track.has_collision()) {
-        auto collision = track.collision();
-        vtxXYZ = {collision.posX(), collision.posY(), collision.posZ()};
+        if (track.collisionId() != prevColId) {
+          auto collision = track.collision();
+          vtxXYZ = {collision.posX(), collision.posY(), collision.posZ()};
+          prevColId = track.collisionId();
+        }
+      } else {
+        // reset vertex for unassigned track
+        vtxXYZ = {0, 0, 0};
       }
 
 #ifdef MY_DEBUG
