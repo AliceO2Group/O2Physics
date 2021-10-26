@@ -108,14 +108,14 @@ struct HfLbToLcPiCandidateSelector {
     }
 
     //d0 of pi
-    if(std::abs(hfCandLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+    if (std::abs(hfCandLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
       return false;
     }
 
     //d0 of Lc+
     //if(std::abs(hfCandLb.impactParameter0()) > cuts->get(pTBin, "d0 Lc+")){
-      //return false;
-      //}
+    //return false;
+    //}
 
     return true;
   }
