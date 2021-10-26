@@ -31,7 +31,7 @@ using namespace o2::framework::expressions;
  * FIXME: computing overhead and errors in calculations
  */
 //****************************************************************************************
-struct TrackExtensionTask {
+struct TrackExtension {
 
   Produces<aod::TracksExtended> extendedTrackQuantities;
 
@@ -64,6 +64,6 @@ struct TrackExtensionTask {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<TrackExtensionTask>(cfgc, TaskName{"track-extension"})};
+  WorkflowSpec workflow{adaptAnalysisTask<TrackExtension>(cfgc)};
   return workflow;
 }

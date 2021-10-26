@@ -24,7 +24,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct CentralityTableTask {
+struct CentralityTable {
   Produces<aod::CentV0Ms> centVOM;
   Produces<aod::CentRun2SPDs> centRun2SPD;
   Produces<aod::CentRun2CL0s> centRun2CL1;
@@ -137,5 +137,5 @@ struct CentralityTableTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CentralityTableTask>(cfgc, TaskName{"centrality-table"})};
+    adaptAnalysisTask<CentralityTable>(cfgc)};
 }

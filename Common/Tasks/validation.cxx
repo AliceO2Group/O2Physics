@@ -24,7 +24,7 @@ namespace o2::aod
 using namespace o2;
 using namespace o2::framework;
 
-struct ValidationTask {
+struct ValidationQa {
   OutputObj<TH1F> hpt_nocuts{TH1F("hpt_nocuts", "pt tracks (#GeV)", 100, 0., 10.)};
   OutputObj<TH1F> hrun_number{TH1F("hrun_number", "run number", 1000, 0., 1000000.)};
   OutputObj<TH1F> hfCYY{TH1F("hfCYY", "cYY", 1000, 0., 150.)};
@@ -71,5 +71,5 @@ struct ValidationTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ValidationTask>(cfgc, TaskName{"validation-qa"})};
+    adaptAnalysisTask<ValidationQa>(cfgc)};
 }
