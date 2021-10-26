@@ -321,18 +321,15 @@ struct HfTagSelTracks {
 #endif
   )
   {
-    std::shared_ptr<Collision> collision{nullptr};
     math_utils::Point3D<float> vtxXYZ;
     for (auto& track : tracks) {
-      // no collision by default
-      collision = nullptr;
       // reset to origin
       // FIXME: use some other definitely incorrect value?
       vtxXYZ = {0, 0, 0};
 
       if (track.has_collision()) {
-        *collision = track.collision();
-        vtxXYZ = {collision->posX(), collision->posY(), collision->posZ()};
+        auto collision = track.collision();
+        vtxXYZ = {collision.posX(), collision.posY(), collision.posZ()};
       }
 
 #ifdef MY_DEBUG
