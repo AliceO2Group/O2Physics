@@ -50,10 +50,10 @@ struct FT0Qa {
       bool ora = (triggersignals & (1 << 0)) != 0;
       bool orc = (triggersignals & (1 << 1)) != 0;
       LOGF(debug, "multV0A=%5.0f;  multT0A=%5.0f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ", col.multV0A(), col.multT0A(), col.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), ft0.posZ());
-      if (ora) {
+      if (col.t0ACorrectedValid()) {
         hT0A->Fill(col.t0ACorrected());
       }
-      if (orc) {
+      if (col.t0CCorrectedValid()) {
         hT0C->Fill(col.t0CCorrected());
       }
       if (ora && orc) {
