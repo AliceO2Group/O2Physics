@@ -17,7 +17,7 @@ using namespace o2::framework;
 
 // Tasks to build transient indices to group V0s and cascades to collisions
 
-struct IndexV0s {
+struct WeakDecayIndicesV0 {
   Produces<aod::TransientV0s> transientV0s;
 
   void process(aod::StoredV0s const& v0s, aod::Tracks const& tracks)
@@ -32,7 +32,7 @@ struct IndexV0s {
 };
 
 // NOTE These tasks have to be split because for the cascades, V0s and not StoredV0s are needed
-struct IndexCascades {
+struct WeakDecayIndicesCascades {
   Produces<aod::TransientCascades> transientCascades;
 
   void process(aod::V0s const& v0s, aod::StoredCascades const& cascades, aod::Tracks const& tracks)
@@ -49,7 +49,7 @@ struct IndexCascades {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<IndexV0s>(cfgc, TaskName{"weak-decay-indices-v0"}),
-    adaptAnalysisTask<IndexCascades>(cfgc, TaskName{"weak-decay-indices-cascades"}),
+    adaptAnalysisTask<WeakDecayIndicesV0>(cfgc),
+    adaptAnalysisTask<WeakDecayIndicesCascades>(cfgc),
   };
 }
