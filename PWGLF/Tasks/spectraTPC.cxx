@@ -37,25 +37,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-template <typename T>
-void makelogaxis(T h)
-{
-  const int nbins = h->GetNbinsX();
-  double binp[nbins + 1];
-  double max = h->GetXaxis()->GetBinUpEdge(nbins);
-  double min = h->GetXaxis()->GetBinLowEdge(1);
-  if (min <= 0) {
-    min = 0.00001;
-  }
-  double lmin = TMath::Log10(min);
-  double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-  for (int i = 0; i < nbins; i++) {
-    binp[i] = TMath::Exp(TMath::Log(10) * (lmin + i * ldelta));
-  }
-  binp[nbins] = max + 1;
-  h->GetXaxis()->Set(nbins, binp);
-}
-
 // Spectra task
 struct tpcSpectra {
   static constexpr int Np = 9;
@@ -150,8 +131,12 @@ struct tpcPidQaSignalwTof {
   template <uint8_t i>
   void addParticleHistos()
   {
-    histos.add(htpcsignal[i].data(), Form(";#it{p} (GeV/#it{c});TPC Signal;N_{#sigma}^{TPC}(%s)", pT[i]), kTH3D, {{1000, 0.001, 20}, {1000, 0, 1000}, {20, -10, 10}});
-    makelogaxis(histos.get<TH3>(HIST(htpcsignal[i])));
+
+    AxisSpec axisP{1000, 0.001, 20, "#it{p} (GeV/#it{c})"};
+    axisP.makeLogaritmic();
+    const AxisSpec axisSignal{1000, 0, 1000, "TPC Signal"};
+    const AxisSpec axisNsigma{20, -10, 10, Form("N_{#sigma}^{TOF}(%s)", pT[i])};
+    histos.add(htpcsignal[i].data(), pT[i], kTH3D, {axisP, axisSignal, axisNsigma});
   }
 
   void init(o2::framework::InitContext&)

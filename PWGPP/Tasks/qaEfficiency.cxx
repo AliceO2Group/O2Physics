@@ -26,11 +26,12 @@ using namespace o2::framework;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{
-    {"eff-el", VariantType::Int, 1, {"Efficiency for the Electron PDG code"}},
-    {"eff-mu", VariantType::Int, 1, {"Efficiency for the Muon PDG code"}},
-    {"eff-pi", VariantType::Int, 1, {"Efficiency for the Pion PDG code"}},
-    {"eff-ka", VariantType::Int, 1, {"Efficiency for the Kaon PDG code"}},
-    {"eff-pr", VariantType::Int, 1, {"Efficiency for the Proton PDG code"}},
+    {"eff-data", VariantType::Int, 1, {"Efficiency for the data"}},
+    {"eff-el", VariantType::Int, 0, {"Efficiency for the Electron PDG code"}},
+    {"eff-mu", VariantType::Int, 0, {"Efficiency for the Muon PDG code"}},
+    {"eff-pi", VariantType::Int, 0, {"Efficiency for the Pion PDG code"}},
+    {"eff-ka", VariantType::Int, 0, {"Efficiency for the Kaon PDG code"}},
+    {"eff-pr", VariantType::Int, 0, {"Efficiency for the Proton PDG code"}},
     {"eff-de", VariantType::Int, 0, {"Efficiency for the Deuteron PDG code"}},
     {"eff-tr", VariantType::Int, 0, {"Efficiency for the Triton PDG code"}},
     {"eff-he", VariantType::Int, 0, {"Efficiency for the Helium3 PDG code"}}};
@@ -43,25 +44,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "TPDGCode.h"
 #include "TEfficiency.h"
 #include "TList.h"
-
-template <typename T>
-void makelogaxis(T h)
-{
-  const int nbins = h->GetNbinsX();
-  double binp[nbins + 1];
-  double max = h->GetXaxis()->GetBinUpEdge(nbins);
-  double min = h->GetXaxis()->GetBinLowEdge(1);
-  if (min <= 0) {
-    min = 0.01;
-  }
-  double lmin = TMath::Log10(min);
-  double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-  for (int i = 0; i < nbins; i++) {
-    binp[i] = TMath::Exp(TMath::Log(10) * (lmin + i * ldelta));
-  }
-  binp[nbins] = max + 1;
-  h->GetXaxis()->Set(nbins, binp);
-}
 
 /// Task to QA the efficiency of a particular particle defined by its pdg code
 template <o2::track::pid_constants::ID particle>
@@ -90,7 +72,7 @@ struct QaTrackingEfficiency {
   Configurable<int> etaBins{"eta-bins", 500, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 500, "Number of phi bins"};
   // Task configuration
-  Configurable<int> makeEff{"make-eff", 0, "Flag to produce the efficiency with TEfficiency"};
+  Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
 
   OutputObj<TList> list{"Efficiency"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -105,7 +87,10 @@ struct QaTrackingEfficiency {
                                etaMin.value, etaMax.value,
                                phiMin.value, phiMax.value,
                                selPrim.value);
-    const AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
+    if (logPt) {
+      axisPt.makeLogaritmic();
+    }
 
     const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
                                 o2::track::pid_constants::sNames[particle],
@@ -151,10 +136,6 @@ struct QaTrackingEfficiency {
 
     histos.add("pt/num", "Numerator " + tagPt, kTH1D, {axisPt});
     histos.add("pt/den", "Denominator " + tagPt, kTH1D, {axisPt});
-    if (logPt) {
-      makelogaxis(histos.get<TH1>(HIST("pt/num")));
-      makelogaxis(histos.get<TH1>(HIST("pt/den")));
-    }
 
     histos.add("eta/num", "Numerator " + tagEta, kTH1D, {axisEta});
     histos.add("eta/den", "Denominator " + tagEta, kTH1D, {axisEta});
@@ -318,6 +299,154 @@ struct QaTrackingEfficiency {
   }
 };
 
+/// Task to QA the efficiency of a particular particle defined by its pdg code
+struct QaTrackingEfficiencyData {
+  // Track selection
+  Configurable<float> etaMin{"eta-min", -3.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"eta-max", 3.f, "Upper limit in eta"};
+  Configurable<float> phiMin{"phi-min", 0.f, "Lower limit in phi"};
+  Configurable<float> phiMax{"phi-max", 6.284f, "Upper limit in phi"};
+  Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
+  Configurable<bool> trackSelection{"track-sel", false, "Flag to use the standard track selection when selecting numerator and denominator"};
+  // Event selection
+  Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
+  Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
+  Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the generated vertez in Z (cm)"};
+  // Histogram configuration
+  Configurable<int> ptBins{"pt-bins", 500, "Number of pT bins"};
+  Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis"};
+  Configurable<int> etaBins{"eta-bins", 500, "Number of eta bins"};
+  Configurable<int> phiBins{"phi-bins", 500, "Number of phi bins"};
+  // Task configuration
+  Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
+
+  OutputObj<TList> list{"Efficiency"};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext&)
+  {
+    const TString tagPt = Form("#it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
+                               etaMin.value, etaMax.value,
+                               phiMin.value, phiMax.value);
+    AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
+    if (logPt) {
+      axisPt.makeLogaritmic();
+    }
+
+    const TString tagEta = Form("#it{p}_{T} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
+                                ptMin.value, ptMax.value,
+                                phiMin.value, phiMax.value);
+    const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
+
+    const TString tagPhi = Form("#it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f]",
+                                etaMin.value, etaMax.value,
+                                ptMin.value, ptMax.value);
+    const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
+
+    const AxisSpec axisSel{9, 0.5, 9.5, "Selection"};
+    histos.add("eventSelection", "Event Selection", kTH1D, {axisSel});
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Contrib.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Position");
+
+    histos.add("trackSelection", "Track Selection", kTH1D, {axisSel});
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
+
+    histos.add("trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
+
+    histos.add("pt/num", "Numerator " + tagPt, kTH1D, {axisPt});
+    histos.add("pt/den", "Denominator " + tagPt, kTH1D, {axisPt});
+
+    histos.add("eta/num", "Numerator " + tagEta, kTH1D, {axisEta});
+    histos.add("eta/den", "Denominator " + tagEta, kTH1D, {axisEta});
+
+    histos.add("phi/num", "Numerator " + tagPhi, kTH1D, {axisPhi});
+    histos.add("phi/den", "Denominator " + tagPhi, kTH1D, {axisPhi});
+
+    list.setObject(new TList);
+    if (makeEff) {
+      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
+        TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
+        if (axis->IsVariableBinSize()) {
+          list->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
+        } else {
+          list->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+        }
+      };
+      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY) {
+        TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
+        TAxis* axisY = histos.get<TH1>(templateHistoY)->GetXaxis();
+        if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
+          list->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
+        } else {
+          list->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
+        }
+      };
+      makeEfficiency("efficiencyVsPt", "Efficiency in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("pt/num"));
+      makeEfficiency("efficiencyVsP", "Efficiency in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("pt/num"));
+      makeEfficiency("efficiencyVsEta", "Efficiency in data " + tagEta + ";#it{#eta};Efficiency", HIST("eta/num"));
+      makeEfficiency("efficiencyVsPhi", "Efficiency in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("phi/num"));
+
+      makeEfficiency2D("efficiencyVsPtVsEta", Form("Efficiency in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("pt/num"), HIST("eta/num"));
+      makeEfficiency2D("efficiencyVsPtVsPhi", Form("Efficiency in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("pt/num"), HIST("phi/num"));
+    }
+  }
+
+  void process(const o2::aod::Collision& collision,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra>& tracks)
+  {
+
+    histos.fill(HIST("eventSelection"), 1);
+    if (collision.numContrib() < nMinNumberOfContributors) {
+      return;
+    }
+    histos.fill(HIST("eventSelection"), 2);
+    if ((collision.posZ() < vertexZMin || collision.posZ() > vertexZMax)) {
+      return;
+    }
+    histos.fill(HIST("eventSelection"), 3);
+
+    for (const auto& track : tracks) {
+      histos.fill(HIST("trackSelection"), 1);
+      if ((track.pt() < ptMin || track.pt() > ptMax)) { // Check pt
+        return;
+      }
+      histos.fill(HIST("trackSelection"), 2);
+      if ((track.eta() < etaMin || track.eta() > etaMax)) { // Check eta
+        return;
+      }
+      histos.fill(HIST("trackSelection"), 3);
+      if ((track.phi() < phiMin || track.phi() > phiMax)) { // Check phi
+        return;
+      }
+      histos.fill(HIST("trackSelection"), 4);
+
+      histos.fill(HIST("trackLength"), track.length());
+      histos.fill(HIST("pt/den"), track.pt());
+      histos.fill(HIST("eta/den"), track.eta());
+      histos.fill(HIST("phi/den"), track.phi());
+      if (track.hasTOF()) {
+        histos.fill(HIST("pt/num"), track.pt());
+        histos.fill(HIST("eta/num"), track.eta());
+        histos.fill(HIST("phi/num"), track.phi());
+      }
+
+      if (makeEff) {
+        static_cast<TEfficiency*>(list->At(0))->Fill(track.hasTOF(), track.pt());
+        static_cast<TEfficiency*>(list->At(1))->Fill(track.hasTOF(), track.p());
+        static_cast<TEfficiency*>(list->At(2))->Fill(track.hasTOF(), track.eta());
+        static_cast<TEfficiency*>(list->At(3))->Fill(track.hasTOF(), track.phi());
+        static_cast<TEfficiency*>(list->At(4))->Fill(track.hasTOF(), track.pt(), track.eta());
+        static_cast<TEfficiency*>(list->At(5))->Fill(track.hasTOF(), track.pt(), track.phi());
+      }
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w;
@@ -344,6 +473,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   }
   if (cfgc.options().get<int>("eff-he")) {
     w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Helium3>>(cfgc, TaskName{"qa-tracking-efficiency-helium3"}));
+  }
+  if (cfgc.options().get<int>("eff-data")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiencyData>(cfgc));
   }
   return w;
 }

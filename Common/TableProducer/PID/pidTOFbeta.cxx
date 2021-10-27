@@ -30,7 +30,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-struct pidTOFTaskBeta {
+struct tofPidBeta {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Colls = aod::Collisions;
   Produces<aod::pidTOFbeta> tablePIDBeta;
@@ -55,7 +55,7 @@ struct pidTOFTaskBeta {
   }
 };
 
-struct tofPidQaBeta {
+struct tofPidBetaQa {
 
   static constexpr int Np = 9;
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
@@ -133,9 +133,9 @@ struct tofPidQaBeta {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<pidTOFTaskBeta>(cfgc)};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<tofPidBeta>(cfgc)};
   if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tofPidQaBeta>(cfgc));
+    workflow.push_back(adaptAnalysisTask<tofPidBetaQa>(cfgc));
   }
   return workflow;
 }
