@@ -73,6 +73,7 @@ class TrackSelectionCfg
 {
  public:
   bool mUseIt = false;          ///< use this track selection configuration
+  bool mOnGen = false;          ///< apply it to generator level also
   int mTPCclusters = 0;         ///< minimum number of TPC clusters
   int mTPCxRows = 70;           ///< minimum number of TPC crossed rows
   float mTPCXRoFClusters = 0.8; ///< minimu value of the TPC ratio no of crossed rows over findable clusters

@@ -195,6 +195,9 @@ bool trackOutOfSpeciesParticles = false;
 int recoIdMethod = 0;
 bool useOwnTrackSelection = false;
 TrackSelection ownTrackSelection = getGlobalTrackSelection();
+bool useOwnParticleSelection = false;
+bool particleMaxDCAxy = 999.9;
+bool particleMaxDCAZ = 999.9;
 
 TDatabasePDG* fPDG = nullptr;
 TH1F* fhCentMultB = nullptr;
@@ -458,8 +461,8 @@ inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
   }
 }
 
-template <typename ParticleObject, typename ParticleListObject>
-inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particles, bool& asone, bool& astwo)
+template <typename ParticleObject, typename MCCollisionObject>
+inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, bool& asone, bool& astwo)
 {
   using namespace filteranalysistask;
 
@@ -470,6 +473,14 @@ inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particl
 
   /* TODO: matchTrackType will not work. We need at least is physical primary */
   if (MC::isPhysicalPrimary(particle)) {
+    if (useOwnParticleSelection) {
+      float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+      float dcaz = TMath::Abs(particle.vz() - collision.posZ());
+      if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
+        return;
+      }
+    }
     if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
       if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
         asone = true;
@@ -694,10 +705,9 @@ struct DptDptCorrelationsFilterAnalysisTask {
   Configurable<o2::analysis::CheckRangeCfg> cfgTrackDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTrackOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
-  Configurable<o2::analysis::TrackSelectionCfg> cfgTrackSelection{"tracksel", {false, 0, 70, 0.8, 2.4, 3.2}, "Track selection: {useit: true/false, tpccls, tpcxrws, tpcxrfc, dcaxy, dcaz}. Default {false,0.70.0.8,2.4,3.2}"};
+  Configurable<o2::analysis::TrackSelectionCfg> cfgTrackSelection{"tracksel", {false, false, 0, 70, 0.8, 2.4, 3.2}, "Track selection: {useit: true/false, ongen: true/false, tpccls, tpcxrws, tpcxrfc, dcaxy, dcaz}. Default {false,0.70.0.8,2.4,3.2}"};
 
-  OutputObj<TList>
-    fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
 
   Produces<aod::AcceptedEvents> acceptedevents;
   Produces<aod::ScannedTracks> scannedtracks;
@@ -768,7 +778,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
         /* track selection */
         /* tricky because the boolean columns issue */
-        AcceptParticle(particle, particles, asone, astwo);
+        AcceptParticle(particle, mccollision, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
           /* fill the charged particle histograms */
@@ -818,6 +828,11 @@ struct DptDptCorrelationsFilterAnalysisTask {
     recoIdMethod = cfgRecoIdMethod;
     if (cfgTrackSelection->mUseIt) {
       useOwnTrackSelection = true;
+      if (cfgTrackSelection->mOnGen) {
+        useOwnParticleSelection = true;
+        particleMaxDCAxy = cfgTrackSelection->mDCAxy;
+        particleMaxDCAZ = cfgTrackSelection->mDCAz;
+      }
       ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
       ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
       ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(cfgTrackSelection->mTPCXRoFClusters);
