@@ -15,6 +15,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
@@ -192,6 +193,9 @@ CentMultEstimatorType fCentMultEstimator = kV0M;
 analysis::CheckRangeCfg trackDCAOutliers;
 bool trackOutOfSpeciesParticles = false;
 int recoIdMethod = 0;
+bool useOwnTrackSelection = false;
+TrackSelection ownTrackSelection = getGlobalTrackSelection();
+
 TDatabasePDG* fPDG = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
@@ -409,23 +413,27 @@ bool matchTrackType(TrackObject const& track)
 {
   using namespace filteranalysistask;
 
-  switch (tracktype) {
-    case 1:
-      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-        return true;
-      } else {
+  if (useOwnTrackSelection) {
+    return ownTrackSelection.IsSelected(track);
+  } else {
+    switch (tracktype) {
+      case 1:
+        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+          return true;
+        } else {
+          return false;
+        }
+        break;
+      case 3: /* Run3 track */
+        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+          return true;
+        } else {
+          return false;
+        }
+        break;
+      default:
         return false;
-      }
-      break;
-    case 3: /* Run3 track */
-      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-        return true;
-      } else {
-        return false;
-      }
-      break;
-    default:
-      return false;
+    }
   }
 }
 
@@ -671,7 +679,7 @@ inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle)
 using namespace dptdptcorrelations;
 
 struct DptDptCorrelationsFilterAnalysisTask {
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
+  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96, 3 = Run3 tracks. Default 1"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe. Default PbPb"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
@@ -680,6 +688,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   Configurable<o2::analysis::CheckRangeCfg> cfgTrackDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTrackOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
+  Configurable<o2::analysis::TrackSelectionCfg> cfgTrackSelection{"tracksel", {false, 0, 70, 0.8, 2.4, 3.2}, "Track selection: {useit: true/false, tpccls, tpcxrws, tpcxrfc, dcaxy, dcaz}. Default {false,0.70.0.8,2.4,3.2}"};
 
   OutputObj<TList>
     fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
@@ -801,6 +810,30 @@ struct DptDptCorrelationsFilterAnalysisTask {
     trackDCAOutliers = cfgTrackDCAOutliers;
     trackOutOfSpeciesParticles = cfgTrackOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
+    if (cfgTrackSelection->mUseIt) {
+      useOwnTrackSelection = true;
+      ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
+      ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
+      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(cfgTrackSelection->mTPCXRoFClusters);
+      ownTrackSelection.SetMaxDcaXYPtDep(std::function<float(float)>{});
+      ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
+      ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);
+      o2::aod::track::TrackTypeEnum ttype;
+      switch (tracktype) {
+        case 1:
+          ttype = o2::aod::track::Run2Track;
+          break;
+        case 3:
+          ttype = o2::aod::track::Track;
+          break;
+        default:
+          ttype = o2::aod::track::Track;
+          break;
+      }
+      ownTrackSelection.SetTrackType(ttype);
+    } else {
+      useOwnTrackSelection = false;
+    }
 
     /* if the system type is not known at this time, we have to put the initalization somewhere else */
     fSystem = getSystemType(cfgSystem);
