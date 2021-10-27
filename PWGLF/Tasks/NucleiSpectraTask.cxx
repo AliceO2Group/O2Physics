@@ -55,6 +55,7 @@ struct NucleiSpectraTask {
     spectra.add("histTofNsigmaData", "n-sigma TOF", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
     spectra.add("histDcaVsPtData", "dca vs Pt", HistType::kTH2F, {ptAxis, {400, -0.2, 0.2, "dca"}});
     spectra.add("histInvMassData", "Invariant mass", HistType::kTH2F, {ptAxis, {1000, 5.0, +20., "inv. mass GeV/c^{2}"}});
+    spectra.add("histPairCount", "Number of pairs", HistType::kTH2F, {{20, -0.5, 19.5, "number of negative particles in event"}, {20, -0.5, 19.5, "number of positive particles in event"}});
   }
 
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
@@ -62,8 +63,8 @@ struct NucleiSpectraTask {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> nsigmacutLow{"nsigmacutLow", -5.0, "Value of the Nsigma cut"};
-  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +5.0, "Value of the Nsigma cut"};
+  Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
+  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
@@ -125,7 +126,7 @@ struct NucleiSpectraTask {
           if (track.sign() < 0 && track.p() * 2.0 > 2.0) {
             negTracks.push_back(lorentzVector);
           }
-          if (track.sign() > 0 && track.p() * 2.0 > 3.6) {
+          if (track.sign() > 0 && track.p() * 2.0 > 4.0) {
             posTracks.push_back(lorentzVector);
           }
         }
@@ -138,6 +139,8 @@ struct NucleiSpectraTask {
     spectra.fill(HIST("histKeepEventData"), keepEvent);
     //
     // calculate invariant mass
+    //
+    spectra.fill(HIST("histPairCount"),negTracks.size(), posTracks.size());
     //
     for (Int_t iPos = 0; iPos < posTracks.size(); iPos++) {
       TLorentzVector& vecPos = posTracks[iPos];
