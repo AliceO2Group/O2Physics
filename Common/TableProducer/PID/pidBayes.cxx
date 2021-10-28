@@ -554,23 +554,34 @@ struct bayesPidQa {
   void addParticleHistos()
   {
     // Probability
-    histos.add(hprob[i].data(), Form(";#it{p} (GeV/#it{c});N_{#sigma}^{TOF}(%s)", pT[i]), HistType::kTH2F, {{nBinsP, MinP, MaxP}, {nBinsProb, MinProb, MaxProb}});
-    makelogaxis(histos.get<TH2>(HIST(hprob[i])));
+    AxisSpec axisP{nBinsP, MinP, MaxP, "#it{p} (GeV/#it{c})"};
+    if (logAxis) {
+      axisP.makeLogaritmic();
+    }
+    const AxisSpec axisProb{nBinsProb, MinProb, MaxProb, "Probability"};
+    histos.add(hprob[i].data(), Form(";;N_{#sigma}^{TOF}(%s)", pT[i]), HistType::kTH2F, {axisP, axisProb});
   }
 
   void init(o2::framework::InitContext&)
   {
+    AxisSpec axisP{nBinsP, MinP, MaxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec axisPt{nBinsP, MinP, MaxP, "#it{p}_{T} (GeV/#it{c})"};
+    if (logAxis) {
+      axisP.makeLogaritmic();
+      axisPt.makeLogaritmic();
+    }
+    const AxisSpec axisTOFSignal{10000, 0, 2e6, "TOF Signal"};
+
     // Event properties
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", HistType::kTH1F, {{100, -20, 20}});
     histos.add("event/colltime", ";Collision time (ps);Entries", HistType::kTH1F, {{100, -2000, 2000}});
-    histos.add("event/tofsignal", ";#it{p} (GeV/#it{c});TOF Signal", HistType::kTH2F, {{nBinsP, MinP, MaxP}, {10000, 0, 2e6}});
-    makelogaxis(histos.get<TH2>(HIST("event/tofsignal")));
+    histos.add("event/tofsignal", "tofsignal", HistType::kTH2F, {axisP, axisTOFSignal});
     histos.add("event/eta", ";#it{#eta};Entries", HistType::kTH1F, {{100, -2, 2}});
     histos.add("event/length", ";Track length (cm);Entries", HistType::kTH1F, {{100, 0, 500}});
-    histos.add("event/pt", ";#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH1F, {{nBinsP, MinP, MaxP}});
-    histos.add("event/p", ";#it{p} (GeV/#it{c});Entries", HistType::kTH1F, {{nBinsP, MinP, MaxP}});
-    histos.add("event/ptreso", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {{nBinsP, MinP, MaxP}, {100, 0, 0.1}});
-    histos.add("mostProbable", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {{nBinsP, MinP, MaxP}, {nBinsProb, MinProb, MaxProb}});
+    histos.add("event/pt", "", HistType::kTH1F, {axisPt});
+    histos.add("event/p", "", HistType::kTH1F, {axisP});
+    histos.add("event/ptreso", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {100, 0, 0.1}});
+    histos.add("mostProbable", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {nBinsProb, MinProb, MaxProb}});
 
     addParticleHistos<0>();
     addParticleHistos<1>();

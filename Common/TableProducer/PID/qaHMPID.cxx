@@ -33,26 +33,6 @@ struct pidHMPIDQA {
   Configurable<float> maxDistance{"maxDistance", 5.f, "Maximum HMPID distance between the track and the cluster (cm)"};
   Configurable<float> minCharge{"minCharge", 120.f, "Minimum HMPID charge collected in the cluster"};
 
-  template <typename T>
-  void makelogaxis(T h)
-  {
-    // return;
-    const int nbins = h->GetNbinsX();
-    double binp[nbins + 1];
-    double max = h->GetXaxis()->GetBinUpEdge(nbins);
-    double min = h->GetXaxis()->GetBinLowEdge(1);
-    if (min <= 0) {
-      min = 0.00001;
-    }
-    double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-    for (int i = 0; i < nbins; i++) {
-      binp[i] = TMath::Exp(TMath::Log(10) * (lmin + i * ldelta));
-    }
-    binp[nbins] = max + 1;
-    h->GetXaxis()->Set(nbins, binp);
-  }
-
   void init(o2::framework::InitContext&)
   {
     AxisSpec momAxis{nBinsP, minP, maxP};

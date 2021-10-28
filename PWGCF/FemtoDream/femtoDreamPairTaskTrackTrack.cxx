@@ -66,12 +66,12 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 693318, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<int> ConfCutPartOne{"ConfCutPartOne", 693318, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) &&
+                                                 ((aod::femtodreamparticle::cut & aod::femtodreamparticle::cutContainerType(ConfCutPartOne)) == aod::femtodreamparticle::cutContainerType(ConfCutPartOne)) &&
                                                  (aod::femtodreamparticle::pt > cfgCutTable->get("PartOne", "MinPt")) &&
                                                  (aod::femtodreamparticle::pt < cfgCutTable->get("PartOne", "MaxPt")) &&
                                                  (nabs(aod::femtodreamparticle::tempFitVar) < cfgCutTable->get("PartOne", "MaxDCAxy")) &&
@@ -83,12 +83,12 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 693318, "Particle 2 - Selection bit"};
+  Configurable<int> ConfCutPartTwo{"ConfCutPartTwo", 693318, "Particle 2 - Selection bit"};
   Configurable<std::vector<int>> ConfPIDPartTwo{"ConfPIDPartTwo", std::vector<int>{2}, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) &&
+                                                 ((aod::femtodreamparticle::cut & aod::femtodreamparticle::cutContainerType(ConfCutPartTwo)) == aod::femtodreamparticle::cutContainerType(ConfCutPartTwo)) &&
                                                  (aod::femtodreamparticle::pt > cfgCutTable->get("PartTwo", "MinPt")) &&
                                                  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
                                                  (nabs(aod::femtodreamparticle::tempFitVar) < cfgCutTable->get("PartTwo", "MaxDCAxy")) &&

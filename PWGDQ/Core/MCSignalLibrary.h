@@ -179,7 +179,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   //LMEE single signals
-  if (!nameStr.compare("eFromPizero")) {
+  if (!nameStr.compare("eFromPi0")) {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from pi0 decays", {prong}, {-1});
     return signal;
@@ -277,7 +277,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   //_________________________________________________________________________________________________________________________
   //LMEE pair signals for LF, same mother
-  if (!nameStr.compare("eeFromPizero")) {
+  if (!nameStr.compare("eeFromPi0")) {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "ee pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;

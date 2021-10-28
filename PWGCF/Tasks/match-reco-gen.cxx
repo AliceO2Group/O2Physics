@@ -190,6 +190,8 @@ SystemType fSystem = kNoSystem;
 GenType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
 analysis::CheckRangeCfg trackDCAOutliers;
+bool trackOutOfSpeciesParticles = false;
+int recoIdMethod = 0;
 TDatabasePDG* fPDG = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
@@ -652,6 +654,9 @@ inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle)
       break;
 
     default:
+      if (trackOutOfSpeciesParticles) {
+        LOGF(info, "Wrong particle passed selection cuts. PDG code: %d", pdgcode);
+      }
       return kWrongSpecies;
       break;
   }
@@ -673,8 +678,11 @@ struct DptDptCorrelationsFilterAnalysisTask {
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTrackDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
+  Configurable<float> cfgTrackOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
+  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
 
-  OutputObj<TList> fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList>
+    fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
 
   Produces<aod::AcceptedEvents> acceptedevents;
   Produces<aod::ScannedTracks> scannedtracks;
@@ -682,7 +690,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   Produces<aod::ScannedTrueTracks> scannedtruetracks;
 
   template <typename TrackListObject, typename CollisionIndex>
-  void filterDetectorLevelTracks(TrackListObject const& ftracks, CollisionIndex colix)
+  void filterDetectorLevelTracks(TrackListObject const& ftracks, CollisionIndex colix, aod::McParticles const&)
   {
     using namespace filteranalysistask;
 
@@ -704,7 +712,12 @@ struct DptDptCorrelationsFilterAnalysisTask {
           /* fill the charged tracks histograms */
           fillTrackHistosAfterSelection(track, kCharged);
           /* let's identify it */
-          MatchRecoGenSpecies sp = IdentifyTrack(track);
+          MatchRecoGenSpecies sp = kWrongSpecies;
+          if (cfgRecoIdMethod == 0) {
+            sp = IdentifyTrack(track);
+          } else if (cfgRecoIdMethod == 1) {
+            sp = IdentifyParticle(track.mcParticle());
+          }
           if (sp != kWrongSpecies) {
             /* fill the species histograms */
             fillTrackHistosAfterSelection(track, sp);
@@ -786,6 +799,8 @@ struct DptDptCorrelationsFilterAnalysisTask {
       LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
     }
     trackDCAOutliers = cfgTrackDCAOutliers;
+    trackOutOfSpeciesParticles = cfgTrackOutOfSpeciesParticles;
+    recoIdMethod = cfgRecoIdMethod;
 
     /* if the system type is not known at this time, we have to put the initalization somewhere else */
     fSystem = getSystemType(cfgSystem);
@@ -953,7 +968,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
   using FullTracksPID = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 
-  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, FullTracksPID const& ftracks)
+  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, FullTracksPID const& ftracks, aod::McParticles const& particles)
   {
     using namespace filteranalysistask;
 
@@ -969,7 +984,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhVertexZA->Fill(collision.posZ());
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
 
-      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
+      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex(), particles);
     } else {
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
       for (auto& track : ftracks) {
@@ -979,7 +994,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
 
-  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, FullTracksPID const& ftracks)
+  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, FullTracksPID const& ftracks, aod::McParticles const& particles)
   {
     using namespace filteranalysistask;
 
@@ -999,7 +1014,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
 
       LOGF(MATCHRECGENLOGCOLLISIONS, "Accepted collision with BC id %d and collision Id %d", collision.bcId(), collision.globalIndex());
-      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
+      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex(), particles);
     } else {
       acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
       for (auto& track : ftracks) {
