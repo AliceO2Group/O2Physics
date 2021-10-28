@@ -203,14 +203,14 @@ struct NucleiSpectraEfficiencyLightRec {
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
             spectra.fill(HIST("histRecPtPion"), track.pt());
           }
-        }        
+        }
       }
       //
       // fill histograms for protons
       //
       if (nSigmaPr > nsigmacutLow && nSigmaPr < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() == -2212 && MC::isPhysicalPrimary(track.mcParticle())) {        
+        if (track.mcParticle().pdgCode() == -2212 && MC::isPhysicalPrimary(track.mcParticle())) {
           TLorentzVector lorentzVector{};
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
@@ -231,8 +231,7 @@ struct NucleiSpectraEfficiencyLightRec {
             spectra.fill(HIST("histRecPtHe3"), track.pt() * 2.0);
           }
         }
-      } 
-
+      }
     }
   }
 };
