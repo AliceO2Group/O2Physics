@@ -13,12 +13,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-// custom configurable for switching between run2 and run3 selection types
-void customize(std::vector<ConfigParamSpec>& workflowOptions)
-{
-  workflowOptions.push_back(ConfigParamSpec{"selection-run", VariantType::Int, 2, {"selection type: 2 - run 2, 3 - run 3"}});
-}
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"

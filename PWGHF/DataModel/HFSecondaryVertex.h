@@ -798,12 +798,62 @@ auto EX(const T& candidate)
 {
   return candidate.e(massX);
 }
+
 template <typename T>
 auto InvMassXToJpsiPiPi(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(443), RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
 }
 
+/// Difference between the X mass and the sum of the J/psi and di-pion masses
+template <typename T>
+auto QX(const T& candidate)
+{
+  auto piVec1 = array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
+  auto piVec2 = array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
+  double massPi = RecoDecay::getMassPDG(kPiPlus);
+
+  auto arrayMomenta = array{piVec1, piVec2};
+  double massPiPi = RecoDecay::M(arrayMomenta, array{massPi, massPi});
+
+  // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
+  double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJpsi);
+
+  double massX = InvMassXToJpsiPiPi(candidate);
+  return std::abs(massX - massJpsi - massPiPi);
+}
+
+/// Angular difference between the J/psi and the pion
+template <typename T>
+auto DRX(const T& candidate, int numPi)
+{
+  double etaJpsi = RecoDecay::Eta(array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
+  double phiJpsi = RecoDecay::Phi(candidate.pxProng0(), candidate.pyProng0());
+
+  double etaPi, phiPi;
+
+  if (numPi <= 1) {
+    etaPi = RecoDecay::Eta(array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
+    phiPi = RecoDecay::Phi(candidate.pxProng1(), candidate.pyProng1());
+  } else {
+    etaPi = RecoDecay::Eta(array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
+    phiPi = RecoDecay::Phi(candidate.pxProng2(), candidate.pyProng2());
+  }
+
+  double deltaEta = etaJpsi - etaPi;
+  double deltaPhi = RecoDecay::constrainAngle(phiJpsi - phiPi, -o2::constants::math::PI);
+
+  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+}
+
+/// Difference in pT between the two pions
+template <typename T>
+auto PiBalanceX(const T& candidate)
+{
+  double ptPi1 = RecoDecay::Pt(candidate.pxProng1(), candidate.pyProng1());
+  double ptPi2 = RecoDecay::Pt(candidate.pxProng2(), candidate.pyProng2());
+  return std::abs(ptPi1 - ptPi2) / (ptPi1 + ptPi2);
+}
 // declare dedicated X candidate table
 DECLARE_SOA_TABLE(HfCandXBase, "AOD", "HFCANDXBASE",
                   // general columns

@@ -80,8 +80,8 @@ struct HfLbToLcPiCandidateSelector {
       return false;
     }
 
-    //d0(Lc)xd0(pi)
-    if (hfCandLb.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+    //Lc+ pt
+    if (hfCandLc.pt() < cuts->get(pTBin, "pT Lc+")) {
       return false;
     }
 
@@ -103,15 +103,19 @@ struct HfLbToLcPiCandidateSelector {
     }
 
     //Lb CPA cut
-    //if (hfCandLb.cpa() < cuts->get(pTBin, "CPA")) {
-    //return false;
-    //}
-
-    //d0 of Lc and pi
-    if ((std::abs(hfCandLb.impactParameter0()) > cuts->get(pTBin, "d0 Lc+")) ||
-        (std::abs(hfCandLb.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))) {
+    if (hfCandLb.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
     }
+
+    //d0 of pi
+    if (std::abs(hfCandLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    //d0 of Lc+
+    //if(std::abs(hfCandLb.impactParameter0()) > cuts->get(pTBin, "d0 Lc+")){
+    //return false;
+    //}
 
     return true;
   }

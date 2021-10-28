@@ -54,10 +54,10 @@ class FemtoDreamCutculator
   std::vector<float> setSelection(std::string name)
   {
     try {
-      boost::property_tree::ptree& signSelections = mConfigTree.get_child(name);
-      boost::property_tree::ptree& signSelectionsValue = signSelections.get_child("values");
+      boost::property_tree::ptree& selections = mConfigTree.get_child(name);
+      boost::property_tree::ptree& selectionsValues = selections.get_child("values");
       std::vector<float> tmpVec;
-      for (boost::property_tree::ptree::value_type& val : signSelectionsValue) {
+      for (boost::property_tree::ptree::value_type& val : selectionsValues) {
         tmpVec.push_back(std::stof(val.second.data()));
       }
       return tmpVec;
@@ -80,7 +80,7 @@ class FemtoDreamCutculator
     }
   }
 
-  /// Retrieves automatically The selection passed to the function is retrieves from the dpl-config.json
+  /// Retrieves automatically the selection passed to the function is retrieves from the dpl-config.json
   /// \param prefix Prefix which is added to the name of the Configurable
   void setTrackSelectionFromFile(const char* prefix)
   {
@@ -98,6 +98,22 @@ class FemtoDreamCutculator
           continue; // kPIDnSigmaMax is a special case
         setTrackSelection(obs, FemtoDreamTrackSelection::getSelectionType(obs), prefix);
       }
+    }
+  }
+
+  /// Retrieves automatically The selection passed to the function is retrieves from the dpl-config.json
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setPIDSelectionFromFile(const char* prefix)
+  {
+    std::string PIDnodeName = std::string(prefix) + "TPIDspecies";
+    try {
+      boost::property_tree::ptree& pidNode = mConfigTree.get_child(PIDnodeName);
+      boost::property_tree::ptree& pidValues = pidNode.get_child("values");
+      for (auto& val : pidValues) {
+        mPIDspecies.push_back(static_cast<o2::track::PID::ID>(std::stoi(val.second.data())));
+      }
+    } catch (const boost::property_tree::ptree_error& e) {
+      LOG(info) << "PID selection not avalible for these skimmed data.";
     }
   }
 
@@ -204,11 +220,17 @@ class FemtoDreamCutculator
     std::cout << "CutCulator has spoken - your selection bit is\n";
     std::cout << bitOutput << " (bitwise)\n";
     std::cout << output << " (number representation)\n";
+    std::cout << "PID for these species is stored:\n";
+    int index = 0;
+    for (auto id : mPIDspecies) {
+      std::cout << o2::track::PID::getName(id) << " : " << index++ << std::endl;
+    }
   }
 
  private:
-  boost::property_tree::ptree mConfigTree; ///< the dpl-config.json buffered into a ptree
-  FemtoDreamTrackSelection mTrackSel;      ///< for setting up the bit-wise selection container for tracks
+  boost::property_tree::ptree mConfigTree;     ///< the dpl-config.json buffered into a ptree
+  FemtoDreamTrackSelection mTrackSel;          ///< for setting up the bit-wise selection container for tracks
+  std::vector<o2::track::PID::ID> mPIDspecies; ///< list of particle species for which PID is stored
 };
 } // namespace o2::analysis::femtoDream
 
