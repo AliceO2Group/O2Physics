@@ -47,7 +47,6 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
-//DECLARE_SOA_COLUMN(MJPsi, mjpsi, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
@@ -125,7 +124,9 @@ struct HfTreeCreatorChicToJpsiGamma {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandChic, aod::HfCandChicMCRec, aod::HFSelChicToJpsiGammaCandidate> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particles,
-               aod::BigTracksPID const& tracks)
+               aod::BigTracksPID const& tracks, 
+               aod::HfCandProng2 const& jpsiCands
+               )
   {
 
     // Filling event properties
@@ -145,18 +146,32 @@ struct HfTreeCreatorChicToJpsiGamma {
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
+      // std::cout << "J/psi invariant mass: " << candidate.jpsiToMuMuMass() << std::endl;  
+      // std::cout << "daughter momenta: " << candidate.jpsiToMuMuMass() << std::endl;  
+      // std::cout << "Prong 0: px, py, pz = " << candidate.pxProng0() << ", " << candidate.pyProng0() << ", " << candidate.pzProng0() << std::endl;  
+      // std::cout << "Prong 1: px, py, pz = " << candidate.pxProng1() << ", " << candidate.pyProng1() << ", " << candidate.pzProng1() << std::endl;  
+      // std::cout << "index 0, 1  = " << candidate.index0Id() << ", " << candidate.index1Id() << std::endl;
+      // auto jpsi = candidate.index0();
+      // auto trackPos = jpsi.index0_as<aod::BigTracksPID>(); // positive daughter
+      // auto trackNeg = jpsi.index1_as<aod::BigTracksPID>(); // negative daughter
+
+      // std::cout << "trackPos: px, py, pz = " << trackPos.px() << ", " << trackPos.py() << ", " << trackPos.pz() << std::endl;  
+      // std::cout << "trackNeg: px, py, pz = " << trackNeg.px() << ", " << trackNeg.py() << ", " << trackNeg.pz() << std::endl;  
+      // std::cout << "bcId, numContrib = " << candidate.index0().index0_as<aod::BigTracksPID>().collision().bcId() << ", "
+      //                                    << candidate.index0().index0_as<aod::BigTracksPID>().collision().numContrib() << std::endl;
       indexCand++;
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
-                           float FunctionY //, float FunctionInvMassJPsi
+                           float FunctionY
          ) { 
         if (FunctionSelection >= 1) {
-          //auto jpsi = candidate.index0();
           rowCandidateFull(
-	          0, //          candidate.index1_as<aod::BigTracksPID>().collision().bcId(),
-            0, //          candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
+            candidate.index0().index0_as<aod::BigTracksPID>().collision().bcId(),
+            candidate.index0().index0_as<aod::BigTracksPID>().collision().numContrib(),
+//	          0, //          candidate.index0().index0_as<aod::BigTracksPID>().collision().bcId(),
+//            0, //          candidate.index0().index0_as<aod::BigTracksPID>().collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -180,23 +195,13 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.eta(),
             candidate.phi(),
             FunctionY,
-            0., //FunctionInvMassJPsi,
+            candidate.jpsiToMuMuMass(),
             candidate.flagMCMatchRec()
           );
         }
       };
       fillTable(0, candidate.isSelChicToJpsiToEEGamma(),   InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
       fillTable(1, candidate.isSelChicToJpsiToMuMuGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
-      // fillTable(0, candidate.isSelChicToJpsiToEEGamma(), 
-      //           InvMassChicToJpsiGamma(candidate), 
-      //           CtChic(candidate), 
-      //           YChic(candidate), 
-      //           InvMassJpsiToEE(candidate.index0()));
-      // fillTable(1, candidate.isSelChicToJpsiToMuMuGamma(), 
-      //           InvMassChicToJpsiGamma(candidate), 
-      //           CtChic(candidate), 
-      //           YChic(candidate), 
-      //           InvMassJpsiToMuMu(candidate.index0()));
     }
 
     // Filling particle properties
