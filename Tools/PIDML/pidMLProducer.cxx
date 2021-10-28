@@ -26,6 +26,14 @@ DECLARE_SOA_COLUMN(Py, py, float);                                 //! Non-dynam
 DECLARE_SOA_COLUMN(Pz, pz, float);                                 //! Non-dynamic column with track z-momentum
 DECLARE_SOA_COLUMN(Sign, sign, float);                             //! Non-dynamic column with track sign
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t); //!
+DECLARE_SOA_COLUMN(TOFExpSignalDiffEl, tofExpSignalDiffEl, float); //! Difference between signal and expected for electron
+DECLARE_SOA_COLUMN(TPCExpSignalDiffEl, tpcExpSignalDiffEl, float); //! Difference between signal and expected for electron
+DECLARE_SOA_COLUMN(TOFExpSignalDiffPi, tofExpSignalDiffPi, float); //! Difference between signal and expected for pion
+DECLARE_SOA_COLUMN(TPCExpSignalDiffPi, tpcExpSignalDiffPi, float); //! Difference between signal and expected for pion
+DECLARE_SOA_COLUMN(TOFExpSignalDiffKa, tofExpSignalDiffKa, float); //! Difference between signal and expected for kaon
+DECLARE_SOA_COLUMN(TPCExpSignalDiffKa, tpcExpSignalDiffKa, float); //! Difference between signal and expected for kaon
+DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float); //! Difference between signal and expected for proton
+DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Difference between signal and expected for proton
 } // namespace pidtracks
 DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for prediction and domain adaptation
                   aod::track::TPCSignal,
@@ -41,7 +49,32 @@ DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for pre
                   aod::track::TrackType,
                   aod::track::TPCNClsShared,
                   aod::track::DcaXY,
-                  aod::track::DcaZ);
+                  aod::track::DcaZ,
+                  pidtpc::TPCNSigmaEl,
+                  pidtpc::TPCExpSigmaEl,
+                  pidtracks::TPCExpSignalDiffEl,
+                  pidtpc::TOFNSigmaEl,
+                  pidtpc::TOFExpSigmaEl,
+                  pidtracks::TOFExpSignalDiffEl,
+                  pidtpc::TPCNSigmaPi,
+                  pidtpc::TPCExpSigmaPi,
+                  pidtracks::TPCExpSignalDiffPi,
+                  pidtpc::TOFNSigmaPi,
+                  pidtpc::TOFExpSigmaPi,
+                  pidtracks::TOFExpSignalDiffPi,
+                  pidtpc::TPCNSigmaKa,
+                  pidtpc::TPCExpSigmaKa,
+                  pidtracks::TPCExpSignalDiffKa,
+                  pidtpc::TOFNSigmaKa,
+                  pidtpc::TOFExpSigmaKa,
+                  pidtracks::TOFExpSignalDiffKa,
+                  pidtpc::TPCNSigmaPr,
+                  pidtpc::TPCExpSigmaPr,
+                  pidtracks::TPCExpSignalDiffPr,
+                  pidtpc::TOFNSigmaPr,
+                  pidtpc::TOFExpSigmaPr,
+                  pidtracks::TOFExpSignalDiffPr
+                  );
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   aod::track::TPCSignal,
                   aod::pidtofsignal::TOFSignal,
@@ -57,6 +90,30 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   aod::track::TPCNClsShared,
                   aod::track::DcaXY,
                   aod::track::DcaZ,
+                  pidtpc::TPCNSigmaEl,
+                  pidtpc::TPCExpSigmaEl,
+                  pidtracks::TPCExpSignalDiffEl,
+                  pidtpc::TOFNSigmaEl,
+                  pidtpc::TOFExpSigmaEl,
+                  pidtracks::TOFExpSignalDiffEl,
+                  pidtpc::TPCNSigmaPi,
+                  pidtpc::TPCExpSigmaPi,
+                  pidtracks::TPCExpSignalDiffPi,
+                  pidtpc::TOFNSigmaPi,
+                  pidtpc::TOFExpSigmaPi,
+                  pidtracks::TOFExpSignalDiffPi,
+                  pidtpc::TPCNSigmaKa,
+                  pidtpc::TPCExpSigmaKa,
+                  pidtracks::TPCExpSignalDiffKa,
+                  pidtpc::TOFNSigmaKa,
+                  pidtpc::TOFExpSigmaKa,
+                  pidtracks::TOFExpSignalDiffKa,
+                  pidtpc::TPCNSigmaPr,
+                  pidtpc::TPCExpSigmaPr,
+                  pidtracks::TPCExpSignalDiffPr,
+                  pidtpc::TOFNSigmaPr,
+                  pidtpc::TOFExpSigmaPr,
+                  pidtracks::TOFExpSignalDiffPr,
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
 } // namespace o2::aod
@@ -73,7 +130,7 @@ struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
 
   void process(BigTracksMC const& tracks, aod::McParticles const& mctracks)
   {
@@ -88,6 +145,14 @@ struct CreateTableMc {
                      track.trackType(),
                      track.tpcNClsShared(),
                      track.dcaXY(), track.dcaZ(),
+                     track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
+                     track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
+                     track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
+                     track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
+                     track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
+                     track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
+                     track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
+                     track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
                      mcParticle.pdgCode(),
                      isPrimary);
     }
@@ -98,7 +163,7 @@ struct CreateTableReal {
   Produces<aod::PidTracksReal> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
 
   void process(BigTracks const& tracks)
   {
@@ -110,7 +175,15 @@ struct CreateTableReal {
                      track.alpha(),
                      track.trackType(),
                      track.tpcNClsShared(),
-                     track.dcaXY(), track.dcaZ());
+                     track.dcaXY(), track.dcaZ(),
+                     track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
+                     track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
+                     track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
+                     track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
+                     track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
+                     track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
+                     track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
+                     track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
     }
   }
 };
