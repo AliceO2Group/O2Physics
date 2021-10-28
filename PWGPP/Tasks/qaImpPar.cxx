@@ -24,6 +24,13 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsCommonDataFormats/NameConf.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/Core/TrackSelection.h"
+
+#include "iostream"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -243,10 +250,14 @@ struct QaImpactParMC {
     const AxisSpec trackEtaAxis{40, -2.f, 2.f, "#it{#eta}"};
     const AxisSpec trackPhiAxis{24, 0.f, TMath::TwoPi(), "#varphi"};
     const AxisSpec trackImpParRPhiAxis{200, -500, 500, "#it{d}_{r#it{#varphi}} [#mum]"};
+    const AxisSpec trackImpParZAxis{200, -500, 500, "#it{d}_{z} [#mum]"};
     const AxisSpec trackPDGAxis{3, 0.5f, 3.5f, "species (1: pi, 2: K, 3: p)"};
 
     histograms.add("pt", "", kTH1D, {trackPtAxis});
     histograms.add("h3ImpPar_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackPDGAxis});
+    histograms.add("h3ImpParZ_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
+    histograms.add("h3ImpPar_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackPDGAxis});
+    histograms.add("h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
   }
 
   //void process(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>>::iterator& collision,
@@ -292,6 +303,18 @@ struct QaImpactParMC {
 
     /// loop over tracks
     float impParRPhi = -999.f;
+    float impParZ = -999.f;
+    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      o2::base::GeometryManager::isGeometryLoaded();
+      o2::base::GeometryManager::loadGeometry();
+      o2::base::Propagator::initFieldFromGRP();
+      auto matLUTFile = o2::base::NameConf::getMatLUTFileName();
+      if (o2::utils::Str::pathExists(matLUTFile)) {
+        auto* lut = o2::base::MatLayerCylSet::loadFromFile(matLUTFile);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+      }
+    }
     for (const auto& track : tracks) {
 
       /// Using the Filter instead
@@ -301,22 +324,55 @@ struct QaImpactParMC {
       ///}
 
       histograms.fill(HIST("pt"), track.pt());
+      const auto mcparticle = track.mcParticle();
+      if(MC::isPhysicalPrimary(mcparticle)){
+          impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
+          impParZ = toMicrometers * track.dcaZ(); // from TracksExtended
+          histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
+          histograms.fill(HIST("h3ImpParZ_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
+      }
 
       // propagation to primary vertex for DCA
       // NB: do not use 'track.collisions()' if the o2::aod::Collisions are joined with McCollisionLabels
       // "crude" method not working with Run 3 MC productions
       //if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(/*track.collision()*/ collision), magneticField, &dca, 100.)) {
+      std::array<float, 2> dca{1e10f, 1e10f};
 
-      /// propagation ok! Retrieve impact parameter
-      // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
-      impParRPhi = toMicrometers * track.dcaXY(); //dca.getY()
-
-      /// MC matching - physical primaries
-      const auto mcparticle = track.mcParticle();
-      if (MC::isPhysicalPrimary(mcparticle)) {
-        histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
-      }
       //}
+      // Reconstructed vertex
+      //if (getTrackParCov(track).propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, o2::base::Propagator::Instance()->getNominalBz(), &dca, 100.)) {
+      // MC vertex
+      if (getTrackParCov(track).propagateParamToDCA({mccollision.posX(), mccollision.posY(), mccollision.posZ()}, o2::base::Propagator::Instance()->getNominalBz(), &dca, 100.)) {
+
+        /// propagation ok! Retrieve impact parameter
+        // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
+        impParRPhi = toMicrometers * dca[0]; //track.dcaXY(); //dca.getY()
+        impParZ = toMicrometers * dca[1];    //track.dcaZ(); //dca.getZ()
+
+        /// MC matching - physical primaries
+        //const auto mcparticle = track.mcParticle();
+        if (MC::isPhysicalPrimary(mcparticle)) {
+          histograms.fill(HIST("h3ImpPar_MCvertex_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
+          histograms.fill(HIST("h3ImpParZ_MCvertex_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
+
+          // retrieve information about the mother mcparticle
+          //const auto indexMother0 = mcparticle.mother0Id();
+          //const auto indexMother1 = mcparticle.mother1Id();
+          //std::cout << std::endl << "=========================================" << std::endl;
+          //std::cout << "   indexMother0 " << indexMother0 << ", indexMother1 " << indexMother1 << std::endl;
+          //if(mcparticle.has_mother0()) {
+          //  std::cout << "===> mcparticle PDG " << mcparticle.pdgCode() << std::endl;
+          //  std::cout << "===> mothers:\n\t";
+          //  std::cout << "pdg mother 0: " << mcParticles.iteratorAt(indexMother0).pdgCode();
+          //  if(mcparticle.has_mother1()){
+          //    for(auto index=(indexMother0+1); index<=indexMother1; index++) {
+          //      std::cout << " " << mcParticles.iteratorAt(index).pdgCode();
+          //    }
+          //  }
+          //  std::cout << std::endl;
+          //}
+        }
+      }
     }
   }
 };
@@ -324,10 +380,11 @@ struct QaImpactParMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w{
-    adaptAnalysisTask<QaImpactPar>(cfgc, TaskName{"qa-impact-par"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    w.push_back(adaptAnalysisTask<QaImpactParMC>(cfgc, TaskName{"qa-impact-par-mc"}));
-  }
+    adaptAnalysisTask<QaImpactParMC>(cfgc, TaskName{"qa-impact-par-mc"})};
+  //  adaptAnalysisTask<QaImpactPar>(cfgc, TaskName{"qa-impact-par"})};
+  //const bool doMC = cfgc.options().get<bool>("doMC");
+  //if (doMC) {
+  //  w.push_back(adaptAnalysisTask<QaImpactParMC>(cfgc, TaskName{"qa-impact-par-mc"}));
+  //}
   return w;
 }
