@@ -140,7 +140,7 @@ struct NucleiSpectraTask {
     //
     // calculate invariant mass
     //
-    spectra.fill(HIST("histPairCount"),negTracks.size(), posTracks.size());
+    spectra.fill(HIST("histPairCount"), negTracks.size(), posTracks.size());
     //
     for (Int_t iPos = 0; iPos < posTracks.size(); iPos++) {
       TLorentzVector& vecPos = posTracks[iPos];
