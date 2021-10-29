@@ -43,8 +43,6 @@ inline auto collisionSelector(C const& collision)
 
 using namespace o2::framework;
 
-std::vector<double> defaultBinning = {0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100};
-
 template <uint8_t TRACKTYPE>
 struct PseudorapidityDensity {
   Service<TDatabasePDG> pdg;
@@ -54,7 +52,9 @@ struct PseudorapidityDensity {
   Configurable<float> vtxZMax{"vtxZMax", 15, "max z vertex"};
   Configurable<float> vtxZMin{"vtxZMin", -15, "min z vertex"};
 
-  Configurable<std::vector<double>> percentileBinning{"pBins", std::move(defaultBinning), "Centrality/multiplicity percentile binning"};
+  ConfigurableAxis percentileBinning{"pBins",
+                                     {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100},
+                                     "Centrality/multiplicity percentile binning"};
 
   HistogramRegistry registry{
     "registry",
@@ -85,12 +85,10 @@ struct PseudorapidityDensity {
     x->SetBinLabel(3, "Selected");
 
     if (doprocessBinned) {
-      auto bins = (std::vector<double>)percentileBinning;
-      AxisSpec pAxis = {bins, "Percentile (%)"};
-      registry.add({"EventsNtrkZvtxBin", "; N_{trk}; Z_{vtx}; Percentile", {HistType::kTH3F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}, pAxis}}});
-      registry.add({"TracksEtaZvtxBin", "; #eta; Z_{vtx}; Percentile", {HistType::kTH3F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}, pAxis}}});
-      registry.add({"TracksPhiEtaBin", "; #varphi; #eta; Percentile", {HistType::kTH3F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}, pAxis}}});
-      registry.add({"EventSelectionBin", "; status; Percentile; events", {HistType::kTH2F, {{3, 0.5, 3.5}, pAxis}}});
+      registry.add({"EventsNtrkZvtxBin", "; N_{trk}; Z_{vtx}; Percentile", {HistType::kTH3F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}, percentileBinning}}});
+      registry.add({"TracksEtaZvtxBin", "; #eta; Z_{vtx}; Percentile", {HistType::kTH3F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}, percentileBinning}}});
+      registry.add({"TracksPhiEtaBin", "; #varphi; #eta; Percentile", {HistType::kTH3F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}, percentileBinning}}});
+      registry.add({"EventSelectionBin", "; status; Percentile; events", {HistType::kTH2F, {{3, 0.5, 3.5}, percentileBinning}}});
 
       hstat = registry.get<TH2>(HIST("EventSelectionBin"));
       x = hstat->GetXaxis();
