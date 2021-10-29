@@ -147,6 +147,8 @@ struct HFCandidateCreator2ProngExpressions {
     int8_t flag = 0;
     int8_t origin = 0;
 
+    rowCandidateProng2->bindExternalIndices(&tracks);
+
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (auto& candidate : *rowCandidateProng2) {
