@@ -150,9 +150,10 @@ struct HFCandidateCreator3ProngExpressions {
   void init(InitContext const&) {}
 
   /// Performs MC matching.
-  void processMC(aod::BigTracksMC const& /*tracks*/,
+  void processMC(aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
+    rowCandidateProng3->bindExternalIndices(&tracks);
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
