@@ -60,12 +60,14 @@ struct NucleiSpectraEfficiencyLightGen {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
+    std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6,
                                      1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     //
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     //
-    spectra.add("histGenPt", "generated particles", HistType::kTH1F, {ptAxis});
+    spectra.add("histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+    spectra.add("histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+    spectra.add("histGenPtHe3", "generated particles", HistType::kTH1F, {ptAxis});
   }
 
   void process(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
@@ -74,16 +76,22 @@ struct NucleiSpectraEfficiencyLightGen {
     // loop over generated particles and fill generated particles
     //
     for (auto& mcParticleGen : mcParticles) {
-      if (mcParticleGen.pdgCode() != -1000020030) {
-        continue;
-      }
       if (!MC::isPhysicalPrimary(mcParticleGen)) {
         continue;
       }
       if (abs(mcParticleGen.y()) > 0.5) {
         continue;
       }
-      spectra.fill(HIST("histGenPt"), mcParticleGen.pt());
+      //
+      if (mcParticleGen.pdgCode() == 211) {
+        spectra.fill(HIST("histGenPtPion"), mcParticleGen.pt());
+      }
+      if (mcParticleGen.pdgCode() == -2212) {
+        spectra.fill(HIST("histGenPtProton"), mcParticleGen.pt());
+      }
+      if (mcParticleGen.pdgCode() == -1000020030) {
+        spectra.fill(HIST("histGenPtHe3"), mcParticleGen.pt());
+      }
     }
   }
 };
@@ -94,17 +102,21 @@ struct NucleiSpectraEfficiencyLightRec {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
+    std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6,
                                      1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     //
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     //
     spectra.add("histEvSel", "eventselection", HistType::kTH1D, {{10, -0.5, 9.5}});
     spectra.add("histRecVtxZ", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
-    spectra.add("histRecPt", "reconstructed particles", HistType::kTH1F, {ptAxis});
+    spectra.add("histRecPtPion", "reconstructed particles", HistType::kTH1F, {ptAxis});
+    spectra.add("histRecPtProton", "reconstructed particles", HistType::kTH1F, {ptAxis});
+    spectra.add("histRecPtHe3", "reconstructed particles", HistType::kTH1F, {ptAxis});
     spectra.add("histTpcSignal", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p/z} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {500, 0.0, 1.2, "#beta (TOF)"}});
-    spectra.add("histTpcNsigma", "n-sigma TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
+    spectra.add("histTpcNsigmaHe3", "n-sigmaHe3 TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{He} (a. u.)"}});
+    spectra.add("histTpcNsigmaPr", "n-sigmaPr TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{Pr} (a. u.)"}});
+    spectra.add("histTpcNsigmaPi", "n-sigmaPi TPC", HistType::kTH2F, {ptAxis, {200, -100., +100., "n#sigma_{Pi} (a. u.)"}});
     spectra.add("histItsClusters", "number of ITS clusters", HistType::kTH1F, {{10, -0.5, +9.5, "number of ITS clusters"}});
     spectra.add("histDcaXYprimary", "dca XY primary particles", HistType::kTH1F, {{200, -1., +1., "dca XY (cm)"}});
     spectra.add("histDcaXYsecondary", "dca XY secondary particles", HistType::kTH1F, {{200, -1., +1., "dca XY (cm)"}});
@@ -112,13 +124,13 @@ struct NucleiSpectraEfficiencyLightRec {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> nsigmacutLow{"nsigmacutLow", -10.0, "Value of the Nsigma cut"};
-  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +10.0, "Value of the Nsigma cut"};
+  Configurable<float> nsigmacutLow{"nsigmacutLow", -20.0, "Value of the Nsigma cut"};
+  Configurable<float> nsigmacutHigh{"nsigmacutHigh", +20.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   //Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TOFSignal>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTPCFullPr, aod::pidTPCFullPi>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>::iterator const& collision,
                TrackCandidates const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
@@ -140,9 +152,10 @@ struct NucleiSpectraEfficiencyLightRec {
     // loop over reconstructed particles and fill reconstructed tracks
     //
     for (auto track : tracks) {
-      TLorentzVector lorentzVector{};
-      lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-      if (lorentzVector.Rapidity() < -0.5 || lorentzVector.Rapidity() > 0.5) {
+      //
+      // apply minimal cuts
+      //
+      if (track.itsNCls() == 0) {
         continue;
       }
       //
@@ -150,18 +163,22 @@ struct NucleiSpectraEfficiencyLightRec {
       //
       float nSigmaHe3 = track.tpcNSigmaHe();
       nSigmaHe3 += 94.222101 * TMath::Exp(-0.905203 * track.tpcInnerParam());
+      float nSigmaPr = track.tpcNSigmaPr();
+      float nSigmaPi = track.tpcNSigmaPi();
       //
       // TPC-QA
       //
-      if (track.itsNCls() > 0) {
-        spectra.fill(HIST("histTpcSignal"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
-      }
-      spectra.fill(HIST("histTpcNsigma"), track.tpcInnerParam(), nSigmaHe3);
+      spectra.fill(HIST("histTpcSignal"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      //
+      spectra.fill(HIST("histTpcNsigmaPi"), track.tpcInnerParam(), nSigmaPi);
+      spectra.fill(HIST("histTpcNsigmaPr"), track.tpcInnerParam(), nSigmaPr);
+      spectra.fill(HIST("histTpcNsigmaHe3"), track.tpcInnerParam(), nSigmaHe3);
       //
       // ITS-QA
       //
       spectra.fill(HIST("histItsClusters"), track.itsNCls());
       //
+      /*
       // TOF-QA
       //
       if (track.hasTOF()) {
@@ -170,20 +187,50 @@ struct NucleiSpectraEfficiencyLightRec {
         Float_t beta = tofLength / (TMath::C() * 1e-10 * tofTime);
         spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), beta);
       }
+      */
       //
       // dca to primary vertex -- wait for tracksextented
       //
       //spectra.fill(HIST("histDcaXYprimary"), track.dcaXY());
       //
-      // fill histograms
+      // fill histograms for pions
+      //
+      if (nSigmaPi > nsigmacutLow && nSigmaPi < nsigmacutHigh) {
+        // check on perfect PID
+        if (track.mcParticle().pdgCode() == 211 && MC::isPhysicalPrimary(track.mcParticle())) {
+          TLorentzVector lorentzVector{};
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPionCharged);
+          if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
+            spectra.fill(HIST("histRecPtPion"), track.pt());
+          }
+        }
+      }
+      //
+      // fill histograms for protons
+      //
+      if (nSigmaPr > nsigmacutLow && nSigmaPr < nsigmacutHigh) {
+        // check on perfect PID
+        if (track.mcParticle().pdgCode() == -2212 && MC::isPhysicalPrimary(track.mcParticle())) {
+          TLorentzVector lorentzVector{};
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+          if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
+            spectra.fill(HIST("histRecPtProton"), track.pt());
+          }
+        }
+      }
+      //
+      // fill histograms for he3
       //
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() != -1000020030) {
-          continue;
+        if (track.mcParticle().pdgCode() == -1000020030) {
+          TLorentzVector lorentzVector{};
+          lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+          if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
+            // fill reconstructed histogram
+            spectra.fill(HIST("histRecPtHe3"), track.pt() * 2.0);
+          }
         }
-        // fill reconstructed histogram
-        spectra.fill(HIST("histRecPt"), track.pt() * 2.0);
       }
     }
   }

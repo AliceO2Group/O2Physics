@@ -15,6 +15,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
@@ -189,9 +190,16 @@ namespace filteranalysistask
 SystemType fSystem = kNoSystem;
 GenType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
-analysis::CheckRangeCfg trackDCAOutliers;
-bool trackOutOfSpeciesParticles = false;
+analysis::CheckRangeCfg traceDCAOutliers;
+bool traceOutOfSpeciesParticles = false;
 int recoIdMethod = 0;
+bool useOwnTrackSelection = false;
+TrackSelection ownTrackSelection = getGlobalTrackSelection();
+bool useOwnParticleSelection = false;
+bool particleMaxDCAxy = 999.9;
+bool particleMaxDCAZ = 999.9;
+bool traceCollId0 = false;
+
 TDatabasePDG* fPDG = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
@@ -409,23 +417,27 @@ bool matchTrackType(TrackObject const& track)
 {
   using namespace filteranalysistask;
 
-  switch (tracktype) {
-    case 1:
-      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-        return true;
-      } else {
+  if (useOwnTrackSelection) {
+    return ownTrackSelection.IsSelected(track);
+  } else {
+    switch (tracktype) {
+      case 1:
+        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+          return true;
+        } else {
+          return false;
+        }
+        break;
+      case 3: /* Run3 track */
+        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+          return true;
+        } else {
+          return false;
+        }
+        break;
+      default:
         return false;
-      }
-      break;
-    case 3: /* Run3 track */
-      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-        return true;
-      } else {
-        return false;
-      }
-      break;
-    default:
-      return false;
+    }
   }
 }
 
@@ -450,8 +462,8 @@ inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
   }
 }
 
-template <typename ParticleObject, typename ParticleListObject>
-inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particles, bool& asone, bool& astwo)
+template <typename ParticleObject, typename MCCollisionObject>
+inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, bool& asone, bool& astwo)
 {
   using namespace filteranalysistask;
 
@@ -460,8 +472,35 @@ inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particl
 
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
-  /* TODO: matchTrackType will not work. We need at least is physical primary */
   if (MC::isPhysicalPrimary(particle)) {
+    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
+    }
+    if (useOwnParticleSelection) {
+      float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+      float dcaz = TMath::Abs(particle.vz() - collision.posZ());
+      if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
+        if ((particle.mcCollisionId() == 0) and traceCollId0) {
+          auto currparticle = particle;
+          LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
+          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", currparticle.mcCollisionId(), collision.globalIndex());
+          LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
+          LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
+          LOGF(info, "   index: %d, pdg code: %d", currparticle.globalIndex(), currparticle.pdgCode());
+          while (currparticle.has_mother0()) {
+            LOGF(info, "   mother0 index: %d, mother1 index: %d", currparticle.mother0Id(), currparticle.mother1Id());
+            LOGF(info, "  Tracking back mother0 index");
+            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
+            LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
+            LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
+            LOGF(info, "   Passed  isPhysicalPrimary(): %s", MC::isPhysicalPrimary(newcurrparticle) ? "YES" : "NO");
+            currparticle = newcurrparticle;
+          }
+        }
+        return;
+      }
+    }
     if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
       if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
         asone = true;
@@ -469,6 +508,10 @@ inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particl
       if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
         astwo = true;
       }
+    }
+  } else {
+    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
     }
   }
 }
@@ -495,22 +538,26 @@ template <typename TrackObject>
 void fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp)
 {
   using namespace filteranalysistask;
+
+  /* the charged species should have been called first so avoid double counting */
+  if (sp == kCharged) {
+    fhEtaA->Fill(track.eta());
+    fhPhiA->Fill(track.phi());
+    fhDCAxyA->Fill(track.dcaXY());
+    fhDCAzA->Fill(track.dcaZ());
+    if (track.dcaXY() < 1.0) {
+      fhFineDCAxyA->Fill(track.dcaXY());
+    }
+    if (track.dcaZ() < 1.0) {
+      fhFineDCAzA->Fill(track.dcaZ());
+    }
+  }
   fhPA[sp]->Fill(track.p());
   fhPtA[sp]->Fill(track.pt());
-  fhEtaA->Fill(track.eta());
-  fhPhiA->Fill(track.phi());
   if (track.sign() > 0) {
     fhPtPosA[sp]->Fill(track.pt());
   } else {
     fhPtNegA[sp]->Fill(track.pt());
-  }
-  fhDCAxyA->Fill(track.dcaXY());
-  fhDCAzA->Fill(track.dcaZ());
-  if (track.dcaXY() < 1.0) {
-    fhFineDCAxyA->Fill(track.dcaXY());
-  }
-  if (track.dcaZ() < 1.0) {
-    fhFineDCAzA->Fill(track.dcaZ());
   }
 }
 
@@ -531,7 +578,7 @@ void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisi
 
   float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                             (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-  if (trackDCAOutliers.mDoIt and (trackDCAOutliers.mLowValue < dcaxy) and (dcaxy < trackDCAOutliers.mUpValue)) {
+  if (traceDCAOutliers.mDoIt and (traceDCAOutliers.mLowValue < dcaxy) and (dcaxy < traceDCAOutliers.mUpValue)) {
     fhTrueDCAxyBid->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
   }
 
@@ -545,27 +592,29 @@ void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisio
 {
   using namespace filteranalysistask;
 
+  /* the charged species should have been called first so avoid double counting */
+  if (sp == kCharged) {
+    fhTrueEtaA->Fill(particle.eta());
+    fhTruePhiA->Fill(particle.phi());
+    float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                              (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+    if (traceDCAOutliers.mDoIt and (traceDCAOutliers.mLowValue < dcaxy) and (dcaxy < traceDCAOutliers.mUpValue)) {
+      LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+           particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+      LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
+    }
+
+    fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                   (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+    fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
+  }
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());
-  fhTrueEtaA->Fill(particle.eta());
-  fhTruePhiA->Fill(particle.phi());
   if (charge > 0) {
     fhTruePtPosA[sp]->Fill(particle.pt());
   } else {
     fhTruePtNegA[sp]->Fill(particle.pt());
   }
-
-  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-  if (trackDCAOutliers.mDoIt and (trackDCAOutliers.mLowValue < dcaxy) and (dcaxy < trackDCAOutliers.mUpValue)) {
-    LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-         particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
-    LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
-  }
-
-  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
-  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
 }
 
 template <typename TrackObject>
@@ -654,7 +703,7 @@ inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle)
       break;
 
     default:
-      if (trackOutOfSpeciesParticles) {
+      if (traceOutOfSpeciesParticles) {
         LOGF(info, "Wrong particle passed selection cuts. PDG code: %d", pdgcode);
       }
       return kWrongSpecies;
@@ -671,18 +720,19 @@ inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle)
 using namespace dptdptcorrelations;
 
 struct DptDptCorrelationsFilterAnalysisTask {
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
+  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96, 3 = Run3 tracks. Default 1"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe. Default PbPb"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-  Configurable<o2::analysis::CheckRangeCfg> cfgTrackDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
-  Configurable<float> cfgTrackOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
+  Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
+  Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
+  Configurable<o2::analysis::TrackSelectionCfg> cfgTrackSelection{"tracksel", {false, false, 0, 70, 0.8, 2.4, 3.2}, "Track selection: {useit: true/false, ongen: true/false, tpccls, tpcxrws, tpcxrfc, dcaxy, dcaz}. Default {false,0.70.0.8,2.4,3.2}"};
+  Configurable<bool> cfgTraceCollId0{"tracecollid0", false, "Trace particles in collisions id 0. Default false"};
 
-  OutputObj<TList>
-    fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> fOutput{"MatchingRecoGenGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
 
   Produces<aod::AcceptedEvents> acceptedevents;
   Produces<aod::ScannedTracks> scannedtracks;
@@ -753,7 +803,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
 
         /* track selection */
         /* tricky because the boolean columns issue */
-        AcceptParticle(particle, particles, asone, astwo);
+        AcceptParticle(particle, mccollision, asone, astwo);
         if (asone or astwo) {
           /* the track has been accepted */
           /* fill the charged particle histograms */
@@ -765,6 +815,10 @@ struct DptDptCorrelationsFilterAnalysisTask {
           }
           acceptedparticles++;
           scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
+        }
+      } else {
+        if ((particle.mcCollisionId() == 0) and traceCollId0) {
+          LOGF(info, "Particle %d with fractional charge or equal to zero", particle.globalIndex());
         }
       }
     }
@@ -798,9 +852,39 @@ struct DptDptCorrelationsFilterAnalysisTask {
     } else {
       LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
     }
-    trackDCAOutliers = cfgTrackDCAOutliers;
-    trackOutOfSpeciesParticles = cfgTrackOutOfSpeciesParticles;
+    traceDCAOutliers = cfgTraceDCAOutliers;
+    traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
+    if (cfgTrackSelection->mUseIt) {
+      useOwnTrackSelection = true;
+      if (cfgTrackSelection->mOnGen) {
+        useOwnParticleSelection = true;
+        particleMaxDCAxy = cfgTrackSelection->mDCAxy;
+        particleMaxDCAZ = cfgTrackSelection->mDCAz;
+      }
+      ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
+      ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
+      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(cfgTrackSelection->mTPCXRoFClusters);
+      ownTrackSelection.SetMaxDcaXYPtDep(std::function<float(float)>{});
+      ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
+      ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);
+      o2::aod::track::TrackTypeEnum ttype;
+      switch (tracktype) {
+        case 1:
+          ttype = o2::aod::track::Run2Track;
+          break;
+        case 3:
+          ttype = o2::aod::track::Track;
+          break;
+        default:
+          ttype = o2::aod::track::Track;
+          break;
+      }
+      ownTrackSelection.SetTrackType(ttype);
+    } else {
+      useOwnTrackSelection = false;
+    }
+    traceCollId0 = cfgTraceCollId0;
 
     /* if the system type is not known at this time, we have to put the initalization somewhere else */
     fSystem = getSystemType(cfgSystem);
@@ -912,9 +996,9 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fhTruePhiB = new TH1F("fTrueHistPhiB", "#phi distribution before (truth);#phi;counts", 360, 0.0, 2 * M_PI);
       fhTruePhiA = new TH1F("fTrueHistPhiA", "#phi distribution (truth);#phi;counts", 360, 0.0, 2 * M_PI);
       fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
-      if (trackDCAOutliers.mDoIt) {
+      if (traceDCAOutliers.mDoIt) {
         fhTrueDCAxyBid = new TH1F("PDGCodeDCAxyB",
-                                  TString::Format("PDG code within %.2f<|DCA_{#it{xy}}|<%.2f; PDG code", trackDCAOutliers.mLowValue, trackDCAOutliers.mUpValue).Data(),
+                                  TString::Format("PDG code within %.2f<|DCA_{#it{xy}}|<%.2f; PDG code", traceDCAOutliers.mLowValue, traceDCAOutliers.mUpValue).Data(),
                                   100, 0.5, 100.5);
       }
       fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
@@ -950,7 +1034,7 @@ struct DptDptCorrelationsFilterAnalysisTask {
       fOutputList->Add(fhTruePhiB);
       fOutputList->Add(fhTruePhiA);
       fOutputList->Add(fhTrueDCAxyB);
-      if (trackDCAOutliers.mDoIt) {
+      if (traceDCAOutliers.mDoIt) {
         fOutputList->Add(fhTrueDCAxyBid);
       }
       fOutputList->Add(fhTrueDCAxyA);
