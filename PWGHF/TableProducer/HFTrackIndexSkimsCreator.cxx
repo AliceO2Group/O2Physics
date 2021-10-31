@@ -337,7 +337,7 @@ struct HfTagSelTracks {
       } else {
         // reset vertex for unassigned track
         vtxXYZ = {0, 0, 0};
-      }    for (auto& track : tracks) {
+      }
 
 #ifdef MY_DEBUG
       auto indexBach = track.mcParticleId();
