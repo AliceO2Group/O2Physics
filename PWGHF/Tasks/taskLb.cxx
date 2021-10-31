@@ -208,7 +208,7 @@ struct HfTaskLbMc {
         registry.fill(HIST("hCPALcRecSig"), candLc.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthLcRecSig"), candLc.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), candidate.pt());
-	//registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
+        //registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
