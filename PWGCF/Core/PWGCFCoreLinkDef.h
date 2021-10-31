@@ -16,5 +16,6 @@
 #pragma link C++ class o2::analysis::EventSelectionCuts + ;
 #pragma link C++ class o2::analysis::DptDptBinningCuts + ;
 #pragma link C++ class o2::analysis::CheckRangeCfg + ;
+#pragma link C++ class o2::analysis::TrackSelectionCfg + ;
 #pragma link C++ class o2::analysis::SimpleInclusiveCut + ;
 #pragma link C++ class CorrelationContainer + ;
