@@ -316,7 +316,6 @@ struct HfTagSelTracks {
     return true;
   }
 
-
   void process(aod::Collisions const& collisions,
                MY_TYPE1 const& tracks
 #ifdef MY_DEBUG
