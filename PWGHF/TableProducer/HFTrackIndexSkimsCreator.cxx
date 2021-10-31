@@ -453,18 +453,24 @@ struct HfTagSelTracks {
 
       iDebugCut = 5;
       // DCA cut
-      array<float, 2> dca;
+
+      // FIXME: set some unambiguosly incorrect value for unassigned tracks? This will put them into overflow bins
+      array<float, 2> dca{10, 10};
       if ((debug || statusProng > 0)) {
-        auto trackparvar0 = getTrackParCov(track);
-        if (!trackparvar0.propagateParamToDCA(vtxXYZ, bz, &dca, 100.)) { // get impact parameters
-          statusProng = 0;
-        }
-        if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
-          CLRBIT(statusProng, CandidateType::Cand2Prong);
-          if (debug) {
-            cutStatus[CandidateType::Cand2Prong][3] = false;
-            if (fillHistograms) {
-              registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
+        // can only check DCA if the vertex is known
+        // FIXME: try alternative associations
+        if (track.has_collision()) {
+          auto trackparvar0 = getTrackParCov(track);
+          if (!trackparvar0.propagateParamToDCA(vtxXYZ, bz, &dca, 100.)) { // get impact parameters
+            statusProng = 0;
+          }
+          if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
+            CLRBIT(statusProng, CandidateType::Cand2Prong);
+            if (debug) {
+              cutStatus[CandidateType::Cand2Prong][3] = false;
+              if (fillHistograms) {
+                registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
+              }
             }
           }
         }
