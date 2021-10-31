@@ -316,7 +316,8 @@ struct HfTagSelTracks {
     return true;
   }
 
-  void process(aod::Collision const& collision,
+
+  void process(aod::Collisions const& collisions,
                MY_TYPE1 const& tracks
 #ifdef MY_DEBUG
                ,
@@ -324,8 +325,19 @@ struct HfTagSelTracks {
 #endif
   )
   {
-    math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
+    auto prevColId = -1;
+    math_utils::Point3D<float> vtxXYZ;
     for (auto& track : tracks) {
+      if (track.has_collision()) {
+        if (track.collisionId() != prevColId) {
+          auto collision = track.collision();
+          vtxXYZ = {collision.posX(), collision.posY(), collision.posZ()};
+          prevColId = track.collisionId();
+        }
+      } else {
+        // reset vertex for unassigned track
+        vtxXYZ = {0, 0, 0};
+      }    for (auto& track : tracks) {
 
 #ifdef MY_DEBUG
       auto indexBach = track.mcParticleId();
