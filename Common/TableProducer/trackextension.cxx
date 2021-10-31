@@ -48,8 +48,8 @@ constexpr long run3lut_timestamp = (1665695116725 + 1634159124442) / 2;
 constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
 const char* ccdbpath_geo = "GLO/Config/Geometry";
-const char* ccdbpath_grp = "Users/v/victor/GRP/GRP";
-const char* ccdburl = "http://alice-ccdb.cern.ch:8080"; /* production  "https://alice-ccdb.cern.ch"; */
+const char* ccdbpath_grp = "GLO/GRP/GRP";
+const char* ccdburl = "https://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.cern.ch:8080"; */
 } // namespace trackextension
 } // namespace analysis
 } // namespace o2
@@ -59,6 +59,7 @@ struct TrackExtension {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int mRunNumber;
+  float mMagField;
 
   void init(InitContext& context)
   {
@@ -79,6 +80,7 @@ struct TrackExtension {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
     mRunNumber = 0;
+    mMagField = 0.0f;
   }
 
   void processRun2(aod::FullTracks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
@@ -88,7 +90,6 @@ struct TrackExtension {
     int lastCollId = -1;
     for (auto& track : tracks) {
       std::array<float, 2> dca{1e10f, 1e10f};
-      float magField = 0.0;
       if (track.has_collision()) {
         if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Track && track.itsChi2NCl() != 0.f && track.tpcChi2NCl() != 0.f && std::abs(track.x()) < 10.f) {
           if (lastCollId != track.collisionId()) {
@@ -97,11 +98,15 @@ struct TrackExtension {
               o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
               if (grpo != nullptr) {
                 /* TODO: magnetic field intensity from L3 current */
-                if (grpo->getL3Current() > 0) {
-                  magField = 5.0;
+                float l3current = grpo->getL3Current();
+                if (l3current > 29950.0f) {
+                  mMagField = 5.0f;
+                } else if (l3current < -29950.0f) {
+                  mMagField = -5.0f;
                 } else {
-                  magField = -5.0;
+                  mMagField = 0.0f;
                 }
+                LOGF(info, "Setting magnetic field to %f from an L3 current %f for run %d", mMagField, l3current, bc.runNumber());
               } else {
                 LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
               }
@@ -111,7 +116,7 @@ struct TrackExtension {
           }
           auto trackPar = getTrackPar(track);
           auto const& collision = track.collision();
-          trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, magField, &dca);
+          trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, mMagField, &dca);
         }
       }
       extendedTrackQuantities(dca[0], dca[1]);
