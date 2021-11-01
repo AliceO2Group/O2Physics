@@ -37,14 +37,16 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> highPtObjectsNames{"HighPtTrack","JetChHighPt"};
+static const std::vector<std::string> highPtObjectsNames{"HighPtTrack", "JetChHighPt"};
 
 struct jetFilter {
-  enum {kHighPtTrack=0, kJetChHighPt, kHighPtObjects};
+  enum { kHighPtTrack = 0,
+         kJetChHighPt,
+         kHighPtObjects };
 
   //event selection cuts
-  Configurable<float> selectionHighPtTrack{"selectionHighPtTrack",10.,"Minimum track pT trigger threshold"};   //we want to keep all events having a track with pT above this
-  Configurable<float> selectionJetChHighPt{"selectionJetChHighPt",40.,"Minimum charged jet pT trigger threshold"};   //we want to keep all events having a charged jet with pT above this
+  Configurable<float> selectionHighPtTrack{"selectionHighPtTrack", 10., "Minimum track pT trigger threshold"};       //we want to keep all events having a track with pT above this
+  Configurable<float> selectionJetChHighPt{"selectionJetChHighPt", 40., "Minimum charged jet pT trigger threshold"}; //we want to keep all events having a charged jet with pT above this
 
   Produces<aod::JetFilters> tags;
 
@@ -65,8 +67,7 @@ struct jetFilter {
     spectra.add("fTrackPtSelected", "pT of selected high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     spectra.add("fJetChPtSelected", "pT of selected high pT charged jets", HistType::kTH1F, {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"}});
 
-
-    auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{kHighPtObjects, -0.5, kHighPtObjects-0.5}}))};
+    auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{kHighPtObjects, -0.5, kHighPtObjects - 0.5}}))};
     for (uint32_t iS{1}; iS <= highPtObjectsNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, highPtObjectsNames[iS - 1].data());
     }
@@ -79,30 +80,29 @@ struct jetFilter {
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
-
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::Jets const& jets)
   {
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};
     //
     spectra.fill(HIST("fCollZpos"), collision.posZ());
- 
+
     //Check whether there is a high pT track
     for (auto& track : tracks) { // start loop over tracks
-       if (track.pt() >= selectionHighPtTrack){
-          spectra.fill(HIST("fTrackPtSelected"), track.pt()); //track pT which passed the cut
-          keepEvent[kHighPtTrack] = true;
-          break;
-       }
+      if (track.pt() >= selectionHighPtTrack) {
+        spectra.fill(HIST("fTrackPtSelected"), track.pt()); //track pT which passed the cut
+        keepEvent[kHighPtTrack] = true;
+        break;
+      }
     }
 
     //Check whether there is a high pT charged jet
     for (auto& jet : jets) { // start loop over charged jets
-       if (jet.pt() >= selectionJetChHighPt){
-          spectra.fill(HIST("fJetChPtSelected"), jet.pt()); //charged jet pT
-          keepEvent[kJetChHighPt] = true;
-          break;
-       }
+      if (jet.pt() >= selectionJetChHighPt) {
+        spectra.fill(HIST("fJetChPtSelected"), jet.pt()); //charged jet pT
+        keepEvent[kJetChHighPt] = true;
+        break;
+      }
     }
 
     //count events which passed the selections
@@ -114,8 +114,6 @@ struct jetFilter {
     tags(keepEvent[0], keepEvent[1]);
   }
 };
-
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {

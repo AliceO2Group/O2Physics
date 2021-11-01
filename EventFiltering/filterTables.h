@@ -37,9 +37,9 @@ DECLARE_SOA_COLUMN(PPL, hasPPL, bool); //! has p-p-L triplet
 DECLARE_SOA_COLUMN(PLL, hasPLL, bool); //! has p-L-L triplet
 DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 
-// jets  
-DECLARE_SOA_COLUMN(HighPtTrack, hasHighPtTrack, bool);     //! event contains high-pT track
-DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool);     //! high-pT charged jet
+// jets
+DECLARE_SOA_COLUMN(HighPtTrack, hasHighPtTrack, bool); //! event contains high-pT track
+DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
 
 } // namespace filtering
 
@@ -64,7 +64,6 @@ DECLARE_SOA_TABLE(CFFilters, "AOD", "CF Filters", //!
                   filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
 using CfFilter = CFFilters::iterator;
 
-
 // jets
 DECLARE_SOA_TABLE(JetFilters, "AOD", "Jet Filters", //!
                   filtering::HighPtTrack, filtering::JetChHighPt);
@@ -73,8 +72,8 @@ using JetFilter = JetFilters::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{5};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters","JetFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters","JetFilteres"};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters", "JetFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters", "JetFilteres"};
 constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter"};
 constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters, CFFilters, JetFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
