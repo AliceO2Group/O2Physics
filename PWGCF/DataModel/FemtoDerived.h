@@ -24,7 +24,6 @@
 
 namespace o2::aod
 {
-
 /// FemtoDreamCollision
 namespace femtodreamcollision
 {

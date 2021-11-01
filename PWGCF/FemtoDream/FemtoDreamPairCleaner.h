@@ -11,7 +11,7 @@
 
 /// \file FemtoDreamPairCleaner.h
 /// \brief FemtoDreamPairCleaner - Makes sure only proper candidates are paired
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
 
 #ifndef ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
 #define ANALYSIS_TASKS_PWGCF_O2FEMTODREAM_INCLUDE_O2FEMTODREAM_FEMTODREAMPAIRCLEANER_H_
@@ -61,6 +61,13 @@ class FemtoDreamPairCleaner
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       /// Track-V0 combination
       // \todo to be implemented
+      uint64_t id1 = part2.indices()[0];
+      uint64_t id2 = part2.indices()[1];
+      auto daughter1 = particles.begin() + id1;
+      auto daughter2 = particles.begin() + id2;
+      if ((*daughter1).indices()[0] <= 0 && (*daughter1).indices()[1] <= 0 && (*daughter2).indices()[0] <= 0 && (*daughter2).indices()[1] <= 0) {
+        return true;
+      }
       return false;
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
       /// Track-Cascade combination

@@ -62,33 +62,14 @@ struct ftofPidQaMC {
   Configurable<float> maxDelta{"maxDelta", 1.f, "Maximum delta plotted"};
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
 
-  template <typename T>
-  void makelogaxis(T h)
-  {
-    if (logAxis == 0) {
-      return;
-    }
-    const int nbins = h->GetNbinsX();
-    double binp[nbins + 1];
-    double max = h->GetXaxis()->GetBinUpEdge(nbins);
-    double min = h->GetXaxis()->GetBinLowEdge(1);
-    if (min <= 0) {
-      min = 0.00001;
-    }
-    double lmin = TMath::Log10(min);
-    double ldelta = (TMath::Log10(max) - lmin) / ((double)nbins);
-    for (int i = 0; i < nbins; i++) {
-      binp[i] = TMath::Exp(TMath::Log(10) * (lmin + i * ldelta));
-    }
-    binp[nbins] = max + 1;
-    h->GetXaxis()->Set(nbins, binp);
-  }
-
   void init(o2::framework::InitContext&)
   {
     AxisSpec momAxis{nBinsP, minP, maxP};
-    AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma};
-    AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta};
+    if (logAxis) {
+      momAxis.makeLogaritmic();
+    }
+    const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma};
+    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta};
 
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
     histos.add("event/length", ";FTOF length (cm)", kTH1F, {{100, 0, 100}});
@@ -110,17 +91,6 @@ struct ftofPidQaMC {
     histos.add("qa/nsigmaPi", ";#it{p} (GeV/#it{c});N_{#sigma}^{FTOF}(#pi)", kTH2F, {momAxis, nsigmaAxis});
     histos.add("qa/nsigmaKa", ";#it{p} (GeV/#it{c});N_{#sigma}^{FTOF}(K)", kTH2F, {momAxis, nsigmaAxis});
     histos.add("qa/nsigmaPr", ";#it{p} (GeV/#it{c});N_{#sigma}^{FTOF}(p)", kTH2F, {momAxis, nsigmaAxis});
-    makelogaxis(histos.get<TH2>(HIST("qa/signalvsP")));
-    makelogaxis(histos.get<TH2>(HIST("qa/deltaEl")));
-    makelogaxis(histos.get<TH2>(HIST("qa/deltaMu")));
-    makelogaxis(histos.get<TH2>(HIST("qa/deltaPi")));
-    makelogaxis(histos.get<TH2>(HIST("qa/deltaKa")));
-    makelogaxis(histos.get<TH2>(HIST("qa/deltaPr")));
-    makelogaxis(histos.get<TH2>(HIST("qa/nsigmaEl")));
-    makelogaxis(histos.get<TH2>(HIST("qa/nsigmaMu")));
-    makelogaxis(histos.get<TH2>(HIST("qa/nsigmaPi")));
-    makelogaxis(histos.get<TH2>(HIST("qa/nsigmaKa")));
-    makelogaxis(histos.get<TH2>(HIST("qa/nsigmaPr")));
   }
 
   using Trks = soa::Join<aod::Tracks, aod::FTOFTracksIndex, aod::TracksExtra>;

@@ -31,6 +31,9 @@ using namespace o2::framework::expressions;
  */
 //****************************************************************************************
 struct TrackSelectionTask {
+  // FIXME: this will be removed once we can get this via meta data
+  Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
+
   Produces<aod::TrackSelection> filterTable;
 
   TrackSelection globalTracks;
@@ -40,6 +43,10 @@ struct TrackSelectionTask {
   {
     globalTracks = getGlobalTrackSelection();
     globalTracksSDD = getGlobalTrackSelectionSDD();
+
+    if (isRun3) {
+      globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+    }
   }
 
   void process(soa::Join<aod::FullTracks, aod::TracksExtended> const& tracks)

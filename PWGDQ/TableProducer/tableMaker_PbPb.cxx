@@ -45,7 +45,7 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, 
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Cents>;
+using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
 using MyEventsNoCent = soa::Join<aod::Collisions, aod::EvSels>;
 //using MyMuons = aod::Muons;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;

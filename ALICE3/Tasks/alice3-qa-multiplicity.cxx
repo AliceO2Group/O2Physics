@@ -13,6 +13,8 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -25,6 +27,7 @@ struct ALICE3MultTask {
   Configurable<float> MaxEta{"MaxEta", 0.8f, "Maximum eta in range"};
   Configurable<float> MaxMult{"MaxMult", 1000.f, "Maximum multiplicity in range"};
   Configurable<float> MinContrib{"MinContrib", 2.f, "Minimum number of contributors to the PV"};
+  Configurable<float> MaxDCA{"MaxDCA", 25.f, "Max DCAxy and DCAz for counted tracks"};
 
   void init(InitContext&)
   {
@@ -35,11 +38,14 @@ struct ALICE3MultTask {
   }
 
   int nevs = 0;
-  void process(const o2::aod::Collision& collision, const o2::aod::Tracks& tracks)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksExtended>& tracks)
   {
     int nTracks = 0;
     for (const auto& track : tracks) {
       if (track.eta() < MinEta || track.eta() > MaxEta) {
+        continue;
+      }
+      if (abs(track.dcaXY()) > MaxDCA || abs(track.dcaZ()) > MaxDCA) {
         continue;
       }
       nTracks++;

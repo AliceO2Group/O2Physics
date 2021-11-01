@@ -90,9 +90,12 @@ struct AccessMcTruth {
 
 // Loop over MCColisions and get corresponding collisions (there can be more than one)
 // For each of them get the corresponding tracks
+// Note the use of "SmallGroups" template, that allows to handle both Run 2, where
+// we have exactly 1-to-1 correspondence between collisions and mc collisions, and
+// Run 3, where we can have 0, 1, or more collisions for a given mc collision
 struct LoopOverMcMatched {
   OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
-  void process(aod::McCollision const& mcCollision, soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
+  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions,
                soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
@@ -116,6 +119,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<VertexDistribution>(cfgc),
     adaptAnalysisTask<AccessMcData>(cfgc),
     adaptAnalysisTask<AccessMcTruth>(cfgc),
-    adaptAnalysisTask<LoopOverMcMatched>(cfgc),
-  };
+    adaptAnalysisTask<LoopOverMcMatched>(cfgc)};
 }

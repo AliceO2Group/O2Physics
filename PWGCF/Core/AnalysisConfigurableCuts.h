@@ -57,6 +57,33 @@ class DptDptBinningCuts
   ClassDefNV(DptDptBinningCuts, 1);
 };
 
+/// \brief Simple class for a generic check within a concrete range of a magnitude
+class CheckRangeCfg
+{
+ public:
+  bool mDoIt = false;    ///< do the actual check
+  float mLowValue = 0.0; ///< range lowest value
+  float mUpValue = 0.0;  ///< range upper value
+ private:
+  ClassDefNV(CheckRangeCfg, 1);
+};
+
+/// \brief Simple class for configuring a track selection object
+class TrackSelectionCfg
+{
+ public:
+  bool mUseIt = false;          ///< use this track selection configuration
+  bool mOnGen = false;          ///< apply it to generator level also
+  int mTPCclusters = 0;         ///< minimum number of TPC clusters
+  int mTPCxRows = 70;           ///< minimum number of TPC crossed rows
+  float mTPCXRoFClusters = 0.8; ///< minimu value of the TPC ratio no of crossed rows over findable clusters
+  float mDCAxy = 2.4;           ///< maximum DCA on xy plane
+  float mDCAz = 3.2;            ///< maximum DCA on z axis
+
+ private:
+  ClassDefNV(TrackSelectionCfg, 1);
+};
+
 class SimpleInclusiveCut : public TNamed
 {
  public:

@@ -31,6 +31,12 @@ DECLARE_SOA_COLUMN(HfHighPt, hasHfHighPt, bool); //! high-pT charm hadron
 DECLARE_SOA_COLUMN(HfBeauty, hasHfBeauty, bool); //! beauty hadron
 DECLARE_SOA_COLUMN(HfFemto, hasHfFemto, bool);   //! charm-hadron - N pair
 
+// CF three body triggers
+DECLARE_SOA_COLUMN(PPP, hasPPP, bool); //! has p-p-p triplet
+DECLARE_SOA_COLUMN(PPL, hasPPL, bool); //! has p-p-L triplet
+DECLARE_SOA_COLUMN(PLL, hasPLL, bool); //! has p-L-L triplet
+DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
+
 } // namespace filtering
 
 // nuclei
@@ -49,12 +55,17 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HF Filters", //!
 
 using HfFilter = HfFilters::iterator;
 
+// correlations
+DECLARE_SOA_TABLE(CFFilters, "AOD", "CF Filters", //!
+                  filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
+using CfFilter = CFFilters::iterator;
+
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{3};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters> FiltersPack;
+constexpr int NumberOfFilters{4};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters, CFFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>

@@ -114,6 +114,9 @@ struct CorrelationTask {
     registry.add("yields", "centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
 
+    const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
+    registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+
     mPairCuts.SetHistogramRegistry(&registry);
 
     if (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 || cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0) {
@@ -151,15 +154,6 @@ struct CorrelationTask {
 
     long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
-
-    if (cfgEfficiencyTrigger.value.empty() == false) {
-      cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, now);
-      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
-    }
-    if (cfgEfficiencyAssociated.value.empty() == false) {
-      cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, now);
-      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
-    }
   }
 
   template <typename TCollision, typename TTracks>
@@ -261,16 +255,23 @@ struct CorrelationTask {
   }
 
   // Version with explicit nested loop
-  void processSameAOD(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Cents>>::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void processSameAOD(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     // TODO will go to CCDBConfigurable
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (cfgEfficiencyTrigger.value.empty() == false) {
       cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, bc.timestamp());
+      if (cfg.mEfficiencyTrigger == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
+      }
       LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
     }
     if (cfgEfficiencyAssociated.value.empty() == false) {
       cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, bc.timestamp());
+      if (cfg.mEfficiencyAssociated == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
+      }
       LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
     }
 
@@ -282,6 +283,7 @@ struct CorrelationTask {
     if (fillCollisionAOD(same, collision, centrality) == false) {
       return;
     }
+    registry.fill(HIST("eventcount"), -2);
     fillQA(collision, centrality, tracks);
     fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), bSign);
   }
@@ -295,12 +297,13 @@ struct CorrelationTask {
     const auto centrality = collision.centV0M();
 
     same->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
+    registry.fill(HIST("eventcount"), -2);
     fillQA(collision, centrality, tracks);
     fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), bSign);
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
-  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::Cents>>& collisions, aodTracks const& tracks)
+  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentV0Ms>>& collisions, aodTracks const& tracks)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
@@ -316,9 +319,11 @@ struct CorrelationTask {
       LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
+      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
       if (fillCollisionAOD(mixed, collision1, collision1.centV0M()) == false) {
         continue;
       }
+      registry.fill(HIST("eventcount"), collision1.bin());
 
       auto it1 = slicer.begin();
       auto it2 = slicer.begin();
@@ -342,6 +347,7 @@ struct CorrelationTask {
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
+      // TODO mixed event weight missing
       fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), bSign);
     }
   }
@@ -362,6 +368,7 @@ struct CorrelationTask {
 
       LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
 
+      registry.fill(HIST("eventcount"), collision1.bin());
       mixed->fillEvent(collision1.centV0M(), CorrelationContainer::kCFStepReconstructed);
 
       auto it1 = slicer.begin();
@@ -392,7 +399,7 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
 
   // Version with combinations
-  void processWithCombinations(soa::Join<aod::Collisions, aod::Cents>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
+  void processWithCombinations(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
   {
     LOGF(info, "Tracks for collision (Combination run): %d", tracks.size());
 
@@ -538,7 +545,7 @@ struct CorrelationHashTask {
     return -1;
   }
 
-  void processAOD(soa::Join<aod::Collisions, aod::Cents> const& collisions)
+  void processAOD(soa::Join<aod::Collisions, aod::CentV0Ms> const& collisions)
   {
     for (auto& collision : collisions) {
       int hash = getHash(collision.posZ(), collision.centV0M());

@@ -28,9 +28,9 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 
 struct MultiplicityTableTaskIndexed {
   Produces<aod::Mults> mult;
-  Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+  Partition<aod::Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
-  void process(aod::Run2MatchedSparse::iterator const& collision, aod::Tracks const& tracks, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
+  void processRun2(aod::Run2MatchedSparse::iterator const& collision, aod::Tracks const& tracks, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
   {
     float multV0A = -1.f;
     float multV0C = -1.f;
@@ -38,7 +38,7 @@ struct MultiplicityTableTaskIndexed {
     float multT0C = -1.f;
     float multZNA = -1.f;
     float multZNC = -1.f;
-    int multTracklets = tracklets.size();
+    int multTracklets = run2tracklets.size();
 
     if (collision.has_fv0a()) {
       auto v0a = collision.fv0a();
@@ -69,13 +69,9 @@ struct MultiplicityTableTaskIndexed {
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i", multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets);
     mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets);
   }
-};
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
-struct MultiplicityTableTaskRun3 {
-  Produces<aod::Mults> mult;
-  Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
-
-  void process(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
   {
     for (auto& collision : collisions) {
       float multV0A = -1.f;
@@ -84,7 +80,7 @@ struct MultiplicityTableTaskRun3 {
       float multT0C = -1.f;
       float multZNA = -1.f;
       float multZNC = -1.f;
-      int multTracklets = tracklets.size();
+      int multTracklets = -1;
 
       const float* aAmplitudesA;
       const float* aAmplitudesC;
@@ -108,13 +104,10 @@ struct MultiplicityTableTaskRun3 {
       mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets);
     }
   }
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  if (cfgc.options().get<int>("selection-run") == 2) {
-    return WorkflowSpec{adaptAnalysisTask<MultiplicityTableTaskIndexed>(cfgc, TaskName{"multiplicity-table"})};
-  } else {
-    return WorkflowSpec{adaptAnalysisTask<MultiplicityTableTaskRun3>(cfgc, TaskName{"multiplicity-table"})};
-  }
+  return WorkflowSpec{adaptAnalysisTask<MultiplicityTableTaskIndexed>(cfgc, TaskName{"multiplicity-table"})};
 }
