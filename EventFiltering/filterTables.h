@@ -73,7 +73,7 @@ using JetFilter = JetFilters::iterator;
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{5};
 constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters", "JetFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters", "JetFilteres"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters", "JetFilters"};
 constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter"};
 constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters, CFFilters, JetFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
