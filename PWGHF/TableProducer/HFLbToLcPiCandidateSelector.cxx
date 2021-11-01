@@ -102,6 +102,12 @@ struct HfLbToLcPiCandidateSelector {
       return false;
     }
 
+    //Lb chi2PCA cut
+    if (hfCandLb.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+      //Printf("Lb selection failed at chi2PCA");
+      return false;
+    }
+
     //Lb CPA cut
     if (hfCandLb.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
@@ -113,9 +119,9 @@ struct HfLbToLcPiCandidateSelector {
     }
 
     //d0 of Lc+
-    //if(std::abs(hfCandLb.impactParameter0()) > cuts->get(pTBin, "d0 Lc+")){
-    //return false;
-    //}
+    if (std::abs(hfCandLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc+")) {
+      return false;
+    }
 
     return true;
   }
