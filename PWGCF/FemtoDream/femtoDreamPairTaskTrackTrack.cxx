@@ -101,10 +101,10 @@ struct femtoDreamPairTaskTrackTrack {
   std::vector<int> vPIDPartOne, vPIDPartTwo;
 
   /// Correlation part
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
-  ConfigurableAxis CfgkstarBins{"CfgkstarBins", {5000, 0., 5.}, "binning kstar"};
-  ConfigurableAxis CfgkTBins{"CfgkTBins", {70, 0., 7.}, "binning kT"};
-  ConfigurableAxis CfgmTBins{"CfgmTBins", {70, 0., 7.}, "binning mT"};
+  ConfigurableAxis CfgMultBins{"CfgMultBins", {26, 1, 27}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
+  ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis CfgmTBins{"CfgmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<float> ConfBField{"ConfBField", +0.5, "Magnetic Field"};
