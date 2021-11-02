@@ -27,7 +27,7 @@ struct LoopV0s {
   void process(aod::V0s const& v0s, aod::Tracks const& tracks)
   {
     for (auto& v0 : v0s) {
-      LOGF(DEBUG, "V0 (%d, %d, %d)", v0.posTrack().collisionId(), v0.negTrack().collisionId(), v0.collisionId());
+      LOGF(debug, "V0 (%d, %d, %d)", v0.posTrack().collisionId(), v0.negTrack().collisionId(), v0.collisionId());
     }
   }
 };
@@ -36,7 +36,7 @@ struct LoopCascades {
   void process(aod::Cascades const& cascades, aod::V0s const& v0s, aod::Tracks const& tracks)
   {
     for (auto& cascade : cascades) {
-      LOGF(DEBUG, "Cascade %d (%d, %d, %d, %d)", cascade.globalIndex(), cascade.bachelor().collisionId(), cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId(), cascade.collisionId());
+      LOGF(debug, "Cascade %d (%d, %d, %d, %d)", cascade.globalIndex(), cascade.bachelor().collisionId(), cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId(), cascade.collisionId());
     }
   }
 };
@@ -45,10 +45,10 @@ struct LoopCascades {
 struct GroupV0s {
   void process(aod::Collision const& collision, aod::V0s const& v0s, aod::Tracks const& tracks)
   {
-    LOGF(INFO, "Collision %d has %d V0s", collision.globalIndex(), v0s.size());
+    LOGF(info, "Collision %d has %d V0s", collision.globalIndex(), v0s.size());
 
     for (auto& v0 : v0s) {
-      LOGF(DEBUG, "Collision %d V0 %d (%d, %d)", collision.globalIndex(), v0.globalIndex(), v0.posTrackId(), v0.negTrackId());
+      LOGF(debug, "Collision %d V0 %d (%d, %d)", collision.globalIndex(), v0.globalIndex(), v0.posTrackId(), v0.negTrackId());
     }
   }
 };
@@ -58,11 +58,11 @@ struct GroupV0s {
 struct GroupV0sCascades {
   void process(aod::Collision const& collision, aod::V0s const& v0s, aod::Cascades const& cascades, aod::Tracks const& tracks)
   {
-    LOGF(INFO, "Collision %d has %d cascades (%d tracks)", collision.globalIndex(), cascades.size(), tracks.size());
+    LOGF(info, "Collision %d has %d cascades (%d tracks)", collision.globalIndex(), cascades.size(), tracks.size());
 
     for (auto& cascade : cascades) {
-      LOGF(INFO, "Collision %d Cascade %d (%d, %d, %d)", collision.globalIndex(), cascade.globalIndex(), cascade.v0().posTrackId(), cascade.v0().negTrackId(), cascade.bachelorId());
-      LOGF(INFO, "             IDs: %d %d %d", cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId(), cascade.bachelor().collisionId());
+      LOGF(info, "Collision %d Cascade %d (%d, %d, %d)", collision.globalIndex(), cascade.globalIndex(), cascade.v0().posTrackId(), cascade.v0().negTrackId(), cascade.bachelorId());
+      LOGF(info, "             IDs: %d %d %d", cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId(), cascade.bachelor().collisionId());
     }
   }
 };

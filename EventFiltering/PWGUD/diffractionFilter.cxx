@@ -72,7 +72,7 @@ struct DGFilterRun2 {
   using BC = BCs::iterator;
   using CCs = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using CC = CCs::iterator;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::TrackSelection>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::TrackSelection>;
   using MUs = aod::FwdTracks;
 
   void process(CC const& collision,
@@ -126,7 +126,7 @@ struct DGFilterRun3 {
   using BC = BCs::iterator;
   using CCs = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using CC = CCs::iterator;
-  using TCs = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>>;
+  using TCs = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>>;
   using MUs = aod::FwdTracks;
 
   void process(CC const& collision,

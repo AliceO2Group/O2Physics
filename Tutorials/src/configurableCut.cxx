@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Analysis/configurableCut.h"
+#include "configurableCut.h"
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, configurableCut const& c)

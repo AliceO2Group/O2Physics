@@ -13,9 +13,9 @@
 #define O2_ANALYSIS_DIFFRACTION_SELECTOR_H_
 
 #include "Framework/DataTypes.h"
-#include "AnalysisDataModel/EventSelection.h"
-#include "AnalysisDataModel/TrackSelectionTables.h"
-#include "AnalysisDataModel/PID/PIDResponse.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/PID/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;

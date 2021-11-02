@@ -41,7 +41,7 @@ include_guard()
 #
 # ${titi} will contain something like `O2Physicsexe-test-toto` (for the exact
 # naming see the o2physics_name_target function) and an executable named
-# o2physics-test-toto will be created upon build)
+# o2-test-toto will be created upon build)
 
 function(o2physics_add_executable baseTargetName)
 
@@ -67,7 +67,19 @@ function(o2physics_add_executable baseTargetName)
     string(TOLOWER ${A_COMPONENT_NAME} component)
     set(comp -${component})
   endif()
-  set(exeName o2${exeType}${comp}-${baseTargetName})
+
+  # Extract PWG name from folder path (if exists)
+  # First get a relative source directory
+  string(REPLACE ${PROJECT_SOURCE_DIR} "" RELATIVE_LIST_DIR ${CMAKE_CURRENT_LIST_DIR})
+  # Match PWG
+  string(REGEX MATCH "PWG[A-Z][A-Z]" PWG ${RELATIVE_LIST_DIR})
+  if(PWG)
+    string(REPLACE "PWG" "" PWGSUFFIX ${PWG})
+    string(TOLOWER ${PWGSUFFIX} pwg_lower)
+    set(pwg -${pwg_lower})
+  endif()
+
+  set(exeName o2${exeType}${comp}${pwg}-${baseTargetName})
 
   if(A_IS_TEST)
     set(isTest "IS_TEST")
@@ -83,7 +95,8 @@ function(o2physics_add_executable baseTargetName)
                         targetName
                         IS_EXE
                         ${isTest}
-                        ${isBench})
+                        ${isBench}
+                        PWG ${PWGSUFFIX})
 
   set(target ${targetName})
 
