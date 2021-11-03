@@ -75,14 +75,14 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #ifdef MY_DEBUG
 using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::McTrackLabels>;
-using MyTracks = soa::Join<aod::FullTracks, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
 using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;
-using MyTracks = soa::Join<aod::FullTracks, aod::HFSelTrack, aod::TracksExtended>;
+using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
