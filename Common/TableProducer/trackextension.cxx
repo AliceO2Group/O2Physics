@@ -97,15 +97,8 @@ struct TrackExtension {
             if (mRunNumber != bc.runNumber()) {
               o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
               if (grpo != nullptr) {
-                /* TODO: magnetic field intensity from L3 current */
                 float l3current = grpo->getL3Current();
-                if (l3current > 29950.0f) {
-                  mMagField = 5.0f;
-                } else if (l3current < -29950.0f) {
-                  mMagField = -5.0f;
-                } else {
-                  mMagField = 0.0f;
-                }
+                mMagField = l3current / 30000.0f * 5.0f;
                 LOGF(info, "Setting magnetic field to %f from an L3 current %f for run %d", mMagField, l3current, bc.runNumber());
               } else {
                 LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
