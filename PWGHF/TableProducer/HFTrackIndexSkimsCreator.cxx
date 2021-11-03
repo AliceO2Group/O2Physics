@@ -466,7 +466,6 @@ struct HfTagSelTracks {
             }
           }
         }
-        //        }
       }
       MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "statusProng = " << statusProng; printf("\n"));
 
