@@ -64,8 +64,6 @@ struct qaEventTrack {
   Configurable<bool> selectSec{"selectSec", false, "select secondaries"};
   Configurable<int> selectPID{"selectPID", 0, "select pid"};
 
-  // TODO: option to select primaries or particluar particle species only
-
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
 
@@ -287,7 +285,6 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
   // vertex resolution
   if constexpr (IS_MC) {
     const auto mcColl = collision.mcCollision();
-    // TODO: dont put relative reso!
     histos.fill(HIST("Events/resoX"), collision.posX() - mcColl.posX(), collision.numContrib());
     histos.fill(HIST("Events/resoY"), collision.posY() - mcColl.posY(), collision.numContrib());
     histos.fill(HIST("Events/resoZ"), collision.posZ() - mcColl.posZ(), collision.numContrib());
