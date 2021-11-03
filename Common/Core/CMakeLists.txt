@@ -12,6 +12,7 @@
 o2physics_add_library(AnalysisCore
                SOURCES TrackSelection.cxx
                        PID/ParamBase.cxx
+                       PID/TPCPIDResponse.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(AnalysisCore
@@ -24,6 +25,7 @@ o2physics_target_root_dictionary(AnalysisCore
                         PID/PIDTPC.h
                         PID/BetheBloch.h
                         PID/TPCReso.h
+                        PID/TPCPIDResponse.h
               LINKDEF AnalysisCoreLinkDef.h)
 
 o2physics_add_executable(merger
