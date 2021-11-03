@@ -88,11 +88,11 @@ struct TaskDPlus {
     registry.add("hPtvsYGenNonPrompt", "3-prong candidates (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagDPlus);
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagDPlus;
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> const& candidates)
   {
-    for (auto& candidate : candidates) {
+    for (auto& candidate : selectedDPlusCandidates) {
       //not possible in Filter since expressions do not support binary operators
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
@@ -126,14 +126,14 @@ struct TaskDPlus {
     }
   }
 
-  Filter filterSelectCandidatesMC = (aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0);
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi > 0;
 
   void processMC(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate, aod::HfCandProng3MCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
-    for (auto& candidate : candidates) {
+    for (auto& candidate : recoFlagDPlusCandidates) {
       //not possible in Filter since expressions do not support binary operators
       if (!(candidate.hfflag() & 1 << DecayType::DPlusToPiKPi)) {
         continue;
