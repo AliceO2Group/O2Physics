@@ -27,7 +27,7 @@ struct TrackExtensionTask {
   Configurable<float> magField{"magField", 5.f, "Magnetic field for the propagation to the primary vertex in kG"};
   Produces<aod::TracksExtended> extendedTrackQuantities;
 
-  void process(aod::FullTracks const& tracks, aod::Collisions const&)
+  void process(aod::Tracks const& tracks, aod::Collisions const&)
   {
     std::array<float, 2> dca{1e10f, 1e10f};
     for (auto& track : tracks) {

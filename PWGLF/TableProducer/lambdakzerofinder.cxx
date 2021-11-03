@@ -139,7 +139,7 @@ struct lambdakzerofinder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
-  void process(aod::Collision const& collision, aod::FullTracks const& tracks,
+  void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
                aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks)
   {
     //Define o2 fitter, 2-prong
@@ -158,10 +158,10 @@ struct lambdakzerofinder {
     std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
     for (auto& t0id : ptracks) { //FIXME: turn into combination(...)
-      auto t0 = t0id.goodTrack_as<aod::FullTracks>();
+      auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
       auto Track1 = getTrackParCov(t0);
       for (auto& t1id : ntracks) {
-        auto t1 = t1id.goodTrack_as<aod::FullTracks>();
+        auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
         auto Track2 = getTrackParCov(t1);
 
         //Try to progate to dca
