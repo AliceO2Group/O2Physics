@@ -61,7 +61,7 @@ class PairCuts
   bool conversionCuts(T const& track1, T const& track2);
 
   template <typename T>
-  bool twoTrackCut(T const& track1, T const& track2, int bSign);
+  bool twoTrackCut(T const& track1, T const& track2, float magField);
 
  protected:
   float mCuts[ParticlesLastEntry] = {-1};
@@ -80,7 +80,7 @@ class PairCuts
   double getInvMassSquaredFast(T const& track1, double m0_1, T const& track2, double m0_2);
 
   template <typename T>
-  float getDPhiStar(T const& track1, T const& track2, float radius, float bSign);
+  float getDPhiStar(T const& track1, T const& track2, float radius, float magField);
 };
 
 template <typename T>
@@ -109,20 +109,20 @@ bool PairCuts::conversionCuts(T const& track1, T const& track2)
 }
 
 template <typename T>
-bool PairCuts::twoTrackCut(T const& track1, T const& track2, int bSign)
+bool PairCuts::twoTrackCut(T const& track1, T const& track2, float magField)
 {
   // the variables & cut have been developed in Run 1 by the CF - HBT group
   //
   // Parameters:
-  //   bSign: sign of B field
+  //   magField: B field in kG
 
   auto deta = track1.eta() - track2.eta();
 
   // optimization
   if (std::fabs(deta) < mTwoTrackDistance * 2.5 * 3) {
     // check first boundaries to see if is worth to loop and find the minimum
-    float dphistar1 = getDPhiStar(track1, track2, mTwoTrackRadius, bSign);
-    float dphistar2 = getDPhiStar(track1, track2, 2.5, bSign);
+    float dphistar1 = getDPhiStar(track1, track2, mTwoTrackRadius, magField);
+    float dphistar2 = getDPhiStar(track1, track2, 2.5, magField);
 
     const float kLimit = mTwoTrackDistance * 3;
 
@@ -130,7 +130,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, int bSign)
       float dphistarminabs = 1e5;
       float dphistarmin = 1e5;
       for (Double_t rad = mTwoTrackRadius; rad < 2.51; rad += 0.01) {
-        float dphistar = getDPhiStar(track1, track2, rad, bSign);
+        float dphistar = getDPhiStar(track1, track2, rad, magField);
 
         float dphistarabs = std::fabs(dphistar);
 
@@ -145,7 +145,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, int bSign)
       }
 
       if (dphistarminabs < mTwoTrackDistance && std::fabs(deta) < mTwoTrackDistance) {
-        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), bSign);
+        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %f", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
         return true;
       }
 
@@ -308,7 +308,7 @@ double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& tr
 }
 
 template <typename T>
-float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, float bSign)
+float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, float magField)
 {
   //
   // calculates dphistar
@@ -322,7 +322,7 @@ float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, floa
   auto pt2 = track2.pt();
   auto charge2 = track2.sign();
 
-  float dphistar = phi1 - phi2 - charge1 * bSign * std::asin(0.075 * radius / pt1) + charge2 * bSign * std::asin(0.075 * radius / pt2);
+  float dphistar = phi1 - phi2 - charge1 * std::asin(0.015 * magField * radius / pt1) + charge2 * std::asin(0.015 * magField * radius / pt2);
 
   if (dphistar > M_PI) {
     dphistar = M_PI * 2 - dphistar;
