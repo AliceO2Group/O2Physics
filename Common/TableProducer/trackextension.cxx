@@ -44,7 +44,6 @@ namespace analysis
 {
 namespace trackextension
 {
-constexpr long run3lut_timestamp = (1665695116725 + 1634159124442) / 2;
 constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
 const char* ccdbpath_geo = "GLO/Config/Geometry";
@@ -69,7 +68,7 @@ struct TrackExtension {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbpath_lut, run3lut_timestamp));
+    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       auto* gm = ccdb->get<TGeoManager>(ccdbpath_geo);
