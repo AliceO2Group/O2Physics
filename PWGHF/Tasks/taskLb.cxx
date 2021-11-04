@@ -72,9 +72,8 @@ struct HfTaskLb {
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
   void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
-  //void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>, aod::BigTracks)
   {
-    float centrality = collision.centV0M(); //FIXME: Add centrality properly;removed for the time being (taking forever to run)
+    float centrality = collision.centV0M();
     registry.fill(HIST("hCentrality"), centrality);
 
     for (auto& candidate : candidates) {
@@ -134,12 +133,12 @@ struct HfTaskLbMc {
     registry.add("hYProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEtaProng0Gen", "MC particles (matched);prong 0 (#Lambda_{b}^{0}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEtaProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPARecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPARecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPAxyRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate CPAxy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPAxyRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate CPAxy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPARecSigD0", "#Lambda_{b}^{0} candidates (matched);prong 0 (#Lambda_{c}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPARecBgD0", "#Lambda_{b}^{0} candidates (unmatched);prong 0 (#Lambda_{c}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPARecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPARecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPAxyRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPAxyRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPALcRecSig", "#Lambda_{b}^{0} candidates (matched);prong 0 (#Lambda_{c}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPALcRecBg", "#Lambda_{b}^{0} candidates (unmatched);prong 0 (#Lambda_{c}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEtaRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEtaRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hRapidityRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -159,12 +158,17 @@ struct HfTaskLbMc {
     registry.add("hDecLengthXYRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXYRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length xy(cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthD0RecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthD0RecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthLcRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthNormRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthNormRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpParProdLbRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hImpParProdLbRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    registry.add("hChi2PCARecSig", "#Lambda_{b}^{0} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hChi2PCARecBg", "#Lambda_{b}^{0} candidates (unmatched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hThetaStarRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hThetaStarRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
@@ -201,8 +205,10 @@ struct HfTaskLbMc {
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), candidate.pt());
         registry.fill(HIST("hImpParProdLbRecSig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hDecLengthNormRecSig"), candidate.decayLengthXYNormalised(), candidate.pt());
-        registry.fill(HIST("hCPARecSigD0"), candLc.cpa(), candidate.pt());
-        registry.fill(HIST("hDecLengthD0RecSig"), candLc.decayLength(), candidate.pt());
+        registry.fill(HIST("hCPALcRecSig"), candLc.cpa(), candidate.pt());
+        registry.fill(HIST("hDecLengthLcRecSig"), candLc.decayLength(), candidate.pt());
+        registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), candidate.pt());
+        //registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
@@ -218,8 +224,10 @@ struct HfTaskLbMc {
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), candidate.pt());
         registry.fill(HIST("hImpParProdLbRecBg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hDecLengthNormRecBg"), candidate.decayLengthXYNormalised(), candidate.pt());
-        registry.fill(HIST("hCPARecBgD0"), candLc.cpa(), candidate.pt());
-        registry.fill(HIST("hDecLengthD0RecBg"), candLc.decayLength(), candidate.pt());
+        registry.fill(HIST("hCPALcRecBg"), candLc.cpa(), candidate.pt());
+        registry.fill(HIST("hDecLengthLcRecBg"), candLc.decayLength(), candidate.pt());
+        registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), candidate.pt());
+        //registry.fill(HIST("hThetaStarRecBg"), candidate.cosThetaStar(), candidate.pt());
       }
     } // rec
 

@@ -178,7 +178,7 @@ struct cascadefinder {
 
   //Process: subscribes to a lot of things!
   void process(aod::Collision const& collision,
-               aod::FullTracks const& tracks,
+               soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
                aod::V0Datas const& V0s,
                aod::CascGoodLambdas const& lambdas,
                aod::CascGoodAntiLambdas const& antiLambdas,
@@ -218,8 +218,8 @@ struct cascadefinder {
     for (auto& v0id : lambdas) {
       //required: de-reference the tracks for cascade building
       auto v0 = v0id.goodLambda();
-      auto pTrack = getTrackParCov(v0.posTrack_as<aod::FullTracks>());
-      auto nTrack = getTrackParCov(v0.negTrack_as<aod::FullTracks>());
+      auto pTrack = getTrackParCov(v0.posTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
+      auto nTrack = getTrackParCov(v0.negTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
       //Let's do the slow part first: the V0 recalculation from scratch
       int nCand = fitterV0.process(pTrack, nTrack);
       if (nCand != 0) {
@@ -258,7 +258,7 @@ struct cascadefinder {
         tV0.setQ2Pt(0); //No bending, please
 
         for (auto& t0id : nBachtracks) {
-          auto t0 = t0id.goodNegTrack_as<aod::FullTracks>();
+          auto t0 = t0id.goodNegTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
           auto bTrack = getTrackParCov(t0);
 
           int nCand2 = fitterCasc.process(tV0, bTrack);
@@ -290,8 +290,8 @@ struct cascadefinder {
     for (auto& v0id : antiLambdas) {
       //required: de-reference the tracks for cascade building
       auto v0 = v0id.goodAntiLambda();
-      auto pTrack = getTrackParCov(v0.posTrack_as<aod::FullTracks>());
-      auto nTrack = getTrackParCov(v0.negTrack_as<aod::FullTracks>());
+      auto pTrack = getTrackParCov(v0.posTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
+      auto nTrack = getTrackParCov(v0.negTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
       //Let's do the slow part first: the V0 recalculation from scratch
       int nCand = fitterV0.process(pTrack, nTrack);
       if (nCand != 0) {
@@ -330,7 +330,7 @@ struct cascadefinder {
         tV0.setQ2Pt(0); //No bending, please
 
         for (auto& t0id : pBachtracks) {
-          auto t0 = t0id.goodPosTrack_as<aod::FullTracks>();
+          auto t0 = t0id.goodPosTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
           auto bTrack = getTrackParCov(t0);
 
           int nCand2 = fitterCasc.process(tV0, bTrack);
