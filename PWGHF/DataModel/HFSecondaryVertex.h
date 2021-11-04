@@ -42,12 +42,18 @@ namespace hf_seltrack
 DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
 DECLARE_SOA_COLUMN(DCAPrim0, dcaPrim0, float);   //!
 DECLARE_SOA_COLUMN(DCAPrim1, dcaPrim1, float);   //!
+DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
+DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
+DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 } // namespace hf_seltrack
 
 DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
                   hf_seltrack::IsSelProng,
                   hf_seltrack::DCAPrim0,
-                  hf_seltrack::DCAPrim1);
+                  hf_seltrack::DCAPrim1,
+                  hf_seltrack::PxProng,
+                  hf_seltrack::PyProng,
+                  hf_seltrack::PzProng);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HFSelTrack>;
 using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;

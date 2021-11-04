@@ -525,7 +525,7 @@ struct HfTagSelTracks {
       }
 
       // fill table row
-      rowSelectedTrack(statusProng, dca[0], dca[1]);
+      rowSelectedTrack(statusProng, dca[0], dca[1], track.px(), track.py(), track.pz());
     }
   }
 };
@@ -603,8 +603,8 @@ struct HfTrackIndexSkimsCreator {
   static const int nCuts2Prong = 4;                                          // how many different selections are made on 2-prongs
   static const int nCuts3Prong = 4;                                          // how many different selections are made on 3-prongs
 
-  array<array<array<double, 2>, 2>, n2ProngDecays> arrMass2Prong;
-  array<array<array<double, 3>, 2>, n3ProngDecays> arrMass3Prong;
+  std::array<std::array<std::array<double, 2>, 2>, n2ProngDecays> arrMass2Prong;
+  std::array<std::array<std::array<double, 3>, 2>, n3ProngDecays> arrMass3Prong;
 
   // arrays of 2-prong and 3-prong cuts
   std::array<LabeledArray<double>, n2ProngDecays> cut2Prong;
@@ -652,9 +652,26 @@ struct HfTrackIndexSkimsCreator {
   template <typename T1, typename T2, typename T3>
   void is2ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
+    /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
+    static std::vector<int> massMinIndex;
+    static std::vector<int> massMaxIndex;
+    static std::vector<int> d0d0Index;
+    static auto cacheIndices = [](std::array<LabeledArray<double>, n2ProngDecays>& cut2Prong, std::vector<int>& mins, std::vector<int>& maxs, std::vector<int>& d0d0) {
+      mins.resize(cut2Prong.size());
+      maxs.resize(cut2Prong.size());
+      d0d0.resize(cut2Prong.size());
+      for (size_t i = 0; i < cut2Prong.size(); ++i) {
+        mins[i] = cut2Prong[i].colmap.find("massMin")->second;
+        maxs[i] = cut2Prong[i].colmap.find("massMax")->second;
+        d0d0[i] = cut2Prong[i].colmap.find("d0d0")->second;
+      }
+      return true;
+    };
+    static bool initIndex = cacheIndices(cut2Prong, massMinIndex, massMaxIndex, d0d0Index);
+
     auto arrMom = array{
-      array{hfTrack0.px(), hfTrack0.py(), hfTrack0.pz()},
-      array{hfTrack1.px(), hfTrack1.py(), hfTrack1.pz()}};
+      array{hfTrack0.pxProng(), hfTrack0.pyProng(), hfTrack0.pzProng()},
+      array{hfTrack1.pxProng(), hfTrack1.pyProng(), hfTrack1.pzProng()}};
 
     auto pT = RecoDecay::Pt(arrMom[0], arrMom[1]) + pTTolerance; // add tolerance because of no reco decay vertex
 
@@ -670,23 +687,6 @@ struct HfTrackIndexSkimsCreator {
         }
         continue;
       }
-
-      /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
-      static std::vector<int> massMinIndex;
-      static std::vector<int> massMaxIndex;
-      static std::vector<int> d0d0Index;
-      static auto cacheIndices = [](std::array<LabeledArray<double>, n2ProngDecays>& cut2Prong, std::vector<int>& mins, std::vector<int>& maxs, std::vector<int>& d0d0) {
-        mins.resize(cut2Prong.size());
-        maxs.resize(cut2Prong.size());
-        d0d0.resize(cut2Prong.size());
-        for (size_t i = 0; i < cut2Prong.size(); ++i) {
-          mins[i] = cut2Prong[i].colmap.find("massMin")->second;
-          maxs[i] = cut2Prong[i].colmap.find("massMax")->second;
-          d0d0[i] = cut2Prong[i].colmap.find("d0d0")->second;
-        }
-        return true;
-      };
-      static bool initIndex = cacheIndices(cut2Prong, massMinIndex, massMaxIndex, d0d0Index);
 
       // invariant mass
       double massHypos[2];
@@ -734,13 +734,6 @@ struct HfTrackIndexSkimsCreator {
   template <typename T1, typename T2, typename T3>
   void is3ProngPreselected(T1 const& hfTrack0, T1 const& hfTrack1, T1 const& hfTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
-    auto arrMom = array{
-      array{hfTrack0.px(), hfTrack0.py(), hfTrack0.pz()},
-      array{hfTrack1.px(), hfTrack1.py(), hfTrack1.pz()},
-      array{hfTrack2.px(), hfTrack2.py(), hfTrack2.pz()}};
-
-    auto pT = RecoDecay::Pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
-
     /// FIXME: this would be better fixed by having a convention on the position of min and max in the 2D Array
     static std::vector<int> massMinIndex;
     static std::vector<int> massMaxIndex;
@@ -754,6 +747,13 @@ struct HfTrackIndexSkimsCreator {
       return true;
     };
     static bool initIndex = cacheIndices(cut3Prong, massMinIndex, massMaxIndex);
+
+    auto arrMom = array{
+      array{hfTrack0.pxProng(), hfTrack0.pyProng(), hfTrack0.pzProng()},
+      array{hfTrack1.pxProng(), hfTrack1.pyProng(), hfTrack1.pzProng()},
+      array{hfTrack2.pxProng(), hfTrack2.pyProng(), hfTrack2.pzProng()}};
+
+    auto pT = RecoDecay::Pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
 
