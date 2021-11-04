@@ -476,6 +476,10 @@ struct ProduceTrainingSamples { // Struct for training samples
   Produces<aod::HFTrigTrain2P> train2P;
   Produces<aod::HFTrigTrain3P> train3P;
 
+  Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
+  Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
+  Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
+
   using BigTracksMCPID = soa::Join<aod::BigTracksPID, aod::BigTracksMC>;
 
   void process(aod::HfTrackIndexProng2 const& cand2Prongs,
@@ -506,9 +510,12 @@ struct ProduceTrainingSamples { // Struct for training samples
         flag = kBkg;
       }
 
-      train2P(trackPos.dcaPrim0(), trackPos.dcaPrim1(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
-              trackNeg.dcaPrim0(), trackNeg.dcaPrim1(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
-              flag);
+      double pseudoRndm = trackPos.pt() * 1000. - (long)(trackPos.pt() * 1000);
+      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
+        train2P(trackPos.dcaPrim0(), trackPos.dcaPrim1(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
+                trackNeg.dcaPrim0(), trackNeg.dcaPrim1(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
+                flag);
+      }
     } // end loop over 2-prong candidates
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
@@ -562,10 +569,13 @@ struct ProduceTrainingSamples { // Struct for training samples
         flag = kBkg;
       }
 
-      train3P(trackFirst.dcaPrim0(), trackFirst.dcaPrim1(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
-              trackSecond.dcaPrim0(), trackSecond.dcaPrim1(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
-              trackThird.dcaPrim0(), trackThird.dcaPrim1(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
-              flag, channel, cand3Prong.hfflag());
+      double pseudoRndm = trackFirst.pt() * 1000. - (long)(trackFirst.pt() * 1000);
+      if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
+        train3P(trackFirst.dcaPrim0(), trackFirst.dcaPrim1(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
+                trackSecond.dcaPrim0(), trackSecond.dcaPrim1(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
+                trackThird.dcaPrim0(), trackThird.dcaPrim1(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
+                flag, channel, cand3Prong.hfflag());
+      }
     } // end loop over 3-prong candidates
   }
 };

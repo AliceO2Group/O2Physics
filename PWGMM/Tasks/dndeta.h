@@ -20,6 +20,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/MC.h"
 
 #include "TDatabasePDG.h"
@@ -51,6 +52,9 @@ struct PseudorapidityDensity {
   Configurable<float> etaMin{"etaMin", -2.0, "min eta value"};
   Configurable<float> vtxZMax{"vtxZMax", 15, "max z vertex"};
   Configurable<float> vtxZMin{"vtxZMin", -15, "min z vertex"};
+
+  Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
+  Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
 
   ConfigurableAxis percentileBinning{"pBins",
                                      {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100},
@@ -106,10 +110,11 @@ struct PseudorapidityDensity {
 
   expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
   expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
+  expressions::Filter DCAFilter = aod::track::dcaXY <= maxDCAXY && aod::track::dcaZ <= maxDCAZ;
   expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
   expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
     registry.fill(HIST("EventSelection"), 1.);
     if (select(collision)) {
@@ -125,7 +130,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  void processBinned(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
+  void processBinned(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
     auto p = collision.centV0M();
     registry.fill(HIST("EventSelectionBin"), 1., p);
@@ -146,7 +151,7 @@ struct PseudorapidityDensity {
 
   using Particles = aod::McParticles;
 
-  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<aod::Tracks> const& tracks)
+  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
     registry.fill(HIST("EventEfficiency"), 1.);
     for (auto& collision : collisions) {
@@ -161,10 +166,11 @@ struct PseudorapidityDensity {
       auto p = pdg->GetParticle(particle.pdgCode());
       int charge = 0;
       if (p == nullptr) {
+        // unknown particles will be skipped
         if (particle.pdgCode() > 1000000000) {
-          auto x = (std::trunc(particle.pdgCode() / 10000) - 100000);
-          charge = x - std::trunc(x / 1000) * 1000;
-          LOGF(DEBUG, "[%d] Nucleus with PDG code %d (charge %d)", particle.globalIndex(), particle.pdgCode(), charge);
+          //          auto x = (std::trunc(particle.pdgCode() / 10000) - 100000);
+          //          charge = x - std::trunc(x / 1000) * 1000;
+          LOGF(DEBUG, "[%d] Nucleus with PDG code %d", particle.globalIndex(), particle.pdgCode() /*, charge*/); // (charge %d)
         } else {
           LOGF(DEBUG, "[%d] Unknown particle with PDG code %d", particle.globalIndex(), particle.pdgCode());
         }
@@ -172,6 +178,15 @@ struct PseudorapidityDensity {
         charge = p->Charge();
       }
       if (charge != 0 && MC::isPhysicalPrimary(particle) && (particle.eta() < etaMax) && (particle.eta() > etaMin)) {
+        // FIXME: temporary before Run 3 MC is fixed
+        if constexpr (TRACKTYPE == o2::dataformats::GlobalTrackID::ITS) {
+          auto dcaxy = std::sqrt((particle.vx() - mcCollision.posX()) * (particle.vx() - mcCollision.posX()) +
+                                 (particle.vy() - mcCollision.posY()) * (particle.vy() - mcCollision.posY()));
+          auto dcaz = std::abs(particle.vz() - mcCollision.posZ());
+          if (!(dcaxy <= maxDCAXY && dcaz <= maxDCAZ)) {
+            continue;
+          }
+        }
         registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
         registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
       }

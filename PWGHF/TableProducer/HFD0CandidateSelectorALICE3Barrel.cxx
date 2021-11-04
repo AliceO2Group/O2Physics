@@ -189,7 +189,7 @@ struct HFD0CandidateSelectorALICE3Barrel {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
+  using Trks = soa::Join<aod::BigTracksPID, aod::RICHTracksIndex, aod::McTrackLabels>;
   void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
