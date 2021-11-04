@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Differenc
 DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for prediction and domain adaptation
                   aod::track::TPCSignal,
                   aod::pidtofsignal::TOFSignal,
+                  aod::pidtofbeta::Beta,
                   pidtracks::Px,
                   pidtracks::Py,
                   pidtracks::Pz,
@@ -73,11 +74,11 @@ DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for pre
                   pidtracks::TPCExpSignalDiffPr,
                   pidtof::TOFNSigmaPr,
                   pidtof::TOFExpSigmaPr,
-                  pidtracks::TOFExpSignalDiffPr
-                  );
+                  pidtracks::TOFExpSignalDiffPr);
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   aod::track::TPCSignal,
                   aod::pidtofsignal::TOFSignal,
+                  aod::pidtofbeta::Beta,
                   pidtracks::Px,
                   pidtracks::Py,
                   pidtracks::Pz,
@@ -130,14 +131,14 @@ struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
 
   void process(BigTracksMC const& tracks, aod::McParticles const& mctracks)
   {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
-      pidTracksTable(track.tpcSignal(), track.tofSignal(),
+      pidTracksTable(track.tpcSignal(), track.tofSignal(), track.beta(),
                      track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
@@ -163,12 +164,12 @@ struct CreateTableReal {
   Produces<aod::PidTracksReal> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
 
   void process(BigTracks const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTable(track.tpcSignal(), track.tofSignal(),
+      pidTracksTable(track.tpcSignal(), track.tofSignal(), track.beta(),
                      track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
