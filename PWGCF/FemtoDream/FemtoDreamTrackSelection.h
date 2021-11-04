@@ -253,10 +253,10 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
       folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/" + WhichDaugh;
     }
 
-    /// \todo this should be an automatic check in the parent class
-    int nSelections = getNSelections() + mPIDspecies.size() * (getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax) - 1);
-    if (8 * sizeof(cutContainerType) < nSelections) {
-      LOG(fatal) << "FemtoDreamTrackCuts: Number of selections to large for your container - quitting!";
+    /// check whether the number of selection exceeds the bitmap size
+    int nSelections = getNSelections() - getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
+    if (nSelections > 8 * sizeof(cutContainerType)) {
+      LOG(fatal) << "FemtoDreamTrackCuts: Number of selections too large for your container - quitting!";
     }
 
     mHistogramRegistry->add((folderName + "/pThist").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});

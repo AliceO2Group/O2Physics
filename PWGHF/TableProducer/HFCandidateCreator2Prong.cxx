@@ -26,12 +26,6 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
@@ -138,26 +132,26 @@ struct HFCandidateCreator2Prong {
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreator2ProngExpressions {
-  Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
-  void init(InitContext const&) {}
-};
-
-/// Performs MC matching.
-struct HFCandidateCreator2ProngMC {
   Produces<aod::HfCandProng2MCRec> rowMCMatchRec;
   Produces<aod::HfCandProng2MCGen> rowMCMatchGen;
 
-  void process(aod::HfCandProng2 const& candidates,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+  Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
+  void init(InitContext const&) {}
+
+  /// Performs MC matching.
+  void processMC(aod::BigTracksMC const& tracks,
+                 aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
 
+    rowCandidateProng2->bindExternalIndices(&tracks);
+
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    // Spawned table can be used directly
+    for (auto& candidate : *rowCandidateProng2) {
       //Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -233,16 +227,13 @@ struct HFCandidateCreator2ProngMC {
       rowMCMatchGen(flag, origin);
     }
   }
+
+  PROCESS_SWITCH(HFCandidateCreator2ProngExpressions, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
     adaptAnalysisTask<HFCandidateCreator2Prong>(cfgc, TaskName{"hf-cand-creator-2prong"}),
     adaptAnalysisTask<HFCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-cand-creator-2prong-expressions"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreator2ProngMC>(cfgc, TaskName{"hf-cand-creator-2prong-mc"}));
-  }
-  return workflow;
 }

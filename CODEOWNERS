@@ -10,7 +10,7 @@
 # **DO NOT USE** @AliceO2Group/core for anything else. 
 * @AliceO2Group/core @jgrosseo @iarsene @ktf @alibuild
 /ALICE3  @njacazio @ginnocen @vkucera @alibuild
-/PWGCF @jgrosseo @saganatt @alibuild
+/PWGCF @jgrosseo @saganatt @alibuild @victor-gonzalez
 /PWGHF  @ginnocen @vkucera @alibuild
 /EventFiltering @mpuccio @alibuild
 /PWGMM @aalkin @alibuild

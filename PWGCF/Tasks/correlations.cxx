@@ -23,6 +23,7 @@
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+#include "DataFormatsParameters/GRPObject.h"
 
 #include <TH1F.h>
 #include <cmath>
@@ -148,12 +149,28 @@ struct CorrelationTask {
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
-    ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
     long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+  }
+
+  float getMagneticField(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with L3 current of %f", timestamp, grpo->getL3Current());
+    }
+    float l3current = grpo->getL3Current();
+    return l3current / 30000.0f * 5.0f;
   }
 
   template <typename TCollision, typename TTracks>
@@ -180,7 +197,7 @@ struct CorrelationTask {
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ, int bSign)
+  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ, float magField)
   {
     // Cache efficiency for particles (too many FindBin lookups)
     float* efficiencyAssociated = nullptr;
@@ -228,7 +245,7 @@ struct CorrelationTask {
           continue;
         }
 
-        if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, bSign)) {
+        if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
           continue;
         }
 
@@ -277,7 +294,6 @@ struct CorrelationTask {
 
     LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
 
-    int bSign = 1; // TODO magnetic field from CCDB
     const auto centrality = collision.centV0M();
 
     if (fillCollisionAOD(same, collision, centrality) == false) {
@@ -285,7 +301,7 @@ struct CorrelationTask {
     }
     registry.fill(HIST("eventcount"), -2);
     fillQA(collision, centrality, tracks);
-    fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), bSign);
+    fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), getMagneticField(bc.timestamp()));
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
@@ -293,21 +309,18 @@ struct CorrelationTask {
   {
     LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centV0M());
 
-    int bSign = 1; // TODO magnetic field from CCDB
     const auto centrality = collision.centV0M();
 
     same->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
     registry.fill(HIST("eventcount"), -2);
     fillQA(collision, centrality, tracks);
-    fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), bSign);
+    fillCorrelations(same, tracks, tracks, centrality, collision.posZ(), getMagneticField(collision.timestamp()));
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
-  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentV0Ms>>& collisions, aodTracks const& tracks)
+  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentV0Ms>>& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
-
-    int bSign = 1; // TODO magnetic field from CCDB
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
@@ -345,10 +358,12 @@ struct CorrelationTask {
       auto tracks2 = std::get<aodTracks>(it2.associatedTables());
       tracks2.bindExternalIndices(&collisions);
 
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
       // TODO mixed event weight missing
-      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), bSign);
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", true);
@@ -356,8 +371,6 @@ struct CorrelationTask {
   void processMixedDerived(soa::Filtered<soa::Join<aod::CFCollisions, aod::Hashes>>& collisions, derivedTracks const& tracks)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
-
-    int bSign = 1; // TODO magnetic field from CCDB
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
@@ -393,19 +406,20 @@ struct CorrelationTask {
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
-      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), bSign);
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), getMagneticField(collision1.timestamp()));
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
 
   // Version with combinations
-  void processWithCombinations(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::Tracks> const& tracks)
+  void processWithCombinations(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::Tracks> const& tracks)
   {
     LOGF(info, "Tracks for collision (Combination run): %d", tracks.size());
 
-    const auto centrality = collision.centV0M();
+    // TODO will go to CCDBConfigurable
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-    int bSign = 1; // TODO magnetic field from CCDB
+    const auto centrality = collision.centV0M();
 
     for (auto track1 = tracks.begin(); track1 != tracks.end(); ++track1) {
 
@@ -436,7 +450,7 @@ struct CorrelationTask {
         continue;
       }
 
-      if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, bSign)) {
+      if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, getMagneticField(bc.timestamp()))) {
         continue;
       }
 
