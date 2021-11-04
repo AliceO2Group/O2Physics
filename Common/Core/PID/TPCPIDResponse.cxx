@@ -36,7 +36,7 @@ inline T TPCPIDResponse<TrackType, id>::BetheBlochAleph(T bg, T kp1, T kp2, T kp
 template <typename TrackType, o2::track::PID::ID id>
 inline float TPCPIDResponse<TrackType, id>::GetExpectedSignal(const TrackType& track) const
 {
-  const float bethe = mChargeFactor * BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * pow((float)o2::track::pid_constants::sCharges[id], mMIP);
+  const float bethe = mChargeFactor * BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * pow((float)o2::track::pid_constants::sCharges[id], mMIP);
   return bethe >= 0.f ? bethe : 0.f;
 }
 
