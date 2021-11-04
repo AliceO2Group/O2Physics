@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Fill MC histograms."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -80,17 +80,18 @@ struct QaImpactPar {
   void init(InitContext&)
   {
     // Primary vertex
-    const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z [cm]"};
+    const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
 
     histograms.add("vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("numberContributors", "", kTH1D, {collisionNumberContributorAxis});
 
     // tracks
-    const AxisSpec trackPtAxis{100, 0.f, 10.f, "#it{p}_{T} [GeV/#it{c}]"};
+    const AxisSpec trackPtAxis{100, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec trackEtaAxis{40, -2.f, 2.f, "#it{#eta}"};
     const AxisSpec trackPhiAxis{24, 0.f, TMath::TwoPi(), "#varphi"};
-    const AxisSpec trackImpParRPhiAxis{200, -500.f, 500.f, "#it{d}_{r#it{#varphi}} [#mum]"};
+    const AxisSpec trackImpParRPhiAxis{200, -500.f, 500.f, "#it{d}_{r#it{#varphi}} (#mum)"};
+    const AxisSpec trackImpParZAxis{200, -500.f, 500.f, "#it{d}_{z} (#mum)"};
     const AxisSpec trackNSigmaTPCPionAxis{20, -10.f, 10.f, "Number of #sigma TPC #pi^{#pm}"};
     const AxisSpec trackNSigmaTPCKaonAxis{20, -10.f, 10.f, "Number of #sigma TPC K^{#pm}"};
     const AxisSpec trackNSigmaTPCProtonAxis{20, -10.f, 10.f, "Number of #sigma TPC proton"};
@@ -100,9 +101,13 @@ struct QaImpactPar {
 
     histograms.add("pt", "", kTH1D, {trackPtAxis});
     histograms.add("h4ImpPar", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+    histograms.add("h4ImpParZ", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("h4ImpPar_Pion", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+    histograms.add("h4ImpParZ_Pion", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("h4ImpPar_Kaon", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+    histograms.add("h4ImpParZ_Kaon", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("h4ImpPar_Proton", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+    histograms.add("h4ImpParZ_Proton", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("hNSigmaTPCPion", "", kTH2D, {trackPtAxis, trackNSigmaTPCPionAxis});
     histograms.add("hNSigmaTPCKaon", "", kTH2D, {trackPtAxis, trackNSigmaTPCKaonAxis});
     histograms.add("hNSigmaTPCProton", "", kTH2D, {trackPtAxis, trackNSigmaTPCProtonAxis});
@@ -150,6 +155,7 @@ struct QaImpactPar {
     /// loop over tracks
     float pt = -999.f;
     float impParRPhi = -999.f;
+    float impParZ = -999.f;
     float tpcNSigmaPion = -999.f;
     float tpcNSigmaKaon = -999.f;
     float tpcNSigmaProton = -999.f;
@@ -187,25 +193,30 @@ struct QaImpactPar {
       /// propagation ok! Retrieve impact parameter
       // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
       impParRPhi = toMicrometers * track.dcaXY(); //dca.getY();
+      impParZ = toMicrometers * track.dcaZ();     //dca.getY();
 
       /// all tracks
       histograms.fill(HIST("h4ImpPar"), pt, impParRPhi, track.eta(), track.phi());
+      histograms.fill(HIST("h4ImpParZ"), pt, impParZ, track.eta(), track.phi());
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
         /// PID selected pions
         histograms.fill(HIST("h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi());
+        histograms.fill(HIST("h4ImpParZ_Pion"), pt, impParZ, track.eta(), track.phi());
         histograms.fill(HIST("hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
         histograms.fill(HIST("hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
       }
       if (isPIDKaonApplied && nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax && nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax) {
         /// PID selected kaons
         histograms.fill(HIST("h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi());
+        histograms.fill(HIST("h4ImpParZ_Kaon"), pt, impParZ, track.eta(), track.phi());
         histograms.fill(HIST("hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
         histograms.fill(HIST("hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
       }
       if (isPIDProtonApplied && nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax && nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax) {
         /// PID selected Protons
         histograms.fill(HIST("h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi());
+        histograms.fill(HIST("h4ImpParZ_Proton"), pt, impParZ, track.eta(), track.phi());
         histograms.fill(HIST("hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
@@ -325,11 +336,11 @@ struct QaImpactParMC {
 
       histograms.fill(HIST("pt"), track.pt());
       const auto mcparticle = track.mcParticle();
-      if(MC::isPhysicalPrimary(mcparticle)){
-          impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
-          impParZ = toMicrometers * track.dcaZ(); // from TracksExtended
-          histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
-          histograms.fill(HIST("h3ImpParZ_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
+      if (MC::isPhysicalPrimary(mcparticle)) {
+        impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
+        impParZ = toMicrometers * track.dcaZ();     // from TracksExtended
+        histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
+        histograms.fill(HIST("h3ImpParZ_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
       }
 
       // propagation to primary vertex for DCA
@@ -380,11 +391,10 @@ struct QaImpactParMC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w{
-    adaptAnalysisTask<QaImpactParMC>(cfgc, TaskName{"qa-impact-par-mc"})};
-  //  adaptAnalysisTask<QaImpactPar>(cfgc, TaskName{"qa-impact-par"})};
-  //const bool doMC = cfgc.options().get<bool>("doMC");
-  //if (doMC) {
-  //  w.push_back(adaptAnalysisTask<QaImpactParMC>(cfgc, TaskName{"qa-impact-par-mc"}));
-  //}
+    adaptAnalysisTask<QaImpactPar>(cfgc, TaskName{"qa-impact-par"})};
+  const bool doMC = cfgc.options().get<bool>("doMC");
+  if (doMC) {
+    w.push_back(adaptAnalysisTask<QaImpactParMC>(cfgc, TaskName{"qa-impact-par-mc"}));
+  }
   return w;
 }
