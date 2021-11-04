@@ -23,12 +23,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct EtaAndClsHistograms {
-  OutputObj<TH2F> etaClsH{TH2F("eta_vs_cls", "#eta vs N_{cls}", 102, -2.01, 2.01, 160, -0.5, 159.5)};
+  OutputObj<TH3F> etaClsH{TH3F("eta_vs_cls_vs_sigmapT", "#eta vs N_{cls} vs sigma_{1/pT}", 102, -2.01, 2.01, 160, -0.5, 159.5, 100, 0, 10)};
 
-  void process(aod::FullTracks const& tracks)
+  void process(soa::Join<aod::FullTracks, aod::TracksCov> const& tracks)
   {
     for (auto& track : tracks) {
-      etaClsH->Fill(track.eta(), track.tpcNClsFindable());
+      etaClsH->Fill(track.eta(), track.tpcNClsFindable(), track.sigma1Pt());
     }
   }
 };
