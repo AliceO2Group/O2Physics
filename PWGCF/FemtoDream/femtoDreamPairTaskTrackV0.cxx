@@ -19,6 +19,8 @@
 #include "FemtoDreamPairCleaner.h"
 #include "FemtoDreamContainer.h"
 #include "FemtoDreamDetaDphiStar.h"
+#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -102,6 +104,8 @@ struct femtoDreamPairTaskTrackV0 {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb; ///Accessing the CCDB
+
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
@@ -114,10 +118,35 @@ struct femtoDreamPairTaskTrackV0 {
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfBField, false); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, false); /// \todo add config for Δη and ΔΦ cut values
     }
 
     vPIDPartOne = ConfPIDPartOne;
+
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = 0.1 * (grpo->getNominalL3Field());
+    return output;
   }
 
   /// internal function that returns the kPIDselection element corresponding to a specifica n-sigma value
@@ -196,9 +225,9 @@ struct femtoDreamPairTaskTrackV0 {
         continue;
       }
 
-      /// close pair rejection
+      auto tmstamp = col.timestamp();
       if (ConfIsCPR) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, getMagneticFieldTesla(tmstamp))) {
           continue;
         }
       }
@@ -268,7 +297,7 @@ struct femtoDreamPairTaskTrackV0 {
           continue;
         }
         if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, getMagneticFieldTesla(collision1.timestamp()))) {
             continue;
           }
         }
