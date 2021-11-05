@@ -49,7 +49,7 @@ struct HfTaskBplus {
      {"hPtProng1", "B+ candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
      {"hPtCand", "B+ candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
 
-  Configurable<int> selectionFlagBPlus{"selectionFlagBPlus", 1, "Selection Flag for B+"};
+  Configurable<int> d_selectionFlagBPlus{"d_selectionFlagBPlus", 1, "Selection Flag for B+"};
   Configurable<double> cutYCandMax{"cutYCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
 
@@ -70,7 +70,7 @@ struct HfTaskBplus {
     registry.add("hInvMassD0", "B+ candidates;prong0, D0 inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBPlus);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= d_selectionFlagBPlus);
 
   void process(soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> const& candidates, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>, aod::BigTracks)
   {
@@ -119,7 +119,7 @@ struct HfTaskBplusMc {
      {"hPtGenSig", "B+ candidates (matched);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 10.}}}},
      {"hPtGen", "MC particles (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}}}};
 
-  Configurable<int> selectionFlagBPlus{"selectionFlagBPlus", 1, "Selection Flag for B+"};
+  Configurable<int> d_selectionFlagBPlus{"d_selectionFlagBPlus", 1, "Selection Flag for B+"};
   Configurable<double> cutYCandMax{"cutYCandMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
 
@@ -166,7 +166,7 @@ struct HfTaskBplusMc {
     registry.add("hImpParProdBPlusRecBg", "B+ candidates (unmatched);candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBPlus);
+  Filter filterSelectCandidates = (aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= d_selectionFlagBPlus);
 
   void process(soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)
