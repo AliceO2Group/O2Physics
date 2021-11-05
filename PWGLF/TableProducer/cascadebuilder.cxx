@@ -60,7 +60,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtended>;
+using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended>;
 
 struct cascadedoindexing {
   Builds<aod::MatchedV0Cascades> var;
