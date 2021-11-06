@@ -67,7 +67,7 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>
 //        This is a temporary fix until the arrow/ROOT issues are solved, at which point it will be possible
 //           to automatically detect the object types transmitted to the VarManager
 //constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapReduced = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
@@ -79,7 +79,8 @@ struct TableMakerMC {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
-  Produces<ReducedEventsMC> eventMC;
+  Produces<ReducedMCEventLabels> eventMClabels;
+  Produces<ReducedMCEvents> eventMC;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
@@ -94,7 +95,9 @@ struct TableMakerMC {
   std::map<uint64_t, int> fNewLabelsReversed;
   std::map<uint64_t, int16_t> fMCFlags;
   std::map<uint64_t, int> fEventIdx;
-  int fCounter;
+  std::map<uint64_t, int> fEventLabels;
+  int fTrackCounter;
+  int fEventCounter;
 
   // list of MCsignal objects
   std::vector<MCSignal> fMCSignals;
@@ -123,11 +126,13 @@ struct TableMakerMC {
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
-    fCounter = 0;
+    fTrackCounter = 0;
+    fEventCounter = 0;
     fNewLabels.clear();
     fNewLabelsReversed.clear();
     fMCFlags.clear();
     fEventIdx.clear();
+    fEventLabels.clear();
 
     TString histClasses = "Event_BeforeCuts;Event_AfterCuts;Event_processEvents;Event_processEventsMC;TrackBarrel_BeforeCuts;TrackBarrel_AfterCuts;TrackBarrel_processTracksBarrel;";
 
@@ -167,9 +172,9 @@ struct TableMakerMC {
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
-
-  void processRec(MyEvents::iterator const& collision, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracksBarrel,
-                  aod::McParticles const& mcTracks, aod::McCollisions const& mcEvents)
+  
+  void processRec(MyEvents::iterator const& collision, aod::McCollisions const& mcEvents, aod::BCs const& bcs, 
+                  soa::Filtered<MyBarrelTracks> const& tracksBarrel, aod::McParticles const& mcTracks)
   {
     uint32_t triggerAliases = 0;
     for (int i = 0; i < kNaliases; i++) {
@@ -179,29 +184,44 @@ struct TableMakerMC {
     }
     uint64_t tag = 0; // TODO: add here available computed event cuts (e.g. run2bcinfo().eventCuts()) or other event wise decisions
 
+    auto mcCollision = collision.mcCollision();
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
     VarManager::FillEvent<gkEventFillMap>(collision, fValues); // extract event information and place it in the fValues array
-    VarManager::FillEvent<gkEventMCFillMap>(collision.mcCollision(), fValues);
+    VarManager::FillEvent<gkEventMCFillMap>(mcCollision, fValues);
 
     fHistMan->FillHistClass("Event_BeforeCuts", fValues); // automatically fill all the histograms in the class Event
     if (!fEventCut->IsSelected(fValues)) {
       return;
     }
     fHistMan->FillHistClass("Event_AfterCuts", fValues);
-
-    event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib());
+    
+    event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
     eventExtended(collision.bc().globalBC(), collision.bc().triggerMask(), 0, triggerAliases, fValues[VarManager::kCentVZERO]);
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
-    eventMC(collision.mcCollision().generatorsID(), collision.mcCollision().posX(), collision.mcCollision().posY(),
-            collision.mcCollision().posZ(), collision.mcCollision().t(), collision.mcCollision().weight(), collision.mcCollision().impactParameter());
-    cout << "event ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    // make an entry for this MC event only if it was not already added to the table
+    if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
+      eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), 
+              mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
+      fEventLabels[mcCollision.globalIndex()] = fEventCounter;
+      fEventCounter++;
+    }
+    eventMClabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
+    cout << "event ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ last index :: " << event.lastIndex() << endl;
+    cout << "event   vtx-Z (reco / gen) :: " << collision.posZ() << " / " << mcCollision.posZ() << endl;
+    cout << "event   coll idx / collMC idx :: " << collision.globalIndex() << " / " << mcCollision.globalIndex() << endl;
+    cout << "event   BC.time reco/recoRes/gen :: " << collision.collisionTime() << " / " << collision.collisionTimeRes() << " / " << mcCollision.t() << endl;
     // loop over the MC truth tracks and find those that need to be written
     uint16_t mcflags = 0;
-    for (auto& mctrack : mcTracks) {
+    
+    auto groupedMcTracks = mcTracks.sliceBy(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    cout << "n MC tracks after slicing: " << groupedMcTracks.size() << endl;
+    //groupedMcTracks.bindTable(mcTracks);
+    for (auto& mctrack : groupedMcTracks) {
+    //for (auto& mctrack : mcTracks) {
       // grouping will be needed here
-      if (mctrack.mcCollision().globalIndex() != collision.mcCollision().globalIndex()) {
+      /*if (mctrack.mcCollision().globalIndex() != collision.mcCollision().globalIndex()) {
         continue;
-      }
+      }*/
 
       // check all the requested MC signals and fill a decision bit map
       mcflags = 0;
@@ -212,25 +232,34 @@ struct TableMakerMC {
         }
         i++;
       }
-      // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
-      if (mcflags) {
-        // fill histograms for each of the signals, if found
-        VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
-        for (int i = 0; i < fMCSignals.size(); i++) {
-          if (mcflags & (uint16_t(1) << i)) {
-            fHistMan->FillHistClass(Form("MCtruth_%s", fMCSignals[i].GetName()), fValues);
-          }
-        }
-
-        cout << "mctrack idx/globalIdx " << mctrack.index() << "/" << mctrack.globalIndex() << ", mcflags ";
-        PrintBits(mcflags, 2);
-        cout << ", mcCollIdx " << collision.mcCollision().globalIndex() << endl;
-        fNewLabels[mctrack.index()] = fCounter;
-        fNewLabelsReversed[fCounter] = mctrack.index();
-        fMCFlags[mctrack.index()] = mcflags;
-        fEventIdx[mctrack.index()] = event.lastIndex();
-        fCounter++;
+      if (mcflags == 0) {
+        continue;        
       }
+      // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
+      // fill histograms for each of the signals, if found
+      VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
+      for (int i = 0; i < fMCSignals.size(); i++) {
+        if (mcflags & (uint16_t(1) << i)) {
+          fHistMan->FillHistClass(Form("MCtruth_%s", fMCSignals[i].GetName()), fValues);
+        }
+      }
+
+      cout << "mctrack globalIdx " << mctrack.globalIndex() << ", mcflags ";
+      PrintBits(mcflags, 4);
+      cout << ", mcCollIdx " << mcCollision.globalIndex();
+      cout << ",  fTrackCounter :: " << fTrackCounter;
+      cout << ";  vz, pt, eta :: " << mctrack.vz() << " / " << mctrack.pt() << " / " << mctrack.eta() << endl;
+      
+      if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+        fNewLabels[mctrack.globalIndex()] = fTrackCounter;
+        fNewLabelsReversed[fTrackCounter] = mctrack.globalIndex();
+        fMCFlags[mctrack.globalIndex()] = mcflags;
+        fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+        fTrackCounter++;
+      } else {
+        cout << "Track is a duplicate" << endl;        
+      }
+      
     } // end loop over mc stack
 
     // loop over reconstructed tracks
@@ -253,27 +282,36 @@ struct TableMakerMC {
       fHistMan->FillHistClass("TrackBarrel_AfterCuts", fValues);
 
       cout << "track pt (rec/gen): " << track.pt() << " / " << mctrack.pt() << endl;
-      cout << "    collision id (rec/mcFromRecEv/mcFromTrack) :: " << collision.globalIndex() << " / " << collision.mcCollision().globalIndex() << " / " << mctrack.mcCollision().globalIndex() << endl;
+      cout << "    collision id (rec/mcFromRecEv/mcFromTrack) :: " << collision.globalIndex() << " / " << mcCollision.globalIndex() << " / " << mcCollision.globalIndex() << endl;
+      
+      mcflags = 0;
+      int i = 0;
+      // check all the specified signals
+      for (auto& sig : fMCSignals) {
+        if (sig.CheckSignal(true, mcTracks, mctrack)) {
+          mcflags |= (uint16_t(1) << i);
+          fHistMan->FillHistClass(Form("TrackBarrel_AfterCuts_%s", sig.GetName()), fValues); // fill the reconstructed truth
+          fHistMan->FillHistClass(Form("MCtruth_%s", sig.GetName()), fValues);               // fill the generated truth
+        }
+        i++;
+      }
+      
       // if the MC truth particle corresponding to this reconstructed track is not already written,
       //   add it to the skimmed stack
-      mcflags = 0;
-      if (!(fNewLabels.find(mctrack.index()) != fNewLabels.end())) {
-        int i = 0;
-        // check all the specified signals
-        for (auto& sig : fMCSignals) {
-          if (sig.CheckSignal(true, mcTracks, mctrack)) {
-            mcflags |= (uint16_t(1) << i);
-            fHistMan->FillHistClass(Form("TrackBarrel_AfterCuts_%s", sig.GetName()), fValues); // fill the reconstructed truth
-            fHistMan->FillHistClass(Form("MCtruth_%s", sig.GetName()), fValues);               // fill the generated truth
-          }
-          i++;
-        }
-
-        fNewLabels[mctrack.index()] = fCounter;
-        fNewLabelsReversed[fCounter] = mctrack.index();
-        fMCFlags[mctrack.index()] = mcflags;
-        fEventIdx[mctrack.index()] = event.lastIndex();
-        fCounter++;
+      cout << "In reco loop:   mctrack globalIdx " << mctrack.globalIndex() << ", mcflags ";
+      PrintBits(mcflags, 2);
+      cout << ", mcCollIdx " << collision.mcCollision().globalIndex();
+      cout << ",  fTrackCounter :: " << fTrackCounter;
+      cout << ";  vz, pt, eta :: " << mctrack.vz() << " / " << mctrack.pt() << " / " << mctrack.eta() << endl;
+      
+      if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
+        fNewLabels[mctrack.globalIndex()] = fTrackCounter;
+        fNewLabelsReversed[fTrackCounter] = mctrack.globalIndex();
+        fMCFlags[mctrack.globalIndex()] = mcflags;
+        fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+        fTrackCounter++;
+      } else {
+        cout << "Track is a duplicate" << endl;
       }
 
       if (track.isGlobalTrack()) {
@@ -282,7 +320,7 @@ struct TableMakerMC {
       if (track.isGlobalTrackSDD()) {
         trackFilteringTag |= (uint64_t(1) << 1);
       }
-      trackBasic(event.lastIndex(), track.globalIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign());
+      trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign());
       trackBarrel(track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
                   track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                   track.tpcNClsShared(), track.tpcChi2NCl(),
@@ -300,9 +338,15 @@ struct TableMakerMC {
                      track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                      track.trdSignal());
       trackBarrelLabels(fNewLabels.find(mctrack.index())->second, track.mcMask(), mcflags);
+      //trackBarrelLabels(fTrackCounter, track.mcMask(), mcflags);
+      /*if (fNewLabels.find(mctrack.index()) == fNewLabels.end()) {
+        trackBarrelLabels(-1, track.mcMask(), mcflags);
+      } else {
+        trackBarrelLabels(fNewLabels.find(mctrack.index())->second, track.mcMask(), mcflags);
+      }*/
     } // end loop over reconstructed tracks
   }
-
+  
   void processWriteStack(aod::McParticles const& mcTracks)
   {
     // loop over the selected MC tracks and write them to the new stack
@@ -311,6 +355,8 @@ struct TableMakerMC {
     // NOTE: We need to write the particles to the new stack in the exact same order as the
     //   one in which the new labels were assigned. So we use the fNewLabelsReversed which has as key the new label
     //   and as value the old stack label, which we then use to retrieve the particle to be written
+    cout << "+++++++++++++++++++++++ Creating the stack +++++++++++++++++++++++++++" << endl;          
+    int i=0;
     for (const auto& [newLabel, oldLabel] : fNewLabelsReversed) {
       auto mctrack = mcTracks.iteratorAt(oldLabel);
       int mcflags = fMCFlags.find(oldLabel)->second;
@@ -335,13 +381,20 @@ struct TableMakerMC {
               m0Label, m1Label, d0Label, d1Label,
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
+      cout << "trkIdx / evtIdx / pdg / status / flags / m0Label / m1Label / d0Label / d1Label / pt / eta :: ";
+      cout << i << " / " << fEventIdx.find(oldLabel)->second << " / " << mctrack.pdgCode() << " / " << mctrack.statusCode() << " / ";
+      cout << mctrack.flags() << " / " << m0Label << " / " << m1Label << " / " << d0Label << " / " << d1Label << " / ";
+      cout << mctrack.pt() << " / " << mctrack.eta() << endl;
+      i++;
     }
 
-    fCounter = 0;
+    fTrackCounter = 0;
+    fEventCounter = 0;
     fNewLabels.clear();
     fNewLabelsReversed.clear();
     fMCFlags.clear();
     fEventIdx.clear();
+    fEventLabels.clear();
   }
 
   void processEvents(MyEvents const& collisions, aod::BCs const& bcs)

@@ -48,7 +48,8 @@ DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                //!
 DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table
                   o2::soa::Index<>,
                   reducedevent::Tag, bc::RunNumber,
-                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib);
+                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, 
+                  collision::CollisionTime, collision::CollisionTimeRes);
 
 DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information
                   bc::GlobalBC, bc::TriggerMask, timestamp::Timestamp, reducedevent::TriggerAlias, cent::CentEstV0M);
@@ -61,20 +62,30 @@ DECLARE_SOA_TABLE(ReducedEventsVtxCov, "AOD", "REVTXCOV", //!    Event vertex co
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
 //           can be constructed and the same data model could be used
-DECLARE_SOA_TABLE(ReducedEventsMC, "AOD", "REMC", //!   Event level MC truth information
+DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REMC", //!   Event level MC truth information
+                  o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 
 using ReducedEvent = ReducedEvents::iterator;
 using ReducedEventExtended = ReducedEventsExtended::iterator;
 using ReducedEventVtxCov = ReducedEventsVtxCov::iterator;
-using ReducedEventMC = ReducedEventsMC::iterator;
+using ReducedMCEvent = ReducedMCEvents::iterator;
+
+namespace reducedeventlabel
+{
+DECLARE_SOA_INDEX_COLUMN(ReducedMCEvent, reducedMCevent); //! MC collision
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);       //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
+} // namespace reducedeventlabel
+
+DECLARE_SOA_TABLE(ReducedMCEventLabels, "AOD", "REMCCOLLBL", //! Table joined to the ReducedEvents table containing the MC index
+                  reducedeventlabel::ReducedMCEventId, reducedeventlabel::McMask);
+using ReducedMCEventLabel = ReducedMCEventLabels::iterator;
 
 namespace reducedtrack
 {
 // basic track information
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //!
-DECLARE_SOA_COLUMN(Idx, idx, uint16_t);               //!
 // ----  flags reserved for storing various information during filtering
 DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint64_t); //!
 // -----------------------------------------------------
@@ -96,7 +107,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
 
 // basic track information
 DECLARE_SOA_TABLE(ReducedTracks, "AOD", "REDUCEDTRACK", //!
-                  o2::soa::Index<>, reducedtrack::ReducedEventId, reducedtrack::Idx, reducedtrack::FilteringFlags,
+                  o2::soa::Index<>, reducedtrack::ReducedEventId, reducedtrack::FilteringFlags,
                   reducedtrack::Pt, reducedtrack::Eta, reducedtrack::Phi, reducedtrack::Sign,
                   reducedtrack::Px<reducedtrack::Pt, reducedtrack::Phi>,
                   reducedtrack::Py<reducedtrack::Pt, reducedtrack::Phi>,
@@ -138,6 +149,7 @@ using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
 
 namespace reducedtrackMC
 {
+DECLARE_SOA_INDEX_COLUMN(ReducedMCEvent, reducedMCevent); //!        
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "ReducedMCTracks_Mother0");       //! Track index of the first mother
@@ -169,7 +181,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
 //       This table contains all MC truth tracks (both barrel and muon)
 DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "RTMC", //!  MC track information (on disk)
-                       o2::soa::Index<>, reducedtrack::ReducedEventId,
+                       o2::soa::Index<>, reducedtrackMC::ReducedMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                        reducedtrackMC::Mother0Id, reducedtrackMC::Mother1Id,
                        reducedtrackMC::Daughter0Id, reducedtrackMC::Daughter1Id, mcparticle::Weight,
@@ -182,13 +194,6 @@ DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "RTMC", //!  M
                        reducedtrackMC::P<reducedtrackMC::Pt, reducedtrackMC::Eta>,
                        reducedtrackMC::Y<reducedtrackMC::Pt, reducedtrackMC::Eta, reducedtrackMC::E>,
                        mcparticle::ProducedByGenerator<mcparticle::Flags>);
-
-/*DECLARE_SOA_EXTENDED_TABLE(ReducedMCTracks, StoredReducedMCTracks, "RTMC", //! Basic derived track properties
-                           aod::reducedtrackMC::Px,
-                           aod::reducedtrackMC::Py,
-                           aod::reducedtrackMC::Pz,
-                           aod::reducedtrackMC::P,
-                           aod::reducedtrackMC::Y);*/
 
 using ReducedMCTrack = ReducedMCTracks::iterator;
 
