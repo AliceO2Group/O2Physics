@@ -197,9 +197,6 @@ struct femtoDreamProducerTask {
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
-    int countdca = 0;
-    int counttot = 0;
-
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -223,7 +220,6 @@ struct femtoDreamProducerTask {
     }
 
     for (auto& v0 : fullV0s) {
-      counttot++;
       auto postrack = v0.posTrack_as<aod::FilteredFullTracks>();
       auto negtrack = v0.negTrack_as<aod::FilteredFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
       const auto dcaXYpos = postrack.dcaXY();
