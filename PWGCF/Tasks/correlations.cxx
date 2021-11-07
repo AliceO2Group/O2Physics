@@ -157,7 +157,7 @@ struct CorrelationTask {
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
   }
 
-  float getMagneticField(uint64_t timestamp)
+  int getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;
@@ -167,10 +167,9 @@ struct CorrelationTask {
         LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
         return 0;
       }
-      LOGF(info, "Retrieved GRP for timestamp %llu with L3 current of %f", timestamp, grpo->getL3Current());
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
     }
-    float l3current = grpo->getL3Current();
-    return l3current / 30000.0f * 5.0f;
+    return grpo->getNominalL3Field();
   }
 
   template <typename TCollision, typename TTracks>
@@ -197,7 +196,7 @@ struct CorrelationTask {
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ, float magField)
+  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ, int magField)
   {
     // Cache efficiency for particles (too many FindBin lookups)
     float* efficiencyAssociated = nullptr;
