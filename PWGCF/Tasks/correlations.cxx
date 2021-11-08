@@ -89,7 +89,7 @@ struct CorrelationTask {
   Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && (aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt);
 
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -545,9 +545,9 @@ struct CorrelationHashTask {
       return -1;
     }
 
-    for (int i = 1; i < vtxBins.size(); i++) {
+    for (unsigned int i = 1; i < vtxBins.size(); i++) {
       if (vtx < vtxBins[i]) {
-        for (int j = 1; j < multBins.size(); j++) {
+        for (unsigned int j = 1; j < multBins.size(); j++) {
           if (mult < multBins[j]) {
             return i + j * (vtxBins.size() + 1);
           }
