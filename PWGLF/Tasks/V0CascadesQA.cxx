@@ -50,7 +50,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr>;//, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr>; //, aod::McTrackLabels>;
 using MyTracksMC = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
 
 struct V0CascadesQA {
@@ -62,17 +62,18 @@ struct V0CascadesQA {
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}}, // storing total #events
     },
-    OutputObjHandlingPolicy::QAObject, true, true
-  };
+    OutputObjHandlingPolicy::QAObject,
+    true,
+    true};
 
   HistogramRegistry histos_V0{
-    "histos-V0", 
+    "histos-V0",
     {
       {"CosPA", "CosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}}},
       {"V0Radius", "V0Radius", {HistType::kTH1D, {{100, 0.0f, 10.0f}}}},
       {"DecayLength", "DecayLength", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"V0DCANegToPV", "V0DCANegToPV", {HistType::kTH1F, {{100, -1.0f, 1.0f}}}}, // this window captures but a small part of the distribution; plus the dcatopv can be negative ---- set to [-1;1] for comparison
-      {"V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{100, 0.0f, 1.0f}}}}, // this window captures but a small part of the distribution; plus the dcatopv can be negative
+      {"V0DCAPosToPV", "V0DCAPosToPV", {HistType::kTH1F, {{100, 0.0f, 1.0f}}}},  // this window captures but a small part of the distribution; plus the dcatopv can be negative
       {"V0DCAV0Daughters", "V0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}}},
       {"CtauK0s", "CtauK0s", {HistType::kTH1F, {{65, 0.0f, 13.0f}}}},
       {"CtauLambda", "CtauLambda", {HistType::kTH1F, {{200, 0.0f, 40.0f}}}},
@@ -81,8 +82,8 @@ struct V0CascadesQA {
       {"DecayLengthLambda", "DecayLengthLambda", {HistType::kTH1F, {{100, 0.0f, 80.0f}}}},
       {"DecayLengthAntiLambda", "DecayLengthAntiLambda", {HistType::kTH1F, {{100, 0.0f, 80.0f}}}},
 
-      {"ResponsePionFromLambda", "ResponsePionFromLambda", {HistType::kTH2F, {{500, 0.0f, 5.0f}, {400,-20.f,20.f}}}},
-      {"ResponseProtonFromLambda", "ResponseProtonFromLambda", {HistType::kTH2F, {{500, 0.0f, 5.0f}, {400,-20.f,20.f}}}},
+      {"ResponsePionFromLambda", "ResponsePionFromLambda", {HistType::kTH2F, {{500, 0.0f, 5.0f}, {400, -20.f, 20.f}}}},
+      {"ResponseProtonFromLambda", "ResponseProtonFromLambda", {HistType::kTH2F, {{500, 0.0f, 5.0f}, {400, -20.f, 20.f}}}},
 
       {"InvMassK0S", "InvMassK0S", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 0.4f, 0.6f}}}},
       {"InvMassLambda", "InvMassLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.07f, 1.17f}}}},
@@ -90,11 +91,12 @@ struct V0CascadesQA {
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
     },
-    OutputObjHandlingPolicy::QAObject, true, true
-  };
+    OutputObjHandlingPolicy::QAObject,
+    true,
+    true};
 
   HistogramRegistry histos_Casc{
-    "histos-Casc", 
+    "histos-Casc",
     {
       {"XiProgSelections", "XiProgSelections", {HistType::kTH2F, {{30, 0.5f, 30.5f}, {2, -2, 2}}}},
       {"OmegaProgSelections", "OmegaProgSelections", {HistType::kTH2F, {{30, 0.5f, 30.5f}, {2, -2, 2}}}},
@@ -124,13 +126,14 @@ struct V0CascadesQA {
       {"InvMassOmegaPlus", "InvMassOmegaPlus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
       {"InvMassOmegaMinus", "InvMassOmegaMinus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
     },
-    OutputObjHandlingPolicy::QAObject, true, true
-  };
+    OutputObjHandlingPolicy::QAObject,
+    true,
+    true};
 
   void init(InitContext const&)
   {
-    if (isMC){
-      histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100,0,10}, {200,-10,10}}});
+    if (isMC) {
+      histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100, 0, 10}, {200, -10, 10}}});
 
       histos_V0.add("InvMassK0STrue", "InvMassK0STrue", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 0.4f, 0.6f}}});
       histos_V0.add("InvMassLambdaTrue", "InvMassLambdaTrue", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.07f, 1.17f}}});
@@ -142,9 +145,6 @@ struct V0CascadesQA {
       histos_Casc.add("InvMassOmegaMinusTrue", "InvMassOmegaMinusTrue", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}});
     }
   }
-
-
-
 
   ///////////////////////////////////////////////////
   ////////// Collisions QA - reconstructed //////////
@@ -163,23 +163,27 @@ struct V0CascadesQA {
   void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
-      if (MC::isPhysicalPrimary(mcparticle)){
-        if (mcparticle.pdgCode() == 310)      histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); //K0s
-        if (mcparticle.pdgCode() == 3122)     histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), mcparticle.y()); //Lambda
-        if (mcparticle.pdgCode() ==-3122)     histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), mcparticle.y()); //AntiLambda
-        if (mcparticle.pdgCode() == 3312)     histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), mcparticle.y()); //Xi-
-        if (mcparticle.pdgCode() ==-3312)     histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), mcparticle.y()); //Xi+
-        if (mcparticle.pdgCode() == 3334)     histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), mcparticle.y()); //Omega-
-        if (mcparticle.pdgCode() ==-3334)     histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), mcparticle.y()); //Omega+
+      if (MC::isPhysicalPrimary(mcparticle)) {
+        if (mcparticle.pdgCode() == 310)
+          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); //K0s
+        if (mcparticle.pdgCode() == 3122)
+          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), mcparticle.y()); //Lambda
+        if (mcparticle.pdgCode() == -3122)
+          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), mcparticle.y()); //AntiLambda
+        if (mcparticle.pdgCode() == 3312)
+          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), mcparticle.y()); //Xi-
+        if (mcparticle.pdgCode() == -3312)
+          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), mcparticle.y()); //Xi+
+        if (mcparticle.pdgCode() == 3334)
+          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), mcparticle.y()); //Omega-
+        if (mcparticle.pdgCode() == -3334)
+          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), mcparticle.y()); //Omega+
 
         // if (!IsParticleFromOutOfBunchPileupCollision){fill the 1.5, 3.5 etc}   AliPhysics analysis
       }
     }
   }
   PROCESS_SWITCH(V0CascadesQA, processMcEvent, "Process MC level Event", false);
-
-
-
 
   ////////////////////////////////////////////
   ////////// V0 QA - Reconstructed ///////////
@@ -239,10 +243,6 @@ struct V0CascadesQA {
   }
   PROCESS_SWITCH(V0CascadesQA, processReconstructedV0, "Process reconstructed level V0s", true);
 
-
-
-
-
   ////////////////////////////////
   ////////// V0 QA - MC //////////
   ////////////////////////////////
@@ -262,17 +262,17 @@ struct V0CascadesQA {
           auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
           bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
 
-          bool isK0sV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) && 
-                      ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211) ||
-                      (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 211));
+          bool isK0sV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) &&
+                         ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211) ||
+                          (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 211));
 
-          bool isLambdaV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) && 
-                          ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 2212) ||
-                          (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 2212 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211));
+          bool isLambdaV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) &&
+                            ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 2212) ||
+                             (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 2212 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211));
 
-          bool isAntiLambdaV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) && 
-                              ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -2212) ||
-                              (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -2212 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 211));
+          bool isAntiLambdaV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) &&
+                                ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -2212) ||
+                                 (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -2212 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 211));
 
           if (isK0sV0) {
             if (TMath::Abs(v0.yK0Short()) < V0_rapidity && CtauK0s < lifetimecut->get("lifetimecutK0S")) { // that s what we have in lambdakzeroanalysis ; discuss with nicolo chiara if we want to have more like in th aliphysics macro or none like in David's O2 QA
@@ -295,22 +295,20 @@ struct V0CascadesQA {
   }
   PROCESS_SWITCH(V0CascadesQA, processMcV0, "Process MC level V0s", false);
 
-
-
   //////////////////////////////////////
   ///// Cascade QA - Reconstructed /////
   //////////////////////////////////////
 
-  Configurable<double> Casc_v0cospa{"Casc_V0cospa", 0.98, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> Casc_casccospa{"Casc_casccospa", 0.98, "Cascade CosPA"}; //AliAnalysisTaskStrAODqa: 0.9992      //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> Casc_dcav0dau{"Casc_dcav0dau", 1.0, "DCA V0 Daughters"};//AliAnalysisTaskStrAODqa: 1. different scale
-  Configurable<float> Casc_dcacascdau{"Casc_dcacascdau", 0.6, "DCA Casc Daughters"};//AliAnalysisTaskStrAODqa: 0.3 different scale
-  Configurable<float> Casc_dcav0topv{"Casc_dcav0topv", 0.1, "DCA Pos To PV"};//AliAnalysisTaskStrAODqa: 0.15 different scale
-  Configurable<float> Casc_dcabachtopv{"Casc_dcabachtopv", .1, "DCA Bach To PV"};//AliAnalysisTaskStrAODqa: 0.17 different scale
-  Configurable<float> Casc_dcapostopv{"Casc_dcapostopv", 0.1, "DCA V0 To PV"}; //AliAnalysisTaskStrAODqa:    if( fCasc_charge>0 &&(fCasc_DcaPosToPV < 0.3 || fCasc_DcaNegToPV < 0.11)) return kFALSE;  different scale
-  Configurable<float> Casc_dcanegtopv{"Casc_dcanegtopv", 0.1, "DCA Neg To PV"};//AliAnalysisTaskStrAODqa:    if( fCasc_charge<0 &&(fCasc_DcaPosToPV < 0.11 || fCasc_DcaNegToPV < 0.3)) return kFALSE;  different scale
-  Configurable<float> Casc_v0radius{"Casc_v0radius", 0.9, "v0 radius"}; //AliAnalysisTaskStrAODqa: 5.
-  Configurable<float> Casc_cascradius{"Casc_cascradius", 1.0, "cascade radius"}; //AliAnalysisTaskStrAODqa: 1.
+  Configurable<double> Casc_v0cospa{"Casc_V0cospa", 0.98, "V0 CosPA"};               //double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> Casc_casccospa{"Casc_casccospa", 0.98, "Cascade CosPA"};      //AliAnalysisTaskStrAODqa: 0.9992      //double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> Casc_dcav0dau{"Casc_dcav0dau", 1.0, "DCA V0 Daughters"};       //AliAnalysisTaskStrAODqa: 1. different scale
+  Configurable<float> Casc_dcacascdau{"Casc_dcacascdau", 0.6, "DCA Casc Daughters"}; //AliAnalysisTaskStrAODqa: 0.3 different scale
+  Configurable<float> Casc_dcav0topv{"Casc_dcav0topv", 0.1, "DCA Pos To PV"};        //AliAnalysisTaskStrAODqa: 0.15 different scale
+  Configurable<float> Casc_dcabachtopv{"Casc_dcabachtopv", .1, "DCA Bach To PV"};    //AliAnalysisTaskStrAODqa: 0.17 different scale
+  Configurable<float> Casc_dcapostopv{"Casc_dcapostopv", 0.1, "DCA V0 To PV"};       //AliAnalysisTaskStrAODqa:    if( fCasc_charge>0 &&(fCasc_DcaPosToPV < 0.3 || fCasc_DcaNegToPV < 0.11)) return kFALSE;  different scale
+  Configurable<float> Casc_dcanegtopv{"Casc_dcanegtopv", 0.1, "DCA Neg To PV"};      //AliAnalysisTaskStrAODqa:    if( fCasc_charge<0 &&(fCasc_DcaPosToPV < 0.11 || fCasc_DcaNegToPV < 0.3)) return kFALSE;  different scale
+  Configurable<float> Casc_v0radius{"Casc_v0radius", 0.9, "v0 radius"};              //AliAnalysisTaskStrAODqa: 5.
+  Configurable<float> Casc_cascradius{"Casc_cascradius", 1.0, "cascade radius"};     //AliAnalysisTaskStrAODqa: 1.
 
   //additional AliAnalysisTaskStrAODqa.cxx cuts not present here
   // if( fCasc_LeastCRaws<70 ) return kFALSE; //assume LeastCRows
@@ -336,7 +334,7 @@ struct V0CascadesQA {
       histos_Casc.fill(HIST("V0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
 
       // double v0cospatoxi = RecoDecay::CPA(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{v0.px(), v0.py(), v0.pz()});
-      double v0cospatoxi = RecoDecay::CPA(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos()+casc.pxneg(), casc.pypos()+casc.pyneg(), casc.pzpos()+casc.pzneg()});
+      double v0cospatoxi = RecoDecay::CPA(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()});
 
       histos_Casc.fill(HIST("V0CosPAToXi"), v0cospatoxi, casc.sign());
       histos_Casc.fill(HIST("CascRadius"), casc.cascradius(), casc.sign());
@@ -353,7 +351,7 @@ struct V0CascadesQA {
       float CtauXi = cascDecayLength / (cascTotalMomentum + 1E-10) * RecoDecay::getMassPDG(3322); // see O2Physics/Common/Core/MC.h for codes and names accepted
       float CtauOmega = cascDecayLength / (cascTotalMomentum + 1E-10) * RecoDecay::getMassPDG(3334);
 
-      float v0TotalMomentum = RecoDecay::sqrtSumOfSquares(casc.pxpos()+casc.pxneg(), casc.pypos()+casc.pyneg(), casc.pzpos()+casc.pzneg());
+      float v0TotalMomentum = RecoDecay::sqrtSumOfSquares(casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg());
       float v0DecayLength = std::sqrt(std::pow(casc.xlambda() - casc.x(), 2) + std::pow(casc.ylambda() - casc.y(), 2) + std::pow(casc.zlambda() - casc.z(), 2));
       float CtauV0 = v0DecayLength / (v0TotalMomentum + 1E-10) * RecoDecay::getMassPDG(kLambda0);
 
@@ -370,12 +368,12 @@ struct V0CascadesQA {
       histos_Casc.fill(HIST("InvMassLambdaDaughter"), casc.mLambda(), casc.sign());
 
       if (casc.v0radius() > Casc_v0radius &&
-      casc.cascradius() > Casc_cascradius &&
-      casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_v0cospa &&
-      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_casccospa &&
-      TMath::Abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > Casc_dcav0topv &&
-      TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
-      casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
+          casc.cascradius() > Casc_cascradius &&
+          casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_v0cospa &&
+          casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_casccospa &&
+          TMath::Abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > Casc_dcav0topv &&
+          TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
+          casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
         if (casc.sign() < 0) {
           if (TMath::Abs(casc.yXi()) < 0.5) {
             histos_Casc.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi());
@@ -383,8 +381,7 @@ struct V0CascadesQA {
           if (TMath::Abs(casc.yOmega()) < 0.5) {
             histos_Casc.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega());
           }
-        }
-        else {
+        } else {
           if (TMath::Abs(casc.yXi()) < 0.5) {
             histos_Casc.fill(HIST("InvMassXiPlus"), casc.pt(), casc.mXi());
           }
@@ -397,9 +394,6 @@ struct V0CascadesQA {
   }
   PROCESS_SWITCH(V0CascadesQA, processReconstructedCascade, "Process reconstructed level Cascades", true);
 
-
-
-
   //////////////////////////////////////
   ////////// Cascade QA - MC ///////////
   //////////////////////////////////////
@@ -408,12 +402,12 @@ struct V0CascadesQA {
   {
     for (auto& casc : Cascades) {
       if (casc.v0radius() > Casc_v0radius &&
-      casc.cascradius() > Casc_cascradius &&
-      casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_v0cospa &&
-      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_casccospa &&
-      TMath::Abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > Casc_dcav0topv &&
-      TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
-      casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
+          casc.cascradius() > Casc_cascradius &&
+          casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_v0cospa &&
+          casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > Casc_casccospa &&
+          TMath::Abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) > Casc_dcav0topv &&
+          TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
+          casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
 
         auto mcnegtrack = casc.v0_as<aod::V0Datas>().negTrack_as<MyTracksMC>().mcParticle();
         auto mcpostrack = casc.v0_as<aod::V0Datas>().posTrack_as<MyTracksMC>().mcParticle();
@@ -424,25 +418,25 @@ struct V0CascadesQA {
         auto particleMotherOfBach = bachelor.mother0_as<aod::McParticles>();
         bool MomOfBachIsPrimary = MC::isPhysicalPrimary(particleMotherOfBach);
 
-        bool isXiMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) && 
-                    mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
-                    particleMotherOfBach.pdgCode() == 3312 && bachelor.pdgCode() == -211 &&
-                    particleMotherOfNeg.pdgCode() == 3122 && mcnegtrack.pdgCode() == -211 && mcpostrack.pdgCode() == 2212);
+        bool isXiMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&
+                                 mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
+                                 particleMotherOfBach.pdgCode() == 3312 && bachelor.pdgCode() == -211 &&
+                                 particleMotherOfNeg.pdgCode() == 3122 && mcnegtrack.pdgCode() == -211 && mcpostrack.pdgCode() == 2212);
 
-        bool  isOmegaMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) && 
-                    mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
-                    particleMotherOfBach.pdgCode() == 3334 && bachelor.pdgCode() == -321 &&
-                    particleMotherOfNeg.pdgCode() == 3122 && mcnegtrack.pdgCode() == -211 && mcpostrack.pdgCode() == 2212);
+        bool isOmegaMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&
+                                    mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
+                                    particleMotherOfBach.pdgCode() == 3334 && bachelor.pdgCode() == -321 &&
+                                    particleMotherOfNeg.pdgCode() == 3122 && mcnegtrack.pdgCode() == -211 && mcpostrack.pdgCode() == 2212);
 
-        bool  isXiPlusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) && 
-                    mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
-                    particleMotherOfBach.pdgCode() == -3312 && bachelor.pdgCode() == 211 &&
-                    particleMotherOfNeg.pdgCode() == -3122 && mcnegtrack.pdgCode() == -2212 && mcpostrack.pdgCode() == 211);
+        bool isXiPlusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&
+                                mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
+                                particleMotherOfBach.pdgCode() == -3312 && bachelor.pdgCode() == 211 &&
+                                particleMotherOfNeg.pdgCode() == -3122 && mcnegtrack.pdgCode() == -2212 && mcpostrack.pdgCode() == 211);
 
-        bool  isOmegaPlusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) && 
-                    mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
-                    particleMotherOfBach.pdgCode() == -3334 && bachelor.pdgCode() == 321 &&
-                    particleMotherOfNeg.pdgCode() == -3122 && mcnegtrack.pdgCode() == -2212 && mcpostrack.pdgCode() == 211);
+        bool isOmegaPlusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&
+                                   mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
+                                   particleMotherOfBach.pdgCode() == -3334 && bachelor.pdgCode() == 321 &&
+                                   particleMotherOfNeg.pdgCode() == -3122 && mcnegtrack.pdgCode() == -2212 && mcpostrack.pdgCode() == 211);
 
         if (isXiMinusCascade) {
           if (TMath::Abs(casc.yXi()) < 0.5) {
@@ -473,6 +467,5 @@ struct V0CascadesQA {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<V0CascadesQA>(cfgc, TaskName{"lf-V0CascadesQA"})
-  };
+    adaptAnalysisTask<V0CascadesQA>(cfgc, TaskName{"lf-V0CascadesQA"})};
 }

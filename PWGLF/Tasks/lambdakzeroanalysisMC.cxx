@@ -156,7 +156,7 @@ struct lambdakzeroanalysisMC {
     // if (!collision.alias()[kINT7]) { //should not use if looking at MC
     //   return;
     // }
-    if (checksel7==1 && !collision.sel7()) {
+    if (checksel7 == 1 && !collision.sel7()) {
       return;
     }
 
@@ -318,7 +318,7 @@ struct V0daughtersTrackingEfficiency {
         }
       }
     }
-    for (auto& track : tracks){
+    for (auto& track : tracks) {
       auto AssociatedMcParticle = track.mcParticle();
       if (TMath::Abs(AssociatedMcParticle.y()) < 0.5) {
         registry.fill(HIST("hAssociatedMcParticleIDs"), AssociatedMcParticle.globalIndex());
@@ -335,5 +335,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<lambdakzeroParticleCountMC>(cfgc, TaskName{"lf-lambdakzeroParticleCountMC"}),
     adaptAnalysisTask<V0daughtersTrackingEfficiency>(cfgc, TaskName{"lf-V0daughtersTrackingEfficiency"})};
 }
-
-
