@@ -647,7 +647,7 @@ inline MatchRecoGenSpecies IdentifyTrack(TrackObject const& track)
     }
   }
   float min_nsigma = 999.0f;
-  MatchRecoGenSpecies sp_min_nsigma;
+  MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kNoOfSpecies; ++sp) {
     if (nsigmas[sp] < min_nsigma) {
       min_nsigma = nsigmas[sp];
@@ -1402,11 +1402,11 @@ struct CheckGeneratorLevelVsDetectorLevel {
     histos.add("before/positivecolid/dcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
     histos.add("before/positivecolid/finedcaxymr", "DCA_{xy} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
     histos.add("before/positivecolid/finedcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{z} (cm)"}});
-    for (int i = 0; i < detectorlbls.size(); ++i) {
+    for (unsigned int i = 0; i < detectorlbls.size(); ++i) {
       histos.get<TH1>(HIST("before/positivecolid/detectormap"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
       histos.get<TH1>(HIST("before/positivecolid/detectormapmr"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
     }
-    for (int i = 0; i < matchlbs.size(); ++i) {
+    for (unsigned int i = 0; i < matchlbs.size(); ++i) {
       histos.get<TH1>(HIST("before/positivecolid/matchcollid"))->GetXaxis()->SetBinLabel(i + 1, matchlbs[i].c_str());
       histos.get<TH1>(HIST("before/positivecolid/matchcollidmr"))->GetXaxis()->SetBinLabel(i + 1, matchlbs[i].c_str());
     }
@@ -1445,8 +1445,8 @@ struct CheckGeneratorLevelVsDetectorLevel {
         if (collsign == kPOSITIVE) {
           /* check the cross collision reconstruction */
           bool crosscollfound = false;
-          for (int i = 0; (i < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++i) {
-            for (int j = i + 1; (j < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++j) {
+          for (unsigned int i = 0; (i < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++i) {
+            for (unsigned int j = i + 1; (j < mclabelpos[collsign][ixpart].size()) and not crosscollfound; ++j) {
               auto track1 = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
               auto track2 = tracks.iteratorAt(mclabelpos[collsign][ixpart][j]);
 
@@ -1462,7 +1462,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
               LOGF(info, "Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
                    particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
               LOGF(info, "With status %d and flags %0X and multi-reconstructed as: ==================================", particle.statusCode(), particle.flags());
-              for (int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
+              for (unsigned int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
                 auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
                 auto coll = colls.iteratorAt(track.collisionId());
                 LOGF(info, "Track with index %d and label %d assigned to collision %d, with associated MC collision %d",
@@ -1474,9 +1474,9 @@ struct CheckGeneratorLevelVsDetectorLevel {
           }
         }
 
-        for (int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
+        for (unsigned int i = 0; i < mclabelpos[collsign][ixpart].size(); ++i) {
           auto track1 = tracks.iteratorAt(mclabelpos[collsign][ixpart][i]);
-          for (int j = i + 1; j < mclabelpos[collsign][ixpart].size(); ++j) {
+          for (unsigned int j = i + 1; j < mclabelpos[collsign][ixpart].size(); ++j) {
             auto track2 = tracks.iteratorAt(mclabelpos[collsign][ixpart][j]);
 
             float deltaeta = track1.eta() - track2.eta();
