@@ -188,11 +188,7 @@ class TrackSelection
   void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
   {
     // layer 0 corresponds to the the innermost ITS layer
-    if (minNRequiredHits > requiredLayers.size()) {
-      LOGF(fatal, "More ITS hits required than layers specified.");
-    } else {
-      mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
-    }
+    mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
   }
   void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers)
   {
