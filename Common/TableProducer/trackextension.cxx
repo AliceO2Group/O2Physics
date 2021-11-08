@@ -58,7 +58,7 @@ struct TrackExtension {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int mRunNumber;
-  int mMagField;
+  float mMagField;
 
   void init(InitContext& context)
   {
@@ -79,7 +79,7 @@ struct TrackExtension {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
     mRunNumber = 0;
-    mMagField = 0;
+    mMagField = 0.0;
   }
 
   void processRun2(aod::FullTracks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
@@ -97,7 +97,7 @@ struct TrackExtension {
               o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
               if (grpo != nullptr) {
                 mMagField = grpo->getNominalL3Field();
-                LOGF(info, "Setting magnetic field to %d kG for run %d", mMagField, bc.runNumber());
+                LOGF(info, "Setting magnetic field to %f kG for run %d", mMagField, bc.runNumber());
               } else {
                 LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
               }
