@@ -163,16 +163,13 @@ struct HfBplusTod0piCandidateSelector {
         continue;
       }
 
-      auto pidPion = -1;
       if (!d_FilterPID) {
         // PID not applied
-        pidPion = 1;
       } else {
         int pidTrackPosPion = selectorPion.getStatusTrackPIDAll(trackPi);
         if (pidTrackPosPion == TrackSelectorPID::Status::PIDAccepted) {
-          pidPion = 1;
         } else {
-          pidPion = 0;
+          // Printf("B+ candidate selection failed at PID");
           hfSelBPlusToD0PiCandidate(statusBplus);
           continue;
         }
