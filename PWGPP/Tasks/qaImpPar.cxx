@@ -47,9 +47,9 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct QaImpactPar {
 
   /// Input parameters
-  Configurable<int>   nBinsImpPar{"nBinsImpPar",200,"Number of bins for impact parameter axis"};
-  Configurable<float> minImpPar{"minImpPar",-500.f,"Minimum value for impact parameter axis"};
-  Configurable<float> maxImpPar{"maxImpPar",500.f,"Maximum value for impact parameter axis"};
+  Configurable<int> nBinsImpPar{"nBinsImpPar", 200, "Number of bins for impact parameter axis"};
+  Configurable<float> minImpPar{"minImpPar", -500.f, "Minimum value for impact parameter axis"};
+  Configurable<float> maxImpPar{"maxImpPar", 500.f, "Maximum value for impact parameter axis"};
   //Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
   //Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
