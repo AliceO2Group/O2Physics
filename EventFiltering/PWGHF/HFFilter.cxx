@@ -437,7 +437,7 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         // 3-prong femto
-        if(isSelectedProton(track)) {
+        if (isSelectedProton(track)) {
           for (int iHypo{0}; iHypo < 3 && !keepEvent[kFemto]; ++iHypo) {
             if (specieCharmHypos[iHypo]) {
               float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
