@@ -74,6 +74,7 @@ class TPCPIDResponse : public TNamed
   /// Gets the number of sigmas with respect the expected value
   template <typename TrackType>
   float GetSeparation(const TrackType& trk, const o2::track::PID::ID id) const;
+  void PrintAll() const;
 
  private:
   std::array<float, 5> mBetheBlochParams = {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092};
@@ -106,6 +107,19 @@ template <typename TrackType>
 inline float TPCPIDResponse::GetSeparation(const TrackType& trk, const o2::track::PID::ID id) const
 {
   return ((trk.tpcSignal() - GetExpectedSignal(trk, id)) / GetExpectedSigma(trk, id));
+}
+
+inline void TPCPIDResponse::PrintAll() const
+{
+  LOG(info) << "==== TPC PID response parameters: ====";
+
+  for (int i = 0; i < mBetheBlochParams.size(); i++)
+    LOG(info) << "BB param [" << i << "] = " << mBetheBlochParams[i];
+  for (int i = 0; i < mResolutionParams.size(); i++)
+    LOG(info) << "Resolution param [" << i << "] = " << mResolutionParams[i];
+
+  LOG(info) << "mMIP = " << mMIP;
+  LOG(info) << "mChargeFactor = " << mChargeFactor;
 }
 
 } // namespace o2::pid::tpc
