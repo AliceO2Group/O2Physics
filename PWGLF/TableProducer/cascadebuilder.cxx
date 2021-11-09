@@ -120,7 +120,7 @@ struct cascadebuilder {
 
       std::array<float, 3> pVtx = {v0.collision().posX(), v0.collision().posY(), v0.collision().posZ()};
 
-      auto b = casc.bachelor_as<FullTracksExt>();
+      // auto b = casc.bachelor_as<FullTracksExt>();
 
       if (tpcrefit) {
         if (!(v0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {

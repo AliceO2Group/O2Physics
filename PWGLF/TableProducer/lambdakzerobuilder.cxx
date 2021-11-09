@@ -219,7 +219,7 @@ struct lambdakzerobuilder {
     fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
     registry.fill(HIST("hEventCounter"), 0.5);
-    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
     for (auto& V0 : V0s) {
       std::array<float, 3> pos = {0.};
