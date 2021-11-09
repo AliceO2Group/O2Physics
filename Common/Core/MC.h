@@ -14,52 +14,12 @@
 
 #include "Framework/Logger.h"
 #include "Framework/AnalysisDataModel.h"
+#include "SimulationDataFormat/MCUtils.h"
 
 #include "TPDGCode.h"
 
 namespace MC
 {
-bool isStable(int pdg)
-{
-  // Decide whether particle (pdg) is stable
-
-  // All ions/nucleons are considered as stable
-  // Nuclear code is 10LZZZAAAI
-  if (pdg > 1000000000) {
-    return true;
-  }
-
-  constexpr int kNstable = 18;
-  int pdgStable[kNstable] = {
-    kGamma,      // Photon
-    kElectron,   // Electron
-    kMuonPlus,   // Muon
-    kPiPlus,     // Pion
-    kKPlus,      // Kaon
-    kK0Short,    // K0s
-    kK0Long,     // K0l
-    kProton,     // Proton
-    kNeutron,    // Neutron
-    kLambda0,    // Lambda_0
-    kSigmaMinus, // Sigma Minus
-    kSigmaPlus,  // Sigma Plus
-    3312,        // Xsi Minus
-    3322,        // Xsi
-    3334,        // Omega
-    kNuE,        // Electron Neutrino
-    kNuMu,       // Muon Neutrino
-    kNuTau       // Tau Neutrino
-  };
-
-  for (int i = 0; i < kNstable; i++) {
-    if (pdg == std::abs(pdgStable[i])) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 // Ported from AliRoot AliStack::IsPhysicalPrimary
 template <typename Particle>
 bool isPhysicalPrimary(Particle const& particle)
@@ -87,7 +47,7 @@ bool isPhysicalPrimary(Particle const& particle)
   }
   // <-
 
-  if (!isStable(pdg)) {
+  if (!o2::mcutils::isStable(pdg)) {
     LOGF(debug, "isPhysicalPrimary F3");
     return false;
   }
