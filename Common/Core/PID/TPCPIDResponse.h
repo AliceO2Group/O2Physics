@@ -36,11 +36,11 @@ namespace o2::pid::tpc
 
 /// \brief Class to handle the TPC PID response
 
-class TPCPIDResponse
+class TPCPIDResponse : public TNamed
 {
 
  public:
-  TPCPIDResponse() = default;
+  TPCPIDResponse() : TNamed("TPCPIDResponse", "TPCPIDResponse"){};
   ~TPCPIDResponse() = default;
 
   /// Setter and Getter for the private parameters
