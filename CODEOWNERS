@@ -8,9 +8,13 @@
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence.
 # **DO NOT USE** @AliceO2Group/core for anything else. 
-* @AliceO2Group/core @jgrosseo @iarsene @ktf @alibuild
-/ALICE3  @njacazio @ginnocen @vkucera @alibuild
-/PWGCF @jgrosseo @saganatt @alibuild @victor-gonzalez
-/PWGHF  @ginnocen @vkucera @alibuild
-/EventFiltering @mpuccio @alibuild
-/PWGMM @aalkin @alibuild
+
+# @alibuild has to be in each line to allow self approval of PRs
+
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf 
+/ALICE3 @alibuild @njacazio @ginnocen @vkucera 
+/DPG @alibuild @mario-krueger
+/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
+/PWGHF @alibuild @ginnocen @vkucera 
+/EventFiltering @alibuild @mpuccio 
+/PWGMM @alibuild @aalkin 
