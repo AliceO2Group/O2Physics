@@ -58,11 +58,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
   }
   return true;
 
-<<<<<<< HEAD
-} // initOptionsAndParse
-=======
 } //initOptionsAndParse
->>>>>>> 9e7d787 (customisable parameters in handleParamTPCResponse, PrintAll() function added to TPCPIDResponse)
 
 int main(int argc, char* argv[])
 {
@@ -119,12 +115,6 @@ int main(int argc, char* argv[])
     }
 
     fin.GetObject(objname.c_str(), tpc);
-<<<<<<< HEAD
-    //   tpc->Print();
-  }
-
-} // main
-=======
     if (!tpc) {
       LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
       return 1;
@@ -135,4 +125,3 @@ int main(int argc, char* argv[])
 
   return 0;
 } //main
->>>>>>> 9e7d787 (customisable parameters in handleParamTPCResponse, PrintAll() function added to TPCPIDResponse)
