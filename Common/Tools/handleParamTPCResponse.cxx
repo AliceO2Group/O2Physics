@@ -26,14 +26,14 @@ namespace bpo = boost::program_options;
 
 bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[], bpo::variables_map& vm)
 {
-  options.add_options() (
+  options.add_options()(
     "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
     "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
     "objname,n", bpo::value<std::string>()->default_value("TPCRespCustom"), "Object name to be stored in file")(
     "help,h", "Print this help.");
   try {
-    bpo::store(parse_command_line(argc,argv,options), vm);
-    
+    bpo::store(parse_command_line(argc, argv, options), vm);
+
     // help
     if (vm.count("help")) {
       LOG(info) << options;
@@ -47,8 +47,8 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     return false;
   }
   return true;
-  
-} //initOptionsAndParse
+
+} // initOptionsAndParse
 
 int main(int argc, char* argv[])
 {
@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
   if (!initOptionsAndParse(options, argc, argv, vm)) {
     return 1;
   }
-
 
   TPCPIDResponse* tpc = nullptr;
   const std::string outFilename = vm["save-to-file"].as<std::string>();
@@ -76,23 +75,19 @@ int main(int argc, char* argv[])
     TFile fout(outFilename.data(), "RECREATE");
     tpc = new TPCPIDResponse();
     fout.cd();
- //   tpc->Print();
+    //   tpc->Print();
     tpc->Write();
     fout.Close();
   }
-  
+
   if (!inFilename.empty()) { // Read and execute object from file
     TFile fin(inFilename.data(), "READ");
     if (!fin.IsOpen()) {
       LOG(warning) << "Input file " << inFilename << " could not be read";
     }
-    
+
     fin.GetObject(objname.c_str(), tpc);
- //   tpc->Print();
+    //   tpc->Print();
   }
-  
-  
-  
-  
-  
-} //main
+
+} // main

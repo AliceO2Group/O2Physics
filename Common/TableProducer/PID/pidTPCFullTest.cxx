@@ -11,10 +11,12 @@
 
 ///
 /// \file   pidTPCFull.cxx
-/// \author Annalena Kalteyer, ...
+/// \author Annalena Kalteyer, Christian Sonnabend
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
+
+#include "TFile.h"
 
 //  // O2 includes
 #include "Framework/AnalysisTask.h"
@@ -22,6 +24,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "Common/Core/PID/ParamBase.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -101,6 +104,7 @@ struct tpcPidFull {
         enableFlag("Al", pidAl);
       }
     }
+
     //   //    // Getting the parametrization parameters
     //   //    ccdb->setURL(url.value);
     //   //    ccdb->setTimestamp(timestamp.value);
@@ -127,15 +131,33 @@ struct tpcPidFull {
 
   void process(Coll const& collisions, Trks const& tracks)
   {
-    o2::pid::tpc::TPCPIDResponse response;
+
+    o2::pid::tpc::TPCPIDResponse* response;
+
+    const TString fname = paramfile.value;
+
+    if (fname != "") {
+      LOG(info) << "Loading exp. TPC response from file " << fname;
+      try {
+        TFile f(fname, "READ");
+        f.GetObject("TPCPIDResponse", response);
+      } catch (...) {
+        LOG(info) << "Loading the file " << fname << " failed!";
+      };
+    } else {
+      LOG(info) << "No external file specified! Load failed!";
+    };
+
+    // LOG(info) << "Custom TPCPID: MIP value from object is " << response->GetMIP();
+
     // Check and fill enabled tables
     auto makeTable = [&tracks, &response](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          table(response.GetExpectedSigma(trk, pid),
-                response.GetSeparation(trk, pid));
+          table(response->GetExpectedSigma(trk, pid),
+                response->GetSeparation(trk, pid));
         }
       }
     };
