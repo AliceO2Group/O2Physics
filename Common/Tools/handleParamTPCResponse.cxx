@@ -34,7 +34,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "bb0", bpo::value<float>()->default_value(0.0320981f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768f), "Bethe-Bloch parameter 1")(
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
-    "bb3", bpo::value<float>()->default_value(2.72123f), "Bethe-Bloch parameter 3")
+    "bb3", bpo::value<float>()->default_value(2.72123f), "Bethe-Bloch parameter 3")(
     "bb4", bpo::value<float>()->default_value(6.08092f), "Bethe-Bloch parameter 4")(
     "sig0", bpo::value<float>()->default_value(0.07f), "Sigma parameter 0")(
     "sig1", bpo::value<float>()->default_value(0.f), "Sigma parameter 1")(
