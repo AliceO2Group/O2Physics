@@ -37,11 +37,8 @@ struct HfBplusTod0piCandidateSelector {
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
 
-  //Track quality
-  Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
-
   //Enable PID
-  Configurable<bool> FilterPID{"FilterPID", true, "Bool to use or not the PID at filtering level"};
+  Configurable<bool> filterPID{"filterPID", true, "Bool to use or not the PID at filtering level"};
 
   //TPC PID
   Configurable<double> pidTPCMinpT{"pidTPCMinpT", 999, "Lower bound of track pT for TPC PID"};
@@ -163,10 +160,9 @@ struct HfBplusTod0piCandidateSelector {
         continue;
       }
 
-      if (FilterPID) {
+      if (filterPID) {
         // PID applied
-        int pidTrackPosPion = selectorPion.getStatusTrackPIDAll(trackPi);
-        if (pidTrackPosPion != TrackSelectorPID::Status::PIDAccepted) {
+        if (selectorPion.getStatusTrackPIDAll(trackPi) != TrackSelectorPID::Status::PIDAccepted) {
           // Printf("PID not successful");
           hfSelBPlusToD0PiCandidate(statusBplus);
           continue;
