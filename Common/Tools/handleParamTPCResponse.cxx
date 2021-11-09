@@ -30,7 +30,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
   options.add_options()(
     "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
     "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
-    "objname,n", bpo::value<std::string>()->default_value("TPCRespCustom"), "Object name to be stored in file")(
+    "objname,n", bpo::value<std::string>()->default_value("TPCPIDResponse"), "Object name to be stored in file")(
     "bb0", bpo::value<float>()->default_value(0.0320981f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768f), "Bethe-Bloch parameter 1")(
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
