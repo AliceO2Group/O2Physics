@@ -20,6 +20,7 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
+#include "Common/Core/TrackSelectorPID.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -36,20 +37,20 @@ struct HfBplusTod0piCandidateSelector {
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
 
-  //Track quality
-  Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
+  //Enable PID
+  Configurable<bool> filterPID{"filterPID", true, "Bool to use or not the PID at filtering level"};
 
   //TPC PID
-  Configurable<double> pidTPCMinpT{"pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 10., "Upper bound of track pT for TPC PID"};
+  Configurable<double> pidTPCMinpT{"pidTPCMinpT", 999, "Lower bound of track pT for TPC PID"};
+  Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 9999, "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTPC{"nSigmaTPC", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTPCCombined{"nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
 
   //TOF PID
   Configurable<double> pidTOFMinpT{"pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 10., "Upper bound of track pT for TOF PID"};
+  Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 50., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTOF{"nSigmaTOF", 5., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTOFCombined{"nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> nSigmaTOFCombined{"nSigmaTOFCombined", 999., "Nsigma cut on TOF combined with TPC"};
 
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_bplus_tod0pi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"BPlus_to_d0pi_cuts", {hf_cuts_bplus_tod0pi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "B+ candidate selection per pT bin"};
@@ -129,6 +130,14 @@ struct HfBplusTod0piCandidateSelector {
 
   void process(aod::HfCandBPlus const& hfCandBs, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>, aod::BigTracksPID const& tracks)
   {
+    TrackSelectorPID selectorPion(kPiPlus);
+    selectorPion.setRangePtTPC(pidTPCMinpT, pidTPCMaxpT);
+    selectorPion.setRangeNSigmaTPC(-nSigmaTPC, nSigmaTPC);
+    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTPCCombined, nSigmaTPCCombined);
+    selectorPion.setRangePtTOF(pidTOFMinpT, pidTOFMaxpT);
+    selectorPion.setRangeNSigmaTOF(-nSigmaTOF, nSigmaTOF);
+    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTOFCombined, nSigmaTOFCombined);
+
     for (auto& hfCandB : hfCandBs) { //looping over Bplus candidates
 
       int statusBplus = 0;
@@ -151,7 +160,18 @@ struct HfBplusTod0piCandidateSelector {
         continue;
       }
 
-      hfSelBPlusToD0PiCandidate(1);
+      if (filterPID) {
+        // PID applied
+        if (selectorPion.getStatusTrackPIDAll(trackPi) != TrackSelectorPID::Status::PIDAccepted) {
+          // Printf("PID not successful");
+          hfSelBPlusToD0PiCandidate(statusBplus);
+          continue;
+        }
+      }
+
+      statusBplus = 1; //Successful topological and PID
+
+      hfSelBPlusToD0PiCandidate(statusBplus);
       // Printf("B+ candidate selection successful, candidate should be selected");
     }
   }
