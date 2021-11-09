@@ -71,7 +71,7 @@ struct TrackExtension {
     auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      auto* gm = ccdb->get<TGeoManager>(ccdbpath_geo);
+      ccdb->get<TGeoManager>(ccdbpath_geo);
       /* it seems this is needed at this level for the material LUT to work properly */
       /* but what happens if the run changes while doing the processing?             */
       o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, analysis::trackextension::run3grp_timestamp);
@@ -79,7 +79,7 @@ struct TrackExtension {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
     mRunNumber = 0;
-    mMagField = 0.0f;
+    mMagField = 0.0;
   }
 
   void processRun2(aod::FullTracks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
@@ -96,9 +96,8 @@ struct TrackExtension {
             if (mRunNumber != bc.runNumber()) {
               o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
               if (grpo != nullptr) {
-                float l3current = grpo->getL3Current();
-                mMagField = l3current / 30000.0f * 5.0f;
-                LOGF(info, "Setting magnetic field to %f from an L3 current %f for run %d", mMagField, l3current, bc.runNumber());
+                mMagField = grpo->getNominalL3Field();
+                LOGF(info, "Setting magnetic field to %f kG for run %d", mMagField, bc.runNumber());
               } else {
                 LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
               }
