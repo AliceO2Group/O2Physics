@@ -10,11 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file HFTreeCreatorLbToLcPi.cxx
-/// \brief Writer of the 3 prong candidates in the form of flat tables to be stored in TTrees.
+/// \brief Writer of the 2 prong candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
+/// \note Extended from HFTreeCreatorD0ToKPi, HFTreeCreatorLcToPKPi, HFTreeCreatorXToJpsiPiPi
 ///
-/// \author Maurice Jongerhuis <m.v.jongerhuis@students.uu.nl>, University Utrecht
+/// \author Panos Christakoglou <Panos.Christakoglou@cern.ch>, Nikhef
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -28,8 +29,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_lb;
-//using namespace o2::aod::hf_cand_prong2;
-//using namespace o2::aod::hf_cand_prong3;
 
 namespace o2::aod
 {
@@ -49,7 +48,6 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -58,24 +56,13 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
-//DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLBFull",
-                  collision::BCId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  hf_cand::XSecondaryVertex,
-                  hf_cand::YSecondaryVertex,
-                  hf_cand::ZSecondaryVertex,
-                  hf_cand::ErrorDecayLength,
-                  hf_cand::ErrorDecayLengthXY,
-                  hf_cand::Chi2PCA,
+// put the arguments into the table
+DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLbFull",
                   full::RSecondaryVertex,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -107,11 +94,9 @@ DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLBFull",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::E,
-                  full::MCflag); //,
-                                 //full::IsCandidateSwapped);
+                  full::MCflag);
 
-DECLARE_SOA_TABLE(HfCandLbFullEvents, "AOD", "HFCANDLBFullE",
+DECLARE_SOA_TABLE(HfCandLbFullEvents, "AOD", "HFCANDLbFullE",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -120,7 +105,7 @@ DECLARE_SOA_TABLE(HfCandLbFullEvents, "AOD", "HFCANDLBFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandLbFullParticles, "AOD", "HFCANDLBFullP",
+DECLARE_SOA_TABLE(HfCandLbFullParticles, "AOD", "HFCANDLbFullP",
                   collision::BCId,
                   full::Pt,
                   full::Eta,
@@ -130,7 +115,8 @@ DECLARE_SOA_TABLE(HfCandLbFullParticles, "AOD", "HFCANDLBFullP",
 
 } // namespace o2::aod
 
-struct CandidateTreeWriter {
+/// Writes the full information in an output TTree
+struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFull> rowCandidateFull;
   Produces<o2::aod::HfCandLbFullEvents> rowCandidateFullEvents;
   Produces<o2::aod::HfCandLbFullParticles> rowCandidateFullParticles;
@@ -141,8 +127,8 @@ struct CandidateTreeWriter {
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandLbBase, aod::HfCandLbMCRec, aod::HFSelLbToLcPiCandidate> const& candidates, // join tables relevant for the candidate aod::hf_selcandidate_lb
-               soa::Join<aod::McParticles, aod::HfCandLbMCGen> const& particles,                                // join generated particle information
+               soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HFSelLbToLcPiCandidate> const& candidates,
+               soa::Join<aod::McParticles, aod::HfCandLbMCGen> const& particles,
                aod::BigTracksPID const& tracks)
   {
 
@@ -166,21 +152,9 @@ struct CandidateTreeWriter {
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
-                           float FunctionY,
-                           float FunctionE) {
+                           float FunctionY) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.index0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
-            candidate.posX(),
-            candidate.posY(),
-            candidate.posZ(),
-            candidate.xSecondaryVertex(),
-            candidate.ySecondaryVertex(),
-            candidate.zSecondaryVertex(),
-            candidate.errorDecayLength(),
-            candidate.errorDecayLengthXY(),
-            candidate.chi2PCA(),
             candidate.rSecondaryVertex(),
             candidate.decayLength(),
             candidate.decayLengthXY(),
@@ -212,19 +186,17 @@ struct CandidateTreeWriter {
             candidate.eta(),
             candidate.phi(),
             FunctionY,
-            FunctionE,
-            candidate.flagMCMatchRec()); //,
-                                         //candidate.isCandidateSwapped());
+            candidate.flagMCMatchRec());
         }
       };
-      // TMP aod::hf_selcandidate_lb::    o2::aod::hf_cand_lb
-      fillTable(0, candidate.isSelLbToLcPi(), InvMassLbToLcPi(candidate), CtLb(candidate), YLb(candidate), ELb(candidate));
+
+      fillTable(0, candidate.isSelLbToLcPi(), InvMassLbToLcPi(candidate), CtLb(candidate), YLb(candidate));
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (auto& particle : particles) {
-      if (std::abs(particle.flagMCMatchGen()) == 1 << o2::aod::hf_cand_lb::DecayType::LbToLcPi) {
+      if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::LbToLcPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
@@ -234,12 +206,12 @@ struct CandidateTreeWriter {
           particle.flagMCMatchGen());
       }
     }
-  } // process
-};  //Struct CandidateTreeWriter
+  }
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<CandidateTreeWriter>(cfgc, TaskName{"hf-tree-creator-lb-tolcpi"}));
+  workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPi>(cfgc));
   return workflow;
 }
