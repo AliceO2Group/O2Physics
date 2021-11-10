@@ -156,9 +156,9 @@ struct TableMakerMC {
     histClasses += "Event_AfterCuts;";
 
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processBarrelOnly") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithCents") || context.mOptions.get<bool>("processBarrelOnlyWithCov"));
+                               context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCov"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") ||
-                             context.mOptions.get<bool>("processMuonOnlyWithCents") || context.mOptions.get<bool>("processMuonOnlyWithCov"));
+                             context.mOptions.get<bool>("processMuonOnlyWithCent") || context.mOptions.get<bool>("processMuonOnlyWithCov"));
     // TODO: switch on/off histogram classes depending on which process function we run
     if (enableBarrelHistos) {
       if (fConfigDetailedQA) {
@@ -651,9 +651,9 @@ struct TableMakerMC {
     fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
   }
   // Produce barrel only tables, with centrality ------------------------------------------------------------------------------------
-  void processBarrelOnlyWithCents(MyEventsWithCents const& collisions, aod::BCs const& bcs,
-                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel,
-                                  aod::McCollisions const& mcEvents, aod::McParticles const& mcTracks)
+  void processBarrelOnlyWithCent(MyEventsWithCents const& collisions, aod::BCs const& bcs,
+                                 soa::Filtered<MyBarrelTracks> const& tracksBarrel,
+                                 aod::McCollisions const& mcEvents, aod::McParticles const& mcTracks)
   {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
   }
@@ -672,9 +672,9 @@ struct TableMakerMC {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks);
   }*/
   // Produce muon only tables, with centrality-------------------------------------------------------------------------------
-  void processMuonOnlyWithCents(MyEventsWithCents const& collisions, aod::BCs const& bcs,
-                                soa::Filtered<MyMuons> const& tracksMuon,
-                                aod::McCollisions const& mcEvents, aod::McParticles const& mcTracks)
+  void processMuonOnlyWithCent(MyEventsWithCents const& collisions, aod::BCs const& bcs,
+                               soa::Filtered<MyMuons> const& tracksMuon,
+                               aod::McCollisions const& mcEvents, aod::McParticles const& mcTracks)
   {
     fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks);
   }
@@ -698,11 +698,11 @@ struct TableMakerMC {
 
   PROCESS_SWITCH(TableMakerMC, processFull, "Produce both barrel and muon skims", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnly, "Produce barrel skims", false);
-  PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCents, "Produce barrel skims, w/ centrality", false);
+  PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCent, "Produce barrel skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processBarrelOnlyWithCov, "Produce barrel skims, with track covariance matrix", false);
   //PROCESS_SWITCH(TableMakerMC, processMuonOnly, "Produce muon skims", false);
   PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCov, "Produce muon skims, with muon covariance matrix", false);
-  PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCents, "Produce muon skims, w/ centrality", false);
+  PROCESS_SWITCH(TableMakerMC, processMuonOnlyWithCent, "Produce muon skims, w/ centrality", false);
   PROCESS_SWITCH(TableMakerMC, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
 };
 
