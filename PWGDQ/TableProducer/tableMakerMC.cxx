@@ -202,8 +202,8 @@ struct TableMakerMC {
           }
         }
       }
-    }    
-  
+    }
+
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -568,7 +568,7 @@ struct TableMakerMC {
   }
 
   void DefineHistograms(TString histClasses)
-  {   
+  {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
     for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
       TString classStr = objArray->At(iclass)->GetName();
