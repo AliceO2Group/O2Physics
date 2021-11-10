@@ -154,8 +154,6 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-            //Maurice Test
-            printf("Is cand Lb to Lcpi = %d\n", candidate.isSelLbToLcPi());
             rowCandidateFull(
             candidate.rSecondaryVertex(),
             candidate.decayLength(),
