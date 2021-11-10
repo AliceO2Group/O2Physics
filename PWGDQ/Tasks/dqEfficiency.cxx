@@ -202,7 +202,7 @@ struct DQBarrelTrackSelection {
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<gkEventFillMap>(event, fValues);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent(), fValues);
-    
+
     uint8_t filterMap = uint8_t(0);
     trackSel.reserve(tracks.size());
 
@@ -340,7 +340,7 @@ struct DQQuarkoniumPairing {
         continue;
       }
       VarManager::FillPair<pairType>(t1, t2, fValues);
-      VarManager::FillPairVertexing<pairType>(event, t1, t2, fValues);    // TODO: make this optional
+      VarManager::FillPairVertexing<pairType>(event, t1, t2, fValues); // TODO: make this optional
       for (int i = 0; i < fCutNames.size(); ++i) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
           if (t1.sign() * t2.sign() < 0) {
@@ -379,7 +379,6 @@ struct DQQuarkoniumPairing {
       }
     }
 
-    
     cout << "entries in groupedMCTracks = " << groupedMCTracks.size() << endl;
     //    // loop over mc stack and fill histograms for pure MC truth signals
     for (auto& sig : fGenMCSignals) {
