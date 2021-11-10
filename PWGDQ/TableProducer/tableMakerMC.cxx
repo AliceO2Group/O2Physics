@@ -231,7 +231,6 @@ struct TableMakerMC {
     std::map<uint64_t, int> fEventLabels;
     int fCounters[2] = {0, 0}; //! [0] - particle counter, [1] - event counter
 
-    uint64_t tag = 0;
     uint16_t mcflags = 0;
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
@@ -339,7 +338,7 @@ struct TableMakerMC {
         trackBarrel.reserve(tracksBarrel.size());
         trackBarrelPID.reserve(tracksBarrel.size());
         trackBarrelLabels.reserve(tracksBarrel.size());
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::TrackCov) {
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov.reserve(tracksBarrel.size());
         }
 
@@ -432,7 +431,7 @@ struct TableMakerMC {
                          track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                          track.trdSignal());
           trackBarrelLabels(fNewLabels.find(mctrack.index())->second, track.mcMask(), mcflags);
-          if constexpr (TTrackFillMap & VarManager::ObjTypes::TrackCov) {
+          if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
             trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                            track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
                            track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
@@ -445,7 +444,7 @@ struct TableMakerMC {
         // build the muon tables
         muonBasic.reserve(tracksMuon.size());
         muonExtra.reserve(tracksMuon.size());
-        if constexpr (TMuonFillMap & VarManager::ObjTypes::MuonCov) {
+        if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
           muonCov.reserve(tracksMuon.size());
         }
         muonLabels.reserve(tracksMuon.size()); // TODO: enable this once we have fwdtrack labels
@@ -502,7 +501,6 @@ struct TableMakerMC {
 
           // if the MC truth particle corresponding to this reconstructed track is not already written,
           //   add it to the skimmed stack
-
           if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
             fNewLabels[mctrack.globalIndex()] = fCounters[0];
             fNewLabelsReversed[fCounters[0]] = mctrack.globalIndex();
@@ -515,7 +513,7 @@ struct TableMakerMC {
           muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                     muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                     muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), muon.matchMCHTrackId(), muon.mchBitMap(), muon.midBitMap(), muon.midBoards());
-          if constexpr (TMuonFillMap & VarManager::ObjTypes::MuonCov) {
+          if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
             muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
                     muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
                     muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(), muon.c1PtX(), muon.c1PtY(),

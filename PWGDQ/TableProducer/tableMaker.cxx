@@ -245,7 +245,7 @@ struct TableMaker {
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
-      if constexpr (TTrackFillMap & VarManager::ObjTypes::TrackCov) {
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
       trackBarrelPID.reserve(tracksBarrel.size());
@@ -297,7 +297,7 @@ struct TableMaker {
                     track.tpcNClsShared(), track.tpcChi2NCl(),
                     track.trdChi2(), track.trdPattern(), track.tofChi2(),
                     track.length(), track.dcaXY(), track.dcaZ());
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::TrackCov) {
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
                          track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
@@ -317,7 +317,7 @@ struct TableMaker {
       // build the muon tables
       muonBasic.reserve(tracksMuon.size());
       muonExtra.reserve(tracksMuon.size());
-      if constexpr (TMuonFillMap & VarManager::ObjTypes::MuonCov) {
+      if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
         muonCov.reserve(tracksMuon.size());
       }
       // loop over muons
@@ -350,7 +350,7 @@ struct TableMaker {
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                   muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), muon.matchMCHTrackId(), muon.mchBitMap(), muon.midBitMap(), muon.midBoards());
-        if constexpr (TMuonFillMap & VarManager::ObjTypes::MuonCov) {
+        if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
           muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
                   muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
                   muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(), muon.c1PtX(), muon.c1PtY(),
