@@ -21,13 +21,17 @@
 #include "TFile.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
-// std::array<float,5>( {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092})
 using namespace o2::pid::tpc;
 namespace bpo = boost::program_options;
 
 bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[], bpo::variables_map& vm)
 {
   options.add_options()(
+    "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database")(
+    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path for object")(
+    "start,s", bpo::value<long>()->default_value(0), "Start timestamp for calibration validity")(
+    "stop,S", bpo::value<long>()->default_value(4108971600000), "End timestamp for calibration validity")(
+    "delete-previous", bpo::value<int>()->default_value(0), "delete previous entry from CCDB (1 = true)")(
     "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
     "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
     "objname,n", bpo::value<std::string>()->default_value("TPCPIDResponse"), "Object name to be stored in file")(
@@ -40,6 +44,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "sig1", bpo::value<float>()->default_value(0.f), "Sigma parameter 1")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
+    "mode", bpo::value<int>()->default_value(0), "Running mode (0 = offline, 1 = CCDB)")(
     "help,h", "Print this help.");
   try {
     bpo::store(parse_command_line(argc, argv, options), vm);
@@ -69,9 +74,18 @@ int main(int argc, char* argv[])
   }
 
   TPCPIDResponse* tpc = nullptr;
+  
+  const std::string urlCCDB = vm["url"].as<std::string>();
+  const std::string pathCCDB = vm["ccdb-path"].as<std::string>();
+  const long startTime = vm["start"].as<long>();
+  const long endTime = vm["stop"].as<long>();
+  const int optDelete = vm["delete-previous"].as<int>();
+  
   const std::string outFilename = vm["save-to-file"].as<std::string>();
   const std::string inFilename = vm["read-from-file"].as<std::string>();
   const std::string objname = vm["objname"].as<std::string>();
+  
+  
   const float bb0 = vm["bb0"].as<float>();
   const float bb1 = vm["bb1"].as<float>();
   const float bb2 = vm["bb2"].as<float>();
@@ -81,9 +95,12 @@ int main(int argc, char* argv[])
   const float sig1 = vm["sig1"].as<float>();
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
-
+  const int useCCDB = vm["mode"].as<int>();
+  
+  // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
   std::array<float, 2> sigparams = {sig0, sig1};
+
 
   if (!outFilename.empty() && !inFilename.empty()) {
     LOG(error) << "Cannot both read and write at the same time!";
@@ -103,7 +120,7 @@ int main(int argc, char* argv[])
     tpc->SetChargeFactor(chargefacval);
     fout.cd();
     //   tpc->Print();
-    tpc->Write();
+    fout.WriteObject(tpc, objname.c_str());
     fout.Close();
   }
 
