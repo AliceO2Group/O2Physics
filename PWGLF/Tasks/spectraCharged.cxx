@@ -25,26 +25,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-/*
- usage:
- -----
- o2-analysis-timestamp | o2-analysis-event-selection | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D.root -b
-
- to run over MC, the timestamp, event-selection and spectra-charged tasks need to be run with argument --isMC
- 
- currently one has to manually toggle on only one of the process functions with the PROCESS_SWITCH in the code (set last argument to true)
-
- ideally at some point we can set both process switches to false and enable the correct one with the flags
-    --processData
-    --processMC
- (currently this throws a runtime error)
- 
- if workflow hangs add also
-    --aod-memory-rate-limit 1000000000
- 
- MEMO: if a table is produced in the workflow (e.g. by event or track selection task) but not consumed by any other task (i.e. part of a process function signature) there is a runtime error and and workflow gets stuck
-*/
-
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 // Task declaration
@@ -57,6 +37,7 @@ struct chargedSpectra {
 
   // TODO: can we derive this from config context resp from meta data in the file to avoid having to specify this option?
   Configurable<bool> isMC{"isMC", false, "option to flag mc"};
+  Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
 
   // task settings that can be steered via hyperloop
   Configurable<uint32_t> maxMultMeas{"measMult", 100, "max measured multiplicity."};
@@ -104,7 +85,7 @@ struct chargedSpectra {
   PROCESS_SWITCH(chargedSpectra, processData, "process data", false);
 
   using CollisionTableMCTrue = aod::McCollisions;
-  using CollisionTableMC = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>;
+  using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>;
   using ParticleTableMC = aod::McParticles;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
@@ -115,12 +96,12 @@ struct chargedSpectra {
    add
     Filter xy;
     soa::Filtered<Table>
-    
+
    For the collision and track tables (data and MC):
     - collision z pos < 10cm
     - trigger condition + event selection
     - track selection + is in kine range
-   
+
    For the MC tables we need to keep everything that EITHER fulfils the conditions in data OR in MC to get correct efficiencies and contamination!
   */
 };
@@ -200,7 +181,7 @@ void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision
 {
   // TODO: process only most probable collsion (run3)
   if (collisions.size() > 1) {
-    LOGF(info, "More than one collision was reconstructed");
+    // LOGF(info, "More than one collision was reconstructed");
   }
 
   initEventMC(mcCollision, particles);
@@ -233,20 +214,12 @@ bool chargedSpectra::initParticle(const P& particle)
   if (particle.pt() <= ptMinCut || particle.pt() >= ptMaxCut) {
     return false;
   }
-  /*
- //TODO: understand why this crashes with seg fault (for converted run2 MCs)
-  if(!MC::isPhysicalPrimary(particle)) {
+  if (!MC::isPhysicalPrimary(particle)) {
     return false;
   }
-   */
   // TODO: find out if particle is charged primary or charged secondary
-  //fMCIsChargedPrimary = fMCEvent->IsPhysicalPrimary(particleID);
-  //fMCIsChargedSecondary = (fMCIsChargedPrimary) ? false : (fMCEvent->IsSecondaryFromWeakDecay(particleID) || fMCEvent->IsSecondaryFromMaterial(particleID));
-
-  // FIXME: dummy to mimic phyiscal primary
-  if (std::abs(particle.pdgCode()) != 211) {
-    return false;
-  }
+  // fMCIsChargedPrimary = fMCEvent->IsPhysicalPrimary(particleID);
+  // fMCIsChargedSecondary = (fMCIsChargedPrimary) ? false : (fMCEvent->IsSecondaryFromWeakDecay(particleID) || fMCEvent->IsSecondaryFromMaterial(particleID));
 
   return true;
 }
@@ -288,12 +261,9 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   }
 
   vars.isAcceptedEvent = false;
-  /*
-  if (collision.alias()[kINT7] && collision.sel7() && collision.posZ() < 10.f) {
-    // TODO: apply also other event selections here (not only trigger mask!)
+  if (!(isRun3 ? collision.sel8() : collision.sel7())) { // currently only  sel8 is defined for run3
     vars.isAcceptedEvent = true;
   }
-   */
 }
 
 //**************************************************************************************************
@@ -311,7 +281,7 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
     }
     ++vars.multTrue;
   }
-  //TODO: also determine event class and check if true z vtx positin is good
+  // TODO: also determine event class and check if true z vtx positin is good
   vars.isAcceptedEventMC = collision.posZ() < 10.f;
 }
 
@@ -341,7 +311,7 @@ template <bool IS_MC, typename C, typename T>
 void chargedSpectra::processMeas(const C& collision, const T& tracks)
 {
   // TODO: probably there is a way to introspect the type of the tables making the IS_MC template argument obsolete
-  //constexpr bool IS_MC = soa::is_type_with_originals_v<C> && has_type<typename C::originals, aod::McCollisionLabels>::value;
+  // constexpr bool IS_MC = soa::is_type_with_originals_v<C> && has_type<typename C::originals, aod::McCollisionLabels>::value;
 
   // TODO: break processing here if event does not survive event selection
 

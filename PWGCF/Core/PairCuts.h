@@ -61,7 +61,7 @@ class PairCuts
   bool conversionCuts(T const& track1, T const& track2);
 
   template <typename T>
-  bool twoTrackCut(T const& track1, T const& track2, float magField);
+  bool twoTrackCut(T const& track1, T const& track2, int magField);
 
  protected:
   float mCuts[ParticlesLastEntry] = {-1};
@@ -80,7 +80,7 @@ class PairCuts
   double getInvMassSquaredFast(T const& track1, double m0_1, T const& track2, double m0_2);
 
   template <typename T>
-  float getDPhiStar(T const& track1, T const& track2, float radius, float magField);
+  float getDPhiStar(T const& track1, T const& track2, float radius, int magField);
 };
 
 template <typename T>
@@ -109,7 +109,7 @@ bool PairCuts::conversionCuts(T const& track1, T const& track2)
 }
 
 template <typename T>
-bool PairCuts::twoTrackCut(T const& track1, T const& track2, float magField)
+bool PairCuts::twoTrackCut(T const& track1, T const& track2, int magField)
 {
   // the variables & cut have been developed in Run 1 by the CF - HBT group
   //
@@ -145,7 +145,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, float magField)
       }
 
       if (dphistarminabs < mTwoTrackDistance && std::fabs(deta) < mTwoTrackDistance) {
-        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %f", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
+        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
         return true;
       }
 
@@ -308,7 +308,7 @@ double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& tr
 }
 
 template <typename T>
-float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, float magField)
+float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, int magField)
 {
   //
   // calculates dphistar
