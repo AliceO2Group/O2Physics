@@ -150,8 +150,7 @@ using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
 namespace reducedtrackMC
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedMCEvent, reducedMCevent); //!        
-DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
-DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);
+DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);                               //! Flags to hold compressed MC selection information
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "ReducedMCTracks_Mother0");       //! Track index of the first mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "ReducedMCTracks_Mother1");       //! Track index of the last mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReducedMCTracks_Daughter0"); //! Track index of the first daugther
@@ -197,15 +196,16 @@ DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "RTMC", //!  M
 
 using ReducedMCTrack = ReducedMCTracks::iterator;
 
-namespace reducedtrackMC
+namespace reducedbarreltracklabel
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedMCTrack, reducedMCTrack); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 }
 
 // NOTE: MC labels. This table has one entry for each reconstructed track (joinable with the track tables)
 //          The McParticleId points to the position of the MC truth track from the ReducedTracksMC table
 DECLARE_SOA_TABLE(ReducedTracksBarrelLabels, "AOD", "RTBARRELLABELS", //!
-                  reducedtrackMC::ReducedMCTrackId, reducedtrackMC::McMask, reducedtrackMC::McReducedFlags);
+                  reducedbarreltracklabel::ReducedMCTrackId, reducedbarreltracklabel::McMask, reducedtrackMC::McReducedFlags);
 
 using ReducedTrackBarrelLabel = ReducedTracksBarrelLabels::iterator;
 
@@ -266,6 +266,19 @@ DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",
 using ReducedMuon = ReducedMuons::iterator;
 using ReducedMuonExtra = ReducedMuonsExtra::iterator;
 using ReducedMuonCov = ReducedMuonsCov::iterator;
+
+namespace reducedmuonlabel
+{
+DECLARE_SOA_INDEX_COLUMN(ReducedMCTrack, reducedMCTrack); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);
+}
+// NOTE: MC labels. This table has one entry for each reconstructed muon (joinable with the muon tables)
+//          The McParticleId points to the position of the MC truth track from the ReducedTracksMC table
+DECLARE_SOA_TABLE(ReducedMuonsLabels, "AOD", "RTMUONSLABELS", //!
+                  reducedmuonlabel::ReducedMCTrackId, reducedmuonlabel::McMask, reducedtrackMC::McReducedFlags);
+
+using ReducedMuonsLabel = ReducedMuonsLabels::iterator;
 
 // pair information
 namespace reducedpair

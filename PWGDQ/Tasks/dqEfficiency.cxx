@@ -382,11 +382,11 @@ struct DQQuarkoniumPairing {
     
     cout << "entries in groupedMCTracks = " << groupedMCTracks.size() << endl;
     //    // loop over mc stack and fill histograms for pure MC truth signals
-    for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-      for (auto& sig : fGenMCSignals) {
-        if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required
-          continue;
-        }
+    for (auto& sig : fGenMCSignals) {
+      if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required
+        continue;
+      }
+      for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
         if (sig.CheckSignal(false, tracksMC, t1, t2)) {
           VarManager::FillPairMC(t1, t2, fValues);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), fValues);
