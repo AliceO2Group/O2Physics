@@ -152,7 +152,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
     if (!currentMCParticle.has_mother0() && j < fProngs[i].fNGenerations - 1) {
       return false;
     }
-    if (j < fProngs[i].fNGenerations - 1) {
+    if (currentMCParticle.has_mother0() && j < fProngs[i].fNGenerations - 1) {
       currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
       //currentMCParticle = currentMCParticle.template mother0_as<U>();
     }
