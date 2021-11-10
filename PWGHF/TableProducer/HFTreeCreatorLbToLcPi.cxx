@@ -148,15 +148,15 @@ struct HfTreeCreatorLbToLcPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      //Maurice Test
-      printf("Is cand Lb to Lcpi = %d\n", candidate.isSelLbToLcPi());
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          rowCandidateFull(
+            //Maurice Test
+            printf("Is cand Lb to Lcpi = %d\n", candidate.isSelLbToLcPi());
+            rowCandidateFull(
             candidate.rSecondaryVertex(),
             candidate.decayLength(),
             candidate.decayLengthXY(),
