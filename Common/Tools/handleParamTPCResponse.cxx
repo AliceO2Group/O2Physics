@@ -12,7 +12,7 @@
 ///
 /// \file handleParamTPCResponse.cxx
 /// \author Jeremy Wilkinson
-/// \brief exec for writing and reading TPCPIDResponse object
+/// \brief exec for writing and reading Response object
 
 #include "CCDB/CcdbApi.h"
 #include <boost/program_options.hpp>
@@ -28,13 +28,13 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
 {
   options.add_options()(
     "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database")(
-    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path for object")(
+    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC/Response"), "CCDB path for object")(
     "start,s", bpo::value<long>()->default_value(0), "Start timestamp for calibration validity")(
     "stop,S", bpo::value<long>()->default_value(4108971600000), "End timestamp for calibration validity")(
     "delete-previous", bpo::value<int>()->default_value(0), "delete previous entry from CCDB (1 = true)")(
     "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
     "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
-    "objname,n", bpo::value<std::string>()->default_value("TPCPIDResponse"), "Object name to be stored in file")(
+    "objname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be stored in file")(
     "bb0", bpo::value<float>()->default_value(0.0320981f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768f), "Bethe-Bloch parameter 1")(
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  TPCPIDResponse* tpc = nullptr;
+  Response* tpc = nullptr;
   
   const std::string urlCCDB = vm["url"].as<std::string>();
   const std::string pathCCDB = vm["ccdb-path"].as<std::string>();
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 
   if (!outFilename.empty()) { // Write new object to file
     TFile fout(outFilename.data(), "RECREATE");
-    tpc = new TPCPIDResponse();
+    tpc = new Response();
     tpc->SetBetheBlochParams(BBparams);
     tpc->SetResolutionParams(sigparams);
     tpc->SetMIP(mipval);
