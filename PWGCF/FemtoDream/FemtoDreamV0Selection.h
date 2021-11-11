@@ -227,7 +227,7 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   const auto cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
 
-  float observable{};
+  float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamV0Selection::kDecVtxMax) {

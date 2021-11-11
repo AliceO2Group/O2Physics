@@ -254,7 +254,7 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
     }
 
     /// check whether the number of selection exceeds the bitmap size
-    size_t nSelections = getNSelections() - getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
+    unsigned int nSelections = getNSelections() - getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
     if (nSelections > 8 * sizeof(cutContainerType)) {
       LOG(fatal) << "FemtoDreamTrackCuts: Number of selections too large for your container - quitting!";
     }
@@ -449,7 +449,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
 
-  float observable{};
+  float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {
