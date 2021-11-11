@@ -27,7 +27,8 @@ using namespace o2::framework;
 struct femtoDreamPairHashTask {
 
   Configurable<std::vector<float>> CfgVtxBins{"CfgVtxBins", std::vector<float>{-10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  Configurable<std::vector<float>> CfgMultBins{"CfgMultBins", std::vector<float>{0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  // Configurable<std::vector<float>> CfgMultBins{"CfgMultBins", std::vector<float>{0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  Configurable<std::vector<float>> CfgMultBins{"CfgMultBins", std::vector<float>{0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f}, "Mixing bins - multiplicity"};
 
   std::vector<float> CastCfgVtxBins, CastCfgMultBins;
 

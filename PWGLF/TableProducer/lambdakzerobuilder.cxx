@@ -74,7 +74,7 @@ DECLARE_SOA_TABLE(V0GoodIndices, "AOD", "V0GOODINDICES", o2::soa::Index<>,
                   v0goodindices::PosTrackId, v0goodindices::NegTrackId, v0goodindices::CollisionId);
 } // namespace o2::aod
 
-using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtended>;
+using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended>;
 using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels>;
 
 //#define MY_DEBUG
