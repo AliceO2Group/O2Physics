@@ -74,18 +74,17 @@ int main(int argc, char* argv[])
   }
 
   Response* tpc = nullptr;
-  
+
   const std::string urlCCDB = vm["url"].as<std::string>();
   const std::string pathCCDB = vm["ccdb-path"].as<std::string>();
   const long startTime = vm["start"].as<long>();
   const long endTime = vm["stop"].as<long>();
   const int optDelete = vm["delete-previous"].as<int>();
-  
+
   const std::string outFilename = vm["save-to-file"].as<std::string>();
   const std::string inFilename = vm["read-from-file"].as<std::string>();
   const std::string objname = vm["objname"].as<std::string>();
-  
-  
+
   const float bb0 = vm["bb0"].as<float>();
   const float bb1 = vm["bb1"].as<float>();
   const float bb2 = vm["bb2"].as<float>();
@@ -96,7 +95,7 @@ int main(int argc, char* argv[])
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
   const int useCCDB = vm["mode"].as<int>();
-  
+
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
   std::array<float, 2> sigparams = {sig0, sig1};
@@ -139,6 +138,6 @@ int main(int argc, char* argv[])
     tpc->PrintAll();
     //   tpc->Print();
   }
-
+  
   return 0;
 } //main
