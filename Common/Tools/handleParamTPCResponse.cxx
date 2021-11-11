@@ -135,6 +135,56 @@ int main(int argc, char* argv[])
       LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
       return 1;
     }
+    LOG(info) << "Reading existing TPCPIDResponse object " << objname << " from " << inFilename << ":";
+    tpc->PrintAll();
+    return 0;
+  }
+
+  else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) // Create new object to write to local file or push to CCDB
+  {
+    LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
+
+    tpc = new Response();
+    tpc->SetBetheBlochParams(BBparams);
+    tpc->SetResolutionParams(sigparams);
+    tpc->SetMIP(mipval);
+    tpc->SetChargeFactor(chargefacval);
+    tpc->PrintAll();
+
+    if (optMode.compare("write") == 0) {
+      if (outFilename.empty()) {
+        LOG(error) << "'write' mode specified, but no output filename. Quitting";
+        return 1;
+      }
+
+      LOG(info) << "Writing to output file " << outFilename;
+      TFile fout(outFilename.data(), "RECREATE");
+      if (!fout.IsOpen()) {
+        LOG(error) << "Output file " << inFilename << " could not be written to";
+        return 1;
+      }
+      fout.cd();
+      //   tpc->Print();
+      fout.WriteObject(tpc, objname.c_str());
+      fout.Close();
+      LOG(info) << "File successfully written";
+      return 0;
+    }
+
+    if (optMode.compare("push") == 0) {
+      LOG(info) << "Attempting to push object to CCDB";
+
+      if (optDelete) {
+        api.truncate(pathCCDB);
+      }
+      api.storeAsTFileAny(tpc, pathCCDB + "/" + objname, metadata, startTime, endTime);
+    }
+  }
+
+  else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
+    LOG(info) << "Attempting to pull object from CCDB";
+
+    tpc = api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers);
     tpc->PrintAll();
     //   tpc->Print();
   }
