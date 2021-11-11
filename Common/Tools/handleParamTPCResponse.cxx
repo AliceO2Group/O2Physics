@@ -63,7 +63,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
   }
   return true;
 
-} //initOptionsAndParse
+} // initOptionsAndParse
 
 int main(int argc, char* argv[])
 {
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  Response* tpc = nullptr;
+  std::unique_ptr<Response> tpc = nullptr;
 
   const std::string urlCCDB = vm["url"].as<std::string>();
   const std::string pathCCDB = vm["ccdb-path"].as<std::string>();
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
-  std::map<std::string, std::string>* headers;
+  std::map<std::string, std::string>* headers = nullptr;
   o2::ccdb::CcdbApi api;
   if (optMode.compare("push") == 0 || optMode.compare("pull") == 0) { // Initialise CCDB if in push/pull mode
     api.init(urlCCDB);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    fin.GetObject(objname.c_str(), tpc);
+    tpc.reset(fin.Get<Response>(objname.c_str()));
     if (!tpc) {
       LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
       return 1;
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
   {
     LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
 
-    tpc = new Response();
+    tpc.reset(new Response());
     tpc->SetBetheBlochParams(BBparams);
     tpc->SetResolutionParams(sigparams);
     tpc->SetMIP(mipval);
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
       }
       fout.cd();
       //   tpc->Print();
-      fout.WriteObject(tpc, objname.c_str());
+      fout.WriteObject(tpc.get(), objname.c_str());
       fout.Close();
       LOG(info) << "File successfully written";
       return 0;
@@ -174,14 +174,14 @@ int main(int argc, char* argv[])
       if (optDelete) {
         api.truncate(pathCCDB);
       }
-      api.storeAsTFileAny(tpc, pathCCDB + "/" + objname, metadata, startTime, endTime);
+      api.storeAsTFileAny(tpc.get(), pathCCDB + "/" + objname, metadata, startTime, endTime);
     }
   }
 
   else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
     LOG(info) << "Attempting to pull object from CCDB";
 
-    tpc = api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers);
+    tpc.reset(api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers));
     tpc->PrintAll();
 
     if (!outFilename.empty()) {
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
       }
       fout.cd();
       //   tpc->Print();
-      fout.WriteObject(tpc, objname.c_str());
+      fout.WriteObject(tpc.get(), objname.c_str());
       fout.Close();
       LOG(info) << "File successfully written";
     }
@@ -204,4 +204,4 @@ int main(int argc, char* argv[])
     LOG(error) << "Invalid mode specified! (must be 'read', 'write', 'pull' or 'push')";
     return 1;
   }
-} //main
+} // main
