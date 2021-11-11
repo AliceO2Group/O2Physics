@@ -16,6 +16,7 @@
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "CommonConstants/MathConstants.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -44,6 +45,7 @@ using Hash = Hashes::iterator;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace constants::math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -73,7 +75,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -M_PI / 2, M_PI / 2 * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
@@ -254,11 +256,11 @@ struct CorrelationTask {
         }
 
         float deltaPhi = track1.phi() - track2.phi();
-        if (deltaPhi > 1.5 * M_PI) {
-          deltaPhi -= M_PI * 2;
+        if (deltaPhi > 1.5f * PI) {
+          deltaPhi -= TwoPI;
         }
-        if (deltaPhi < -0.5 * M_PI) {
-          deltaPhi += M_PI * 2;
+        if (deltaPhi < -PIHalf) {
+          deltaPhi += TwoPI;
         }
 
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
@@ -454,11 +456,11 @@ struct CorrelationTask {
       }
 
       float deltaPhi = track1.phi() - track2.phi();
-      if (deltaPhi > 1.5 * M_PI) {
-        deltaPhi -= M_PI * 2;
+      if (deltaPhi > 1.5f * PI) {
+        deltaPhi -= TwoPI;
       }
-      if (deltaPhi < -0.5 * M_PI) {
-        deltaPhi += M_PI * 2;
+      if (deltaPhi < -PIHalf) {
+        deltaPhi += TwoPI;
       }
 
       same->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,

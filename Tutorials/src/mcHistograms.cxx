@@ -15,10 +15,13 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "CommonConstants/MathConstants.h"
+
 #include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;
+using namespace constants::math;
 
 // Simple access to collision
 struct VertexDistribution {
@@ -34,7 +37,7 @@ struct VertexDistribution {
 
 // Grouping between MC particles and collisions
 struct AccessMcData {
-  OutputObj<TH1F> phiH{TH1F("phi", "phi", 100, 0., 2. * M_PI)};
+  OutputObj<TH1F> phiH{TH1F("phi", "phi", 100, 0., TwoPI)};
   OutputObj<TH1F> etaH{TH1F("eta", "eta", 102, -2.01, 2.01)};
 
   // group according to McCollisions
@@ -58,7 +61,7 @@ struct AccessMcData {
 // Access from tracks to MC particle
 struct AccessMcTruth {
   OutputObj<TH1F> etaDiff{TH1F("etaDiff", ";eta_{MC} - eta_{Rec}", 100, -2, 2)};
-  OutputObj<TH1F> phiDiff{TH1F("phiDiff", ";phi_{MC} - phi_{Rec}", 100, -M_PI, M_PI)};
+  OutputObj<TH1F> phiDiff{TH1F("phiDiff", ";phi_{MC} - phi_{Rec}", 100, -PI, PI)};
 
   // group according to reconstructed Collisions
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks,
@@ -75,11 +78,11 @@ struct AccessMcTruth {
       if (MC::isPhysicalPrimary(particle)) {
         etaDiff->Fill(particle.eta() - track.eta());
         auto delta = particle.phi() - track.phi();
-        if (delta > M_PI) {
-          delta -= 2 * M_PI;
+        if (delta > PI) {
+          delta -= TwoPI;
         }
-        if (delta < -M_PI) {
-          delta += 2 * M_PI;
+        if (delta < -PI) {
+          delta += TwoPI;
         }
         phiDiff->Fill(delta);
       }
