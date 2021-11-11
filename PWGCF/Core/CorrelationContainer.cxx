@@ -489,9 +489,6 @@ TH2* CorrelationContainer::getPerTriggerYield(CorrelationContainer::CFStep step,
   THnBase* trackSameAll = nullptr;
   TH2* eventSameAll = nullptr;
 
-  Long64_t totalEvents = 0;
-  Int_t nCorrelationFunctions = 0;
-
   getHistsZVtxMult(step, ptTriggerMin, ptTriggerMax, &trackSameAll, &eventSameAll);
 
   TAxis* multAxis = trackSameAll->GetAxis(3);
