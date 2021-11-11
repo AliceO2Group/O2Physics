@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
     }
   }
 
-  if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
+  else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
     LOG(info) << "Attempting to pull object from CCDB";
 
     tpc = api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers);
