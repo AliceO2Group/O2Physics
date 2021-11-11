@@ -12,6 +12,20 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/Logger.h"
 
+const char* aliasLabels[kNaliases] = {
+  "kINT7",
+  "kEMC7",
+  "kINT7inMUON",
+  "kMuonSingleLowPt7",
+  "kMuonSingleHighPt7",
+  "kMuonUnlikeLowPt7",
+  "kMuonLikeLowPt7",
+  "kCUP8",
+  "kCUP9",
+  "kMUP10",
+  "kMUP11",
+  "kALL"};
+
 void TriggerAliases::AddClassIdToAlias(uint32_t aliasId, int classId)
 {
   if (classId < 0 || classId > 99) {
