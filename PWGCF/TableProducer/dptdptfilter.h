@@ -81,7 +81,7 @@ int zvtxbins = 40;
 float zvtxlow = -10.0, zvtxup = 10.0;
 int phibins = 72;
 float philow = 0.0;
-float phiup = M_PI * 2;
+float phiup = constants::math::TwoPI;
 
 int tracktype = 1;
 int trackonecharge = 1;

@@ -96,7 +96,7 @@ struct DptDptFilterQA {
   {
     using namespace o2::analysis::dptdptfilterqa;
 
-    if (collision.eventaccepted() != (uint8_t) true) {
+    if (!collision.collisionaccepted()) {
       histos.fill(HIST(dirname[dir]) + HIST("SelectedEvents"), 0.5);
     } else {
       histos.fill(HIST(dirname[dir]) + HIST("SelectedEvents"), 1.5);
@@ -107,20 +107,20 @@ struct DptDptFilterQA {
     int ntracks_one_and_two = 0;
     int ntracks_none = 0;
     for (auto& track : tracks) {
-      if ((track.trackacceptedasone() != (uint8_t) true) and (track.trackacceptedastwo() != (uint8_t) true)) {
+      if (!track.trackacceptedasone() and !track.trackacceptedastwo()) {
         ntracks_none++;
       }
-      if ((track.trackacceptedasone() == (uint8_t) true) and (track.trackacceptedastwo() == (uint8_t) true)) {
+      if (track.trackacceptedasone() and track.trackacceptedastwo()) {
         ntracks_one_and_two++;
       }
-      if (track.trackacceptedasone() == (uint8_t) true) {
+      if (track.trackacceptedasone()) {
         ntracks_one++;
       }
-      if (track.trackacceptedastwo() == (uint8_t) true) {
+      if (track.trackacceptedastwo()) {
         ntracks_two++;
       }
     }
-    if (collision.eventaccepted() != (uint8_t) true) {
+    if (!collision.collisionaccepted()) {
       /* control for non selected events */
       histos.fill(HIST(dirname[dir]) + HIST("TracksOneUnsel"), ntracks_one);
       histos.fill(HIST(dirname[dir]) + HIST("TracksTwoUnsel"), ntracks_two);
@@ -134,10 +134,10 @@ struct DptDptFilterQA {
     }
   }
 
-  Filter onlyacceptedevents = (aod::dptdptfilter::eventaccepted == (uint8_t) true);
-  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == (uint8_t) true) or (aod::dptdptfilter::trackacceptedastwo == (uint8_t) true));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == true);
+  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == true) or (aod::dptdptfilter::trackacceptedastwo == true));
 
-  void processGeneratorLevel(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
+  void processGeneratorLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {
     using namespace o2::analysis::dptdptfilterqa;
     LOGF(DPTDPTFILTERLOGCOLLISIONS, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
@@ -145,7 +145,7 @@ struct DptDptFilterQA {
   }
   PROCESS_SWITCH(DptDptFilterQA, processGeneratorLevel, "Process generator level filter task QA", true);
 
-  void processDetectorLevel(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks> const& tracks)
+  void processDetectorLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
     using namespace o2::analysis::dptdptfilterqa;
     LOGF(DPTDPTFILTERLOGCOLLISIONS, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());

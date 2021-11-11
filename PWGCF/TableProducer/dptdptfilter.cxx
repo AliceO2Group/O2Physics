@@ -144,9 +144,9 @@ struct DptDptFilter {
 
   OutputObj<TList> fOutput{"DptDptFilterGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
 
-  Produces<aod::AcceptedEvents> acceptedevents;
+  Produces<aod::DptDptCFAcceptedCollisions> acceptedcollisions;
   Produces<aod::ScannedTracks> scannedtracks;
-  Produces<aod::AcceptedTrueEvents> acceptedtrueevents;
+  Produces<aod::DptDptCFAcceptedTrueCollisions> acceptedtrueevents;
   Produces<aod::ScannedTrueTracks> scannedtruetracks;
 
   template <typename TrackObject>
@@ -313,11 +313,11 @@ struct DptDptFilter {
   {
     using namespace dptdptfilter;
 
-    constexpr int pdgcodeEl = 11L;
-    constexpr int pdgcodeMu = 13L;
-    constexpr int pdgcodePi = 211L;
-    constexpr int pdgcodeKa = 321L;
-    constexpr int pdgcodePr = 2212L;
+    constexpr int pdgcodeEl = 11;
+    constexpr int pdgcodeMu = 13;
+    constexpr int pdgcodePi = 211;
+    constexpr int pdgcodeKa = 321;
+    constexpr int pdgcodePr = 2212;
 
     int pdgcode = abs(particle.pdgCode());
 
@@ -446,8 +446,8 @@ struct DptDptFilter {
       fhPtNegB = new TH1F("fHistPtNegB", "P_{T} distribution for reconstructed (#minus) before;P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
       fhEtaB = new TH1F("fHistEtaB", "#eta distribution for reconstructed before;#eta;counts", 40, -2.0, 2.0);
       fhEtaA = new TH1F("fHistEtaA", "#eta distribution for reconstructed;#eta;counts", etabins, etalow, etaup);
-      fhPhiB = new TH1F("fHistPhiB", "#phi distribution for reconstructed before;#phi;counts", 360, 0.0, 2 * M_PI);
-      fhPhiA = new TH1F("fHistPhiA", "#phi distribution for reconstructed;#phi;counts", 360, 0.0, 2 * M_PI);
+      fhPhiB = new TH1F("fHistPhiB", "#phi distribution for reconstructed before;#phi;counts", 360, 0.0, constants::math::TwoPI);
+      fhPhiA = new TH1F("fHistPhiA", "#phi distribution for reconstructed;#phi;counts", 360, 0.0, constants::math::TwoPI);
       fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
       fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
       fhFineDCAxyA = new TH1F("FineDCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 4000, -1.0, 1.0);
@@ -526,8 +526,8 @@ struct DptDptFilter {
       fhTruePtNegB = new TH1F("fTrueHistPtNegB", "P_{T} distribution (#minus) before (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
       fhTrueEtaB = new TH1F("fTrueHistEtaB", "#eta distribution before (truth);#eta;counts", 40, -2.0, 2.0);
       fhTrueEtaA = new TH1F("fTrueHistEtaA", "#eta distribution (truth);#eta;counts", etabins, etalow, etaup);
-      fhTruePhiB = new TH1F("fTrueHistPhiB", "#phi distribution before (truth);#phi;counts", 360, 0.0, 2 * M_PI);
-      fhTruePhiA = new TH1F("fTrueHistPhiA", "#phi distribution (truth);#phi;counts", 360, 0.0, 2 * M_PI);
+      fhTruePhiB = new TH1F("fTrueHistPhiB", "#phi distribution before (truth);#phi;counts", 360, 0.0, constants::math::TwoPI);
+      fhTruePhiA = new TH1F("fTrueHistPhiA", "#phi distribution (truth);#phi;counts", 360, 0.0, constants::math::TwoPI);
       fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
       if (traceDCAOutliers.mDoIt) {
         fhTrueDCAxyBid = new TH1F("PDGCodeDCAxyB",
@@ -676,7 +676,7 @@ bool DptDptFilter::selectTrack(TrackObject const& track, int64_t colix)
       /* fill the species histograms */
       fillTrackHistosAfterSelection(track, sp);
     }
-    scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
+    scannedtracks(colix, asone, astwo, track.pt(), track.eta(), track.phi());
     return true;
   }
   return false;
@@ -715,7 +715,7 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
           fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
         }
         acceptedparticles++;
-        scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
+        scannedtruetracks(colix, asone, astwo, particle.pt(), particle.eta(), particle.phi());
       }
     } else {
       if ((particle.mcCollisionId() == 0) and traceCollId0) {
@@ -815,13 +815,13 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
     fhVertexZA->Fill(collision.posZ());
-    acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
+    acceptedcollisions(collision.bcId(), collision.posZ(), acceptedevent, centormult);
 
-    filterTracks(ftracks, acceptedevents.lastIndex());
+    filterTracks(ftracks, acceptedcollisions.lastIndex());
   } else {
-    acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
+    acceptedcollisions(collision.bcId(), collision.posZ(), acceptedevent, centormult);
     for (auto& track : ftracks) {
-      scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
+      scannedtracks(acceptedcollisions.lastIndex(), false, false, track.pt(), track.eta(), track.phi());
     }
   }
 }
@@ -878,13 +878,13 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McP
     acceptedevent = true;
     fhTrueCentMultA->Fill(centormult);
     fhTrueVertexZA->Fill(mccollision.posZ());
-    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
+    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
 
     filterParticles(mcparticles, mccollision, acceptedtrueevents.lastIndex());
   } else {
-    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
+    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
     for (auto& particle : mcparticles) {
-      scannedtruetracks(acceptedtrueevents.lastIndex(), (uint8_t) false, (uint8_t) false, particle.pt(), particle.eta(), particle.phi());
+      scannedtruetracks(acceptedtrueevents.lastIndex(), false, false, particle.pt(), particle.eta(), particle.phi());
     }
   }
 }

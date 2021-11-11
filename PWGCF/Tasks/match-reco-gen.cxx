@@ -140,10 +140,8 @@ struct CheckGeneratorLevelVsDetectorLevel {
     fDataType = getDataType(cfgDataType);
     fPDG = TDatabasePDG::Instance();
 
-    constexpr float TWOPI = 2.0f * static_cast<float>(M_PI);
-
     AxisSpec deltaEta = {100, -2, 2, "#Delta#eta"};
-    AxisSpec deltaPhi = {100, 0, TWOPI, "#Delta#varphi (rad)"};
+    AxisSpec deltaPhi = {100, 0, constants::math::TwoPI, "#Delta#varphi (rad)"};
     AxisSpec deltaPt = {1000, 0, 4, "#Delta#it{p}_{T} (GeV/#it{c})"};
     AxisSpec mrectimes = {11, -0.5f, 10.5f, "##/particle"};
     AxisSpec detectors = {32, -0.5, 31.5, "Detectors"};
@@ -158,15 +156,15 @@ struct CheckGeneratorLevelVsDetectorLevel {
     histos.add("before/positivecolid/mrDeltaPt", "#Delta#it{p}_{T} multirec tracks", kTH1F, {deltaPt});
     histos.add("before/positivecolid/multirec", "Multiple reconstruction", kTH1F, {mrectimes});
     histos.add("before/positivecolid/genrecoeta", "#eta Generated vs reconstructed", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
-    histos.add("before/positivecolid/genrecophi", "#varphi Generated vs reconstructed", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
+    histos.add("before/positivecolid/genrecophi", "#varphi Generated vs reconstructed", kTH2F, {{100, 0, constants::math::TwoPI, "#varphi (rad) reco"}, {100, 0, constants::math::TwoPI, "#varphi (rad) gen"}});
     histos.add("before/positivecolid/genrecopt", "#it{p}_{T} Generated vs reconstructed", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
     histos.add("before/positivecolid/detectormap", "Active detectors", kTH1F, {detectors});
     histos.add("before/positivecolid/matchcollid", "particle MC coll Id <=> track coll MC coll Id", kTH1F, {{2, 0.0, 2.0}});
     histos.add("before/positivecolid/genrecomreta", "#eta Generated vs reconstructed (mr)", kTH2F, {{100, -1.0, 1.0, "#eta reco"}, {100, -1.0, 1.0, "#eta gen"}});
-    histos.add("before/positivecolid/genrecomrphi", "#varphi Generated vs reconstructed (mr)", kTH2F, {{100, 0, TWOPI, "#varphi (rad) reco"}, {100, 0, TWOPI, "#varphi (rad) gen"}});
+    histos.add("before/positivecolid/genrecomrphi", "#varphi Generated vs reconstructed (mr)", kTH2F, {{100, 0, constants::math::TwoPI, "#varphi (rad) reco"}, {100, 0, constants::math::TwoPI, "#varphi (rad) gen"}});
     histos.add("before/positivecolid/genrecomrpt", "#it{p}_{T} Generated vs reconstructed (mr)", kTH2F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) reco"}, {1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c}) gen"}});
     histos.add("before/positivecolid/recomreta", "#eta Reconstructed (mr)", kTH1F, {{100, -1.0, 1.0, "#eta"}});
-    histos.add("before/positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, TWOPI, "#varphi (rad)"}});
+    histos.add("before/positivecolid/recomrphi", "#varphi Reconstructed (mr)", kTH1F, {{100, 0, constants::math::TwoPI, "#varphi (rad)"}});
     histos.add("before/positivecolid/recomrpt", "#it{p}_{T} Reconstructed (mr)", kTH1F, {{1000, 0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     histos.add("before/positivecolid/detectormapmr", "Active detectors (mr)", kTH1F, {detectors});
     histos.add("before/positivecolid/matchcollidmr", "particle MC coll Id <=> track coll MC coll Id (mr)", kTH1F, {{2, 0.0, 2.0}});
@@ -201,7 +199,6 @@ struct CheckGeneratorLevelVsDetectorLevel {
 
     static constexpr std::string_view dir[] = {"before/", "after/"};
     static constexpr std::string_view colldir[] = {"positivecolid/", "negativecolid/"};
-    constexpr float TWOPI = 2.0F * static_cast<float>(M_PI);
 
     int nrec_poslabel = 0;
     int nrec_neglabel = 0;
@@ -258,10 +255,10 @@ struct CheckGeneratorLevelVsDetectorLevel {
             float deltaeta = track1.eta() - track2.eta();
             float deltaphi = track1.phi() - track2.phi();
             if (deltaphi < 0) {
-              deltaphi += TWOPI;
+              deltaphi += constants::math::TwoPI;
             }
-            if (deltaphi > TWOPI) {
-              deltaphi -= TWOPI;
+            if (deltaphi > constants::math::TwoPI) {
+              deltaphi -= constants::math::TwoPI;
             }
             float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
 

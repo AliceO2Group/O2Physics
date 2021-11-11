@@ -61,9 +61,9 @@ int deltaetabins = etabins * 2 - 1;
 float deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
 float deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
 int deltaphibins = phibins;
-float deltaphibinwidth = M_PI * 2 / deltaphibins;
+float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
-float deltaphiup = M_PI * 2 - deltaphibinwidth / 2.0;
+float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
 bool processpairs = false;
 std::string fTaskConfigurationString = "PendingToConfigure";
@@ -120,7 +120,7 @@ struct DptDptCorrelationsTask {
       using namespace correlationstask;
       using namespace o2::analysis::dptdptfilter;
       if (not(phi < phiup)) {
-        return phi - M_PI * 2;
+        return phi - constants::math::TwoPI;
       } else {
         return phi;
       }
@@ -459,7 +459,7 @@ struct DptDptCorrelationsTask {
     zvtxup = cfgBinning->mZVtxmax;
     phibins = cfgBinning->mPhibins;
     philow = 0.0f;
-    phiup = M_PI * 2;
+    phiup = constants::math::TwoPI;
     phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
     /* update the potential binning change */
@@ -471,9 +471,9 @@ struct DptDptCorrelationsTask {
     deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
     deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
     deltaphibins = phibins;
-    deltaphibinwidth = M_PI * 2 / deltaphibins;
+    deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
-    deltaphiup = M_PI * 2 - deltaphibinwidth / 2.0;
+    deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
     /* create the output directory which will own the task output */
     TList* fGlobalOutputList = new TList();
@@ -547,18 +547,18 @@ struct DptDptCorrelationsTask {
     return ixDCE;
   }
 
-  Filter onlyacceptedevents = (aod::dptdptfilter::eventaccepted == (uint8_t) true);
-  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == (uint8_t) true) or (aod::dptdptfilter::trackacceptedastwo == (uint8_t) true));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == true);
+  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == true) or (aod::dptdptfilter::trackacceptedastwo == true));
 
-  void processRecLevel(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
+  void processRecLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
   {
     using namespace correlationstask;
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == (uint8_t) true;
-      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == (uint8_t) true;
+      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == true;
+      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == true;
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
@@ -569,15 +569,15 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
 
-  void processGenLevel(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks>& tracks)
+  void processGenLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks>& tracks)
   {
     using namespace correlationstask;
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == (uint8_t) true;
-      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == (uint8_t) true;
+      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == true;
+      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == true;
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 

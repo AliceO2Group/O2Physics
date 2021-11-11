@@ -21,42 +21,42 @@ namespace aod
 /* we have to change from int to bool when bool columns work properly */
 namespace dptdptfilter
 {
-DECLARE_SOA_COLUMN(EventAccepted, eventaccepted, uint8_t); //! If the collision/event has been accepted or not
-DECLARE_SOA_COLUMN(EventCentMult, centmult, float);        //! The centrality/multiplicity pecentile
+DECLARE_SOA_COLUMN(DptDptCFCollisionAccepted, collisionaccepted, bool); //! If the collision/event has been accepted or not
+DECLARE_SOA_COLUMN(DptDptCFCollisionCentMult, centmult, float);         //! The centrality/multiplicity pecentile
 } // namespace dptdptfilter
-DECLARE_SOA_TABLE(AcceptedEvents, "AOD", "ACCEPTEDEVENTS", //! Accepted reconstructed collisions/events filtered table
+DECLARE_SOA_TABLE(DptDptCFAcceptedCollisions, "AOD", "DPTDPTCFACCCOLL", //! Accepted reconstructed collisions/events filtered table
                   o2::soa::Index<>,
                   collision::BCId,
                   collision::PosZ,
-                  dptdptfilter::EventAccepted,
-                  dptdptfilter::EventCentMult);
-using AcceptedEvent = AcceptedEvents::iterator;
-DECLARE_SOA_TABLE(AcceptedTrueEvents, "AOD", "ACCTRUEEVENTS", //! Accepted generated collisions/events filtered table
+                  dptdptfilter::DptDptCFCollisionAccepted,
+                  dptdptfilter::DptDptCFCollisionCentMult);
+using DptDptCFAcceptedCollision = DptDptCFAcceptedCollisions::iterator;
+DECLARE_SOA_TABLE(DptDptCFAcceptedTrueCollisions, "AOD", "DPTCFACCGENCOLL", //! Accepted generated collisions/events filtered table
                   o2::soa::Index<>,
                   collision::BCId,
                   mccollision::PosZ,
-                  dptdptfilter::EventAccepted,
-                  dptdptfilter::EventCentMult);
-using AcceptedTrueEvent = AcceptedTrueEvents::iterator;
+                  dptdptfilter::DptDptCFCollisionAccepted,
+                  dptdptfilter::DptDptCFCollisionCentMult);
+using DptDptCFAcceptedTrueCollision = DptDptCFAcceptedTrueCollisions::iterator;
 namespace dptdptfilter
 {
-DECLARE_SOA_INDEX_COLUMN(AcceptedEvent, event);                      //! Reconstructed collision/event
-DECLARE_SOA_INDEX_COLUMN(AcceptedTrueEvent, mcevent);                //! Generated collision/event
-DECLARE_SOA_COLUMN(TrackacceptedAsOne, trackacceptedasone, uint8_t); //! Track accepted as type one
-DECLARE_SOA_COLUMN(TrackacceptedAsTwo, trackacceptedastwo, uint8_t); //! Track accepted as type two
-DECLARE_SOA_COLUMN(Pt, pt, float);                                   //! The track transverse momentum
-DECLARE_SOA_COLUMN(Eta, eta, float);                                 //! The track pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! The track azimuthal angle
+DECLARE_SOA_INDEX_COLUMN(DptDptCFAcceptedCollision, event);       //! Reconstructed collision/event
+DECLARE_SOA_INDEX_COLUMN(DptDptCFAcceptedTrueCollision, mcevent); //! Generated collision/event
+DECLARE_SOA_COLUMN(TrackacceptedAsOne, trackacceptedasone, bool); //! Track accepted as type one
+DECLARE_SOA_COLUMN(TrackacceptedAsTwo, trackacceptedastwo, bool); //! Track accepted as type two
+DECLARE_SOA_COLUMN(Pt, pt, float);                                //! The track transverse momentum
+DECLARE_SOA_COLUMN(Eta, eta, float);                              //! The track pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                              //! The track azimuthal angle
 } // namespace dptdptfilter
 DECLARE_SOA_TABLE(ScannedTracks, "AOD", "SCANNEDTRACKS", //! The reconstructed tracks filtered table
-                  dptdptfilter::AcceptedEventId,
+                  dptdptfilter::DptDptCFAcceptedCollisionId,
                   dptdptfilter::TrackacceptedAsOne,
                   dptdptfilter::TrackacceptedAsTwo,
                   dptdptfilter::Pt,
                   dptdptfilter::Eta,
                   dptdptfilter::Phi);
 DECLARE_SOA_TABLE(ScannedTrueTracks, "AOD", "SCANTRUETRACKS", //! The generated particles filtered table
-                  dptdptfilter::AcceptedTrueEventId,
+                  dptdptfilter::DptDptCFAcceptedTrueCollisionId,
                   dptdptfilter::TrackacceptedAsOne,
                   dptdptfilter::TrackacceptedAsTwo,
                   dptdptfilter::Pt,
