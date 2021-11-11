@@ -37,6 +37,9 @@ DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Differenc
 } // namespace pidtracks
 DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for prediction and domain adaptation
                   aod::track::TPCSignal,
+                  aod::track::TRDSignal,
+                  aod::track::TrackEtaEMCAL,
+                  aod::track::TrackPhiEMCAL,
                   aod::pidtofsignal::TOFSignal,
                   aod::pidtofbeta::Beta,
                   pidtracks::Px,
@@ -77,6 +80,9 @@ DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for pre
                   pidtracks::TOFExpSignalDiffPr);
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   aod::track::TPCSignal,
+                  aod::track::TRDSignal,
+                  aod::track::TrackEtaEMCAL,
+                  aod::track::TrackPhiEMCAL,
                   aod::pidtofsignal::TOFSignal,
                   aod::pidtofbeta::Beta,
                   pidtracks::Px,
@@ -138,7 +144,8 @@ struct CreateTableMc {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
-      pidTracksTable(track.tpcSignal(), track.tofSignal(), track.beta(),
+      pidTracksTable(track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
+                     track.tofSignal(), track.beta(),
                      track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
@@ -169,7 +176,8 @@ struct CreateTableReal {
   void process(BigTracks const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTable(track.tpcSignal(), track.tofSignal(), track.beta(),
+      pidTracksTable(track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
+                     track.tofSignal(), track.beta(),
                      track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
