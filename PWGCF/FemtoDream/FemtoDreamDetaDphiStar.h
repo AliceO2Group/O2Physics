@@ -153,7 +153,7 @@ class FemtoDreamDetaDphiStar
 
     float phi0 = part.phi();
     // Start: Get the charge from cutcontainer using masks
-    float charge;
+    float charge = 0.;
     if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
       charge = 0;
     } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {
