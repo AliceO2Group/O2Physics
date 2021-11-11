@@ -102,25 +102,25 @@ int main(int argc, char* argv[])
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
   std::array<float, 2> sigparams = {sig0, sig1};
-  
+
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
   std::map<std::string, std::string>* headers;
   o2::ccdb::CcdbApi api;
-  if (optMode.compare("push") == 0 || optMode.compare("pull") == 0) {  // Initialise CCDB if in push/pull mode
+  if (optMode.compare("push") == 0 || optMode.compare("pull") == 0) { // Initialise CCDB if in push/pull mode
     api.init(urlCCDB);
     if (!api.isHostReachable()) {
       LOG(warning) << "CCDB mode (push/pull) enabled but host " << urlCCDB << " is unreachable.";
       return 1;
-      }
     }
-  
-  if (optMode.compare("read") == 0 ) { // Read existing object from local file
+  }
+
+  if (optMode.compare("read") == 0) { // Read existing object from local file
     if (inFilename.empty()) {
       LOG(error) << "read mode defined with no input file, please set --read-from-file";
-      return 1; 
+      return 1;
     }
-    
+
     TFile fin(inFilename.data(), "READ");
     if (!fin.IsOpen()) {
       LOG(error) << "Input file " << inFilename << " could not be read";
@@ -132,15 +132,15 @@ int main(int argc, char* argv[])
       LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
       return 1;
     }
-    LOG(info) << "Reading existing TPCPIDResponse object " << objname << " from " << inFilename << ":" ;
+    LOG(info) << "Reading existing TPCPIDResponse object " << objname << " from " << inFilename << ":";
     tpc->PrintAll();
     return 0;
   }
 
-  else if (optMode.compare("write") == 0 || optMode.compare("push") == 0 )  // Create new object to write to local file or push to CCDB
+  else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) // Create new object to write to local file or push to CCDB
   {
     LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
-    
+
     tpc = new Response();
     tpc->SetBetheBlochParams(BBparams);
     tpc->SetResolutionParams(sigparams);
@@ -170,35 +170,34 @@ int main(int argc, char* argv[])
 
     if (optMode.compare("push") == 0) {
       LOG(info) << "Attempting to push object to CCDB";
-      
+
       if (optDelete) {
         api.truncate(pathCCDB);
       }
       api.storeAsTFileAny(tpc, pathCCDB + "/" + objname, metadata, startTime, endTime);
     }
-
   }
 
   if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
-      LOG(info) << "Attempting to pull object from CCDB";
+    LOG(info) << "Attempting to pull object from CCDB";
 
-      tpc = api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers);
-      tpc->PrintAll();
+    tpc = api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers);
+    tpc->PrintAll();
 
-      if (!outFilename.empty()) {
-        LOG(info) << "Writing pulled object to local file";
-        TFile fout(outFilename.data(), "RECREATE");
-        if (!fout.IsOpen()) {
-          LOG(error) << "Output file " << inFilename << " could not be written to";
-          return 1;
-        }
-        fout.cd();
-        //   tpc->Print();
-        fout.WriteObject(tpc, objname.c_str());
-        fout.Close();
-        LOG(info) << "File successfully written";
+    if (!outFilename.empty()) {
+      LOG(info) << "Writing pulled object to local file";
+      TFile fout(outFilename.data(), "RECREATE");
+      if (!fout.IsOpen()) {
+        LOG(error) << "Output file " << inFilename << " could not be written to";
+        return 1;
       }
-      return 0;
+      fout.cd();
+      //   tpc->Print();
+      fout.WriteObject(tpc, objname.c_str());
+      fout.Close();
+      LOG(info) << "File successfully written";
+    }
+    return 0;
   }
 
   else {
