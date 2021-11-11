@@ -107,8 +107,8 @@ inline void Response::PrintAll() const
     LOGP(info, "BB param [{}] = {}", i, mBetheBlochParams[i]);
   for (int i = 0; i < int(mResolutionParams.size()); i++)
     LOGP(info, "Resolution param [{}] = {}", i, mResolutionParams[i]);
-    LOGP(info, "mMIP = {}", mMIP);
-    LOGP(info, "mChargeFactor = {}", mChargeFactor);
+  LOGP(info, "mMIP = {}", mMIP);
+  LOGP(info, "mChargeFactor = {}", mChargeFactor);
 }
 
 } // namespace o2::pid::tpc

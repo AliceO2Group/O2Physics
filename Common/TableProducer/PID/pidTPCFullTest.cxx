@@ -113,7 +113,7 @@ struct tpcPidFull {
         std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
         f->GetObject("Response", response);
       } catch (...) {
-          LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
+        LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
       };
     } else {
       const std::string path = ccdbPath.value;
