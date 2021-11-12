@@ -454,7 +454,7 @@ struct DQEventMixing {
           }
 
           VarManager::FillPair<pairTypeEMu>(track1, muon2, fValues);
-          
+
           int i = 0;
           for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
             if (twoTrackFilter & (uint8_t(1) << i)) {
