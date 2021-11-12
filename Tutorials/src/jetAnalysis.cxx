@@ -16,7 +16,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "AnalysisDataModel/Jet.h"
+#include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,7 +39,7 @@ struct JetAnalysis {
   {
     hJetPt->Fill(jet.pt());
     for (const auto& c : constituents) {
-      LOGF(DEBUG, "jet %d: track id %d, track pt %g", jet.index(), c.trackId(), c.track().pt());
+      LOGF(debug, "jet %d: track id %d, track pt %g", jet.index(), c.trackId(), c.track().pt());
       hConstPt->Fill(c.track().pt());
     }
   }
