@@ -28,6 +28,8 @@
 #include "PWGCF/FemtoDream/FemtoDreamContainer.h"
 #include "PWGCF/FemtoDream/FemtoDreamMath.h"
 #include "PWGCF/FemtoDream/FemtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/FemtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/FemtoDreamContainer.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -51,13 +53,13 @@ enum CFTriggers {
 
 static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
 
-//uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
-//uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
+// uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
+// uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
 static constexpr uint8_t Track = 0;      // Track
 static constexpr uint8_t V0 = 1;         // V0
 static constexpr uint8_t V0Daughter = 2; // V0  daughters
 static constexpr uint32_t kSignMinusMask = 1;
-static constexpr uint32_t kSignPlusMask = 1 << 1;
+static constexpr uint32_t kSignPlusMask = 2;
 static constexpr uint32_t kValue0 = 0;
 
 } // namespace
@@ -78,25 +80,45 @@ struct CFFilter {
 
   Produces<aod::CFFilters> tags;
 
-  //Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
+  Configurable<std::vector<float>> confQ3TriggerLimit{"Q3TriggerLimitC", std::vector<float>{0.6f, 0.6f, 0.6f, 0.6f}, "Q3 limit for selection"};
+  Configurable<int> Q3Trigger{"Q3Trigger", 0, "Choice which trigger to run"};
+  Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.017, "Max limit of delta phi"};
+  Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.017, "Max limit of delta eta"};
+  Configurable<float> lmagfield{"lmagfield", 0.5, "Magnetic field value"};
+
+  // Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
   Partition<o2::aod::FemtoDreamParticles> partsProton1 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsLambda1 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsProton0 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsLambda0 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
 
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  //FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
+  // FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTV;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
   void init(o2::framework::InitContext&)
   {
+    bool plotPerRadii = true;
+
+    closePairRejectionTT.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, lmagfield, plotPerRadii);
+    closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, lmagfield, plotPerRadii);
     registry.add("fProcessedEvents", "CF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 5.5}});
     std::array<std::string, 6> eventTitles = {"all", "rejected", "p-p-p", "p-p-L", "p-L-L", "L-L-L"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
-    registry.add("fSameEvent", "CF - same event distribution;;events", HistType::kTH1F, {{8000, 0, 8}});
+    if (Q3Trigger == 0 || Q3Trigger == 11) {
+      registry.add("fSameEventPartPPP", "CF - same event ppp distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
+      registry.add("fSameEventAntiPartPPP", "CF - same event ppp distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
+    }
+    if (Q3Trigger == 1 || Q3Trigger == 11) {
+      registry.add("fSameEventPartPPL", "CF - same event ppL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
+      registry.add("fSameEventAntiPartPPL", "CF - same event ppL distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
+    }
   }
 
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
@@ -106,42 +128,114 @@ struct CFFilter {
   {
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
     bool keepEvent[nTriplets]{false};
-
-    // This is the main trigger part for proton-proton-Lambda
-    // pairCleanerTV -> Test if lambda hyperons don't have a daughter which is as well used as primary proton
-    // Calculate Q3 and check if it is smaller than 0.6
-    // If at collision has at least one triplet with Q3<0.6, the trigger value is set to true!
-    // IMPORTANT: Include close pair rejection here
+    int lowQ3Triplets[2] = {0, 0};
     if (partsFemto.size() != 0) {
-      int lowQ3Triplets = 0;
-      if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
-        for (auto& partLambda : partsLambda0) {
-          if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
-            continue;
+      auto Q3TriggerLimit = (std::vector<float>)confQ3TriggerLimit;
+      // TRIGGER FOR PPP TRIPLETS
+      if (Q3Trigger == 0 || Q3Trigger == 11) {
+        if (partsProton0.size() >= 3) {
+          for (auto& [p1, p2, p3] : combinations(partsProton0, partsProton0, partsProton0)) {
+            // Think if pair cleaning is needed in current framework
+            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+              continue;
+            }
+            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto)) {
+              continue;
+            }
+            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto)) {
+              continue;
+            }
+            auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
+            registry.get<TH1>(HIST("fSameEventPartPPP"))->Fill(Q3);
+            if (Q3 < Q3TriggerLimit.at(0)) {
+              lowQ3Triplets[0]++;
+            }
           }
-          for (auto& [p1, p2] : combinations(partsProton0, partsProton0)) {
-            auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
-            registry.get<TH1>(HIST("fSameEvent"))->Fill(Q3);
-            if (Q3 < 1.5)
-              lowQ3Triplets++; // real value 0.6. We use 1.5 here for testing locally because of statistics
-          }
+        } // end if
+
+        if (lowQ3Triplets[0] == 0) { // if at least one triplet found in particles, no need to check antiparticles
+          if (partsProton1.size() >= 3) {
+            for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
+              // Think if pair cleaning is needed in current framework
+              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+                continue;
+              }
+              if (closePairRejectionTT.isClosePair(p1, p3, partsFemto)) {
+                continue;
+              }
+              if (closePairRejectionTT.isClosePair(p2, p3, partsFemto)) {
+                continue;
+              }
+              auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
+              registry.get<TH1>(HIST("fSameEventAntiPartPPP"))->Fill(Q3);
+              if (Q3 < Q3TriggerLimit.at(0)) {
+                lowQ3Triplets[0]++;
+              }
+            }
+          } // end if
         }
-      } // end if
-      if (partsLambda1.size() >= 1 && partsProton1.size() >= 2) {
-        for (auto& partLambda : partsLambda1) {
-          if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
-            continue;
+      }
+
+      // TRIGGER FOR PPL TRIPLETS
+      if (Q3Trigger == 1 || Q3Trigger == 11) {
+        if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
+          for (auto& partLambda : partsLambda0) {
+            if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
+              continue;
+            }
+            for (auto& [p1, p2] : combinations(partsProton0, partsProton0)) {
+              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+                continue;
+              }
+              if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto)) {
+                continue;
+              }
+              if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto)) {
+                continue;
+              }
+              auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
+              registry.get<TH1>(HIST("fSameEventPartPPL"))->Fill(Q3);
+              if (Q3 < Q3TriggerLimit.at(1)) {
+                lowQ3Triplets[1]++;
+              }
+            }
           }
-          for (auto& [p1, p2] : combinations(partsProton1, partsProton1)) {
-            auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
-            registry.get<TH1>(HIST("fSameEvent"))->Fill(Q3);
-            if (Q3 < 1.5)
-              lowQ3Triplets++; // real value 0.6. We use 1.5 here for testing locally because of statistics
-          }
+        } // end if
+
+        if (lowQ3Triplets[1] == 0) { // if at least one triplet found in particles, no need to check antiparticles
+          if (partsLambda1.size() >= 1 && partsProton1.size() >= 2) {
+            for (auto& partLambda : partsLambda1) {
+              if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
+                continue;
+              }
+              for (auto& [p1, p2] : combinations(partsProton1, partsProton1)) {
+                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+                  continue;
+                }
+                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto)) {
+                  continue;
+                }
+                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto)) {
+                  continue;
+                }
+                auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
+                registry.get<TH1>(HIST("fSameEventAntiPartPPL"))->Fill(Q3);
+                if (Q3 < Q3TriggerLimit.at(1)) {
+                  lowQ3Triplets[1]++;
+                }
+              }
+            }
+          } // end if
         }
-      } // end if
-      if (lowQ3Triplets > 0)
-        keepEvent[kPPL] = true;
+      }
+    }
+
+    if (lowQ3Triplets[0] > 0) {
+      keepEvent[kPPP] = true;
+    }
+
+    if (lowQ3Triplets[1] > 0) {
+      keepEvent[kPPL] = true;
     }
 
     tags(keepEvent[kPPP], keepEvent[kPPL], keepEvent[kPLL], keepEvent[kLLL]);

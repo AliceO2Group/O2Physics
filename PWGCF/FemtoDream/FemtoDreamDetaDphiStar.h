@@ -96,9 +96,10 @@ class FemtoDreamDetaDphiStar
         return false;
       }
 
-      bool pass = true;
+      bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto daughter = particles.begin() + part2.indices()[i];
+        auto indexOfDaughter = part2.index() - 2 + i;
+        auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = AveragePhiStar(part1, *daughter, i);
         histdetadpi[i][0]->Fill(deta, dphiAvg);
