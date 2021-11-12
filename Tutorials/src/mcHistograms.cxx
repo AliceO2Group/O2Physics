@@ -46,7 +46,7 @@ struct AccessMcData {
     LOGF(info, "First: %d | Length: %d", mcParticles.begin().index(), mcParticles.size());
     int count = 0;
     for (auto& mcParticle : mcParticles) {
-      if (MC::isPhysicalPrimary(mcParticle)) {
+      if (particle.isPhysicalPrimary()) {
         phiH->Fill(mcParticle.phi());
         etaH->Fill(mcParticle.eta());
         count++;
