@@ -24,6 +24,7 @@
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/StrangenessTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2::analysis;
 
@@ -40,8 +41,6 @@ DECLARE_SOA_TABLE(HFSelCollision, "AOD", "HFSELCOLLISION", //!
 namespace hf_seltrack
 {
 DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
-DECLARE_SOA_COLUMN(DCAPrim0, dcaPrim0, float);   //!
-DECLARE_SOA_COLUMN(DCAPrim1, dcaPrim1, float);   //!
 DECLARE_SOA_COLUMN(PxProng, pxProng, float);     //!
 DECLARE_SOA_COLUMN(PyProng, pyProng, float);     //!
 DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
@@ -49,17 +48,17 @@ DECLARE_SOA_COLUMN(PzProng, pzProng, float);     //!
 
 DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
                   hf_seltrack::IsSelProng,
-                  hf_seltrack::DCAPrim0,
-                  hf_seltrack::DCAPrim1,
                   hf_seltrack::PxProng,
                   hf_seltrack::PyProng,
                   hf_seltrack::PzProng);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HFSelTrack>;
+using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;
 using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
 using BigTracksPID = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksExtended>;
 
 // FIXME: this is a workaround until we get the index columns to work with joins.
 
