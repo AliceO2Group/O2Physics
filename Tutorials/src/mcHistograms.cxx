@@ -17,8 +17,6 @@
 #include "Framework/AnalysisTask.h"
 #include "CommonConstants/MathConstants.h"
 
-#include "Common/Core/MC.h"
-
 using namespace o2;
 using namespace o2::framework;
 using namespace constants::math;
@@ -48,7 +46,7 @@ struct AccessMcData {
     LOGF(info, "First: %d | Length: %d", mcParticles.begin().index(), mcParticles.size());
     int count = 0;
     for (auto& mcParticle : mcParticles) {
-      if (MC::isPhysicalPrimary(mcParticle)) {
+      if (mcParticle.isPhysicalPrimary()) {
         phiH->Fill(mcParticle.phi());
         etaH->Fill(mcParticle.eta());
         count++;
@@ -75,7 +73,7 @@ struct AccessMcTruth {
       //if (track.labelMask() != 0)
       //  continue;
       auto particle = track.mcParticle();
-      if (MC::isPhysicalPrimary(particle)) {
+      if (particle.isPhysicalPrimary()) {
         etaDiff->Fill(particle.eta() - track.eta());
         auto delta = particle.phi() - track.phi();
         if (delta > PI) {
