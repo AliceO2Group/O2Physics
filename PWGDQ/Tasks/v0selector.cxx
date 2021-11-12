@@ -567,7 +567,6 @@ struct v0selector {
         }
 
         const auto& cascvtx = fitterCasc.getPCACandidate();
-        const std::array<float, 3> pvecCasc = {pvecpos[0] + pvecneg[0] + pvecbach[0], pvecpos[1] + pvecneg[1] + pvecbach[1], pvecpos[2] + pvecneg[2] + pvecbach[2]};
         auto CascCosinePA = RecoDecay::CPA(pVtx, array{cascvtx[0], cascvtx[1], cascvtx[2]}, pvecbach);
         registry.fill(HIST("hCascCosPA"), CascCosinePA);
 
