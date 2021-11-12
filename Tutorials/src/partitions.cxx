@@ -38,9 +38,9 @@ struct PartitionOutside {
   using myTracks = soa::Filtered<aod::Tracks>;
 
   // definition of partitions
-  Partition<myTracks> leftPhi = aod::track::phiraw < philow;
-  Partition<myTracks> midPhi = aod::track::phiraw >= philow && aod::track::phiraw < phiup;
-  Partition<myTracks> rightPhi = aod::track::phiraw >= phiup;
+  Partition<myTracks> leftPhi = aod::track::phi < philow;
+  Partition<myTracks> midPhi = aod::track::phi >= philow && aod::track::phi < phiup;
+  Partition<myTracks> rightPhi = aod::track::phi >= phiup;
 
   // partitions are created and provided within the process function
   void process(aod::Collision const& collision, myTracks const& tracks)
@@ -52,15 +52,15 @@ struct PartitionOutside {
 
     for (auto& track : leftPhi) {
       LOGF(info, "id = %d, from collision: %d, collision: %d; eta:  %.3f < %.3f < %.3f; phi: %.3f < %.3f; pt: %.3f < %.3f < %.3f",
-           track.collisionId(), track.collision().globalIndex(), collision.globalIndex(), (float)etalow, track.eta(), (float)etaup, track.phiraw(), (float)philow, (float)ptlow, track.pt(), (float)ptup);
+           track.collisionId(), track.collision().globalIndex(), collision.globalIndex(), (float)etalow, track.eta(), (float)etaup, track.phi(), (float)philow, (float)ptlow, track.pt(), (float)ptup);
     }
     for (auto& track : midPhi) {
       LOGF(info, "id = %d, from collision: %d, collision: %d; eta: %.3f < %.3f < %.3f; phi: %.3f <= %.3f < %.3f; pt: %.3f < %.3f < %.3f",
-           track.collisionId(), track.collision().globalIndex(), collision.globalIndex(), (float)etalow, track.eta(), (float)etaup, (float)philow, track.phiraw(), (float)phiup, (float)ptlow, track.pt(), (float)ptup);
+           track.collisionId(), track.collision().globalIndex(), collision.globalIndex(), (float)etalow, track.eta(), (float)etaup, (float)philow, track.phi(), (float)phiup, (float)ptlow, track.pt(), (float)ptup);
     }
     for (auto& track : rightPhi) {
       LOGF(info, "id = %d, from collision: %d, collision: %d; eta: %.3f < %.3f < %.3f; phi: %.3f < %.3f; pt: %.3f < %.3f < %.3f",
-           track.collisionId(), track.collision().globalIndex(), collision.globalIndex(), (float)etalow, track.eta(), (float)etaup, (float)phiup, track.phiraw(), (float)ptlow, track.pt(), (float)ptup);
+           track.collisionId(), track.collision().globalIndex(), collision.globalIndex(), (float)etalow, track.eta(), (float)etaup, (float)phiup, track.phi(), (float)ptlow, track.pt(), (float)ptup);
     }
   }
 };
