@@ -184,9 +184,13 @@ int main(int argc, char* argv[])
   }
 
   else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
-    LOG(info) << "Attempting to pull object from CCDB";
+    LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname;
 
     tpc.reset(api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers));
+    if (!tpc) { //Quit gracefully if pulling object fails
+      return 1;
+    }
+
     tpc->PrintAll();
 <<<<<<< HEAD
     //   tpc->Print();
