@@ -165,8 +165,8 @@ struct DQBarrelTrackSelection {
     // Configure histogram classes for each track cut;
     // Add histogram classes for each track cut and for each requested MC signal (reconstructed tracks with MC truth)
     TString histClasses = "TrackBarrel_BeforeCuts;";
-    for (int i = 0; i < fTrackCuts.size(); i++) {
-      histClasses += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+    for (auto& cut : fTrackCuts) {
+      histClasses += Form("TrackBarrel_%s;", cut.GetName());
       for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
         MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
         if (sig) {
@@ -174,7 +174,7 @@ struct DQBarrelTrackSelection {
             continue;
           }
           fMCSignals.push_back(*sig);
-          histClasses += Form("TrackBarrel_%s_%s;", fTrackCuts[i].GetName(), sigNamesArray->At(isig)->GetName());
+          histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), sigNamesArray->At(isig)->GetName());
         }
       }
     }
@@ -233,9 +233,10 @@ struct DQBarrelTrackSelection {
 
       for (auto& sig : fMCSignals) {
         if (sig.CheckSignal(false, tracksMC, mctrack)) {
-          for (int j = 0; j < fTrackCuts.size(); j++) {
+          int j = 0;
+          for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, j++) {
             if (filterMap & (uint8_t(1) << j)) {
-              fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", fTrackCuts[j].GetName(), sig.GetName()), fValues);
+              fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", (*cut).GetName(), sig.GetName()), fValues);
             }
           }
         }
@@ -333,7 +334,6 @@ struct DQQuarkoniumPairing {
 
     // Run the same event pairing for barrel tracks
     uint8_t twoTrackFilter = 0;
-    uint16_t dileptonFilterMap = 0;
     constexpr static int pairType = VarManager::kJpsiToEE;
     // Loop over reconstructed pairs and fill histograms
     for (auto& [t1, t2] : combinations(tracks, tracks)) {
@@ -343,20 +343,21 @@ struct DQQuarkoniumPairing {
       }
       VarManager::FillPair<pairType>(t1, t2, fValues);
       VarManager::FillPairVertexing<pairType>(event, t1, t2, fValues); // TODO: make this optional
-      for (int i = 0; i < fCutNames.size(); ++i) {
+      int i = 0;
+      for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
           if (t1.sign() * t2.sign() < 0) {
-            fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fCutNames[i].Data()), fValues);
+            fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", (*cutName).Data()), fValues);
             for (auto& sig : fRecMCSignals) {
               if (sig.CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
-                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fCutNames[i].Data(), sig.GetName()), fValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", (*cutName).Data(), sig.GetName()), fValues);
               }
             }
           } else {
             if (t1.sign() > 0) {
-              fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fCutNames[i].Data()), fValues);
+              fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", (*cutName).Data()), fValues);
             } else {
-              fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fCutNames[i].Data()), fValues);
+              fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", (*cutName).Data()), fValues);
             }
           }
         }

@@ -155,8 +155,8 @@ struct DQBarrelTrackSelectionTask {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString cutNames = "TrackBarrel_BeforeCuts;";
-    for (int i = 0; i < fTrackCuts.size(); i++) {
-      cutNames += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+    for (auto& cut : fTrackCuts) {
+      cutNames += Form("TrackBarrel_%s;", cut.GetName());
     }
 
     DefineHistograms(fHistMan, cutNames.Data());     // define all histograms
