@@ -28,7 +28,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
 {
   options.add_options()(
     "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database")(
-    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC/Response"), "CCDB path for object")(
+    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path to TPC directory")(
     "start,s", bpo::value<long>()->default_value(0), "Start timestamp for calibration validity")(
     "stop,S", bpo::value<long>()->default_value(4108971600000), "End timestamp for calibration validity")(
     "delete-previous", bpo::value<int>()->default_value(0), "delete previous entry from CCDB (1 = true)")(
