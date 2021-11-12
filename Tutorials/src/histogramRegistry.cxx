@@ -103,17 +103,17 @@ struct DimensionTest {
     using namespace aod::track;
     // does not work with dynamic columns (e.g. Charge, NormalizedPhi)
     registry.fill<Eta>(HIST("1d"), tracks, eta > -0.7f);
-    registry.fill<Pt, Eta, RawPhi>(HIST("3d"), tracks, eta > 0.f);
-    registry.fill<Pt, Eta, RawPhi, P, X>(HIST("5d"), tracks, pt > 0.15f);
-    registry.fill<Pt, Eta, RawPhi, P, X, Y, Z>(HIST("7d"), tracks, pt > 0.15f);
-    registry.fill<Pt, Eta, RawPhi>(HIST("2d-profile"), tracks, eta > -0.5f);
+    registry.fill<Pt, Eta, Phi>(HIST("3d"), tracks, eta > 0.f);
+    registry.fill<Pt, Eta, Phi, P, X>(HIST("5d"), tracks, pt > 0.15f);
+    registry.fill<Pt, Eta, Phi, P, X, Y, Z>(HIST("7d"), tracks, pt > 0.15f);
+    registry.fill<Pt, Eta, Phi>(HIST("2d-profile"), tracks, eta > -0.5f);
 
     // fill 4d histogram with weight (column X)
-    registry.fill<Pt, Eta, RawPhi, Z, X>(HIST("4d-weight"), tracks, eta > 0.f);
+    registry.fill<Pt, Eta, Phi, Z, X>(HIST("4d-weight"), tracks, eta > 0.f);
 
-    registry.fill<Pt, Eta, RawPhi>(HIST("2d-weight"), tracks, eta > 0.f);
+    registry.fill<Pt, Eta, Phi>(HIST("2d-weight"), tracks, eta > 0.f);
 
-    registry.fill<Pt, Eta, RawPhi>(HIST("1d-profile-weight"), tracks, eta > 0.f);
+    registry.fill<Pt, Eta, Phi>(HIST("1d-profile-weight"), tracks, eta > 0.f);
 
     for (auto& track : tracks) {
       registry.fill(HIST("2d"), track.eta(), track.pt());

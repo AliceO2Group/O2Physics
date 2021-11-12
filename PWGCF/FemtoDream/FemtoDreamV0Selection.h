@@ -32,8 +32,8 @@ namespace o2::analysis::femtoDream
 namespace femtoDreamV0Selection
 {
 /// The different selections this task is capable of doing
-enum V0Sel { kpTV0Min, //!Min. p_T (GeV/c)
-             kpTV0Max, //!Max. p_T (GeV/c)
+enum V0Sel { kpTV0Min, //! Min. p_T (GeV/c)
+             kpTV0Max, //! Max. p_T (GeV/c)
              kDCAV0DaughMax,
              kCPAV0Min,
              kTranRadV0Min,
@@ -124,8 +124,8 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
     fillSelectionHistogram<daugh>();
 
     /// \todo this should be an automatic check in the parent class, and the return type should be templated
-    int nSelections = getNSelections();
-    if (8 * sizeof(cutContainerType) < nSelections) {
+    size_t nSelections = getNSelections();
+    if (nSelections > 8 * sizeof(cutContainerType)) {
       LOG(FATAL) << "FemtoDreamV0Cuts: Number of selections to large for your container - quitting!";
     }
     std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]);
@@ -195,14 +195,14 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   if (nTranRadV0Max > 0 && tranRad > TranRadV0Max) {
     return false;
   }
-  for (int i = 0; i < decVtx.size(); i++) {
+  for (size_t i = 0; i < decVtx.size(); i++) {
     if (nDecVtxMax > 0 && decVtx.at(i) > DecVtxMax) {
       return false;
     }
   }
-  const auto dcaXYpos = posTrack.dcaXY();
-  const auto dcaZpos = posTrack.dcaZ();
-  const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
+  // const auto dcaXYpos = posTrack.dcaXY();
+  // const auto dcaZpos = posTrack.dcaZ();
+  // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
@@ -227,7 +227,7 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   const auto cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
 
-  float observable;
+  float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamV0Selection::kDecVtxMax) {

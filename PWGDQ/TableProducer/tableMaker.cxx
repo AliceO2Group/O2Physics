@@ -45,11 +45,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
+                                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                        aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                        aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -58,13 +63,16 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
-using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
+using MyMuons = aod::FwdTracks;
+using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
-constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
+constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
+constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 
 struct TableMaker {
 
@@ -77,7 +85,7 @@ struct TableMaker {
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
-  Produces<ReducedMuonsCov> muonCov; // TODO: use with fwdtracks
+  Produces<ReducedMuonsCov> muonCov;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
@@ -116,10 +124,15 @@ struct TableMaker {
       histClasses += "Event_BeforeCuts;";
     }
     histClasses += "Event_AfterCuts;";
-    if (context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCentWithV0Bits") ||
-        context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithV0Bits") ||
-        context.mOptions.get<bool>("processFullWithEventFilter") || context.mOptions.get<bool>("processBarrelOnly") ||
-        context.mOptions.get<bool>("processBarrelOnlyWithCent")) {
+
+    bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCent") ||
+                               context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter"));
+    bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCent") ||
+                             context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
+                             context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter"));
+
+    if (enableBarrelHistos) {
       if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
       }
@@ -127,10 +140,7 @@ struct TableMaker {
         histClasses += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
       }
     }
-    if (context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCentWithV0Bits") ||
-        context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithV0Bits") ||
-        context.mOptions.get<bool>("processFullWithEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
-        context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithFilter")) {
+    if (enableMuonHistos) {
       if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
       }
@@ -226,7 +236,7 @@ struct TableMaker {
     }
 
     // create the event tables
-    event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib());
+    event(tag, collision.bc().runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
     eventExtended(collision.bc().globalBC(), collision.bc().triggerMask(), 0, triggerAliases, VarManager::fgValues[VarManager::kCentVZERO]);
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
@@ -235,7 +245,9 @@ struct TableMaker {
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
-      trackBarrelCov.reserve(tracksBarrel.size());
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
+        trackBarrelCov.reserve(tracksBarrel.size());
+      }
       trackBarrelPID.reserve(tracksBarrel.size());
 
       // loop over tracks
@@ -270,20 +282,27 @@ struct TableMaker {
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT2-6: V0Bits
           trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
+          for (int iv0 = 0; iv0 < 5; iv0++) {
+            if (track.pidbit() & (uint8_t(1) << iv0)) {
+              ((TH1I*)fStatsList->At(1))->Fill(fTrackCuts.size() + float(iv0));
+            }
+          }
         }
         trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
 
         // create the track tables
-        trackBasic(event.lastIndex(), track.globalIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign());
+        trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign());
         trackBarrel(track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
                     track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.tpcChi2NCl(),
                     track.trdChi2(), track.trdPattern(), track.tofChi2(),
                     track.length(), track.dcaXY(), track.dcaZ());
-        trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
-                       track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
-                       track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
-                       track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
+          trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
+                         track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
+                         track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
+                         track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
+        }
         trackBarrelPID(track.tpcSignal(),
                        track.tpcNSigmaEl(), track.tpcNSigmaMu(),
                        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
@@ -298,7 +317,9 @@ struct TableMaker {
       // build the muon tables
       muonBasic.reserve(tracksMuon.size());
       muonExtra.reserve(tracksMuon.size());
-      muonCov.reserve(tracksMuon.size());
+      if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
+        muonCov.reserve(tracksMuon.size());
+      }
       // loop over muons
       for (auto& muon : tracksMuon) {
         trackFilteringTag = uint64_t(0);
@@ -329,10 +350,12 @@ struct TableMaker {
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                   muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), muon.matchMCHTrackId(), muon.mchBitMap(), muon.midBitMap(), muon.midBoards());
-        muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
-                muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
-                muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(), muon.c1PtX(), muon.c1PtY(),
-                muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2());
+        if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
+          muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
+                  muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
+                  muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(), muon.c1PtX(), muon.c1PtY(),
+                  muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2());
+        }
       }
     }
   } // end fullSkimming()
@@ -395,42 +418,30 @@ struct TableMaker {
     fStatsList->Add(histMuons);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel + muon tables, with centrality
-  void processFullWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
-                           soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
-  {
-    fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
-  }
-
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel + muon tables, with centrality, with V0Bits
-  void processFullWithCentWithV0Bits(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
-                                     soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
-  {
-    fullSkimming<gkEventFillMapWithCent, gkTrackFillMapWithV0Bits, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
-  }
-
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel + muon tables
+  // Produce barrel + muon tables -------------------------------------------------------------------------------------------------------------
   void processFull(MyEvents::iterator const& collision, aod::BCs const& bcs,
                    soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel + muon tables, with V0Bits
-  void processFullWithV0Bits(MyEvents::iterator const& collision, aod::BCs const& bcs,
-                             soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
+  // Produce barrel + muon tables, with centrality --------------------------------------------------------------------------------------------
+  void processFullWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
+                           soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
+    fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel + muon tables, with event filtering
-  void processFullWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
-                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
+  // Produce barrel only tables, with V0Bits ------------------------------------------------------------------------------------------------
+  void processBarrelOnlyWithV0Bits(MyEvents::iterator const& collision, aod::BCs const& bcs,
+                                   soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr);
+  }
+
+  // Produce barrel only tables, with event filtering ----------------------------------------------------------------------------------------
+  void processBarrelOnlyWithEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
+                                        soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     for (int i = 0; i < kNaliases; i++) {
       if (collision.alias()[i] > 0) {
@@ -439,61 +450,53 @@ struct TableMaker {
     }
     ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
     if (collision.eventFilter()) {
-      fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
+      fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr);
     }
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel + muon tables, with event filtering, with V0Bits
-  void processFullWithEventFilterWithV0Bits(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
-                                            soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
-  {
-    // TODO: We should make such that tasks like the v0-selector are not running over events which are rejected by the filtering task
-    for (int i = 0; i < kNaliases; i++) {
-      if (collision.alias()[i] > 0) {
-        ((TH2I*)fStatsList->At(0))->Fill(1.0, float(i));
-      }
-    }
-    ((TH2I*)fStatsList->At(0))->Fill(1.0, float(kNaliases));
-    if (collision.eventFilter()) {
-      fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
-    }
-  }
-
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel tables only, with centrality
+  // Produce barrel only tables, with centrality -----------------------------------------------------------------------------------------------
   void processBarrelOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce barrel tables only
+  // Produce barrel tables only, with track cov matrix ----------------------------------------------------------------------------------------
+  void processBarrelOnlyWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
+                                soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr);
+  }
+
+  // Produce barrel tables only ----------------------------------------------------------------------------------------------------------------
   void processBarrelOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
                          soa::Filtered<MyBarrelTracks> const& tracksBarrel)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collision, bcs, tracksBarrel, nullptr);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce muon tables only, with centrality
+  // Produce muon tables only, with centrality -------------------------------------------------------------------------------------------------
   void processMuonOnlyWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
                                soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce muon tables only
+  // Produce muon tables only, with muon cov matrix --------------------------------------------------------------------------------------------
+  void processMuonOnlyWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
+                              soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon);
+  }
+
+  // Produce muon tables only ------------------------------------------------------------------------------------------------------------------
   void processMuonOnly(MyEvents::iterator const& collision, aod::BCs const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collision, bcs, nullptr, tracksMuon);
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Produce muon tables only, with event filtering
+  // Produce muon tables only, with event filtering --------------------------------------------------------------------------------------------
   void processMuonOnlyWithFilter(MyEventsWithFilter::iterator const& collision, aod::BCs const& bcs,
                                  soa::Filtered<MyMuons> const& tracksMuon)
   {
@@ -508,8 +511,7 @@ struct TableMaker {
     }
   }
 
-  //_____________________________________________________________________________________________________________________________________________
-  // Process the BCs and store stats for luminosity retrieval
+  // Process the BCs and store stats for luminosity retrieval -----------------------------------------------------------------------------------
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
     for (int i = 0; i < kNaliases; i++) {
@@ -520,15 +522,15 @@ struct TableMaker {
     ((TH2I*)fStatsList->At(0))->Fill(0.0, float(kNaliases));
   }
 
-  PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
-  PROCESS_SWITCH(TableMaker, processFullWithCentWithV0Bits, "Build full DQ skimmed data model, w/ centrality, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processFull, "Build full DQ skimmed data model, w/o centrality", false);
-  PROCESS_SWITCH(TableMaker, processFullWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
-  PROCESS_SWITCH(TableMaker, processFullWithEventFilter, "Build full DQ skimmed data model, w/o centrality, w/ event filter", false);
-  PROCESS_SWITCH(TableMaker, processFullWithEventFilterWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ event filter, w/ V0Bits", false);
+  PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithEventFilter, "Build full DQ skimmed data model, w/o centrality, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCent, "Build barrel-only DQ skimmed data model, w/ centrality", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnly, "Build barrel-only DQ skimmed data model, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCent, "Build muon-only DQ skimmed data model, w/ centrality", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCov, "Build muon-only DQ skimmed data model, w/ muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);

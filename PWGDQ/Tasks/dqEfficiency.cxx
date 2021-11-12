@@ -59,12 +59,15 @@ DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", reducedevent::IsEventSelected);
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", reducedtrack::IsBarrelSelected);
 } // namespace o2::aod
 
-using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMC>;
-using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedEventsMC>;
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedEventsMC>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMC>;
+//using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMC>;
+using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
+using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
+// TODO: make secondary vertexing optional
+using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
+using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
 
-using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
+using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
+using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -77,8 +80,10 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses);
 //        This is a temporary fix until the arrow/ROOT issues are solved, at which point it will be possible
 //           to automatically detect the object types transmitted to the VarManager
 
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMC;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
+constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventMC;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
 struct DQEventSelection {
@@ -115,12 +120,13 @@ struct DQEventSelection {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void process(MyEvents::iterator const& event)
+  void process(MyEvents::iterator const& event, aod::ReducedMCEvents const& mcEvents)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
 
     VarManager::FillEvent<gkEventFillMap>(event, fValues);
+    VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent(), fValues);
     fHistMan->FillHistClass("Event_BeforeCuts", fValues); // automatically fill all the histograms in the class Event
     if (fEventCut->IsSelected(fValues)) {
       fHistMan->FillHistClass("Event_AfterCuts", fValues);
@@ -191,12 +197,13 @@ struct DQBarrelTrackSelection {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void process(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCTracks const& tracksMC)
+  void process(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     //cout << "Event ######################################" << endl;
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables, fValues);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<gkEventFillMap>(event, fValues);
+    VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent(), fValues);
 
     uint8_t filterMap = uint8_t(0);
     trackSel.reserve(tracks.size());
@@ -205,11 +212,11 @@ struct DQBarrelTrackSelection {
       filterMap = uint8_t(0);
       //cout << "track ===================================" << endl;
       VarManager::FillTrack<gkTrackFillMap>(track, fValues);
-      //cout << "after fill ===================================" << endl;
+      cout << "after fill ===================================" << endl;
       auto mctrack = track.reducedMCTrack();
-      //cout << "MC matched track " << mctrack.index() << "/" << mctrack.globalIndex() << ", pdgCode " << mctrack.pdgCode() << ", pt rec/gen " << track.pt() << "/" << mctrack.pt() << ", MCflags " << mctrack.mcReducedFlags() << endl;
+      cout << "MC matched track " << mctrack.index() << "/" << mctrack.globalIndex() << ", pdgCode " << mctrack.pdgCode() << ", pt rec/gen " << track.pt() << "/" << mctrack.pt() << ", MCflags " << mctrack.mcReducedFlags() << endl;
       VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
-      //cout << "after fill MC ===================================" << endl;
+      cout << "after fill MC ===================================" << endl;
       fHistMan->FillHistClass("TrackBarrel_BeforeCuts", fValues);
 
       int i = 0;
@@ -317,11 +324,12 @@ struct DQQuarkoniumPairing {
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
   }
 
-  void process(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, ReducedMCTracks const& tracksMC)
+  void process(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars, fValues);
     VarManager::FillEvent<gkEventFillMap>(event, fValues);
+    VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent(), fValues);
 
     // Run the same event pairing for barrel tracks
     uint8_t twoTrackFilter = 0;
@@ -334,7 +342,7 @@ struct DQQuarkoniumPairing {
         continue;
       }
       VarManager::FillPair<pairType>(t1, t2, fValues);
-      VarManager::FillPairVertexing<pairType>(event, t1, t2, fValues);
+      VarManager::FillPairVertexing<pairType>(event, t1, t2, fValues); // TODO: make this optional
       for (int i = 0; i < fCutNames.size(); ++i) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
           if (t1.sign() * t2.sign() < 0) {
@@ -356,7 +364,9 @@ struct DQQuarkoniumPairing {
     } // end loop over barrel track pairs
 
     // loop over mc stack and fill histograms for pure MC truth signals
-    for (auto& mctrack : tracksMC) {
+    // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
+    auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    for (auto& mctrack : groupedMCTracks) {
       VarManager::FillTrack<gkParticleMCFillMap>(mctrack, fValues);
       // NOTE: Signals are checked here based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
@@ -371,13 +381,13 @@ struct DQQuarkoniumPairing {
       }
     }
 
-    cout << "entries in tracksMC = " << tracksMC.size() << endl;
+    cout << "entries in groupedMCTracks = " << groupedMCTracks.size() << endl;
     //    // loop over mc stack and fill histograms for pure MC truth signals
-    for (auto& [t1, t2] : combinations(tracksMC, tracksMC)) {
-      for (auto& sig : fGenMCSignals) {
-        if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required
-          continue;
-        }
+    for (auto& sig : fGenMCSignals) {
+      if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required
+        continue;
+      }
+      for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
         if (sig.CheckSignal(false, tracksMC, t1, t2)) {
           VarManager::FillPairMC(t1, t2, fValues);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), fValues);
