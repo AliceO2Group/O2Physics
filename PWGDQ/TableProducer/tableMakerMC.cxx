@@ -164,8 +164,8 @@ struct TableMakerMC {
       if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
       }
-      for (int i = 0; i < fTrackCuts.size(); i++) {
-        histClasses += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+      for (auto& cut : fTrackCuts) {
+        histClasses += Form("TrackBarrel_%s;", cut.GetName());
       }
     }
 
@@ -173,8 +173,8 @@ struct TableMakerMC {
       if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
       }
-      for (int i = 0; i < fMuonCuts.size(); i++) {
-        histClasses += Form("Muons_%s;", fMuonCuts[i].GetName());
+      for (auto& cut : fMuonCuts) {
+        histClasses += Form("Muons_%s;", cut.GetName());
       }
     }
 
@@ -191,13 +191,13 @@ struct TableMakerMC {
         }
         if (fConfigDetailedQA) {
           if (enableBarrelHistos) {
-            for (int i = 0; i < fTrackCuts.size(); i++) {
-              histClasses += Form("TrackBarrel_%s_%s;", fTrackCuts[i].GetName(), objArray->At(isig)->GetName());
+            for (auto& cut : fTrackCuts) {
+              histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
           }
           if (enableMuonHistos) {
-            for (int i = 0; i < fMuonCuts.size(); i++) {
-              histClasses += Form("Muons_%s_%s;", fMuonCuts[i].GetName(), objArray->At(isig)->GetName());
+            for (auto& cut : fMuonCuts) {
+              histClasses += Form("Muons_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
             }
           }
         }
@@ -316,9 +316,10 @@ struct TableMakerMC {
         // fill histograms for each of the signals, if found
         if (!fConfigNoQA) {
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
-          for (int i = 0; i < fMCSignals.size(); i++) {
-            if (mcflags & (uint16_t(1) << i)) {
-              fHistMan->FillHistClass(Form("MCTruth_%s", fMCSignals[i].GetName()), VarManager::fgValues);
+          int j = 0;
+          for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
+            if (mcflags & (uint16_t(1) << j)) {
+              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal).GetName()), VarManager::fgValues);
             }
           }
         }
@@ -548,7 +549,7 @@ struct TableMakerMC {
               m0Label, m1Label, d0Label, d1Label,
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
-      for (int isig = 0; isig < fMCSignals.size(); isig++) {
+      for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
         if (mcflags & (uint16_t(1) << isig)) {
           ((TH1I*)fStatsList->At(3))->Fill(float(isig));
         }
@@ -602,8 +603,9 @@ struct TableMakerMC {
     fStatsList->SetOwner(kTRUE);
     std::vector<TString> eventLabels{"BCs", "Collisions before filtering", "Before cuts", "After cuts"};
     TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, kNaliases + 1, -0.5, kNaliases + 0.5);
-    for (int ib = 1; ib <= eventLabels.size(); ib++) {
-      histEvents->GetXaxis()->SetBinLabel(ib, eventLabels[ib - 1]);
+    int ib = 1;
+    for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
+      histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
     }
     for (int ib = 1; ib <= kNaliases; ib++) {
       histEvents->GetYaxis()->SetBinLabel(ib, aliasLabels[ib - 1]);
@@ -613,8 +615,9 @@ struct TableMakerMC {
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
     TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
-    for (int ib = 1; ib <= fTrackCuts.size(); ib++) {
-      histTracks->GetXaxis()->SetBinLabel(ib, fTrackCuts[ib - 1].GetName());
+    ib = 1;
+    for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
+      histTracks->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
     const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
     for (int ib = 0; ib < 5; ib++) {
@@ -622,13 +625,15 @@ struct TableMakerMC {
     }
     fStatsList->Add(histTracks);
     TH1I* histMuons = new TH1I("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);
-    for (int ib = 1; ib <= fMuonCuts.size(); ib++) {
-      histMuons->GetXaxis()->SetBinLabel(ib, fMuonCuts[ib - 1].GetName());
+    ib = 1;
+    for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
+      histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
     fStatsList->Add(histMuons);
     TH1I* histMCsignals = new TH1I("MCsignals", "MC signals", fMCSignals.size() + 1, -0.5, fMCSignals.size() - 0.5 + 1.0);
-    for (int ib = 1; ib <= fMCSignals.size(); ib++) {
-      histMCsignals->GetXaxis()->SetBinLabel(ib, fMCSignals[ib - 1].GetName());
+    ib = 1;
+    for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, ib++) {
+      histMCsignals->GetXaxis()->SetBinLabel(ib, (*signal).GetName());
     }
     histMCsignals->GetXaxis()->SetBinLabel(fMCSignals.size() + 1, "Others (matched to reco tracks)");
     fStatsList->Add(histMCsignals);
