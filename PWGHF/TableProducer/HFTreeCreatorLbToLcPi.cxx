@@ -154,7 +154,7 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        if (FunctionSelection >= 1) {
+        if (true) { // FunctionSelection >= 1
             rowCandidateFull(
             candidate.rSecondaryVertex(),
             candidate.decayLength(),
