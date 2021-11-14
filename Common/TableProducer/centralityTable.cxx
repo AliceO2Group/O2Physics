@@ -37,12 +37,20 @@ struct CentralityTable {
   Configurable<int> estRun2CL1{"estRun2CL1", -1, {"Produces Run2 centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   int mRunNumber;
-  bool mV0MCalibrationStored;
-  TH1* mhVtxAmpCorrV0A;
-  TH1* mhVtxAmpCorrV0C;
-  TH1* mhMultSelCalibV0M;
+  struct tagV0MCalibration {
+    bool mV0MCalibrationStored = false;
+    TH1* mhVtxAmpCorrV0A = nullptr;
+    TH1* mhVtxAmpCorrV0C = nullptr;
+    TH1* mhMultSelCalibV0M = nullptr;
+  } V0MInfo;
+  struct tagSPDTrackletsCalibration {
+    bool mSPDCalibrationStored = false;
+    TH1* mhVtxAmpCorrSPD = nullptr;
+    TH1* mhMultSelCalibSPD = nullptr;
+  } SPDInfo;
 
-  void init(InitContext& context)
+  void
+    init(InitContext& context)
   {
     /* Checking the tables which are requested in the workflow and enabling them */
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
@@ -72,10 +80,6 @@ struct CentralityTable {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     mRunNumber = 0;
-    mV0MCalibrationStored = false;
-    mhVtxAmpCorrV0A = nullptr;
-    mhVtxAmpCorrV0C = nullptr;
-    mhMultSelCalibV0M = nullptr;
   }
 
   void process(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, aod::BCsWithTimestamps const&, aod::Tracks const& tracks)
@@ -86,6 +90,8 @@ struct CentralityTable {
       LOGF(debug, "timestamp=%llu", bc.timestamp());
       TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
 
+      V0MInfo.mV0MCalibrationStored = false;
+      SPDInfo.mSPDCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
           TH1* h = (TH1*)callst->FindObject(ccdbhname);
@@ -93,17 +99,24 @@ struct CentralityTable {
         };
         if (estV0M == 1) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-          mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
-          mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
-          mhMultSelCalibV0M = getccdb("hMultSelCalib_V0M");
-          if ((mhVtxAmpCorrV0A != nullptr) and (mhVtxAmpCorrV0C != nullptr) and (mhMultSelCalibV0M != nullptr)) {
-            mV0MCalibrationStored = true;
+          V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+          V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
+          V0MInfo.mhMultSelCalibV0M = getccdb("hMultSelCalib_V0M");
+          if ((V0MInfo.mhVtxAmpCorrV0A != nullptr) and (V0MInfo.mhVtxAmpCorrV0C != nullptr) and (V0MInfo.mhMultSelCalibV0M != nullptr)) {
+            V0MInfo.mV0MCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from V0M for run %d corrupted");
+            LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
           }
         }
         if (estRun2SPD == 1) {
-          LOGF(fatal, "Run2 calibration information estimated from SPD tracklets still not available");
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          SPDInfo.mhVtxAmpCorrSPD = getccdb("hVtx_fnTracklets_Normalized");
+          SPDInfo.mhMultSelCalibSPD = getccdb("hMultSelCalib_SPDTracklets");
+          if ((SPDInfo.mhVtxAmpCorrSPD != nullptr) and (SPDInfo.mhMultSelCalibSPD != nullptr)) {
+            SPDInfo.mSPDCalibrationStored = true;
+          } else {
+            LOGF(fatal, "Calibration information from SPD tracklets for run %d corrupted", bc.runNumber());
+          }
         }
         if (estRun2CL0 == 1) {
           LOGF(fatal, "Run2 calibration information estimated from CL0 still not available");
@@ -111,25 +124,32 @@ struct CentralityTable {
         if (estRun2CL1 == 1) {
           LOGF(fatal, "Run2 calibration information estimated from CL1 still not available");
         }
-        if (mV0MCalibrationStored) {
+        if (V0MInfo.mV0MCalibrationStored or SPDInfo.mSPDCalibrationStored) {
           mRunNumber = bc.runNumber();
         }
       } else {
-        /* we dont change the run number to keep trying */
-        mV0MCalibrationStored = false;
         LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
     }
     if (estV0M == 1) {
-      float centV0M = 105.0f;
-      if (mV0MCalibrationStored) {
-        float v0m = collision.multV0A() * mhVtxAmpCorrV0A->GetBinContent(mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
-                    collision.multV0C() * mhVtxAmpCorrV0C->GetBinContent(mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
-        centV0M = mhMultSelCalibV0M->GetBinContent(mhMultSelCalibV0M->FindFixBin(v0m));
+      float cV0M = 105.0f;
+      if (V0MInfo.mV0MCalibrationStored) {
+        float v0m = collision.multV0A() * V0MInfo.mhVtxAmpCorrV0A->GetBinContent(V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
+                    collision.multV0C() * V0MInfo.mhVtxAmpCorrV0C->GetBinContent(V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+        cV0M = V0MInfo.mhMultSelCalibV0M->GetBinContent(V0MInfo.mhMultSelCalibV0M->FindFixBin(v0m));
       }
-      LOGF(debug, "centV0M=%.0f", centV0M);
+      LOGF(debug, "centV0M=%.0f", cV0M);
       // fill centrality columns
-      centVOM(centV0M);
+      centVOM(cV0M);
+    }
+    if (estRun2SPD == 1) {
+      float cSPD = 105.0f;
+      if (SPDInfo.mSPDCalibrationStored) {
+        float spdm = collision.multTracklets() * SPDInfo.mhVtxAmpCorrSPD->GetBinContent(SPDInfo.mhVtxAmpCorrSPD->FindFixBin(collision.posZ()));
+        cSPD = SPDInfo.mhMultSelCalibSPD->GetBinContent(SPDInfo.mhMultSelCalibSPD->FindFixBin(spdm));
+      }
+      LOGF(debug, "centSPD=%.0f", cSPD);
+      centRun2SPD(cSPD);
     }
   }
 };
