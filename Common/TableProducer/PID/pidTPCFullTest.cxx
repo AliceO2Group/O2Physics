@@ -133,13 +133,14 @@ struct tpcPidFull {
     // LOG(info) << "Custom TPCPID: MIP value from object is " << response->GetMIP();
 
     // Check and fill enabled tables
-    auto makeTable = [&tracks](const Configurable<int>& flag, auto& table, const o2::pid::tpc::Response& response, const o2::track::PID::ID pid) {
+    auto makeTable = [&tracks, &collisions](const Configurable<int>& flag, auto& table, const o2::pid::tpc::Response& response, const o2::track::PID::ID pid) {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          table(response.GetExpectedSigma(trk, pid),
-                response.GetNumberOfSigma(trk, pid));
+          auto collision = collisions.iteratorAt(trk.collisionId());
+          table(response.GetExpectedSigma(collision, trk, pid),
+                response.GetNumberOfSigma(collision, trk, pid));
         }
       }
     };
