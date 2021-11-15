@@ -59,8 +59,7 @@ struct UPCForward {
 
     Configurable<float> etalow{"etalow", -4.0f, ""};   //
     Configurable<float> etahigh{"etahigh", -2.5f, ""}; //
-    Filter etaFilter_a = aod::fwdtrack::eta > etalow;
-    Filter etaFilter_b = aod::fwdtrack::eta < etahigh;
+    Filter etaFilter = (aod::fwdtrack::eta > etalow) && (aod::fwdtrack::eta < etahigh);
   }
   // new
   void process(soa::Join<aod::BCs, aod::Run2BCInfos, aod::BcSels>::iterator const& bc, soa::Filtered<aod::FwdTracks> const& tracksMuon)
@@ -130,13 +129,6 @@ struct UPCForward {
       return;
     }
     registry.fill(HIST("hSelectionCounter"), 5);
-
-    if ((p1.Eta() < -4) || (p2.Eta() < -4)) {
-      return;
-    }
-    if ((p1.Eta() > -2.5) || (p2.Eta() > -2.5)) {
-      return;
-    }
 
     registry.fill(HIST("hSelectionCounter"), 6);
     p = p1 + p2;
