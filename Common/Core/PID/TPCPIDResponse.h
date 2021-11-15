@@ -23,6 +23,9 @@
 #include "TMath.h"
 #include "TPCSimulation/Detector.h"
 
+#include "TF1.h"
+#include "TMath.h"
+
 namespace o2::pid::tpc
 {
 
@@ -37,34 +40,48 @@ class Response
 
   /// Setter and Getter for the private parameters
   void SetBetheBlochParams(const std::array<float, 5>& betheBlochParams) { mBetheBlochParams = betheBlochParams; };
-  void SetResolutionParams(const std::array<float, 2>& resolutionParams) { mResolutionParams = resolutionParams; };
+  void SetResolutionParams(const std::array<float, 8>& resolutionParams) { mResolutionParams = resolutionParams; };
   void SetMIP(const float mip) { mMIP = mip; };
   void SetChargeFactor(const float chargeFactor) { mChargeFactor = chargeFactor; };
+  void SetResolutionParametrization(const TF1 sigmaParametrization) {fSigmaParametrization = sigmaParametrization; };
 
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; };
-  const std::array<float, 2> GetResolutionParams() const { return mResolutionParams; };
+  const std::array<float, 2> GetResolutionParams() const { 
+    if(useDefaultResolutionParam) {return mResolutionParamsDefault;} 
+    else {return mResolutionParams;}
+  };
   const float GetMIP() const { return mMIP; };
   const float GetChargeFactor() const { return mChargeFactor; };
+  const TF1 GetResolutionParametrization() const { return fSigmaParametrization; };
 
   /// Gets the expected signal of the track
   template <typename TrackType>
   float GetExpectedSignal(const TrackType& track, const o2::track::PID::ID id) const;
   /// Gets the expected resolution of the track
-  template <typename TrackType>
-  float GetExpectedSigma(const TrackType& trk, const o2::track::PID::ID id) const;
+  template <typename CollisionType,typename TrackType>
+  float GetExpectedSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
   /// Gets the number of sigmas with respect the expected value
-  template <typename TrackType>
-  float GetNumberOfSigma(const TrackType& trk, const o2::track::PID::ID id) const;
+  template <typename CollisionType,typename TrackType>
+  float GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
   /// Gets the deviation to the expected signal
   template <typename TrackType>
   float GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const;
+  /// Gets relative dEdx resolution contribution due relative pt resolution
+  template <typename TrackType>
+  float GetRelativeResolutiondEdx(const TrackType& trk, const o2::track::PID::ID id) const;
+
   void PrintAll() const;
 
  private:
+  std::array<float, 5> mBetheBlochParamsAleph = {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092};
   std::array<float, 5> mBetheBlochParams = {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092};
-  std::array<float, 2> mResolutionParams = {0.07, 0.0};
+  std::array<float, 2> mResolutionParamsDefault = {0.07, 0.0};
+  std::array<float, 8> mResolutionParams = {5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585};
   float mMIP = 50.f;
   float mChargeFactor = 2.3f;
+  float mMultNormalization = 11000.;
+  bool useDefaultResolutionParam = true;
+  TF1 fSigmaParametrization = new TF1("fSigmaParametrization", "sqrt(([0]**2)*x[0]+(([1]**2)*(x[5]*[5])*(x[0]/sqrt(1+x[1]**2))**[2])+x[5]*Response::GetRelativeResolutiondEdx(x[2],x[3],x[4],[3])**2+([4]*x[4])**2 +((x[6]*[6])**2)+(x[6]*(x[0]/sqrt(1+x[1]**2))*[7])**2)"); 
 
   ClassDefNV(Response, 1);
 
@@ -74,23 +91,48 @@ class Response
 template <typename TrackType>
 inline float Response::GetExpectedSignal(const TrackType& track, const o2::track::PID::ID id) const
 {
-  const float bethe = mMIP * o2::tpc::Detector::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+  const float bethe = mMIP * o2::tpc::Detector::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParamsAleph[0], mBetheBlochParamsAleph[1], mBetheBlochParamsAleph[2], mBetheBlochParamsAleph[3], mBetheBlochParamsAleph[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
   return bethe >= 0.f ? bethe : 0.f;
 }
 
 /// Gets the expected resolution of the measurement
-template <typename TrackType>
-inline float Response::GetExpectedSigma(const TrackType& track, const o2::track::PID::ID id) const
+template <typename CollisionType, typename TrackType>
+inline float Response::GetExpectedSigma(const CollisionType& collision, const TrackType& track, const o2::track::PID::ID id) const
 {
-  const float reso = track.tpcSignal() * mResolutionParams[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParams[1] / (float)track.tpcNClsFound()) : 1.f);
-  return reso >= 0.f ? reso : 0.f;
+  if(!useDefaultResolutionParam){
+
+    std::array<float, 8> values = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    const std::array<float, 5> maxCl = {63., 64., 32., 96., 159.};
+    const float ncl = track.tpcNClsFound();
+    const float p = track.tpcInnerParam();
+    const float mass = o2::track::pid_constants::sMasses[id];
+    const float bg =  p/mass;
+    const float dEdx = o2::tpc::Detector::BetheBlochAleph(bg, mBetheBlochParamsAleph[0], mBetheBlochParamsAleph[1], mBetheBlochParamsAleph[2], mBetheBlochParamsAleph[3], mBetheBlochParamsAleph[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+
+    values[0] = 1./dEdx;
+    values[1] = track.tgl;
+    values[2] = p;
+    values[3] = mass;
+    values[4] = (float)o2::track::pid_constants::sCharges[id];
+    values[5] = track.signed1Pt;
+    values[6] = std::sqrt(maxCl[0]/ncl);
+    values[7] = collision.multTracklets() / mMultNormalization;
+
+
+    fSigmaParametrization.SetParameters(mResolutionParams);
+    return fSigmaParametrization->EvalPar(values)*(mMIP/values[0]);
+  }
+  else{
+    const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
+    return reso >= 0.f ? reso : 0.f;
+  }
 }
 
 /// Gets the number of sigma between the actual signal and the expected signal
-template <typename TrackType>
-inline float Response::GetNumberOfSigma(const TrackType& trk, const o2::track::PID::ID id) const
+template <typename CollisionType, typename TrackType>
+inline float Response::GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const
 {
-  return ((trk.tpcSignal() - GetExpectedSignal(trk, id)) / GetExpectedSigma(trk, id));
+  return ((trk.tpcSignal() - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
 }
 
 /// Gets the deviation between the actual signal and the expected signal
@@ -100,13 +142,33 @@ inline float Response::GetSignalDelta(const TrackType& trk, const o2::track::PID
   return (trk.tpcSignal() - GetExpectedSignal(trk, id));
 }
 
+//// Gets relative dEdx resolution contribution due relative pt resolution
+inline float Response::GetRelativeResolutiondEdx(const float p, const float mass, const float charge , const float resol) const
+{
+  const float bg =  p/mass;
+  const float dEdx = o2::tpc::Detector::BetheBlochAleph(bg, mBetheBlochParamsAleph[0], mBetheBlochParamsAleph[1], mBetheBlochParamsAleph[2], mBetheBlochParamsAleph[3], mBetheBlochParamsAleph[4]) * std::pow(charge, mChargeFactor);
+  const float deltaP = resol*std::sqrt(dEdx);
+  const float bgDelta=p*(1+deltaP)/mass;
+  const float dEdx2=o2::tpc::Detector::BetheBlochAleph(bgDelta, mBetheBlochParamsAleph[0], mBetheBlochParamsAleph[1], mBetheBlochParamsAleph[2], mBetheBlochParamsAleph[3], mBetheBlochParamsAleph[4]) * std::pow(charge, mChargeFactor);
+  const float deltaRel = TMath::Abs(dEdx2-dEdx)/dEdx;
+  return deltaRel;
+}
+
 inline void Response::PrintAll() const
 {
   LOGP(info, "==== TPC PID response parameters: ====");
   for (int i = 0; i < int(mBetheBlochParams.size()); i++)
     LOGP(info, "BB param [{}] = {}", i, mBetheBlochParams[i]);
-  for (int i = 0; i < int(mResolutionParams.size()); i++)
+  if (useDefaultResolutionParam)
+  {
+    LOGP(info, "Default Resolution parametrization: ");
+    for (int i = 0; i < int(mResolutionParamsDefault.size()); i++)
+      LOGP(info, "Resolution param [{}] = {}", i, mResolutionParamsDefault[i]);
+  }
+  else {
+    for (int i = 0; i < int(mResolutionParams.size()); i++)
     LOGP(info, "Resolution param [{}] = {}", i, mResolutionParams[i]);
+  }
   LOGP(info, "mMIP = {}", mMIP);
   LOGP(info, "mChargeFactor = {}", mChargeFactor);
 }
