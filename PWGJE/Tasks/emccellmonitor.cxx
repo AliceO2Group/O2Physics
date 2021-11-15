@@ -90,7 +90,9 @@ struct CellMonitor {
   void process(o2::aod::Calos const& cells, o2::aod::BCs const& bcs)
   {
     LOG(DEBUG) << "Processing next event";
-    std::vector<int> bccounter;
+    for (const auto& bc : bcs) {
+      mHistManager.fill(HIST("events"), 1);
+    }
     for (const auto& cell : cells) {
       // cell.cellNumber(),
       // cell.amplitude(),
@@ -192,7 +194,7 @@ struct CellMonitor {
   void supermoduleHistHelper(int col, int row, double amplitude, double celltime)
   {
     static constexpr std::string_view cellAmpHistSM[20] = {"cellAmplitudeSM/cellAmpSM0", "cellAmplitudeSM/cellAmpSM1", "cellAmplitudeSM/cellAmpSM2", "cellAmplitudeSM/cellAmpSM3", "cellAmplitudeSM/cellAmpSM4", "cellAmplitudeSM/cellAmpSM5", "cellAmplitudeSM/cellAmpSM6", "cellAmplitudeSM/cellAmpSM7", "cellAmplitudeSM/cellAmpSM8", "cellAmplitudeSM/cellAmpSM9", "cellAmplitudeSM/cellAmpSM10", "cellAmplitudeSM/cellAmpSM11", "cellAmplitudeSM/cellAmpSM12", "cellAmplitudeSM/cellAmpSM13", "cellAmplitudeSM/cellAmpSM14", "cellAmplitudeSM/cellAmpSM15", "cellAmplitudeSM/cellAmpSM16", "cellAmplitudeSM/cellAmpSM17", "cellAmplitudeSM/cellAmpSM18", "cellAmplitudeSM/cellAmpSM19"};
-    static constexpr std::string_view cellCountHistSM[20] = {"cellCountSM/cellAmpSM0", "cellCountSM/cellAmpSM1", "cellCountSM/cellAmpSM2", "cellCountSM/cellAmpSM3", "cellCountSM/cellAmpSM4", "cellCountSM/cellAmpSM5", "cellCountSM/cellAmpSM6", "cellCountSM/cellAmpSM7", "cellCountSM/cellAmpSM8", "cellCountSM/cellAmpSM9", "cellCountSM/cellAmpSM10", "cellCountSM/cellAmpSM11", "cellCountSM/cellAmpSM12", "cellCountSM/cellAmpSM13", "cellCountSM/cellAmpSM14", "cellCountSM/cellAmpSM15", "cellCountSM/cellAmpSM16", "cellCountSM/cellAmpSM17", "cellCountSM/cellAmpSM18", "cellCountSM/cellAmpSM19"};
+    static constexpr std::string_view cellCountHistSM[20] = {"cellCountSM/cellCountSM0", "cellCountSM/cellCountSM1", "cellCountSM/cellCountSM2", "cellCountSM/cellCountSM3", "cellCountSM/cellCountSM4", "cellCountSM/cellCountSM5", "cellCountSM/cellCountSM6", "cellCountSM/cellCountSM7", "cellCountSM/cellCountSM8", "cellCountSM/cellCountSM9", "cellCountSM/cellCountSM10", "cellCountSM/cellCountSM11", "cellCountSM/cellCountSM12", "cellCountSM/cellCountSM13", "cellCountSM/cellCountSM14", "cellCountSM/cellCountSM15", "cellCountSM/cellCountSM16", "cellCountSM/cellCountSM17", "cellCountSM/cellCountSM18", "cellCountSM/cellCountSM19"};
     static constexpr std::string_view cellAmpTimeHist[20] = {"cellAmplitudeTime/cellAmpTimeCorrSM0", "cellAmplitudeTime/cellAmpTimeCorrSM1", "cellAmplitudeTime/cellAmpTimeCorrSM2", "cellAmplitudeTime/cellAmpTimeCorrSM3", "cellAmplitudeTime/cellAmpTimeCorrSM4", "cellAmplitudeTime/cellAmpTimeCorrSM5", "cellAmplitudeTime/cellAmpTimeCorrSM6", "cellAmplitudeTime/cellAmpTimeCorrSM7", "cellAmplitudeTime/cellAmpTimeCorrSM8", "cellAmplitudeTime/cellAmpTimeCorrSM9", "cellAmplitudeTime/cellAmpTimeCorrSM10", "cellAmplitudeTime/cellAmpTimeCorrSM11", "cellAmplitudeTime/cellAmpTimeCorrSM12", "cellAmplitudeTime/cellAmpTimeCorrSM13", "cellAmplitudeTime/cellAmpTimeCorrSM14", "cellAmplitudeTime/cellAmpTimeCorrSM15", "cellAmplitudeTime/cellAmpTimeCorrSM16", "cellAmplitudeTime/cellAmpTimeCorrSM17", "cellAmplitudeTime/cellAmpTimeCorrSM18", "cellAmplitudeTime/cellAmpTimeCorrSM19"};
     mHistManager.fill(HIST(cellAmpHistSM[supermoduleID]), col, row);
     mHistManager.fill(HIST(cellCountHistSM[supermoduleID]), col, row, amplitude);
