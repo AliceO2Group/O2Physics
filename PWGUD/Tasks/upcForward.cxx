@@ -61,107 +61,108 @@ struct UPCForward {
     Configurable<float> etahigh{"etahigh", -2.5f, ""}; //
     Filter etaFilter_a = aod::fwdtrack::eta > etalow;
     Filter etaFilter_b = aod::fwdtrack::eta < etahigh;
-    // new
-    void process(soa::Join<aod::BCs, aod::Run2BCInfos, aod::BcSels>::iterator const& bc, soa::Filtered<aod::FwdTracks> const& tracksMuon)
-    {
-
-      registry.fill(HIST("hSelectionCounter"), 0);
-
-      int iMuonTracknumber = 0;
-      TLorentzVector p1, p2, p;
-      bool ispositive = kFALSE;
-      bool isnegative = kFALSE;
-
-      // V0 and FD information
-      bool isBeamBeamV0A = bc.bbV0A();
-      bool isBeamGasV0A = bc.bgV0A();
-      bool isBeamBeamV0C = bc.bbV0C();
-      bool isBeamGasV0C = bc.bgV0C();
-
-      bool isBeamBeamFDA = bc.bbFDA();
-      bool isBeamGasFDA = bc.bgFDA();
-      bool isBeamBeamFDC = bc.bbFDC();
-      bool isBeamGasFDC = bc.bgFDC();
-
-      // offline V0 and FD selection
-      bool isV0Selection = isBeamBeamV0A || isBeamGasV0A || isBeamGasV0C;
-      bool isFDSelection = isBeamBeamFDA || isBeamGasFDA || isBeamBeamFDC || isBeamGasFDC;
-
-      // CCUP10 and CCUP11 information
-      bool iskMUP11fired = bc.alias()[kMUP11];
-      bool iskMUP10fired = bc.alias()[kMUP10];
-      // cout << iskMUP11fired << iskMUP10fired<< endl;
-      //  selecting kMUP10 and 11 triggers
-      if (!iskMUP11fired && !iskMUP10fired) {
-        return;
-      }
-      registry.fill(HIST("hSelectionCounter"), 1);
-
-      if (isV0Selection) {
-        return;
-      }
-      registry.fill(HIST("hSelectionCounter"), 2);
-
-      if (isFDSelection) {
-        return;
-      }
-      registry.fill(HIST("hSelectionCounter"), 3);
-
-      for (auto& muon : tracksMuon) {
-        registry.fill(HIST("hCharge"), muon.sign());
-        iMuonTracknumber++;
-
-        if (muon.sign() > 0) {
-          p1.SetXYZM(muon.px(), muon.py(), muon.pz(), mmuon);
-          ispositive = kTRUE;
-        }
-        if (muon.sign() < 0) {
-          p2.SetXYZM(muon.px(), muon.py(), muon.pz(), mmuon);
-          isnegative = kTRUE;
-        }
-      }
-      if (iMuonTracknumber != 2) {
-        return;
-      }
-
-      registry.fill(HIST("hSelectionCounter"), 4);
-      if (!ispositive || !isnegative) {
-        return;
-      }
-      registry.fill(HIST("hSelectionCounter"), 5);
-
-      if ((p1.Eta() < -4) || (p2.Eta() < -4)) {
-        return;
-      }
-      if ((p1.Eta() > -2.5) || (p2.Eta() > -2.5)) {
-        return;
-      }
-
-      registry.fill(HIST("hSelectionCounter"), 6);
-      p = p1 + p2;
-      cout << "pt of dimuon " << p.Pt() << endl;
-      if (p.Pt() > 1) {
-        return;
-      }
-      registry.fill(HIST("hSelectionCounter"), 7);
-      registry.fill(HIST("hPt"), p.Pt());
-      registry.fill(HIST("hPx"), p.Px());
-      registry.fill(HIST("hPy"), p.Py());
-      registry.fill(HIST("hPz"), p.Pz());
-      registry.fill(HIST("hRap"), p.Rapidity());
-      registry.fill(HIST("hMass"), p.M());
-      registry.fill(HIST("hPhi"), p.Phi());
-      registry.fill(HIST("hEta"), p1.Eta());
-      registry.fill(HIST("hEta"), p2.Eta());
-      registry.fill(HIST("hPtsingle_muons"), p1.Pt());
-      registry.fill(HIST("hPtsingle_muons"), p2.Pt());
-
-    } // end of process
-
-  }; // end of struct
-
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-  {
-    return WorkflowSpec{
-      adaptAnalysisTask<UPCForward>(cfgc)};
   }
+  // new
+  void process(soa::Join<aod::BCs, aod::Run2BCInfos, aod::BcSels>::iterator const& bc, soa::Filtered<aod::FwdTracks> const& tracksMuon)
+  {
+
+    registry.fill(HIST("hSelectionCounter"), 0);
+
+    int iMuonTracknumber = 0;
+    TLorentzVector p1, p2, p;
+    bool ispositive = kFALSE;
+    bool isnegative = kFALSE;
+
+    // V0 and FD information
+    bool isBeamBeamV0A = bc.bbV0A();
+    bool isBeamGasV0A = bc.bgV0A();
+    bool isBeamBeamV0C = bc.bbV0C();
+    bool isBeamGasV0C = bc.bgV0C();
+
+    bool isBeamBeamFDA = bc.bbFDA();
+    bool isBeamGasFDA = bc.bgFDA();
+    bool isBeamBeamFDC = bc.bbFDC();
+    bool isBeamGasFDC = bc.bgFDC();
+
+    // offline V0 and FD selection
+    bool isV0Selection = isBeamBeamV0A || isBeamGasV0A || isBeamGasV0C;
+    bool isFDSelection = isBeamBeamFDA || isBeamGasFDA || isBeamBeamFDC || isBeamGasFDC;
+
+    // CCUP10 and CCUP11 information
+    bool iskMUP11fired = bc.alias()[kMUP11];
+    bool iskMUP10fired = bc.alias()[kMUP10];
+    // cout << iskMUP11fired << iskMUP10fired<< endl;
+    //  selecting kMUP10 and 11 triggers
+    if (!iskMUP11fired && !iskMUP10fired) {
+      return;
+    }
+    registry.fill(HIST("hSelectionCounter"), 1);
+
+    if (isV0Selection) {
+      return;
+    }
+    registry.fill(HIST("hSelectionCounter"), 2);
+
+    if (isFDSelection) {
+      return;
+    }
+    registry.fill(HIST("hSelectionCounter"), 3);
+
+    for (auto& muon : tracksMuon) {
+      registry.fill(HIST("hCharge"), muon.sign());
+      iMuonTracknumber++;
+
+      if (muon.sign() > 0) {
+        p1.SetXYZM(muon.px(), muon.py(), muon.pz(), mmuon);
+        ispositive = kTRUE;
+      }
+      if (muon.sign() < 0) {
+        p2.SetXYZM(muon.px(), muon.py(), muon.pz(), mmuon);
+        isnegative = kTRUE;
+      }
+    }
+    if (iMuonTracknumber != 2) {
+      return;
+    }
+
+    registry.fill(HIST("hSelectionCounter"), 4);
+    if (!ispositive || !isnegative) {
+      return;
+    }
+    registry.fill(HIST("hSelectionCounter"), 5);
+
+    if ((p1.Eta() < -4) || (p2.Eta() < -4)) {
+      return;
+    }
+    if ((p1.Eta() > -2.5) || (p2.Eta() > -2.5)) {
+      return;
+    }
+
+    registry.fill(HIST("hSelectionCounter"), 6);
+    p = p1 + p2;
+    cout << "pt of dimuon " << p.Pt() << endl;
+    if (p.Pt() > 1) {
+      return;
+    }
+    registry.fill(HIST("hSelectionCounter"), 7);
+    registry.fill(HIST("hPt"), p.Pt());
+    registry.fill(HIST("hPx"), p.Px());
+    registry.fill(HIST("hPy"), p.Py());
+    registry.fill(HIST("hPz"), p.Pz());
+    registry.fill(HIST("hRap"), p.Rapidity());
+    registry.fill(HIST("hMass"), p.M());
+    registry.fill(HIST("hPhi"), p.Phi());
+    registry.fill(HIST("hEta"), p1.Eta());
+    registry.fill(HIST("hEta"), p2.Eta());
+    registry.fill(HIST("hPtsingle_muons"), p1.Pt());
+    registry.fill(HIST("hPtsingle_muons"), p2.Pt());
+
+  } // end of process
+
+}; // end of struct
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<UPCForward>(cfgc)};
+}
