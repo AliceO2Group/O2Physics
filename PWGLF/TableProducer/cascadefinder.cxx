@@ -207,7 +207,6 @@ struct cascadefinder {
 
     Long_t lNCand = 0;
 
-    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
     std::array<float, 3> pos = {0.};
     std::array<float, 3> posXi = {0.};
     std::array<float, 3> pvecpos = {0.};
