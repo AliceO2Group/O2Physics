@@ -27,6 +27,8 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,7 +46,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 struct tpcPidFull {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = aod::Collisions;
+  using Coll = soa::Join<aod::Collisions, aod::Mults>;
+  
   // Tables to produce
   Produces<o2::aod::pidTPCFullEl> tablePIDEl;
   Produces<o2::aod::pidTPCFullMu> tablePIDMu;
@@ -112,6 +115,7 @@ struct tpcPidFull {
       try {
         std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
         f->GetObject("Response", response);
+        response->SetUseDefaultResolutionParam(false);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
       };
