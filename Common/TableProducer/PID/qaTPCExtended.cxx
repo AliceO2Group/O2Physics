@@ -27,6 +27,7 @@ using namespace o2::track;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{         //runtime customisation goes here
+  {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}
   };
   std::swap(workflowOptions, options);
      
@@ -37,7 +38,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 using namespace o2::dataformats;
 
 
-struct QaTpcPid {
+struct QaTpcTof {
   //Configurables
   Configurable<float> cutTOF{"cutTOF", 3.f, "TOF nsigma cut for TPC-TOF PID"};
   Configurable<int> pBins{"pBins", 400, "Number of momentum bins"};
@@ -73,7 +74,7 @@ struct QaTpcPid {
     AxisSpec tofnSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TOF n_{#sigma}"};
     
     hists.add(hnsigmaTPC[i].data(), Form("TPC signal (%s) without TOF cut",partName[i]), kTH2F, {pAxis, nSigmaAxis}); 
-    hists.add(hnsigmaTPCTOF[i].data(), Form("TPC signal (%s) after TOF cut",partName[i],cutTOF), kTH2F, {pAxis, nSigmaAxis}); 
+    hists.add(hnsigmaTPCTOF[i].data(), Form("TPC signal (%s) after %.2f#sigma TOF cut",partName[i],double(cutTOF)), kTH2F, {pAxis, nSigmaAxis}); 
     hists.add(hnsigmaTOF[i].data(), "TOF signal", kTH2F, {pAxis, tofnSigmaAxis}); 
     hists.add(hnsigmaTOFAfter[i].data(), "TOF signal after TOF cut", kTH2F, {pAxis, tofnSigmaAxis}); 
     
@@ -98,6 +99,7 @@ struct QaTpcPid {
   template <uint8_t i, typename T>
   void fillTPCQAParticleHistos(const T& t, const float mom, const float tofNSigma, const float tpcNSigma)
   {
+    // Fill TPC-TOF histograms before/after nsigma cut on TOF
     hists.fill(HIST(hnsigmaTPC[i]),mom, tpcNSigma);
     if (abs(tofNSigma) < cutTOF) hists.fill(HIST(hnsigmaTPCTOF[i]),mom, tpcNSigma);
     
@@ -130,10 +132,86 @@ struct QaTpcPid {
   }//process
 };//struct QaTPCPID
 
+struct QaTpcV0 {
+    static constexpr int NpV0 = 4;
+
+  static constexpr const char* partName[NpV0] = {"e", "#pi", "K", "p", };
+  static constexpr std::string_view hdEdxV0[NpV0] = {"dEdxV0/El", "dEdxV0/Pi",
+                                                   "dEdxV0/Ka", "dEdxV0/Pr"};
+  static constexpr std::string_view hdEdxDiffV0[NpV0] = {"dEdxDiffTPCV0/El", "dEdxDiffTPCV0/Pi",
+                                                   "dEdxDiffTPCV0/Ka", "dEdxDiffTPCV0/Pr"};
+  static constexpr std::string_view hnsigmaV0[NpV0] = {"nsigmaTPCV0/El", "nsigmaTPCV0/Pi",
+                                                   "nsigmaTPCV0/Ka", "nsigmaTPCV0/Pr"};
+  HistogramRegistry histos{"TPCPIDQA_V0"};
+  Configurable<int> logAxis{"logAxis",0, "Flag to use log momentum axis in V0 QA"};
+  Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
+  Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
+  Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
+  Configurable<int> nBinsNSigma{"nBinsNSigma",200, "Number of bins for TPC nSigma"};
+  Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
+  Configurable<float> maxNSigma{"maxNSigma",  10.f, "Upper limit for TPC nSigma"};
+  
+
+  template <uint8_t i>
+  void addV0Histos()
+  {
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    if (logAxis) {
+      pAxis.makeLogaritmic();
+    }
+
+    // corrected dE/dx for clean V0
+    AxisSpec expAxis{1000,0,1000,Form("d#it{E}/d#it{x}_(%s from V^{0}) A.U.", partName[i])};
+    histos.add(hdEdxV0[i].data(), "", kTH2F, {pAxis, expAxis});
+
+    AxisSpec deltaAxis{1000, -500, 500, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(expected(%s from V^{0})",partName[i])};
+    histos.add(hdEdxDiffV0[i].data(), "", kTH2F, {pAxis, deltaAxis});
+
+    AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("n_{#sigma}^{TPC}(%s from V^{0})",partName[i])};
+    histos.add(hnsigmaV0[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
+
+  }//addV0Histos
+
+  template <uint8_t i, typename T>
+  void fillV0Histos(const T& t, const float mom, const float exp_diff, const float nsigma)
+  {
+    histos.fill(HIST(hdEdxV0[i]), mom, t.tpcSignal() - exp_diff);
+    histos.fill(HIST(hdEdxDiffV0[i]), mom, exp_diff);
+    histos.fill(HIST(hnsigmaV0[i]), t.p(), nsigma);
+  }
+
+
+  void init(o2::framework::InitContext&)
+  {
+    addV0Histos<0>();
+    addV0Histos<1>();
+    addV0Histos<2>();
+    addV0Histos<3>();
+
+  }//init
+
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
+                                                          aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                                          aod::TrackSelection> const& tracks)
+  {
+    for (auto t : tracks) {
+      const float mom = t.tpcInnerParam();
+      fillV0Histos<0>(t, mom, t.tpcExpSignalDiffEl(), t.tpcNSigmaEl());
+      fillV0Histos<1>(t, mom, t.tpcExpSignalDiffPi(), t.tpcNSigmaPi());
+      fillV0Histos<2>(t, mom, t.tpcExpSignalDiffKa(), t.tpcNSigmaKa());
+      fillV0Histos<3>(t, mom, t.tpcExpSignalDiffPr(), t.tpcNSigmaPr());
+    } //for loop
+  } //process
+};//struct QaTpcV0
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w;
-  w.push_back(adaptAnalysisTask<QaTpcPid>(cfgc));
+  w.push_back(adaptAnalysisTask<QaTpcTof>(cfgc));
+  if (cfgc.options().get<int>("useV0")) {
+    w.push_back(adaptAnalysisTask<QaTpcV0>(cfgc));
+  }
+
   return w;
 }
