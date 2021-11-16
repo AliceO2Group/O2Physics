@@ -57,33 +57,24 @@ class FemtoDreamPairCleaner
   {
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
       /// Track-Track combination
+      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack) {
+        LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide kTrack,kTrack candidates.";
+        return false;
+      }
       return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       /// Track-V0 combination
-      // \todo to be implemented
-      uint64_t id1 = part2.indices()[0];
-      uint64_t id2 = part2.indices()[1];
+      if (part2.partType() != o2::aod::femtodreamparticle::ParticleType::kV0) {
+        LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide second argument kV0 candidate.";
+        return false;
+      }
+      uint64_t id1 = part2.index() - 2;
+      uint64_t id2 = part2.index() - 1;
       auto daughter1 = particles.begin() + id1;
       auto daughter2 = particles.begin() + id2;
       if ((*daughter1).indices()[0] <= 0 && (*daughter1).indices()[1] <= 0 && (*daughter2).indices()[0] <= 0 && (*daughter2).indices()[1] <= 0) {
         return true;
       }
-      return false;
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-      /// Track-Cascade combination
-      // \todo to be implemented
-      return false;
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-      /// V0-V0 combination
-      // \todo to be implemented
-      return false;
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-      /// V0-Cascade combination
-      // \todo to be implemented
-      return false;
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kCascade && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-      /// Cascade-Cascade combination
-      // \todo to be implemented
       return false;
     } else {
       LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";

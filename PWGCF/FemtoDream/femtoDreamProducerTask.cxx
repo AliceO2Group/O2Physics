@@ -222,9 +222,9 @@ struct femtoDreamProducerTask {
     for (auto& v0 : fullV0s) {
       auto postrack = v0.posTrack_as<aod::FilteredFullTracks>();
       auto negtrack = v0.negTrack_as<aod::FilteredFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
-      const auto dcaXYpos = postrack.dcaXY();
-      const auto dcaZpos = postrack.dcaZ();
-      const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
+      // const auto dcaXYpos = postrack.dcaXY();
+      // const auto dcaZpos = postrack.dcaZ();
+      // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
       if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
         continue;
       }

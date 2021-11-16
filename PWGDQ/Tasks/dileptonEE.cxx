@@ -167,8 +167,8 @@ struct DQBarrelTrackSelection {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString cutNames = "TrackBarrel_BeforeCuts;";
-    for (int i = 0; i < fTrackCuts.size(); i++) {
-      cutNames += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+    for (auto& cut : fTrackCuts) {
+      cutNames += Form("TrackBarrel_%s;", cut.GetName());
     }
 
     DefineHistograms(fHistMan, cutNames.Data());     // define all histograms
@@ -426,15 +426,16 @@ struct DQEventMixing {
           }
           VarManager::FillPair<pairType>(track1, track2, fValues);
 
-          for (int i = 0; i < fCutNames.size(); ++i) {
+          int i = 0;
+          for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
             if (twoTrackFilter & (uint8_t(1) << i)) {
               if (track1.sign() * track2.sign() < 0) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEULS_%s", fCutNames[i].Data()), fValues);
+                fHistMan->FillHistClass(Form("PairsBarrelMEULS_%s", (*cutName).Data()), fValues);
               } else {
                 if (track1.sign() > 0) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMELSpp_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelMELSpp_%s", (*cutName).Data()), fValues);
                 } else {
-                  fHistMan->FillHistClass(Form("PairsBarrelMELSnn_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelMELSnn_%s", (*cutName).Data()), fValues);
                 }
               }
             } // end if (filter bits)
