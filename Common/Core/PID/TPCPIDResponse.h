@@ -22,9 +22,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "TMath.h"
 #include "TPCSimulation/Detector.h"
-
-#include "TF1.h"
-#include "TMath.h"
+#include "TFormula.h"
 
 namespace o2::pid::tpc
 {
@@ -43,14 +41,14 @@ class Response
   void SetResolutionParams(const std::array<Double_t, 8>& resolutionParams) { mResolutionParams = resolutionParams; };
   void SetMIP(const float mip) { mMIP = mip; };
   void SetChargeFactor(const float chargeFactor) { mChargeFactor = chargeFactor; };
-  void SetResolutionParametrization(TF1* sigmaParametrization) {fSigmaParametrization = sigmaParametrization; };
+  void SetResolutionParametrization(TFormula* sigmaParametrization) {fSigmaParametrization = sigmaParametrization; };
   void SetUseDefaultResolutionParam(const bool useDefault) {useDefaultResolutionParam = useDefault; };
 
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; };
   const std::array<Double_t, 8> GetResolutionParams() const { return mResolutionParams; };
   const float GetMIP() const { return mMIP; };
   const float GetChargeFactor() const { return mChargeFactor; };
-  TF1* GetResolutionParametrization() { return fSigmaParametrization; };
+  TFormula* GetResolutionParametrization() { return fSigmaParametrization; };
 
   /// Gets the expected signal of the track
   template <typename TrackType>
@@ -77,9 +75,9 @@ class Response
   float mChargeFactor = 2.3f;
   float mMultNormalization = 11000.;
   bool useDefaultResolutionParam = true;
-  TF1* fSigmaParametrization = new TF1("fSigmaParametrization", "sqrt(([0]**2)*x[0]+(([1]**2)*(x[5]*[5])*(x[0]/sqrt(1+x[1]**2))**[2])+x[5]*Response::GetRelativeResolutiondEdx(x[2],x[3],x[4],[3])**2+([4]*x[4])**2 +((x[6]*[6])**2)+(x[6]*(x[0]/sqrt(1+x[1]**2))*[7])**2)"); 
+  TFormula* fSigmaParametrization = new TFormula("fSigmaParametrization", "sqrt(([0]**2)*x[0]+(([1]**2)*(x[2]*[5])*(x[0]/sqrt(1+x[1]**2))**[2])+x[2]*x[3]**2+([4]*x[4])**2 +((x[5]*[6])**2)+(x[5]*(x[0]/sqrt(1+x[1]**2))*[7])**2)"); 
 
-  ClassDefNV(Response, 1);
+  ClassDefNV(Response, 2);
 
 }; // class Response
 
@@ -105,13 +103,13 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double bg =  p/mass;
     const double dEdx = o2::tpc::Detector::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
 
+    const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[3]);
+
     values.push_back((1./dEdx));
     values.push_back((track.tgl()));
-    values.push_back((p)) ;
-    values.push_back((mass));
-    values.push_back(((double)o2::track::pid_constants::sCharges[id] ));
-    values.push_back((track.signed1Pt()));
     values.push_back((std::sqrt(maxCl[0]/ncl)));
+    values.push_back(relReso);
+    values.push_back((track.signed1Pt()));
     values.push_back((collision.multTracklets()) / mMultNormalization);
 
     const int vecsize = values.size();
