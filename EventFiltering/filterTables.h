@@ -96,7 +96,7 @@ using MultFilter = MultFilters::iterator;
 constexpr int NumberOfFilters{7};
 constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
 constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter","o2-analysis-mult-filter"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
 constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters, CFFilters, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
