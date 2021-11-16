@@ -47,6 +47,17 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 // Some definitions
+namespace
+{
+enum HfTriggers {
+  kSingleE = 0,
+  kSingleMuLow,
+  kSingleMuHigh,
+  kDiElectron,
+  kDiMuon,
+  kNTriggersDQ
+};
+} // namespace
 namespace o2::aod
 {
 namespace dqppfilter
@@ -389,10 +400,10 @@ struct DQFilterPPTask {
     process(MyEventsSelected::iterator const& event, MyBarrelTracksSelected const& tracks, MyMuonsSelected const& muons, aod::BCs const& bcs)
   {
     uint64_t filter = 0; // first 32 bits for dielectrin, last 32 for dimuons
-        
-    //Is event good? [0] = SingleE, [1] = SingleMulow, [2] = SingleMuHigh, [3] = DiElectron, [4] = DiMuon
-    bool keepEvent[5]{false};
-        
+
+    //[0] = SingleE, [1] = SingleMulow, [2] = SingleMuHigh, [3] = DiElectron, [4] = DiMuon
+    bool keepEvent[kNTriggersDQ]{false};
+
     constexpr int pairTypeEE = VarManager::kJpsiToEE;
     constexpr int pairTypeMuMu = VarManager::kJpsiToMuMu;
     if (event.isDQEventSelected() == 1) {
@@ -513,11 +524,20 @@ struct DQFilterPPTask {
         if (singleBarrelCount[i] > 0) {
           filter |= (uint64_t(1) << i);
           fStatsSingleBarrel->Fill(i);
+          std::string nameTrkStr = fTrkCutsNameArray->At(i)->GetName();
+          if (!nameTrkStr.compare("jpsiKineAndQuality")) {
+            keepEvent[kSingleE] = true; // Single Electron trigger
+          }
         }
         for (int j = 0; j < fNPairCuts; j++) {
           if (pairsBarrelCount[j + i * fNPairCuts] > 0) {
             filter |= (uint64_t(1) << (8 + j + i * fNPairCuts));
             fStatsBarrel->Fill(j, i);
+            std::string nameTrkStr = fTrkCutsNameArray->At(i)->GetName();
+            std::string namePairStr = fPairCuts[j].GetName();
+            if (!namePairStr.compare("pairNoCut") && !nameTrkStr.compare("jpsiKineAndQuality")) {
+              keepEvent[kDiElectron] = true; // Di-Electron trigger
+            }
           }
         }
       }
@@ -525,11 +545,23 @@ struct DQFilterPPTask {
         if (singleMuonsCount[i] > 0) {
           filter |= (uint64_t(1) << (32 + i));
           fStatsSingleMuon->Fill(i);
+          std::string nameMuStr = fMuonCutsNameArray->At(i)->GetName();
+          if (!nameMuStr.compare("muonLowPt")) {
+            keepEvent[kSingleMuLow] = true; // Single Low pT Muon trigger
+          }
+          if (!nameMuStr.compare("muonHighPt")) {
+            keepEvent[kSingleMuHigh] = true; // Single High pT Muon trigger
+          }
         }
         for (int j = 0; j < fNPairCuts; j++) {
           if (pairsUnlikeMuonsCount[j + i * fNPairCuts] > 0) {
             filter |= (uint64_t(1) << (40 + j + i * fNPairCuts));
             fStatsMuon->Fill(j, i);
+            std::string nameMuStr = fMuonCutsNameArray->At(i)->GetName();
+            std::string namePairStr = fPairCuts[j].GetName();
+            if (!namePairStr.compare("pairNoCut") && !nameMuStr.compare("muonLowPt")) {
+              keepEvent[kDiMuon] = true; // Di-Muon low pT trigger
+            }
           }
           if (pairsLikeMuonsCount[j + i * fNPairCuts] > 0) {
             filter |= (uint64_t(1) << (52 + j + i * fNPairCuts));
@@ -537,23 +569,6 @@ struct DQFilterPPTask {
           }
         }
       }
-
-//      // Fill event selections tag for central event filtering
-//      if (singleBarrelCount[0] > 0) {
-//        keepEvent[0] = true;
-//      }
-//      if (singleMuonsCount[1] > 0) {
-//        keepEvent[1] = true;
-//      }
-//      if (singleMuonsCount[2] > 0) {
-//        keepEvent[2] = true;
-//      }
-//      if (pairsBarrelCount[0] > 0) {
-//        keepEvent[3] = true;
-//      }
-//      if (pairsUnlikeMuonsCount[fNPairCuts] > 0) {
-//        keepEvent[4] = true;
-//      }
 
       delete[] pairsBarrelCount;
       delete[] pairsUnlikeMuonsCount;
@@ -563,7 +578,7 @@ struct DQFilterPPTask {
     }
     eventFilter(filter);
     //Filling the table
-    dqtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4]);
+    dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
   }
 };
 
