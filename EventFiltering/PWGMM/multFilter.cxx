@@ -44,7 +44,7 @@ struct multFilter {
 
 	//event selection cuts
 	Configurable<float> selectionLeadingPtTrack{"selectionLeadingPtTrack", 8., "Minimum track pT leading threshold"};
-	Configurable<float> selectionHighTrackMult{"selectionHighTrackMult", 54., "Minimum charged particle multiplicity threshold"};
+	Configurable<float> selectionHighTrackMult{"selectionHighTrackMult", 58., "Minimum charged particle multiplicity threshold"};
 
 	Produces<aod::MultFilters> tags;
 
@@ -91,11 +91,6 @@ struct multFilter {
 
 		multiplicity.fill(HIST("fProcessedEvents"), 0);
 
-		//check if your trigger alias is fired
-		if (!collision.alias()[kINT7]) {
-			return;
-		}
-
 		//
 		multiplicity.fill(HIST("fCollZpos"), collision.posZ());
 		Int_t multTrack = 0;
@@ -108,6 +103,7 @@ struct multFilter {
 				flPt  = track.pt();
 			}
 		}
+
 		multiplicity.fill(HIST("fLeadingTrackPt"), flPt);
 		multiplicity.fill(HIST("fTrackMult"), multTrack);
 		// Check whether this event has a leading track candidate
