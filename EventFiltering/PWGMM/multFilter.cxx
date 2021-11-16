@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> mmObjectsNames{"w/ high-#it{p}_{T}", "high track-mult event"};
+//static const std::vector<std::string> mmObjectsNames{"w/ high-#it{p}_{T}", "high track-mult event"};
 
 struct multFilter {
 	enum { kLeadingPtTrack = 0,
@@ -66,15 +66,23 @@ struct multFilter {
 
 		multiplicity.add("fLeadingTrackPtSelected", "pT of selected high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
 		multiplicity.add("fTrackMultSelected", "charged particle multiplicity of the selected events", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
-		std::array<std::string, 2> eventTitles = {"all", "rejected"};
 
-		auto scalers{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM+2, -0.5, kNtriggersMM + 2 - 0.5}}))};
-		for (size_t iBin = 0; iBin < eventTitles.size()+mmObjectsNames.size(); iBin++) {
-			if(iBin<2)
-				scalers->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
-			else
-				scalers->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin-2].data());
+		std::array<std::string, 4> eventTitles = {"all", "rejected","w/ high-#it{p}_{T}","high track-mult event"};
+		auto scalers{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents", "Multiplicity - event filtered;;events", HistType::kTH1F, {{4, -0.5, 3.5}}))};
+		for (size_t iBin = 0; iBin < 4; iBin++) {
+			scalers->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
 		}
+		/*
+		   std::array<std::string, 2> eventTitles = {"all", "rejected"};
+
+		   auto scalers{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM+2, -0.5, kNtriggersMM + 2 - 0.5}}))};
+		   for (size_t iBin = 0; iBin < eventTitles.size()+mmObjectsNames.size(); iBin++) {
+		   if(iBin<2)
+		   scalers->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+		   else
+		   scalers->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin-2].data());
+		   }
+		 */
 	}
 
 	//declare filters on tracks and charged jets
