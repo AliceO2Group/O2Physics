@@ -26,6 +26,13 @@ DECLARE_SOA_COLUMN(He4, hasHe4, bool); //!
 // diffraction
 DECLARE_SOA_COLUMN(DG, hasDG, bool); //! Double Gap events, DG
 
+// Dileptons & Quarkonia
+DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
+DECLARE_SOA_COLUMN(SingleMuLow, hasSingleMuLow, bool);   //! single muon with low pT trigger
+DECLARE_SOA_COLUMN(SingleMuHigh, hasSingleMuHigh, bool); //! single muon with high pT trigger
+DECLARE_SOA_COLUMN(DiElectron, hasDiElectron, bool);     //! dielectron trigger
+DECLARE_SOA_COLUMN(DiMuon, hasDiMuon, bool);             //! dimuon trigger with low pT on muons
+
 // heavy flavours
 DECLARE_SOA_COLUMN(HfHighPt, hasHfHighPt, bool); //! high-pT charm hadron
 DECLARE_SOA_COLUMN(HfBeauty, hasHfBeauty, bool); //! beauty hadron
@@ -64,6 +71,11 @@ DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filt
                   filtering::DG);
 using DiffractionFilter = DiffractionFilters::iterator;
 
+// Dileptons & Quarkonia
+DECLARE_SOA_TABLE(DqFilters, "AOD", "DQ Filters", //!
+                  filtering::SingleE, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiElectron, filtering::DiMuon);
+using DqFilter = DqFilters::iterator;
+
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HF Filters", //!
                   filtering::HfHighPt, filtering::HfBeauty, filtering::HfFemto);
@@ -93,11 +105,11 @@ DECLARE_SOA_TABLE(MultFilters, "AOD", "MM Filters", //!
 using MultFilter = MultFilters::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{7};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters, CFFilters, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
+constexpr int NumberOfFilters{8};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DileptonQuarkoniaFilters", "HeavyFlavourFilters", "CorrelationFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DQFilters", "HFFilters", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>
