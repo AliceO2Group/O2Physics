@@ -48,10 +48,9 @@ DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);       //! at least 2 Xi
 DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);       //! at least 3 Xi
 DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool); //! at least 4 Xi
 DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R > 24.39 cm (YN interactions)
-
 // multiplicity
-DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool); //! event contains high-pT track
-DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool); //! high muliplicity collision
+DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool); //! event contains leading track > 8 GeV
+DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);   //! high muliplicity collision
 
 } // namespace filtering
 
@@ -97,7 +96,7 @@ using MultFilter = MultFilters::iterator;
 constexpr int NumberOfFilters{7};
 constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "HeavyFlavourFilters", "CorrelationFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
 constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "HFFilters", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter","o2-analysis-mult-filter"};
 constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, HfFilters, CFFilters, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
