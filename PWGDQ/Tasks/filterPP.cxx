@@ -159,7 +159,7 @@ struct DQBarrelTrackSelectionTask {
 
   float* fValues; // array to be used by the VarManager
 
-  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiKineAndQuality,jpsiPID1", "Comma separated list of barrel track cuts"};
 
   void init(o2::framework::InitContext&)
   {
@@ -311,7 +311,7 @@ struct DQFilterPPTask {
   Partition<MyBarrelTracksSelected> posTracks = aod::track::signed1Pt > 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
   Partition<MyBarrelTracksSelected> negTracks = aod::track::signed1Pt < 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
 
-  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiKineAndQuality,jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts,muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairNoCut,pairMassLow", "Comma separated list of pair cuts"};
 
