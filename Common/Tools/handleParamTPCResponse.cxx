@@ -40,14 +40,14 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
     "bb3", bpo::value<float>()->default_value(2.72123f), "Bethe-Bloch parameter 3")(
     "bb4", bpo::value<float>()->default_value(6.08092f), "Bethe-Bloch parameter 4")(
-    "sig0", bpo::value<float>()->default_value(5.43799e-7f), "Sigma parameter 0")(
-    "sig1", bpo::value<float>()->default_value(0.053044f), "Sigma parameter 1")(
-    "sig2", bpo::value<float>()->default_value(0.667584f), "Sigma parameter 2")(
-    "sig3", bpo::value<float>()->default_value(0.0142667f), "Sigma parameter 3")(
-    "sig4", bpo::value<float>()->default_value(0.00235175f), "Sigma parameter 4")(
-    "sig5", bpo::value<float>()->default_value(1.22482f), "Sigma parameter 5")(
-    "sig6", bpo::value<float>()->default_value(2.3501e-7f), "Sigma parameter 6")(
-    "sig7", bpo::value<float>()->default_value(0.031585f), "Sigma parameter 7")(
+    "sig0", bpo::value<double>()->default_value(5.43799e-7f), "Sigma parameter 0")(
+    "sig1", bpo::value<double>()->default_value(0.053044f), "Sigma parameter 1")(
+    "sig2", bpo::value<double>()->default_value(0.667584f), "Sigma parameter 2")(
+    "sig3", bpo::value<double>()->default_value(0.0142667f), "Sigma parameter 3")(
+    "sig4", bpo::value<double>()->default_value(0.00235175f), "Sigma parameter 4")(
+    "sig5", bpo::value<double>()->default_value(1.22482f), "Sigma parameter 5")(
+    "sig6", bpo::value<double>()->default_value(2.3501e-7f), "Sigma parameter 6")(
+    "sig7", bpo::value<double>()->default_value(0.031585f), "Sigma parameter 7")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
     "mode", bpo::value<int>()->default_value(0), "Running mode (0 = offline, 1 = CCDB)")(
@@ -96,14 +96,14 @@ int main(int argc, char* argv[])
   const float bb2 = vm["bb2"].as<float>();
   const float bb3 = vm["bb3"].as<float>();
   const float bb4 = vm["bb4"].as<float>();
-  const float sig0 = vm["sig0"].as<double>();
-  const float sig1 = vm["sig1"].as<double>();
-  const float sig2 = vm["sig2"].as<double>();
-  const float sig3 = vm["sig3"].as<double>();
-  const float sig4 = vm["sig4"].as<double>();
-  const float sig5 = vm["sig5"].as<double>();
-  const float sig6 = vm["sig6"].as<double>();
-  const float sig7 = vm["sig7"].as<double>();
+  const double sig0 = vm["sig0"].as<double>();
+  const double sig1 = vm["sig1"].as<double>();
+  const double sig2 = vm["sig2"].as<double>();
+  const double sig3 = vm["sig3"].as<double>();
+  const double sig4 = vm["sig4"].as<double>();
+  const double sig5 = vm["sig5"].as<double>();
+  const double sig6 = vm["sig6"].as<double>();
+  const double sig7 = vm["sig7"].as<double>();
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
   const int useCCDB = vm["mode"].as<int>();
@@ -163,6 +163,7 @@ int main(int argc, char* argv[])
     tpc->SetResolutionParams(sigparams);
     tpc->SetMIP(mipval);
     tpc->SetChargeFactor(chargefacval);
+    tpc->SetUseDefaultResolutionParam(false);
     tpc->PrintAll();
 
     if (optMode.compare("write") == 0) {
