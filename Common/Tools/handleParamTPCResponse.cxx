@@ -40,8 +40,14 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
     "bb3", bpo::value<float>()->default_value(2.72123f), "Bethe-Bloch parameter 3")(
     "bb4", bpo::value<float>()->default_value(6.08092f), "Bethe-Bloch parameter 4")(
-    "sig0", bpo::value<float>()->default_value(0.07f), "Sigma parameter 0")(
-    "sig1", bpo::value<float>()->default_value(0.f), "Sigma parameter 1")(
+    "sig0", bpo::value<float>()->default_value(5.43799e-7f), "Sigma parameter 0")(
+    "sig1", bpo::value<float>()->default_value(0.053044f), "Sigma parameter 1")(
+    "sig2", bpo::value<float>()->default_value(0.667584f), "Sigma parameter 2")(
+    "sig3", bpo::value<float>()->default_value(0.0142667f), "Sigma parameter 3")(
+    "sig4", bpo::value<float>()->default_value(0.00235175f), "Sigma parameter 4")(
+    "sig5", bpo::value<float>()->default_value(1.22482f), "Sigma parameter 5")(
+    "sig6", bpo::value<float>()->default_value(2.3501e-7f), "Sigma parameter 6")(
+    "sig7", bpo::value<float>()->default_value(0.031585f), "Sigma parameter 7")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
     "mode", bpo::value<int>()->default_value(0), "Running mode (0 = offline, 1 = CCDB)")(

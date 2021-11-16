@@ -44,6 +44,7 @@ class Response
   void SetMIP(const float mip) { mMIP = mip; };
   void SetChargeFactor(const float chargeFactor) { mChargeFactor = chargeFactor; };
   void SetResolutionParametrization(TF1* sigmaParametrization) {fSigmaParametrization = sigmaParametrization; };
+  void SetUseDefaultResolutionParam(const bool useDefault) {useDefaultResolutionParam = useDefault; };
 
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; };
   const std::array<Double_t, 8> GetResolutionParams() const { return mResolutionParams; };
@@ -111,7 +112,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     values.push_back(((double)o2::track::pid_constants::sCharges[id] ));
     values.push_back((track.signed1Pt()));
     values.push_back((std::sqrt(maxCl[0]/ncl)));
-    values.push_back((collision.numContrib()) / mMultNormalization);
+    values.push_back((collision.multTracklets()) / mMultNormalization);
 
     const int vecsize = values.size();
     Double_t valueArray[vecsize];
