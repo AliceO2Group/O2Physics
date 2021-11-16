@@ -90,15 +90,21 @@ int main(int argc, char* argv[])
   const float bb2 = vm["bb2"].as<float>();
   const float bb3 = vm["bb3"].as<float>();
   const float bb4 = vm["bb4"].as<float>();
-  const float sig0 = vm["sig0"].as<float>();
-  const float sig1 = vm["sig1"].as<float>();
+  const float sig0 = vm["sig0"].as<double>();
+  const float sig1 = vm["sig1"].as<double>();
+  const float sig2 = vm["sig2"].as<double>();
+  const float sig3 = vm["sig3"].as<double>();
+  const float sig4 = vm["sig4"].as<double>();
+  const float sig5 = vm["sig5"].as<double>();
+  const float sig6 = vm["sig6"].as<double>();
+  const float sig7 = vm["sig7"].as<double>();
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
   const int useCCDB = vm["mode"].as<int>();
 
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
-  std::array<float, 2> sigparams = {sig0, sig1};
+  std::array<double, 8> sigparams = {sig0, sig1, sig2, sig3, sig4, sig5, sig6, sig7,};
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
