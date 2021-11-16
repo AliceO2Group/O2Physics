@@ -20,3 +20,6 @@ CMakeFiles/
 /.vs/cmake.db
 /.vs/O2Physics/v17
 /.vs/O2Physics/project-colors.json
+.vscode
+build
+compile_commands.json

@@ -28,13 +28,20 @@ using namespace o2;
 using namespace o2::framework;
 
 struct ExtendTable {
-  void process(aod::Collision const&, aod::Tracks const& tracks)
+  void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
+    // note that this needs to be done only once, as it is done for the whole table
+    // the extension is temporary and is lost when the variable it is assigned to
+    // goes out of scope
     auto table_extension = soa::Extend<aod::Tracks, aod::extension::P2>(tracks);
-    for (auto& row : table_extension) {
-      if (row.trackType() != 3) {
-        if (row.index() % 100 == 0) {
-          LOGF(info, "P^2 = %.3f", row.p2());
+    for (auto& collision : collisions) {
+      auto trackSlice = table_extension.sliceBy(aod::track::collisionId, collision.globalIndex());
+      LOGP(info, "Collision {}", collision.globalIndex());
+      for (auto& row : trackSlice) {
+        if (row.trackType() != 3) {
+          if (row.index() % 100 == 0) {
+            LOGP(info, "P^2 = {}", row.p2());
+          }
         }
       }
     }

@@ -74,14 +74,14 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 //#define MY_DEBUG
 
 #ifdef MY_DEBUG
-using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::McTrackLabels>;
+using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels>;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;
+using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended>;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
@@ -321,19 +321,7 @@ struct HfTagSelTracks {
 #endif
   )
   {
-    auto prevColId = -1;
-    math_utils::Point3D<float> vtxXYZ;
     for (auto& track : tracks) {
-      if (track.has_collision()) {
-        if (track.collisionId() != prevColId) {
-          auto collision = track.collision();
-          vtxXYZ = {collision.posX(), collision.posY(), collision.posZ()};
-          prevColId = track.collisionId();
-        }
-      } else {
-        // reset vertex for unassigned track
-        vtxXYZ = {0, 0, 0};
-      }
 
 #ifdef MY_DEBUG
       auto indexBach = track.mcParticleId();
@@ -449,41 +437,32 @@ struct HfTagSelTracks {
 
       iDebugCut = 5;
       // DCA cut
-      // FIXME: set some unambiguosly incorrect value for unassigned tracks? This will put them into overflow bins
-      array<float, 2> dca{10, 10};
+      array<float, 2> dca{track.dcaXY(), track.dcaZ()};
       if ((debug || statusProng > 0)) {
-        // can only check DCA if the vertex is known
-        // FIXME: try alternative associations
-        if (track.has_collision()) {
-          auto trackparvar0 = getTrackParCov(track);
-          if (!trackparvar0.propagateParamToDCA(vtxXYZ, bz, &dca, 100.)) { // get impact parameters
-            statusProng = 0;
-          }
-          if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
-            CLRBIT(statusProng, CandidateType::Cand2Prong);
-            if (debug) {
-              cutStatus[CandidateType::Cand2Prong][3] = false;
-              if (fillHistograms) {
-                registry.get<TH1>(HIST("hRejTracks"))->Fill((nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
-              }
+        if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
+          CLRBIT(statusProng, CandidateType::Cand2Prong);
+          if (debug) {
+            cutStatus[CandidateType::Cand2Prong][3] = false;
+            if (fillHistograms) {
+              registry.get<TH1>(HIST("hRejTracks"))->Fill((nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
             }
           }
-          if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand3Prong)) {
-            CLRBIT(statusProng, CandidateType::Cand3Prong);
-            if (debug) {
-              cutStatus[CandidateType::Cand3Prong][3] = false;
-              if (fillHistograms) {
-                registry.get<TH1>(HIST("hRejTracks"))->Fill((nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
-              }
+        }
+        if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand3Prong)) {
+          CLRBIT(statusProng, CandidateType::Cand3Prong);
+          if (debug) {
+            cutStatus[CandidateType::Cand3Prong][3] = false;
+            if (fillHistograms) {
+              registry.get<TH1>(HIST("hRejTracks"))->Fill((nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
             }
           }
-          if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && !isSelectedTrack(track, dca, CandidateType::CandV0bachelor)) {
-            CLRBIT(statusProng, CandidateType::CandV0bachelor);
-            if (debug) {
-              cutStatus[CandidateType::CandV0bachelor][3] = false;
-              if (fillHistograms) {
-                registry.get<TH1>(HIST("hRejTracks"))->Fill((nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
-              }
+        }
+        if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && !isSelectedTrack(track, dca, CandidateType::CandV0bachelor)) {
+          CLRBIT(statusProng, CandidateType::CandV0bachelor);
+          if (debug) {
+            cutStatus[CandidateType::CandV0bachelor][3] = false;
+            if (fillHistograms) {
+              registry.get<TH1>(HIST("hRejTracks"))->Fill((nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
             }
           }
         }

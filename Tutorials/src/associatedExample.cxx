@@ -76,7 +76,7 @@ struct ConsumeEtaPhi {
     LOGF(info, "ID: %d", collision.globalIndex());
     LOGF(info, "Tracks: %d", extTracks.size());
     for (auto& track : extTracks) {
-      LOGF(info, "(%f, %f) - (%f, %f)", track.eta(), track.phiraw(), track.etas(), track.phis());
+      LOGF(info, "(%f, %f) - (%f, %f)", track.eta(), track.phi(), track.etas(), track.phis());
     }
   }
 };

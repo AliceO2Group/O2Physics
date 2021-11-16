@@ -28,8 +28,11 @@
 #include "TF1.h"
 #include "THn.h"
 #include "Framework/HistogramSpec.h"
+#include "CommonConstants/MathConstants.h"
 
+using namespace o2;
 using namespace o2::framework;
+using namespace o2::constants::math;
 
 ClassImp(CorrelationContainer);
 
@@ -485,9 +488,6 @@ TH2* CorrelationContainer::getPerTriggerYield(CorrelationContainer::CFStep step,
 
   THnBase* trackSameAll = nullptr;
   TH2* eventSameAll = nullptr;
-
-  Long64_t totalEvents = 0;
-  Int_t nCorrelationFunctions = 0;
 
   getHistsZVtxMult(step, ptTriggerMin, ptTriggerMax, &trackSameAll, &eventSameAll);
 
@@ -1498,8 +1498,8 @@ void CorrelationContainer::symmetrizepTBins()
               for (Int_t i4 = 1; i4 <= target->GetAxis(4)->GetNbins(); i4++) {
                 Int_t binEta = target->GetAxis(0)->FindBin(-target->GetAxis(0)->GetBinCenter(i0));
                 Double_t phi = -target->GetAxis(4)->GetBinCenter(i4);
-                if (phi < -M_PI / 2) {
-                  phi += M_PI * 2;
+                if (phi < -PIHalf) {
+                  phi += TwoPI;
                 }
                 Int_t binPhi = target->GetAxis(4)->FindBin(phi);
 
