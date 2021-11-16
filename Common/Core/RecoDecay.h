@@ -116,7 +116,7 @@ class RecoDecay
   static double dotProd(const array<T, N>& vec1, const array<U, N>& vec2)
   {
     double res{0};
-    for (auto iDim = 0; iDim < N; ++iDim) {
+    for (std::size_t iDim = 0; iDim < N; ++iDim) {
       res += (double)vec1[iDim] * (double)vec2[iDim];
     }
     return res;

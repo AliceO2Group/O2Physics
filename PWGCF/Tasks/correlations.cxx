@@ -16,6 +16,7 @@
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "CommonConstants/MathConstants.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -44,6 +45,7 @@ using Hash = Hashes::iterator;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace constants::math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -73,7 +75,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -M_PI / 2, M_PI / 2 * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
@@ -89,7 +91,7 @@ struct CorrelationTask {
   Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && (aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt);
 
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -157,7 +159,7 @@ struct CorrelationTask {
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
   }
 
-  float getMagneticField(uint64_t timestamp)
+  int getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;
@@ -167,10 +169,9 @@ struct CorrelationTask {
         LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
         return 0;
       }
-      LOGF(info, "Retrieved GRP for timestamp %llu with L3 current of %f", timestamp, grpo->getL3Current());
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
     }
-    float l3current = grpo->getL3Current();
-    return l3current / 30000.0f * 5.0f;
+    return grpo->getNominalL3Field();
   }
 
   template <typename TCollision, typename TTracks>
@@ -197,7 +198,7 @@ struct CorrelationTask {
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ, float magField)
+  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ, int magField)
   {
     // Cache efficiency for particles (too many FindBin lookups)
     float* efficiencyAssociated = nullptr;
@@ -255,11 +256,11 @@ struct CorrelationTask {
         }
 
         float deltaPhi = track1.phi() - track2.phi();
-        if (deltaPhi > 1.5 * M_PI) {
-          deltaPhi -= M_PI * 2;
+        if (deltaPhi > 1.5f * PI) {
+          deltaPhi -= TwoPI;
         }
-        if (deltaPhi < -0.5 * M_PI) {
-          deltaPhi += M_PI * 2;
+        if (deltaPhi < -PIHalf) {
+          deltaPhi += TwoPI;
         }
 
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
@@ -455,11 +456,11 @@ struct CorrelationTask {
       }
 
       float deltaPhi = track1.phi() - track2.phi();
-      if (deltaPhi > 1.5 * M_PI) {
-        deltaPhi -= M_PI * 2;
+      if (deltaPhi > 1.5f * PI) {
+        deltaPhi -= TwoPI;
       }
-      if (deltaPhi < -0.5 * M_PI) {
-        deltaPhi += M_PI * 2;
+      if (deltaPhi < -PIHalf) {
+        deltaPhi += TwoPI;
       }
 
       same->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
@@ -546,9 +547,9 @@ struct CorrelationHashTask {
       return -1;
     }
 
-    for (int i = 1; i < vtxBins.size(); i++) {
+    for (unsigned int i = 1; i < vtxBins.size(); i++) {
       if (vtx < vtxBins[i]) {
-        for (int j = 1; j < multBins.size(); j++) {
+        for (unsigned int j = 1; j < multBins.size(); j++) {
           if (mult < multBins[j]) {
             return i + j * (vtxBins.size() + 1);
           }

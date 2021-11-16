@@ -18,6 +18,8 @@ alien:///alice/data/2015/LHC15o/000246392/pass5_lowIR/PWGZZ/Run3_Conversion/148_
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
+#include "iostream"
+#include "Common/DataModel/EventSelection.h"
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TString.h>
@@ -27,35 +29,42 @@ using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-#define mmuon 0.1057 //mass of muon
+#define mmuon 0.1057 // mass of muon
 struct UPCForward {
-  //defining histograms using histogram registry
-  HistogramRegistry registry{
-    "registry",
-    {{"hMass", ";#it{m_{#mu#mu}}, GeV/c^{2};", {HistType::kTH1D, {{500, 0, 10}}}},
-     {"hPt", ";#it{p_{t}}, GeV/c;", {HistType::kTH1D, {{500, 0., 5.}}}},
-     {"hPtsingle_muons", ";#it{p_{t}}, GeV/c;", {HistType::kTH1D, {{500, 0., 5.}}}},
-     {"hPx", ";#it{p_{x}}, GeV/c;", {HistType::kTH1D, {{500, -5., 5.}}}},
-     {"hPy", ";#it{p_{y}}, GeV/c;", {HistType::kTH1D, {{500, -5., 5.}}}},
-     {"hPz", ";#it{p_{z}}, GeV/c;", {HistType::kTH1D, {{500, -5., 5.}}}},
-     {"hRap", ";#it{y},..;", {HistType::kTH1D, {{500, -10., 10.}}}},
-     {"hEta", ";#it{y},..;", {HistType::kTH1D, {{500, -10., 10.}}}},
-     {"hCharge", ";#it{charge},..;", {HistType::kTH1D, {{500, -10., 10.}}}},
-     {"hSelectionCounter", ";#it{Selection},..;", {HistType::kTH1I, {{30, 0., 30.}}}},
-     {"hPhi", ";#it{#Phi},;", {HistType::kTH1D, {{500, -6., 6.}}}}}};
+  // defining histograms using histogram registry
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
-    //TString SelectionCuts[8] = {"NoSelection", "CMup11and10Trigger","V0Selection","FDSelection", "twotracks", "oppositecharge", "-2.5<Eta<-4", "Pt<1"};
 
-    /* // commenting out this part now as histogram registry do not seem to suppor the binlabel using AxisSpec() or any other method
+    auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{30, 0., 30.}});
+
+    // THIS IS THE SELECTION CUTS FOR NOW. We will add further cuts
+    TString SelectionCuts[8] = {"NoSelection", "CMup11and10Trigger", "V0Selection", "FDSelection", "twotracks", "oppositecharge", "-2.5<Eta<-4", "Pt<1"};
+    // now we can set BinLabel in histogram Registry
     for (int i = 0; i < 6; i++) {
-      registry.GetXaxis().(HIST("hSelectionCounter",SetBinLabel(i + 1, SelectionCuts[i].Data())));
-    }*/
+      hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, SelectionCuts[i].Data());
+    }
+
+    registry.add("hMass", "Mass of Mother;#it{m_{#mu#mu}}, GeV/c^{2};", kTH1D, {{500, 0., 10.}});
+    registry.add("hPt", "Pt of Mother;#it{p_{t}}, GeV/c;", kTH1D, {{500, 0., 5.}});
+    registry.add("hPtsingle_muons", "Pt of Daughters;#it{p_{t}}, GeV/c;", kTH1D, {{500, 0., 5.}});
+    registry.add("hPx", "Px;#it{P_{x}}, GeV/c;", kTH1D, {{500, -5., 5.}});
+    registry.add("hPy", "Py;#it{P_{y}}, GeV/c;", kTH1D, {{500, -5., 5.}});
+    registry.add("hPz", "Pz;#it{P_{z}}, GeV/c;", kTH1D, {{500, -5., 5.}});
+    registry.add("hRap", "Rapidity of Mother;#it{y};", kTH1D, {{500, -10., 10.}});
+    registry.add("hEta", "Eta;#it{#eta};", kTH1D, {{500, -10., 10.}});
+    registry.add("hCharge", "Charge;#it{charge};", kTH1D, {{500, -10., 10.}});
+    registry.add("hPhi", "Phi;#it{#Phi};", kTH1D, {{500, -6., 6.}});
+
+    Configurable<float> etalow{"etalow", -4.0f, ""};   //
+    Configurable<float> etahigh{"etahigh", -2.5f, ""}; //
+    Filter etaFilter = (aod::fwdtrack::eta > etalow) && (aod::fwdtrack::eta < etahigh);
   }
-  //new
-  void process(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc, aod::Muons const& tracksMuon)
+  // new
+  void process(soa::Join<aod::BCs, aod::Run2BCInfos, aod::BcSels>::iterator const& bc, soa::Filtered<aod::FwdTracks> const& tracksMuon)
   {
+
     registry.fill(HIST("hSelectionCounter"), 0);
 
     int iMuonTracknumber = 0;
@@ -74,15 +83,15 @@ struct UPCForward {
     bool isBeamBeamFDC = bc.bbFDC();
     bool isBeamGasFDC = bc.bgFDC();
 
-    //offline V0 and FD selection
+    // offline V0 and FD selection
     bool isV0Selection = isBeamBeamV0A || isBeamGasV0A || isBeamGasV0C;
     bool isFDSelection = isBeamBeamFDA || isBeamGasFDA || isBeamBeamFDC || isBeamGasFDC;
 
-    //CCUP10 and CCUP11 information
+    // CCUP10 and CCUP11 information
     bool iskMUP11fired = bc.alias()[kMUP11];
     bool iskMUP10fired = bc.alias()[kMUP10];
-
-    // selecting kMUP10 and 11 triggers
+    // cout << iskMUP11fired << iskMUP10fired<< endl;
+    //  selecting kMUP10 and 11 triggers
     if (!iskMUP11fired && !iskMUP10fired) {
       return;
     }
@@ -101,6 +110,7 @@ struct UPCForward {
     for (auto& muon : tracksMuon) {
       registry.fill(HIST("hCharge"), muon.sign());
       iMuonTracknumber++;
+
       if (muon.sign() > 0) {
         p1.SetXYZM(muon.px(), muon.py(), muon.pz(), mmuon);
         ispositive = kTRUE;
@@ -113,18 +123,16 @@ struct UPCForward {
     if (iMuonTracknumber != 2) {
       return;
     }
+
     registry.fill(HIST("hSelectionCounter"), 4);
     if (!ispositive || !isnegative) {
       return;
     }
     registry.fill(HIST("hSelectionCounter"), 5);
 
-    if (-4 < p1.Eta() < -2.5 || -4 < p2.Eta() < -2.5) {
-
-      return;
-    }
     registry.fill(HIST("hSelectionCounter"), 6);
     p = p1 + p2;
+    cout << "pt of dimuon " << p.Pt() << endl;
     if (p.Pt() > 1) {
       return;
     }
@@ -141,8 +149,10 @@ struct UPCForward {
     registry.fill(HIST("hPtsingle_muons"), p1.Pt());
     registry.fill(HIST("hPtsingle_muons"), p2.Pt());
 
-  } //end of process
-};
+  } // end of process
+
+}; // end of struct
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{

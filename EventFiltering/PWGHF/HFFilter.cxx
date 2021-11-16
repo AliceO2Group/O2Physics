@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 #include "../filterTables.h"
 
@@ -36,17 +37,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_cand;
 using namespace hf_cuts_single_track;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionTrigger{"doTrigger", VariantType::Bool, true, {"Perform trigger selection"}};
-  ConfigParamSpec optionTraining{"doTrainSamples", VariantType::Bool, true, {"Produce training samples"}};
-  workflowOptions.push_back(optionTrigger);
-  workflowOptions.push_back(optionTraining);
-}
-
-// always should be after customize() function
-#include "Framework/runDataProcessing.h"
 
 namespace
 {
@@ -218,6 +208,8 @@ struct AddCollisionId {
 struct HfFilter { // Main struct for HF triggers
 
   Produces<aod::HfFilters> tags;
+  Produces<aod::HFTrigTrain2P> train2P;
+  Produces<aod::HFTrigTrain3P> train3P;
 
   // parameters for high-pT triggers
   Configurable<float> pTThreshold2Prong{"pTThreshold2Prong", 5., "pT treshold for high pT 2-prong candidates for kHighPt triggers in GeV/c"};
@@ -238,6 +230,11 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> femtoMaxNsigmaProton{"femtoMaxNsigmaProton", 3., "Maximum value for PID proton Nsigma for femto triggers"};
   // array of single-track cuts for pion
   std::array<LabeledArray<double>, 2> cutsSingleTrackBeauty;
+
+  // parameters for production of training samples
+  Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
+  Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
+  Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   std::shared_ptr<TH1> hProcessedEvents;
@@ -331,6 +328,7 @@ struct HfFilter { // Main struct for HF triggers
   using HfTrackIndexProng2withColl = soa::Join<aod::HfTrackIndexProng2, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::HfTrackIndexProng3, aod::Colls3Prong>;
   using BigTracksWithProtonPID = soa::Join<aod::BigTracks, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using BigTracksMCPID = soa::Join<aod::BigTracksPID, aod::BigTracksMC>;
 
   void process(aod::Collision const& collision,
                HfTrackIndexProng2withColl const& cand2Prongs,
@@ -423,7 +421,6 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
 
-        int iHypo = 0;
         bool specieCharmHypos[3] = {isDPlus, isDs, isLc};
         float massCharmHypos[3] = {massDPlus, massDs, massLc};
         float massBeautyHypos[3] = {massB0, massBs, massLb};
@@ -440,20 +437,16 @@ struct HfFilter { // Main struct for HF triggers
         }
 
         // 3-prong femto
-        int iFemtoHypo = 0;
-        if (!keepEvent[kFemto]) {
-          bool isProton = isSelectedProton(track);
-          while (!keepEvent[kFemto] && iFemtoHypo < 3) {
-            if (specieCharmHypos[iFemtoHypo] && isProton) {
-              float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iFemtoHypo]);
+        if (isSelectedProton(track)) {
+          for (int iHypo{0}; iHypo < 3 && !keepEvent[kFemto]; ++iHypo) {
+            if (specieCharmHypos[iHypo]) {
+              float RelativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (RelativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
               }
             }
-            iFemtoHypo++;
-          } //while (!keepEvent[kFemto] && iFemtoHypo < 3)
+          }
         }
-
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 
@@ -469,23 +462,11 @@ struct HfFilter { // Main struct for HF triggers
       }
     }
   }
-};
 
-struct ProduceTrainingSamples { // Struct for training samples
-
-  Produces<aod::HFTrigTrain2P> train2P;
-  Produces<aod::HFTrigTrain3P> train3P;
-
-  Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
-  Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
-  Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
-
-  using BigTracksMCPID = soa::Join<aod::BigTracksPID, aod::BigTracksMC>;
-
-  void process(aod::HfTrackIndexProng2 const& cand2Prongs,
-               aod::HfTrackIndexProng3 const& cand3Prongs,
-               aod::McParticles const& particlesMC,
-               BigTracksMCPID const&)
+  void processTraining(aod::HfTrackIndexProng2 const& cand2Prongs,
+                       aod::HfTrackIndexProng3 const& cand3Prongs,
+                       aod::McParticles const& particlesMC,
+                       BigTracksMCPID const&)
   {
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
 
@@ -578,23 +559,16 @@ struct ProduceTrainingSamples { // Struct for training samples
       }
     } // end loop over 3-prong candidates
   }
+
+  PROCESS_SWITCH(HfFilter, processTraining, "Process MC for training samples", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
 
   WorkflowSpec workflow{};
-
-  const bool doTrainSamples = cfg.options().get<bool>("doTrainSamples");
-  if (doTrainSamples) {
-    workflow.push_back(adaptAnalysisTask<ProduceTrainingSamples>(cfg));
-  }
-
-  const bool doTrigger = cfg.options().get<bool>("doTrigger");
-  if (doTrigger) {
-    workflow.push_back(adaptAnalysisTask<AddCollisionId>(cfg));
-    workflow.push_back(adaptAnalysisTask<HfFilter>(cfg));
-  }
+  workflow.push_back(adaptAnalysisTask<AddCollisionId>(cfg));
+  workflow.push_back(adaptAnalysisTask<HfFilter>(cfg));
 
   return workflow;
 }

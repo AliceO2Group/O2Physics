@@ -87,7 +87,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   void setPIDSpecies(T& pids)
   {
     std::vector<int> tmpPids = pids; /// necessary due to some features of the configurable
-    for (const o2::track::PID& pid : tmpPids) {
+    for (o2::track::PID pid : tmpPids) {
       mPIDspecies.push_back(pid);
     }
   }
@@ -254,20 +254,20 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
     }
 
     /// check whether the number of selection exceeds the bitmap size
-    int nSelections = getNSelections() - getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
+    unsigned int nSelections = getNSelections() - getNSelections(femtoDreamTrackSelection::kPIDnSigmaMax);
     if (nSelections > 8 * sizeof(cutContainerType)) {
       LOG(fatal) << "FemtoDreamTrackCuts: Number of selections too large for your container - quitting!";
     }
 
-    mHistogramRegistry->add((folderName + "/pThist").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});
-    mHistogramRegistry->add((folderName + "/etahist").c_str(), "; #eta; Entries", kTH1F, {{1000, -1, 1}});
-    mHistogramRegistry->add((folderName + "/phihist").c_str(), "; #phi; Entries", kTH1F, {{1000, 0, 2. * M_PI}});
+    mHistogramRegistry->add((folderName + "/pThist").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
+    mHistogramRegistry->add((folderName + "/etahist").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + "/phihist").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
     mHistogramRegistry->add((folderName + "/tpcnclshist").c_str(), "; TPC Cluster; Entries", kTH1F, {{163, 0, 163}});
     mHistogramRegistry->add((folderName + "/tpcfclshist").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
     mHistogramRegistry->add((folderName + "/tpcnrowshist").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
     mHistogramRegistry->add((folderName + "/tpcnsharedhist").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/dcaXYhist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {301, -1.5, 1.5}});
-    mHistogramRegistry->add((folderName + "/dcaZhist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {301, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + "/dcaXYhist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
+    mHistogramRegistry->add((folderName + "/dcaZhist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     mHistogramRegistry->add((folderName + "/dcahist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH1F, {{301, 0., 1.5}});
     mHistogramRegistry->add((folderName + "/tpcdEdx").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
     mHistogramRegistry->add((folderName + "/tofSignal").c_str(), "; #it{p} (GeV/#it{c}); TOF Signal", kTH2F, {{100, 0, 10}, {1000, 0, 100e3}});
@@ -449,7 +449,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
 
-  float observable;
+  float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {

@@ -103,7 +103,7 @@ class FemtoDreamObjectSelection
   /// \return The most open selection of the selection variable given to the class
   selValDataType getMinimalSelection(selVariable selVar, femtoDreamSelection::SelectionType selType)
   {
-    selValDataType minimalSel;
+    selValDataType minimalSel{};
     switch (selType) {
       case (femtoDreamSelection::SelectionType::kUpperLimit):
       case (femtoDreamSelection::SelectionType::kAbsUpperLimit):

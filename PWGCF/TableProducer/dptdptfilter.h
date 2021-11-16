@@ -1,0 +1,433 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+#ifndef O2_ANALYSIS_DPTDPTFILTER_H
+#define O2_ANALYSIS_DPTDPTFILTER_H
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/MC.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include <TDatabasePDG.h>
+
+namespace o2
+{
+namespace aod
+{
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
+using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels>;
+using CollisionEvSel = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
+} // namespace aod
+namespace analysis
+{
+namespace dptdptfilter
+{
+/// \enum SystemType
+/// \brief The type of the system under analysis
+enum SystemType {
+  kNoSystem = 0, ///< no system defined
+  kpp,           ///< **p-p** system
+  kpPb,          ///< **p-Pb** system
+  kPbp,          ///< **Pb-p** system
+  kPbPb,         ///< **Pb-Pb** system
+  kXeXe,         ///< **Xe-Xe** system
+  knSystems      ///< number of handled systems
+};
+
+/// \enum DataType
+/// \brief Which kind of data is the task addressing
+enum DataType {
+  kData = 0, ///< actual data, not generated
+  kMC,       ///< Generator level and detector level
+  kFastMC,   ///< Gererator level but stored dataset
+  kOnTheFly, ///< On the fly generator level data
+  knGenData  ///< number of different generator data types
+};
+
+/// \enum CentMultEstimatorType
+/// \brief The detector used to estimate centrality/multiplicity
+enum CentMultEstimatorType {
+  kNOCM = 0,           ///< do not use centrality/multiplicity estimator
+  kV0M,                ///< V0M centrality/multiplicity estimator
+  kV0A,                ///< V0A centrality/multiplicity estimator
+  kV0C,                ///< V0C centrality/multiplicity estimator
+  kCL0,                ///< CL0 centrality/multiplicity estimator
+  kCL1,                ///< CL1 centrality/multiplicity estimator
+  knCentMultEstimators ///< number of centrality/mutiplicity estimator
+};
+
+//============================================================================================
+// The DptDptFilter configuration objects
+//============================================================================================
+int ptbins = 18;
+float ptlow = 0.2, ptup = 2.0;
+int etabins = 16;
+float etalow = -0.8, etaup = 0.8;
+int zvtxbins = 40;
+float zvtxlow = -10.0, zvtxup = 10.0;
+int phibins = 72;
+float philow = 0.0;
+float phiup = constants::math::TwoPI;
+
+int tracktype = 1;
+int trackonecharge = 1;
+int tracktwocharge = -1;
+
+SystemType fSystem = kNoSystem;
+DataType fDataType = kData;
+CentMultEstimatorType fCentMultEstimator = kV0M;
+
+/* adaptations for the pp nightly checks */
+analysis::CheckRangeCfg traceDCAOutliers;
+bool traceOutOfSpeciesParticles = false;
+int recoIdMethod = 0;
+bool useOwnTrackSelection = false;
+TrackSelection ownTrackSelection = getGlobalTrackSelection();
+bool useOwnParticleSelection = false;
+bool particleMaxDCAxy = 999.9;
+bool particleMaxDCAZ = 999.9;
+bool traceCollId0 = false;
+
+TDatabasePDG* fPDG = nullptr;
+
+inline SystemType getSystemType(std::string const& sysstr)
+{
+  /* we have to figure out how extract the system type */
+  if (sysstr.empty() or (sysstr == "PbPb")) {
+    return kPbPb;
+  } else if (sysstr == "pp") {
+    return kpp;
+  } else if (sysstr == "pPb") {
+    return kpPb;
+  } else if (sysstr == "Pbp") {
+    return kPbp;
+  } else if (sysstr == "pPb") {
+    return kpPb;
+  } else if (sysstr == "XeXe") {
+    return kXeXe;
+  } else {
+    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %d", sysstr.c_str());
+  }
+  return kPbPb;
+}
+
+/// \brief Type of data according to the configuration string
+/// \param datastr The data type configuration string
+/// \return Internal code for the passed kind of data string
+inline DataType getDataType(std::string const& datastr)
+{
+  /* we have to figure out how extract the type of data*/
+  if (datastr.empty() or (datastr == "data")) {
+    return kData;
+  } else if (datastr == "MC") {
+    return kMC;
+  } else if (datastr == "FastMC") {
+    return kFastMC;
+  } else if (datastr == "OnTheFlyMC") {
+    return kOnTheFly;
+  } else {
+    LOGF(fatal, "DptDptCorrelations::getDataType(). Wrong type of dat: %d", datastr.c_str());
+  }
+  return kData;
+}
+
+inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
+{
+  if (datastr == "V0M") {
+    return kV0M;
+  } else if (datastr == "NOCM") {
+    return kNOCM;
+  } else {
+    LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", datastr.c_str());
+  }
+  return kNOCM;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// Trigger selection
+//////////////////////////////////////////////////////////////////////////////////
+
+/// \brief Trigger selection for reconstructed and detector level collision tables
+template <typename CollisionObject>
+inline bool triggerSelectionReco(CollisionObject const& collision)
+{
+  bool trigsel = false;
+  if (fDataType != kData) {
+    trigsel = true;
+  } else if (collision.alias()[kINT7]) {
+    if (collision.sel7()) {
+      trigsel = true;
+    }
+  }
+  return trigsel;
+}
+
+/// \brief Trigger selection by default: unknow subscribed collision table
+template <typename CollisionObject>
+inline bool triggerSelection(CollisionObject const& collision)
+{
+  LOGF(fatal, "Trigger selection not implemented for this kind of collisions");
+  return false;
+}
+
+/// \brief Trigger selection for reconstructed collision tables without centrality/multiplicity
+template <>
+inline bool triggerSelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision)
+{
+  return triggerSelectionReco(collision);
+}
+
+/// \brief Trigger selection for reconstructed collision tables with centrality/multiplicity
+template <>
+inline bool triggerSelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision)
+{
+  return triggerSelectionReco(collision);
+}
+
+/// \brief Trigger selection for detector level collision tables without centrality/multiplicity
+template <>
+inline bool triggerSelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision)
+{
+  return triggerSelectionReco(collision);
+}
+
+/// \brief Trigger selection for detector level collision tables with centrality/multiplicity
+template <>
+inline bool triggerSelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision)
+{
+  return triggerSelectionReco(collision);
+}
+
+/// \brief Trigger selection for generator level collison table
+template <>
+inline bool triggerSelection<aod::McCollision>(aod::McCollision const& collision)
+{
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// Centrality selection
+//////////////////////////////////////////////////////////////////////////////////
+
+/// \brief Centrality selection when there is centrality/multiplicity information
+template <typename CollisionObject>
+inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
+{
+  bool centmultsel = false;
+  switch (fCentMultEstimator) {
+    case kV0M:
+      if (collision.centV0M() < 100 and 0 < collision.centV0M()) {
+        centmult = collision.centV0M();
+        centmultsel = true;
+      }
+      break;
+    default:
+      break;
+  }
+  return centmultsel;
+}
+
+/// \brief Centrality selection when there is not centrality/multiplicity information
+template <typename CollisionObject>
+inline bool centralitySelectionNoMult(CollisionObject collision, float& centmult)
+{
+  bool centmultsel = false;
+  switch (fCentMultEstimator) {
+    case kNOCM:
+      centmult = 50.0;
+      centmultsel = true;
+      break;
+    default:
+      break;
+  }
+  return centmultsel;
+}
+
+/// \brief Centrality selection by default: unknown subscribed collision table
+template <typename CollisionObject>
+inline bool centralitySelection(CollisionObject const& collision, float& centmult)
+{
+  LOGF(fatal, "Centrality selection not implemented for this kind of collisions");
+  return false;
+}
+
+/// \brief Centrality selection for reconstructed and detector level collision tables with centrality/multiplicity information
+template <>
+inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision, float& centmult)
+{
+  return centralitySelectionMult(collision, centmult);
+}
+
+/// \brief Centrality selection for reconstructed and detector level collision tables without centrality/multiplicity information
+template <>
+inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision, float& centmult)
+{
+  return centralitySelectionNoMult(collision, centmult);
+}
+
+/// \brief Centrality selection for detector level collision tables without centrality/multiplicity
+template <>
+inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision, float& centmult)
+{
+  return centralitySelectionNoMult(collision, centmult);
+}
+
+/// \brief Centrality selection for detector level collision tables with centrality/multiplicity
+template <>
+inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision, float& centmult)
+{
+  return centralitySelectionMult(collision, centmult);
+}
+
+/// \brief Centrality selection for generator level collision table
+template <>
+inline bool centralitySelection<aod::McCollision>(aod::McCollision const& collision, float& centmult)
+{
+  if (centmult < 100 and 0 < centmult) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// Event selection
+//////////////////////////////////////////////////////////////////////////////////
+
+template <typename CollisionObject>
+inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
+{
+  bool trigsel = triggerSelection(collision);
+
+  bool zvtxsel = false;
+  /* TODO: vertex quality checks */
+  if (zvtxlow < collision.posZ() and collision.posZ() < zvtxup) {
+    zvtxsel = true;
+  }
+
+  bool centmultsel = centralitySelection(collision, centormult);
+
+  return trigsel and zvtxsel and centmultsel;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// Track selection
+//////////////////////////////////////////////////////////////////////////////////
+
+template <typename TrackObject>
+inline bool matchTrackType(TrackObject const& track)
+{
+  if (useOwnTrackSelection) {
+    return ownTrackSelection.IsSelected(track);
+  } else {
+    switch (tracktype) {
+      case 1:
+        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+          return true;
+        } else {
+          return false;
+        }
+        break;
+      case 3: /* Run3 track */
+        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+          return true;
+        } else {
+          return false;
+        }
+        break;
+      default:
+        return false;
+    }
+  }
+}
+
+template <typename TrackObject>
+inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
+{
+  asone = false;
+  astwo = false;
+
+  /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
+  if (matchTrackType(track)) {
+    if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
+      if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
+        asone = true;
+      }
+      if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
+        astwo = true;
+      }
+    }
+  }
+}
+
+template <typename ParticleObject, typename MCCollisionObject>
+inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, bool& asone, bool& astwo)
+{
+  asone = false;
+  astwo = false;
+
+  float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
+
+  if (MC::isPhysicalPrimary(particle)) {
+    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
+    }
+    if (useOwnParticleSelection) {
+      float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+      float dcaz = TMath::Abs(particle.vz() - collision.posZ());
+      if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
+        if ((particle.mcCollisionId() == 0) and traceCollId0) {
+          auto currparticle = particle;
+          LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
+          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", currparticle.mcCollisionId(), collision.globalIndex());
+          LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
+          LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
+          LOGF(info, "   index: %d, pdg code: %d", currparticle.globalIndex(), currparticle.pdgCode());
+          while (currparticle.has_mother0()) {
+            LOGF(info, "   mother0 index: %d, mother1 index: %d", currparticle.mother0Id(), currparticle.mother1Id());
+            LOGF(info, "  Tracking back mother0 index");
+            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
+            LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
+            LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
+            LOGF(info, "   Passed  isPhysicalPrimary(): %s", MC::isPhysicalPrimary(newcurrparticle) ? "YES" : "NO");
+            currparticle = newcurrparticle;
+          }
+        }
+        return;
+      }
+    }
+    if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
+      if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
+        asone = true;
+      }
+      if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
+        astwo = true;
+      }
+    }
+  } else {
+    if ((particle.mcCollisionId() == 0) and traceCollId0) {
+      LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
+    }
+  }
+}
+
+} // namespace dptdptfilter
+} // namespace analysis
+} // namespace o2
+
+#endif // O2_ANALYSIS_DPTDPTFILTER_H

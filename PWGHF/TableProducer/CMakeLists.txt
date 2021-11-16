@@ -79,27 +79,27 @@ o2physics_add_dpl_workflow(d0-candidate-selector
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(d0-candidate-selector-ALICE3-Barrel
+o2physics_add_dpl_workflow(d0-candidate-selector-alice3-barrel
                     SOURCES HFD0CandidateSelectorALICE3Barrel.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(d0-candidate-selector-parametrizedPID
+o2physics_add_dpl_workflow(d0-candidate-selector-parametrized-pid
                     SOURCES HFD0CandidateSelectorparametrizedPID.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lc-candidate-selector-parametrizedPID
+o2physics_add_dpl_workflow(lc-candidate-selector-parametrized-pid
                     SOURCES HFLcCandidateSelectorparametrizedPID.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lc-candidate-selector-ALICE3
+o2physics_add_dpl_workflow(lc-candidate-selector-alice3
                     SOURCES HFLcCandidateSelectorALICE3.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(d0-candidate-selector-ALICE3-Forward
+o2physics_add_dpl_workflow(d0-candidate-selector-alice3-forward
                     SOURCES HFD0CandidateSelectorALICE3Forward.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)

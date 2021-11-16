@@ -29,7 +29,6 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
 
-  int this_option_optind = optind ? optind : 1;
   int option_index = 0;
   static struct option long_options[] = {
     {"input", required_argument, nullptr, 0},

@@ -17,7 +17,10 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/MC.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptdptfilter.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/runDataProcessing.h"
 #include <TROOT.h>
 #include <TDatabasePDG.h>
 #include <TParameter.h>
@@ -39,79 +42,18 @@ using namespace o2::framework::expressions;
 #define DPTDPTLOGCOLLISIONS debug
 #define DPTDPTLOGTRACKS debug
 
-#include "Framework/runDataProcessing.h"
-
 namespace o2
 {
 namespace aod
 {
-/* we have to change from int to bool when bool columns work properly */
-namespace dptdptcorrelations
-{
-DECLARE_SOA_COLUMN(EventAccepted, eventaccepted, uint8_t); //! If the collision/event has been accepted or not
-DECLARE_SOA_COLUMN(EventCentMult, centmult, float);        //! The centrality/multiplicity pecentile
-} // namespace dptdptcorrelations
-DECLARE_SOA_TABLE(AcceptedEvents, "AOD", "ACCEPTEDEVENTS", //! Accepted reconstructed collisions/events filtered table
-                  o2::soa::Index<>,
-                  collision::BCId,
-                  collision::PosZ,
-                  dptdptcorrelations::EventAccepted,
-                  dptdptcorrelations::EventCentMult);
-using AcceptedEvent = AcceptedEvents::iterator;
-DECLARE_SOA_TABLE(AcceptedTrueEvents, "AOD", "ACCTRUEEVENTS", //! Accepted generated collisions/events filtered table
-                  o2::soa::Index<>,
-                  collision::BCId,
-                  mccollision::PosZ,
-                  dptdptcorrelations::EventAccepted,
-                  dptdptcorrelations::EventCentMult);
-using AcceptedTrueEvent = AcceptedTrueEvents::iterator;
-namespace dptdptcorrelations
-{
-DECLARE_SOA_INDEX_COLUMN(AcceptedEvent, event);                      //! Reconstructed collision/event
-DECLARE_SOA_INDEX_COLUMN(AcceptedTrueEvent, mcevent);                //! Generated collision/event
-DECLARE_SOA_COLUMN(TrackacceptedAsOne, trackacceptedasone, uint8_t); //! Track accepted as type one
-DECLARE_SOA_COLUMN(TrackacceptedAsTwo, trackacceptedastwo, uint8_t); //! Track accepted as type two
-DECLARE_SOA_COLUMN(Pt, pt, float);                                   //! The track transverse momentum
-DECLARE_SOA_COLUMN(Eta, eta, float);                                 //! The track pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! The track azimuthal angle
-} // namespace dptdptcorrelations
-DECLARE_SOA_TABLE(ScannedTracks, "AOD", "SCANNEDTRACKS", //! The reconstructed tracks filtered table
-                  dptdptcorrelations::AcceptedEventId,
-                  dptdptcorrelations::TrackacceptedAsOne,
-                  dptdptcorrelations::TrackacceptedAsTwo,
-                  dptdptcorrelations::Pt,
-                  dptdptcorrelations::Eta,
-                  dptdptcorrelations::Phi);
-DECLARE_SOA_TABLE(ScannedTrueTracks, "AOD", "SCANTRUETRACKS", //! The generated particles filtered table
-                  dptdptcorrelations::AcceptedTrueEventId,
-                  dptdptcorrelations::TrackacceptedAsOne,
-                  dptdptcorrelations::TrackacceptedAsTwo,
-                  dptdptcorrelations::Pt,
-                  dptdptcorrelations::Eta,
-                  dptdptcorrelations::Phi);
-
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
-using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels>;
-using CollisionEvSel = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
 using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::ScannedTracks>>;
 using FilteredTrackData = Partition<aod::FilteredTracks>::filtered_iterator;
 } // namespace aod
 } // namespace o2
 
-namespace dptdptcorrelations
+namespace correlationstask
 {
-/* all this is made configurable */
-int ptbins = 18;
-float ptlow = 0.2, ptup = 2.0;
-int etabins = 16;
-float etalow = -0.8, etaup = 0.8;
-int zvtxbins = 40;
-float zvtxlow = -10.0, zvtxup = 10.0;
-int phibins = 72;
-float philow = 0.0;
-float phiup = M_PI * 2;
+using namespace o2::analysis::dptdptfilter;
 float phibinshift = 0.5;
 float etabinwidth = (etaup - etalow) / float(etabins);
 float phibinwidth = (phiup - philow) / float(phibins);
@@ -119,133 +61,12 @@ int deltaetabins = etabins * 2 - 1;
 float deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
 float deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
 int deltaphibins = phibins;
-float deltaphibinwidth = M_PI * 2 / deltaphibins;
+float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
-float deltaphiup = M_PI * 2 - deltaphibinwidth / 2.0;
+float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
-int tracktype = 1;
-int trackonecharge = 1;
-int tracktwocharge = -1;
 bool processpairs = false;
 std::string fTaskConfigurationString = "PendingToConfigure";
-
-/// \enum SystemType
-/// \brief The type of the system under analysis
-enum SystemType {
-  kNoSystem = 0, ///< no system defined
-  kpp,           ///< **p-p** system
-  kpPb,          ///< **p-Pb** system
-  kPbp,          ///< **Pb-p** system
-  kPbPb,         ///< **Pb-Pb** system
-  kXeXe,         ///< **Xe-Xe** system
-  knSystems      ///< number of handled systems
-};
-
-/// \enum GeneratorType
-/// \brief Which kid of generator data is the task addressing
-enum GenType {
-  kData = 0, ///< actual data, not generated
-  kMC,       ///< Generator level and detector level
-  kFastMC,   ///< Gererator level but stored dataset
-  kOnTheFly, ///< On the fly generator level data
-  knGenData  ///< number of different generator data types
-};
-
-/// \enum CentMultEstimatorType
-/// \brief The detector used to estimate centrality/multiplicity
-enum CentMultEstimatorType {
-  kNOCM = 0,           ///< do not use centrality/multiplicity estimator
-  kV0M,                ///< V0M centrality/multiplicity estimator
-  kV0A,                ///< V0A centrality/multiplicity estimator
-  kV0C,                ///< V0C centrality/multiplicity estimator
-  kCL0,                ///< CL0 centrality/multiplicity estimator
-  kCL1,                ///< CL1 centrality/multiplicity estimator
-  knCentMultEstimators ///< number of centrality/mutiplicity estimator
-};
-
-namespace filteranalysistask
-{
-//============================================================================================
-// The DptDptCorrelationsFilterAnalysisTask output objects
-//============================================================================================
-SystemType fSystem = kNoSystem;
-GenType fDataType = kData;
-CentMultEstimatorType fCentMultEstimator = kV0M;
-TDatabasePDG* fPDG = nullptr;
-TH1F* fhCentMultB = nullptr;
-TH1F* fhCentMultA = nullptr;
-TH1F* fhVertexZB = nullptr;
-TH1F* fhVertexZA = nullptr;
-TH1F* fhPtB = nullptr;
-TH1F* fhPtA = nullptr;
-TH1F* fhPtPosB = nullptr;
-TH1F* fhPtPosA = nullptr;
-TH1F* fhPtNegB = nullptr;
-TH1F* fhPtNegA = nullptr;
-
-TH1F* fhEtaB = nullptr;
-TH1F* fhEtaA = nullptr;
-
-TH1F* fhPhiB = nullptr;
-TH1F* fhPhiA = nullptr;
-
-TH2F* fhEtaVsPhiB = nullptr;
-TH2F* fhEtaVsPhiA = nullptr;
-
-TH2F* fhPtVsEtaB = nullptr;
-TH2F* fhPtVsEtaA = nullptr;
-
-TH1F* fhDCAxyB = nullptr;
-TH1F* fhDCAxyA = nullptr;
-TH1F* fhFineDCAxyA = nullptr;
-TH1F* fhDCAzB = nullptr;
-TH1F* fhDCAzA = nullptr;
-TH1F* fhFineDCAzA = nullptr;
-
-TH1F* fhTrueCentMultB = nullptr;
-TH1F* fhTrueCentMultA = nullptr;
-TH1F* fhTrueVertexZB = nullptr;
-TH1F* fhTrueVertexZA = nullptr;
-TH1F* fhTruePtB = nullptr;
-TH1F* fhTruePtA = nullptr;
-TH1F* fhTruePtPosB = nullptr;
-TH1F* fhTruePtPosA = nullptr;
-TH1F* fhTruePtNegB = nullptr;
-TH1F* fhTruePtNegA = nullptr;
-
-TH1F* fhTrueEtaB = nullptr;
-TH1F* fhTrueEtaA = nullptr;
-
-TH1F* fhTruePhiB = nullptr;
-TH1F* fhTruePhiA = nullptr;
-
-TH2F* fhTrueEtaVsPhiB = nullptr;
-TH2F* fhTrueEtaVsPhiA = nullptr;
-
-TH2F* fhTruePtVsEtaB = nullptr;
-TH2F* fhTruePtVsEtaA = nullptr;
-
-TH1F* fhTrueDCAxyB = nullptr;
-TH1F* fhTrueDCAxyA = nullptr;
-TH1F* fhTrueDCAzB = nullptr;
-TH1F* fhTrueDCAzA = nullptr;
-} // namespace filteranalysistask
-
-namespace filteranalysistaskqa
-{
-TH1F* fhTracksOne = nullptr;
-TH1F* fhTracksTwo = nullptr;
-TH1F* fhTracksOneAndTwo = nullptr;
-TH1F* fhTracksNone = nullptr;
-TH1F* fhTracksOneUnsel = nullptr;
-TH1F* fhTracksTwoUnsel = nullptr;
-TH1F* fhTracksOneAndTwoUnsel = nullptr;
-TH1F* fhTracksNoneUnsel = nullptr;
-TH1F* fhSelectedEvents = nullptr;
-} // namespace filteranalysistaskqa
-
-namespace correlationstask
-{
 
 /// \enum TrackPairs
 /// \brief The track combinations hadled by the class
@@ -257,758 +78,6 @@ enum TrackPairs {
   nTrackPairs ///< the number of track pairs
 };
 } // namespace correlationstask
-
-/// \brief System type according to configuration string
-/// \param sysstr The system configuration string
-/// \return The internal code for the passed system string
-SystemType getSystemType(std::string const& sysstr)
-{
-  /* we have to figure out how extract the system type */
-  if (sysstr.empty() or (sysstr == "PbPb")) {
-    return kPbPb;
-  } else if (sysstr == "pp") {
-    return kpp;
-  } else if (sysstr == "pPb") {
-    return kpPb;
-  } else if (sysstr == "Pbp") {
-    return kPbp;
-  } else if (sysstr == "pPb") {
-    return kpPb;
-  } else if (sysstr == "XeXe") {
-    return kXeXe;
-  } else {
-    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %d", sysstr.c_str());
-  }
-  return kPbPb;
-}
-
-/// \brief Type of data according to the configuration string
-/// \param datastr The data type configuration string
-/// \return Internal code for the passed kind of data string
-GenType getGenType(std::string const& datastr)
-{
-  /* we have to figure out how extract the type of data*/
-  if (datastr.empty() or (datastr == "data")) {
-    return kData;
-  } else if (datastr == "MC") {
-    return kMC;
-  } else if (datastr == "FastMC") {
-    return kFastMC;
-  } else if (datastr == "OnTheFlyMC") {
-    return kOnTheFly;
-  } else {
-    LOGF(fatal, "DptDptCorrelations::getGenType(). Wrong type of dat: %d", datastr.c_str());
-  }
-  return kData;
-}
-
-template <typename CollisionObject>
-bool IsEvtSelected(CollisionObject const& collision, float& centormult)
-{
-  using namespace filteranalysistask;
-  using namespace dptdptcorrelations;
-
-  bool trigsel = false;
-  if (fDataType != kData) {
-    trigsel = true;
-  } else if (collision.alias()[kINT7]) {
-    if (collision.sel7()) {
-      trigsel = true;
-    }
-  }
-
-  bool zvtxsel = false;
-  /* TODO: vertex quality checks */
-  if (zvtxlow < collision.posZ() and collision.posZ() < zvtxup) {
-    zvtxsel = true;
-  }
-
-  bool centmultsel = false;
-  switch (fCentMultEstimator) {
-    case kV0M:
-      if (collision.centV0M() < 100 and 0 < collision.centV0M()) {
-        centormult = collision.centV0M();
-        centmultsel = true;
-      }
-      break;
-    default:
-      break;
-  }
-  return trigsel and zvtxsel and centmultsel;
-}
-
-template <typename CollisionObject>
-bool IsEvtSelectedNoCentMult(CollisionObject const& collision, float& centormult)
-{
-  using namespace filteranalysistask;
-  using namespace dptdptcorrelations;
-
-  bool trigsel = false;
-  if (fDataType != kData) {
-    trigsel = true;
-  } else if (collision.alias()[kINT7]) {
-    if (collision.sel7() or collision.sel8()) {
-      trigsel = true;
-    }
-  }
-
-  bool zvtxsel = false;
-  /* TODO: vertex quality checks */
-  if (zvtxlow < collision.posZ() and collision.posZ() < zvtxup) {
-    zvtxsel = true;
-  }
-
-  bool centmultsel = false;
-  switch (fCentMultEstimator) {
-    case kNOCM:
-      centormult = 50.0;
-      centmultsel = true;
-      break;
-    default:
-      break;
-  }
-  return trigsel and zvtxsel and centmultsel;
-}
-
-template <typename CollisionObject>
-bool IsTrueEvtSelected(CollisionObject const& collision, float centormult)
-{
-  using namespace filteranalysistask;
-  using namespace dptdptcorrelations;
-
-  bool zvtxsel = false;
-  /* TODO: vertex quality checks */
-  if (zvtxlow < collision.posZ() and collision.posZ() < zvtxup) {
-    zvtxsel = true;
-  }
-
-  bool centmultsel = false;
-  if (centormult < 100 and 0 < centormult) {
-    centmultsel = true;
-  }
-
-  return zvtxsel and centmultsel;
-}
-
-template <typename TrackObject>
-bool matchTrackType(TrackObject const& track)
-{
-  using namespace filteranalysistask;
-
-  switch (tracktype) {
-    case 1:
-      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-        return true;
-      } else {
-        return false;
-      }
-      break;
-    case 3: /* Run3 track */
-      if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
-        return true;
-      } else {
-        return false;
-      }
-      break;
-    default:
-      return false;
-  }
-}
-
-template <typename TrackObject>
-inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
-{
-  using namespace filteranalysistask;
-
-  asone = false;
-  astwo = false;
-
-  /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
-  if (matchTrackType(track)) {
-    if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
-      if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
-        asone = true;
-      }
-      if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
-        astwo = true;
-      }
-    }
-  }
-}
-
-template <typename ParticleObject, typename ParticleListObject>
-inline void AcceptParticle(ParticleObject& particle, ParticleListObject& particles, bool& asone, bool& astwo)
-{
-  using namespace filteranalysistask;
-
-  asone = false;
-  astwo = false;
-
-  float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
-
-  /* TODO: matchTrackType will not work. We need at least is physical primary */
-  if (MC::isPhysicalPrimary(particle)) {
-    if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
-      if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
-        asone = true;
-      }
-      if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
-        astwo = true;
-      }
-    }
-  }
-}
-
-template <typename TrackObject>
-void fillTrackHistosBeforeSelection(TrackObject const& track)
-{
-  using namespace filteranalysistask;
-
-  fhPtB->Fill(track.pt());
-  fhEtaB->Fill(track.eta());
-  fhPhiB->Fill(track.phi());
-  fhEtaVsPhiB->Fill(track.phi(), track.eta());
-  fhPtVsEtaB->Fill(track.eta(), track.pt());
-  if (track.sign() > 0) {
-    fhPtPosB->Fill(track.pt());
-  } else {
-    fhPtNegB->Fill(track.pt());
-  }
-  fhDCAxyB->Fill(track.dcaXY());
-  fhDCAzB->Fill(track.dcaZ());
-}
-
-template <typename TrackObject>
-void fillTrackHistosAfterSelection(TrackObject const& track)
-{
-  using namespace filteranalysistask;
-
-  fhPtA->Fill(track.pt());
-  fhEtaA->Fill(track.eta());
-  fhPhiA->Fill(track.phi());
-  fhEtaVsPhiA->Fill(track.phi(), track.eta());
-  fhPtVsEtaA->Fill(track.eta(), track.pt());
-  if (track.sign() > 0) {
-    fhPtPosA->Fill(track.pt());
-  } else {
-    fhPtNegA->Fill(track.pt());
-  }
-  fhDCAxyA->Fill(track.dcaXY());
-  fhDCAzA->Fill(track.dcaZ());
-  if (track.dcaXY() < 1.0) {
-    fhFineDCAxyA->Fill(track.dcaXY());
-  }
-  if (track.dcaZ() < 1.0) {
-    fhFineDCAzA->Fill(track.dcaZ());
-  }
-}
-
-template <typename ParticleObject, typename MCCollisionObject>
-void fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
-{
-  using namespace filteranalysistask;
-
-  fhTruePtB->Fill(particle.pt());
-  fhTrueEtaB->Fill(particle.eta());
-  fhTruePhiB->Fill(particle.phi());
-  fhTrueEtaVsPhiB->Fill(particle.phi(), particle.eta());
-  fhTruePtVsEtaB->Fill(particle.eta(), particle.pt());
-  if (charge > 0) {
-    fhTruePtPosB->Fill(particle.pt());
-  } else if (charge < 0) {
-    fhTruePtNegB->Fill(particle.pt());
-  }
-
-  fhTrueDCAxyB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
-  fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
-}
-
-template <typename ParticleObject, typename MCCollisionObject>
-void fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
-{
-  using namespace filteranalysistask;
-
-  fhTruePtA->Fill(particle.pt());
-  fhTrueEtaA->Fill(particle.eta());
-  fhTruePhiA->Fill(particle.phi());
-  fhTrueEtaVsPhiA->Fill(particle.phi(), particle.eta());
-  fhTruePtVsEtaA->Fill(particle.eta(), particle.pt());
-  if (charge > 0) {
-    fhTruePtPosA->Fill(particle.pt());
-  } else {
-    fhTruePtNegA->Fill(particle.pt());
-  }
-
-  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
-  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
-}
-
-} /* end namespace dptdptcorrelations */
-
-// Task for <dpt,dpt> correlations analysis
-// FIXME: this should really inherit from AnalysisTask but
-//        we need GCC 7.4+ for that
-
-using namespace dptdptcorrelations;
-
-struct DptDptCorrelationsFilterAnalysisTask {
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
-  Configurable<bool> cfgProcessPairs{"processpairs", true, "Process pairs: false = no, just singles, true = yes, process pairs"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe. Default PbPb"};
-
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
-                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-
-  OutputObj<TList> fOutput{"DptDptCorrelationsGlobalInfo", OutputObjHandlingPolicy::AnalysisObject};
-
-  Produces<aod::AcceptedEvents> acceptedevents;
-  Produces<aod::ScannedTracks> scannedtracks;
-  Produces<aod::AcceptedTrueEvents> acceptedtrueevents;
-  Produces<aod::ScannedTrueTracks> scannedtruetracks;
-
-  template <typename TrackListObject, typename CollisionIndex>
-  void filterTracks(TrackListObject const& ftracks, CollisionIndex colix)
-  {
-    using namespace filteranalysistask;
-
-    int acceptedtracks = 0;
-
-    for (auto& track : ftracks) {
-      /* before track selection */
-      fillTrackHistosBeforeSelection(track);
-
-      /* track selection */
-      /* tricky because the boolean columns issue */
-      bool asone, astwo;
-      AcceptTrack(track, asone, astwo);
-      if (asone or astwo) {
-        /* the track has been accepted */
-        fillTrackHistosAfterSelection(track);
-        acceptedtracks++;
-        scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
-      }
-    }
-    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
-  }
-
-  template <typename TrackListObject, typename CollisionIndex>
-  void filterDetectorLevelTracks(TrackListObject const& ftracks, CollisionIndex colix)
-  {
-    using namespace filteranalysistask;
-
-    int acceptedtracks = 0;
-
-    for (auto& track : ftracks) {
-      bool asone = false;
-      bool astwo = false;
-      if (not(track.mcParticleId() < 0)) {
-        /* correctly reconstructed track */
-        /* before track selection */
-        fillTrackHistosBeforeSelection(track);
-
-        /* track selection */
-        /* tricky because the boolean columns issue */
-        AcceptTrack(track, asone, astwo);
-        if (asone or astwo) {
-          /* the track has been accepted */
-          fillTrackHistosAfterSelection(track);
-          acceptedtracks++;
-          scannedtracks(colix, (uint8_t)asone, (uint8_t)astwo, track.pt(), track.eta(), track.phi());
-        }
-      }
-    }
-    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d reconstructed tracks", acceptedtracks);
-  }
-
-  template <typename ParticleListObject, typename MCCollisionObject, typename CollisionIndex>
-  void filterParticles(ParticleListObject const& particles, MCCollisionObject const& mccollision, CollisionIndex colix)
-  {
-    using namespace filteranalysistask;
-
-    int acceptedparticles = 0;
-
-    for (auto& particle : particles) {
-      float charge = 0.0;
-      TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-      if (pdgparticle != nullptr) {
-        charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
-      }
-
-      bool asone = false;
-      bool astwo = false;
-      if (charge != 0) {
-        /* before particle selection */
-        fillParticleHistosBeforeSelection(particle, mccollision, charge);
-
-        /* track selection */
-        /* tricky because the boolean columns issue */
-        AcceptParticle(particle, particles, asone, astwo);
-        if (asone or astwo) {
-          /* the track has been accepted */
-          fillParticleHistosAfterSelection(particle, mccollision, charge);
-          acceptedparticles++;
-          scannedtruetracks(colix, (uint8_t)asone, (uint8_t)astwo, particle.pt(), particle.eta(), particle.phi());
-        }
-      }
-    }
-    LOGF(DPTDPTLOGCOLLISIONS, "Accepted %d generated particles", acceptedparticles);
-  }
-
-  void init(InitContext const&)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(info, "FilterAnalysisTask::init()");
-
-    /* update with the configurable values */
-    /* the binning */
-    ptbins = cfgBinning->mPTbins;
-    ptlow = cfgBinning->mPTmin;
-    ptup = cfgBinning->mPTmax;
-    etabins = cfgBinning->mEtabins;
-    etalow = cfgBinning->mEtamin;
-    etaup = cfgBinning->mEtamax;
-    zvtxbins = cfgBinning->mZVtxbins;
-    zvtxlow = cfgBinning->mZVtxmin;
-    zvtxup = cfgBinning->mZVtxmax;
-    /* the track types and combinations */
-    tracktype = cfgTrackType.value;
-    /* the centrality/multiplicity estimation */
-    if (cfgCentMultEstimator->compare("V0M") == 0) {
-      fCentMultEstimator = kV0M;
-    } else if (cfgCentMultEstimator->compare("NOCM") == 0) {
-      fCentMultEstimator = kNOCM;
-    } else {
-      LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", cfgCentMultEstimator->c_str());
-    }
-
-    /* if the system type is not known at this time, we have to put the initalization somewhere else */
-    fSystem = getSystemType(cfgSystem);
-    fDataType = getGenType(cfgDataType);
-    fPDG = TDatabasePDG::Instance();
-
-    /* create the output list which will own the task histograms */
-    TList* fOutputList = new TList();
-    fOutputList->SetOwner(true);
-    fOutput.setObject(fOutputList);
-
-    /* incorporate configuration parameters to the output */
-    fOutputList->Add(new TParameter<Int_t>("TrackType", cfgTrackType, 'f'));
-    fOutputList->Add(new TParameter<Int_t>("TrackOneCharge", trackonecharge, 'f'));
-    fOutputList->Add(new TParameter<Int_t>("TrackTwoCharge", tracktwocharge, 'f'));
-
-    if ((fDataType == kData) or (fDataType == kMC)) {
-      /* create the reconstructed data histograms */
-      if (fSystem > kPbp) {
-        fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", 100, 0, 100);
-        fhCentMultA = new TH1F("CentralityA", "Centrality; centrality (%)", 100, 0, 100);
-      } else {
-        /* for pp, pPb and Pbp systems use multiplicity instead */
-        fhCentMultB = new TH1F("MultiplicityB", "Multiplicity before cut; multiplicity (%)", 100, 0, 100);
-        fhCentMultA = new TH1F("MultiplicityA", "Multiplicity; multiplicity (%)", 100, 0, 100);
-      }
-
-      fhVertexZB = new TH1F("VertexZB", "Vertex Z; z_{vtx}", 60, -15, 15);
-      fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
-
-      fhPtB = new TH1F("fHistPtB", "p_{T} distribution for reconstructed before;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhPtA = new TH1F("fHistPtA", "p_{T} distribution for reconstructed;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
-      fhPtPosB = new TH1F("fHistPtPosB", "P_{T} distribution for reconstructed (#plus) before;P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhPtPosA = new TH1F("fHistPtPosA", "P_{T} distribution for reconstructed (#plus);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
-      fhPtNegB = new TH1F("fHistPtNegB", "P_{T} distribution for reconstructed (#minus) before;P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhPtNegA = new TH1F("fHistPtNegA", "P_{T} distribution for reconstructed (#minus);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
-      fhEtaB = new TH1F("fHistEtaB", "#eta distribution for reconstructed before;#eta;counts", 40, -2.0, 2.0);
-      fhEtaA = new TH1F("fHistEtaA", "#eta distribution for reconstructed;#eta;counts", etabins, etalow, etaup);
-      fhPhiB = new TH1F("fHistPhiB", "#phi distribution for reconstructed before;#phi;counts", 360, 0.0, 2 * M_PI);
-      fhPhiA = new TH1F("fHistPhiA", "#phi distribution for reconstructed;#phi;counts", 360, 0.0, 2 * M_PI);
-      fhEtaVsPhiB = new TH2F(TString::Format("CSTaskEtaVsPhiB_%s", fTaskConfigurationString.c_str()), "#eta vs #phi before;#phi;#eta", 360, 0.0, 2 * M_PI, 100, -2.0, 2.0);
-      fhEtaVsPhiA = new TH2F(TString::Format("CSTaskEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi;#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
-      fhPtVsEtaB = new TH2F(TString::Format("fhPtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
-      fhPtVsEtaA = new TH2F(TString::Format("fhPtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta;#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
-      fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
-      fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
-      fhFineDCAxyA = new TH1F("FineDCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 4000, -1.0, 1.0);
-      fhDCAzB = new TH1F("DCAzB", "DCA_{z} distribution for reconstructed before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
-      fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
-      fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
-
-      /* add the hstograms to the output list */
-      fOutputList->Add(fhCentMultB);
-      fOutputList->Add(fhCentMultA);
-      fOutputList->Add(fhVertexZB);
-      fOutputList->Add(fhVertexZA);
-      fOutputList->Add(fhPtB);
-      fOutputList->Add(fhPtA);
-      fOutputList->Add(fhPtPosB);
-      fOutputList->Add(fhPtPosA);
-      fOutputList->Add(fhPtNegB);
-      fOutputList->Add(fhPtNegA);
-      fOutputList->Add(fhEtaB);
-      fOutputList->Add(fhEtaA);
-      fOutputList->Add(fhPhiB);
-      fOutputList->Add(fhPhiA);
-      fOutputList->Add(fhEtaVsPhiB);
-      fOutputList->Add(fhEtaVsPhiA);
-      fOutputList->Add(fhPtVsEtaB);
-      fOutputList->Add(fhPtVsEtaA);
-      fOutputList->Add(fhDCAxyB);
-      fOutputList->Add(fhDCAxyA);
-      fOutputList->Add(fhFineDCAxyA);
-      fOutputList->Add(fhDCAzB);
-      fOutputList->Add(fhDCAzA);
-      fOutputList->Add(fhFineDCAzA);
-    }
-
-    if (fDataType != kData) {
-      /* create the true data histograms */
-      if (fSystem > kPbp) {
-        fhTrueCentMultB = new TH1F("TrueCentralityB", "Centrality before (truth); centrality (%)", 100, 0, 100);
-        fhTrueCentMultA = new TH1F("TrueCentralityA", "Centrality (truth); centrality (%)", 100, 0, 100);
-      } else {
-        /* for pp, pPb and Pbp systems use multiplicity instead */
-        fhTrueCentMultB = new TH1F("TrueMultiplicityB", "Multiplicity before (truth); multiplicity (%)", 100, 0, 100);
-        fhTrueCentMultA = new TH1F("TrueMultiplicityA", "Multiplicity (truth); multiplicity (%)", 100, 0, 100);
-      }
-
-      fhTrueVertexZB = new TH1F("TrueVertexZB", "Vertex Z before (truth); z_{vtx}", 60, -15, 15);
-      fhTrueVertexZA = new TH1F("TrueVertexZA", "Vertex Z (truth); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
-
-      fhTruePtB = new TH1F("fTrueHistPtB", "p_{T} distribution before (truth);p_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhTruePtA = new TH1F("fTrueHistPtA", "p_{T} distribution (truth);p_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
-      fhTruePtPosB = new TH1F("fTrueHistPtPosB", "P_{T} distribution (#plus) before (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhTruePtPosA = new TH1F("fTrueHistPtPosA", "P_{T} distribution (#plus) (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
-      fhTruePtNegB = new TH1F("fTrueHistPtNegB", "P_{T} distribution (#minus) before (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
-      fhTruePtNegA = new TH1F("fTrueHistPtNegA", "P_{T} distribution (#minus) (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", ptbins, ptlow, ptup);
-      fhTrueEtaB = new TH1F("fTrueHistEtaB", "#eta distribution before (truth);#eta;counts", 40, -2.0, 2.0);
-      fhTrueEtaA = new TH1F("fTrueHistEtaA", "#eta distribution (truth);#eta;counts", etabins, etalow, etaup);
-      fhTruePhiB = new TH1F("fTrueHistPhiB", "#phi distribution before (truth);#phi;counts", 360, 0.0, 2 * M_PI);
-      fhTruePhiA = new TH1F("fTrueHistPhiA", "#phi distribution (truth);#phi;counts", 360, 0.0, 2 * M_PI);
-      fhTrueEtaVsPhiB = new TH2F(TString::Format("CSTaskTrueEtaVsPhiB_%s", fTaskConfigurationString.c_str()), "#eta vs #phi before (truth);#phi;#eta", 360, 0.0, 2 * M_PI, 100, -2.0, 2.0);
-      fhTrueEtaVsPhiA = new TH2F(TString::Format("CSTaskTrueEtaVsPhiA_%s", fTaskConfigurationString.c_str()), "#eta vs #phi (truth);#phi;#eta", 360, 0.0, 2 * M_PI, etabins, etalow, etaup);
-      fhTruePtVsEtaB = new TH2F(TString::Format("fhTruePtVsEtaB_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta before (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, 100, 0.0, 15.0);
-      fhTruePtVsEtaA = new TH2F(TString::Format("fhTruePtVsEtaA_%s", fTaskConfigurationString.c_str()), "p_{T} vs #eta (truth);#eta;p_{T} (GeV/c)", etabins, etalow, etaup, ptbins, ptlow, ptup);
-      fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
-      fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
-      fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
-      fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
-
-      /* add the hstograms to the output list */
-      fOutputList->Add(fhTrueCentMultB);
-      fOutputList->Add(fhTrueCentMultA);
-      fOutputList->Add(fhTrueVertexZB);
-      fOutputList->Add(fhTrueVertexZA);
-      fOutputList->Add(fhTruePtB);
-      fOutputList->Add(fhTruePtA);
-      fOutputList->Add(fhTruePtPosB);
-      fOutputList->Add(fhTruePtPosA);
-      fOutputList->Add(fhTruePtNegB);
-      fOutputList->Add(fhTruePtNegA);
-      fOutputList->Add(fhTrueEtaB);
-      fOutputList->Add(fhTrueEtaA);
-      fOutputList->Add(fhTruePhiB);
-      fOutputList->Add(fhTruePhiA);
-      fOutputList->Add(fhTrueEtaVsPhiB);
-      fOutputList->Add(fhTrueEtaVsPhiA);
-      fOutputList->Add(fhTruePtVsEtaB);
-      fOutputList->Add(fhTruePtVsEtaA);
-      fOutputList->Add(fhTrueDCAxyB);
-      fOutputList->Add(fhTrueDCAxyA);
-      fOutputList->Add(fhTrueDCAzB);
-      fOutputList->Add(fhTrueDCAzA);
-    }
-  }
-
-  void processWithCent(aod::CollisionEvSelCent const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCent(). New collision with %d tracks", ftracks.size());
-
-    fhCentMultB->Fill(collision.centV0M());
-    fhVertexZB->Fill(collision.posZ());
-    bool acceptedevent = false;
-    float centormult = -100.0;
-    if (IsEvtSelected(collision, centormult)) {
-      acceptedevent = true;
-      fhCentMultA->Fill(collision.centV0M());
-      fhVertexZA->Fill(collision.posZ());
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterTracks(ftracks, acceptedevents.lastIndex());
-    } else {
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& track : ftracks) {
-        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
-      }
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCent, "Process reco with centrality", false);
-
-  void processWithoutCent(aod::CollisionEvSel const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCent(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
-
-    /* the task does not have access to either centrality nor multiplicity 
-       classes information, so it has to live without it.
-       For the time being we assign a value of 50% */
-    fhCentMultB->Fill(50.0);
-    fhVertexZB->Fill(collision.posZ());
-    bool acceptedevent = false;
-    float centormult = -100.0;
-    if (IsEvtSelectedNoCentMult(collision, centormult)) {
-      acceptedevent = true;
-      fhCentMultA->Fill(50.0);
-      fhVertexZA->Fill(collision.posZ());
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterTracks(ftracks, acceptedevents.lastIndex());
-    } else {
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& track : ftracks) {
-        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
-      }
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCent, "Process reco without centrality", false);
-
-  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision,
-                                    soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentDetectorLevel(). New collision with %d tracks", ftracks.size());
-
-    fhCentMultB->Fill(collision.centV0M());
-    fhVertexZB->Fill(collision.posZ());
-    bool acceptedevent = false;
-    float centormult = -100.0;
-    if (IsEvtSelected(collision, centormult)) {
-      acceptedevent = true;
-      fhCentMultA->Fill(collision.centV0M());
-      fhVertexZA->Fill(collision.posZ());
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
-    } else {
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& track : ftracks) {
-        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
-      }
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
-
-  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision,
-                                       soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection> const& ftracks)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentDetectorLevel(). New collision with collision id %d and with %d tracks", collision.bcId(), ftracks.size());
-
-    /* the task does not have access to either centrality nor multiplicity 
-       classes information, so it has to live without it.
-       For the time being we assign a value of 50% */
-    fhCentMultB->Fill(50.0);
-    fhVertexZB->Fill(collision.posZ());
-    bool acceptedevent = false;
-    float centormult = -100.0;
-    if (IsEvtSelectedNoCentMult(collision, centormult)) {
-      acceptedevent = true;
-      fhCentMultA->Fill(50.0);
-      fhVertexZA->Fill(collision.posZ());
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterDetectorLevelTracks(ftracks, acceptedevents.lastIndex());
-    } else {
-      acceptedevents(collision.bcId(), collision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& track : ftracks) {
-        scannedtracks(acceptedevents.lastIndex(), (uint8_t) false, (uint8_t) false, track.pt(), track.eta(), track.phi());
-      }
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
-
-  void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
-                                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentV0Ms> const& collisions,
-                                     aod::McParticles const& mcparticles)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithCentGeneratorLevel(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
-
-    /* TODO: in here we have to decide what to do in the following cases
-       - On the fly production -> clearly we will need a different process
-       - reconstructed collisions without generated associated -> we need a different process or a different signature
-       - multiplicity/centrality classes extracted from the reconstructed collision but then
-       - generated collision without associated reconstructed collision: how to extract mutliplicity/centrality classes?
-       - generated collision with several associated reconstructed collisions: from which to extract multiplicity/centrality classes?
-    */
-    if (collisions.size() > 1) {
-      LOGF(error, "FilterAnalysisTask::processWithCentGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first for centrality/multiplicity classes extraction");
-    }
-
-    for (auto& collision : collisions) {
-      float cent = collision.centV0M();
-      fhTrueCentMultB->Fill(cent);
-      fhTrueVertexZB->Fill(mccollision.posZ());
-
-      bool acceptedevent = false;
-      if (IsTrueEvtSelected(mccollision, cent)) {
-        acceptedevent = true;
-        fhTrueCentMultA->Fill(cent);
-        fhTrueVertexZA->Fill(mccollision.posZ());
-        acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
-
-        filterParticles(mcparticles, collision, acceptedtrueevents.lastIndex());
-      } else {
-        acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, cent);
-        for (auto& particle : mcparticles) {
-          scannedtruetracks(acceptedtrueevents.lastIndex(), (uint8_t) false, (uint8_t) false, particle.pt(), particle.eta(), particle.phi());
-        }
-      }
-      break; /* TODO: only processing the first reconstructed collision for centrality/multiplicity class estimation */
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithCentGeneratorLevel, "Process generated with centrality", false);
-
-  void processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
-                                        aod::McParticles const& mcparticles)
-  {
-    using namespace filteranalysistask;
-
-    LOGF(DPTDPTLOGCOLLISIONS, "FilterAnalysisTask::processWithoutCentGeneratorLevel(). New generated collision with %d particles", mcparticles.size());
-
-    /* the task does not have access to either centrality nor multiplicity 
-       classes information, so it has to live without it.
-       For the time being we assign a value of 50% */
-    fhTrueCentMultB->Fill(50.0);
-    fhTrueVertexZB->Fill(mccollision.posZ());
-
-    bool acceptedevent = false;
-    float centormult = 50.0;
-    if (IsTrueEvtSelected(mccollision, centormult)) {
-      acceptedevent = true;
-      fhTrueCentMultA->Fill(centormult);
-      fhTrueVertexZA->Fill(mccollision.posZ());
-      acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
-
-      filterParticles(mcparticles, mccollision, acceptedtrueevents.lastIndex());
-    } else {
-      acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), (uint8_t)acceptedevent, centormult);
-      for (auto& particle : mcparticles) {
-        scannedtruetracks(acceptedtrueevents.lastIndex(), (uint8_t) false, (uint8_t) false, particle.pt(), particle.eta(), particle.phi());
-      }
-    }
-  }
-  PROCESS_SWITCH(DptDptCorrelationsFilterAnalysisTask, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
-};
 
 // Task for building <dpt,dpt> correlations
 struct DptDptCorrelationsTask {
@@ -1048,8 +117,10 @@ struct DptDptCorrelationsTask {
     /// \return the track phi origin shifted azimuthal angle
     float GetShiftedPhi(float phi)
     {
+      using namespace correlationstask;
+      using namespace o2::analysis::dptdptfilter;
       if (not(phi < phiup)) {
-        return phi - M_PI * 2;
+        return phi - constants::math::TwoPI;
       } else {
         return phi;
       }
@@ -1070,6 +141,9 @@ struct DptDptCorrelationsTask {
     template <typename TrackObject>
     int GetEtaPhiIndex(TrackObject const& t)
     {
+      using namespace correlationstask;
+      using namespace o2::analysis::dptdptfilter;
+
       int etaix = int((t.eta() - etalow) / etabinwidth);
       /* consider a potential phi origin shift */
       float phi = GetShiftedPhi(t.phi());
@@ -1090,6 +164,7 @@ struct DptDptCorrelationsTask {
     int GetDEtaDPhiGlobalIndex(TrackObject const& t1, TrackObject const& t2)
     {
       using namespace correlationstask;
+      using namespace o2::analysis::dptdptfilter;
 
       /* rule: ix are always zero based while bins are always one based */
       int etaix_1 = int((t1.eta() - etalow) / etabinwidth);
@@ -1236,6 +311,7 @@ struct DptDptCorrelationsTask {
     void init(TList* fOutputList)
     {
       using namespace correlationstask;
+      using namespace o2::analysis::dptdptfilter;
 
       /* create the histograms */
       Bool_t oldstatus = TH1::AddDirectoryStatus();
@@ -1369,6 +445,7 @@ struct DptDptCorrelationsTask {
   void init(InitContext const&)
   {
     using namespace correlationstask;
+    using namespace o2::analysis::dptdptfilter;
 
     /* update with the configurable values */
     ptbins = cfgBinning->mPTbins;
@@ -1382,7 +459,7 @@ struct DptDptCorrelationsTask {
     zvtxup = cfgBinning->mZVtxmax;
     phibins = cfgBinning->mPhibins;
     philow = 0.0f;
-    phiup = M_PI * 2;
+    phiup = constants::math::TwoPI;
     phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
     /* update the potential binning change */
@@ -1394,9 +471,9 @@ struct DptDptCorrelationsTask {
     deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
     deltaetabinwidth = (deltaetaup - deltaetalow) / float(deltaetabins);
     deltaphibins = phibins;
-    deltaphibinwidth = M_PI * 2 / deltaphibins;
+    deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
-    deltaphiup = M_PI * 2 - deltaphibinwidth / 2.0;
+    deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
     /* create the output directory which will own the task output */
     TList* fGlobalOutputList = new TList();
@@ -1470,18 +547,18 @@ struct DptDptCorrelationsTask {
     return ixDCE;
   }
 
-  Filter onlyacceptedevents = (aod::dptdptcorrelations::eventaccepted == (uint8_t) true);
-  Filter onlyacceptedtracks = ((aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true) or (aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == true);
+  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == true) or (aod::dptdptfilter::trackacceptedastwo == true));
 
-  void processRecLevel(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
+  void processRecLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
   {
     using namespace correlationstask;
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true;
-      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true;
+      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == true;
+      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == true;
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
@@ -1492,15 +569,15 @@ struct DptDptCorrelationsTask {
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
 
-  void processGenLevel(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks>& tracks)
+  void processGenLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks>& tracks)
   {
     using namespace correlationstask;
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true;
-      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true;
+      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == true;
+      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == true;
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
@@ -1520,138 +597,9 @@ struct DptDptCorrelationsTask {
   PROCESS_SWITCH(DptDptCorrelationsTask, processCleaner, "Cleaner process for not used output", false);
 };
 
-// Checking the filtered tables
-/* it seems we cannot use a base class task */
-// struct TracksAndEventClassificationQABase {
-
-void initQATask(InitContext const&, TList* outlst)
-{
-  using namespace filteranalysistaskqa;
-
-  fhTracksOne = new TH1F("TracksOne", "Tracks as track one;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksTwo = new TH1F("TracksTwo", "Tracks as track two;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksOneAndTwo = new TH1F("TracksOneAndTwo", "Tracks as track one and as track two;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksNone = new TH1F("TracksNone", "Not selected tracks;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksOneUnsel = new TH1F("TracksOneUnsel", "Tracks as track one;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksTwoUnsel = new TH1F("TracksTwoUnsel", "Tracks as track two;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksOneAndTwoUnsel = new TH1F("TracksOneAndTwoUnsel", "Tracks as track one and as track two;number of tracks;events", 1500, 0.0, 1500.0);
-  fhTracksNoneUnsel = new TH1F("TracksNoneUnsel", "Not selected tracks;number of tracks;events", 1500, 0.0, 1500.0);
-  fhSelectedEvents = new TH1F("SelectedEvents", "Selected events;;events", 2, 0.0, 2.0);
-  fhSelectedEvents->GetXaxis()->SetBinLabel(1, "Not selected events");
-  fhSelectedEvents->GetXaxis()->SetBinLabel(2, "Selected events");
-
-  outlst->Add(fhTracksOne);
-  outlst->Add(fhTracksTwo);
-  outlst->Add(fhTracksOneAndTwo);
-  outlst->Add(fhTracksNone);
-  outlst->Add(fhTracksOneUnsel);
-  outlst->Add(fhTracksTwoUnsel);
-  outlst->Add(fhTracksOneAndTwoUnsel);
-  outlst->Add(fhTracksNoneUnsel);
-  outlst->Add(fhSelectedEvents);
-}
-
-template <typename FilteredCollision, typename FilteredTracks>
-void processQATask(FilteredCollision const& collision,
-                   FilteredTracks const& tracks)
-{
-  using namespace filteranalysistaskqa;
-
-  if (collision.eventaccepted() != (uint8_t) true) {
-    fhSelectedEvents->Fill(0.5);
-  } else {
-    fhSelectedEvents->Fill(1.5);
-  }
-
-  int ntracks_one = 0;
-  int ntracks_two = 0;
-  int ntracks_one_and_two = 0;
-  int ntracks_none = 0;
-  for (auto& track : tracks) {
-    if ((track.trackacceptedasone() != (uint8_t) true) and (track.trackacceptedastwo() != (uint8_t) true)) {
-      ntracks_none++;
-    }
-    if ((track.trackacceptedasone() == (uint8_t) true) and (track.trackacceptedastwo() == (uint8_t) true)) {
-      ntracks_one_and_two++;
-    }
-    if (track.trackacceptedasone() == (uint8_t) true) {
-      ntracks_one++;
-    }
-    if (track.trackacceptedastwo() == (uint8_t) true) {
-      ntracks_two++;
-    }
-  }
-  if (collision.eventaccepted() != (uint8_t) true) {
-    /* control for non selected events */
-    fhTracksOneUnsel->Fill(ntracks_one);
-    fhTracksTwoUnsel->Fill(ntracks_two);
-    fhTracksNoneUnsel->Fill(ntracks_none);
-    fhTracksOneAndTwoUnsel->Fill(ntracks_one_and_two);
-  } else {
-    fhTracksOne->Fill(ntracks_one);
-    fhTracksTwo->Fill(ntracks_two);
-    fhTracksNone->Fill(ntracks_none);
-    fhTracksOneAndTwo->Fill(ntracks_one_and_two);
-  }
-}
-// };
-
-/* it seems we cannot use a base class task */
-// struct TracksAndEventClassificationQARec : TracksAndEventClassificationQABase {
-struct TracksAndEventClassificationQARec {
-  OutputObj<TList> fOutput{"FliterTaskRecoQA", OutputObjHandlingPolicy::AnalysisObject};
-
-  void init(InitContext const& context)
-  {
-    TList* fOutputList = new TList();
-    fOutputList->SetName("FilterTaskRecoQA");
-    fOutputList->SetOwner(true);
-    fOutput.setObject(fOutputList);
-
-    initQATask(context, fOutputList);
-  }
-
-  Filter onlyacceptedevents = (aod::dptdptcorrelations::eventaccepted == (uint8_t) true);
-  Filter onlyacceptedtracks = ((aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true) or (aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true));
-
-  void process(soa::Filtered<aod::AcceptedEvents>::iterator const& collision, soa::Filtered<aod::ScannedTracks> const& tracks)
-  {
-    LOGF(DPTDPTLOGCOLLISIONS, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
-    processQATask(collision, tracks);
-  }
-};
-
-/* it seems we cannot use a base class task */
-//struct TracksAndEventClassificationQAGen : TracksAndEventClassificationQABase {
-struct TracksAndEventClassificationQAGen {
-  OutputObj<TList> fOutput{"FliterTaskGenQA", OutputObjHandlingPolicy::AnalysisObject};
-
-  void init(InitContext const& context)
-  {
-    TList* fOutputList = new TList();
-    fOutputList->SetName("FilterTaskGenQA");
-    fOutputList->SetOwner(true);
-    fOutput.setObject(fOutputList);
-
-    initQATask(context, fOutputList);
-  }
-
-  Filter onlyacceptedevents = (aod::dptdptcorrelations::eventaccepted == (uint8_t) true);
-  Filter onlyacceptedtracks = ((aod::dptdptcorrelations::trackacceptedasone == (uint8_t) true) or (aod::dptdptcorrelations::trackacceptedastwo == (uint8_t) true));
-
-  void process(soa::Filtered<aod::AcceptedTrueEvents>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
-  {
-    LOGF(DPTDPTLOGCOLLISIONS, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
-    processQATask(collision, tracks);
-  }
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<DptDptCorrelationsFilterAnalysisTask>(cfgc, SetDefaultProcesses{{{"processWithoutCent", true}, {"processWithoutCentMC", true}}}),
-    adaptAnalysisTask<TracksAndEventClassificationQARec>(cfgc),
-    adaptAnalysisTask<TracksAndEventClassificationQAGen>(cfgc),
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processCleaner", false}}}),
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processCleaner", false}}})};
   return workflow;
