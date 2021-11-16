@@ -154,7 +154,7 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        if (true) { // FunctionSelection >= 1
+        if (FunctionSelection >= 1) { // Set to true to keep unselected events as well
             rowCandidateFull(
             candidate.rSecondaryVertex(),
             candidate.decayLength(),
