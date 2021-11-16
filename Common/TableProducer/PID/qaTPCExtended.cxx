@@ -28,8 +28,9 @@ using TPCV0Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, 
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{//runtime customisation goes here
-    {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}};
+  std::vector<ConfigParamSpec> options{         //runtime customisation goes here
+  {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}
+  };
   std::swap(workflowOptions, options);
 }
 
