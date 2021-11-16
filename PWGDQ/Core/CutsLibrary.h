@@ -87,6 +87,20 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("kaonPID")) {
+    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPID")) {
+    cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
+    return cut;
+  }
+
   //---------------------------------------------------------------------------------------
   // NOTE: Below there are several TPC pid cuts used for studies of the dE/dx degradation
   //    and its impact on the high lumi pp quarkonia triggers
@@ -209,10 +223,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("muonTightQualityCutsForTests")) {
-    cut->AddCut(GetAnalysisCut("muonTightQualityCutsForTests"));
-    return cut;
-  }
   if (!nameStr.compare("muonLowPt")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
@@ -222,6 +232,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("muonHighPt")) {
     cut->AddCut(GetAnalysisCut("muonHighPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonTightQualityCutsForTests")) {
+    cut->AddCut(GetAnalysisCut("muonTightQualityCutsForTests"));
     return cut;
   }
 
@@ -405,6 +420,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 3000.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 3000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPIDnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPIDnsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
     return cut;
   }
 

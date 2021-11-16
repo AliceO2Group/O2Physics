@@ -49,7 +49,7 @@ using namespace o2::aod;
 // Some definitions
 namespace
 {
-enum HfTriggers {
+enum DQTriggers {
   kSingleE = 0,
   kSingleMuLow,
   kSingleMuHigh,
@@ -85,12 +85,12 @@ using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::Tra
                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                          aod::DQBarrelTrackCuts>;
-using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
-using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::DQMuonsCuts>;
+using MyMuons = aod::FwdTracks;
+using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::DQMuonsCuts>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
-constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
+constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
@@ -159,7 +159,7 @@ struct DQBarrelTrackSelectionTask {
 
   float* fValues; // array to be used by the VarManager
 
-  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiKineAndQuality,jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
 
   void init(o2::framework::InitContext&)
   {
@@ -231,7 +231,7 @@ struct DQMuonsSelection {
 
   float* fValues;
 
-  Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonQualityCuts,muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
 
   void init(o2::framework::InitContext&)
   {
@@ -311,8 +311,8 @@ struct DQFilterPPTask {
   Partition<MyBarrelTracksSelected> posTracks = aod::track::signed1Pt > 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
   Partition<MyBarrelTracksSelected> negTracks = aod::track::signed1Pt < 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
 
-  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiKineAndQuality,jpsiPID1", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts,muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
+  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairNoCut,pairMassLow", "Comma separated list of pair cuts"};
 
   int fNTrackCuts;
