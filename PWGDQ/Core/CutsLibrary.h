@@ -211,7 +211,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("muonTightQualityCutsForTests")) {
     cut->AddCut(GetAnalysisCut("muonTightQualityCutsForTests"));
-      return cut;
+    return cut;
   }
   if (!nameStr.compare("muonLowPt")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
