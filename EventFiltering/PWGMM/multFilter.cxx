@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> mmObjectsNames{"w/ high-#it{p}_{T}", "high track-mult event"};
+static const std::vector<std::string> mmObjectsNames{"LeadingPtTrack", "HighTrackMult"};
 
 struct multFilter {
 	enum { kLeadingPtTrack = 0,
@@ -86,6 +86,9 @@ struct multFilter {
 	using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 	void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
 	{
+
+		bool keepEvent[kNtriggersMM]{false};
+
 		multiplicity.fill(HIST("fProcessedEvents"), 0);
 
 		//check if your trigger alias is fired
@@ -93,7 +96,6 @@ struct multFilter {
 			return;
 		}
 
-		bool keepEvent[kNtriggersMM]{false};
 		//
 		multiplicity.fill(HIST("fCollZpos"), collision.posZ());
 		Int_t multTrack = 0;
