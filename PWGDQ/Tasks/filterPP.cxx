@@ -159,7 +159,7 @@ struct DQBarrelTrackSelectionTask {
 
   float* fValues; // array to be used by the VarManager
 
-  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID2", "Comma separated list of ADDITIONAL barrel track cuts"};
 
   void init(o2::framework::InitContext&)
   {
@@ -184,7 +184,7 @@ struct DQBarrelTrackSelectionTask {
   void DefineCuts()
   {
     // available cuts: jpsiKineAndQuality, jpsiPID1, jpsiPID2
-    TString cutNamesStr = fConfigCuts.value;
+    TString cutNamesStr = "jpsiPID1," + fConfigCuts.value;  // "jpsiPID1" is the fixed standard cut provided to the Central Event Filtering task
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -231,7 +231,7 @@ struct DQMuonsSelection {
 
   float* fValues;
 
-  Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
 
   void init(o2::framework::InitContext&)
   {
@@ -256,7 +256,7 @@ struct DQMuonsSelection {
   void DefineCuts()
   {
     // available cuts: muonQualityCuts
-    TString cutNamesStr = fConfigCuts.value;
+    TString cutNamesStr = "muonLowPt,muonHighPt," + fConfigCuts.value; // "muonLowPt" & "muonHighPt" are the fixed standard cut provided to the Central Event Filtering task
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -311,9 +311,9 @@ struct DQFilterPPTask {
   Partition<MyBarrelTracksSelected> posTracks = aod::track::signed1Pt > 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
   Partition<MyBarrelTracksSelected> negTracks = aod::track::signed1Pt < 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
 
-  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonLowPt,muonHighPt", "Comma separated list of muon track cuts"};
-  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairNoCut,pairMassLow", "Comma separated list of pair cuts"};
+  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID2", "Comma separated list of ADDITIONAL barrel track cuts"};
+  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
+  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairMassLow,pairJpsi", "Comma separated list of ADDITIONAL pair cuts"};
 
   int fNTrackCuts;
   int fNMuonCuts;
@@ -324,7 +324,7 @@ struct DQFilterPPTask {
   void DefineCuts()
   {
     // available pair cuts in CutsLibrary: pairNoCut,pairMassLow,pairJpsi,pairPsi2S,pairUpsilon,pairJpsiPtLow1, pairJpsiPtLow2
-    TString pairCutNamesStr = fConfigPairCuts.value;
+    TString pairCutNamesStr = "pairNoCut," + fConfigPairCuts.value; // "pairNoCut" is the fixed standard cut provided to the Central Event Filtering task
     std::unique_ptr<TObjArray> objArray(pairCutNamesStr.Tokenize(","));
     fNPairCuts = objArray->GetEntries();
     if (fNPairCuts) {
@@ -351,10 +351,10 @@ struct DQFilterPPTask {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     // configure histograms
-    TString trackCutNamesStr = fConfigTrackCuts.value;
+    TString trackCutNamesStr = "jpsiPID1," + fConfigTrackCuts.value;
     fTrkCutsNameArray = trackCutNamesStr.Tokenize(",");
     fNTrackCuts = fTrkCutsNameArray->GetEntries();
-    TString muonCutNamesStr = fConfigMuonCuts.value;
+    TString muonCutNamesStr = "muonLowPt,muonHighPt," + fConfigMuonCuts.value;
     fMuonCutsNameArray = muonCutNamesStr.Tokenize(",");
     fNMuonCuts = fMuonCutsNameArray->GetEntries();
     TString histNames = "";
@@ -399,7 +399,7 @@ struct DQFilterPPTask {
   void
     process(MyEventsSelected::iterator const& event, MyBarrelTracksSelected const& tracks, MyMuonsSelected const& muons, aod::BCs const& bcs)
   {
-    uint64_t filter = 0; // first 32 bits for dielectrin, last 32 for dimuons
+    uint64_t filter = 0; // first 32 bits for dielectron, last 32 for dimuons
 
     //[0] = SingleE, [1] = SingleMulow, [2] = SingleMuHigh, [3] = DiElectron, [4] = DiMuon
     bool keepEvent[kNTriggersDQ]{false};
@@ -519,25 +519,35 @@ struct DQFilterPPTask {
         }
       }
 
+        // Fill event selections tag for central event filtering
+        if (singleBarrelCount[0] > 0) { // Single Barrel count : bit 0 corresponds to "jpsiPID1" cut
+          keepEvent[0] = true;
+        }
+        if (singleMuonsCount[0] > 0) {  // Single Muon count : bit 0 corresponds to "muonLowPt" cut
+          keepEvent[1] = true;
+        }
+        if (singleMuonsCount[1] > 0) {  // Single Muon count : bit 1 corresponds to "muonHighPt" cut
+          keepEvent[2] = true;
+        }
+        if (pairsBarrelCount[0] > 0) {  // Pair Barrel count : bit 0 corresponds "jpsiPID1" & "pairNoCut"  [jPaircut + iTrackCut * fNPairCuts]
+          keepEvent[3] = true;
+        }
+        if (pairsUnlikeMuonsCount[0] > 0) { // Pair Muon count : bit 0 corresponds "muonLowPt" & "pairNoCut"  [jPaircut + iMuonCut * fNPairCuts]
+          keepEvent[4] = true;
+        }
+        //Filling the table
+        dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
+
       // Fill DQ bit map
       for (int i = 0; i < fNTrackCuts; i++) {
         if (singleBarrelCount[i] > 0) {
           filter |= (uint64_t(1) << i);
           fStatsSingleBarrel->Fill(i);
-          std::string nameTrkStr = fTrkCutsNameArray->At(i)->GetName();
-          if (!nameTrkStr.compare("jpsiKineAndQuality")) {
-            keepEvent[kSingleE] = true; // Single Electron trigger
-          }
         }
         for (int j = 0; j < fNPairCuts; j++) {
           if (pairsBarrelCount[j + i * fNPairCuts] > 0) {
             filter |= (uint64_t(1) << (8 + j + i * fNPairCuts));
             fStatsBarrel->Fill(j, i);
-            std::string nameTrkStr = fTrkCutsNameArray->At(i)->GetName();
-            std::string namePairStr = fPairCuts[j].GetName();
-            if (!namePairStr.compare("pairNoCut") && !nameTrkStr.compare("jpsiKineAndQuality")) {
-              keepEvent[kDiElectron] = true; // Di-Electron trigger
-            }
           }
         }
       }
@@ -545,23 +555,11 @@ struct DQFilterPPTask {
         if (singleMuonsCount[i] > 0) {
           filter |= (uint64_t(1) << (32 + i));
           fStatsSingleMuon->Fill(i);
-          std::string nameMuStr = fMuonCutsNameArray->At(i)->GetName();
-          if (!nameMuStr.compare("muonLowPt")) {
-            keepEvent[kSingleMuLow] = true; // Single Low pT Muon trigger
-          }
-          if (!nameMuStr.compare("muonHighPt")) {
-            keepEvent[kSingleMuHigh] = true; // Single High pT Muon trigger
-          }
         }
         for (int j = 0; j < fNPairCuts; j++) {
           if (pairsUnlikeMuonsCount[j + i * fNPairCuts] > 0) {
             filter |= (uint64_t(1) << (40 + j + i * fNPairCuts));
             fStatsMuon->Fill(j, i);
-            std::string nameMuStr = fMuonCutsNameArray->At(i)->GetName();
-            std::string namePairStr = fPairCuts[j].GetName();
-            if (!namePairStr.compare("pairNoCut") && !nameMuStr.compare("muonLowPt")) {
-              keepEvent[kDiMuon] = true; // Di-Muon low pT trigger
-            }
           }
           if (pairsLikeMuonsCount[j + i * fNPairCuts] > 0) {
             filter |= (uint64_t(1) << (52 + j + i * fNPairCuts));
@@ -577,8 +575,6 @@ struct DQFilterPPTask {
       delete[] singleBarrelCount;
     }
     eventFilter(filter);
-    //Filling the table
-    dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
   }
 };
 
