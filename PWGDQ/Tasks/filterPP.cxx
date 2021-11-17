@@ -184,7 +184,7 @@ struct DQBarrelTrackSelectionTask {
   void DefineCuts()
   {
     // available cuts: jpsiKineAndQuality, jpsiPID1, jpsiPID2
-    TString cutNamesStr = "jpsiPID1," + fConfigCuts.value;  // "jpsiPID1" is the fixed standard cut provided to the Central Event Filtering task
+    TString cutNamesStr = "jpsiPID1," + fConfigCuts.value; // "jpsiPID1" is the fixed standard cut provided to the Central Event Filtering task
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -519,24 +519,24 @@ struct DQFilterPPTask {
         }
       }
 
-        // Fill event selections tag for central event filtering
-        if (singleBarrelCount[0] > 0) { // Single Barrel count : bit 0 corresponds to "jpsiPID1" cut
-          keepEvent[0] = true;
-        }
-        if (singleMuonsCount[0] > 0) {  // Single Muon count : bit 0 corresponds to "muonLowPt" cut
-          keepEvent[1] = true;
-        }
-        if (singleMuonsCount[1] > 0) {  // Single Muon count : bit 1 corresponds to "muonHighPt" cut
-          keepEvent[2] = true;
-        }
-        if (pairsBarrelCount[0] > 0) {  // Pair Barrel count : bit 0 corresponds "jpsiPID1" & "pairNoCut"  [jPaircut + iTrackCut * fNPairCuts]
-          keepEvent[3] = true;
-        }
-        if (pairsUnlikeMuonsCount[0] > 0) { // Pair Muon count : bit 0 corresponds "muonLowPt" & "pairNoCut"  [jPaircut + iMuonCut * fNPairCuts]
-          keepEvent[4] = true;
-        }
-        //Filling the table
-        dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
+      // Fill event selections tag for central event filtering
+      if (singleBarrelCount[0] > 0) { // Single Barrel count : bit 0 corresponds to "jpsiPID1" cut
+        keepEvent[0] = true;
+      }
+      if (singleMuonsCount[0] > 0) { // Single Muon count : bit 0 corresponds to "muonLowPt" cut
+        keepEvent[1] = true;
+      }
+      if (singleMuonsCount[1] > 0) { // Single Muon count : bit 1 corresponds to "muonHighPt" cut
+        keepEvent[2] = true;
+      }
+      if (pairsBarrelCount[0] > 0) { // Pair Barrel count : bit 0 corresponds "jpsiPID1" & "pairNoCut"  [jPaircut + iTrackCut * fNPairCuts]
+        keepEvent[3] = true;
+      }
+      if (pairsUnlikeMuonsCount[0] > 0) { // Pair Muon count : bit 0 corresponds "muonLowPt" & "pairNoCut"  [jPaircut + iMuonCut * fNPairCuts]
+        keepEvent[4] = true;
+      }
+      //Filling the table
+      dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
 
       // Fill DQ bit map
       for (int i = 0; i < fNTrackCuts; i++) {
