@@ -53,7 +53,7 @@ using std::array;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr>; //, aod::McTrackLabels>;
 using MyTracksMC = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
 
-struct V0CascadesQA {
+struct v0cascadesqa {
 
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
 
@@ -183,7 +183,7 @@ struct V0CascadesQA {
       }
     }
   }
-  PROCESS_SWITCH(V0CascadesQA, processMcEvent, "Process MC level Event", false);
+  PROCESS_SWITCH(v0cascadesqa, processMcEvent, "Process MC level Event", false);
 
   ////////////////////////////////////////////
   ////////// V0 QA - Reconstructed ///////////
@@ -241,7 +241,7 @@ struct V0CascadesQA {
       }
     }
   }
-  PROCESS_SWITCH(V0CascadesQA, processReconstructedV0, "Process reconstructed level V0s", true);
+  PROCESS_SWITCH(v0cascadesqa, processReconstructedV0, "Process reconstructed level V0s", true);
 
   ////////////////////////////////
   ////////// V0 QA - MC //////////
@@ -293,7 +293,7 @@ struct V0CascadesQA {
       }
     }
   }
-  PROCESS_SWITCH(V0CascadesQA, processMcV0, "Process MC level V0s", false);
+  PROCESS_SWITCH(v0cascadesqa, processMcV0, "Process MC level V0s", false);
 
   //////////////////////////////////////
   ///// Cascade QA - Reconstructed /////
@@ -392,7 +392,7 @@ struct V0CascadesQA {
       }
     }
   }
-  PROCESS_SWITCH(V0CascadesQA, processReconstructedCascade, "Process reconstructed level Cascades", true);
+  PROCESS_SWITCH(v0cascadesqa, processReconstructedCascade, "Process reconstructed level Cascades", true);
 
   //////////////////////////////////////
   ////////// Cascade QA - MC ///////////
@@ -461,11 +461,11 @@ struct V0CascadesQA {
       }
     }
   }
-  PROCESS_SWITCH(V0CascadesQA, processMcCascade, "Process MC level Cascades", false);
+  PROCESS_SWITCH(v0cascadesqa, processMcCascade, "Process MC level Cascades", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<V0CascadesQA>(cfgc, TaskName{"lf-V0CascadesQA"})};
+    adaptAnalysisTask<v0cascadesqa>(cfgc, TaskName{"lf-v0cascades-qa"})};
 }
