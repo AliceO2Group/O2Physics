@@ -187,8 +187,8 @@ struct DQBarrelTrackSelection {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString cutNames = "TrackBarrel_BeforeCuts;";
-    for (int i = 0; i < fTrackCuts.size(); i++) {
-      cutNames += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+    for (auto& cut : fTrackCuts) {
+      cutNames += Form("TrackBarrel_%s;", cut.GetName());
     }
 
     DefineHistograms(fHistMan, cutNames.Data());     // define all histograms
@@ -389,15 +389,16 @@ struct DQEventMixing {
 
           VarManager::FillPair<pairTypeEE>(track1, track2, fValues);
 
-          for (int i = 0; i < fCutNames.size(); ++i) {
+          int i = 0;
+          for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
             if (twoTrackFilter & (uint8_t(1) << i)) {
               if (track1.sign() * track2.sign() < 0) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fCutNames[i].Data()), fValues);
+                fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", (*cutName).Data()), fValues);
               } else {
                 if (track1.sign() > 0) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", (*cutName).Data()), fValues);
                 } else {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", (*cutName).Data()), fValues);
                 }
               }
             } // end if (filter bits)
@@ -454,15 +455,16 @@ struct DQEventMixing {
 
           VarManager::FillPair<pairTypeEMu>(track1, muon2, fValues);
 
-          for (int i = 0; i < fCutNames.size(); ++i) {
+          int i = 0;
+          for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
             if (twoTrackFilter & (uint8_t(1) << i)) {
               if (track1.sign() * muon2.sign() < 0) {
-                fHistMan->FillHistClass(Form("PairsEleMuMEPM_%s", fCutNames[i].Data()), fValues);
+                fHistMan->FillHistClass(Form("PairsEleMuMEPM_%s", (*cutName).Data()), fValues);
               } else {
                 if (track1.sign() > 0) {
-                  fHistMan->FillHistClass(Form("PairsEleMuMEPP_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsEleMuMEPP_%s", (*cutName).Data()), fValues);
                 } else {
-                  fHistMan->FillHistClass(Form("PairsEleMuMEMM_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsEleMuMEMM_%s", (*cutName).Data()), fValues);
                 }
               }
             } // end if (filter bits)
@@ -554,15 +556,16 @@ struct DQTableReader {
       VarManager::FillPair<pairTypeEE>(t1, t2, fValues);
       VarManager::FillPairVertexing<pairTypeEE>(event, t1, t2, fValues);
       dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
-      for (int i = 0; i < fCutNames.size(); ++i) {
+      int i = 0;
+      for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
           if (t1.sign() * t2.sign() < 0) {
-            fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fCutNames[i].Data()), fValues);
+            fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", (*cutName).Data()), fValues);
           } else {
             if (t1.sign() > 0) {
-              fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fCutNames[i].Data()), fValues);
+              fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", (*cutName).Data()), fValues);
             } else {
-              fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fCutNames[i].Data()), fValues);
+              fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", (*cutName).Data()), fValues);
             }
           }
         }
@@ -603,15 +606,16 @@ struct DQTableReader {
       dileptonFilterMap = uint32_t(twoTrackFilter) << 16;
       VarManager::FillPair<pairTypeEMu>(trackBarrel, trackMuon, fValues);
       dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], trackBarrel.sign() + trackMuon.sign(), dileptonFilterMap);
-      for (int i = 0; i < fCutNames.size(); ++i) {
+      int i = 0;
+      for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
         if (twoTrackFilter & (uint8_t(1) << i)) {
           if (trackBarrel.sign() * trackMuon.sign() < 0) {
-            fHistMan->FillHistClass(Form("PairsEleMuSEPM_%s", fCutNames[i].Data()), fValues);
+            fHistMan->FillHistClass(Form("PairsEleMuSEPM_%s", (*cutName).Data()), fValues);
           } else {
             if (trackBarrel.sign() > 0) {
-              fHistMan->FillHistClass(Form("PairsEleMuSEPP_%s", fCutNames[i].Data()), fValues);
+              fHistMan->FillHistClass(Form("PairsEleMuSEPP_%s", (*cutName).Data()), fValues);
             } else {
-              fHistMan->FillHistClass(Form("PairsEleMuSEMM_%s", fCutNames[i].Data()), fValues);
+              fHistMan->FillHistClass(Form("PairsEleMuSEMM_%s", (*cutName).Data()), fValues);
             }
           }
         } // end if (filter bits)

@@ -136,16 +136,16 @@ struct TableMaker {
       if (fConfigDetailedQA) {
         histClasses += "TrackBarrel_BeforeCuts;";
       }
-      for (int i = 0; i < fTrackCuts.size(); i++) {
-        histClasses += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+      for (auto& cut : fTrackCuts) {
+        histClasses += Form("TrackBarrel_%s;", cut.GetName());
       }
     }
     if (enableMuonHistos) {
       if (fConfigDetailedQA) {
         histClasses += "Muons_BeforeCuts;";
       }
-      for (int i = 0; i < fMuonCuts.size(); i++) {
-        histClasses += Form("Muons_%s;", fMuonCuts[i].GetName());
+      for (auto& muonCut : fMuonCuts) {
+        histClasses += Form("Muons_%s;", muonCut.GetName());
       }
     }
 
@@ -392,8 +392,9 @@ struct TableMaker {
     fStatsList->SetOwner(kTRUE);
     std::vector<TString> eventLabels{"BCs", "Collisions before filtering", "Before cuts", "After cuts"};
     TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, kNaliases + 1, -0.5, kNaliases + 0.5);
-    for (int ib = 1; ib <= eventLabels.size(); ib++) {
-      histEvents->GetXaxis()->SetBinLabel(ib, eventLabels[ib - 1]);
+    int ib = 1;
+    for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
+      histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
     }
     for (int ib = 1; ib <= kNaliases; ib++) {
       histEvents->GetYaxis()->SetBinLabel(ib, aliasLabels[ib - 1]);
@@ -403,17 +404,19 @@ struct TableMaker {
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
     TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
-    for (int ib = 1; ib <= fTrackCuts.size(); ib++) {
-      histTracks->GetXaxis()->SetBinLabel(ib, fTrackCuts[ib - 1].GetName());
+    ib = 1;
+    for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
+      histTracks->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
     const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (int ib = 0; ib < 5; ib++) {
+    for (ib = 0; ib < 5; ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
     fStatsList->Add(histTracks);
     TH1I* histMuons = new TH1I("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);
-    for (int ib = 1; ib <= fMuonCuts.size(); ib++) {
-      histMuons->GetXaxis()->SetBinLabel(ib, fMuonCuts[ib - 1].GetName());
+    ib = 1;
+    for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
+      histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
     fStatsList->Add(histMuons);
   }

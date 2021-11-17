@@ -48,7 +48,7 @@ constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
 const char* ccdbpath_geo = "GLO/Config/Geometry";
 const char* ccdbpath_grp = "GLO/GRP/GRP";
-const char* ccdburl = "https://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.cern.ch:8080"; */
+const char* ccdburl = "http://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.cern.ch:8080"; */
 } // namespace trackextension
 } // namespace analysis
 } // namespace o2
