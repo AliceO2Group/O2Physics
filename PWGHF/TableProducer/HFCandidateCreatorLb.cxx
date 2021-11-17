@@ -135,7 +135,7 @@ struct HFCandidateCreatorLb {
       int index0Lc = track0.globalIndex();
       int index1Lc = track1.globalIndex();
       int index2Lc = track2.globalIndex();
-      int charge = track0.sign() + track1.sign() + track2.sign();
+      //int charge = track0.sign() + track1.sign() + track2.sign();
 
       for (auto& trackPion : tracks) {
         if (trackPion.pt() < ptPionMin) {
@@ -159,7 +159,7 @@ struct HFCandidateCreatorLb {
         // calculate relevant properties
         const auto& secondaryVertexLb = df2.getPCACandidate();
         auto chi2PCA = df2.getChi2AtPCACandidate();
-        auto covMatrixPCA = df2.calcPCACovMatrix().Array();
+        auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
         df2.propagateTracksToVertex();
         df2.getTrack(0).getPxPyPzGlo(pvecLc);

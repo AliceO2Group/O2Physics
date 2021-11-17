@@ -147,7 +147,7 @@ struct HfCandidateCreatorXicc {
         // calculate relevant properties
         const auto& secondaryVertexXicc = df2.getPCACandidate();
         auto chi2PCA = df2.getChi2AtPCACandidate();
-        auto covMatrixPCA = df2.calcPCACovMatrix().Array();
+        auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
         df2.propagateTracksToVertex();
         df2.getTrack(0).getPxPyPzGlo(pvecxic);

@@ -184,31 +184,31 @@ struct HfSelOptimisation {
 
     histPt2Prong[candOrig][candType]->Fill(pT);
 
-    for (int iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
+    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
       if (candidate.cpa() > cutsToTestCosp->at(iCospCut)) {
         histCospVsPt2Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
       }
     }
 
-    for (int iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
+    for (std::size_t iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
       if (candidate.decayLength() > cutsToTestDecLen->at(iDecLenCut)) {
         histDecLenVsPt2Prong[candOrig][candType]->Fill(pT, iDecLenCut + 1);
       }
     }
 
-    for (int iImpParProd{0}; iImpParProd < cutsToTestImpParProd->size(); ++iImpParProd) {
+    for (std::size_t iImpParProd{0}; iImpParProd < cutsToTestImpParProd->size(); ++iImpParProd) {
       if (candidate.impactParameterProduct() < cutsToTestImpParProd->at(iImpParProd)) {
         histImpParProdVsPt2Prong[candOrig][candType]->Fill(pT, iImpParProd + 1);
       }
     }
 
-    for (int iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
+    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
       if (absDCA[0] > cutsToTestMinDCAxy->at(iMinDCAxy)) {
         histMinDCAxyVsPt2Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
       }
     }
 
-    for (int iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
+    for (std::size_t iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
       if (ptTrack[0] > cutsToTestMinTrackPt->at(iMinTrackPt)) {
         histMinTrackPtVsPt2Prong[candOrig][candType]->Fill(pT, iMinTrackPt + 1);
       }
@@ -232,25 +232,25 @@ struct HfSelOptimisation {
 
     histPt3Prong[candOrig][candType]->Fill(pT);
 
-    for (int iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
+    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
       if (candidate.cpa() > cutsToTestCosp->at(iCospCut)) {
         histCospVsPt3Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
       }
     }
 
-    for (int iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
+    for (std::size_t iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
       if (candidate.decayLength() > cutsToTestDecLen->at(iDecLenCut)) {
         histDecLenVsPt3Prong[candOrig][candType]->Fill(pT, iDecLenCut + 1);
       }
     }
 
-    for (int iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
+    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
       if (absDCA[0] > cutsToTestMinDCAxy->at(iMinDCAxy)) {
         histMinDCAxyVsPt3Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
       }
     }
 
-    for (int iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
+    for (std::size_t iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
       if (ptTrack[0] > cutsToTestMinTrackPt->at(iMinTrackPt)) {
         histMinTrackPtVsPt3Prong[candOrig][candType]->Fill(pT, iMinTrackPt + 1);
       }
