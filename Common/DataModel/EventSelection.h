@@ -72,32 +72,35 @@ enum EventSelectionFlags {
   kNsel
 };
 
-static const char* eventSelectionLabels[kNsel] = {
-  "kIsBBV0A",
-  "kIsBBV0C",
-  "kIsBBFDA",
-  "kIsBBFDC",
-  "kNoBGV0A",
-  "kNoBGV0C",
-  "kNoBGFDA",
-  "kNoBGFDC",
-  "kIsBBT0A",
-  "kIsBBT0C",
-  "kIsBBZNA",
-  "kIsBBZNC",
-  "kNoBGZNA",
-  "kNoBGZNC",
-  "kNoV0MOnVsOfPileup",
-  "kNoSPDOnVsOfPileup",
-  "kNoV0Casymmetry",
-  "kIsGoodTimeRange",
-  "kNoIncompleteDAQ",
-  "kNoTPCLaserWarmUp",
-  "kNoTPCHVdip",
-  "kNoPileupFromSPD",
-  "kNoV0PFPileup",
-  "kNoSPDClsVsTklBG",
-  "kNoV0C012vsTklBG"};
+// In a struct to avoid warnings if that is not used in all executables which include this file
+struct EventSelectionLabels {
+  static constexpr const char* labels[kNsel] = {
+    "kIsBBV0A",
+    "kIsBBV0C",
+    "kIsBBFDA",
+    "kIsBBFDC",
+    "kNoBGV0A",
+    "kNoBGV0C",
+    "kNoBGFDA",
+    "kNoBGFDC",
+    "kIsBBT0A",
+    "kIsBBT0C",
+    "kIsBBZNA",
+    "kIsBBZNC",
+    "kNoBGZNA",
+    "kNoBGZNC",
+    "kNoV0MOnVsOfPileup",
+    "kNoSPDOnVsOfPileup",
+    "kNoV0Casymmetry",
+    "kIsGoodTimeRange",
+    "kNoIncompleteDAQ",
+    "kNoTPCLaserWarmUp",
+    "kNoTPCHVdip",
+    "kNoPileupFromSPD",
+    "kNoV0PFPileup",
+    "kNoSPDClsVsTklBG",
+    "kNoV0C012vsTklBG"};
+};
 
 // collision-joinable event selection decisions
 namespace evsel

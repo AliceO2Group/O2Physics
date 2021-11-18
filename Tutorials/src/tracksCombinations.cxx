@@ -50,9 +50,9 @@ struct HashTask {
   // Calculate hash for an element based on 2 properties and their bins.
   int getHash(const std::vector<float>& xBins, const std::vector<float>& yBins, float colX, float colY)
   {
-    for (int i = 0; i < xBins.size(); i++) {
+    for (unsigned int i = 0; i < xBins.size(); i++) {
       if (colX < xBins[i]) {
-        for (int j = 0; j < yBins.size(); j++) {
+        for (unsigned int j = 0; j < yBins.size(); j++) {
           if (colY < yBins[j]) {
             return i + j * (xBins.size() + 1);
           }
@@ -63,7 +63,7 @@ struct HashTask {
     }
 
     // overflow for xBins only
-    for (int j = 0; j < yBins.size(); j++) {
+    for (unsigned int j = 0; j < yBins.size(); j++) {
       if (colY < yBins[j]) {
         return xBins.size() + j * (xBins.size() + 1);
       }
