@@ -13,6 +13,7 @@
 #include <fstream>
 #include <getopt.h>
 
+#include "TSystem.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TList.h"
@@ -272,6 +273,12 @@ int main(int argc, char* argv[])
 
   outputFile->Write();
   outputFile->Close();
+
+  // in case of failure, remove the incomplete file
+  if (exitCode) {
+    printf("Removing incomplete output file %s.\n", outputFile->GetName());
+    gSystem->Unlink(outputFile->GetName());
+  }
 
   printf("AOD merger finished.\n");
 
