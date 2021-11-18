@@ -16,6 +16,7 @@
 /// \note Extended from HFTreeCreatorD0ToKPi, HFTreeCreatorLcToPKPi, HFTreeCreatorXToJpsiPiPi
 ///
 /// \author Panos Christakoglou <Panos.Christakoglou@cern.ch>, Nikhef
+/// \author Maurice Jongerhuis <m.v.jongeruis@students.uu.nl>, University Utrecht
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
