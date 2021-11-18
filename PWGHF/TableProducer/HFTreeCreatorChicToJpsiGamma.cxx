@@ -137,15 +137,14 @@ struct HfTreeCreatorChicToJpsiGamma {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandChic, aod::HfCandChicMCRec, aod::HFSelChicToJpsiGammaCandidate> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particles,
-               aod::BigTracksPID const& tracks, 
-               aod::HfCandProng2 const& jpsiCands
-               )
+               aod::BigTracksPID const& tracks,
+               aod::HfCandProng2 const& jpsiCands)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (auto& collision : collisions) {
-    rowCandidateFullEvents(
+      rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
         collision.posX(),
@@ -159,34 +158,34 @@ struct HfTreeCreatorChicToJpsiGamma {
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      // std::cout << "candidate: px, py, pz = " << candidate.px() << ", " << candidate.py() << ", " << candidate.pz() << std::endl;  
-      // std::cout << "Prong 0: px, py, pz = " << candidate.pxProng0() << ", " << candidate.pyProng0() << ", " << candidate.pzProng0() << std::endl;  
-      // std::cout << "Prong 1: px, py, pz = " << candidate.pxProng1() << ", " << candidate.pyProng1() << ", " << candidate.pzProng1() << std::endl;  
-      // std::cout << "J/psi invariant mass: " << candidate.jpsiToMuMuMass() << std::endl;  
+      // std::cout << "candidate: px, py, pz = " << candidate.px() << ", " << candidate.py() << ", " << candidate.pz() << std::endl;
+      // std::cout << "Prong 0: px, py, pz = " << candidate.pxProng0() << ", " << candidate.pyProng0() << ", " << candidate.pzProng0() << std::endl;
+      // std::cout << "Prong 1: px, py, pz = " << candidate.pxProng1() << ", " << candidate.pyProng1() << ", " << candidate.pzProng1() << std::endl;
+      // std::cout << "J/psi invariant mass: " << candidate.jpsiToMuMuMass() << std::endl;
       // std::cout << "index 0, 1  = " << candidate.index0Id() << ", " << candidate.index1Id() << std::endl;
       auto pxchic = candidate.px();
       auto pychic = candidate.py();
       auto pzchic = candidate.pz();
-      auto pchic  = RecoDecay::P(candidate.px(), candidate.py(), candidate.pz());
+      auto pchic = RecoDecay::P(candidate.px(), candidate.py(), candidate.pz());
       auto pxjpsi = candidate.pxProng0();
       auto pyjpsi = candidate.pyProng0();
       auto pzjpsi = candidate.pzProng0();
-      auto pjpsi  = RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0());
+      auto pjpsi = RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0());
       auto pxgamma = candidate.pxProng1();
       auto pygamma = candidate.pyProng1();
       auto pzgamma = candidate.pzProng1();
-      auto pgamma  = RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
-      auto pl1 = abs(pxchic * pxjpsi  + pychic * pyjpsi  + pzchic * pzjpsi)  / pchic; 
-      auto pl2 = abs(pxchic * pxgamma + pychic * pygamma + pzchic * pzgamma) / pchic; 
-      auto alpha = (pl1-pl2)/(pl1+pl2);
-      auto qt = sqrt ( pjpsi*pjpsi - pl1*pl1);
+      auto pgamma = RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
+      auto pl1 = abs(pxchic * pxjpsi + pychic * pyjpsi + pzchic * pzjpsi) / pchic;
+      auto pl2 = abs(pxchic * pxgamma + pychic * pygamma + pzchic * pzgamma) / pchic;
+      auto alpha = (pl1 - pl2) / (pl1 + pl2);
+      auto qt = sqrt(pjpsi * pjpsi - pl1 * pl1);
 
       auto jpsi = candidate.index0();
 
       // auto trackPos = jpsi.index0_as<aod::BigTracksPID>(); // positive daughter
       // auto trackNeg = jpsi.index1_as<aod::BigTracksPID>(); // negative daughter
-      // std::cout << "trackPos: px, py, pz = " << trackPos.px() << ", " << trackPos.py() << ", " << trackPos.pz() << std::endl;  
-      // std::cout << "trackNeg: px, py, pz = " << trackNeg.px() << ", " << trackNeg.py() << ", " << trackNeg.pz() << std::endl;  
+      // std::cout << "trackPos: px, py, pz = " << trackPos.px() << ", " << trackPos.py() << ", " << trackPos.pz() << std::endl;
+      // std::cout << "trackNeg: px, py, pz = " << trackNeg.px() << ", " << trackNeg.py() << ", " << trackNeg.pz() << std::endl;
       // std::cout << "bcId, numContrib = " << candidate.index0().index0_as<aod::BigTracksPID>().collision().bcId() << ", "
       //                                    << candidate.index0().index0_as<aod::BigTracksPID>().collision().numContrib() << std::endl;
       indexCand++;
@@ -194,8 +193,7 @@ struct HfTreeCreatorChicToJpsiGamma {
                            int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
-                           float FunctionY
-         ) { 
+                           float FunctionY) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
             candidate.index0().index0_as<aod::BigTracksPID>().collision().bcId(),
@@ -210,7 +208,7 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.ptProng0(),
             RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.ptProng1(),
-            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),            
+            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
             alpha,
             qt,
             candidate.chi2PCA(),
@@ -218,7 +216,7 @@ struct HfTreeCreatorChicToJpsiGamma {
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
-            candidate.p(),    
+            candidate.p(),
             candidate.cpa(),
             candidate.cpaXY(),
             FunctionCt,
@@ -226,12 +224,11 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.phi(),
             FunctionY,
             candidate.jpsiToMuMuMass(),
-            candidate.flagMCMatchRec()
-          );
+            candidate.flagMCMatchRec());
         }
       };
-      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(),   InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
-//      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
+      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
+      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), InvMassChicToJpsiGamma(candidate), CtChic(candidate), YChic(candidate));
     }
 
     // Filling particle properties
