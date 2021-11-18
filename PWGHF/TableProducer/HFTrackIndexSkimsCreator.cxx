@@ -336,14 +336,14 @@ struct HfTagSelTracks {
       MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "\nWe found the proton " << indexBach);
 
       int statusProng = BIT(CandidateType::NCandidateTypes) - 1; // selection flag , all bits on
-      bool cutStatus[CandidateType::NCandidateTypes][nCuts];
-      if (debug) {
-        for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
-          for (int iCut = 0; iCut < nCuts; iCut++) {
-            cutStatus[iCandType][iCut] = true;
-          }
-        }
-      }
+      //bool cutStatus[CandidateType::NCandidateTypes][nCuts];
+      //if (debug) {
+      //  for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
+      //    for (int iCut = 0; iCut < nCuts; iCut++) {
+      //      cutStatus[iCandType][iCut] = true;
+      //    }
+      //  }
+      //}
 
       auto trackPt = track.pt();
       auto trackEta = track.eta();
@@ -357,7 +357,7 @@ struct HfTagSelTracks {
       if (trackPt < pTMinTrack2Prong) {
         CLRBIT(statusProng, CandidateType::Cand2Prong); // set the nth bit to 0
         if (debug) {
-          cutStatus[CandidateType::Cand2Prong][0] = false;
+          //cutStatus[CandidateType::Cand2Prong][0] = false;
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
           }
@@ -366,7 +366,7 @@ struct HfTagSelTracks {
       if (trackPt < pTMinTrack3Prong) {
         CLRBIT(statusProng, CandidateType::Cand3Prong);
         if (debug) {
-          cutStatus[CandidateType::Cand3Prong][0] = false;
+          //cutStatus[CandidateType::Cand3Prong][0] = false;
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
           }
@@ -377,7 +377,7 @@ struct HfTagSelTracks {
       if (trackPt < ptMinTrackBach) {
         CLRBIT(statusProng, CandidateType::CandV0bachelor);
         if (debug) {
-          cutStatus[CandidateType::CandV0bachelor][0] = false;
+          //cutStatus[CandidateType::CandV0bachelor][0] = false;
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
           }
@@ -389,7 +389,7 @@ struct HfTagSelTracks {
       if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && std::abs(trackEta) > etaMax2Prong) {
         CLRBIT(statusProng, CandidateType::Cand2Prong);
         if (debug) {
-          cutStatus[CandidateType::Cand2Prong][1] = false;
+          //cutStatus[CandidateType::Cand2Prong][1] = false;
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
           }
@@ -398,7 +398,7 @@ struct HfTagSelTracks {
       if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && std::abs(trackEta) > etaMax3Prong) {
         CLRBIT(statusProng, CandidateType::Cand3Prong);
         if (debug) {
-          cutStatus[CandidateType::Cand3Prong][1] = false;
+          //cutStatus[CandidateType::Cand3Prong][1] = false;
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
           }
@@ -409,7 +409,7 @@ struct HfTagSelTracks {
       if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && std::abs(trackEta) > etaMaxBach) {
         CLRBIT(statusProng, CandidateType::CandV0bachelor);
         if (debug) {
-          cutStatus[CandidateType::CandV0bachelor][1] = false;
+          //cutStatus[CandidateType::CandV0bachelor][1] = false;
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
           }
@@ -429,7 +429,7 @@ struct HfTagSelTracks {
           MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " did not pass clusters cut");
           if (debug) {
             for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
-              cutStatus[iCandType][2] = false;
+              //cutStatus[iCandType][2] = false;
               if (fillHistograms) {
                 registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iDebugCut);
               }
@@ -445,7 +445,7 @@ struct HfTagSelTracks {
         if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
           CLRBIT(statusProng, CandidateType::Cand2Prong);
           if (debug) {
-            cutStatus[CandidateType::Cand2Prong][3] = false;
+            //cutStatus[CandidateType::Cand2Prong][3] = false;
             if (fillHistograms) {
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand2Prong + iDebugCut);
             }
@@ -454,7 +454,7 @@ struct HfTagSelTracks {
         if ((debug || TESTBIT(statusProng, CandidateType::Cand3Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand3Prong)) {
           CLRBIT(statusProng, CandidateType::Cand3Prong);
           if (debug) {
-            cutStatus[CandidateType::Cand3Prong][3] = false;
+            //cutStatus[CandidateType::Cand3Prong][3] = false;
             if (fillHistograms) {
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::Cand3Prong + iDebugCut);
             }
@@ -463,7 +463,7 @@ struct HfTagSelTracks {
         if ((debug || TESTBIT(statusProng, CandidateType::CandV0bachelor)) && !isSelectedTrack(track, dca, CandidateType::CandV0bachelor)) {
           CLRBIT(statusProng, CandidateType::CandV0bachelor);
           if (debug) {
-            cutStatus[CandidateType::CandV0bachelor][3] = false;
+            //cutStatus[CandidateType::CandV0bachelor][3] = false;
             if (fillHistograms) {
               registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iDebugCut);
             }
@@ -645,7 +645,7 @@ struct HfTrackIndexSkimsCreator {
       }
       return true;
     };
-    static bool initIndex = cacheIndices(cut2Prong, massMinIndex, massMaxIndex, d0d0Index);
+    cacheIndices(cut2Prong, massMinIndex, massMaxIndex, d0d0Index);
 
     auto arrMom = array{
       array{hfTrack0.pxProng(), hfTrack0.pyProng(), hfTrack0.pzProng()},
@@ -724,7 +724,7 @@ struct HfTrackIndexSkimsCreator {
       }
       return true;
     };
-    static bool initIndex = cacheIndices(cut3Prong, massMinIndex, massMaxIndex);
+    cacheIndices(cut3Prong, massMinIndex, massMaxIndex);
 
     auto arrMom = array{
       array{hfTrack0.pxProng(), hfTrack0.pyProng(), hfTrack0.pzProng()},
@@ -791,7 +791,7 @@ struct HfTrackIndexSkimsCreator {
         }
         return true;
       };
-      static bool initIndex = cacheIndices(cut2Prong, cospIndex);
+      cacheIndices(cut2Prong, cospIndex);
 
       for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
 
@@ -842,7 +842,7 @@ struct HfTrackIndexSkimsCreator {
         }
         return true;
       };
-      static bool initIndex = cacheIndices(cut3Prong, cospIndex, decLenIndex);
+      cacheIndices(cut3Prong, cospIndex, decLenIndex);
 
       for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
 

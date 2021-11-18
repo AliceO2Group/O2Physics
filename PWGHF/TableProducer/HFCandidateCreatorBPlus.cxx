@@ -130,7 +130,7 @@ struct HfCandidateCreatorBplus {
       auto trackD0 = o2::dataformats::V0(vertexD0, momentumD0, pCovMatrixD0, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0});
 
       //loop over tracks for pi selection
-      auto count = 0;
+      //auto count = 0;
       for (auto& track : tracks) {
         //if(count % 100 == 0){
         //LOGF(info, "Col: %d (cand); %d (track)", candidate.collisionId(), track.collisionId());
@@ -168,7 +168,7 @@ struct HfCandidateCreatorBplus {
         bfitter.getTrack(1).getPxPyPzGlo(pVecBach); //momentum of pi+ at the B+ vertex
         const auto& BSecVertex = bfitter.getPCACandidate();
         auto chi2PCA = bfitter.getChi2AtPCACandidate();
-        auto covMatrixPCA = bfitter.calcPCACovMatrix().Array();
+        auto covMatrixPCA = bfitter.calcPCACovMatrixFlat();
         hCovSVXX->Fill(covMatrixPCA[0]); //FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
 
         pVecBCand = RecoDecay::PVec(pVecD0, pVecBach);
