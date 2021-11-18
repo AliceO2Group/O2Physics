@@ -23,6 +23,7 @@
 
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
+#include "CommonDataFormat/InteractionRecord.h"
 
 /// \struct CellMonitor
 /// \brief Simple monitoring task for cell related quantities
@@ -46,6 +47,7 @@ struct CellMonitor {
   o2::framework::Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0., "Minimum cell amplitude for histograms."};
   o2::framework::Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50, "Min. cell time of main bunch selection"};
   o2::framework::Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100, "Max. cell time of main bunch selection"};
+  o2::framework::Configurable<int> mVetoBCID{"vetoBCID", -1, "BC ID to be excluded"};
 
   o2::framework::HistogramRegistry mHistManager{"CellMonitorHistograms"};
 
@@ -60,7 +62,9 @@ struct CellMonitor {
     LOG(INFO) << "Initializing EMCAL cell monitor task ...";
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     auto nCells = mGeometry->GetNCells();
-    int ntimeMain = int(mMaxCellTimeMain - mMaxCellTimeMain);
+    LOG(INFO) << "Setting up histos for " << nCells << " cells";
+    int ntimeMain = int(mMaxCellTimeMain - mMinCellTimeMain);
+    LOG(INFO) << "Creating histogram for main bunch time range " << mMinCellTimeMain << " ns to " << mMaxCellTimeMain << " ns with " << ntimeMain << " bins";
 
     const o2Axis cellAxis{nCells, -0.5, nCells - 0.5, "cellID", "Cell abs. ID"},
       amplitudeAxis{makeAmplitudeBinning(), "amplitude", "Amplitude (GeV)"},
@@ -68,14 +72,22 @@ struct CellMonitor {
       timeAxisLarge{1500, -600, 900, "celltime", "cell time (ns)"},
       timeAxisMainBunch{ntimeMain, mMinCellTimeMain, mMaxCellTimeMain, "celltimeMain", "time (ns)"},
       colAxis{48, -0.5, 47.5, "colum", "Column"},
-      rowAxis{24, -0.5, 23.5, "row", "Row"};
-    mHistManager.add("events", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+      rowAxis{24, -0.5, 23.5, "row", "Row"},
+      bcAxis{3501, -0.5, 3500.5};
+    mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("cellBCAll", "Bunch crossing ID of cell (all cells)", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("cellBCSelected", "Bunch crossing ID of cell (selected cells)", o2HistType::kTH1F, {{bcAxis}});
     mHistManager.add("cellMasking", "Monitoring for masked cells", o2HistType::kTH1F, {cellAxis});
     mHistManager.add("cellFrequency", "Frequency of cell firing", o2HistType::kTH1F, {cellAxis});
     mHistManager.add("cellAmplitude", "Energy distribution per cell", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
     mHistManager.add("cellAmplitudeCut", "Energy distribution per cell", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
     mHistManager.add("cellTime", "Time distribution per cell", o2HistType::kTH2F, {timeAxisLarge, cellAxis});
     mHistManager.add("cellTimeMain", "Time distribution per cell for the main bunch", o2HistType::kTH2F, {timeAxisMainBunch, cellAxis});
+    mHistManager.add("cellAmplitudeBC", "Cell amplitude vs. bunch crossing ID", o2HistType::kTH2F, {bcAxis, amplitudeAxis});
+    mHistManager.add("celTimeBC", "Cell time vs. bunch crossing ID", o2HistType::kTH2F, {bcAxis, timeAxisLarge});
     //mCellClusterOccurrency.setObject(new TH1F("cellClusterOccurrency", "Occurrency of a cell in clusters", nCells, -0.5, nCells - 0.5));
     //mCellAmplitudeFractionCluster.setObject(new TH2F("cellAmplitudeFractionCluster", "Summed cell amplitude fraction in a cluster", nCells, -0.5, nCells - 0.5, 200, 0., 200.));
 
@@ -84,6 +96,7 @@ struct CellMonitor {
       mHistManager.add(Form("cellCountSM/cellCountSM%d", ism), Form("Count rate per cell for SM %d; col; row", ism), o2HistType::kTH2F, {colAxis, rowAxis});
       mHistManager.add(Form("cellAmplitudeTime/cellAmpTimeCorrSM%d", ism), Form("Correlation between cell amplitude and time in Supermodule %d", ism), o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge});
     }
+    LOG(INFO) << "Cell monitor task configured ...";
   }
 
   /// \brief Process EMCAL cells
@@ -91,7 +104,14 @@ struct CellMonitor {
   {
     LOG(DEBUG) << "Processing next event";
     for (const auto& bc : bcs) {
-      mHistManager.fill(HIST("events"), 1);
+      o2::InteractionRecord eventIR;
+      eventIR.setFromLong(bc.globalBC());
+      mHistManager.fill(HIST("eventsAll"), 1);
+      mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+      if (mVetoBCID >= 0 && eventIR.bc == mVetoBCID)
+        continue;
+      mHistManager.fill(HIST("eventsSelected"), 1);
+      mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
     }
     for (const auto& cell : cells) {
       // cell.cellNumber(),
@@ -101,6 +121,12 @@ struct CellMonitor {
         continue;
       if (isCellMasked(cell.cellNumber()))
         continue;
+      o2::InteractionRecord cellIR;
+      cellIR.setFromLong(cell.bc().globalBC());
+      mHistManager.fill(HIST("cellBCAll"), cellIR.bc);
+      if (mVetoBCID >= 0 && cellIR.bc == mVetoBCID)
+        continue;
+      mHistManager.fill(HIST("cellBCSelected"), cellIR.bc);
       mHistManager.fill(HIST("cellAmplitude"), cell.amplitude(), cell.cellNumber());
       if (cell.amplitude() < mMinCellAmplitude)
         continue;
@@ -110,6 +136,9 @@ struct CellMonitor {
       if (cell.time() > mMinCellTimeMain && cell.time() < mMaxCellTimeMain) {
         mHistManager.fill(HIST("cellTimeMain"), cell.time(), cell.cellNumber());
       }
+
+      mHistManager.fill(HIST("cellAmplitudeBC"), cellIR.bc, cell.amplitude());
+      mHistManager.fill(HIST("celTimeBC"), cellIR.bc, cell.time());
 
       // Get Cell index in eta-phi of sm
       auto [supermodule, module, phiInModule, etaInModule] = mGeometry->GetCellIndex(cell.cellNumber());
