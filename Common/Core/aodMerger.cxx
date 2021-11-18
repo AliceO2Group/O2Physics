@@ -29,13 +29,14 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
   bool skipNonExistingFiles = false;
+  int exitCode = 0; // 0: success, 1: failure
 
   int option_index = 0;
   static struct option long_options[] = {
     {"input", required_argument, nullptr, 0},
     {"output", required_argument, nullptr, 1},
     {"max-size", required_argument, nullptr, 2},
-    {"skip-non-existing-files", required_argument, nullptr, 3},
+    {"skip-non-existing-files", no_argument, nullptr, 3},
     {"help", no_argument, nullptr, 4},
     {nullptr, 0, nullptr, 0}};
 
@@ -50,13 +51,13 @@ int main(int argc, char* argv[])
     } else if (c == 2) {
       maxDirSize = atol(optarg);
     } else if (c == 3) {
-      skipNonExistingFiles = (strcmp(optarg, "true")) ? false : true;
+      skipNonExistingFiles = true;
     } else if (c == 4) {
       printf("AOD merging tool. Options: \n");
-      printf("  --input <inputfile.txt>                  Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
-      printf("  --output <outputfile.root>               Target output ROOT file. Default: %s\n", outputFileName.c_str());
-      printf("  --max-size <size in Bytes>               Target directory size. Default: %ld\n", maxDirSize);
-      printf("  --skip-non-existing-files <true|false>   Non-existing files are skipped. Default: %s\n", "false");
+      printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
+      printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
+      printf("  --max-size <size in Bytes>   Target directory size. Default: %ld\n", maxDirSize);
+      printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the intput list.\n");
       return -1;
     } else {
       return -2;
@@ -67,7 +68,9 @@ int main(int argc, char* argv[])
   printf("  Input file: %s\n", inputCollection.c_str());
   printf("  Ouput file name: %s\n", outputFileName.c_str());
   printf("  Maximal folder size (uncompressed): %ld\n", maxDirSize);
-  printf("  Skip non-existing files: %s\n", (skipNonExistingFiles) ? "true" : "false");
+  if (skipNonExistingFiles) {
+    printf("  WARNING: Skipping non-existing files.\n");
+  }
 
   std::map<std::string, TTree*> trees;
   std::map<std::string, int> offsets;
@@ -100,12 +103,13 @@ int main(int argc, char* argv[])
 
     auto inputFile = TFile::Open(line);
     if (!inputFile) {
-      printf("Could not open input file %s.\n", line.Data());
+      printf("Error: Could not open input file %s.\n", line.Data());
       if (skipNonExistingFiles) {
         continue;
       } else {
         printf("Aborting merge!\n");
-        return 1;
+        exitCode = 1;
+        break;
       }
     }
 
@@ -271,5 +275,5 @@ int main(int argc, char* argv[])
 
   printf("AOD merger finished.\n");
 
-  return 0;
+  return exitCode;
 }
