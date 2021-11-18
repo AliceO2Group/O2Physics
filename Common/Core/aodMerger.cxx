@@ -13,6 +13,7 @@
 #include <fstream>
 #include <getopt.h>
 
+#include "TSystem.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TList.h"
@@ -28,13 +29,16 @@ int main(int argc, char* argv[])
   std::string inputCollection("input.txt");
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
+  bool skipNonExistingFiles = false;
+  int exitCode = 0; // 0: success, 1: failure
 
   int option_index = 0;
   static struct option long_options[] = {
     {"input", required_argument, nullptr, 0},
     {"output", required_argument, nullptr, 1},
     {"max-size", required_argument, nullptr, 2},
-    {"help", no_argument, nullptr, 3},
+    {"skip-non-existing-files", no_argument, nullptr, 3},
+    {"help", no_argument, nullptr, 4},
     {nullptr, 0, nullptr, 0}};
 
   while (true) {
@@ -48,10 +52,13 @@ int main(int argc, char* argv[])
     } else if (c == 2) {
       maxDirSize = atol(optarg);
     } else if (c == 3) {
+      skipNonExistingFiles = true;
+    } else if (c == 4) {
       printf("AOD merging tool. Options: \n");
       printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
-      printf("  --max-size <size in Bytes>   Target directory size: %ld \n", maxDirSize);
+      printf("  --max-size <size in Bytes>   Target directory size. Default: %ld\n", maxDirSize);
+      printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the intput list.\n");
       return -1;
     } else {
       return -2;
@@ -62,6 +69,9 @@ int main(int argc, char* argv[])
   printf("  Input file: %s\n", inputCollection.c_str());
   printf("  Ouput file name: %s\n", outputFileName.c_str());
   printf("  Maximal folder size (uncompressed): %ld\n", maxDirSize);
+  if (skipNonExistingFiles) {
+    printf("  WARNING: Skipping non-existing files.\n");
+  }
 
   std::map<std::string, TTree*> trees;
   std::map<std::string, int> offsets;
@@ -93,6 +103,17 @@ int main(int argc, char* argv[])
     printf("Processing input file: %s\n", line.Data());
 
     auto inputFile = TFile::Open(line);
+    if (!inputFile) {
+      printf("Error: Could not open input file %s.\n", line.Data());
+      if (skipNonExistingFiles) {
+        continue;
+      } else {
+        printf("Aborting merge!\n");
+        exitCode = 1;
+        break;
+      }
+    }
+
     TList* keyList = inputFile->GetListOfKeys();
     keyList->Sort();
 
@@ -234,9 +255,9 @@ int main(int argc, char* argv[])
       }
 
       if (currentDirSize > maxDirSize) {
-        printf("Maximum size reached: %ld. Closing folder.\n", currentDirSize);
+        printf("Maximum size reached: %ld. Closing folder %s.\n", currentDirSize, dfName);
         for (auto const& tree : trees) {
-          //printf("Writing %s\n", tree.first.c_str());
+          // printf("Writing %s\n", tree.first.c_str());
           outputDir->cd();
           tree.second->Write();
           delete tree.second;
@@ -249,10 +270,17 @@ int main(int argc, char* argv[])
     }
     inputFile->Close();
   }
+
   outputFile->Write();
   outputFile->Close();
 
+  // in case of failure, remove the incomplete file
+  if (exitCode) {
+    printf("Removing incomplete output file %s.\n", outputFile->GetName());
+    gSystem->Unlink(outputFile->GetName());
+  }
+
   printf("AOD merger finished.\n");
 
-  return 0;
+  return exitCode;
 }
