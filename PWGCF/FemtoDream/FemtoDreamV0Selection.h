@@ -13,6 +13,7 @@
 /// \brief Definition of the FemtoDreamV0Selection
 /// \author Valentina Mantovani Sarti, TU München valentina.mantovani-sarti@tum.de
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
 #ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
 #define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
@@ -32,15 +33,26 @@ namespace o2::analysis::femtoDream
 namespace femtoDreamV0Selection
 {
 /// The different selections this task is capable of doing
-enum V0Sel { kpTV0Min, //! Min. p_T (GeV/c)
-             kpTV0Max, //! Max. p_T (GeV/c)
+enum V0Sel { kV0Sign, ///< +1 particle, -1 antiparticle
+             kpTV0Min,
+             kpTV0Max,
              kDCAV0DaughMax,
              kCPAV0Min,
              kTranRadV0Min,
              kTranRadV0Max,
              kDecVtxMax };
+
 enum ChildTrackType { kPosTrack,
                       kNegTrack };
+
+enum V0ContainerPosition {
+  kV0,
+  kPosCuts,
+  kPosPID,
+  kNegCuts,
+  kNegPID,
+}; /// Position in the full VO cut container
+
 } // namespace femtoDreamV0Selection
 
 /// \class FemtoDreamV0Selection
@@ -69,7 +81,7 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
   template <typename C, typename V, typename T>
   bool isSelectedMinimal(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
-  /// \todo for the moment the PID of the tracks is factored out into a separate field, hence 5 values in total
+  /// \todo for the moment the PID of the tracks is factored out into a separate field, hence 5 values in total \\ASK: what does it mean?
   template <typename cutContainerType, typename C, typename V, typename T>
   std::array<cutContainerType, 5> getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
@@ -95,6 +107,49 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
     }
   }
 
+  /// Helper function to obtain the name of a given selection criterion for consistent naming of the configurables
+  /// \param iSel Track selection variable to be examined
+  /// \param prefix Additional prefix for the name of the configurable
+  /// \param suffix Additional suffix for the name of the configurable
+  static std::string getSelectionName(femtoDreamV0Selection::V0Sel iSel, std::string_view prefix = "", std::string_view suffix = "")
+  {
+    std::string outString = static_cast<std::string>(prefix);
+    outString += static_cast<std::string>(mSelectionNames[iSel]);
+    outString += suffix;
+    return outString;
+  }
+
+  /// Helper function to obtain the index of a given selection variable for consistent naming of the configurables
+  /// \param obs V0 selection variable (together with prefix) got from file
+  /// \param prefix Additional prefix for the output of the configurable
+  static int findSelectionIndex(const std::string_view& obs, std::string_view prefix = "")
+  {
+    for (int index = 0; index < kNv0Selection; index++) {
+      std::string_view cmp{static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index])};
+      if (obs.compare(cmp) == 0)
+        return index;
+    }
+    LOGF(info, "Variable %s not found", obs);
+    return -1;
+  }
+
+  /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
+  /// \param iSel V0 selection variable whose type is returned
+  static femtoDreamSelection::SelectionType getSelectionType(femtoDreamV0Selection::V0Sel iSel)
+  {
+    return mSelectionTypes[iSel];
+  }
+
+  /// Helper function to obtain the helper string of a given selection criterion for consistent description of the configurables
+  /// \param iSel Track selection variable to be examined
+  /// \param prefix Additional prefix for the output of the configurable
+  static std::string getSelectionHelper(femtoDreamV0Selection::V0Sel iSel, std::string_view prefix = "")
+  {
+    std::string outString = static_cast<std::string>(prefix);
+    outString += static_cast<std::string>(mSelectionHelper[iSel]);
+    return outString;
+  }
+
  private:
   int nPtV0MinSel;
   int nPtV0MaxSel;
@@ -112,6 +167,38 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
   float DecVtxMax;
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
+
+  static constexpr int kNv0Selection = 8;
+
+  static constexpr std::string_view mSelectionNames[kNv0Selection] = {
+    "Sign",
+    "PtMin",
+    "PtMax",
+    "DCAdaughMax",
+    "CPAMin",
+    "TranRadMin",
+    "TranRadMax",
+    "DecVecMax"}; ///< Name of the different selections
+
+  static constexpr femtoDreamSelection::SelectionType mSelectionTypes[kNv0Selection]{
+    femtoDreamSelection::kEqual,
+    femtoDreamSelection::kLowerLimit,
+    femtoDreamSelection::kUpperLimit,
+    femtoDreamSelection::kUpperLimit,
+    femtoDreamSelection::kLowerLimit,
+    femtoDreamSelection::kLowerLimit,
+    femtoDreamSelection::kLowerLimit,
+    femtoDreamSelection::kUpperLimit}; ///< Map to match a variable with its type
+
+  static constexpr std::string_view mSelectionHelper[kNv0Selection] = {
+    "+1 for lambda, -1 for antilambda",
+    "Minimum pT (GeV/c)",
+    "Maximum pT (GeV/c)",
+    "Maximum DCA daugh from SV (cm)",
+    "Minimum Cosine of Pointing Angle",
+    "Minimum transverse radius (cm)",
+    "Maximum transverse radius (cm)",
+    "Maximum distance from primary vertex"}; ///< Helper information for the different selections
 
 }; // namespace femtoDream
 
@@ -221,6 +308,7 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   cutContainerType output = 0;
   size_t counter = 0;
 
+  float sign = 0.;
   const auto pT = v0.pt();
   const auto tranRad = v0.v0radius();
   const auto dcaDaughv0 = v0.dcaV0daughters();
@@ -230,13 +318,31 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
-    if (selVariable == femtoDreamV0Selection::kDecVtxMax) {
+    if (selVariable == femtoDreamV0Selection::kV0Sign) {
+      if (sel.getSelectionValue() < 0) {
+        auto nSigmaPr = negTrack.tpcNSigmaPr();
+        auto nSigmaPi = posTrack.tpcNSigmaPi();
+        if (abs(nSigmaPr) < 3.5 && abs(nSigmaPi) < 3.5) {
+          sign = -1.;
+        }
+      } else {
+        auto nSigmaPi = negTrack.tpcNSigmaPr();
+        auto nSigmaPr = posTrack.tpcNSigmaPi();
+        if (abs(nSigmaPr) < 3.5 && abs(nSigmaPi) < 3.5) {
+          sign = 1.;
+        }
+      }
+      sel.checkSelectionSetBit(sign, output, counter);
+    } else if (selVariable == femtoDreamV0Selection::kDecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);
         sel.checkSelectionSetBit(decVtxValue, output, counter);
       }
     } else {
       switch (selVariable) {
+        case (femtoDreamV0Selection::kV0Sign):
+          observable = sign;
+          break;
         case (femtoDreamV0Selection::kpTV0Min):
         case (femtoDreamV0Selection::kpTV0Max):
           observable = pT;
@@ -257,7 +363,10 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
       sel.checkSelectionSetBit(observable, output, counter);
     }
   }
-  return {output, outputPosTrack.at(0), outputPosTrack.at(1), outputNegTrack.at(0), outputNegTrack.at(1)};
+  return {output, outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+          outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+          outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+          outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID)};
 }
 
 template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename C, typename V, typename T>
