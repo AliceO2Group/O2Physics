@@ -35,6 +35,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
     "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
     "objname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be stored in file")(
+    "inobjname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be read from file in 'push' mode")(
     "bb0", bpo::value<float>()->default_value(0.0320981f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768f), "Bethe-Bloch parameter 1")(
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
@@ -90,6 +91,7 @@ int main(int argc, char* argv[])
   const std::string outFilename = vm["save-to-file"].as<std::string>();
   const std::string inFilename = vm["read-from-file"].as<std::string>();
   const std::string objname = vm["objname"].as<std::string>();
+  const std::string inobjname = vm["inobjname"].as<std::string>();
 
   const float bb0 = vm["bb0"].as<float>();
   const float bb1 = vm["bb1"].as<float>();
@@ -110,7 +112,7 @@ int main(int argc, char* argv[])
 
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
-  std::array<double, 8> sigparams = {sig0, sig1, sig2, sig3, sig4, sig5, sig6, sig7,};
+  std::array<double, 8> sigparams = {sig0, sig1, sig2, sig3, sig4, sig5, sig6, sig7};
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
@@ -156,16 +158,30 @@ int main(int argc, char* argv[])
 
   else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) // Create new object to write to local file or push to CCDB
   {
-    LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
+    if (!inFilename.empty()) { // Read from existing file to push to CCDB
+      LOG(info) << "Reading from existing file to write to CCDB:";
+      TFile fin(inFilename.data(), "READ");
+      if (!fin.IsOpen()) {
+        LOG(error) << "Input file " << inFilename << " could not be read";
+        return 1;
+      }
+      tpc.reset(fin.Get<Response>(inobjname.c_str()));
+      if (!tpc) {
+      LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
+      return 1;
+      }
+      tpc->PrintAll();
+    } else {    //Create new object if file not specified
+      LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
 
-    tpc.reset(new Response());
-    tpc->SetBetheBlochParams(BBparams);
-    tpc->SetResolutionParams(sigparams);
-    tpc->SetMIP(mipval);
-    tpc->SetChargeFactor(chargefacval);
-    tpc->SetUseDefaultResolutionParam(false);
-    tpc->PrintAll();
-
+      tpc.reset(new Response());
+      tpc->SetBetheBlochParams(BBparams);
+      tpc->SetResolutionParams(sigparams);
+      tpc->SetMIP(mipval);
+      tpc->SetChargeFactor(chargefacval);
+      tpc->SetUseDefaultResolutionParam(false);
+      tpc->PrintAll();
+    }
     if (optMode.compare("write") == 0) {
       if (outFilename.empty()) {
         LOG(error) << "'write' mode specified, but no output filename. Quitting";
