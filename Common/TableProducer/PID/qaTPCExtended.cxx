@@ -166,8 +166,9 @@ struct QaTpcV0 {
                                                          "dEdxDiffTPCV0/Ka", "dEdxDiffTPCV0/Pr"};
   static constexpr std::string_view hnsigmaV0[NpV0] = {"nsigmaTPCV0/El", "nsigmaTPCV0/Pi",
                                                        "nsigmaTPCV0/Ka", "nsigmaTPCV0/Pr"};
+  static constexpr std::string_view hnsigmaV0VsEta[NpV0] = {"nsigmaTPCV0VsEta/El", "nsigmaTPCV0VsEta/Pi",
+                                                       "nsigmaTPCV0VsEta/Ka", "nsigmaTPCV0VsEta/Pr"};
   HistogramRegistry histos{"TPCPIDQA_V0"};
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use log momentum axis in V0 QA"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
@@ -189,9 +190,8 @@ struct QaTpcV0 {
   void addV0Histos()
   {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
-    }
+    pAxis.makeLogaritmic();
+    
 
     // corrected dE/dx for clean V0
     AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s from V^{0}) A.U.", partName[i])};
@@ -203,6 +203,9 @@ struct QaTpcV0 {
     AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("n_{#sigma}^{TPC}(%s from V^{0})", partName[i])};
     histos.add(hnsigmaV0[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
 
+    AxisSpec etaAxis{1000, -1, 1, "#eta"};
+    histos.add(hnsigmaV0VsEta[i].data(), "", kTH2F, {etaAxis, nSigmaAxis});
+
   } //addV0Histos
 
   template <uint8_t i, typename T>
@@ -211,6 +214,7 @@ struct QaTpcV0 {
     histos.fill(HIST(hdEdxV0[i]), mom, t.tpcSignal() - exp_diff);
     histos.fill(HIST(hdEdxDiffV0[i]), mom, exp_diff);
     histos.fill(HIST(hnsigmaV0[i]), t.p(), nsigma);
+    histos.fill(HIST(hnsigmaV0VsEta[i]),t.eta(),nsigma);
   }
 
   void init(o2::framework::InitContext&)
