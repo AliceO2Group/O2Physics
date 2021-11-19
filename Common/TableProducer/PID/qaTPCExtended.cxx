@@ -28,9 +28,8 @@ using TPCV0Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, 
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{         //runtime customisation goes here
-  {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}
-  };
+  std::vector<ConfigParamSpec> options{//runtime customisation goes here
+    {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}};
   std::swap(workflowOptions, options);
 }
 
@@ -42,13 +41,13 @@ struct QaTpcTof {
   //Configurables
   Configurable<float> cutTOF{"cutTOF", 3.f, "TOF nsigma cut for TPC-TOF PID"};
   Configurable<int> pBins{"pBins", 400, "Number of momentum bins"};
-  Configurable<float> pMin{"pMin", 0.01, "Lower limit in momentum"};
-  Configurable<float> pMax{"pMax", 20., "Upper limit in momentum"};
+  Configurable<float> pMin{"pMin", 0.f, "Lower limit in momentum"};
+  Configurable<float> pMax{"pMax", 20.f, "Upper limit in momentum"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for TPC nSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Upper limit for TPC nSigma"};
 
-  HistogramRegistry hists{"HistogramsTPCPIDQA", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry hists{"HistogramsTPCPIDQA"};
 
   static constexpr int Np = 9;
   static constexpr std::string_view hnsigmaTPC[Np] = {"nsigmaTPC/El", "nsigmaTPC/Mu", "nsigmaTPC/Pi",
@@ -130,26 +129,32 @@ struct QaTpcTof {
       fillTPCQAParticleHistos<7>(t, mom, t.tofNSigmaHe(), t.tpcNSigmaHe());
       fillTPCQAParticleHistos<8>(t, mom, t.tofNSigmaAl(), t.tpcNSigmaAl());
 
+    } //for
+  }   //process
+};    //struct QaTPCPID
+
 struct QaTpcV0 {
   static constexpr int NpV0 = 4;
-  enum EV0DaughID {kEle=0, kPi=1, kKa=2, kPr=3};
-  static constexpr const char* partName[NpV0] = {"e", "#pi", "K", "p", };
+  enum EV0DaughID { kEle = 0,
+                    kPi = 1,
+                    kKa = 2,
+                    kPr = 3 };
+  static constexpr const char* partName[NpV0] = {"e", "#pi", "K", "p"};
   static constexpr std::string_view hdEdxV0[NpV0] = {"dEdxV0/El", "dEdxV0/Pi",
                                                      "dEdxV0/Ka", "dEdxV0/Pr"};
   static constexpr std::string_view hdEdxDiffV0[NpV0] = {"dEdxDiffTPCV0/El", "dEdxDiffTPCV0/Pi",
                                                          "dEdxDiffTPCV0/Ka", "dEdxDiffTPCV0/Pr"};
   static constexpr std::string_view hnsigmaV0[NpV0] = {"nsigmaTPCV0/El", "nsigmaTPCV0/Pi",
                                                        "nsigmaTPCV0/Ka", "nsigmaTPCV0/Pr"};
-  static constexpr std::string_view hnsigmaV0VsEta[NpV0] = {"nsigmaTPCV0VsEta/El", "nsigmaTPCV0VsEta/Pi",
-                                                       "nsigmaTPCV0VsEta/Ka", "nsigmaTPCV0VsEta/Pr"};
-  HistogramRegistry histos{"TPCPIDQA_V0", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"TPCPIDQA_V0"};
+  Configurable<int> logAxis{"logAxis", 0, "Flag to use log momentum axis in V0 QA"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for TPC nSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
-  Configurable<float> maxNSigma{"maxNSigma",  10.f, "Upper limit for TPC nSigma"};
-  
+  Configurable<float> maxNSigma{"maxNSigma", 10.f, "Upper limit for TPC nSigma"};
+
   //Definition of V0 preselection cuts for K0S, Lambda, Anti-lambda
   //K0S
   static constexpr const float cutQTK0[2] = {0.1075f, 0.215f};
@@ -159,7 +164,6 @@ struct QaTpcV0 {
   static constexpr const float cutAlphaL[2] = {0.35f, 0.7f};
   static constexpr const float cutAlphaAL[2] = {-0.7f, -0.35f};
   static constexpr const float cutAPL[3] = {0.107f, -0.69f, 0.5f};
-  
 
   template <uint8_t i>
   void addV0Histos()
@@ -177,9 +181,6 @@ struct QaTpcV0 {
 
     AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("n_{#sigma}^{TPC}(%s from V^{0})", partName[i])};
     histos.add(hnsigmaV0[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
-
-    AxisSpec etaAxis{1000, -1, 1, "#eta"};
-    histos.add(hnsigmaV0VsEta[i].data(), "", kTH2F, {etaAxis, nSigmaAxis});
 
   } //addV0Histos
 
@@ -203,7 +204,7 @@ struct QaTpcV0 {
 
   void process(aod::Collision const& collision, aod::V0Datas const& v0s, TPCV0Tracks const& tracks)
   {
-    for (auto v0 : v0s) {//for loop on built v0 candidates
+    for (auto v0 : v0s) { //for loop on built v0 candidates
       // initialise dynamic variables
       float alpha = v0.alpha();
       float qt = v0.qtarm();
@@ -211,34 +212,32 @@ struct QaTpcV0 {
       auto negTrack = v0.negTrack_as<TPCV0Tracks>();
       // Check for K0
       float q = cutAPK0[0] * sqrt(abs(1 - alpha * alpha / (cutAPK0[1] * cutAPK0[1])));
-      if ((qt > cutQTK0[0]) && (qt < cutQTK0[1]) && (qt > q) ) {
+      if ((qt > cutQTK0[0]) && (qt < cutQTK0[1]) && (qt > q)) {
         // Treat as K0 (both tracks pions)
-        fillV0Histos<kPi>(posTrack,posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
-        fillV0Histos<kPi>(negTrack,negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
-
+        fillV0Histos<kPi>(posTrack, posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
+        fillV0Histos<kPi>(negTrack, negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
       }
 
       // Check for Lambda
-      q = cutAPL[0] * sqrt(abs(1 - ( (alpha + cutAPL[1]) * (alpha + cutAPL[1]) ) / (cutAPL[2] * cutAPL[2])));
-      if ( (alpha > cutAlphaL[0]) && (alpha < cutAlphaL[1]) && (qt > cutQTL) && (qt < q)) {
+      q = cutAPL[0] * sqrt(abs(1 - ((alpha + cutAPL[1]) * (alpha + cutAPL[1])) / (cutAPL[2] * cutAPL[2])));
+      if ((alpha > cutAlphaL[0]) && (alpha < cutAlphaL[1]) && (qt > cutQTL) && (qt < q)) {
         //Treat as Lambda (pos proton, neg pion)
-        fillV0Histos<kPr>(posTrack,posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPr(), posTrack.tpcNSigmaPr());
-        fillV0Histos<kPi>(negTrack,negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
-
+        fillV0Histos<kPr>(posTrack, posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPr(), posTrack.tpcNSigmaPr());
+        fillV0Histos<kPi>(negTrack, negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
       }
 
       // Check for antilambda
-      q = cutAPL[0] * sqrt(abs(1 - ( (alpha - cutAPL[1]) * (alpha - cutAPL[1]) ) / (cutAPL[2] * cutAPL[2]) ));
-      if ( (alpha > cutAlphaAL[0]) && (alpha < cutAlphaAL[1]) && (qt <  q) ) {
+      q = cutAPL[0] * sqrt(abs(1 - ((alpha - cutAPL[1]) * (alpha - cutAPL[1])) / (cutAPL[2] * cutAPL[2])));
+      if ((alpha > cutAlphaAL[0]) && (alpha < cutAlphaAL[1]) && (qt < q)) {
         //Treat as antilambda (pos pion, neg proton)
-        fillV0Histos<kPi>(posTrack,posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
-        fillV0Histos<kPr>(negTrack,negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPr(), negTrack.tpcNSigmaPr());
+        fillV0Histos<kPi>(posTrack, posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
+        fillV0Histos<kPr>(negTrack, negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPr(), negTrack.tpcNSigmaPr());
       }
-      
+
     } //for
-  }//process
-    
-};//struct QaTpcV0
+  }   //process
+
+}; //struct QaTpcV0
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
