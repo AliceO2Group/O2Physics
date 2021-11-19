@@ -352,7 +352,7 @@ struct TableMakerMC {
           VarManager::FillTrack<TTrackFillMap>(track);
           auto mctrack = track.mcParticle();
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
-          
+
           if (fConfigDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
           }
