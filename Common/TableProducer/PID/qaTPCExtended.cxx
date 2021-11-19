@@ -18,11 +18,14 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/StrangenessTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
+using TPCV0Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi,
+                              aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TrackSelection>;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -133,8 +136,8 @@ struct QaTpcTof {
 };//struct QaTPCPID
 
 struct QaTpcV0 {
-    static constexpr int NpV0 = 4;
-
+  static constexpr int NpV0 = 4;
+  enum EV0DaughID {kEle=0, kPi=1, kKa=2, kPr=3};
   static constexpr const char* partName[NpV0] = {"e", "#pi", "K", "p", };
   static constexpr std::string_view hdEdxV0[NpV0] = {"dEdxV0/El", "dEdxV0/Pi",
                                                    "dEdxV0/Ka", "dEdxV0/Pr"};
@@ -150,6 +153,16 @@ struct QaTpcV0 {
   Configurable<int> nBinsNSigma{"nBinsNSigma",200, "Number of bins for TPC nSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
   Configurable<float> maxNSigma{"maxNSigma",  10.f, "Upper limit for TPC nSigma"};
+  
+  //Definition of V0 preselection cuts for K0S, Lambda, Anti-lambda
+  //K0S
+  static constexpr const float cutQTK0[2] = {0.1075f, 0.215f};
+  static constexpr const float cutAPK0[2] = {0.199f, 0.8f};
+  //Lambda/Antilambda
+  static constexpr const float cutQTL = 0.03f;
+  static constexpr const float cutAlphaL[2] = {0.35f, 0.7f};
+  static constexpr const float cutAlphaAL[2] = {-0.7f, -0.35f};
+  static constexpr const float cutAPL[3] = {0.107f, -0.69f, 0.5f};
   
 
   template <uint8_t i>
@@ -190,19 +203,43 @@ struct QaTpcV0 {
 
   }//init
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
-                                                          aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                                          aod::TrackSelection> const& tracks)
+  void process(aod::Collision const& collision, aod::V0Datas const& v0s, TPCV0Tracks const& tracks)
   {
-    for (auto t : tracks) {
-      const float mom = t.tpcInnerParam();
-      fillV0Histos<0>(t, mom, t.tpcExpSignalDiffEl(), t.tpcNSigmaEl());
-      fillV0Histos<1>(t, mom, t.tpcExpSignalDiffPi(), t.tpcNSigmaPi());
-      fillV0Histos<2>(t, mom, t.tpcExpSignalDiffKa(), t.tpcNSigmaKa());
-      fillV0Histos<3>(t, mom, t.tpcExpSignalDiffPr(), t.tpcNSigmaPr());
-    } //for loop
-  } //process
+    for (auto v0 : v0s) {//for loop on built v0 candidates
+      // initialise dynamic variables
+      float alpha = v0.alpha();
+      float qt = v0.qtarm();
+      auto posTrack = v0.posTrack_as<TPCV0Tracks>();
+      auto negTrack = v0.negTrack_as<TPCV0Tracks>();
+      // Check for K0
+      float q = cutAPK0[0] * sqrt(abs(1 - alpha * alpha / (cutAPK0[1] * cutAPK0[1])));
+      if ((qt > cutQTK0[0]) && (qt < cutQTK0[1]) && (qt > q) ) {
+        // Treat as K0 (both tracks pions)
+        fillV0Histos<kPi>(posTrack,posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
+        fillV0Histos<kPi>(negTrack,negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
+
+      }
+
+      // Check for Lambda
+      q = cutAPL[0] * sqrt(abs(1 - ( (alpha + cutAPL[1]) * (alpha + cutAPL[1]) ) / (cutAPL[2] * cutAPL[2])));
+      if ( (alpha > cutAlphaL[0]) && (alpha < cutAlphaL[1]) && (qt > cutQTL) && (qt < q)) {
+        //Treat as Lambda (pos proton, neg pion)
+        fillV0Histos<kPr>(posTrack,posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPr(), posTrack.tpcNSigmaPr());
+        fillV0Histos<kPi>(negTrack,negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
+
+      }
+
+      // Check for antilambda
+      q = cutAPL[0] * sqrt(abs(1 - ( (alpha - cutAPL[1]) * (alpha - cutAPL[1]) ) / (cutAPL[2] * cutAPL[2]) ));
+      if ( (alpha > cutAlphaAL[0]) && (alpha < cutAlphaAL[1]) && (qt <  q) ) {
+        //Treat as antilambda (pos pion, neg proton)
+        fillV0Histos<kPi>(posTrack,posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
+        fillV0Histos<kPr>(negTrack,negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPr(), negTrack.tpcNSigmaPr());
+      }
+      
+    } //for
+  }//process
+    
 };//struct QaTpcV0
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
