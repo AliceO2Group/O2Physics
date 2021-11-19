@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -349,6 +350,8 @@ struct TableMakerMC {
           trackFilteringTag = uint64_t(0);
           trackTempFilterMap = uint8_t(0);
           VarManager::FillTrack<TTrackFillMap>(track);
+          auto mctrack = track.mcParticle();
+          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
           if (fConfigDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -385,9 +388,6 @@ struct TableMakerMC {
             }
           }
           trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
-
-          auto mctrack = track.mcParticle();
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
           mcflags = 0;
           i = 0;     // runs over the MC signals
