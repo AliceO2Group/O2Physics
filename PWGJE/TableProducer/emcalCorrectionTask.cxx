@@ -121,10 +121,10 @@ struct EmcalCorrectionTask {
       //LOG(debug) << "Cell E: " << cell;
 
       mEmcalCells.emplace_back(o2::emcal::Cell(
-        cell.cellNumber(),
-        cell.amplitude(),
-        cell.time(),
-        o2::emcal::intToChannelType(cell.cellType())));
+            cell.cellNumber(),
+            cell.amplitude(),
+            cell.time(),
+            o2::emcal::intToChannelType(cell.cellType())));
     }
 
     // Cell QA
@@ -177,7 +177,7 @@ struct EmcalCorrectionTask {
       auto pos = cluster.getGlobalPosition();
       pos = pos - math_utils::Point3D<float>{collision.posX(), collision.posY(), collision.posZ()};
       // Normalize the vector and rescale by energy.
-      pos /= (cluster.E() / std::sqrt(pos.Mag2()));
+      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
       // We have our necessary properties. Now we store outputs
       //LOG(debug) << "Cluster E: " << cluster.E();
