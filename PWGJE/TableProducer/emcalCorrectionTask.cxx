@@ -121,10 +121,10 @@ struct EmcalCorrectionTask {
       //LOG(debug) << "Cell E: " << cell;
 
       mEmcalCells.emplace_back(o2::emcal::Cell(
-            cell.cellNumber(),
-            cell.amplitude(),
-            cell.time(),
-            o2::emcal::intToChannelType(cell.cellType())));
+        cell.cellNumber(),
+        cell.amplitude(),
+        cell.time(),
+        o2::emcal::intToChannelType(cell.cellType())));
     }
 
     // Cell QA
