@@ -101,7 +101,7 @@ class MCSignal : public TNamed
 
  private:
   std::vector<MCProng> fProngs;
-  int fNProngs;
+  unsigned int fNProngs;
   std::vector<short> fCommonAncestorIdxs;
   int fTempAncestorLabel;
 
