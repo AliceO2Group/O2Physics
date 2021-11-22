@@ -177,7 +177,7 @@ struct EmcalCorrectionTask {
       auto pos = cluster.getGlobalPosition();
       pos = pos - math_utils::Point3D<float>{collision.posX(), collision.posY(), collision.posZ()};
       // Normalize the vector and rescale by energy.
-      pos /= (cluster.E() / std::sqrt(pos.Mag2()));
+      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
       // We have our necessary properties. Now we store outputs
       //LOG(debug) << "Cluster E: " << cluster.E();
