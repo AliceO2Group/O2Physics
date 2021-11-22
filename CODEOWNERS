@@ -14,8 +14,9 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf 
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera 
 /DPG @alibuild @mario-krueger
+/EventFiltering @alibuild @mpuccio 
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
+/PWGDQ @alibuild @iarsene
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar
 /PWGLF @alibuild @njacazio
-/EventFiltering @alibuild @mpuccio 
 /PWGMM @alibuild @aalkin 
