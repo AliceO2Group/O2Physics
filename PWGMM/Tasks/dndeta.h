@@ -53,6 +53,7 @@ struct PseudorapidityDensity {
   Configurable<float> vtxZMax{"vtxZMax", 15, "max z vertex"};
   Configurable<float> vtxZMin{"vtxZMin", -15, "min z vertex"};
 
+  Configurable<bool> useDCA{"useDCA", false, "use DCA cuts"};
   Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
   Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
 
@@ -110,7 +111,7 @@ struct PseudorapidityDensity {
 
   expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
   expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
-  expressions::Filter DCAFilter = aod::track::dcaXY <= maxDCAXY && aod::track::dcaZ <= maxDCAZ;
+  expressions::Filter DCAFilter = ifnode(useDCA.node(), nabs(aod::track::dcaXY) <= maxDCAXY && nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
   expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
   expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
 

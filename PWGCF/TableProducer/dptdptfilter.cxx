@@ -640,7 +640,7 @@ MatchRecoGenSpecies DptDptFilter::trackIdentification(TrackObject const& track)
   if (recoIdMethod == 0) {
     sp = kDptDptCharged;
   } else if (recoIdMethod == 1) {
-    if constexpr (framework::has_type_v<aod::pidTPCPi, typename TrackObject::all_columns>) {
+    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns>) {
       sp = IdentifyTrack(track);
     } else {
       LOGF(fatal, "Track identification required but PID information not present");
