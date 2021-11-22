@@ -82,7 +82,7 @@ int MixingHandler::GetMixingVariable(VarManager::Variables var)
   int i = 0;
   for (auto v = fVariables.begin(); v != fVariables.end(); v++, i++) {
     if (*v == var) {
-      return i;      
+      return i;
     }
   }
   return -1;
@@ -113,7 +113,7 @@ void MixingHandler::Init()
   //
   int size = 1;
   for (auto v : fVariableLimits) {
-    size *= (v.GetSize() - 1);        
+    size *= (v.GetSize() - 1);
   }
 
   fIsInitialized = kTRUE;
