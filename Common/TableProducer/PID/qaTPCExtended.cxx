@@ -47,7 +47,7 @@ struct QaTpcTof {
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Upper limit for TPC nSigma"};
 
-  HistogramRegistry hists{"HistogramsTPCPIDQA"};
+  HistogramRegistry hists{"HistogramsTPCPIDQA", {}, OutputObjHandlingPolicy::QAObject};
 
   static constexpr int Np = 9;
   static constexpr std::string_view hnsigmaTPC[Np] = {"nsigmaTPC/El", "nsigmaTPC/Mu", "nsigmaTPC/Pi",
@@ -147,7 +147,7 @@ struct QaTpcV0 {
                                                        "nsigmaTPCV0/Ka", "nsigmaTPCV0/Pr"};
   static constexpr std::string_view hnsigmaV0VsEta[NpV0] = {"nsigmaTPCV0VsEta/El", "nsigmaTPCV0VsEta/Pi",
                                                        "nsigmaTPCV0VsEta/Ka", "nsigmaTPCV0VsEta/Pr"};
-  HistogramRegistry histos{"TPCPIDQA_V0"};
+  HistogramRegistry histos{"TPCPIDQA_V0", {}, OutputObjHandlingPolicy::QAObject};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
