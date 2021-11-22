@@ -1232,7 +1232,7 @@ DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);         // debug flag for mi
 enum DecayType { BsToDsPi }; // move this to a dedicated cascade namespace in the future?
 
 // Bs → Ds+ π- → K+ K- π+ π-
-//float massBs = RecoDecay::getMassPDG(pdg::Code::kBs);
+// float massBs = RecoDecay::getMassPDG(pdg::Code::kBs);
 template <typename T>
 auto CtBs(const T& candidate)
 {

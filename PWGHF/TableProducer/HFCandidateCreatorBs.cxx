@@ -234,7 +234,7 @@ struct HFCandidateCreatorBsMC {
 
     // Match reconstructed candidates.
     for (auto& candidate : candidates) {
-      //Printf("New rec. candidate");
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       debug = 0;
@@ -247,11 +247,11 @@ struct HFCandidateCreatorBsMC {
                                     dsCand.index1_as<aod::BigTracksMC>(),
                                     dsCand.index2_as<aod::BigTracksMC>()};
       // Bs → Ds+ π-
-      //Printf("Checking Bs → Ds+ π-");
+      // Printf("Checking Bs → Ds+ π-");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kBs, array{+kKPlus, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Bs → Ds+ π-
-        //Printf("Checking Bs → Ds+ π-");
+        // Printf("Checking Bs → Ds+ π-");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersDs, pdg::Code::kDs, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = 1 << hf_cand_bs::DecayType::BsToDsPi;
@@ -265,14 +265,14 @@ struct HFCandidateCreatorBsMC {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       // Bs → Ds+ π-
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{int(pdg::Code::kDs), -kPiPlus}, true)) {
         // Match Ds+ -> φπ -> K+K-π
         auto DsCandMC = particlesMC.iteratorAt(particle.daughter0Id());
-        //Printf("Checking Ds+ -> φπ -> K+K-π");
+        // Printf("Checking Ds+ -> φπ -> K+K-π");
         if (RecoDecay::isMatchedMCGen(particlesMC, DsCandMC, int(pdg::Code::kDs), array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_bs::DecayType::BsToDsPi);
         }

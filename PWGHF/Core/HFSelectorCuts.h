@@ -649,7 +649,7 @@ static const std::vector<std::string> pTBinLabels = {
 
 // column labels
 static const std::vector<std::string> cutVarLabels = {"m", "CPA", "Chi2PCA", "d0 Ds+", "d0 Pi", "pT Ds+", "pT Pi", "Bs decLen", "Bs decLenXY", "Imp. Par. Product", "DeltaMDs", "Cos ThetaStar"};
-} // namespace hf_cuts_lb_tolcpi
+} // namespace hf_cuts_bs_todspi
 
 namespace hf_cuts_x_tojpsipipi
 {
