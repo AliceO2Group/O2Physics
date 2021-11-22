@@ -89,13 +89,13 @@ class MCProng
   bool TestPDG(int i, int pdgCode) const;
   bool ComparePDG(int pdg, int prongPDG, bool checkBothCharges = false, bool exclude = false) const;
 
+  int fNGenerations;
   std::vector<int> fPDGcodes;
   std::vector<bool> fCheckBothCharges;
   std::vector<bool> fExcludePDG;
   std::vector<uint64_t> fSourceBits;
   std::vector<uint64_t> fExcludeSource;
   std::vector<bool> fUseANDonSourceBitMap;
-  int fNGenerations;
 
   ClassDef(MCProng, 1);
 };

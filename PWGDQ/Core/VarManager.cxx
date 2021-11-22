@@ -80,9 +80,10 @@ void VarManager::SetRunNumbers(std::vector<int> runs)
   //
   // maps the list of runs such that one can plot the list of runs nicely in a histogram axis
   //
-  for (int i = 0; i < runs.size(); ++i) {
-    fgRunMap[runs.at(i)] = i + 1;
-    fgRunStr += Form("%d;", runs.at(i));
+  int i = 0;
+  for (auto run = runs.begin(); run != runs.end(); run++, i++) {
+    fgRunMap[*run] = i + 1;
+    fgRunStr += Form("%d;", *run);
   }
 }
 
