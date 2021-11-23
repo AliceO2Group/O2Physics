@@ -41,8 +41,8 @@ struct QaTpcTof {
   //Configurables
   Configurable<float> cutTOF{"cutTOF", 3.f, "TOF nsigma cut for TPC-TOF PID"};
   Configurable<int> pBins{"pBins", 400, "Number of momentum bins"};
-  Configurable<float> pMin{"pMin", 0.f, "Lower limit in momentum"};
-  Configurable<float> pMax{"pMax", 20.f, "Upper limit in momentum"};
+  Configurable<float> pMin{"pMin", 0.01, "Lower limit in momentum"};
+  Configurable<float> pMax{"pMax", 20., "Upper limit in momentum"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for TPC nSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Upper limit for TPC nSigma"};
@@ -69,7 +69,7 @@ struct QaTpcTof {
   void addTPCQAParticleHistos()
   {
     AxisSpec pAxis{pBins, pMin, pMax, "#it{p} [GeV/#it{c}]"};
-    pAxis.makeLogaritmic();
+    pAxis.MakeLogaritmic();
     AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TPC n_{#sigma}"};
     AxisSpec tofnSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TOF n_{#sigma}"};
 
