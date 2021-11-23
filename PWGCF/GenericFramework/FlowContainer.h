@@ -7,10 +7,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// Author: Vytautas Vislavicius
-/// Ported to O2: Emil Gorm Nielsen
-/// Output container for flow in O2
+//
+/// \brief Implementation of the Generic Framework for flow measurements in O2
+/// \author Emil Gorm Nielsen & Vytautas Vislavicius
+/// \since 19-07-2021
 
 #ifndef FLOWCONTAINER__H
 #define FLOWCONTAINER__H

@@ -1,4 +1,3 @@
-
 // Copyright CERN and copyright holders of ALICE O2. This software is
 // distributed under the terms of the GNU General Public License v3 (GPL
 // Version 3), copied verbatim in the file "COPYING".
@@ -8,10 +7,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// Author: Vytautas Vislavicius
-/// Ported to O2: Emil Gorm Nielsen
-/// Extention of Generic Flow (https://arxiv.org/abs/1312.3572)
+//
+/// \brief Implementation of the Generic Framework for flow measurements in O2
+/// \author Emil Gorm Nielsen & Vytautas Vislavicius
+/// \since 19-07-2021
 
 #include "GFWWeights.h"
 #include "TMath.h"

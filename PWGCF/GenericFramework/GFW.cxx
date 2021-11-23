@@ -7,12 +7,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// Author: Vytautas Vislavicius
-/// Ported to O2: Emil Gorm Nielsen
-/// Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
-/// Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
-/// If used, modified, or distributed, please aknowledge the author of this code.
+//
+/// \brief Implementation of the Generic Framework for flow measurements in O2
+/// \author Emil Gorm Nielsen & Vytautas Vislavicius
+/// \since 19-07-2021
 
 #include "GFW.h"
 GFW::GFW() : fInitialized(kFALSE){};
