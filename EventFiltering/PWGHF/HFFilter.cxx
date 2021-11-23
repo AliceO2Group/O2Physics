@@ -470,7 +470,7 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 
-    if(n2Prongs > 1 || n3Prongs > 1 || (n2Prongs > 0 && n3Prongs > 0)) {
+    if (n2Prongs > 1 || n3Prongs > 1 || (n2Prongs > 0 && n3Prongs > 0)) {
       keepEvent[kDoubleCharm] = true;
     }
 
