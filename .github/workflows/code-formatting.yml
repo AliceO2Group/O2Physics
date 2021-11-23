@@ -1,9 +1,10 @@
-name: Check PR with clang-format
+name: PR formatting
 
 on: [pull_request_target]
 
 jobs:
   clang-format:
+    name: clang-format
     # We need at least 20.04 to install clang-format-11.
     runs-on: ubuntu-20.04
 
@@ -99,3 +100,53 @@ jobs:
           true) echo 'PR clean' ; exit 0 ;;
           false) echo 'PR not clean' ; exit 1 ;;
         esac
+
+  copyright:
+    name: copyright headers
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+        # We need the history of the dev branch all the way back to where the PR
+        # diverged. We're fetching everything here, as we don't know how many
+        # commits back that point is.
+        fetch-depth: 0
+
+    - name: Check copyright headers
+      env:
+        # The expected copyright notice.
+        COPYRIGHT: |
+          // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+          // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+          // All rights not expressly granted are reserved.
+          //
+          // This software is distributed under the terms of the GNU General Public
+          // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+          //
+          // In applying this license CERN does not waive the privileges and immunities
+          // granted to it by virtue of its status as an Intergovernmental Organization
+          // or submit itself to any jurisdiction.
+      run: |
+        # Run copyright notice check
+        copyright_lines=$(echo "$COPYRIGHT" | wc -l)
+        base_commit=$(git merge-base HEAD ${{ github.event.pull_request.base.sha }})
+        have_err=
+        git diff --diff-filter d --name-only "$base_commit" -- '*.cxx' '*.h' | while read -r file; do
+          if [ "$(head -n "$copyright_lines" "$file")" != "$COPYRIGHT" ]; then
+            echo "::error::$file: missing or malformed copyright notice" >&2
+            have_err=1
+          fi
+        done
+
+        # Tell user what to do in case of copyright notice error
+        if [ -n "$have_err" ]; then
+          cat << EOF >&2
+        ::error::The files listed above are missing the correct copyright notice.
+        ::error::Make sure all your source files begin with the following exact lines:
+        $COPYRIGHT
+        EOF
+          exit 1
+        fi
