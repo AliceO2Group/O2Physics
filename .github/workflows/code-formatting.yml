@@ -130,6 +130,7 @@ jobs:
           // granted to it by virtue of its status as an Intergovernmental Organization
           // or submit itself to any jurisdiction.
       run: |
+        set -exo pipefail
         # Run copyright notice check
         copyright_lines=$(echo "$COPYRIGHT" | wc -l)
         base_commit=$(git merge-base HEAD ${{ github.event.pull_request.base.sha }})
