@@ -544,6 +544,7 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 
+<<<<<<< HEAD
     if (activateQA) {
       hN2ProngCharmCand->Fill(n2Prongs);
       hN3ProngCharmCand->Fill(n3Prongs);
@@ -555,6 +556,14 @@ struct HfFilter { // Main struct for HF triggers
 
     tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
 
+=======
+    if(n2Prongs > 1 || n3Prongs > 1 || (n2Prongs > 0 && n3Prongs > 0)) {
+      keepEvent[kDoubleCharm] = true;
+    }
+
+    tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
+
+>>>>>>> c3a5b1b (Add trigger for events with multiple charm-hadron candidates)
     if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && keepEvent[kDoubleCharm]) {
       hProcessedEvents->Fill(1);
     } else {
