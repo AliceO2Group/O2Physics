@@ -131,6 +131,7 @@ jobs:
           // or submit itself to any jurisdiction.
       run: |
         # Run copyright notice check
+        COPYRIGHT=$(printf '%s' "$COPYRIGHT")  # strip trailing newline
         copyright_lines=$(echo "$COPYRIGHT" | wc -l)
         base_commit=$(git merge-base HEAD ${{ github.event.pull_request.base.sha }})
         have_err=
