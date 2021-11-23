@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #ifndef ProfileSubset__H
 #define ProfileSubset__H
 // Helper function to select a subrange of a TProfile
