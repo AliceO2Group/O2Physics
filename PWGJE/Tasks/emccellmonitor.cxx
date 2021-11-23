@@ -59,12 +59,12 @@ struct CellMonitor {
   {
     using o2HistType = o2::framework::HistType;
     using o2Axis = o2::framework::AxisSpec;
-    LOG(INFO) << "Initializing EMCAL cell monitor task ...";
+    LOG(info) << "Initializing EMCAL cell monitor task ...";
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     auto nCells = mGeometry->GetNCells();
-    LOG(INFO) << "Setting up histos for " << nCells << " cells";
+    LOG(info) << "Setting up histos for " << nCells << " cells";
     int ntimeMain = int(mMaxCellTimeMain - mMinCellTimeMain);
-    LOG(INFO) << "Creating histogram for main bunch time range " << mMinCellTimeMain << " ns to " << mMaxCellTimeMain << " ns with " << ntimeMain << " bins";
+    LOG(info) << "Creating histogram for main bunch time range " << mMinCellTimeMain << " ns to " << mMaxCellTimeMain << " ns with " << ntimeMain << " bins";
 
     const o2Axis cellAxis{nCells, -0.5, nCells - 0.5, "cellID", "Cell abs. ID"},
       amplitudeAxis{makeAmplitudeBinning(), "amplitude", "Amplitude (GeV)"},
@@ -96,13 +96,13 @@ struct CellMonitor {
       mHistManager.add(Form("cellCountSM/cellCountSM%d", ism), Form("Count rate per cell for SM %d; col; row", ism), o2HistType::kTH2F, {colAxis, rowAxis});
       mHistManager.add(Form("cellAmplitudeTime/cellAmpTimeCorrSM%d", ism), Form("Correlation between cell amplitude and time in Supermodule %d", ism), o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge});
     }
-    LOG(INFO) << "Cell monitor task configured ...";
+    LOG(info) << "Cell monitor task configured ...";
   }
 
   /// \brief Process EMCAL cells
   void process(o2::aod::Calos const& cells, o2::aod::BCs const& bcs)
   {
-    LOG(DEBUG) << "Processing next event";
+    LOG(debug) << "Processing next event";
     for (const auto& bc : bcs) {
       o2::InteractionRecord eventIR;
       eventIR.setFromLong(bc.globalBC());
@@ -146,7 +146,7 @@ struct CellMonitor {
 
       fillSupermoduleHistograms(supermodule, col, row, cell.amplitude(), cell.time());
     }
-    LOG(DEBUG) << "Processing event done";
+    LOG(debug) << "Processing event done";
   }
 
   void fillSupermoduleHistograms(int supermoduleID, int col, int row, double amplitude, double celltime)
