@@ -79,7 +79,7 @@ struct QaTpcTof {
   void addTPCQAParticleHistos()
   {
     AxisSpec pAxis{pBins, pMin, pMax, "#it{p} [GeV/#it{c}]"};
-    pAxis.MakeLogaritmic();
+    pAxis.makeLogaritmic();
     AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TPC n_{#sigma}"};
     AxisSpec tofnSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TOF n_{#sigma}"};
 <<<<<<< HEAD
