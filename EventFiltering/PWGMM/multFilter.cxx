@@ -1,4 +1,3 @@
-
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -9,11 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
+//
 // \file multFilter.cxx
 // \brief task for selection of high multiplicity events
 //
 // \author Antonio Ortiz <antonio.ortiz.velasquez@cern.ch>, ICN-UNAM
+//
+// O2 includes
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
