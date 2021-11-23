@@ -83,7 +83,9 @@ class Response
   std::array<float, 5> mBetheBlochParams = {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092};
   std::array<float, 2> mResolutionParamsDefault = {0.07, 0.0};
   std::array<std::vector<double>, 5> mResolutionParams = {{{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585}, {5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585},{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585},{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585},{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585}}};
-  int mReadOutChamber = 0;
+  /// Choose between global parameters and different readout chambers:
+  /// 0 = Global, 1 = IROC, 2 = OROC1, 3 = OROC2, 4 = OROC3
+  int mReadOutChamber = 0; 
   float mMIP = 50.f;
   float mChargeFactor = 2.3f;
   float mMultNormalization = 11000.;
@@ -175,11 +177,34 @@ inline void Response::PrintAll() const
       LOGP(info, "Resolution param [{}] = {}", i, mResolutionParamsDefault[i]);
   }
   else {
-    for (int i = 0; i < int(mResolutionParams[0].size()); i++)
+    for (int i = 0; i < int(mResolutionParams[mReadOutChamber].size()); i++)
     LOGP(info, "Resolution param [{}] = {}", i, mResolutionParams[mReadOutChamber][i]);
+  }
+  switch (mReadOutChamber)
+  {
+  case 0:
+    LOGP(info, "No specific readout chamber selected. Use Global resolution parameters.");
+    break;
+  case 1:
+    LOGP(info, "Use resolution parameters for IROC.");
+    break;
+  case 2:
+    LOGP(info, "Use resolution parameters for OROC1.");
+    break;
+  case 3:
+    LOGP(info, "Use resolution parameters for OROC2.");
+    break;
+  case 4:
+    LOGP(info, "Use resolution parameters for OROC3.");
+    break;
+  default:
+    break;
   }
   LOGP(info, "mMIP = {}", mMIP);
   LOGP(info, "mChargeFactor = {}", mChargeFactor);
+  LOGP(info, "mMultNormalization = {}", mMultNormalization);
+  LOGP(info, "mMaxClusters = {}", mMaxClusters);
+
 }
 
 } // namespace o2::pid::tpc
