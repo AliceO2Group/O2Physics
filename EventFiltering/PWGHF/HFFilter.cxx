@@ -46,6 +46,7 @@ enum HfTriggers {
   kHighPt = 0,
   kBeauty,
   kFemto,
+  kDoubleCharm,
   kNtriggersHF
 };
 
@@ -352,6 +353,8 @@ struct HfFilter { // Main struct for HF triggers
     bool keepEvent[kNtriggersHF]{false};
     //
 
+    int n2Prongs{0}, n3Prongs{0};
+
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
 
       if (!TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_prong2::DecayType::D0ToPiK)) { // check if it's a D0
@@ -362,6 +365,9 @@ struct HfFilter { // Main struct for HF triggers
       auto trackNeg = cand2Prong.index1_as<BigTracksWithProtonPID>(); // negative daughter
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+
+      // TODO: add ML selections here
+      n2Prongs++;
 
       auto pVec2Prong = RecoDecay::PVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::Pt(pVec2Prong);
@@ -418,6 +424,9 @@ struct HfFilter { // Main struct for HF triggers
 
       float sign3Prong = trackFirst.signed1Pt() * trackSecond.signed1Pt() * trackThird.signed1Pt();
 
+      // TODO: add ML selections here
+      n3Prongs++;
+
       auto pVec3Prong = RecoDecay::PVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::Pt(pVec3Prong);
       if (pt3Prong >= pTThreshold3Prong) {
@@ -461,9 +470,13 @@ struct HfFilter { // Main struct for HF triggers
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 
-    tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto]);
+    if(n2Prongs > 1 || n3Prongs > 1 || (n2Prongs > 0 && n3Prongs > 0)) {
+      keepEvent[kDoubleCharm] = true;
+    }
 
-    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto]) {
+    tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
+
+    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && keepEvent[kDoubleCharm]) {
       hProcessedEvents->Fill(1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersHF; iTrigger++) {
