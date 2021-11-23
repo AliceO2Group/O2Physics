@@ -143,10 +143,8 @@ jobs:
 
         # Tell user what to do in case of copyright notice error
         if [ -n "$have_err" ]; then
-          cat << EOF >&2
-        ::error::The files listed above are missing the correct copyright notice.
-        ::error::Make sure all your source files begin with the following exact lines:
-        $COPYRIGHT
-        EOF
+          echo '::error::The files listed above are missing the correct copyright notice.' >&2
+          echo '::error::Make sure all your source files begin with the following exact lines:' >&2
+          echo "$COPYRIGHT" >&2
           exit 1
         fi
