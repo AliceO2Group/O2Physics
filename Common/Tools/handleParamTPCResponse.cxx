@@ -49,8 +49,11 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "sig5", bpo::value<double>()->default_value(1.22482f), "Sigma parameter 5")(
     "sig6", bpo::value<double>()->default_value(2.3501e-7f), "Sigma parameter 6")(
     "sig7", bpo::value<double>()->default_value(0.031585f), "Sigma parameter 7")(
+    "readoutchamber", bpo::value<int>()->default_value(0), "Readout Chamber")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
+    "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
+    "paramMaxClusters", bpo::value<float>()->default_value(63.), "Maximum Number of Clusters")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(
     "help,h", "Print this help.");
   try {
@@ -106,8 +109,11 @@ int main(int argc, char* argv[])
   const double sig5 = vm["sig5"].as<double>();
   const double sig6 = vm["sig6"].as<double>();
   const double sig7 = vm["sig7"].as<double>();
+  const char readoutchamber = vm["readoutchamber"].as<int>();
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
+  const float multNormval = vm["paramMultNormalization"].as<float>();
+  const float maxnumclusterval = vm["paramMaxClusters"].as<float>();
   const std::string optMode = vm["mode"].as<std::string>();
   if (optMode.empty()) {
     LOG(error) << "--mode must be specified (read, write, pull, push)";
@@ -115,7 +121,7 @@ int main(int argc, char* argv[])
   }
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
-  std::array<double, 8> sigparams = {sig0, sig1, sig2, sig3, sig4, sig5, sig6, sig7};
+  std::vector<double> sigparams = {sig0, sig1, sig2, sig3, sig4, sig5, sig6, sig7};
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
@@ -171,9 +177,12 @@ int main(int argc, char* argv[])
 
       tpc.reset(new Response());
       tpc->SetBetheBlochParams(BBparams);
+      tpc->SetReadOutChamber(readoutchamber);
       tpc->SetResolutionParams(sigparams);
       tpc->SetMIP(mipval);
       tpc->SetChargeFactor(chargefacval);
+      tpc->SetMultiplicityNormalization(multNormval);
+      tpc->SetMaxNumberClusters(maxnumclusterval);
       tpc->SetUseDefaultResolutionParam(false);
       tpc->PrintAll();
     }
