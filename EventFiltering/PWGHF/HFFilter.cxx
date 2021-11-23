@@ -99,12 +99,14 @@ DECLARE_SOA_TABLE(Colls3Prong, "AOD", "COLLSID3P", o2::aod::extra3Prong::Collisi
 
 namespace hftraining2p
 {
+DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
 DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float); //!
 DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float); //!
 DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float); //!
 DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float); //!
+DECLARE_SOA_COLUMN(PT2, pT2, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);       //!
 DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float); //!
@@ -114,12 +116,14 @@ DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float); //!
 DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);    //!
 } // namespace hftraining2p
 DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
+                  hftraining2p::PT1,
                   hftraining2p::DCAPrimXY1,
                   hftraining2p::DCAPrimZ1,
                   hftraining2p::NsigmaPiTPC1,
                   hftraining2p::NsigmaKaTPC1,
                   hftraining2p::NsigmaPiTOF1,
                   hftraining2p::NsigmaKaTOF1,
+                  hftraining2p::PT2,
                   hftraining2p::DCAPrimXY2,
                   hftraining2p::DCAPrimZ2,
                   hftraining2p::NsigmaPiTPC2,
@@ -130,6 +134,7 @@ DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
 
 namespace hftraining3p
 {
+DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
 DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float); //!
@@ -138,6 +143,7 @@ DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float); //!
 DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float); //!
 DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float); //!
 DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float); //!
+DECLARE_SOA_COLUMN(PT2, pT2, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);       //!
 DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float); //!
@@ -146,6 +152,7 @@ DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float); //!
 DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float); //!
 DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float); //!
 DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float); //!
+DECLARE_SOA_COLUMN(PT3, pT3, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY3, dcaPrimXY3, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ3, dcaPrimZ3, float);       //!
 DECLARE_SOA_COLUMN(NsigmaPiTPC3, nsigmaPiTPC3, float); //!
@@ -159,6 +166,7 @@ DECLARE_SOA_COLUMN(Channel, channel, int8_t);          //!
 DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);        //!
 } // namespace hftraining3p
 DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
+                  hftraining3p::PT1,
                   hftraining3p::DCAPrimXY1,
                   hftraining3p::DCAPrimZ1,
                   hftraining3p::NsigmaPiTPC1,
@@ -167,6 +175,7 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::NsigmaPiTOF1,
                   hftraining3p::NsigmaKaTOF1,
                   hftraining3p::NsigmaPrTOF1,
+                  hftraining3p::PT2,
                   hftraining3p::DCAPrimXY2,
                   hftraining3p::DCAPrimZ2,
                   hftraining3p::NsigmaPiTPC2,
@@ -175,6 +184,7 @@ DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::NsigmaPiTOF2,
                   hftraining3p::NsigmaKaTOF2,
                   hftraining3p::NsigmaPrTOF2,
+                  hftraining3p::PT3,
                   hftraining3p::DCAPrimXY3,
                   hftraining3p::DCAPrimZ3,
                   hftraining3p::NsigmaPiTPC3,
@@ -494,8 +504,8 @@ struct HfFilter { // Main struct for HF triggers
 
       double pseudoRndm = trackPos.pt() * 1000. - (long)(trackPos.pt() * 1000);
       if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train2P(trackPos.dcaXY(), trackPos.dcaZ(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
-                trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
+        train2P(trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
+                trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
                 flag);
       }
     } // end loop over 2-prong candidates
@@ -553,9 +563,9 @@ struct HfFilter { // Main struct for HF triggers
 
       double pseudoRndm = trackFirst.pt() * 1000. - (long)(trackFirst.pt() * 1000);
       if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train3P(trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
-                trackSecond.dcaXY(), trackSecond.dcaZ(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
-                trackThird.dcaXY(), trackThird.dcaZ(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
+        train3P(trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
+                trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
+                trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
                 flag, channel, cand3Prong.hfflag());
       }
     } // end loop over 3-prong candidates
