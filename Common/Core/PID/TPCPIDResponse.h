@@ -38,17 +38,29 @@ class Response
 
   /// Setter and Getter for the private parameters
   void SetBetheBlochParams(const std::array<float, 5>& betheBlochParams) { mBetheBlochParams = betheBlochParams; };
-  void SetResolutionParams(const std::array<Double_t, 8>& resolutionParams) { mResolutionParams = resolutionParams; };
+  void SetResolutionParams(const std::vector<double>& resolutionParams) { mResolutionParams[mReadOutChamber] = resolutionParams; };
   void SetMIP(const float mip) { mMIP = mip; };
   void SetChargeFactor(const float chargeFactor) { mChargeFactor = chargeFactor; };
+  void SetMultiplicityNormalization(const float multNormalization) { mMultNormalization = multNormalization; };
+  void SetMaxNumberClusters(const float maxNumClusters) { mMaxClusters = maxNumClusters; };
   void SetResolutionParametrization(TFormula* sigmaParametrization) {fSigmaParametrization = sigmaParametrization; };
   void SetUseDefaultResolutionParam(const bool useDefault) {useDefaultResolutionParam = useDefault; };
+  void SetReadOutChamber(const int readoutchamber) {mReadOutChamber = readoutchamber; };
 
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; };
-  const std::array<Double_t, 8> GetResolutionParams() const { return mResolutionParams; };
+  const std::vector<double> GetResolutionParams() const {return mResolutionParams[mReadOutChamber]; };
   const float GetMIP() const { return mMIP; };
   const float GetChargeFactor() const { return mChargeFactor; };
+  const float GetMultiplicityNormalization() const { return mMultNormalization; };
+  const float GetMaxNumberClusters() const { return mMaxClusters; };
   TFormula* GetResolutionParametrization() { return fSigmaParametrization; };
+  const int GetReadOutChamber() const {
+    if(mReadOutChamber == 0){LOGP(info, "Readout chamber Global");}
+    else if(mReadOutChamber == 1){LOGP(info, "Readout chamber IROC");}
+    else if(mReadOutChamber == 2){LOGP(info, "Readout chamber OROC1");}
+    else if(mReadOutChamber == 3){LOGP(info, "Readout chamber OROC2");}
+    else if(mReadOutChamber == 4){LOGP(info, "Readout chamber OROC3");}
+    return mReadOutChamber; };
 
   /// Gets the expected signal of the track
   template <typename TrackType>
@@ -70,10 +82,12 @@ class Response
  private:
   std::array<float, 5> mBetheBlochParams = {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092};
   std::array<float, 2> mResolutionParamsDefault = {0.07, 0.0};
-  std::array<Double_t, 8> mResolutionParams = {5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585};
+  std::array<std::vector<double>, 5> mResolutionParams = {{{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585}, {5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585},{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585},{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585},{5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585}}};
+  int mReadOutChamber = 0;
   float mMIP = 50.f;
   float mChargeFactor = 2.3f;
   float mMultNormalization = 11000.;
+  float mMaxClusters = 63.;
   bool useDefaultResolutionParam = true;
   TFormula* fSigmaParametrization = new TFormula("fSigmaParametrization", "sqrt(([0]**2)*x[0]+(([1]**2)*(x[2]*[5])*(x[0]/sqrt(1+x[1]**2))**[2])+x[2]*x[3]**2+([4]*x[4])**2 +((x[5]*[6])**2)+(x[5]*(x[0]/sqrt(1+x[1]**2))*[7])**2)"); 
 
@@ -96,33 +110,26 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
   if(!useDefaultResolutionParam){
 
     std::vector<double> values;
-    const std::array<double, 5> maxCl = {63., 64., 32., 96., 159.};
     const double ncl = track.tpcNClsFound();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg =  p/mass;
     const double dEdx = o2::tpc::Detector::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
 
-    const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[3]);
+    const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[mReadOutChamber][3]);
 
     values.push_back((1./dEdx));
     values.push_back((track.tgl()));
-    values.push_back((std::sqrt(maxCl[0]/ncl)));
+    values.push_back((std::sqrt(mMaxClusters/ncl)));
     values.push_back(relReso);
     values.push_back((track.signed1Pt()));
     values.push_back((collision.multTracklets()) / mMultNormalization);
 
-    const int vecsize = values.size();
-    Double_t valueArray[vecsize];
-    for (int i = 0; i < vecsize; i++)
-    {
-      valueArray[i] = values[i];
-    }
-    for (int i = 0; i < int(mResolutionParams.size()); i++){
-      fSigmaParametrization->SetParameter(i, mResolutionParams[i]);
-    }
     
-    return fSigmaParametrization->EvalPar(valueArray)*(mMIP/valueArray[0]);
+    
+    fSigmaParametrization->SetParameters(mResolutionParams[mReadOutChamber].data());
+    
+    return fSigmaParametrization->EvalPar(values.data())*(mMIP/values[0]);
   }
   else{
     const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
@@ -168,8 +175,8 @@ inline void Response::PrintAll() const
       LOGP(info, "Resolution param [{}] = {}", i, mResolutionParamsDefault[i]);
   }
   else {
-    for (int i = 0; i < int(mResolutionParams.size()); i++)
-    LOGP(info, "Resolution param [{}] = {}", i, mResolutionParams[i]);
+    for (int i = 0; i < int(mResolutionParams[0].size()); i++)
+    LOGP(info, "Resolution param [{}] = {}", i, mResolutionParams[mReadOutChamber][i]);
   }
   LOGP(info, "mMIP = {}", mMIP);
   LOGP(info, "mChargeFactor = {}", mChargeFactor);
