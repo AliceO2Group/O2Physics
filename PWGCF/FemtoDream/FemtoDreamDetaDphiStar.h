@@ -182,7 +182,7 @@ class FemtoDreamDetaDphiStar
     PhiAtRadiiTPC(part2, tmpVec2);
     const int num = tmpVec1.size();
     float dPhiAvg = 0;
-    for (size_t i = 0; i < num; i++) {
+    for (int i = 0; i < num; i++) {
       float dphi = tmpVec1.at(i) - tmpVec2.at(i);
       dphi = TVector2::Phi_mpi_pi(dphi);
       dPhiAvg += dphi;
