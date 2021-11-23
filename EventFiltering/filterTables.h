@@ -34,9 +34,10 @@ DECLARE_SOA_COLUMN(DiElectron, hasDiElectron, bool);     //! dielectron trigger
 DECLARE_SOA_COLUMN(DiMuon, hasDiMuon, bool);             //! dimuon trigger with low pT on muons
 
 // heavy flavours
-DECLARE_SOA_COLUMN(HfHighPt, hasHfHighPt, bool); //! high-pT charm hadron
-DECLARE_SOA_COLUMN(HfBeauty, hasHfBeauty, bool); //! beauty hadron
-DECLARE_SOA_COLUMN(HfFemto, hasHfFemto, bool);   //! charm-hadron - N pair
+DECLARE_SOA_COLUMN(HfHighPt, hasHfHighPt, bool);           //! high-pT charm hadron
+DECLARE_SOA_COLUMN(HfBeauty, hasHfBeauty, bool);           //! beauty hadron
+DECLARE_SOA_COLUMN(HfFemto, hasHfFemto, bool);             //! charm-hadron - N pair
+DECLARE_SOA_COLUMN(HfDoubleCharm, hasHfDoubleCharm, bool); //! at least two charm-hadron candidates
 
 // CF three body triggers
 DECLARE_SOA_COLUMN(PPP, hasPPP, bool); //! has p-p-p triplet
@@ -78,7 +79,7 @@ using DqFilter = DqFilters::iterator;
 
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HF Filters", //!
-                  filtering::HfHighPt, filtering::HfBeauty, filtering::HfFemto);
+                  filtering::HfHighPt, filtering::HfBeauty, filtering::HfFemto, filtering::HfDoubleCharm);
 
 using HfFilter = HfFilters::iterator;
 
