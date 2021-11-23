@@ -1,11 +1,19 @@
-/*
-Author: Vytautas Vislavicius
-Ported to O2: Emil Gorm Nielsen
-Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
-Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
-Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
-If used, modified, or distributed, please aknowledge the author of this code.
-*/
+// Copyright CERN and copyright holders of ALICE O2. This software is
+// distributed under the terms of the GNU General Public License v3 (GPL
+// Version 3), copied verbatim in the file "COPYING".
+//
+// See http://alice-o2.web.cern.ch/license for full licensing information.
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// Author: Vytautas Vislavicius
+/// Ported to O2: Emil Gorm Nielsen
+/// Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
+/// Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
+/// If used, modified, or distributed, please aknowledge the author of this code.
+
 #ifndef GFW__H
 #define GFW__H
 #include "GFWCumulant.h"

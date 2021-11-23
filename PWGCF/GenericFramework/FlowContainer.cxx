@@ -1,8 +1,17 @@
-/*
-Author: Vytautas Vislavicius
-Ported to O2: Emil Gorm Nielsen
-Extention of Generic Flow (https://arxiv.org/abs/1312.3572)
-*/
+// Copyright CERN and copyright holders of ALICE O2. This software is
+// distributed under the terms of the GNU General Public License v3 (GPL
+// Version 3), copied verbatim in the file "COPYING".
+//
+// See http://alice-o2.web.cern.ch/license for full licensing information.
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// Author: Vytautas Vislavicius
+/// Ported to O2: Emil Gorm Nielsen
+/// Output container for flow in O2
+
 #include "FlowContainer.h"
 
 ClassImp(FlowContainer);

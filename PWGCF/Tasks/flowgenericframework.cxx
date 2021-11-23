@@ -43,7 +43,7 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-
+  O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
 
@@ -104,7 +104,7 @@ struct GenericFramework {
     oba->Add(new TNamed("ChGap32", "ChGap32"));   // gap-case
     oba->Add(new TNamed("ChGap42", "ChGap42"));   // gap case
     fFC->SetName("FlowContainer");
-    fFC->Initialize(oba, axisMultiplicity, 1);
+    fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
     delete oba;
 
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
@@ -157,10 +157,11 @@ struct GenericFramework {
 
     fGFW->Clear();
     const auto centrality = collision.centV0M();
+    if(centrality>100) return;
     float l_Random = fRndm->Rndm();
     float weff = 1, wacc = 1;
 
-    for (auto track = tracks.begin(); track != tracks.end(); ++track) {
+    for (auto& track : tracks) {
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hEta"), track.eta());
 
