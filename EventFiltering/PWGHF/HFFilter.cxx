@@ -545,6 +545,7 @@ struct HfFilter { // Main struct for HF triggers
     }   // end loop over 3-prong candidates
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (activateQA) {
       hN2ProngCharmCand->Fill(n2Prongs);
       hN3ProngCharmCand->Fill(n3Prongs);
@@ -558,6 +559,9 @@ struct HfFilter { // Main struct for HF triggers
 
 =======
     if(n2Prongs > 1 || n3Prongs > 1 || (n2Prongs > 0 && n3Prongs > 0)) {
+=======
+    if (n2Prongs > 1 || n3Prongs > 1 || (n2Prongs > 0 && n3Prongs > 0)) {
+>>>>>>> cb7a315 (fix format)
       keepEvent[kDoubleCharm] = true;
     }
 
