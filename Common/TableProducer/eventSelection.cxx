@@ -431,15 +431,15 @@ struct EventSelectionTask {
     int64_t foundFT0 = bc.foundFT0();
 
     if (foundFT0 < 0) { // search in +/-4 sigma around meanBC
-      uint64_t apprBC = bc.globalBC();
-      uint64_t meanBC = apprBC - std::lround(col.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      int64_t apprBC = bc.globalBC();
+      int64_t meanBC = apprBC - std::lround(col.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
       int64_t deltaBC = std::ceil(col.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
       // search forward
       int forwardMoveCount = 0;
       int64_t forwardBcDist = deltaBC + 1;
-      for (; bc != bcs.end() && bc.globalBC() - meanBC <= deltaBC; ++bc, ++forwardMoveCount) {
+      for (; bc != bcs.end() && apprBC - meanBC <= deltaBC; ++bc, ++forwardMoveCount) {
         if (bc.foundFT0() >= 0) {
-          forwardBcDist = bc.globalBC() - meanBC;
+          forwardBcDist = apprBC - meanBC;
           break;
         }
       }
@@ -447,9 +447,9 @@ struct EventSelectionTask {
       // search backward
       int backwardMoveCount = 0;
       int64_t backwardBcDist = deltaBC + 1;
-      for (; bc != bcs.begin() && bc.globalBC() - meanBC >= -deltaBC; --bc, --backwardMoveCount) {
+      for (; bc != bcs.begin() && apprBC - meanBC >= -deltaBC; --bc, --backwardMoveCount) {
         if (bc.foundFT0() >= 0) {
-          backwardBcDist = meanBC - bc.globalBC();
+          backwardBcDist = meanBC - apprBC;
           break;
         }
       }

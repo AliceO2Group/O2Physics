@@ -75,7 +75,7 @@ struct cascadebuilder {
   OutputObj<TH1F> hCascFiltered{TH1F("hCascFiltered", "", 15, 0, 15)};
   OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 10, 0, 10)};
 
-  //Configurables
+  // Configurables
   Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
@@ -92,7 +92,7 @@ struct cascadebuilder {
 
   void process(aod::MatchedV0Cascades const& MatchedV0Cascades, aod::V0Datas const&, aod::Cascades const&, aod::Collisions const&, soa::Join<aod::FullTracks, aod::TracksExtended> const&)
   {
-    //Define o2 fitter, 2-prong
+    // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
     fitterV0.setPropagateToPCA(true);
@@ -120,19 +120,19 @@ struct cascadebuilder {
 
       std::array<float, 3> pVtx = {v0.collision().posX(), v0.collision().posY(), v0.collision().posZ()};
 
-      auto b = casc.bachelor_as<FullTracksExt>();
+      // auto b = casc.bachelor_as<FullTracksExt>();
 
       if (tpcrefit) {
         if (!(v0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          continue; // TPC refit
         }
         hCascFiltered->Fill(1.5);
         if (!(v0.negTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          continue; // TPC refit
         }
         hCascFiltered->Fill(2.5);
         if (!(casc.bachelor_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          continue; // TPC refit
         }
         hCascFiltered->Fill(3.5);
       }
@@ -161,7 +161,7 @@ struct cascadebuilder {
       }
       hCascFiltered->Fill(9.5);
 
-      //V0 selections
+      // V0 selections
       if (fabs(v0.mLambda() - 1.116) > lambdamasswindow && fabs(v0.mAntiLambda() - 1.116) > lambdamasswindow) {
         continue;
       }
@@ -192,7 +192,7 @@ struct cascadebuilder {
 
       hCascCandidate->Fill(0.5);
 
-      //Acquire basic tracks
+      // Acquire basic tracks
       auto pTrack = getTrackParCov(v0.posTrack_as<FullTracksExt>());
       auto nTrack = getTrackParCov(v0.negTrack_as<FullTracksExt>());
       auto bTrack = getTrackParCov(casc.bachelor_as<FullTracksExt>());
@@ -213,7 +213,7 @@ struct cascadebuilder {
         std::array<float, 21> cov1 = {0};
         std::array<float, 21> covV0 = {0};
 
-        //Covariance matrix calculation
+        // Covariance matrix calculation
         const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         fitterV0.getTrack(0).getPxPyPzGlo(pvecpos);
         fitterV0.getTrack(1).getPxPyPzGlo(pvecneg);
@@ -235,7 +235,7 @@ struct cascadebuilder {
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
-        tV0.setQ2Pt(0); //No bending, please
+        tV0.setQ2Pt(0); // No bending, please
         int nCand2 = fitterCasc.process(tV0, bTrack);
         if (nCand2 != 0) {
           fitterCasc.propagateTracksToVertex();
@@ -245,9 +245,9 @@ struct cascadebuilder {
             posXi[i] = cascvtx[i];
           }
           fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
-        } //end if cascade recoed
-      }   //end if v0 recoed
-      //Fill table, please
+        } // end if cascade recoed
+      }   // end if v0 recoed
+      // Fill table, please
       cascdata(
         v0.globalIndex(),
         casc.bachelor_as<FullTracksExt>().globalIndex(),
