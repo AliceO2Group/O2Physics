@@ -132,7 +132,7 @@ struct DptDptFilter {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96, 3 = Run3 tracks. Default 1"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe. Default PbPb"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -426,7 +426,7 @@ struct DptDptFilter {
     fOutputList->Add(new TParameter<Int_t>("TrackOneCharge", trackonecharge, 'f'));
     fOutputList->Add(new TParameter<Int_t>("TrackTwoCharge", tracktwocharge, 'f'));
 
-    if ((fDataType == kData) or (fDataType == kMC)) {
+    if ((fDataType == kData) or (fDataType == kDataNoEvtSel) or (fDataType == kMC)) {
       /* create the reconstructed data histograms */
       if (fSystem > kPbp) {
         fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", 100, 0, 100);
@@ -506,7 +506,7 @@ struct DptDptFilter {
       }
     }
 
-    if (fDataType != kData) {
+    if ((fDataType != kData) and (fDataType != kDataNoEvtSel)) {
       /* create the true data histograms */
       if (fSystem > kPbp) {
         fhTrueCentMultB = new TH1F("TrueCentralityB", "Centrality before (truth); centrality (%)", 100, 0, 100);

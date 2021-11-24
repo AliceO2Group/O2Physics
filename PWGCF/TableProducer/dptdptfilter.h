@@ -51,11 +51,12 @@ enum SystemType {
 /// \enum DataType
 /// \brief Which kind of data is the task addressing
 enum DataType {
-  kData = 0, ///< actual data, not generated
-  kMC,       ///< Generator level and detector level
-  kFastMC,   ///< Gererator level but stored dataset
-  kOnTheFly, ///< On the fly generator level data
-  knGenData  ///< number of different generator data types
+  kData = 0,     ///< actual data, not generated
+  kMC,           ///< Generator level and detector level
+  kFastMC,       ///< Gererator level but stored dataset
+  kOnTheFly,     ///< On the fly generator level data
+  kDataNoEvtSel, ///< actual data but not event selection available yet
+  knGenData      ///< number of different generator data types
 };
 
 /// \enum CentMultEstimatorType
@@ -133,6 +134,8 @@ inline DataType getDataType(std::string const& datastr)
   /* we have to figure out how extract the type of data*/
   if (datastr.empty() or (datastr == "data")) {
     return kData;
+  } else if (datastr == "datanoevsel") {
+    return kDataNoEvtSel;
   } else if (datastr == "MC") {
     return kMC;
   } else if (datastr == "FastMC") {
