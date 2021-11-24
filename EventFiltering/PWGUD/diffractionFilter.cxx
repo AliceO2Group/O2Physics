@@ -88,7 +88,6 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   return slice;
 }
 
-
 // Run 3
 struct DGFilterRun3 {
 
@@ -108,15 +107,15 @@ struct DGFilterRun3 {
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-    aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+                        aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 
   void process(CC const& collision,
                BCs const& bcs,
                TCs& tracks,
-//               MFs& mfttracks,
-               FWs& fwdtracks, 
+               //               MFs& mfttracks,
+               FWs& fwdtracks,
                aod::Zdcs& zdcs,
                aod::FT0s& ft0s,
                aod::FV0As& fv0as,
@@ -144,7 +143,7 @@ struct DGFilterRun3 {
     if (isDGEvent) {
       isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
     }
-    
+
     // fill filterTable
     if (isDGEvent) {
       LOGF(info, "This collision is a DG candidate!");
@@ -156,6 +155,6 @@ struct DGFilterRun3 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-      adaptAnalysisTask<DGFilterRun3>(cfgc, TaskName{"DGfilterRun3"}),
+    adaptAnalysisTask<DGFilterRun3>(cfgc, TaskName{"DGfilterRun3"}),
   };
 }

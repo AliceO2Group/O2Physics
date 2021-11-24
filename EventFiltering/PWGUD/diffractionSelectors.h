@@ -33,13 +33,13 @@ struct DGSelector {
   // Function to check if collisions passes filter
   template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
   bool IsSelected(cutHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
-  {    
+  {
     LOGF(debug, "Collision %f BC %i", collision.collisionTime(), bc.globalBC());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
     LOGF(debug, "Number of tracks: %i", tracks.size());
 
     // Number of tracks
-    // All tracks in vertex 
+    // All tracks in vertex
     if (collision.numContrib() != tracks.size()) {
       return false;
     }
@@ -56,10 +56,10 @@ struct DGSelector {
     LOGF(debug, "Tracks");
     for (auto& track : tracks) {
       goodTracks &= (track.isGlobalTrack() > 0);
-      
+
       // update netCharge
       netCharge += track.sign();
-      
+
       // TOF hit with good match quality
       if (track.hasTOF() && track.tofChi2() < diffCuts.maxTOFChi2()) {
         nTracksWithTOFHit++;

@@ -29,8 +29,7 @@ class cutHolder
             float minPt = 0., float maxPt = 1000.,
             float minEta = -1.0, float maxEta = 1.0,
             float maxTOFChi2 = 10.,
-            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : mNDtcoll{ndtcoll}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge},
-                                                                mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
+            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : mNDtcoll{ndtcoll}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
   {
   }
 
@@ -72,7 +71,7 @@ class cutHolder
 
   // number of tracks with TOF hit
   int mMinNTracksWithTOFHit;
-  
+
   // net charge of all tracks
   int mMinNetCharge;
   int mMaxNetCharge;
