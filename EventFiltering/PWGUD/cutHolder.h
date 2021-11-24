@@ -30,7 +30,7 @@ class cutHolder
             float minPt = 0., float maxPt = 1000.,
             float minEta = -1.0, float maxEta = 1.0,
             float maxTOFChi2 = 10.,
-            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : misMC{isMC}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mdeltaBC{deltaBC}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
+            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : misMC{isMC}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mdeltaBC{deltaBC}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
   {
   }
 

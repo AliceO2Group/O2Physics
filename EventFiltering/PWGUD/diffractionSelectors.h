@@ -42,7 +42,7 @@ struct DGSelector {
     // Decisions which do NOT need pre- post-pileup protection
 
     // Number of tracks
-    //if (tracks.size() < diffCuts.minNTracks() || tracks.size() > diffCuts.maxNTracks()) {
+    // if (tracks.size() < diffCuts.minNTracks() || tracks.size() > diffCuts.maxNTracks()) {
     //  return false;
     //}
 
@@ -67,9 +67,9 @@ struct DGSelector {
     LOGF(info, "Tracks with TOF hit %i", nTracksWithTOFHit);
 
     // only tracks with good PID
-    for (auto& track : tracks) {
-      auto goodPID = hasGoodPID(diffCuts, track);
-    }
+    // for (auto& track : tracks) {
+    //   auto goodPID = hasGoodPID(diffCuts, track);
+    // }
 
     // Decisions which need past-future protection
     // This applies to 'slow' detectors
@@ -94,8 +94,8 @@ struct DGSelector {
 
       // check no activity in FV0-C
       // ATTENTION: not available in Run 3 data
-      //LOGF(info, "FV0-C");
-      //if (bc.has_fv0c()) {
+      // LOGF(info, "FV0-C");
+      // if (bc.has_fv0c()) {
       //  LOGF(info, "  %f / %f", bc.fv0c().time(), bc.fv0c().amplitude()[0]);
       //}
 

@@ -244,7 +244,7 @@ struct DQMuonsSelection {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString cutNames = "TrackMuons_BeforeCuts;";
-    for (int i = 0; i < fTrackCuts.size(); i++) {
+    for (unsigned int i = 0; i < fTrackCuts.size(); i++) {
       cutNames += Form("TrackMuons_%s;", fTrackCuts[i].GetName());
     }
 
@@ -535,7 +535,7 @@ struct DQFilterPPTask {
       if (pairsUnlikeMuonsCount[0] > 0) { // Pair Muon count : bit 0 corresponds "muonLowPt" & "pairNoCut"  [jPaircut + iMuonCut * fNPairCuts]
         keepEvent[4] = true;
       }
-      //Filling the table
+      // Filling the table
       dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
 
       // Fill DQ bit map
