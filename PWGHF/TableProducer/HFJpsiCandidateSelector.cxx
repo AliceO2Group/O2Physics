@@ -17,7 +17,6 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
