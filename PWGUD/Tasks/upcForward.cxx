@@ -75,7 +75,7 @@ struct UPCForward {
     // V0 and FD information
     bool isBeamBeamV0A = bc.bbV0A();
     bool isBeamGasV0A = bc.bgV0A();
-    bool isBeamBeamV0C = bc.bbV0C();
+    // bool isBeamBeamV0C = bc.bbV0C();
     bool isBeamGasV0C = bc.bgV0C();
 
     bool isBeamBeamFDA = bc.bbFDA();
