@@ -48,6 +48,7 @@ struct AllTracks {
     // count the tracks contained in each data frame
     count = 0;
     for (auto& track : tracks) {
+      LOGF(debug, "Track with momentum %f", track.pt());
       count++;
     }
     totalCount += count;

@@ -142,9 +142,9 @@ struct NucleiSpectraTask {
     //
     spectra.fill(HIST("histPairCount"), negTracks.size(), posTracks.size());
     //
-    for (Int_t iPos = 0; iPos < posTracks.size(); iPos++) {
+    for (unsigned int iPos = 0; iPos < posTracks.size(); iPos++) {
       TLorentzVector& vecPos = posTracks[iPos];
-      for (Int_t jNeg = 0; jNeg < negTracks.size(); jNeg++) {
+      for (unsigned int jNeg = 0; jNeg < negTracks.size(); jNeg++) {
         TLorentzVector& vecNeg = negTracks[jNeg];
         TLorentzVector vecMother = vecPos + vecNeg;
         spectra.fill(HIST("histInvMassData"), vecMother.Pt(), vecMother.M());

@@ -98,8 +98,8 @@ int recoIdMethod = 0;
 bool useOwnTrackSelection = false;
 TrackSelection ownTrackSelection = getGlobalTrackSelection();
 bool useOwnParticleSelection = false;
-bool particleMaxDCAxy = 999.9;
-bool particleMaxDCAZ = 999.9;
+float particleMaxDCAxy = 999.9f;
+float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
 TDatabasePDG* fPDG = nullptr;
