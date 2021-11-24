@@ -88,9 +88,9 @@ struct lambdakzeroprefilter {
   Produces<aod::V0GoodPosTracks> v0GoodPosTracks;
   Produces<aod::V0GoodNegTracks> v0GoodNegTracks;
 
-  //still exhibiting issues? To be checked
-  //Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodPosTracks = aod::track::signed1Pt > 0.0f && aod::track::dcaXY > dcapostopv;
-  //Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodNegTracks = aod::track::signed1Pt < 0.0f && aod::track::dcaXY < -dcanegtopv;
+  // still exhibiting issues? To be checked
+  // Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodPosTracks = aod::track::signed1Pt > 0.0f && aod::track::dcaXY > dcapostopv;
+  // Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodNegTracks = aod::track::signed1Pt < 0.0f && aod::track::dcaXY < -dcanegtopv;
 
   void process(aod::Collision const& collision,
                soa::Join<aod::FullTracks, aod::TracksExtended> const& tracks)
@@ -98,7 +98,7 @@ struct lambdakzeroprefilter {
     for (auto& t0 : tracks) {
       if (tpcrefit) {
         if (!(t0.trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          continue; // TPC refit
         }
       }
       if (t0.tpcNClsCrossedRows() < mincrossedrows) {
@@ -130,19 +130,19 @@ struct lambdakzerofinder {
     },
   };
 
-  //Configurables
+  // Configurables
   Configurable<double> d_bz{"d_bz", +5.0, "bz field"};
   Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
   void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
                aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks)
   {
-    //Define o2 fitter, 2-prong
+    // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
     fitter.setPropagateToPCA(true);
@@ -155,29 +155,29 @@ struct lambdakzerofinder {
 
     Long_t lNCand = 0;
 
-    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
-    for (auto& t0id : ptracks) { //FIXME: turn into combination(...)
+    for (auto& t0id : ptracks) { // FIXME: turn into combination(...)
       auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
       auto Track1 = getTrackParCov(t0);
       for (auto& t1id : ntracks) {
         auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
         auto Track2 = getTrackParCov(t1);
 
-        //Try to progate to dca
+        // Try to progate to dca
         int nCand = fitter.process(Track1, Track2);
         if (nCand == 0) {
           continue;
         }
         const auto& vtx = fitter.getPCACandidate();
 
-        //Fiducial: min radius
+        // Fiducial: min radius
         auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
         if (thisv0radius < v0radius) {
           continue;
         }
 
-        //DCA V0 daughters
+        // DCA V0 daughters
         auto thisdcav0dau = fitter.getChi2AtPCACandidate();
         if (thisdcav0dau > dcav0dau) {
           continue;
@@ -213,9 +213,9 @@ struct lambdakzerofinder {
 };
 
 struct lambdakzerofinderQA {
-  //Basic checks
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Basic checks
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", .6, "DCA V0 Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -240,7 +240,7 @@ struct lambdakzerofinderQA {
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  ///Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
+  /// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision,
                soa::Filtered<aod::V0Datas> const& fullV0s)
   {
