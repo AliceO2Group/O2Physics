@@ -122,7 +122,7 @@ struct cascadeprefilter {
   {
     for (auto& t0 : goodPosTracks) {
       if (!(t0.trackType() & o2::aod::track::TPCrefit)) {
-        continue; //TPC refit
+        continue; // TPC refit
       }
       if (t0.tpcNClsCrossedRows() < mincrossedrows) {
         continue;
@@ -131,7 +131,7 @@ struct cascadeprefilter {
     }
     for (auto& t0 : goodNegTracks) {
       if (!(t0.trackType() & o2::aod::track::TPCrefit)) {
-        continue; //TPC refit
+        continue; // TPC refit
       }
       if (t0.tpcNClsCrossedRows() < mincrossedrows) {
         continue;
@@ -167,16 +167,16 @@ struct cascadefinder {
 
   OutputObj<TH1F> hCandPerEvent{TH1F("hCandPerEvent", "", 100, 0, 100)};
 
-  //Configurables
+  // Configurables
   Configurable<double> d_bz{"d_bz", +5.0, "bz field"};
   Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
 
-  //Selection criteria
-  Configurable<double> v0cospa{"casccospa", 0.998, "Casc CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"casccospa", 0.998, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcacascdau", 1.0, "DCA Casc Daughters"};
   Configurable<float> v0radius{"cascradius", 1.0, "cascradius"};
 
-  //Process: subscribes to a lot of things!
+  // Process: subscribes to a lot of things!
   void process(aod::Collision const& collision,
                soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
                aod::V0Datas const& V0s,
@@ -185,7 +185,7 @@ struct cascadefinder {
                aod::CascGoodPosTracks const& pBachtracks,
                aod::CascGoodNegTracks const& nBachtracks)
   {
-    //Define o2 fitter, 2-prong
+    // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
     fitterV0.setPropagateToPCA(true);
@@ -207,20 +207,20 @@ struct cascadefinder {
 
     Long_t lNCand = 0;
 
-    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
     std::array<float, 3> pos = {0.};
     std::array<float, 3> posXi = {0.};
     std::array<float, 3> pvecpos = {0.};
     std::array<float, 3> pvecneg = {0.};
     std::array<float, 3> pvecbach = {0.};
 
-    //Cascades first
+    // Cascades first
     for (auto& v0id : lambdas) {
-      //required: de-reference the tracks for cascade building
+      // required: de-reference the tracks for cascade building
       auto v0 = v0id.goodLambda();
       auto pTrack = getTrackParCov(v0.posTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
       auto nTrack = getTrackParCov(v0.negTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
-      //Let's do the slow part first: the V0 recalculation from scratch
+      // Let's do the slow part first: the V0 recalculation from scratch
       int nCand = fitterV0.process(pTrack, nTrack);
       if (nCand != 0) {
         fitterV0.propagateTracksToVertex();
@@ -233,7 +233,7 @@ struct cascadefinder {
         std::array<float, 21> cov1 = {0};
         std::array<float, 21> covV0 = {0};
 
-        //Covariance matrix calculation
+        // Covariance matrix calculation
         const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         fitterV0.getTrack(0).getPxPyPzGlo(pvecpos);
         fitterV0.getTrack(1).getPxPyPzGlo(pvecneg);
@@ -255,7 +255,7 @@ struct cascadefinder {
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
-        tV0.setQ2Pt(0); //No bending, please
+        tV0.setQ2Pt(0); // No bending, please
 
         for (auto& t0id : nBachtracks) {
           auto t0 = t0id.goodNegTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
@@ -271,7 +271,7 @@ struct cascadefinder {
             fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
 
             lNCand++;
-            //If we got here, it means this is a good candidate!
+            // If we got here, it means this is a good candidate!
             cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
                      -1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
@@ -281,18 +281,18 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY());
-          } //end if cascade recoed
-        }   //end loop over bachelor
-      }     //end if v0 recoed
-    }       //end loop over cascades
+          } // end if cascade recoed
+        }   // end loop over bachelor
+      }     // end if v0 recoed
+    }       // end loop over cascades
 
-    //Anticascades
+    // Anticascades
     for (auto& v0id : antiLambdas) {
-      //required: de-reference the tracks for cascade building
+      // required: de-reference the tracks for cascade building
       auto v0 = v0id.goodAntiLambda();
       auto pTrack = getTrackParCov(v0.posTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
       auto nTrack = getTrackParCov(v0.negTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>());
-      //Let's do the slow part first: the V0 recalculation from scratch
+      // Let's do the slow part first: the V0 recalculation from scratch
       int nCand = fitterV0.process(pTrack, nTrack);
       if (nCand != 0) {
         fitterV0.propagateTracksToVertex();
@@ -305,7 +305,7 @@ struct cascadefinder {
         std::array<float, 21> cov1 = {0};
         std::array<float, 21> covV0 = {0};
 
-        //Covariance matrix calculation
+        // Covariance matrix calculation
         const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         fitterV0.getTrack(0).getPxPyPzGlo(pvecpos);
         fitterV0.getTrack(1).getPxPyPzGlo(pvecneg);
@@ -327,7 +327,7 @@ struct cascadefinder {
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
-        tV0.setQ2Pt(0); //No bending, please
+        tV0.setQ2Pt(0); // No bending, please
 
         for (auto& t0id : pBachtracks) {
           auto t0 = t0id.goodPosTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
@@ -343,7 +343,7 @@ struct cascadefinder {
             fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
 
             lNCand++;
-            //If we got here, it means this is a good candidate!
+            // If we got here, it means this is a good candidate!
             cascdata(v0.globalIndex(), v0.posTrack().globalIndex(), v0.negTrack().collisionId(),
                      +1, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
                      pvecpos[0], pvecpos[1], pvecpos[2],
@@ -353,25 +353,25 @@ struct cascadefinder {
                      v0.dcapostopv(),
                      v0.dcanegtopv(),
                      t0id.dcaXY());
-          } //end if cascade recoed
-        }   //end loop over bachelor
-      }     //end if v0 recoed
-    }       //end loop over anticascades
+          } // end if cascade recoed
+        }   // end loop over bachelor
+      }     // end if v0 recoed
+    }       // end loop over anticascades
 
     hCandPerEvent->Fill(lNCand);
   }
 };
 
 struct cascadefinderQA {
-  //Basic checks
+  // Basic checks
   OutputObj<TH3F> h3dMassXiMinus{TH3F("h3dMassXiMinus", "", 20, 0, 100, 200, 0, 10, 200, 1.322 - 0.100, 1.322 + 0.100)};
   OutputObj<TH3F> h3dMassXiPlus{TH3F("h3dMassXiPlus", "", 20, 0, 100, 200, 0, 10, 200, 1.322 - 0.100, 1.322 + 0.100)};
   OutputObj<TH3F> h3dMassOmegaMinus{TH3F("h3dMassOmegaMinus", "", 20, 0, 100, 200, 0, 10, 200, 1.672 - 0.100, 1.672 + 0.100)};
   OutputObj<TH3F> h3dMassOmegaPlus{TH3F("h3dMassOmegaPlus", "", 20, 0, 100, 200, 0, 10, 200, 1.672 - 0.100, 1.672 + 0.100)};
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.999, "V0 CosPA"};       //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> casccospa{"casccospa", 0.999, "Casc CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.999, "V0 CosPA"};       // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> casccospa{"casccospa", 0.999, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcacascdau{"dcacascdau", .3, "DCA Casc Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
@@ -387,7 +387,7 @@ struct cascadefinderQA {
                                                                            aod::cascdata::dcabachtopv > dcabachtopv&&
                                                                                                           aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  ///Connect to CascFinderData: newly indexed, note: CascDataExt table incompatible with standard V0 table!
+  /// Connect to CascFinderData: newly indexed, note: CascDataExt table incompatible with standard V0 table!
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
     if (!collision.alias()[kINT7]) {
@@ -397,13 +397,13 @@ struct cascadefinderQA {
       return;
     }
     for (auto& casc : Cascades) {
-      //FIXME: dynamic columns cannot be filtered on?
+      // FIXME: dynamic columns cannot be filtered on?
       if (casc.v0radius() > v0radius &&
           casc.cascradius() > cascradius &&
           casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
           casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa &&
           casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
-        if (casc.sign() < 0) { //FIXME: could be done better...
+        if (casc.sign() < 0) { // FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
             h3dMassXiMinus->Fill(collision.centV0M(), casc.pt(), casc.mXi());
           }

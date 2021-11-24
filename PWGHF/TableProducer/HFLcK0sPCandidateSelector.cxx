@@ -311,7 +311,7 @@ struct HFLcK0sPCandidateSelector {
     } else {
       statusTOF = -1; //no PID info
     }
-     
+
     if (statusTPC == 2 || statusTOF == 2) {
       return 1; //what if we have 2 && 0 ?
     } else if (statusTPC == 1 && statusTOF == 1) {
@@ -327,9 +327,9 @@ struct HFLcK0sPCandidateSelector {
   void process(aod::HfCandCascade const& candidates, MyBigTracks const& tracks)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
-    bool topolLc = 0;
+    //bool topolLc = 0;
     int pidProton = -1;
-    int pidLc = -1;
+    //int pidLc = -1;
 
     for (auto& candidate : candidates) { //looping over cascade candidates
 
@@ -352,7 +352,7 @@ struct HFLcK0sPCandidateSelector {
       }
       */
 
-      topolLc = true;
+      //topolLc = true;
       pidProton = -1;
 
       // daughter track validity selection

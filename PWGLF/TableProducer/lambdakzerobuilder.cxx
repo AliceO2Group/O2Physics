@@ -61,7 +61,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-//This table stores a filtered list of valid V0 indices
+// This table stores a filtered list of valid V0 indices
 namespace o2::aod
 {
 namespace v0goodindices
@@ -89,9 +89,9 @@ using MyTracks = FullTracksExt;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
-//This prefilter creates a skimmed list of good V0s to re-reconstruct so that
-//CPU is saved in case there are specific selections that are to be done
-//Note: more configurables, more options to be added as needed
+// This prefilter creates a skimmed list of good V0s to re-reconstruct so that
+// CPU is saved in case there are specific selections that are to be done
+// Note: more configurables, more options to be added as needed
 struct lambdakzeroprefilterpairs {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -134,11 +134,11 @@ struct lambdakzeroprefilterpairs {
       if (isRun2) {
         if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
-          continue; //TPC refit
+          continue; // TPC refit
         }
         if (!(V0.negTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
-          continue; //TPC refit
+          continue; // TPC refit
         }
       }
       registry.fill(HIST("hGoodIndices"), 1.5);
@@ -181,12 +181,12 @@ struct lambdakzerobuilder {
     },
   };
 
-  //Configurables
+  // Configurables
   Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
   // Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", 1, "Use Abs DCAs"}; uncomment this once we want to use the weighted DCA
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
@@ -207,7 +207,7 @@ struct lambdakzerobuilder {
 #endif
   )
   {
-    //Define o2 fitter, 2-prong
+    // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
     fitter.setPropagateToPCA(true);
@@ -219,7 +219,7 @@ struct lambdakzerobuilder {
     fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
     registry.fill(HIST("hEventCounter"), 0.5);
-    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
     for (auto& V0 : V0s) {
       std::array<float, 3> pos = {0.};
@@ -254,7 +254,7 @@ struct lambdakzerobuilder {
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 0: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      //Apply selections so a skimmed table is created only
+      // Apply selections so a skimmed table is created only
       if (fitter.getChi2AtPCACandidate() > dcav0dau) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to dca cut");
         continue;
@@ -266,7 +266,7 @@ struct lambdakzerobuilder {
         continue;
       }
 
-      auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); //probably find better name to differentiate the cut from the variable
+      auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to radius cut");
         continue;

@@ -12,12 +12,14 @@
 /// \file FemtoDreamCutculator.h
 /// \brief FemtoDreamCutculator - small class to match bit-wise encoding and actual physics cuts
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
 #ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
 #define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
 
 #include "FemtoDreamSelection.h"
 #include "FemtoDreamTrackSelection.h"
+#include "FemtoDreamV0Selection.h"
 
 #include <bitset>
 
@@ -68,7 +70,8 @@ class FemtoDreamCutculator
   }
 
   /// Specialization of the setSelection function for tracks
-  /// The selection passed to the function is retrieves from the dpl-config.json
+
+  /// The selection passed to the function is retrieved from the dpl-config.json
   /// \param obs Observable of the track selection
   /// \param type Type of the track selection
   /// \param prefix Prefix which is added to the name of the Configurable
@@ -80,7 +83,7 @@ class FemtoDreamCutculator
     }
   }
 
-  /// Retrieves automatically the selection passed to the function is retrieves from the dpl-config.json
+  /// Automatically retrieves track selections from the dpl-config.json
   /// \param prefix Prefix which is added to the name of the Configurable
   void setTrackSelectionFromFile(const char* prefix)
   {
@@ -101,7 +104,7 @@ class FemtoDreamCutculator
     }
   }
 
-  /// Retrieves automatically The selection passed to the function is retrieves from the dpl-config.json
+  /// Automatically retrieves track PID from the dpl-config.json
   /// \param prefix Prefix which is added to the name of the Configurable
   void setPIDSelectionFromFile(const char* prefix)
   {
@@ -114,6 +117,39 @@ class FemtoDreamCutculator
       }
     } catch (const boost::property_tree::ptree_error& e) {
       LOG(info) << "PID selection not avalible for these skimmed data.";
+    }
+  }
+
+  /// Specialization of the setSelection function for V0
+
+  /// The selection passed to the function is retrieved from the dpl-config.json
+  /// \param obs Observable of the track selection
+  /// \param type Type of the track selection
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setV0Selection(femtoDreamV0Selection::V0Sel obs, femtoDreamSelection::SelectionType type, const char* prefix)
+  {
+    auto tmpVec = setSelection(FemtoDreamV0Selection::getSelectionName(obs, prefix));
+    if (tmpVec.size() > 0) {
+      mV0Sel.setSelection(tmpVec, obs, type);
+    }
+  }
+
+  /// Automatically retrieves V0 selections from the dpl-config.json
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setV0SelectionFromFile(const char* prefix)
+  {
+    for (const auto& sel : mConfigTree) {
+      std::string sel_name = sel.first;
+      femtoDreamV0Selection::V0Sel obs;
+      if (sel_name.find(prefix) != std::string::npos) {
+        int index = FemtoDreamV0Selection::findSelectionIndex(std::string_view(sel_name), prefix);
+        if (index >= 0) {
+          obs = femtoDreamV0Selection::V0Sel(index);
+        } else {
+          continue;
+        }
+        setV0Selection(obs, FemtoDreamV0Selection::getSelectionType(obs), prefix);
+      }
     }
   }
 
@@ -208,9 +244,9 @@ class FemtoDreamCutculator
     if (in.compare("T") == 0) {
       output = iterateSelection(mTrackSel);
     } else if (in.compare("V") == 0) {
-      // output=  iterateSelection<nBins>(mV0Sel);
+      output = iterateSelection(mV0Sel);
     } else if (in.compare("C") == 0) {
-      // output =  iterateSelection<nBins>(mCascadeSel);
+      // output =  iterateSelection(mCascadeSel);
     } else {
       std::cout << "Option " << in << " not recognized - available options are (T/V/C) \n";
       analyseCuts();
@@ -230,6 +266,7 @@ class FemtoDreamCutculator
  private:
   boost::property_tree::ptree mConfigTree;     ///< the dpl-config.json buffered into a ptree
   FemtoDreamTrackSelection mTrackSel;          ///< for setting up the bit-wise selection container for tracks
+  FemtoDreamV0Selection mV0Sel;                ///< for setting up the bit-wise selection container for V0s
   std::vector<o2::track::PID::ID> mPIDspecies; ///< list of particle species for which PID is stored
 };
 } // namespace o2::analysis::femtoDream

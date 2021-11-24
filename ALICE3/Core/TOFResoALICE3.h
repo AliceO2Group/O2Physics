@@ -39,7 +39,7 @@ class TOFResoALICE3 : public Parametrization
     }
 
     /** get info **/
-    const float time = x[1];
+    // const float time = x[1];
     const float evtimereso = x[2];
     const float mass = x[3];
     const float L = x[4];

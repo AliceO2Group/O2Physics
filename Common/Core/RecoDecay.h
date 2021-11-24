@@ -425,8 +425,8 @@ class RecoDecay
   {
     array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
     double energyTot{0.};                  // candidate energy
-    for (auto iProng = 0; iProng < N; ++iProng) {
-      for (auto iMom = 0; iMom < 3; ++iMom) {
+    for (std::size_t iProng = 0; iProng < N; ++iProng) {
+      for (std::size_t iMom = 0; iMom < 3; ++iMom) {
         momTotal[iMom] += arrMom[iProng][iMom];
       } // loop over momentum components
       energyTot += E(arrMom[iProng], arrMass[iProng]);
@@ -505,7 +505,7 @@ class RecoDecay
   {
     auto decLenXY = distanceXY(posPV, posSV);
     double maxNormDeltaIP{0.};
-    for (auto iProng = 0; iProng < N; ++iProng) {
+    for (std::size_t iProng = 0; iProng < N; ++iProng) {
       auto prongNormDeltaIP = normImpParMeasMinusExpProng(decLenXY, errDecLenXY, momMother, arrImpPar[iProng],
                                                           arrErrImpPar[iProng], arrMom[iProng]);
       if (std::abs(prongNormDeltaIP) > std::abs(maxNormDeltaIP)) {
@@ -723,7 +723,7 @@ class RecoDecay
       *sign = sgn;
     }
     // Loop over decay candidate prongs
-    for (auto iProng = 0; iProng < N; ++iProng) {
+    for (std::size_t iProng = 0; iProng < N; ++iProng) {
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
@@ -746,7 +746,7 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > N) {
+        if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
           //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
           return -1;
         }
@@ -766,7 +766,7 @@ class RecoDecay
       // Check that the daughter is in the list of final daughters.
       // (Check that the daughter is not a stepdaughter, i.e. particle pointing to the mother while not being its daughter.)
       bool isDaughterFound = false; // Is the index of this prong among the remaining expected indices of daughters?
-      for (auto iD = 0; iD < arrAllDaughtersIndex.size(); ++iD) {
+      for (std::size_t iD = 0; iD < arrAllDaughtersIndex.size(); ++iD) {
         if (arrDaughtersIndex[iProng] == arrAllDaughtersIndex[iD]) {
           arrAllDaughtersIndex[iD] = -1; // Remove this index from the array of expected daughters. (Rejects twin daughters, i.e. particle considered twice as a daughter.)
           isDaughterFound = true;
@@ -781,7 +781,7 @@ class RecoDecay
       auto PDGParticleI = particleI.pdgCode(); // PDG code of the ith daughter
       //Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
       bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
-      for (auto iProngCp = 0; iProngCp < N; ++iProngCp) {
+      for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
         if (PDGParticleI == sgn * arrPDGDaughters[iProngCp]) {
           arrPDGDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
           isPDGFound = true;
@@ -866,7 +866,7 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > N) {
+      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
         //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
         return false;
       }
@@ -888,7 +888,7 @@ class RecoDecay
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();        // PDG code of the ith daughter
         //Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
-        for (auto iProngCp = 0; iProngCp < N; ++iProngCp) {
+        for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
           if (PDGCandidateDaughterI == sgn * arrPDGDaughters[iProngCp]) {
             arrPDGDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
             isPDGFound = true;

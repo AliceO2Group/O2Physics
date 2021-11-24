@@ -217,8 +217,8 @@ struct HFD0CandidateSelectorparametrizedPID {
       auto trackPos = candidate.index0_as<Trks>();
       auto trackNeg = candidate.index1_as<Trks>();
 
-      auto momentumPosTrack = trackPos.p();
-      auto momentumNegTrack = trackNeg.p();
+      //auto momentumPosTrack = trackPos.p();
+      //auto momentumNegTrack = trackNeg.p();
       auto ptPosTrack = trackPos.pt();
       auto ptNegTrack = trackNeg.pt();
       auto etaPosTrack = std::abs(trackPos.eta());

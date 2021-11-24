@@ -215,8 +215,8 @@ struct HFD0CandidateSelectorALICE3Forward {
       auto trackPos = candidate.index0_as<Trks>();
       auto trackNeg = candidate.index1_as<Trks>();
 
-      auto momentumPosTrack = trackPos.p();
-      auto momentumNegTrack = trackNeg.p();
+      //auto momentumPosTrack = trackPos.p();
+      //auto momentumNegTrack = trackNeg.p();
 
       bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
@@ -226,9 +226,9 @@ struct HFD0CandidateSelectorALICE3Forward {
         continue;
       }
 
-      float nsigmaTOFNegKaon = -5000.0;
+      //float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
-      float nsigmaTOFPosPion = -5000.0;
+      //float nsigmaTOFPosPion = -5000.0;
       float nsigmaRICHPosPion = -5000.0;
 
       if (trackPos.has_frich()) {
@@ -239,8 +239,8 @@ struct HFD0CandidateSelectorALICE3Forward {
         nsigmaRICHNegKaon = trackNeg.frich().frichNsigmaKa();
       }
 
-      bool selectPionTOFplusRICH = false;
-      bool selectKaonTOFplusRICH = false;
+      //bool selectPionTOFplusRICH = false;
+      //bool selectKaonTOFplusRICH = false;
 
       if (topolD0) {
         statusD0NoPID = 1;
