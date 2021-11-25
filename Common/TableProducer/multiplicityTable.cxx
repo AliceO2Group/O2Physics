@@ -28,9 +28,9 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 
 struct MultiplicityTableTaskIndexed {
   Produces<aod::Mults> mult;
-  Partition<soa::aod::Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
-  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = ((aod::track::detectorMap & o2::aod::track::TPC) != 0);
-  void processRun2(aod::Run2MatchedSparse::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
+  Partition<aod::Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  void processRun2(aod::Run2MatchedSparse::iterator const& collision, aod::Tracks const& tracks, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
   {
     float multV0A = -1.f;
     float multV0C = -1.f;
@@ -73,7 +73,7 @@ struct MultiplicityTableTaskIndexed {
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks, aod::TracksExtra const& tracksExtra, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
   {
     for (auto& collision : collisions) {
       float multV0A = -1.f;
