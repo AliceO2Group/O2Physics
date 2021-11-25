@@ -26,7 +26,7 @@ class GFWCumulant
   enum UsedFlags_t { kBlank = 0,
                      kFull = 1,
                      kPt = 2 };
-  void SetType(uint infl)
+  void SetType(unsigned int infl)
   {
     DestroyComplexVectorArray();
     fUsed = infl;
@@ -35,7 +35,7 @@ class GFWCumulant
   int GetN() { return fNEntries; };
   // protected:
   TComplex*** fQvector;
-  uint fUsed;
+  unsigned int fUsed;
   int fNEntries;
   // Q-vectors. Could be done recursively, but maybe defining each one of them explicitly is easier to read
   TComplex Vec(int, int, int ptbin = 0); // envelope class to summarize pt-dif. Q-vec getter
