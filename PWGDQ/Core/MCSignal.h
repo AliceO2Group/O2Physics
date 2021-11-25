@@ -97,11 +97,11 @@ class MCSignal : public TNamed
     return CheckMC(0, checkSources, mcStack, args...);
   };
 
-  void Print();
+  void PrintConfig();
 
  private:
   std::vector<MCProng> fProngs;
-  int fNProngs;
+  unsigned int fNProngs;
   std::vector<short> fCommonAncestorIdxs;
   int fTempAncestorLabel;
 

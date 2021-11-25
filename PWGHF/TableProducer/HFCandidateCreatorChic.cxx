@@ -150,7 +150,7 @@ struct HFCandidateCreatorChic {
         trackJpsi.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
 
         // get uncertainty of the decay length
-        double phi, theta;
+        //double phi, theta;
         // getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, ChicsecondaryVertex, phi, theta);
         //auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         //auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
@@ -211,7 +211,7 @@ struct HFCandidateCreatorChicMC {
                aod::ECALs const& ecals)
   {
     int indexRec = -1;
-    int8_t sign = 0;
+    //int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t channel = 0;

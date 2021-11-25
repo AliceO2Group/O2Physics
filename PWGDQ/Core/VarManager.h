@@ -982,10 +982,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-  values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v12.M() / (v12.Pz() * o2::constants::physics::LightSpeedCm2NS);
+  values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
   values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
 
-  values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (v12.Pz() * o2::constants::physics::LightSpeedCm2NS);
+  values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
   values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
 }
 

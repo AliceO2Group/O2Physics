@@ -17,12 +17,12 @@
 ///                  pidTOF*, o2-analysis-pid-tof
 ///                  pidTPC*, o2-analysis-pid-tpc
 ///                  Timestamps, o2-analysis-timestamp
-///        usage: o2-analysis-timestamp --aod-file AO2D.root | \
-///               o2-analysis-trackextension | \
-///               o2-analysis-event-selection --isMC 0 --selection-run 2 | \
-///               o2-analysis-trackselection | \
-///               o2-analysis-pid-tof | \
-///               o2-analysis-pid-tpc | \
+///        usage: o2-analysis-timestamp --aod-file AO2D.root |
+///               o2-analysis-trackextension |
+///               o2-analysis-event-selection --isMC 0 --selection-run 2 |
+///               o2-analysis-trackselection |
+///               o2-analysis-pid-tof |
+///               o2-analysis-pid-tpc |
 ///               o2-analysis-diffraction-filter --selection-run 2
 ///
 /// \author P. Buehler , paul.buehler@oeaw.ac.at

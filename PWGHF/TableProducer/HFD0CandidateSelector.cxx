@@ -150,7 +150,7 @@ struct HFD0CandidateSelector {
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K")) {
+    if (std::abs(trackPion.dcaXY()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaXY()) > cuts->get(pTBin, "d0K")) {
       return false;
     }
 
@@ -168,7 +168,7 @@ struct HFD0CandidateSelector {
     return true;
   }
 
-  void process(aod::HfCandProng2 const& candidates, aod::BigTracksPID const&)
+  void process(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -198,8 +198,8 @@ struct HFD0CandidateSelector {
       }
       statusHFFlag = 1;
 
-      auto trackPos = candidate.index0_as<aod::BigTracksPID>(); // positive daughter
-      auto trackNeg = candidate.index1_as<aod::BigTracksPID>(); // negative daughter
+      auto trackPos = candidate.index0_as<aod::BigTracksPIDExtended>(); // positive daughter
+      auto trackNeg = candidate.index1_as<aod::BigTracksPIDExtended>(); // negative daughter
 
       /*
       if (!daughterSelection(trackPos) || !daughterSelection(trackNeg)) {

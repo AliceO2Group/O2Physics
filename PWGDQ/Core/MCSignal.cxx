@@ -61,7 +61,7 @@ void MCSignal::AddProng(MCProng prong, short commonAncestor)
 }
 
 //________________________________________________________________________________________________
-void MCSignal::Print()
+void MCSignal::PrintConfig()
 {
   cout << "Name/Title: " << fName << " / " << fTitle << endl;
   cout << "Printing " << fNProngs << "/" << fProngs.size() << " prongs:" << endl;

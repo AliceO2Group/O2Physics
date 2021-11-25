@@ -1,8 +1,9 @@
-// Copyright CERN and copyright holders of ALICE O2. This software is
-// distributed under the terms of the GNU General Public License v3 (GPL
-// Version 3), copied verbatim in the file "COPYING".
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
-// See http://alice-o2.web.cern.ch/license for full licensing information.
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
@@ -53,12 +54,15 @@ struct PseudorapidityDensity {
   Configurable<float> vtxZMax{"vtxZMax", 15, "max z vertex"};
   Configurable<float> vtxZMin{"vtxZMin", -15, "min z vertex"};
 
+  Configurable<bool> useDCA{"useDCA", false, "use DCA cuts"};
   Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
   Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
 
   ConfigurableAxis percentileBinning{"pBins",
                                      {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100},
                                      "Centrality/multiplicity percentile binning"};
+
+  Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
 
   HistogramRegistry registry{
     "registry",
@@ -105,12 +109,15 @@ struct PseudorapidityDensity {
   template <typename C>
   bool select(C const& collision)
   {
-    return collisionSelector<C, TRACKTYPE>(collision);
+    if (useEvSel) {
+      return collisionSelector<C, TRACKTYPE>(collision);
+    }
+    return true;
   }
 
   expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
   expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
-  expressions::Filter DCAFilter = aod::track::dcaXY <= maxDCAXY && aod::track::dcaZ <= maxDCAZ;
+  expressions::Filter DCAFilter = ifnode(useDCA.node(), nabs(aod::track::dcaXY) <= maxDCAXY && nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
   expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
   expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
 
@@ -168,25 +175,14 @@ struct PseudorapidityDensity {
       if (p == nullptr) {
         // unknown particles will be skipped
         if (particle.pdgCode() > 1000000000) {
-          //          auto x = (std::trunc(particle.pdgCode() / 10000) - 100000);
-          //          charge = x - std::trunc(x / 1000) * 1000;
-          LOGF(DEBUG, "[%d] Nucleus with PDG code %d", particle.globalIndex(), particle.pdgCode() /*, charge*/); // (charge %d)
+          LOGP(debug, "[{}] Nucleus with PDG code {}", particle.globalIndex(), particle.pdgCode());
         } else {
-          LOGF(DEBUG, "[%d] Unknown particle with PDG code %d", particle.globalIndex(), particle.pdgCode());
+          LOGP(debug, "[{}] Unknown particle with PDG code {}", particle.globalIndex(), particle.pdgCode());
         }
       } else {
         charge = p->Charge();
       }
-      if (charge != 0 && MC::isPhysicalPrimary(particle) && (particle.eta() < etaMax) && (particle.eta() > etaMin)) {
-        // FIXME: temporary before Run 3 MC is fixed
-        if constexpr (TRACKTYPE == o2::dataformats::GlobalTrackID::ITS) {
-          auto dcaxy = std::sqrt((particle.vx() - mcCollision.posX()) * (particle.vx() - mcCollision.posX()) +
-                                 (particle.vy() - mcCollision.posY()) * (particle.vy() - mcCollision.posY()));
-          auto dcaz = std::abs(particle.vz() - mcCollision.posZ());
-          if (!(dcaxy <= maxDCAXY && dcaz <= maxDCAZ)) {
-            continue;
-          }
-        }
+      if (charge != 0 && particle.isPhysicalPrimary() && (particle.eta() < etaMax) && (particle.eta() > etaMin)) {
         registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
         registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
       }
