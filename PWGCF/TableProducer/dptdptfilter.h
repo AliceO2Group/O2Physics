@@ -385,7 +385,7 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
 
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
-  if (MC::isPhysicalPrimary(particle)) {
+  if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) and traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
@@ -407,7 +407,7 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
             auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
             LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
             LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
-            LOGF(info, "   Passed  isPhysicalPrimary(): %s", MC::isPhysicalPrimary(newcurrparticle) ? "YES" : "NO");
+            LOGF(info, "   Passed  isPhysicalPrimary(): %s", newcurrparticle.isPhysicalPrimary() ? "YES" : "NO");
             currparticle = newcurrparticle;
           }
         }
