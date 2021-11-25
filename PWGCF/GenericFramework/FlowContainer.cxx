@@ -465,7 +465,7 @@ TH1D* FlowContainer::GetVN2(TH1D* cn2)
   rethist->Reset();
   double rf2 = cn2->GetBinContent(0);
   double rf2e = cn2->GetBinError(0);
-  bool OnPt = (!rf2 == 0);
+  bool OnPt = ((!rf2) == 0);
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double d2 = cn2->GetBinContent(i);
     double d2e = cn2->GetBinError(i);
@@ -686,7 +686,7 @@ TH1D* FlowContainer::GetVN4(TH1D* inh)
   TH1D* rethist = (TH1D*)inh->Clone(Form("v24_%s", inh->GetName()));
   double c4 = inh->GetBinContent(0);
   double c4e = inh->GetBinError(0);
-  bool OnPt = (!c4 == 0);
+  bool OnPt = ((!c4) == 0);
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double d4 = inh->GetBinContent(i);
@@ -704,7 +704,7 @@ TH1D* FlowContainer::GetVN6(TH1D* inh)
   TH1D* rethist = (TH1D*)inh->Clone(Form("v26_%s", inh->GetName()));
   double c6 = inh->GetBinContent(0);
   double c6e = inh->GetBinError(0);
-  bool OnPt = (!c6 == 0);
+  bool OnPt = ((!c6) == 0);
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double d6 = inh->GetBinContent(i);
@@ -722,7 +722,7 @@ TH1D* FlowContainer::GetVN8(TH1D* inh)
   TH1D* rethist = (TH1D*)inh->Clone(Form("v28_%s", inh->GetName()));
   double c8 = inh->GetBinContent(0);
   double c8e = inh->GetBinError(0);
-  bool OnPt = (!c8 == 0);
+  bool OnPt = ((!c8) == 0);
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double d8 = inh->GetBinContent(i);
