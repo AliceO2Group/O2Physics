@@ -45,7 +45,7 @@ struct ValidationQa {
 
   void process(aod::Collision const& collision, aod::BCs const& bcs, soa::Join<aod::Tracks, aod::TracksCov> const& tracks)
   {
-    int unused_variable2 = 3;
+    int unused_variable3 = 3;
 
     hrun_number->Fill(collision.bc().runNumber());
     LOGF(info, "Tracks for collision: %d", tracks.size());
