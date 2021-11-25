@@ -135,7 +135,7 @@ struct HFCandidateCreatorBs {
       int index0Ds = track0.globalIndex();
       int index1Ds = track1.globalIndex();
       int index2Ds = track2.globalIndex();
-      int charge = track0.sign() + track1.sign() + track2.sign();
+      //int charge = track0.sign() + track1.sign() + track2.sign();
 
       for (auto& trackPion : tracks) {
         if (trackPion.pt() < ptPionMin) {
@@ -159,7 +159,7 @@ struct HFCandidateCreatorBs {
         // calculate relevant properties
         const auto& secondaryVertexBs = df2.getPCACandidate();
         auto chi2PCA = df2.getChi2AtPCACandidate();
-        auto covMatrixPCA = df2.calcPCACovMatrix().Array();
+        auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
         df2.propagateTracksToVertex();
         df2.getTrack(0).getPxPyPzGlo(pvecDs);
@@ -272,6 +272,7 @@ struct HFCandidateCreatorBsMC {
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{int(pdg::Code::kDs), -kPiPlus}, true)) {
         // Match Ds+ -> φπ -> K+K-π
         auto DsCandMC = particlesMC.iteratorAt(particle.daughter0Id());
+        
         // Printf("Checking Ds+ -> φπ -> K+K-π");
         if (RecoDecay::isMatchedMCGen(particlesMC, DsCandMC, int(pdg::Code::kDs), array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_bs::DecayType::BsToDsPi);

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFLbToLcPiCandidateSelector.cxx
+/// \file HFBsToDsPiCandidateSelector.cxx
 /// \brief Bs → Ds+ π- candidate selector
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
@@ -65,13 +65,8 @@ struct HfBsToDsPiCandidateSelector {
       return false;
     }
 
-    // check that the candidate pT is within the analysis range
-    if (candpT < pTCandMin || candpT >= pTCandMax) {
-      return false;
-    }
-
-    //Λb0 mass cut
-    if (std::abs(InvMassBsToDsPi(hfCandBs) - RecoDecay::getMassPDG(pdg::Code::kLambdaB0)) > cuts->get(pTBin, "m")) {
+    //Bs mass cut
+    if (std::abs(InvMassBsToDsPi(hfCandBs) - RecoDecay::getMassPDG(pdg::Code::kBs)) > cuts->get(pTBin, "m")) {
       //Printf("Bs topol selection failed at mass diff check");
       return false;
     }
@@ -88,7 +83,7 @@ struct HfBsToDsPiCandidateSelector {
 
     //Ds mass
     //if (trackPi.sign() < 0) {
-    //if (std::abs(InvMassDspKpi(hfCandDs) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMDs")) {
+    //if (std::abs(InvMassDspKpi(hfCandDs) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "DeltaMDs")) {
     //return false;
     //}
     //}
@@ -133,7 +128,7 @@ struct HfBsToDsPiCandidateSelector {
 
       int statusBs = 0;
 
-      // check if flagged as Λb --> Λc+ π-
+      // check if flagged as Bs --> Ds+ π-
       if (!(hfCandBs.hfflag() & 1 << hf_cand_bs::DecayType::BsToDsPi)) {
         hfSelBsToDsPiCandidate(statusBs);
         //Printf("Bs candidate selection failed at hfflag check");
@@ -141,7 +136,6 @@ struct HfBsToDsPiCandidateSelector {
       }
 
       // Ds is always index0 and pi is index1 by default
-      //auto candDs = hfCandBs.index0();
       auto candDs = hfCandBs.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelDsCandidate>>();
       auto trackPi = hfCandBs.index1_as<aod::BigTracksPID>();
 

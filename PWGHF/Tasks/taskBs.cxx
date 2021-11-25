@@ -54,19 +54,20 @@ struct HfTaskBs {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("hMass", "#Lambda_{b}^{0} candidates;inv. mass #Lambda_{c}^{#plus}#pi^{#minus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
-    registry.add("hDecLength", "#Lambda_{b}^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthXY", "#Lambda_{b}^{0} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong0", "#Lambda_{b}^{0} candidates;prong 0 (#Lambda_{c}^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong1", "#Lambda_{b}^{0} candidates;prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPA", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEta", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hRapidity", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpParErr", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLenErr", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLenXYErr", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hIPProd", "#Lambda_{b}^{0} candidates;#Lambda_{b}^{0} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hInvMassDs", "#Lambda_{b}^{0} candidates;prong0, #Lambda_{c}^{+} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    auto vbins = (std::vector<double>)bins;
+    registry.add("hMass", "B_{s} candidates;inv. mass #Lambda_{c}^{#plus}#pi^{#minus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
+    registry.add("hDecLength", "B_{s} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthXY", "B_{s} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong0", "B_{s} candidates;prong 0 (#Lambda_{c}^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong1", "B_{s} candidates;prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPA", "B_{s} candidates;B_{s} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEta", "B_{s} candidates;B_{s} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hRapidity", "B_{s} candidates;B_{s} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hImpParErr", "B_{s} candidates;B_{s} candidate impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLenErr", "B_{s} candidates;B_{s} candidate decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLenXYErr", "B_{s} candidates;B_{s} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hIPProd", "B_{s} candidates;B_{s} candidate impact parameter product;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hInvMassDs", "B_{s} candidates;prong0, D_{s}^{+} inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_bs::isSelBsToDsPi >= selectionFlagBs);
@@ -125,50 +126,51 @@ struct HfTaskBsMc {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("hEtaGen", "MC particles (matched);#Lambda_{b}^{0} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYGen", "MC particles (matched);#Lambda_{b}^{0} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtProng0Gen", "MC particles (matched);prong 0 (#Lambda_{c}^{+}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYProng0Gen", "MC particles (matched);prong 0 (#Lambda_{c}^{+}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hYProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaProng0Gen", "MC particles (matched);prong 0 (#Lambda_{b}^{0}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPARecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPARecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPAxyRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPAxyRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPADsRecSig", "#Lambda_{b}^{0} candidates (matched);prong 0 (#Lambda_{c}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPADsRecBg", "#Lambda_{b}^{0} candidates (unmatched);prong 0 (#Lambda_{c}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hRapidityRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hRapidityRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate #it{#y};entries", {HistType::kTH2F, {{100, -2., 2.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    auto vbins = (std::vector<double>)bins;
+    registry.add("hEtaGen", "MC particles (matched);B_{s} candidate #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYGen", "MC particles (matched);B_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng0Gen", "MC particles (matched);prong 0 (D_{s}^{+}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYProng0Gen", "MC particles (matched);prong 0 (D_{s}^{+}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hYProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaProng0Gen", "MC particles (matched);prong 0 (B_{s}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaProng1Gen", "MC particles (matched);prong 1 (#pi^{-}) #it{#eta}^{gen};entries", {HistType::kTH2F, {{100, -2, 2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPARecSig", "B_{s} candidates (matched);B_{s} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPARecBg", "B_{s} candidates (unmatched);B_{s} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPAxyRecSig", "B_{s} candidates (matched);B_{s} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPAxyRecBg", "B_{s} candidates (unmatched);B_{s} candidate CPAxy;entries", {HistType::kTH2F, {{220, 0., 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPADsRecSig", "B_{s} candidates (matched);prong 0 (D_{s}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCPADsRecBg", "B_{s} candidates (unmatched);prong 0 (D_{s}^{+}) cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaRecSig", "B_{s} candidates (matched);B_{s} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hEtaRecBg", "B_{s} candidates (unmatched);B_{s} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hRapidityRecSig", "B_{s} candidates (matched);B_{s} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hRapidityRecBg", "B_{s} candidates (unmatched);B_{s} candidate #it{#y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    registry.add("hPtProng0RecSig", "#Lambda_{b}^{0} candidates (matched);prong 0 (#Lambda_{c}^{+}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtProng1RecSig", "#Lambda_{b}^{0} candidates (matched);prong 1 (#pi^{#minus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtProng0RecBg", "#Lambda_{b}^{0} candidates (unmatched);prong 0 (#Lambda_{c}^{+}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtProng1RecBg", "#Lambda_{b}^{0} candidates (unmatched);prong 1 (#pi^{#minus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassRecSig", "#Lambda_{b}^{0} candidates (matched);inv. mass #Lambda_{c}^{+}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.00}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassRecBg", "#Lambda_{b}^{0} candidates (unmatched);inv. mass #Lambda_{c}^{+}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.0}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong0RecSig", "#Lambda_{b}^{0} candidates (matched);prong 0 (#Lambda_{c}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong1RecSig", "#Lambda_{b}^{0} candidates (matched);prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong0RecBg", "#Lambda_{b}^{0} candidates (unmatched);prong 0 (#Lambda_{c}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong1RecBg", "#Lambda_{b}^{0} candidates (unmatched);prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthXYRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthXYRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length xy(cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthDsRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthDsRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthNormRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthNormRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpParProdBsRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpParProdBsRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng0RecSig", "B_{s} candidates (matched);prong 0 (D_{s}^{+}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng1RecSig", "B_{s} candidates (matched);prong 1 (#pi^{#minus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng0RecBg", "B_{s} candidates (unmatched);prong 0 (D_{s}^{+}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtProng1RecBg", "B_{s} candidates (unmatched);prong 1 (#pi^{#minus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassRecSig", "B_{s} candidates (matched);inv. mass D_{s}^{+}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.00}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassRecBg", "B_{s} candidates (unmatched);inv. mass D_{s}^{+}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.0}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong0RecSig", "B_{s} candidates (matched);prong 0 (D_{s}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong1RecSig", "B_{s} candidates (matched);prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong0RecBg", "B_{s} candidates (unmatched);prong 0 (D_{s}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong1RecBg", "B_{s} candidates (unmatched);prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthRecSig", "B_{s} candidates (matched);B_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthXYRecSig", "B_{s} candidates (matched);B_{s} candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthRecBg", "B_{s} candidates (unmatched);B_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthXYRecBg", "B_{s} candidates (unmatched);B_{s} candidate decay length xy(cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthDsRecSig", "B_{s} candidates (matched);B_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthDsRecBg", "B_{s} candidates (unmatched);B_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthNormRecSig", "B_{s} candidates (matched);B_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthNormRecBg", "B_{s} candidates (unmatched);B_{s} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hImpParProdBsRecSig", "B_{s} candidates (matched);B_{s} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hImpParProdBsRecBg", "B_{s} candidates (unmatched);B_{s} candidate impact parameter product ;entries", {HistType::kTH2F, {{100, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    registry.add("hChi2PCARecSig", "#Lambda_{b}^{0} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hChi2PCARecBg", "#Lambda_{b}^{0} candidates (unmatched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hThetaStarRecSig", "#Lambda_{b}^{0} candidates (matched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hThetaStarRecBg", "#Lambda_{b}^{0} candidates (unmatched);#Lambda_{b}^{0} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hChi2PCARecSig", "B_{s} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hChi2PCARecBg", "B_{s} candidates (unmatched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hThetaStarRecSig", "B_{s} candidates (matched);B_{s} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hThetaStarRecBg", "B_{s} candidates (unmatched);B_{s} #cos(#theta^{*});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_bs::isSelBsToDsPi >= selectionFlagBs);
