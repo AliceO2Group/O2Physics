@@ -178,9 +178,9 @@ struct HfTaskBsMc {
   void process(soa::Filtered<soa::Join<aod::HfCandBs, aod::HFSelBsToDsPiCandidate, aod::HfCandBsMCRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandBsMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
-    //MC rec
+    // MC rec
     for (auto& candidate : candidates) {
-      //Printf("(Panos) MC candidate: pT: %lf",candidate.pt());
+      // Printf("(Panos) MC candidate: pT: %lf",candidate.pt());
       if (!(candidate.hfflag() & 1 << hf_cand_bs::DecayType::BsToDsPi)) {
         continue;
       }
@@ -210,7 +210,7 @@ struct HfTaskBsMc {
         registry.fill(HIST("hCPADsRecSig"), candDs.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthDsRecSig"), candDs.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), candidate.pt());
-        //registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
+        // registry.fill(HIST("hThetaStarRecSig"), candidate.cosThetaStar(), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
@@ -229,12 +229,12 @@ struct HfTaskBsMc {
         registry.fill(HIST("hCPADsRecBg"), candDs.cpa(), candidate.pt());
         registry.fill(HIST("hDecLengthDsRecBg"), candDs.decayLength(), candidate.pt());
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), candidate.pt());
-        //registry.fill(HIST("hThetaStarRecBg"), candidate.cosThetaStar(), candidate.pt());
+        // registry.fill(HIST("hThetaStarRecBg"), candidate.cosThetaStar(), candidate.pt());
       }
     } // rec
 
     // MC gen. level
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bs::DecayType::BsToDsPi) {
 
@@ -265,7 +265,7 @@ struct HfTaskBsMc {
         registry.fill(HIST("hYGen"), yParticle, particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta(), particle.pt());
       }
-    } //gen
+    } // gen
   }   // process
 };    // struct
 

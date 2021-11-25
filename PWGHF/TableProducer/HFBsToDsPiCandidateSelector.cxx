@@ -35,16 +35,16 @@ struct HfBsToDsPiCandidateSelector {
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
 
-  //Track quality
+  // Track quality
   Configurable<double> TPCNClsFindablePIDCut{"TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
 
-  //TPC PID
+  // TPC PID
   Configurable<double> pidTPCMinpT{"pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 10., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTPC{"nSigmaTPC", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTPCCombined{"nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
 
-  //TOF PID
+  // TOF PID
   Configurable<double> pidTOFMinpT{"pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 10., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTOF{"nSigmaTOF", 5., "Nsigma cut on TOF only"};
@@ -65,56 +65,56 @@ struct HfBsToDsPiCandidateSelector {
       return false;
     }
 
-    //Bs mass cut
+    // Bs mass cut
     if (std::abs(InvMassBsToDsPi(hfCandBs) - RecoDecay::getMassPDG(pdg::Code::kBs)) > cuts->get(pTBin, "m")) {
-      //Printf("Bs topol selection failed at mass diff check");
+      // Printf("Bs topol selection failed at mass diff check");
       return false;
     }
 
-    //pion pt
+    // pion pt
     if (trackPi.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
 
-    //Ds+ pt
+    // Ds+ pt
     if (hfCandDs.pt() < cuts->get(pTBin, "pT Ds+")) {
       return false;
     }
 
-    //Ds mass
-    //if (trackPi.sign() < 0) {
-    //if (std::abs(InvMassDspKpi(hfCandDs) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "DeltaMDs")) {
-    //return false;
-    //}
-    //}
+    // Ds mass
+    // if (trackPi.sign() < 0) {
+    // if (std::abs(InvMassDspKpi(hfCandDs) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "DeltaMDs")) {
+    // return false;
+    // }
+    // }
 
-    //Bs Decay length
+    // Bs Decay length
     if (hfCandBs.decayLength() < cuts->get(pTBin, "Bs decLen")) {
       return false;
     }
 
-    //Bs Decay length XY
+    // Bs Decay length XY
     if (hfCandBs.decayLengthXY() < cuts->get(pTBin, "Bs decLenXY")) {
       return false;
     }
 
-    //Bs chi2PCA cut
+    // Bs chi2PCA cut
     if (hfCandBs.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      //Printf("Bs selection failed at chi2PCA");
+      // Printf("Bs selection failed at chi2PCA");
       return false;
     }
 
-    //Bs CPA cut
+    // Bs CPA cut
     if (hfCandBs.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
     }
 
-    //d0 of pi
+    // d0 of pi
     if (std::abs(hfCandBs.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
       return false;
     }
 
-    //d0 of Ds+
+    // d0 of Ds+
     if (std::abs(hfCandBs.impactParameter0()) < cuts->get(pTBin, "d0 Ds+")) {
       return false;
     }
@@ -124,14 +124,14 @@ struct HfBsToDsPiCandidateSelector {
 
   void process(aod::HfCandBs const& hfCandBss, soa::Join<aod::HfCandProng3, aod::HFSelDsCandidate>, aod::BigTracksPID const&)
   {
-    for (auto& hfCandBs : hfCandBss) { //looping over Bs candidates
+    for (auto& hfCandBs : hfCandBss) { // looping over Bs candidates
 
       int statusBs = 0;
 
       // check if flagged as Bs --> Ds+ π-
       if (!(hfCandBs.hfflag() & 1 << hf_cand_bs::DecayType::BsToDsPi)) {
         hfSelBsToDsPiCandidate(statusBs);
-        //Printf("Bs candidate selection failed at hfflag check");
+        // Printf("Bs candidate selection failed at hfflag check");
         continue;
       }
 
@@ -139,7 +139,7 @@ struct HfBsToDsPiCandidateSelector {
       auto candDs = hfCandBs.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelDsCandidate>>();
       auto trackPi = hfCandBs.index1_as<aod::BigTracksPID>();
 
-      //topological cuts
+      // topological cuts
       if (!selectionTopol(hfCandBs, candDs, trackPi)) {
         hfSelBsToDsPiCandidate(statusBs);
         // Printf("Bs candidate selection failed at selection topology");
@@ -147,7 +147,7 @@ struct HfBsToDsPiCandidateSelector {
       }
 
       hfSelBsToDsPiCandidate(1);
-      //Printf("Bs candidate selection successful, candidate should be selected");
+      // Printf("Bs candidate selection successful, candidate should be selected");
     }
   }
 };
