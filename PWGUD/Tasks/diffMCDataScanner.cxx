@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief
-////  ATTENTION Nov. 2021:
-////  MFT is not implemented yet and can not be used
-////  releated code is commented
+///   ATTENTION Nov. 2021:
+///   MFT is not implemented yet and can not be used
+///   releated code is commented
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
@@ -28,32 +28,16 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+
+#include "PWGUD/DataModel/McPIDTable.h"
+
 #include "CommonConstants/LHCConstants.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/MC.h"
 
 using namespace o2::framework::expressions;
-
-namespace o2::aod
-{
-namespace datascan
-{
-DECLARE_SOA_COLUMN(PID, pid, int);   //! MCTruth PID
-DECLARE_SOA_COLUMN(Pt, pt, float);   //! MCTruth particle pt
-DECLARE_SOA_COLUMN(sEL, sel, float); //! TPC nSigma el
-DECLARE_SOA_COLUMN(sMU, smu, float); //! TPC nSigma mu
-DECLARE_SOA_COLUMN(sPI, spi, float); //! TPC nSigma pi
-DECLARE_SOA_COLUMN(sKA, ska, float); //! TPC nSigma ka
-DECLARE_SOA_COLUMN(sPR, spr, float); //! TPC nSigma pr
-} // namespace datascan
-DECLARE_SOA_TABLE(nSigmas, "AOD", "NSIGMAS", //! MCTruth of particle PID and pt and TPC nSigma for el, mu, pi, ka, pr
-                  datascan::PID, datascan::Pt,
-                  datascan::sEL, datascan::sMU, datascan::sPI,
-                  datascan::sKA, datascan::sPR);
-} // namespace o2::aod
 
 template <typename T>
 T getCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, T const& bcs)
@@ -75,7 +59,7 @@ T getCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabel
   // find slice of BCs table with BC in [minBC, maxBC]
   int64_t maxBCId = bcIter.globalIndex();
   int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && bcIter.globalBC() >= minBC) {
+  while (bcIter != bcs.end() && (int64_t)bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
     LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
     maxBCId = bcIter.globalIndex();
     ++bcIter;
@@ -448,7 +432,7 @@ struct MCTracks {
 
 // TPC nSigma
 struct TPCnSigma {
-  Produces<aod::nSigmas> nSigmas;
+  Produces<aod::UDnSigmas> nSigmas;
 
   using TCs = soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels>;
   using TCwPIDs = soa::Join<TCs, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
