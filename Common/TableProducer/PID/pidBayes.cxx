@@ -150,8 +150,7 @@ struct bayesPid {
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec device : workflows.devices) {
       for (auto input : device.inputs) {
-        auto enableFlag = [&input, this](const PID::ID& id,
-                                         Configurable<int>& flag) {
+        auto enableFlag = [&input](const PID::ID& id, Configurable<int>& flag) {
           const std::string particles[PID::NIDs] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
           const std::string particle = particles[id];
           const std::string table = "pidBayes" + particle;
