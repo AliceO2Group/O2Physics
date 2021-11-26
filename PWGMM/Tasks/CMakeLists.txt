@@ -17,4 +17,9 @@ o2physics_add_dpl_workflow(run2-dndeta
 o2physics_add_dpl_workflow(dndeta
                     SOURCES dndeta.cxx dndeta.h
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)	    
+                    COMPONENT_NAME Analysis)	 
+
+o2physics_add_dpl_workflow(lumi
+      		    SOURCES lumi.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
