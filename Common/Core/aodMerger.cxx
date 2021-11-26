@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
   bool skipNonExistingFiles = false;
-  int exitCode = 0; // 0: success, 1: failure
+  int exitCode = 0; // 0: success, >0: failure
 
   int option_index = 0;
   static struct option long_options[] = {
@@ -86,6 +86,7 @@ int main(int argc, char* argv[])
   TString line;
   bool connectedToAliEn = false;
   TMap* metaData = nullptr;
+  int totalMergedDFs = 0;
   int mergedDFs = 0;
   while (in.good()) {
     in >> line;
@@ -149,6 +150,7 @@ int main(int argc, char* argv[])
 
       printf("  Processing folder %s\n", dfName);
       ++mergedDFs;
+      ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
       auto treeList = folder->GetListOfKeys();
 
@@ -274,8 +276,13 @@ int main(int argc, char* argv[])
   outputFile->Write();
   outputFile->Close();
 
+  if (totalMergedDFs == 0) {
+    printf("ERROR: Did not merge a single DF. This does not seem right.\n");
+    exitCode = 2;
+  }
+
   // in case of failure, remove the incomplete file
-  if (exitCode) {
+  if (exitCode != 0) {
     printf("Removing incomplete output file %s.\n", outputFile->GetName());
     gSystem->Unlink(outputFile->GetName());
   }
