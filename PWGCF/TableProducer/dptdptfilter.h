@@ -45,7 +45,8 @@ enum SystemType {
   kPbp,          ///< **Pb-p** system
   kPbPb,         ///< **Pb-Pb** system
   kXeXe,         ///< **Xe-Xe** system
-  knSystems      ///< number of handled systems
+  kppRun3,
+  knSystems ///< number of handled systems
 };
 
 /// \enum DataType
@@ -120,6 +121,8 @@ inline SystemType getSystemType(std::string const& sysstr)
     return kpPb;
   } else if (sysstr == "XeXe") {
     return kXeXe;
+  } else if (sysstr == "ppRun3") {
+    return kppRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %d", sysstr.c_str());
   }
@@ -169,12 +172,25 @@ template <typename CollisionObject>
 inline bool triggerSelectionReco(CollisionObject const& collision)
 {
   bool trigsel = false;
-  if (fDataType != kData) {
-    trigsel = true;
-  } else if (collision.alias()[kINT7]) {
-    if (collision.sel7()) {
-      trigsel = true;
-    }
+  switch (fSystem) {
+    case kpp:
+    case kpPb:
+    case kPbp:
+    case kPbPb:
+    case kXeXe:
+      if (collision.alias()[kINT7]) {
+        if (collision.sel7()) {
+          trigsel = true;
+        }
+      }
+      break;
+    case kppRun3:
+      if (collision.sel8()) {
+        trigsel = true;
+      }
+      break;
+    default:
+      break;
   }
   return trigsel;
 }
