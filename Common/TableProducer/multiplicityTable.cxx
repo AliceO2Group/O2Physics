@@ -81,7 +81,7 @@ struct MultiplicityTableTaskIndexed {
       float multT0C = -1.f;
       float multZNA = -1.f;
       float multZNC = -1.f;
-      int multTracklets = -1; 
+      int multTracklets = -1;
       int multTPC = tracksWithTPC.size();
       const float* aAmplitudesA;
       const float* aAmplitudesC;
