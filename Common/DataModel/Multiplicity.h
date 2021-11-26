@@ -28,6 +28,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultV0M, multV0M, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MultT0M, multT0M, //!
                            [](float multT0A, float multT0C) -> float { return multT0A + multT0C; });
 DECLARE_SOA_COLUMN(MultTracklets, multTracklets, int);
+DECLARE_SOA_COLUMN(MultTPC, multTPC, int);
 
 } // namespace mult
 DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
@@ -36,7 +37,8 @@ DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
                   mult::MultZNA, mult::MultZNC,
                   mult::MultV0M<mult::MultV0A, mult::MultV0C>,
                   mult::MultT0M<mult::MultT0A, mult::MultT0C>,
-                  mult::MultTracklets);
+                  mult::MultTracklets,
+                  mult::MultTPC);
 using Mult = Mults::iterator;
 } // namespace o2::aod
 
