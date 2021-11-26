@@ -34,7 +34,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct uecharged {
+struct ueCharged {
 
   TrackSelection globalTrackswoPrim; // Track without cut for primaries
   TrackSelection globalTracks;       // Track with cut for primaries
@@ -68,7 +68,7 @@ struct uecharged {
     ConfigurableAxis ptBinningt{"ptBinningt", {0, 0.15, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTtrig bin limits"};
     AxisSpec ptAxist = {ptBinningt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
 
-    ConfigurableAxis ptBinning{"ptBinning", {0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTassoc bin limits"};
+    ConfigurableAxis ptBinning{"ptBinning", {0, 0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTassoc bin limits"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
     f_Eff.setObject(new TF1("fpara", "(x<0.22)*((-0.770334)+(6.32178)*x)+(x>=0.22&&x<0.4)*((0.310721)+(2.02610)*x+(-2.25005)*x*x)+(x>=0.4&&x<1.0)*((1.21232)+(-1.27511)*x+(0.588435)*x*x)+(x>=1.0&&x<5.5)*((0.502911)+(0.0416893)*x)+(x>=5.5)*(0.709143)", 0.15, 50.0));
@@ -310,6 +310,7 @@ struct uecharged {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<uecharged>(cfgc, TaskName{"UeCharged"})};
+  WorkflowSpec workflow{};
+  workflow.push_back(adaptAnalysisTask<ueCharged>(cfgc));
+  return workflow;
 }
