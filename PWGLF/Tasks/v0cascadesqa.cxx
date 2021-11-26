@@ -154,7 +154,7 @@ struct v0cascadesqa {
   {
     histos_eve.fill(HIST("hEventCounter"), 0.5);
   }
-  PROCESS_SWITCH(V0CascadesQA, processReconstructedEvent, "Process reconstructed level Event", true);
+  PROCESS_SWITCH(v0cascadesqa, processReconstructedEvent, "Process reconstructed level Event", true);
 
   ///////////////////////////////////////
   ////////// Collision QA - MC //////////
