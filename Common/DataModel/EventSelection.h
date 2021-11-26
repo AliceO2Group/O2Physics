@@ -92,8 +92,8 @@ DECLARE_SOA_COLUMN(SpdClusters, spdClusters, uint32_t); //! Number of SPD cluste
 DECLARE_SOA_COLUMN(NTracklets, nTracklets, int);        //! Tracklet multiplicity
 DECLARE_SOA_COLUMN(Sel7, sel7, bool);                   //! Event selection decision based on V0A & V0C
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);                   //! Event selection decision based on TVX
-DECLARE_SOA_COLUMN(FoundFT0, foundFT0, int64_t);        //! FT0 entry index in FT0s table (-1 if doesn't exist)
-DECLARE_SOA_COLUMN(FoundFV0, foundFV0, int64_t);        //! FV0 entry index in FV0A table (-1 if doesn't exist)
+DECLARE_SOA_COLUMN(FoundFT0, foundFT0, int32_t);        //! FT0 entry index in FT0s table (-1 if doesn't exist)
+DECLARE_SOA_COLUMN(FoundFV0, foundFV0, int32_t);        //! FV0 entry index in FV0A table (-1 if doesn't exist)
 } // namespace evsel
 DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::Alias, evsel::Selection,

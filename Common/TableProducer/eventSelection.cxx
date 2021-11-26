@@ -207,8 +207,8 @@ struct BcSelectionTask {
       selection[kNoPileupFromSPD] = (eventCuts & 1 << aod::kIsPileupFromSPD) == 0;
       selection[kNoV0PFPileup] = (eventCuts & 1 << aod::kIsV0PFPileup) == 0;
 
-      int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
-      int64_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
+      int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
 
       // Fill bc selection columns
       bcsel(alias, selection,
@@ -276,8 +276,8 @@ struct BcSelectionTask {
 
       uint32_t spdClusters = 0;
 
-      int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
-      int64_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
+      int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       LOGP(debug, "foundFT0={}\n", foundFT0);
       // Fill bc selection columns
       bcsel(alias, selection,
@@ -368,8 +368,8 @@ struct EventSelectionTask {
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
-    int64_t foundFT0 = bc.foundFT0();
-    int64_t foundFV0 = bc.foundFV0();
+    int32_t foundFT0 = bc.foundFT0();
+    int32_t foundFV0 = bc.foundFV0();
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -440,7 +440,7 @@ struct EventSelectionTask {
       deltaBC = customDeltaBC;
     }
 
-    int64_t foundFT0 = bc.foundFT0();
+    int32_t foundFT0 = bc.foundFT0();
     if (foundFT0 < 0) { // search in +/-4 sigma around meanBC
       // search forward
       int forwardMoveCount = 0;
@@ -472,7 +472,7 @@ struct EventSelectionTask {
     }
     foundFT0 = bc.foundFT0();
 
-    int64_t foundFV0 = bc.foundFV0();
+    int32_t foundFV0 = bc.foundFV0();
     LOGP(debug, "foundFT0 = {}", foundFT0);
 
     // copy alias decisions from bcsel table
