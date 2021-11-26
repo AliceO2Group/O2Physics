@@ -91,20 +91,22 @@ struct multFilter {
                         float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)
   {
     float dphi = -999;
-    if (phia < 0)
+    if (phia < 0) {
       phia += 2 * M_PI;
-    else if (phia > 2 * M_PI)
+    } else if (phia > 2 * M_PI) {
       phia -= 2 * M_PI;
-    if (phib < 0)
+    }
+    if (phib < 0) {
       phib += 2 * M_PI;
-    else if (phib > 2 * M_PI)
+    } else if (phib > 2 * M_PI) {
       phib -= 2 * M_PI;
+    }
     dphi = phib - phia;
-    if (dphi < rangeMin)
+    if (dphi < rangeMin) {
       dphi += 2 * M_PI;
-    else if (dphi > rangeMax)
+    } else if (dphi > rangeMax) {
       dphi -= 2 * M_PI;
-
+    }
     return dphi;
   }
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)

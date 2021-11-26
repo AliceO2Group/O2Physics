@@ -21,6 +21,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TF1.h>
@@ -64,21 +65,11 @@ struct uecharged {
     globalTrackswoPrim.SetMaxDcaXYPtDep([](float pt) { return 3.f + pt; });
     globalTrackswoPrim.SetRequireGoldenChi2(false);
 
-    std::vector<double> ptBinningL = {
-      0.15, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50,
-      5.00, 6.00, 7.00, 8.00, 9.00, 10.0, 12.0, 14.0, 16.0, 18.0,
-      20.0, 25.0, 30.0, 40.0, 50.0};
-    AxisSpec ptAxisL = {ptBinningL, "#it{p}_{T}^{trig} (GeV/#it{c})"};
+    ConfigurableAxis ptBinningt{"ptBinningt", {0, 0.15, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTtrig bin limits"};
+    AxisSpec ptAxist = {ptBinningt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
 
-    std::vector<double> ptBinning = {
-      0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0};
-    AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-
-    std::vector<double> nchBinning = {-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5, 21.5, 22.5, 23.5, 24.5, 25.5, 26.5, 27.5, 28.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 35.5, 36.5, 37.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 44.5, 45.5, 46.5, 47.5, 48.5, 49.5, 50.5, 51.5, 52.5, 53.5, 54.5, 55.5, 56.5, 57.5, 58.5, 59.5, 60.5, 61.5, 62.5, 63.5, 64.5, 65.5, 66.5, 67.5, 68.5, 69.5, 70.5, 71.5, 72.5, 73.5, 74.5, 75.5, 76.5, 77.5, 78.5, 79.5, 80.5, 81.5, 82.5, 83.5, 84.5, 85.5, 86.5, 87.5, 88.5, 89.5, 90.5, 91.5, 92.5, 93.5, 94.5, 95.5, 96.5, 97.5, 98.5, 99.5};
-    AxisSpec nchAxis = {nchBinning, "#it{N}_{trk}"};
-
-    std::vector<double> dcaxyBinning = {-3.025, -2.975, -2.925, -2.875, -2.825, -2.775, -2.725, -2.675, -2.625, -2.575, -2.525, -2.475, -2.425, -2.375, -2.325, -2.275, -2.225, -2.175, -2.125, -2.075, -2.025, -1.975, -1.925, -1.875, -1.825, -1.775, -1.725, -1.675, -1.625, -1.575, -1.525, -1.475, -1.425, -1.375, -1.325, -1.275, -1.225, -1.175, -1.125, -1.075, -1.025, -0.975, -0.925, -0.875, -0.825, -0.775, -0.725, -0.675, -0.625, -0.575, -0.525, -0.475, -0.425, -0.375, -0.325, -0.275, -0.225, -0.175, -0.125, -0.075, -0.025, 0.025, 0.075, 0.125, 0.175, 0.225, 0.275, 0.325, 0.375, 0.425, 0.475, 0.525, 0.575, 0.625, 0.675, 0.725, 0.775, 0.825, 0.875, 0.925, 0.975, 1.025, 1.075, 1.125, 1.175, 1.225, 1.275, 1.325, 1.375, 1.425, 1.475, 1.525, 1.575, 1.625, 1.675, 1.725, 1.775, 1.825, 1.875, 1.925, 1.975, 2.025, 2.075, 2.125, 2.175, 2.225, 2.275, 2.325, 2.375, 2.425, 2.475, 2.525, 2.575, 2.625, 2.675, 2.725, 2.775, 2.825, 2.875, 2.925, 2.975, 3.025};
-    AxisSpec dcaxyAxis = {dcaxyBinning, "#it{DCA}_{xy} (cm)"};
+    ConfigurableAxis ptBinning{"ptBinning", {0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTassoc bin limits"};
+    AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
     f_Eff.setObject(new TF1("fpara", "(x<0.22)*((-0.770334)+(6.32178)*x)+(x>=0.22&&x<0.4)*((0.310721)+(2.02610)*x+(-2.25005)*x*x)+(x>=0.4&&x<1.0)*((1.21232)+(-1.27511)*x+(0.588435)*x*x)+(x>=1.0&&x<5.5)*((0.502911)+(0.0416893)*x)+(x>=5.5)*(0.709143)", 0.15, 50.0));
 
@@ -89,32 +80,28 @@ struct uecharged {
     ue.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
 
     ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{3, 0, 3, " "}});
-    ue.add("hPtLeadingRecPS", "rec pTleading after physics selection", HistType::kTH1D, {ptAxisL});
+    ue.add("hPtLeadingRecPS", "rec pTleading after physics selection", HistType::kTH1D, {ptAxist});
 
-    for (int i = 0; i < 3; ++i)
-      ue.add(pNumDenMeasuredPS[i].data(), "Number Density; ; #LT #it{N}_{trk} #GT", HistType::kTProfile, {ptAxisL});
-
-    for (int i = 0; i < 3; ++i)
-      ue.add(pSumPtMeasuredPS[i].data(), "Total #it{p}_{T}; ; #LT#sum#it{p}_{T}#GT", HistType::kTProfile, {ptAxisL});
-
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 3; ++i) {
+      ue.add(pNumDenMeasuredPS[i].data(), "Number Density; ; #LT #it{N}_{trk} #GT", HistType::kTProfile, {ptAxist});
+      ue.add(pSumPtMeasuredPS[i].data(), "Total #it{p}_{T}; ; #LT#sum#it{p}_{T}#GT", HistType::kTProfile, {ptAxist});
       ue.add(hPhi[i].data(), "all charged; #Delta#phi; Counts", HistType::kTH1D, {{64, -M_PI / 2.0, 3.0 * M_PI / 2.0, ""}});
-
+    }
     // Data driven
     for (int i = 0; i < 3; ++i) {
-      ue.add(hNumDenMCDd[i].data(), " ", HistType::kTH2D, {{ptAxisL}, {nchAxis}});
-      ue.add(hSumPtMCDd[i].data(), " ", HistType::kTH2D, {{ptAxisL}, {ptAxis}});
-      ue.add(hNumDenMCMatchDd[i].data(), " ", HistType::kTH2D, {{ptAxisL}, {nchAxis}});
-      ue.add(hSumPtMCMatchDd[i].data(), " ", HistType::kTH2D, {{ptAxisL}, {ptAxis}});
+      ue.add(hNumDenMCDd[i].data(), " ", HistType::kTH2D, {{ptAxist}, {100, -0.5, 99.5, "#it{N}_{trk}"}});
+      ue.add(hSumPtMCDd[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
+      ue.add(hNumDenMCMatchDd[i].data(), " ", HistType::kTH2D, {{ptAxist}, {100, -0.5, 99.5, "#it{N}_{trk}"}});
+      ue.add(hSumPtMCMatchDd[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
     }
 
     for (int i = 0; i < 3; ++i) {
-      ue.add(hPtVsPtLeadingData[i].data(), " ", HistType::kTH2D, {{ptAxisL}, {ptAxis}});
-      ue.add(pNumDenData[i].data(), "", HistType::kTProfile, {ptAxisL});
-      ue.add(pSumPtData[i].data(), "", HistType::kTProfile, {ptAxisL});
+      ue.add(hPtVsPtLeadingData[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
+      ue.add(pNumDenData[i].data(), "", HistType::kTProfile, {ptAxist});
+      ue.add(pSumPtData[i].data(), "", HistType::kTProfile, {ptAxist});
     }
-    ue.add("hPtLeadingData", " ", HistType::kTH1D, {{ptAxisL}});
-    ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {dcaxyAxis}});
+    ue.add("hPtLeadingData", " ", HistType::kTH1D, {{ptAxist}});
+    ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
   }
 
   float DeltaPhi(float phia, float phib,
@@ -122,19 +109,22 @@ struct uecharged {
   {
     float dphi = -999;
 
-    if (phia < 0)
+    if (phia < 0) {
       phia += 2 * M_PI;
-    else if (phia > 2 * M_PI)
+    } else if (phia > 2 * M_PI) {
       phia -= 2 * M_PI;
-    if (phib < 0)
+    }
+    if (phib < 0) {
       phib += 2 * M_PI;
-    else if (phib > 2 * M_PI)
+    } else if (phib > 2 * M_PI) {
       phib -= 2 * M_PI;
+    }
     dphi = phib - phia;
-    if (dphi < rangeMin)
+    if (dphi < rangeMin) {
       dphi += 2 * M_PI;
-    else if (dphi > rangeMax)
+    } else if (dphi > rangeMax) {
       dphi -= 2 * M_PI;
+    }
 
     return dphi;
   }
@@ -152,8 +142,9 @@ struct uecharged {
 
     ue.fill(HIST("hStat"), collision.size());
     //hStat->Fill(collision.size());
-    if (TMath::Abs(collision.posZ()) > 10.0)
+    if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
+    }
     auto vtxZ = collision.posZ();
 
     ue.fill(HIST("hCounter"), 2);
@@ -165,15 +156,17 @@ struct uecharged {
     int flIndex = 0;
     for (auto& track : tracks) {
 
-      if (!globalTracks.IsSelected(track))
+      if (!globalTracks.IsSelected(track)) {
         continue;
+      }
 
       ue.fill(HIST("hdNdeta"), track.eta());
       ue.fill(HIST("vtxZEta"), track.eta(), vtxZ);
       ue.fill(HIST("phiEta"), track.eta(), track.phi());
 
-      if (track.pt() < 0.15)
+      if (track.pt() < 0.15) {
         continue;
+      }
       if (flPt < track.pt()) {
         flPt = track.pt();
         flPhi = track.phi();
@@ -193,20 +186,20 @@ struct uecharged {
     vector<Float_t> ptArray;
     vector<Float_t> phiArray;
     vector<int> indexArray;
-    ptArray.clear();
-    phiArray.clear();
-    indexArray.clear();
 
     for (auto& track : tracks) {
 
-      if (track.pt() < 0.15)
+      if (track.pt() < 0.15) {
         continue;
+      }
 
-      if (globalTrackswoPrim.IsSelected(track))
+      if (globalTrackswoPrim.IsSelected(track)) {
         ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
+      }
 
-      if (!globalTracks.IsSelected(track))
+      if (!globalTracks.IsSelected(track)) {
         continue;
+      }
 
       // applying the efficiency twice for the misrec of leading particle
       if (f_Eff->Eval(track.pt()) > gRandom->Uniform(0, 1)) {
@@ -216,8 +209,9 @@ struct uecharged {
       }
 
       // remove the autocorrelation
-      if (flIndex == track.globalIndex())
+      if (flIndex == track.globalIndex()) {
         continue;
+      }
 
       double DPhi = DeltaPhi(track.phi(), flPhi);
 
@@ -240,29 +234,21 @@ struct uecharged {
       }
     }
 
-    for (int i_reg = 0; i_reg < 3; ++i_reg)
+    for (int i_reg = 0; i_reg < 3; ++i_reg) {
       ue_rec.push_back(1.0 * nchm_top[i_reg]);
-    for (int i_reg = 0; i_reg < 3; ++i_reg)
+    }
+    for (int i_reg = 0; i_reg < 3; ++i_reg) {
       ue_rec.push_back(sumptm_top[i_reg]);
+    }
 
     // add flags for Vtx, PS, ev sel
-
-    // for some reason loops in side donot work
-    ue.fill(HIST(pNumDenMeasuredPS[0]), flPt, ue_rec[0]);
-    ue.fill(HIST(pNumDenMeasuredPS[1]), flPt, ue_rec[1]);
-    ue.fill(HIST(pNumDenMeasuredPS[2]), flPt, ue_rec[2]);
-
-    ue.fill(HIST(pNumDenData[0]), flPt, ue_rec[0]);
-    ue.fill(HIST(pNumDenData[1]), flPt, ue_rec[1]);
-    ue.fill(HIST(pNumDenData[2]), flPt, ue_rec[2]);
-
-    ue.fill(HIST(pSumPtMeasuredPS[0]), flPt, ue_rec[3]);
-    ue.fill(HIST(pSumPtMeasuredPS[1]), flPt, ue_rec[4]);
-    ue.fill(HIST(pSumPtMeasuredPS[2]), flPt, ue_rec[5]);
-
-    ue.fill(HIST(pSumPtData[0]), flPt, ue_rec[3]);
-    ue.fill(HIST(pSumPtData[1]), flPt, ue_rec[4]);
-    ue.fill(HIST(pSumPtData[2]), flPt, ue_rec[5]);
+    static_for<0, 2>([&](auto i) {
+      constexpr int index = i.value;
+      ue.fill(HIST(pNumDenMeasuredPS[index]), flPt, ue_rec[index]);
+      ue.fill(HIST(pNumDenData[index]), flPt, ue_rec[index]);
+      ue.fill(HIST(pSumPtMeasuredPS[index]), flPt, ue_rec[index + 3]);
+      ue.fill(HIST(pSumPtData[index]), flPt, ue_rec[index + 3]);
+    });
 
     ue.fill(HIST("hPtLeadingData"), flPt);
 
@@ -273,7 +259,6 @@ struct uecharged {
     int ntrkdd = ptArray.size();
 
     for (int i = 0; i < ntrkdd; ++i) {
-
       if (flPtdd < ptArray[i]) {
         flPtdd = ptArray[i];
         flPhidd = phiArray[i];
@@ -287,10 +272,9 @@ struct uecharged {
       sumptm_topdd[i] = 0;
     }
     for (int i = 0; i < ntrkdd; ++i) {
-
-      if (indexArray[i] == flIndexdd)
+      if (indexArray[i] == flIndexdd) {
         continue;
-
+      }
       double DPhi = DeltaPhi(phiArray[i], flPhidd);
       if (TMath::Abs(DPhi) < M_PI / 3.0) { // near side
         nchm_topdd[0]++;
@@ -304,23 +288,18 @@ struct uecharged {
       }
     }
 
-    ue.fill(HIST(hNumDenMCDd[0]), flPtdd, nchm_topdd[0]);
-    ue.fill(HIST(hNumDenMCDd[1]), flPtdd, nchm_topdd[1]);
-    ue.fill(HIST(hNumDenMCDd[2]), flPtdd, nchm_topdd[2]);
-
-    ue.fill(HIST(hSumPtMCDd[0]), flPtdd, sumptm_topdd[0]);
-    ue.fill(HIST(hSumPtMCDd[1]), flPtdd, sumptm_topdd[1]);
-    ue.fill(HIST(hSumPtMCDd[2]), flPtdd, sumptm_topdd[2]);
+    static_for<0, 2>([&](auto i) {
+      constexpr int index = i.value;
+      ue.fill(HIST(hNumDenMCDd[index]), flPtdd, nchm_topdd[index]);
+      ue.fill(HIST(hSumPtMCDd[index]), flPtdd, sumptm_topdd[index]);
+    });
 
     if (flIndexdd == flIndex) {
-
-      ue.fill(HIST(hNumDenMCMatchDd[0]), flPtdd, nchm_topdd[0]);
-      ue.fill(HIST(hNumDenMCMatchDd[1]), flPtdd, nchm_topdd[1]);
-      ue.fill(HIST(hNumDenMCMatchDd[2]), flPtdd, nchm_topdd[2]);
-
-      ue.fill(HIST(hSumPtMCMatchDd[0]), flPtdd, sumptm_topdd[0]);
-      ue.fill(HIST(hSumPtMCMatchDd[1]), flPtdd, sumptm_topdd[1]);
-      ue.fill(HIST(hSumPtMCMatchDd[2]), flPtdd, sumptm_topdd[2]);
+      static_for<0, 2>([&](auto i) {
+        constexpr int index = i.value;
+        ue.fill(HIST(hNumDenMCMatchDd[index]), flPtdd, nchm_topdd[index]);
+        ue.fill(HIST(hSumPtMCMatchDd[index]), flPtdd, sumptm_topdd[index]);
+      });
     }
 
     ptArray.clear();
@@ -332,5 +311,5 @@ struct uecharged {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<uecharged>(cfgc, TaskName{"ue-charged"})};
+    adaptAnalysisTask<uecharged>(cfgc, TaskName{"UeCharged"})};
 }
