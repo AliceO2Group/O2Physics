@@ -73,9 +73,8 @@ struct MultiplicityTableTaskIndexed {
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
   {
-    for (auto& collision : collisions) {
       float multV0A = -1.f;
       float multV0C = -1.f;
       float multT0A = -1.f;
@@ -83,7 +82,7 @@ struct MultiplicityTableTaskIndexed {
       float multZNA = -1.f;
       float multZNC = -1.f;
       int multTracklets = -1;
-      int multTPC = -1;
+      int multTPC = tracksWithTPC.size();
       const float* aAmplitudesA;
       const float* aAmplitudesC;
 
@@ -104,7 +103,6 @@ struct MultiplicityTableTaskIndexed {
 
       LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
       mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
-    }
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
 };
