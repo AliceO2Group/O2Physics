@@ -68,7 +68,7 @@ T getCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabel
 
   bcIter.moveByIndex(-moveCount); // Move back to original position
   int64_t minBCId = collision.bcId();
-  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && bcIter.globalBC() >= minBC) {
+  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
     LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
     minBCId = bcIter.globalIndex();
     --bcIter;
