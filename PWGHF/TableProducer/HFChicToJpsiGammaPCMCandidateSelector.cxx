@@ -96,7 +96,7 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
     }
 
     if ((TMath::Abs(hfCandChicPCM.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
-      return false;                                                                  // DCA check on daughters
+      return false;                                                                     // DCA check on daughters
     }
 
     // add more cuts: d0 product? PCA?

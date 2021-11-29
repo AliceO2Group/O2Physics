@@ -1158,8 +1158,6 @@ auto InvMassLbToLcPi(const T& candidate)
 }
 } // namespace hf_cand_lb
 
-
-
 // specific chic candidate properties with PCM
 namespace hf_cand_chicPCM
 {
@@ -1202,8 +1200,6 @@ auto InvMassChicToJpsiGamma(const T& candidate)
 
 } // namespace hf_cand_chicPCM
 
-
-
 // declare dedicated Lb candidate table
 DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   // general columns
@@ -1219,7 +1215,7 @@ DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_prong2::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
-                   /* dynamic columns that use candidate momentum components */
+                  /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>,
                   hf_cand::Pt2<hf_cand_prong2::Px, hf_cand_prong2::Py>,
                   hf_cand::P<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
@@ -1236,12 +1232,12 @@ DECLARE_SOA_TABLE(HfCandLbBase, "AOD", "HFCANDLBBASE",
                   hf_cand::E<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
                   hf_cand::E2<hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>);
 
- // declare dedicated chi_cPCM candidate table
+// declare dedicated chi_cPCM candidate table
 DECLARE_SOA_TABLE(HfCandChicCBase, "AOD", "HFCANDCHICCBASE",
                   // general columns
                   HFCAND_COLUMNS,
                   // 2-prong specific columns
-                   hf_cand_chicPCM::Index0Id, hf_cand_chicPCM::Index1Id,
+                  hf_cand_chicPCM::Index0Id, hf_cand_chicPCM::Index1Id,
                   hf_track_index::HFflag, hf_cand_chicPCM::JpsiToMuMuMass,
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -1295,7 +1291,6 @@ DECLARE_SOA_TABLE(HfCandChicCMCGen, "AOD", "HFCANDCHICMCGEN", //!
                   hf_cand_chicPCM::FlagMCMatchGen,
                   hf_cand_chicPCM::OriginMCGen,
                   hf_cand_chicPCM::FlagMCDecayChanGen);
-
 
 } // namespace o2::aod
 

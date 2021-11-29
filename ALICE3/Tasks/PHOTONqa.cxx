@@ -25,7 +25,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
@@ -33,16 +32,12 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-
 namespace indices
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_INDEX_COLUMN(Photon, photon);
-
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
-
 } // namespace indices
-
 DECLARE_SOA_INDEX_TABLE_USER(PhotonTracksIndex, Tracks, "PhotonTrk", indices::TrackId, indices::PhotonId);
 DECLARE_SOA_INDEX_TABLE_USER(PhotonMcPartIndex, McParticles, "PhotonPart", indices::McParticleId, indices::PhotonId);
 } // namespace o2::aod
@@ -50,7 +45,7 @@ DECLARE_SOA_INDEX_TABLE_USER(PhotonMcPartIndex, McParticles, "PhotonPart", indic
 struct photonIndexBuilder { // Builder of the PHOTON-track index linkage
   Builds<o2::aod::PhotonTracksIndex> ind;
   Builds<o2::aod::PhotonMcPartIndex> indPart;
- 
+
   void init(o2::framework::InitContext&)
   {
   }
@@ -79,7 +74,7 @@ struct photonQaMc {
     for (auto& particle : mcParticles) {
       if (!particle.has_photon())
         continue;
-      const float photonp = std::sqrt(particle.photon().px() * particle.photon().px() + particle.photon().py() * particle.photon().py() + particle.photon().pz() * particle.photon().pz());
+      const float photonp = RecoDecay::sqrtSumOfSquares(photon.px(), photon.py(), photon.pz());
       histos.fill(HIST("photonpVsp"), photonp, particle.p());
       histos.fill(HIST("photonpxVspx"), particle.photon().px(), particle.px());
       histos.fill(HIST("photonpyVspy"), particle.photon().py(), particle.py());
@@ -87,8 +82,8 @@ struct photonQaMc {
       histos.get<TH1>(HIST("PDGs"))->Fill(Form("%i", particle.pdgCode()), 1.f);
     }
     for (auto& photon : photons) {
-      const float photonp = RecoDecay::sqrtSumOfSquares(photon.px() , photon.py(), photon.pz());
-      LOGF(debug,"Photon momentum %f",photonp);
+      const float photonp = RecoDecay::sqrtSumOfSquares(photon.px(), photon.py(), photon.pz());
+      LOGF(debug, "Photon momentum %f", photonp);
       histos.fill(HIST("photonp"), photonp);
     }
   }
