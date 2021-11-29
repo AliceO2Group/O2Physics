@@ -51,8 +51,13 @@ enum CFTriggers {
   kLLL
 };
 
-static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
+enum kDetector {
+  kTPC = 0,
+  kTPCTOF = 1,
+  kNdetectors = 2
+};
 
+static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
 // uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
 // uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
 static constexpr uint8_t Track = 0;      // Track
@@ -100,6 +105,35 @@ struct CFFilter {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
+  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
+  {
+    bool pidSelection = true;
+    for (auto iSpecies : vSpecies) {
+      int bit_to_check = iSpecies * kDetector::kNdetectors + iDet;
+      if (!(pidcut & (1UL << bit_to_check))) {
+        pidSelection = false;
+      }
+    }
+    return pidSelection;
+  };
+
+  bool isFullPIDSelectedProton(aod::femtodreamparticle::cutContainerType const& pidCut, float const& momentum)
+  {
+    float pidThresh = 0.75;
+    bool pidSelection = true;
+    float nSigmaTPC = 3.5;
+    float nSigmaTPCTOF = 3.5;
+    auto vSpecies = std::vector<int>{2};
+    if (momentum < pidThresh) {
+      /// TPC PID only
+      pidSelection = isPIDSelected(pidCut, vSpecies, nSigmaTPC, kDetector::kTPC);
+    } else {
+      /// TPC + TOF PID
+      pidSelection = isPIDSelected(pidCut, vSpecies, nSigmaTPCTOF, kDetector::kTPCTOF);
+    }
+    return pidSelection;
+  };
+
   void init(o2::framework::InitContext&)
   {
     bool plotPerRadii = true;
@@ -135,7 +169,11 @@ struct CFFilter {
       if (Q3Trigger == 0 || Q3Trigger == 11) {
         if (partsProton0.size() >= 3) {
           for (auto& [p1, p2, p3] : combinations(partsProton0, partsProton0, partsProton0)) {
+            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+              continue;
+            }
             // Think if pair cleaning is needed in current framework
+            // Run close pair rejection
             if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
               continue;
             }
@@ -156,7 +194,12 @@ struct CFFilter {
         if (lowQ3Triplets[0] == 0) { // if at least one triplet found in particles, no need to check antiparticles
           if (partsProton1.size() >= 3) {
             for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
+
+              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+                continue;
+              }
               // Think if pair cleaning is needed in current framework
+              // Run close pair rejection
               if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
                 continue;
               }
