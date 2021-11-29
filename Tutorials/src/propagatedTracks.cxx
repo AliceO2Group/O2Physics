@@ -41,7 +41,7 @@ struct PropagatedTracksExtended {
      {"heta", "track #eta propagated;entries", {HistType::kTH1F, {{200, -2., 2.}}}},
      {"hdcaXY", "propagated track dcaXY;entries", {HistType::kTH1F, {{160, -2., 2.}}}}}};
 
-  void process(aod::Collision const& collision, soa::Join<aod::tracksPropagated, aod::TracksExtended> const& tracks)
+  void process(aod::Collision const& collision, soa::Join<aod::TracksPropagated, aod::TracksExtended> const& tracks)
   {
     registry.fill(HIST("hcollx"), collision.posX());
     for (auto& track : tracks) {
@@ -61,7 +61,7 @@ struct PropagatedTracksExtra {
      {"hphi", "track #phi propagated;entries", {HistType::kTH1F, {{140, -1., 8.}}}},
      {"heta", "track #eta propagated;entries", {HistType::kTH1F, {{200, -2., 2.}}}}}};
 
-  void process(aod::Collision const& collision, soa::Join<aod::tracksPropagated, aod::TracksExtra> const& tracks)
+  void process(aod::Collision const& collision, soa::Join<aod::TracksPropagated, aod::TracksExtra> const& tracks)
   {
     for (auto& track : tracks) {
       registry.fill(HIST("hpt"), track.pt());
@@ -79,7 +79,7 @@ struct PropagatedTracksPar {
      {"hY", "propagated track Y position", {HistType::kTH1F, {{240, -12., 12.}}}},
      {"hZ", "propagated track Z position", {HistType::kTH1F, {{240, -12., 12.}}}}}};
 
-  void process(aod::trackParPropagated const& track)
+  void process(aod::TrackParPropagated const& track)
   {
     registry.fill(HIST("hX"), track.x());
     registry.fill(HIST("hY"), track.y());
