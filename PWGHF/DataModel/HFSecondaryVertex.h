@@ -236,7 +236,7 @@ DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);       //! particle origin,
 enum DecayType { D0ToPiK = 0,
                  JpsiToEE,
                  JpsiToMuMu,
-                 N2ProngDecays }; //always keep N2ProngDecays at the end
+                 N2ProngDecays }; // always keep N2ProngDecays at the end
 
 // functions for specific particles
 
@@ -402,7 +402,7 @@ DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
                               float, 1.f * aod::hf_cand::pyProng0 + 1.f * aod::hf_cand::pyProng1);
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * aod::hf_cand::pzProng0 + 1.f * aod::hf_cand::pzProng1);
-//DECLARE_SOA_DYNAMIC_COLUMN(M, m, [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
+// DECLARE_SOA_DYNAMIC_COLUMN(M, m, [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Pos, ptV0Pos, //!
                            [](float px, float py) { return RecoDecay::Pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
@@ -425,7 +425,7 @@ auto InvMassGamma(const T& candidate)
 } // namespace hf_cand_casc
 
 DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
-                  // general columns
+                                                           // general columns
                   HFCAND_COLUMNS,
                   // cascade specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
@@ -611,7 +611,7 @@ DECLARE_SOA_COLUMN(FlagMCDecayChanGen, flagMCDecayChanGen, int8_t); //! resonant
 // mapping of decay types
 enum DecayType { DPlusToPiKPi = 0,
                  LcToPKPi,
-                 DsToPiKK,
+                 DsToKKPi,
                  XicToPKPi,
                  N3ProngDecays }; //always keep N3ProngDecays at the end
 
@@ -641,6 +641,38 @@ template <typename T>
 auto InvMassDPlus(const T& candidate)
 {
   return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+// Ds± → K± K∓ π±
+
+template <typename T>
+auto CtDs(const T& candidate)
+{
+  return candidate.ct(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto YDs(const T& candidate)
+{
+  return candidate.y(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto EDs(const T& candidate)
+{
+  return candidate.e(RecoDecay::getMassPDG(pdg::Code::kDs));
+}
+
+template <typename T>
+auto InvMassDsKKPi(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kPiPlus)});
+}
+
+template <typename T>
+auto InvMassDsPiKK(const T& candidate)
+{
+  return candidate.m(array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kKPlus), RecoDecay::getMassPDG(kKPlus)});
 }
 
 // Λc± → p± K∓ π±
@@ -1132,7 +1164,7 @@ DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);         // debug flag for mi
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
 
 // Λb → Λc+ π- → p K- π+ π-
-//float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
+// float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
 template <typename T>
 auto CtLb(const T& candidate)
 {
