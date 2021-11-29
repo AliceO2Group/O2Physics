@@ -44,7 +44,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! z-component of the track momentum GeV/c
 
 } // namespace trackpropagated
 
-DECLARE_SOA_TABLE(tracksPropagated, "AOD", "TRACKPROPAG", //! commonly used track parameters, propagated to the primary vertex
+DECLARE_SOA_TABLE(TracksPropagated, "AOD", "TRACKPROPAG", //! commonly used track parameters, propagated to the primary vertex
                   o2::soa::Index<>,
                   track::CollisionId,
                   track::TrackType,
@@ -56,9 +56,9 @@ DECLARE_SOA_TABLE(tracksPropagated, "AOD", "TRACKPROPAG", //! commonly used trac
                   trackpropagated::Py<trackpropagated::Pt, trackpropagated::Phi>,
                   trackpropagated::Pz<trackpropagated::Pt, trackpropagated::Eta>);
 
-using trackPropagated = tracksPropagated::iterator;
+using TrackPropagated = TracksPropagated::iterator;
 
-DECLARE_SOA_TABLE(tracksParPropagated, "AOD", "TRACKPARPROPAG", //! additional track parameters, propagated to the primary vertex
+DECLARE_SOA_TABLE(TracksParPropagated, "AOD", "TRACKPARPROPAG", //! additional track parameters, propagated to the primary vertex
                   track::X, track::Alpha,
                   track::Y, track::Z, track::Snp, track::Tgl,
                   track::Signed1Pt,
@@ -67,7 +67,7 @@ DECLARE_SOA_TABLE(tracksParPropagated, "AOD", "TRACKPARPROPAG", //! additional t
                   track::Pz<track::Signed1Pt, track::Tgl>,
                   track::Sign<track::Signed1Pt>);
 
-using trackParPropagated = tracksParPropagated::iterator;
+using TrackParPropagated = TracksParPropagated::iterator;
 // TODO: replace this table with dynamical columns in the tracksPropagated table
 
 } // namespace o2::aod

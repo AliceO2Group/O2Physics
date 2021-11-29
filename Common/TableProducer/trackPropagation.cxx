@@ -42,7 +42,6 @@ namespace analysis
 {
 namespace trackpropagation
 {
-// constexpr long run3lut_timestamp = (1665695116725 + 1634159124442) / 2;
 constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 
 } // namespace trackpropagation
@@ -53,8 +52,8 @@ struct TrackPropagation {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  Produces<aod::tracksPropagated> tracksPropagated;
-  Produces<aod::tracksParPropagated> tracksParPropagated;
+  Produces<aod::TracksPropagated> tracksPropagated;
+  Produces<aod::TracksParPropagated> tracksParPropagated;
   Produces<aod::TracksExtended> tracksExtended;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -85,11 +84,11 @@ struct TrackPropagation {
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec device : workflows.devices) {
       for (auto input : device.inputs) {
-        const std::string tableTracksPropagated = "tracksPropagated";
+        const std::string tableTracksPropagated = "TracksPropagated";
         if (input.matcher.binding == tableTracksPropagated) {
           fillTracksPropagated = true;
         }
-        const std::string tableTracksParPropagated = "tracksParPropagated";
+        const std::string tableTracksParPropagated = "TracksParPropagated";
         if (input.matcher.binding == tableTracksParPropagated) {
           fillTracksParPropagated = true;
         }
