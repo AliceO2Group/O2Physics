@@ -42,7 +42,7 @@ namespace analysis
 {
 namespace trackpropagation
 {
-constexpr long run3lut_timestamp = (1665695116725 + 1634159124442) / 2;
+// constexpr long run3lut_timestamp = (1665695116725 + 1634159124442) / 2;
 constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 
 } // namespace trackpropagation
