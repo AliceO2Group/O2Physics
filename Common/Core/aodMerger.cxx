@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <map>
+#include <list>
 #include <fstream>
 #include <getopt.h>
 
@@ -88,7 +89,7 @@ int main(int argc, char* argv[])
   TMap* metaData = nullptr;
   int totalMergedDFs = 0;
   int mergedDFs = 0;
-  while (in.good()) {
+  while (in.good() && exitCode == 0) {
     in >> line;
 
     if (line.Length() == 0) {
@@ -153,14 +154,21 @@ int main(int argc, char* argv[])
       ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
       auto treeList = folder->GetListOfKeys();
+      std::list<std::string> foundTrees;
 
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
+        foundTrees.push_back(treeName);
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
         printf("    Processing tree %s with %lld entries\n", treeName, inputTree->GetEntries());
 
         if (trees.count(treeName) == 0) {
+          if (mergedDFs > 1) {
+            printf("    *** FATAL ***: The tree %s was not in the previous dataframe(s)\n", treeName);
+            exitCode = 3;
+          }
+
           // clone tree
           // NOTE Basket size etc. are copied in CloneTree()
           if (!outputDir) {
@@ -241,6 +249,20 @@ int main(int argc, char* argv[])
           }
 
           delete inputTree;
+        }
+      }
+      if (exitCode > 0) {
+        break;
+      }
+
+      // check if all trees were present
+      if (mergedDFs > 1) {
+        for (auto const& tree : trees) {
+          bool found = (std::find(foundTrees.begin(), foundTrees.end(), tree.first) != foundTrees.end());
+          if (found == false) {
+            printf("  *** FATAL ***: The tree %s was not in the current dataframe\n", tree.first.c_str());
+            exitCode = 4;
+          }
         }
       }
 
