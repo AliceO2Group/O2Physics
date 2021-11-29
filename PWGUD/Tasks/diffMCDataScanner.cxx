@@ -51,7 +51,7 @@ T getCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabel
   uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
   int64_t minBC = meanBC - deltaBC;
-  int64_t maxBC = meanBC + deltaBC;
+  uint64_t maxBC = meanBC + deltaBC;
   if (minBC < 0) {
     minBC = 0;
   }
@@ -59,7 +59,7 @@ T getCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabel
   // find slice of BCs table with BC in [minBC, maxBC]
   int64_t maxBCId = bcIter.globalIndex();
   int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && (int64_t)bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
+  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
     LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
     maxBCId = bcIter.globalIndex();
     ++bcIter;
