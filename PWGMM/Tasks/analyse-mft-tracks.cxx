@@ -1,3 +1,16 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
@@ -65,16 +78,16 @@ struct analyseGenTracks
   {
      "registryGen",
      {
-       {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}},           //
+       {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2*M_PI}, {35, -4.5, -1.}}}},           //
        {"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{35, -4.5, -1.}, {201, -20.1, 20.1}}}},             //
        {"NtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},            //
        {"NtrkEtaGen", "; N_{trk}; #eta; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {35, -4.5, -1.}}}},            //
      }                                                                                                                   //
    };
 
-   expressions::Filter posZFilterMC = (aod::mccollision::posZ < 15) && (aod::mccollision::posZ > -15);
 
-  void process(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, Particles const& particles)
+
+  void process(aod::McCollisions::iterator const& mcCollision, Particles const& particles)
     {
       int nChargedPrimaryParticles = 0;
       auto z = mcCollision.posZ();
@@ -112,7 +125,7 @@ struct analyseGenTracks
         }
       }
 
-      //registryGen.fill(HIST("NtrkZvtxGen"), nChargedPrimaryParticles, mcCollision.posZ());
+      registryGen.fill(HIST("NtrkZvtxGen"), nChargedPrimaryParticles, mcCollision.posZ());
     }
 };
 //end of the gen task
@@ -122,6 +135,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<analyseMFTTracks>(cfgc),
-    //adaptAnalysisTask<analyseGenTracks>(cfgc),
+    adaptAnalysisTask<analyseGenTracks>(cfgc),
   };
 }
