@@ -36,16 +36,18 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> mmObjectsNames{"LeadingPtTrack", "HighTrackMult"};
+static const std::vector<std::string> mmObjectsNames{"LeadingPtTrack", "HighTrackMult", "HighTrackMultTrans"};
 
 struct multFilter {
   enum { kLeadingPtTrack = 0,
          kHighTrackMult,
+         kHighTrackMultTrans,
          kNtriggersMM };
 
   //event selection cuts
   Configurable<float> selectionLeadingPtTrack{"selectionLeadingPtTrack", 8., "Minimum track pT leading threshold"};
   Configurable<float> selectionHighTrackMult{"selectionHighTrackMult", 58., "Minimum charged particle multiplicity threshold"};
+  Configurable<float> selectionHighTrackMultTrans{"selectionHighTrackMultTrans", 40., "Minimum charged particle multiplicity (in transverse region) threshold"};
 
   Produces<aod::MultFilters> tags;
 
@@ -63,9 +65,11 @@ struct multFilter {
     multiplicity.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
     multiplicity.add("fLeadingTrackPt", "pT of high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     multiplicity.add("fTrackMult", "charged particle multiplicity", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
-
+    multiplicity.add("fTrackMultTrans", "charged particle multiplicity in transverse region", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8, transverse region)"}});
     multiplicity.add("fLeadingTrackPtSelected", "pT of selected high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     multiplicity.add("fTrackMultSelected", "charged particle multiplicity of the selected events", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
+    multiplicity.add("fTrackMultTransSelected", "charged particle multiplicity  (in the transverse region) of the selected events", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
+    multiplicity.add("fDeltaPhiTrans", "delta phi distribution in transverse region", HistType::kTH1F, {{64, -M_PI / 2.0, +3.0 * M_PI / 2.0, "number of tracks (|#eta|<0.8, trans reg.)"}});
 
     std::array<std::string, 2> eventTitles = {"all", "rejected"};
 
@@ -83,6 +87,28 @@ struct multFilter {
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrackEtaCut) && (aod::track::isGlobalTrack == (uint8_t) true) && (aod::track::pt > cfgTrackLowPtCut);
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  float computeDeltaPhi(float phia, float phib,
+                        float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)
+  {
+    float dphi = -999;
+    if (phia < 0) {
+      phia += 2 * M_PI;
+    } else if (phia > 2 * M_PI) {
+      phia -= 2 * M_PI;
+    }
+    if (phib < 0) {
+      phib += 2 * M_PI;
+    } else if (phib > 2 * M_PI) {
+      phib -= 2 * M_PI;
+    }
+    dphi = phib - phia;
+    if (dphi < rangeMin) {
+      dphi += 2 * M_PI;
+    } else if (dphi > rangeMax) {
+      dphi -= 2 * M_PI;
+    }
+    return dphi;
+  }
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
 
@@ -92,14 +118,16 @@ struct multFilter {
 
     //
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
-    Int_t multTrack = 0;
-    Double_t flPt = 0; // leading pT
+    int multTrack = 0;
+    float flPt = 0; // leading pT
+    float flPhi = 0;
     //Check whether there is a leading pT track
     for (auto& track : tracks) { // start loop over tracks
       multTrack++;
       multiplicity.fill(HIST("hdNdeta"), track.eta());
       if (flPt < track.pt()) {
         flPt = track.pt();
+        flPhi = track.phi();
       }
     }
 
@@ -107,6 +135,21 @@ struct multFilter {
     multiplicity.fill(HIST("fTrackMult"), multTrack);
     // Check whether this event has a leading track candidate
     if (flPt >= selectionLeadingPtTrack) {
+      // compute Nch transverse
+      int multTrackTrans = 0;
+      for (auto& track : tracks) { // start loop over tracks
+        float DPhi = computeDeltaPhi(track.phi(), flPhi);
+        if (!(TMath::Abs(DPhi) < M_PI / 3.0 || TMath::Abs(DPhi - M_PI) < M_PI / 3.0)) { // transverse side
+          multTrackTrans++;
+          multiplicity.fill(HIST("fDeltaPhiTrans"), DPhi);
+        }
+      }
+
+      multiplicity.fill(HIST("fTrackMultTrans"), multTrackTrans);
+      if (multTrack >= selectionHighTrackMultTrans) {
+        keepEvent[kHighTrackMultTrans] = true; // accepted HM events
+        multiplicity.fill(HIST("fTrackMultTransSelected"), multTrack);
+      }
       multiplicity.fill(HIST("fLeadingTrackPtSelected"), flPt); //track pT which passed the cut
       keepEvent[kLeadingPtTrack] = true;
     }
@@ -116,9 +159,9 @@ struct multFilter {
       keepEvent[kHighTrackMult] = true; // accepted HM events
       multiplicity.fill(HIST("fTrackMultSelected"), multTrack);
     }
-    tags(keepEvent[kLeadingPtTrack], keepEvent[kHighTrackMult]);
+    tags(keepEvent[kLeadingPtTrack], keepEvent[kHighTrackMult], keepEvent[kHighTrackMultTrans]);
 
-    if (!keepEvent[kLeadingPtTrack] && !keepEvent[kHighTrackMult]) {
+    if (!keepEvent[kLeadingPtTrack] && !keepEvent[kHighTrackMult] && !keepEvent[kHighTrackMultTrans]) {
       multiplicity.fill(HIST("fProcessedEvents"), 1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {
