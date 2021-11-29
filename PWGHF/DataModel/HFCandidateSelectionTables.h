@@ -90,8 +90,15 @@ namespace hf_selcandidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
 } // namespace hf_selcandidate_dplus
-DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELDPLUSCAND", //!
+DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELdpcandidateCAND", //!
                   hf_selcandidate_dplus::IsSelDplusToPiKPi);
+
+namespace hf_selcandidate_ds
+{
+DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
+} // namespace hf_selcandidate_ds
+DECLARE_SOA_TABLE(HFSelDsToKKPiCandidate, "AOD", "HFSELDSCAND", //!
+                  hf_selcandidate_ds::IsSelDsToKKPi);
 
 namespace hf_selcandidate_lc
 {
