@@ -485,16 +485,16 @@ struct HfFilter { // Main struct for HF triggers
       if (pt3Prong >= pTThreshold3Prong) {
         keepEvent[kHighPt] = true;
         if (activateQA) {
-          if(isDPlus) {
+          if (isDPlus) {
             hCharmHighPt[kDplus]->Fill(pt3Prong);
           }
-          if(isDs) {
+          if (isDs) {
             hCharmHighPt[kDs]->Fill(pt3Prong);
           }
-          if(isLc) {
+          if (isLc) {
             hCharmHighPt[kLc]->Fill(pt3Prong);
           }
-          if(isXic) {
+          if (isXic) {
             hCharmHighPt[kXic]->Fill(pt3Prong);
           }
         }
@@ -519,7 +519,7 @@ struct HfFilter { // Main struct for HF triggers
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
                 if (activateQA) {
-                  hMassB[iHypo+1]->Fill(massCandB);
+                  hMassB[iHypo + 1]->Fill(massCandB);
                 }
               }
             }
@@ -534,7 +534,7 @@ struct HfFilter { // Main struct for HF triggers
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
                 if (activateQA) {
-                  hCharmProtonKstarDistr[iHypo+1]->Fill(relativeMomentum);
+                  hCharmProtonKstarDistr[iHypo + 1]->Fill(relativeMomentum);
                 }
               }
             }
