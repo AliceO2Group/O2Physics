@@ -496,8 +496,8 @@ struct v0selector {
         auto bTrack = getTrackParCov(casc.bachelor_as<FullTracksExt>());
 
         if (cpos < 0) { //swap charge
-          auto pTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
-          auto nTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
+          pTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
+          nTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
         }
 
         int nCand = fitter.process(pTrack, nTrack);
