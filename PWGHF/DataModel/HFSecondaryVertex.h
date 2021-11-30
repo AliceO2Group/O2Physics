@@ -1162,7 +1162,7 @@ auto InvMassLbToLcPi(const T& candidate)
 namespace hf_cand_chicPCM
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, HfCandProng2, "_0"); // Jpsi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, PHOTONs, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, Photons, "_1");
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t);         // reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t);         // generator level

@@ -20,6 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "ALICE3/DataModel/PHOTON.h"
 #include "Common/Core/MC.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
@@ -74,7 +75,7 @@ struct photonQaMc {
     for (auto& particle : mcParticles) {
       if (!particle.has_photon())
         continue;
-      const float photonp = RecoDecay::sqrtSumOfSquares(photon.px(), photon.py(), photon.pz());
+      const float photonp = RecoDecay::sqrtSumOfSquares(particle.photon.px(), particle.photon.py(), particle.photon.pz());
       histos.fill(HIST("photonpVsp"), photonp, particle.p());
       histos.fill(HIST("photonpxVspx"), particle.photon().px(), particle.px());
       histos.fill(HIST("photonpyVspy"), particle.photon().py(), particle.py());
