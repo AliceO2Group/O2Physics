@@ -7,6 +7,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \author Junlee Kim (jikim1290@gmail.com)
+/// \since November 2021
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
