@@ -248,9 +248,9 @@ struct HFCandidateCreatorChicPCMMC {
         hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.index0()));
 
         int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), pdg::Code::kChic1);
-        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), pdg::Code::kChic1);
+        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcParticle().globalIndex()), pdg::Code::kChic1);
 
-        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
+        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcParticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.iteratorAt(indexMother);
           //  hEphotonMatched->Fill(candidate.index1().p());
           hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
@@ -268,9 +268,9 @@ struct HFCandidateCreatorChicPCMMC {
         }
 
         indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), pdg::Code::kChic0);
-        indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), pdg::Code::kChic0);
+        indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcParticle().globalIndex()), pdg::Code::kChic0);
 
-        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
+        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcParticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.iteratorAt(indexMother);
           //  hEphotonMatched->Fill(candidate.index1().p());
           hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
@@ -287,8 +287,8 @@ struct HFCandidateCreatorChicPCMMC {
           }
         }
         indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(indexRec), pdg::Code::kChic2);
-        indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcparticle().globalIndex()), pdg::Code::kChic2);
-        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
+        indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcParticle().globalIndex()), pdg::Code::kChic2);
+        if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcParticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.iteratorAt(indexMother);
           //  hEphotonMatched->Fill(candidate.index1().p());
           hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
