@@ -204,9 +204,9 @@ struct strangenessFilter {
       QAHistos.fill(HIST("hMassOmegaBefSel"), casc.mOmega());
 
       //Position
-      xipos = TMath::Sqrt(TMath::Power(casc.x() - collision.posX(), 2) + TMath::Power(casc.y() - collision.posY(), 2) + TMath::Power(casc.z() - collision.posZ(), 2));
+      xipos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       //Total momentum
-      xiptotmom = TMath::Sqrt(casc.px() * casc.px() + casc.py() * casc.py() + casc.pz() * casc.pz());
+      xiptotmom = std::hypot(casc.px(),casc.py(),casc.pz());
       //Proper lifetime
       xiproperlifetime = RecoDecay::getMassPDG(3312) * xipos / (xiptotmom + 1e-13);
       omegaproperlifetime = RecoDecay::getMassPDG(3334) * xipos / (xiptotmom + 1e-13);
