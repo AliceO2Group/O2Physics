@@ -29,7 +29,6 @@ struct lumiTask{
 		histos.add("vertexx_timestamp", "", HistType::kTH2F,{{1000,0,5e7,"t"},{1000,-1,1,"x"} });
 		histos.add("vertexy_timestamp", "", HistType::kTH2F,{{1000,0,5e7,"t"},{1000,-1,1,"y"}});
 	} // init 
-
         void process(aod::Collision const& collision, aod::BCsWithTimestamps const&){
 		auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 		histos.fill(HIST("vertexx"), collision.posX() ); 
