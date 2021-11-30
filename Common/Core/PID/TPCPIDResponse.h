@@ -38,7 +38,7 @@ class Response
 
   /// Setter and Getter for the private parameters
   void SetBetheBlochParams(const std::array<float, 5>& betheBlochParams) { mBetheBlochParams = betheBlochParams; };
-  void SetResolutionParams(const std::vector<double>& resolutionParams) { mResolutionParams[mReadOutChamber] = resolutionParams; };
+  void SetResolutionParams(const std::vector<double>& resolutionParams, const int readoutchamber = 0) { mResolutionParams[readoutchamber] = resolutionParams; };
   void SetMIP(const float mip) { mMIP = mip; };
   void SetChargeFactor(const float chargeFactor) { mChargeFactor = chargeFactor; };
   void SetMultiplicityNormalization(const float multNormalization) { mMultNormalization = multNormalization; };

@@ -18,9 +18,12 @@
 #include <boost/program_options.hpp>
 #include <FairLogger.h>
 #include <array>
+#include <fstream>
+#include <sstream>
 #include "TFile.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Algorithm/RangeTokenizer.h"
 using namespace o2::pid::tpc;
 namespace bpo = boost::program_options;
 
@@ -41,15 +44,12 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "bb2", bpo::value<float>()->default_value(2.52666e-16f), "Bethe-Bloch parameter 2")(
     "bb3", bpo::value<float>()->default_value(2.72123f), "Bethe-Bloch parameter 3")(
     "bb4", bpo::value<float>()->default_value(6.08092f), "Bethe-Bloch parameter 4")(
-    "sig0", bpo::value<double>()->default_value(5.43799e-7f), "Sigma parameter 0")(
-    "sig1", bpo::value<double>()->default_value(0.053044f), "Sigma parameter 1")(
-    "sig2", bpo::value<double>()->default_value(0.667584f), "Sigma parameter 2")(
-    "sig3", bpo::value<double>()->default_value(0.0142667f), "Sigma parameter 3")(
-    "sig4", bpo::value<double>()->default_value(0.00235175f), "Sigma parameter 4")(
-    "sig5", bpo::value<double>()->default_value(1.22482f), "Sigma parameter 5")(
-    "sig6", bpo::value<double>()->default_value(2.3501e-7f), "Sigma parameter 6")(
-    "sig7", bpo::value<double>()->default_value(0.031585f), "Sigma parameter 7")(
-    "readoutchamber", bpo::value<int>()->default_value(0), "Readout Chamber")(
+    "reso-param-path", bpo::value<std::string>()->default_value(""), "Path to resolution parameter file")(
+    "sigmaGlobal", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters global")(
+    "sigmaIROC", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters IROC")(
+    "sigmaOROC1", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC1")(
+    "sigmaOROC2", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC2")(
+    "sigmaOROC3", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC3")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
@@ -101,15 +101,12 @@ int main(int argc, char* argv[])
   const float bb2 = vm["bb2"].as<float>();
   const float bb3 = vm["bb3"].as<float>();
   const float bb4 = vm["bb4"].as<float>();
-  const double sig0 = vm["sig0"].as<double>();
-  const double sig1 = vm["sig1"].as<double>();
-  const double sig2 = vm["sig2"].as<double>();
-  const double sig3 = vm["sig3"].as<double>();
-  const double sig4 = vm["sig4"].as<double>();
-  const double sig5 = vm["sig5"].as<double>();
-  const double sig6 = vm["sig6"].as<double>();
-  const double sig7 = vm["sig7"].as<double>();
-  const char readoutchamber = vm["readoutchamber"].as<int>();
+  const std::string pathResoParam = vm["reso-param-path"].as<std::string>();
+  const std::string sigmaGlobal = vm["sigmaGlobal"].as<std::string>();
+  const std::string sigmaIROC = vm["sigmaIROC"].as<std::string>();
+  const std::string sigmaOROC1 = vm["sigmaOROC1"].as<std::string>();
+  const std::string sigmaOROC2 = vm["sigmaOROC2"].as<std::string>();
+  const std::string sigmaOROC3 = vm["sigmaOROC3"].as<std::string>();
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
   const float multNormval = vm["paramMultNormalization"].as<float>();
@@ -121,7 +118,41 @@ int main(int argc, char* argv[])
   }
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
-  std::vector<double> sigparams = {sig0, sig1, sig2, sig3, sig4, sig5, sig6, sig7};
+
+  std::vector<double> sigparamsGlobal;
+  std::vector<double> sigparamsIROC;
+  std::vector<double> sigparamsOROC1;
+  std::vector<double> sigparamsOROC2;
+  std::vector<double> sigparamsOROC3;
+  if(pathResoParam!=""){ // Read resolution parameters from file
+    std::ifstream infile(pathResoParam);
+    std::string paramstring;
+    std::vector<std::vector<double>> sigmaParams;
+    for (int i = 0; i < 5; i++){
+      std::getline(infile, paramstring);
+      std::istringstream ss(paramstring);
+      sigmaParams.push_back({});
+      double param = 0.;
+      while (ss >> param){
+        sigmaParams.back().push_back(param);
+      }
+    }
+    sigparamsGlobal = sigmaParams[0];
+    sigparamsIROC = sigmaParams[1];
+    sigparamsOROC1 = sigmaParams[2];
+    sigparamsOROC2 = sigmaParams[3];
+    sigparamsOROC3 = sigmaParams[4];
+  }
+  else{
+  sigparamsGlobal = o2::RangeTokenizer::tokenize<double>(sigmaGlobal);
+  sigparamsIROC = o2::RangeTokenizer::tokenize<double>(sigmaIROC);
+  sigparamsOROC1 = o2::RangeTokenizer::tokenize<double>(sigmaOROC1);
+  sigparamsOROC2 = o2::RangeTokenizer::tokenize<double>(sigmaOROC2);
+  sigparamsOROC3 = o2::RangeTokenizer::tokenize<double>(sigmaOROC3);
+
+  }
+
+
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
@@ -177,8 +208,11 @@ int main(int argc, char* argv[])
 
       tpc.reset(new Response());
       tpc->SetBetheBlochParams(BBparams);
-      tpc->SetReadOutChamber(readoutchamber);
-      tpc->SetResolutionParams(sigparams);
+      tpc->SetResolutionParams(sigparamsGlobal, 0);
+      tpc->SetResolutionParams(sigparamsIROC, 1);
+      tpc->SetResolutionParams(sigparamsOROC1, 2);
+      tpc->SetResolutionParams(sigparamsOROC2, 3);
+      tpc->SetResolutionParams(sigparamsOROC3, 4);
       tpc->SetMIP(mipval);
       tpc->SetChargeFactor(chargefacval);
       tpc->SetMultiplicityNormalization(multNormval);
