@@ -38,7 +38,7 @@ struct lumiTask{
 //		LOGF(info, "Got timestamp %llu", bc.timestamp());
 		histos.fill(HIST("vertexx_timestamp"), bc.timestamp()-1530314294062, collision.posX() );
 		histos.fill(HIST("vertexy_timestamp"), bc.timestamp()-1530314294062, collision.posY() );
-	} // need selection 
+	} // need selections
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
