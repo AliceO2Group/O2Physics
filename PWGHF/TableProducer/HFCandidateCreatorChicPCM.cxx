@@ -77,7 +77,7 @@ struct HFCandidateCreatorChicPCM {
                  aod::HfCandProng2,
                  aod::HFSelJpsiCandidate>> const& jpsiCands,
                aod::BigTracks const& tracks,
-               aod::PHOTONs const& photons)
+               aod::Photons const& photons)
   {
     // 2-prong vertex fitter (to rebuild Jpsi vertex)
     o2::vertexing::DCAFitterN<2> df2;
@@ -122,7 +122,7 @@ struct HFCandidateCreatorChicPCM {
       prong1TrackParCov.propagateTo(jpsiCand.xSecondaryVertex(), magneticField);
       const std::array<float, 6> covJpsi = df2.calcPCACovMatrixFlat();
       // define the Jpsi track
-      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); //FIXME: also needs covxyz???
+      auto trackJpsi = o2::dataformats::V0(vertexJpsi, pvecJpsi, covJpsi, prong0TrackParCov, prong1TrackParCov, {0, 0}, {0, 0}); // FIXME: also needs covxyz???
 
       // -----------------------------------------------------------------
       // loop over gamma candidates
@@ -149,8 +149,8 @@ struct HFCandidateCreatorChicPCM {
         // get uncertainty of the decay length
         double phi, theta;
         // getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, ChicsecondaryVertex, phi, theta);
-        //auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-        //auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+        // auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+        // auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
         int hfFlag = 0;
         if (TESTBIT(jpsiCand.hfflag(), hf_cand_prong2::DecayType::JpsiToMuMu)) {
@@ -166,7 +166,7 @@ struct HFCandidateCreatorChicPCM {
                            collision.posX(), collision.posY(), collision.posZ(),
                            0.f, 0.f, 0.f,               //    ChicsecondaryVertex[0], ChicsecondaryVertex[1], ChicsecondaryVertex[2],
                            0.f, 0.f,                    // errorDecayLength, errorDecayLengthXY,
-                           df2.getChi2AtPCACandidate(), //chi2PCA of Jpsi
+                           df2.getChi2AtPCACandidate(), // chi2PCA of Jpsi
                            pvecJpsi[0], pvecJpsi[1], pvecJpsi[2],
                            pvecGamma[0], pvecGamma[1], pvecGamma[2],
                            impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
@@ -180,7 +180,7 @@ struct HFCandidateCreatorChicPCM {
                            collision.posX(), collision.posY(), collision.posZ(),
                            0.f, 0.f, 0.f,               //    ChicsecondaryVertex[0], ChicsecondaryVertex[1], ChicsecondaryVertex[2],
                            0.f, 0.f,                    // errorDecayLength, errorDecayLengthXY,
-                           df2.getChi2AtPCACandidate(), //chi2PCA of Jpsi
+                           df2.getChi2AtPCACandidate(), // chi2PCA of Jpsi
                            pvecJpsi[0], pvecJpsi[1], pvecJpsi[2],
                            pvecGamma[0], pvecGamma[1], pvecGamma[2],
                            impactParameter0.getY(), 0.f,                  // impactParameter1.getY(),
@@ -224,7 +224,7 @@ struct HFCandidateCreatorChicPCMMC {
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC,
-               aod::PHOTONs const& photons)
+               aod::Photons const& photons)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -314,7 +314,7 @@ struct HFCandidateCreatorChicPCMMC {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       channel = 0;

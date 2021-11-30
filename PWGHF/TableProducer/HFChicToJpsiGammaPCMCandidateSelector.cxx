@@ -25,7 +25,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-//using namespace o2::aod::hf_cand_chic;
+// using namespace o2::aod::hf_cand_chic;
 using namespace o2::aod::hf_cand_chicPCM;
 using namespace o2::analysis;
 using namespace o2::analysis::hf_cuts_chic_tojpsigamma;
@@ -74,17 +74,17 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
     }
 
     if (candpT < d_pTCandMin || candpT >= d_pTCandMax) {
-      return false; //check that the candidate pT is within the analysis range
+      return false; // check that the candidate pT is within the analysis range
     }
 
     auto mchic = RecoDecay::getMassPDG(20443); // chi_c1(1p)
     if (TMath::Abs(InvMassChicToJpsiGamma(hfCandChicPCM) - mchic) > cuts->get(pTBin, "m")) {
       // Printf("Chic topol selection failed at mass diff check");
-      return false; //check that mass difference is within bounds
+      return false; // check that mass difference is within bounds
     }
 
     if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi"))) { // adf: Warning: no cut on photon
-      return false;                                        //cut on daughter pT
+      return false;                                        // cut on daughter pT
     }
 
     // if ((hfCandJpsi.pt() < cuts->get(pTBin, "pT Jpsi")) || (trackNeg.pt() < cuts->get(pTBin, "pT Pi")) || (trackPos.pt() < cuts->get(pTBin, "pT Pi"))) {
@@ -114,7 +114,7 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
     if (TMath::Abs(track.pt()) < d_pidTPCMinpT || TMath::Abs(track.pt()) >= d_pidTPCMaxpT) {
       return false;
     }
-    //if (track.TPCNClsFindable() < d_TPCNClsFindablePIDCut) return false;
+    // if (track.TPCNClsFindable() < d_TPCNClsFindablePIDCut) return false;
     return true;
   }
 
@@ -180,12 +180,12 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
 
   //---------------------------------------------------------------
 
-  void process(aod::HfCandChicPCM const& hfCandChicPCMs, aod::HfCandProng2, aod::BigTracksPID const& tracks, aod::PHOTONs const& photons)
+  void process(aod::HfCandChicPCM const& hfCandChicPCMs, aod::HfCandProng2, aod::BigTracksPID const& tracks, aod::Photons const& photons)
   {
-    for (auto& hfCandChicPCM : hfCandChicPCMs) { //looping over chi_c candidates
+    for (auto& hfCandChicPCM : hfCandChicPCMs) { // looping over chi_c candidates
       // note the difference between Jpsi (index0) and pions (index1,2)
       auto candJpsi = hfCandChicPCM.index0();
-      auto gamma = hfCandChicPCM.index1_as<aod::PHOTONs>();
+      auto gamma = hfCandChicPCM.index1_as<aod::Photons>();
 
       int selJpsiToEE = 1;
       int selJpsiToMuMu = 1;
@@ -210,8 +210,8 @@ struct HFChicToJpsiGammaPCMCandidateSelector {
         continue;
       }
 
-      //implement filter bit 4 cut - should be done before this task at the track selection level
-      //need to add special cuts (additional cuts on decay length and d0 norm)
+      // implement filter bit 4 cut - should be done before this task at the track selection level
+      // need to add special cuts (additional cuts on decay length and d0 norm)
 
       if (!selectionTopol(hfCandChicPCM, candJpsi, gamma)) { // check selections
         hfSelChicToJpsiGammaPCMCandidate(0, 0);
