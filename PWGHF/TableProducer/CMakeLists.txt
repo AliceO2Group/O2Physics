@@ -64,8 +64,6 @@ o2physics_add_dpl_workflow(candidate-creator-chicpcm
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
-
-
 o2physics_add_dpl_workflow(tree-creator-lc-topkpi
                     SOURCES HFTreeCreatorLcToPKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
@@ -161,7 +159,7 @@ o2physics_add_dpl_workflow(chic-tojpsigamma-candidate-selector
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(chic-tojpsigammaPCM-candidate-selector
+o2physics_add_dpl_workflow(chic-tojpsigammapcm-candidate-selector
                     SOURCES HFChicToJpsiGammaPCMCandidateSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
