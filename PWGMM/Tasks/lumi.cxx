@@ -28,7 +28,7 @@ struct lumiTask{
 		histos.add("timestamp", "", HistType::kTH1F,{{1000,0,5e7,"t"}});
 		histos.add("vertexx_timestamp", "", HistType::kTH2F,{{1000,0,5e7,"t"},{1000,-1,1,"x"} });
 		histos.add("vertexy_timestamp", "", HistType::kTH2F,{{1000,0,5e7,"t"},{1000,-1,1,"y"}});
-	} // init
+	} // init 
 
         void process(aod::Collision const& collision, aod::BCsWithTimestamps const&){
 		auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -38,7 +38,7 @@ struct lumiTask{
 //		LOGF(info, "Got timestamp %llu", bc.timestamp());
 		histos.fill(HIST("vertexx_timestamp"), bc.timestamp()-1530314294062, collision.posX() );
 		histos.fill(HIST("vertexy_timestamp"), bc.timestamp()-1530314294062, collision.posY() );
-	}
+	} // need selection 
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
