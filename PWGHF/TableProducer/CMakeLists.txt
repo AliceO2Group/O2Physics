@@ -59,7 +59,7 @@ o2physics_add_dpl_workflow(candidate-creator-chic
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-creator-chicPCM
+o2physics_add_dpl_workflow(candidate-creator-chicpcm
                     SOURCES HFCandidateCreatorChicPCM.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
