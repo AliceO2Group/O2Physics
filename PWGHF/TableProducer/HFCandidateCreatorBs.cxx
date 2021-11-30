@@ -53,9 +53,9 @@ struct HFCandidateCreatorBs {
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
 
   OutputObj<TH1F> hMassDsToKKPi{TH1F("hMassDsToKKPi", "D_{s}^{#plus} candidates;inv. mass (K^{#plus}K^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hPtDs{TH1F("hPtDs", "#Lambda_{c}^{#plus} candidates;D_{s}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
+  OutputObj<TH1F> hPtDs{TH1F("hPtDs", "D_{s}^{#plus} candidates;D_{s}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#minus} candidates;#pi^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hCPADs{TH1F("hCPADs", "D_{s}^{#plus} candidates;#Lambda_{c}^{#plus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
+  OutputObj<TH1F> hCPADs{TH1F("hCPADs", "D_{s}^{#plus} candidates;D_{s}^{#plus} cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassBsToDsPi{TH1F("hMassBsToDsPi", "2-prong candidates;inv. mass (B_{s}^{0} #rightarrow D_{s}^{#plus}#pi^{#minus} #rightarrow K^{#plus}K^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
@@ -269,7 +269,7 @@ struct HFCandidateCreatorBsMC {
       flag = 0;
       origin = 0;
       // Bs → Ds+ π-
-      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{int(pdg::Code::kDs), -kPiPlus}, true)) {
+      if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kBs, array{int(pdg::Code::kDs), -kPiPlus}, true)) {
         // Match Ds+ -> φπ -> K+K-π
         auto DsCandMC = particlesMC.iteratorAt(particle.daughter0Id());
 

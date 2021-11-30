@@ -55,10 +55,10 @@ struct HfTaskBs {
   void init(o2::framework::InitContext&)
   {
     auto vbins = (std::vector<double>)bins;
-    registry.add("hMass", "B_{s} candidates;inv. mass #Lambda_{c}^{#plus}#pi^{#minus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
+    registry.add("hMass", "B_{s} candidates;inv. mass D_{s}^{#plus}#pi^{#minus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
     registry.add("hDecLength", "B_{s} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXY", "B_{s} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong0", "B_{s} candidates;prong 0 (#Lambda_{c}^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hd0Prong0", "B_{s} candidates;prong 0 (D_{s}^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1", "B_{s} candidates;prong 1 (#pi^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCPA", "B_{s} candidates;B_{s} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "B_{s} candidates;B_{s} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -190,7 +190,7 @@ struct HfTaskBsMc {
       auto candDs = candidate.index0_as<aod::HfCandProng3>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bs::DecayType::BsToDsPi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMCGen>>(), pdg::Code::kLambdaB0, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMCGen>>(), pdg::Code::kBs, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
@@ -238,7 +238,7 @@ struct HfTaskBsMc {
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bs::DecayType::BsToDsPi) {
 
-        auto yParticle = RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kLambdaB0));
+        auto yParticle = RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kBs));
         if (cutYCandMax >= 0. && std::abs(yParticle) > cutYCandMax) {
           continue;
         }
