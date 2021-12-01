@@ -20,13 +20,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lumiTask {
-  HistogramRegistry histos{"histos",{
-      {"vertexx", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}}, //
-      {"vertexy", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}}, //
-      {"timestamp", "", {HistType::kTH1F, {{1000, 0, 5e7, "t"}}}}, //
-      {"vertexx_timestamp", "", {HistType::kTH2F, {{1000, 0, 5e7, "t"}, {1000, -1, 1, "x"}}}}, //
-      {"vertexy_timestamp", "", {HistType::kTH2F, {{1000, 0, 5e7, "t"}, {1000, -1, 1, "y"}}}} //
-  } };
+  HistogramRegistry histos{"histos", {
+                                       {"vertexx", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}},                                //
+                                       {"vertexy", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}},                                //
+                                       {"timestamp", "", {HistType::kTH1F, {{1000, 0, 5e7, "t"}}}},                             //
+                                       {"vertexx_timestamp", "", {HistType::kTH2F, {{1000, 0, 5e7, "t"}, {1000, -1, 1, "x"}}}}, //
+                                       {"vertexy_timestamp", "", {HistType::kTH2F, {{1000, 0, 5e7, "t"}, {1000, -1, 1, "y"}}}}  //
+                                     }};
   int first_time = 1530314294062; // to be updated
 
   void process(aod::Collision const& collision, aod::BCsWithTimestamps const&)
@@ -35,7 +35,7 @@ struct lumiTask {
     histos.fill(HIST("vertexx"), collision.posX());
     histos.fill(HIST("vertexy"), collision.posY());
     histos.fill(HIST("timestamp"), bc.timestamp() - first_time);
-    //          LOGF(info, "Got timestamp {}", bc.timestamp());
+    //		LOGF(info, "Got timestamp {}", bc.timestamp());
     histos.fill(HIST("vertexx_timestamp"), bc.timestamp() - first_time, collision.posX());
     histos.fill(HIST("vertexy_timestamp"), bc.timestamp() - first_time, collision.posY());
   } // need selections
