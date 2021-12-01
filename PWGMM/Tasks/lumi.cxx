@@ -35,7 +35,7 @@ struct lumiTask {
     histos.fill(HIST("vertexx"), collision.posX());
     histos.fill(HIST("vertexy"), collision.posY());
     histos.fill(HIST("timestamp"), bc.timestamp() - first_time);
-    //		LOGF(info, "Got timestamp {}", bc.timestamp());
+    //		LOGP(info, "Got timestamp {}", bc.timestamp());
     histos.fill(HIST("vertexx_timestamp"), bc.timestamp() - first_time, collision.posX());
     histos.fill(HIST("vertexy_timestamp"), bc.timestamp() - first_time, collision.posY());
   } // need selections
