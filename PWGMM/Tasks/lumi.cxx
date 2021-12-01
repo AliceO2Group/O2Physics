@@ -42,7 +42,6 @@ struct lumiTask {
     histos.fill(HIST("vertexy_timestamp"), bc.timestamp() - 1530314294062, collision.posY());
   } // need selections
 };
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<lumiTask>(cfgc)};
