@@ -90,7 +90,7 @@ namespace hf_selcandidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
 } // namespace hf_selcandidate_dplus
-DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELdpcandidateCAND", //!
+DECLARE_SOA_TABLE(HFSelDplusToPiKPptiCandidate, "AOD", "HFSELDPLUSCAND", //!
                   hf_selcandidate_dplus::IsSelDplusToPiKPi);
 
 namespace hf_selcandidate_ds
