@@ -27,7 +27,7 @@ struct lumiTask {
                                        {"vertexx_timestamp", "", {HistType::kTH2F, {{1000, 0, 5e7, "t"}, {1000, -1, 1, "x"}}}}, //
                                        {"vertexy_timestamp", "", {HistType::kTH2F, {{1000, 0, 5e7, "t"}, {1000, -1, 1, "y"}}}}  //
                                      }};
-  int first_time = 1530314294062; // to be updated
+  uint64_t first_time = 1530314294062; // to be updated
 
   void process(aod::Collision const& collision, aod::BCsWithTimestamps const&)
   {
