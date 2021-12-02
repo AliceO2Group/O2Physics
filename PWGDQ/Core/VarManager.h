@@ -798,7 +798,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 
   if constexpr ((pairType == kJpsiToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
-          
+
     if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY]) {
       // Quantities based on the barrel tables
       double dca1 = t1.dcaXY();
@@ -879,7 +879,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
   constexpr bool trackHasCov = ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0);
   constexpr bool muonHasCov = ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0);
-        
+
   if (!values) {
     values = fgValues;
   }
@@ -920,7 +920,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     o2::track::TrackParCovFwd pars2{t2.z(), t2pars, t2covs, chi22};
     procCode = FwdfgFitterTwoProng.process(pars1, pars2);
   } else {
-    return;        
+    return;
   }
 
   values[kVertexingProcCode] = procCode;

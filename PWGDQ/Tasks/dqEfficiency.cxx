@@ -89,7 +89,7 @@ struct AnalysisEventSelection {
   OutputObj<THashList> fOutputList{"output"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  
+
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
 
@@ -99,7 +99,7 @@ struct AnalysisEventSelection {
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-          
+
     VarManager::SetDefaultVarNames();
     if (fConfigQA) {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -136,14 +136,16 @@ struct AnalysisEventSelection {
       eventSel(0);
     }
   }
-  
-  void processSkimmed(MyEvents::iterator const& event, aod::ReducedMCEvents const& mcEvents) {
-    runSelection<gkEventFillMap,gkMCEventFillMap>(event,mcEvents);
+
+  void processSkimmed(MyEvents::iterator const& event, aod::ReducedMCEvents const& mcEvents)
+  {
+    runSelection<gkEventFillMap, gkMCEventFillMap>(event, mcEvents);
   }
-  void processDummy(MyEvents&) {
-    // do nothing        
+  void processDummy(MyEvents&)
+  {
+    // do nothing
   }
-  
+
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
 };
@@ -154,13 +156,13 @@ struct AnalysisTrackSelection {
   Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  
+
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<MCSignal> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<std::vector<TString>> fHistNamesMCMatched;
-  
+
   void init(o2::framework::InitContext&)
   {
     TString cutNamesStr = fConfigCuts.value;
@@ -190,13 +192,13 @@ struct AnalysisTrackSelection {
             continue;
           }
           fMCSignals.push_back(*sig);
-          TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sigNamesArray->At(isig)->GetName()); 
+          TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sigNamesArray->At(isig)->GetName());
           mcnames.push_back(nameStr2);
           histClasses += Form("%s;", nameStr2.Data());
         }
       }
       fHistNamesMCMatched.push_back(mcnames);
-    }    
+    }
 
     if (fConfigQA) {
       VarManager::SetDefaultVarNames();
@@ -226,8 +228,8 @@ struct AnalysisTrackSelection {
     trackSel.reserve(tracks.size());
     for (auto& track : tracks) {
       filterMap = 0;
-      
-      VarManager::FillTrack<TTrackFillMap>(track);  // compute track quantities
+
+      VarManager::FillTrack<TTrackFillMap>(track); // compute track quantities
       // compute MC matched quantities
       if constexpr (TTrackMCFillMap & VarManager::ObjTypes::ReducedTrack) {
         VarManager::FillTrack<gkParticleMCFillMap>(track.reducedMCTrack());
@@ -235,7 +237,7 @@ struct AnalysisTrackSelection {
       if constexpr (TTrackMCFillMap & VarManager::ObjTypes::Track) {
         VarManager::FillTrack<gkParticleMCFillMap>(track.mcParticle());
       }
-      
+
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
@@ -255,10 +257,10 @@ struct AnalysisTrackSelection {
         continue;
       }
 
-      if(!fConfigQA) {
-        continue;        
+      if (!fConfigQA) {
+        continue;
       }
-      
+
       // compute MC matching decisions
       uint32_t mcDecision = 0;
       int isig = 0;
@@ -274,7 +276,7 @@ struct AnalysisTrackSelection {
           }
         }
       }
-      
+
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
         if (!(mcDecision & (uint32_t(1) << i))) {
@@ -285,17 +287,19 @@ struct AnalysisTrackSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      } // end loop over MC signals
-    } // end loop over tracks
+      }   // end loop over MC signals
+    }     // end loop over tracks
   }
-  
-  void processSkimmed(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
-    runSelection<gkEventFillMap,gkMCEventFillMap,gkTrackFillMap,gkParticleMCFillMap>(event,tracks,eventsMC,tracksMC);
+
+  void processSkimmed(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
+    runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, eventsMC, tracksMC);
   }
-  void processDummy(MyEvents&) {
-    // do nothing        
+  void processDummy(MyEvents&)
+  {
+    // do nothing
   }
-  
+
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy process function", false);
 };
@@ -306,13 +310,13 @@ struct AnalysisMuonSelection {
   Configurable<std::string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgMuonMCSignals", "", "Comma separated list of MC signals"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  
+
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<MCSignal> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<std::vector<TString>> fHistNamesMCMatched;
-  
+
   void init(o2::framework::InitContext&)
   {
     TString cutNamesStr = fConfigCuts.value;
@@ -348,7 +352,7 @@ struct AnalysisMuonSelection {
         }
       }
       fHistNamesMCMatched.push_back(mcnames);
-    }    
+    }
 
     if (fConfigQA) {
       VarManager::SetDefaultVarNames();
@@ -380,7 +384,7 @@ struct AnalysisMuonSelection {
     for (auto& muon : muons) {
       filterMap = 0;
       VarManager::FillTrack<TMuonFillMap>(muon); // compute muon quantities
-      
+
       // compute MC matched quantities using either the DQ skimmed or the Framework data models
       if constexpr (TMuonFillMap & VarManager::ObjTypes::ReducedMuon) {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.reducedMCTrack());
@@ -388,7 +392,7 @@ struct AnalysisMuonSelection {
       if constexpr (TMuonFillMap & VarManager::ObjTypes::Muon) {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.mcParticle());
       }
-      
+
       if (fConfigQA) {
         fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
       }
@@ -404,17 +408,17 @@ struct AnalysisMuonSelection {
         }
       }
       muonSel(static_cast<int>(filterMap));
-      
+
       // if no filter fulfilled, continue
       if (!filterMap) {
         continue;
       }
 
       // everything below is related to filling QA histograms
-      if(!fConfigQA) {
-        continue;        
+      if (!fConfigQA) {
+        continue;
       }
-      
+
       // compute MC matching decisions
       uint32_t mcDecision = 0;
       int isig = 0;
@@ -430,7 +434,7 @@ struct AnalysisMuonSelection {
           }
         }
       }
-      
+
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
         if (!(mcDecision & (uint32_t(1) << i))) {
@@ -441,17 +445,19 @@ struct AnalysisMuonSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      } // end loop over MC signals
-    } // end loop over muons
+      }   // end loop over MC signals
+    }     // end loop over muons
   }
-  
-  void processSkimmed(MyEventsSelected::iterator const& event, MyMuonTracks const& muons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
-    runSelection<gkEventFillMap,gkMCEventFillMap,gkMuonFillMap,gkParticleMCFillMap>(event,muons,eventsMC,tracksMC);
+
+  void processSkimmed(MyEventsSelected::iterator const& event, MyMuonTracks const& muons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
+    runSelection<gkEventFillMap, gkMCEventFillMap, gkMuonFillMap, gkParticleMCFillMap>(event, muons, eventsMC, tracksMC);
   }
-  void processDummy(MyEvents&) {
-    // do nothing        
+  void processDummy(MyEvents&)
+  {
+    // do nothing
   }
-  
+
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmed, "Run muon selection on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy process function", false);
 };
@@ -469,7 +475,7 @@ struct AnalysisSameEventPairing {
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
   // TODO:   special AnalysisCuts to be prepared in this direction
   // TODO: cuts on the MC truth information to be added if needed
-  
+
   HistogramManager* fHistMan;
   std::vector<std::vector<TString>> fBarrelHistNames;
   std::vector<std::vector<TString>> fBarrelHistNamesMCmatched;
@@ -483,9 +489,9 @@ struct AnalysisSameEventPairing {
   void init(o2::framework::InitContext& context)
   {
     bool enableBarrelHistos = context.mOptions.get<bool>("processJpsiToEESkimmed");
-    //bool enableMuonHistos = context.mOptions.get<bool>("processJpsiToMuMuSkimmed");      
+    //bool enableMuonHistos = context.mOptions.get<bool>("processJpsiToMuMuSkimmed");
     //bool enableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
-    
+
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -506,8 +512,7 @@ struct AnalysisSameEventPairing {
           std::vector<TString> names = {
             Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
-            Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())
-          };
+            Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           fBarrelHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
@@ -526,10 +531,10 @@ struct AnalysisSameEventPairing {
             } // end loop over MC signals
           }
           fBarrelHistNamesMCmatched.push_back(mcSigClasses);
-        }  // end loop over cuts
-      }  // end if(cutNames.IsNull())  
-    }  // end if processBarrel
-    
+        } // end loop over cuts
+      }   // end if(cutNames.IsNull())
+    }     // end if processBarrel
+
     /*if (enableMuonHistos) {
       TString cutNames = fConfigMuonCuts.value;
       if (!cutNames.IsNull()) {
@@ -602,7 +607,7 @@ struct AnalysisSameEventPairing {
       }  // end if(cutNames.IsNull())  
     }  // end if processBarrelMuon
     */
-    
+
     // Add histogram classes for each specified MCsignal at the generator level
     // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
     TString sigGenNamesStr = fConfigMCGenSignals.value;
@@ -612,7 +617,7 @@ struct AnalysisSameEventPairing {
       if (sig) {
         if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
           fGenMCSignals.push_back(*sig);
-          histNames += Form("MCTruthGen_%s;", sig->GetName());  // TODO: Add these names to a std::vector to avoid using Form in the process function
+          histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
         } else if (sig->GetNProngs() == 2) { // NOTE: 2-prong signals required
           fGenMCSignals.push_back(*sig);
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
@@ -620,7 +625,7 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    DefineHistograms(fHistMan, histNames.Data());  // define all histograms
+    DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
 
@@ -632,20 +637,20 @@ struct AnalysisSameEventPairing {
   void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
-    unsigned int ncuts = fBarrelHistNames.size()/3;  // we have 3 hist classes for each cut
+    unsigned int ncuts = fBarrelHistNames.size() / 3; // we have 3 hist classes for each cut
     std::vector<std::vector<TString>> histNames = fBarrelHistNames;
     std::vector<std::vector<TString>> histNamesMCmatched = fBarrelHistNamesMCmatched;
     if constexpr (TPairType == VarManager::kJpsiToMuMu) {
-      ncuts = fMuonHistNames.size()/3;
+      ncuts = fMuonHistNames.size() / 3;
       histNames = fMuonHistNames;
       histNamesMCmatched = fMuonHistNamesMCmatched;
     }
     if constexpr (TPairType == VarManager::kElectronMuon) {
-      ncuts = fBarrelMuonHistNames.size()/3;
+      ncuts = fBarrelMuonHistNames.size() / 3;
       histNames = fBarrelMuonHistNames;
       histNamesMCmatched = fBarrelMuonHistNamesMCmatched;
     }
-    
+
     // Loop over two track combinations
     uint8_t twoTrackFilter = 0;
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
@@ -664,25 +669,25 @@ struct AnalysisSameEventPairing {
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
       if constexpr ((TPairType == VarManager::kJpsiToEE) || (TPairType == VarManager::kJpsiToMuMu)) {
-        VarManager::FillPairVertexing<TPairType,TEventFillMap,TTrackFillMap>(event, t1, t2, VarManager::fgValues);
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
       }
-      
+
       // run MC matching for this pair
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
           if ((*sig).CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);        
+            mcDecision |= (uint32_t(1) << isig);
           }
         }
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::Track || TTrackFillMap & VarManager::ObjTypes::Muon) {  // for Framework data model
+        if constexpr (TTrackFillMap & VarManager::ObjTypes::Track || TTrackFillMap & VarManager::ObjTypes::Muon) { // for Framework data model
           if ((*sig).CheckSignal(false, tracksMC, t1.mcParticle(), t2.mcParticle())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
-      }  // end loop over MC signals
-      
+      } // end loop over MC signals
+
       // Loop over all fulfilled cuts and fill pair histograms
       for (unsigned int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint8_t(1) << icut)) {
@@ -703,7 +708,7 @@ struct AnalysisSameEventPairing {
         }
       }
     } // end loop over barrel track pairs
-  }  // end runPairing
+  }   // end runPairing
 
   template <typename TTracksMC>
   void runMCGen(TTracksMC const& groupedMCTracks)
@@ -739,21 +744,22 @@ struct AnalysisSameEventPairing {
         }
       }
     } //end of true pairing loop
-  } // end runMCGen
-  
-  void processJpsiToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, 
-                              soa::Filtered<MyBarrelTracksSelected> const& tracks, 
-                              ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
+  }   // end runMCGen
+
+  void processJpsiToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
+                              soa::Filtered<MyBarrelTracksSelected> const& tracks,
+                              ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
-    
+
     runPairing<VarManager::kJpsiToEE, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, tracks, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     runMCGen(groupedMCTracks);
   }
-  
+
   /*void processJpsiToMuMuSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, 
                                 soa::Filtered<MyMuonTracksSelected> const& muons, 
                                 ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
@@ -779,10 +785,11 @@ struct AnalysisSameEventPairing {
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     runMCGen(groupedMCTracks);
   }*/
-  void processDummy(MyEvents&) {
-    // do nothing        
+  void processDummy(MyEvents&)
+  {
+    // do nothing
   }
-  
+
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToEESkimmed, "Run barrel barrel pairing on DQ skimmed tracks", false);
   //PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuSkimmed, "Run muon muon pairing on DQ skimmed muons", false);
   //PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonSkimmed, "Run barrel muon pairing on DQ skimmed tracks", false);
@@ -820,7 +827,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
       }
     }
-    
+
     if (classStr.Contains("Muon")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
     }
