@@ -41,6 +41,18 @@ inline auto collisionSelector(C const& collision)
     throw framework::runtime_error("Unsupported track selection!");
   }
 }
+
+template <typename B, uint8_t TRACKTYPE>
+inline auto BCSelector(B const& bc)
+{
+  if constexpr (TRACKTYPE == aod::track::TrackTypeEnum::Run2Tracklet) {
+    return true;
+  } else if constexpr (TRACKTYPE == o2::dataformats::GlobalTrackID::ITS) {
+    return bc.selection()[aod::EventSelectionFlags::kIsBBT0A] & bc.selection()[aod::EventSelectionFlags::kIsBBT0C];
+  } else {
+    throw framework::runtime_error("Unsupported track selection!");
+  }
+}
 } // namespace
 
 using namespace o2::framework;
@@ -67,15 +79,11 @@ struct PseudorapidityDensity {
   HistogramRegistry registry{
     "registry",
     {
-      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},    //
-      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},           //
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},            //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{3, 0.5, 3.5}}}},                                         //
-      {"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
-      {"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},        //
-      {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},         //
-      {"EventEfficiency", "; status; events", {HistType::kTH1F, {{3, 0.5, 3.5}}}}                                       //
-    }                                                                                                                   //
+      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
+      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},        //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},         //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                                       //
+    }                                                                                                                //
   };
 
   void init(InitContext&)
@@ -85,12 +93,23 @@ struct PseudorapidityDensity {
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "Selected");
     x->SetBinLabel(3, "Rejected");
+    x->SetBinLabel(4, "Good BCs");
+    x->SetBinLabel(5, "BCs with collisions");
+    x->SetBinLabel(6, "BCs with selected collisions");
+    x->SetBinLabel(7, "BCs with pile-up");
 
-    auto heff = registry.get<TH1>(HIST("EventEfficiency"));
-    x = heff->GetXaxis();
-    x->SetBinLabel(1, "Generated");
-    x->SetBinLabel(2, "Reconstructed");
-    x->SetBinLabel(3, "Selected");
+    if (doprocessGen) {
+      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}});
+      registry.add({"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}});
+      registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}});
+      registry.add({"EventEfficiency", "; status; events", {HistType::kTH1F, {{3, 0.5, 3.5}}}});
+
+      auto heff = registry.get<TH1>(HIST("EventEfficiency"));
+      x = heff->GetXaxis();
+      x->SetBinLabel(1, "Generated");
+      x->SetBinLabel(2, "Reconstructed");
+      x->SetBinLabel(3, "Selected");
+    }
 
     if (doprocessBinned) {
       registry.add({"EventsNtrkZvtxBin", "; N_{trk}; Z_{vtx}; Percentile", {HistType::kTH3F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}, percentileBinning}}});
@@ -115,11 +134,46 @@ struct PseudorapidityDensity {
     return true;
   }
 
+  template <typename B>
+  bool selectBC(B const& bc)
+  {
+    return BCSelector<B, TRACKTYPE>(bc);
+  }
+
   expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
   expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
   expressions::Filter DCAFilter = ifnode(useDCA.node(), nabs(aod::track::dcaXY) <= maxDCAXY && nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
   expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
   expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
+
+  using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+  void processTagging(FullBCs const& bcs, soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>> const& collisions, aod::FT0s const& ft0s)
+  {
+    std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
+    for (auto& bc : bcs) {
+      if (selectBC(bc)) {
+        registry.fill(HIST("EventSelection"), 4);
+        cols.clear();
+        for (auto& collision : collisions) {
+          if ((collision.foundFT0() >= 0) && (ft0s.iteratorAt(collision.foundFT0()).bcId() == bc.globalIndex())) {
+            cols.emplace_back(collision);
+          }
+        }
+        LOGP(info, "BC {} has {} collisions", bc.globalBC(), cols.size());
+        if (!cols.empty()) {
+          registry.fill(HIST("EventSelection"), 5);
+          if (std::any_of(cols.begin(), cols.end(), [&](auto const& x) { return select(x); })) {
+            registry.fill(HIST("EventSelection"), 6);
+          }
+          if (cols.size() > 1) {
+            registry.fill(HIST("EventSelection"), 7);
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processTagging, "Collect event sample stats", false);
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
