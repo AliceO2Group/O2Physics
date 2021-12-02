@@ -222,7 +222,6 @@ struct DQBarrelTrackSelection {
 };
 
 struct DileptonEE {
-  Produces<aod::Dileptons> dileptonList;
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fPairCuts;
@@ -306,8 +305,7 @@ struct DileptonEE {
         if (!filter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPair<pairType>(tpos, tneg, fValues);
-        dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], 0, filter);
+        VarManager::FillPair<pairType, gkTrackFillMap>(tpos, tneg, fValues);
         for (int i = 0; i < fNTrackCuts; ++i) {
           if (filter & (uint8_t(1) << i)) {
             fHistMan->FillHistClass(Form("PairsBarrelULS_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
@@ -319,8 +317,7 @@ struct DileptonEE {
         if (!filter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPair<pairType>(tpos, tpos2, fValues);
-        dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], 2, filter);
+        VarManager::FillPair<pairType, gkTrackFillMap>(tpos, tpos2, fValues);
         for (int i = 0; i < fNTrackCuts; ++i) {
           if (filter & (uint8_t(1) << i)) {
             fHistMan->FillHistClass(Form("PairsBarrelLSpp_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
@@ -334,8 +331,7 @@ struct DileptonEE {
         if (!filter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPair<pairType>(tneg, tneg2, fValues);
-        dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], -2, filter);
+        VarManager::FillPair<pairType, gkTrackFillMap>(tneg, tneg2, fValues);
         for (int i = 0; i < fNTrackCuts; ++i) {
           if (filter & (uint8_t(1) << i)) {
             fHistMan->FillHistClass(Form("PairsBarrelLSnn_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
@@ -424,7 +420,7 @@ struct DQEventMixing {
           if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
             continue;
           }
-          VarManager::FillPair<pairType>(track1, track2, fValues);
+          VarManager::FillPairME<pairType>(track1, track2, fValues);
 
           int i = 0;
           for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {

@@ -15,6 +15,12 @@
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera 
 /DPG @alibuild @mario-krueger
 /EventFiltering @alibuild @mpuccio 
+/EventFiltering/PWGHF @alibuild @fgrosa @vkucera
+/EventFiltering/PWGUD @alibuild @pbuehler
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
+/EventFiltering/PWGCF @alibuild @lauraser
+/EventFiltering/PWGMM @alibuild @aortizve
+/EventFiltering/PWGJE @alibuild @fkrizek
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
 /PWGDQ @alibuild @iarsene
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar

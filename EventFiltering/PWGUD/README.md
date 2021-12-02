@@ -14,5 +14,4 @@ Contains the actual filter logics for the various types of events. Currently imp
 
 ### diffractionFilter.cxx
 Contains the actual filter tasks. Currently implemented are:
-- DGFilterRun2: filter task for DG events in Run 2 data
 - DGFilterRun3: filter task for DG events in Run 3 data

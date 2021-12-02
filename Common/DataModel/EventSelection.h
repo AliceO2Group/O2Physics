@@ -72,36 +72,6 @@ enum EventSelectionFlags {
   kNsel
 };
 
-// In a struct to avoid warnings if that is not used in all executables which include this file
-struct EventSelectionLabels {
-  static constexpr const char* labels[kNsel] = {
-    "kIsBBV0A",
-    "kIsBBV0C",
-    "kIsBBFDA",
-    "kIsBBFDC",
-    "kNoBGV0A",
-    "kNoBGV0C",
-    "kNoBGFDA",
-    "kNoBGFDC",
-    "kIsBBT0A",
-    "kIsBBT0C",
-    "kIsBBZNA",
-    "kIsBBZNC",
-    "kNoBGZNA",
-    "kNoBGZNC",
-    "kNoV0MOnVsOfPileup",
-    "kNoSPDOnVsOfPileup",
-    "kNoV0Casymmetry",
-    "kIsGoodTimeRange",
-    "kNoIncompleteDAQ",
-    "kNoTPCLaserWarmUp",
-    "kNoTPCHVdip",
-    "kNoPileupFromSPD",
-    "kNoV0PFPileup",
-    "kNoSPDClsVsTklBG",
-    "kNoV0C012vsTklBG"};
-};
-
 // collision-joinable event selection decisions
 namespace evsel
 {
@@ -122,21 +92,22 @@ DECLARE_SOA_COLUMN(SpdClusters, spdClusters, uint32_t); //! Number of SPD cluste
 DECLARE_SOA_COLUMN(NTracklets, nTracklets, int);        //! Tracklet multiplicity
 DECLARE_SOA_COLUMN(Sel7, sel7, bool);                   //! Event selection decision based on V0A & V0C
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);                   //! Event selection decision based on TVX
-DECLARE_SOA_COLUMN(FoundFT0, foundFT0, int64_t);        //! FT0 entry index in FT0s table (-1 if doesn't exist)
+DECLARE_SOA_COLUMN(FoundFT0, foundFT0, int32_t);        //! FT0 entry index in FT0s table (-1 if doesn't exist)
+DECLARE_SOA_COLUMN(FoundFV0, foundFV0, int32_t);        //! FV0 entry index in FV0A table (-1 if doesn't exist)
 } // namespace evsel
 DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::Alias, evsel::Selection,
                   evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
                   evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
                   evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::NTracklets,
-                  evsel::Sel7, evsel::Sel8, evsel::FoundFT0);
+                  evsel::Sel7, evsel::Sel8, evsel::FoundFT0, evsel::FoundFV0);
 using EvSel = EvSels::iterator;
 
 DECLARE_SOA_TABLE(BcSels, "AOD", "BCSEL", //!
                   evsel::Alias, evsel::Selection,
                   evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
                   evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
-                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0);
+                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0, evsel::FoundFV0);
 using BcSel = BcSels::iterator;
 } // namespace o2::aod
 

@@ -171,12 +171,12 @@ struct HfSelOptimisation {
   /// \param candType is the candidate channel
   /// \param candOrig is candidate type (Prompt, NonPrompt, Bkg)
   /// \param candidate is a candidate
-  /// \param tracks is the array of doughter tracks
+  /// \param tracks is the array of daughter tracks
   template <std::size_t candType, std::size_t candOrig, typename T1, typename T2>
   void testSelections2Prong(const T1& candidate, const T2& tracks)
   {
     auto pT = candidate.pt();
-    std::array<double, 2> absDCA{std::abs(tracks[0].dcaPrim0()), std::abs(tracks[1].dcaPrim0())};
+    std::array<double, 2> absDCA{std::abs(tracks[0].dcaXY()), std::abs(tracks[1].dcaXY())};
     std::sort(absDCA.begin(), absDCA.end());
 
     std::array<double, 2> ptTrack{tracks[0].pt(), tracks[1].pt()};
@@ -224,7 +224,7 @@ struct HfSelOptimisation {
   void testSelections3Prong(const T1& candidate, const T2& tracks)
   {
     auto pT = candidate.pt();
-    std::array<double, 3> absDCA{std::abs(tracks[0].dcaPrim0()), std::abs(tracks[1].dcaPrim0()), std::abs(tracks[2].dcaPrim0())};
+    std::array<double, 3> absDCA{std::abs(tracks[0].dcaXY()), std::abs(tracks[1].dcaXY()), std::abs(tracks[2].dcaXY())};
     std::sort(absDCA.begin(), absDCA.end());
 
     std::array<double, 3> ptTrack{tracks[0].pt(), tracks[1].pt(), tracks[2].pt()};
@@ -257,15 +257,16 @@ struct HfSelOptimisation {
     }
   }
 
+  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksExtended>;
   void process(soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec> const& cand2Prongs,
                soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec> const& cand3Prongs,
-               aod::BigTracks const&)
+               ExtendedTracks const&)
   {
     // looping over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {
 
-      auto trackPos = cand2Prong.index0_as<aod::BigTracks>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<aod::BigTracks>(); // negative daughter
+      auto trackPos = cand2Prong.index0_as<ExtendedTracks>(); // positive daughter
+      auto trackNeg = cand2Prong.index1_as<ExtendedTracks>(); // negative daughter
       std::array tracks = {trackPos, trackNeg};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
@@ -319,9 +320,9 @@ struct HfSelOptimisation {
     // looping over 3-prong candidates
     for (const auto& cand3Prong : cand3Prongs) {
 
-      auto trackFirst = cand3Prong.index0_as<aod::BigTracks>();  // first daughter
-      auto trackSecond = cand3Prong.index1_as<aod::BigTracks>(); // second daughter
-      auto trackThird = cand3Prong.index2_as<aod::BigTracks>();  // third daughter
+      auto trackFirst = cand3Prong.index0_as<ExtendedTracks>();  // first daughter
+      auto trackSecond = cand3Prong.index1_as<ExtendedTracks>(); // second daughter
+      auto trackThird = cand3Prong.index2_as<ExtendedTracks>();  // third daughter
       std::array tracks = {trackFirst, trackSecond, trackThird};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;

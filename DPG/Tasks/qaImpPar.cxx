@@ -337,7 +337,7 @@ struct QaImpactParMC {
 
       histograms.fill(HIST("pt"), track.pt());
       const auto mcparticle = track.mcParticle();
-      if (MC::isPhysicalPrimary(mcparticle)) {
+      if (mcparticle.isPhysicalPrimary()) {
         impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
         impParZ = toMicrometers * track.dcaZ();     // from TracksExtended
         histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
@@ -363,7 +363,7 @@ struct QaImpactParMC {
 
         /// MC matching - physical primaries
         //const auto mcparticle = track.mcParticle();
-        if (MC::isPhysicalPrimary(mcparticle)) {
+        if (mcparticle.isPhysicalPrimary()) {
           histograms.fill(HIST("h3ImpPar_MCvertex_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
           histograms.fill(HIST("h3ImpParZ_MCvertex_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
 
