@@ -171,7 +171,7 @@ struct HFD0CandidateSelectorparametrizedPID {
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K")) {
+    if (std::abs(trackPion.dcaXY()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaXY()) > cuts->get(pTBin, "d0K")) {
       return false;
     }
 
@@ -189,7 +189,7 @@ struct HFD0CandidateSelectorparametrizedPID {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
+  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
   void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
@@ -217,8 +217,8 @@ struct HFD0CandidateSelectorparametrizedPID {
       auto trackPos = candidate.index0_as<Trks>();
       auto trackNeg = candidate.index1_as<Trks>();
 
-      auto momentumPosTrack = trackPos.p();
-      auto momentumNegTrack = trackNeg.p();
+      //auto momentumPosTrack = trackPos.p();
+      //auto momentumNegTrack = trackNeg.p();
       auto ptPosTrack = trackPos.pt();
       auto ptNegTrack = trackNeg.pt();
       auto etaPosTrack = std::abs(trackPos.eta());

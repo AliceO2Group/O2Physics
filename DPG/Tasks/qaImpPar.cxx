@@ -133,7 +133,7 @@ struct QaImpactPar {
   {
     //o2::dataformats::DCA dca;
     // FIXME: get this from CCDB
-    constexpr float magneticField{5.0};      // in kG
+    //constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
     const bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
     const bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
@@ -280,7 +280,7 @@ struct QaImpactParMC {
   {
     //o2::dataformats::DCA dca;
     // FIXME: get this from CCDB
-    constexpr float magneticField{5.0};      // in kG
+    //constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
     /// trigger selection
@@ -316,7 +316,7 @@ struct QaImpactParMC {
     /// loop over tracks
     float impParRPhi = -999.f;
     float impParZ = -999.f;
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    //o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       o2::base::GeometryManager::isGeometryLoaded();
       o2::base::GeometryManager::loadGeometry();
@@ -337,7 +337,7 @@ struct QaImpactParMC {
 
       histograms.fill(HIST("pt"), track.pt());
       const auto mcparticle = track.mcParticle();
-      if (MC::isPhysicalPrimary(mcparticle)) {
+      if (mcparticle.isPhysicalPrimary()) {
         impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
         impParZ = toMicrometers * track.dcaZ();     // from TracksExtended
         histograms.fill(HIST("h3ImpPar_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
@@ -363,7 +363,7 @@ struct QaImpactParMC {
 
         /// MC matching - physical primaries
         //const auto mcparticle = track.mcParticle();
-        if (MC::isPhysicalPrimary(mcparticle)) {
+        if (mcparticle.isPhysicalPrimary()) {
           histograms.fill(HIST("h3ImpPar_MCvertex_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
           histograms.fill(HIST("h3ImpParZ_MCvertex_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
 

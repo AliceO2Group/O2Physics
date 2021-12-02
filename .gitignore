@@ -3,3 +3,4 @@ CMakeFiles/
 .vscode
 build
 compile_commands.json
+.DS_Store

@@ -12,13 +12,9 @@
 #include "cutHolder.h"
 
 // setter
-void cutHolder::SetisRun2(bool isRun2)
+void cutHolder::SetNDtcoll(int ndtcoll)
 {
-  misRun2 = isRun2;
-}
-void cutHolder::SetisMC(bool isMC)
-{
-  misMC = isMC;
+  mNDtcoll = ndtcoll;
 }
 void cutHolder::SetNTracks(int MinNTracks, int MaxNTracks)
 {
@@ -29,9 +25,10 @@ void cutHolder::SetMinNTracksWithTOFHit(int MinNTracksWithTOFHit)
 {
   mMinNTracksWithTOFHit = MinNTracksWithTOFHit;
 }
-void cutHolder::SetDeltaBC(int deltaBC)
+void cutHolder::SetNetCharge(int MinNetCharge, int MaxNetCharge)
 {
-  mdeltaBC = deltaBC;
+  mMinNetCharge = MinNetCharge;
+  mMaxNetCharge = MaxNetCharge;
 }
 void cutHolder::SetPoszRange(float MinPosz, float MaxPosz)
 {
@@ -63,12 +60,12 @@ void cutHolder::SetMaxnSigmaTOF(float maxnSigma)
 }
 
 // getter
-bool cutHolder::isRun2() const { return misRun2; }
-bool cutHolder::isMC() const { return misMC; }
+int cutHolder::NDtcoll() const { return mNDtcoll; }
 int cutHolder::minNTracks() const { return mMinNTracks; }
 int cutHolder::maxNTracks() const { return mMaxNTracks; }
 int cutHolder::minNTracksWithTOFHit() const { return mMinNTracksWithTOFHit; }
-int cutHolder::deltaBC() const { return mdeltaBC; }
+int cutHolder::minNetCharge() const { return mMinNetCharge; }
+int cutHolder::maxNetCharge() const { return mMaxNetCharge; }
 float cutHolder::minPosz() const { return mMinVertexPosz; }
 float cutHolder::maxPosz() const { return mMaxVertexPosz; }
 float cutHolder::minPt() const { return mMinPt; }

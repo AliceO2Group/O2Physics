@@ -63,7 +63,7 @@ std::vector<std::vector<int64_t>> mclabelneg[2];
 struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};

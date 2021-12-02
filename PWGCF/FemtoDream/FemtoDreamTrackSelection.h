@@ -12,6 +12,7 @@
 /// \file FemtoDreamTrackCuts.h
 /// \brief Definition of the FemtoDreamTrackCuts
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
 #ifndef ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
 #define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
@@ -43,6 +44,12 @@ enum TrackSel { kSign,        ///< Sign of the track
                 kDCAMin,      ///< Min. DCA_xyz (cm)
                 kPIDnSigmaMax ///< Max. |n_sigma| for PID
 };
+
+enum TrackContainerPosition {
+  kCuts,
+  kPID
+}; /// Position in the full track cut container
+
 } // namespace femtoDreamTrackSelection
 
 /// \class FemtoDreamTrackCuts

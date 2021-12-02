@@ -24,7 +24,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
 struct RootHistograms {
 
@@ -58,9 +57,7 @@ struct OutputObjects {
 
 struct OutputObjSet {
   // incomplete definition of an OutputObj
-  OutputObj<TH1F> trZ{"trZ", OutputObjHandlingPolicy::QAObject};
-
-  Filter ptfilter = aod::track::pt > 0.5f;
+  OutputObj<TH1F> trZ{"trZ"};
 
   void init(InitContext const&)
   {
@@ -72,7 +69,7 @@ struct OutputObjSet {
     // trZ.setObject({"Z","Z",100,-10.,10.}); <- creates new
   }
 
-  void process(soa::Filtered<aod::Tracks> const& tracks)
+  void process(aod::Tracks const& tracks)
   {
     for (auto& track : tracks) {
       trZ->Fill(track.z());

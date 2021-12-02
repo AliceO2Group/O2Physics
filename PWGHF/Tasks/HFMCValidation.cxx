@@ -99,14 +99,14 @@ struct ValidationGenLevel {
       listDaughters.clear();
 
       // Checking the decay of the particles and the momentum conservation
-      for (int iD = 0; iD < PDGArrayParticle.size(); iD++) {
+      for (std::size_t iD = 0; iD < PDGArrayParticle.size(); iD++) {
         if (std::abs(particlePdgCode) == PDGArrayParticle[iD]) {
           RecoDecay::getDaughters(particlesMC, particle, &listDaughters, arrPDGFinal[iD], -1);
-          int arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
+          std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           if (listDaughters.size() == arrayPDGsize) {
             counter[iD]++;
           }
-          for (int i = 0; i < listDaughters.size(); i++) {
+          for (std::size_t i = 0; i < listDaughters.size(); i++) {
             auto daughter = particlesMC.iteratorAt(listDaughters.at(i));
             sumPxDau += daughter.px();
             sumPyDau += daughter.py();
@@ -166,7 +166,6 @@ struct ValidationRecLevel {
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
   {
     int indexParticle = 0;
-    double pxDiff, pyDiff, pzDiff, pDiff;
     double decayLength;
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_prong2::DecayType::D0ToPiK)) {

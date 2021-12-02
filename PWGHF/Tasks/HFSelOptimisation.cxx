@@ -171,12 +171,12 @@ struct HfSelOptimisation {
   /// \param candType is the candidate channel
   /// \param candOrig is candidate type (Prompt, NonPrompt, Bkg)
   /// \param candidate is a candidate
-  /// \param tracks is the array of doughter tracks
+  /// \param tracks is the array of daughter tracks
   template <std::size_t candType, std::size_t candOrig, typename T1, typename T2>
   void testSelections2Prong(const T1& candidate, const T2& tracks)
   {
     auto pT = candidate.pt();
-    std::array<double, 2> absDCA{std::abs(tracks[0].dcaPrim0()), std::abs(tracks[1].dcaPrim0())};
+    std::array<double, 2> absDCA{std::abs(tracks[0].dcaXY()), std::abs(tracks[1].dcaXY())};
     std::sort(absDCA.begin(), absDCA.end());
 
     std::array<double, 2> ptTrack{tracks[0].pt(), tracks[1].pt()};
@@ -184,31 +184,31 @@ struct HfSelOptimisation {
 
     histPt2Prong[candOrig][candType]->Fill(pT);
 
-    for (int iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
+    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
       if (candidate.cpa() > cutsToTestCosp->at(iCospCut)) {
         histCospVsPt2Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
       }
     }
 
-    for (int iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
+    for (std::size_t iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
       if (candidate.decayLength() > cutsToTestDecLen->at(iDecLenCut)) {
         histDecLenVsPt2Prong[candOrig][candType]->Fill(pT, iDecLenCut + 1);
       }
     }
 
-    for (int iImpParProd{0}; iImpParProd < cutsToTestImpParProd->size(); ++iImpParProd) {
+    for (std::size_t iImpParProd{0}; iImpParProd < cutsToTestImpParProd->size(); ++iImpParProd) {
       if (candidate.impactParameterProduct() < cutsToTestImpParProd->at(iImpParProd)) {
         histImpParProdVsPt2Prong[candOrig][candType]->Fill(pT, iImpParProd + 1);
       }
     }
 
-    for (int iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
+    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
       if (absDCA[0] > cutsToTestMinDCAxy->at(iMinDCAxy)) {
         histMinDCAxyVsPt2Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
       }
     }
 
-    for (int iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
+    for (std::size_t iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
       if (ptTrack[0] > cutsToTestMinTrackPt->at(iMinTrackPt)) {
         histMinTrackPtVsPt2Prong[candOrig][candType]->Fill(pT, iMinTrackPt + 1);
       }
@@ -224,7 +224,7 @@ struct HfSelOptimisation {
   void testSelections3Prong(const T1& candidate, const T2& tracks)
   {
     auto pT = candidate.pt();
-    std::array<double, 3> absDCA{std::abs(tracks[0].dcaPrim0()), std::abs(tracks[1].dcaPrim0()), std::abs(tracks[2].dcaPrim0())};
+    std::array<double, 3> absDCA{std::abs(tracks[0].dcaXY()), std::abs(tracks[1].dcaXY()), std::abs(tracks[2].dcaXY())};
     std::sort(absDCA.begin(), absDCA.end());
 
     std::array<double, 3> ptTrack{tracks[0].pt(), tracks[1].pt(), tracks[2].pt()};
@@ -232,40 +232,41 @@ struct HfSelOptimisation {
 
     histPt3Prong[candOrig][candType]->Fill(pT);
 
-    for (int iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
+    for (std::size_t iCospCut{0}; iCospCut < cutsToTestCosp->size(); ++iCospCut) {
       if (candidate.cpa() > cutsToTestCosp->at(iCospCut)) {
         histCospVsPt3Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
       }
     }
 
-    for (int iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
+    for (std::size_t iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
       if (candidate.decayLength() > cutsToTestDecLen->at(iDecLenCut)) {
         histDecLenVsPt3Prong[candOrig][candType]->Fill(pT, iDecLenCut + 1);
       }
     }
 
-    for (int iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
+    for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDCAxy->size(); ++iMinDCAxy) {
       if (absDCA[0] > cutsToTestMinDCAxy->at(iMinDCAxy)) {
         histMinDCAxyVsPt3Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
       }
     }
 
-    for (int iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
+    for (std::size_t iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
       if (ptTrack[0] > cutsToTestMinTrackPt->at(iMinTrackPt)) {
         histMinTrackPtVsPt3Prong[candOrig][candType]->Fill(pT, iMinTrackPt + 1);
       }
     }
   }
 
+  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksExtended>;
   void process(soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec> const& cand2Prongs,
                soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec> const& cand3Prongs,
-               aod::BigTracks const&)
+               ExtendedTracks const&)
   {
     // looping over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {
 
-      auto trackPos = cand2Prong.index0_as<aod::BigTracks>(); // positive daughter
-      auto trackNeg = cand2Prong.index1_as<aod::BigTracks>(); // negative daughter
+      auto trackPos = cand2Prong.index0_as<ExtendedTracks>(); // positive daughter
+      auto trackNeg = cand2Prong.index1_as<ExtendedTracks>(); // negative daughter
       std::array tracks = {trackPos, trackNeg};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
@@ -319,9 +320,9 @@ struct HfSelOptimisation {
     // looping over 3-prong candidates
     for (const auto& cand3Prong : cand3Prongs) {
 
-      auto trackFirst = cand3Prong.index0_as<aod::BigTracks>();  // first daughter
-      auto trackSecond = cand3Prong.index1_as<aod::BigTracks>(); // second daughter
-      auto trackThird = cand3Prong.index2_as<aod::BigTracks>();  // third daughter
+      auto trackFirst = cand3Prong.index0_as<ExtendedTracks>();  // first daughter
+      auto trackSecond = cand3Prong.index1_as<ExtendedTracks>(); // second daughter
+      auto trackThird = cand3Prong.index2_as<ExtendedTracks>();  // third daughter
       std::array tracks = {trackFirst, trackSecond, trackThird};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;

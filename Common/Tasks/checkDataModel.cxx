@@ -31,9 +31,12 @@ using namespace o2::framework::expressions;
 
 template <typename Table>
 struct LoadTable {
-  void process(Table const& tracks)
+  OutputObj<TH1F> counter{TH1F("counter", "counter", 2, 0., 2)};
+  void process(Table const& table)
   {
-    LOGF(info, "Table has %d entries", tracks.size());
+    LOGF(info, "Table has %d entries", table.size());
+    counter->Fill(0.5);
+    counter->Fill(1.5, table.size());
   }
 };
 
@@ -48,7 +51,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
       adaptAnalysisTask<LoadTable<aod::Tracks>>(cfgc, TaskName("Tracks")),
       adaptAnalysisTask<LoadTable<aod::TracksCov>>(cfgc, TaskName("TracksCov")),
-      //adaptAnalysisTask<LoadTable<aod::TracksExtra>>(cfgc, TaskName("TracksExtra")),
+      adaptAnalysisTask<LoadTable<aod::TracksExtra>>(cfgc, TaskName("TracksExtra")),
 
       adaptAnalysisTask<LoadTable<aod::FwdTracks>>(cfgc, TaskName("FwdTracks")),
       adaptAnalysisTask<LoadTable<aod::FwdTracksCov>>(cfgc, TaskName("FwdTracksCov")),
