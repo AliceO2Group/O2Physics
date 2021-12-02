@@ -298,7 +298,7 @@ struct DQFilterPPTaskTiny {
           if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
             continue;
           }
-          VarManager::FillPair<pairType>(tpos, tneg, fValues); // compute pair quantities
+          VarManager::FillPair<pairType, gkTrackFillMap>(tpos, tneg, fValues); // compute pair quantities
           for (int i = 0; i < fNTrackCuts; ++i) {
             if (!(cutFilter & (uint8_t(1) << i))) {
               continue;
