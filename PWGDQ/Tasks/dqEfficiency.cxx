@@ -118,10 +118,10 @@ struct AnalysisEventSelection {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
 
     VarManager::FillEvent<TEventFillMap>(event);
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::CollisionMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
     }
     if (fConfigQA) {
@@ -217,10 +217,10 @@ struct AnalysisTrackSelection {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::CollisionMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
     }
 
@@ -265,12 +265,12 @@ struct AnalysisTrackSelection {
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack) {
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           if ((*sig).CheckSignal(false, tracksMC, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::Track) {
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if ((*sig).CheckSignal(false, tracksMC, track.mcParticle())) {
             mcDecision |= (uint32_t(1) << isig);
           }
@@ -372,10 +372,10 @@ struct AnalysisMuonSelection {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::CollisionMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
     }
 
@@ -386,10 +386,10 @@ struct AnalysisMuonSelection {
       VarManager::FillTrack<TMuonFillMap>(muon); // compute muon quantities
 
       // compute MC matched quantities using either the DQ skimmed or the Framework data models
-      if constexpr (TMuonFillMap & VarManager::ObjTypes::ReducedMuon) {
+      if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.reducedMCTrack());
       }
-      if constexpr (TMuonFillMap & VarManager::ObjTypes::Muon) {
+      if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.mcParticle());
       }
 
@@ -423,12 +423,12 @@ struct AnalysisMuonSelection {
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if constexpr (TMuonFillMap & VarManager::ObjTypes::ReducedMuon) {
+        if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
           if ((*sig).CheckSignal(false, muonsMC, muon.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
-        if constexpr (TMuonFillMap & VarManager::ObjTypes::Muon) {
+        if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
           if ((*sig).CheckSignal(false, muonsMC, muon.mcParticle())) {
             mcDecision |= (uint32_t(1) << isig);
           }
