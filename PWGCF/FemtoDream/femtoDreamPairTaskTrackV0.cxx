@@ -55,7 +55,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   /// Particle 1 (track)
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<int> ConfCutPartOne{"ConfCutPartOne", 5542986, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542986, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
   Configurable<LabeledArray<float>> cfgCutArray{"cfgCutArray", {cutsArray, nCuts, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
@@ -63,18 +63,18 @@ struct femtoDreamPairTaskTrackV0 {
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (aod::femtodreamparticle::pt < cfgCutArray->get("MaxPt")) &&
-                                                 ((aod::femtodreamparticle::cut & aod::femtodreamparticle::cutContainerType(ConfCutPartOne)) == aod::femtodreamparticle::cutContainerType(ConfCutPartOne));
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
   /// Particle 2 (V0)
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 3122, "Particle 1 - PDG code"};
-  Configurable<int> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
+  Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                                 ((aod::femtodreamparticle::cut & aod::femtodreamparticle::cutContainerType(ConfCutPartTwo)) == aod::femtodreamparticle::cutContainerType(ConfCutPartTwo));
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 2> trackHistoPartTwo;
