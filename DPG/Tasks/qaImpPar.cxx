@@ -240,7 +240,8 @@ struct QaImpactPar {
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
 
-  void processMC(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>>::iterator& collision,
+  // void processMC(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>>::iterator& collision,
+  void processMC(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>::iterator& collision,
                  const o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::McTrackLabels>>& tracks,
                  const o2::aod::McCollisions&,
                  const o2::aod::McParticles& mcParticles) // this Join should ensure to run over all the MC matched tracks
@@ -260,6 +261,9 @@ struct QaImpactPar {
     //         return;
     //     }
     // }
+    if (usesel8 && !collision.sel8()) {
+      return;
+    }
 
     const auto mccollision = collision.mcCollision();
 
