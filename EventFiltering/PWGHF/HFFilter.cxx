@@ -296,8 +296,8 @@ struct HfFilter { // Main struct for HF triggers
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassB[iBeautyPart] = registry.add<TH1>(Form("fMass%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} distribution of triggered %s candidates;#it{M} (GeV/#it{c}^{2});events", beautyParticleNames[iBeautyPart].data()), HistType::kTH1F, {{220, 4.9, 6.0}});
       }
-      hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}});
-      hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}});
+      hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
+      hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
     }
   }
 
@@ -350,8 +350,8 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     if (activateQA) {
-      hProtonTPCPID->Fill(NSigmaTPC, track.p());
-      hProtonTOFPID->Fill(NSigmaTOF, track.p());
+      hProtonTPCPID->Fill(track.p(), NSigmaTPC);
+      hProtonTOFPID->Fill(track.p(), NSigmaTOF);
     }
 
     return true;
