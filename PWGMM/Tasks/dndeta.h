@@ -155,7 +155,7 @@ struct PseudorapidityDensity {
         registry.fill(HIST("EventSelection"), 4);
         cols.clear();
         for (auto& collision : collisions) {
-          if ((collision.foundFT0() >= 0) && (ft0s.iteratorAt(collision.foundFT0()).bcId() == bc.globalIndex())) {
+          if ((collision.has_foundFT0()) && (collision.foundFT0().bcId() == bc.globalIndex())) {
             cols.emplace_back(collision);
           }
         }

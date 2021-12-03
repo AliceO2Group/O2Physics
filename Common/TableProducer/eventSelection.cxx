@@ -368,9 +368,9 @@ struct EventSelectionTask {
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
-    int32_t foundBC = bc.index();
-    int32_t foundFT0 = bc.foundFT0();
-    int32_t foundFV0 = bc.foundFV0();
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -441,13 +441,12 @@ struct EventSelectionTask {
       deltaBC = customDeltaBC;
     }
 
-    int32_t foundFT0 = bc.foundFT0();
-    if (foundFT0 < 0) { // search in +/-4 sigma around meanBC
+    if (bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
       // search forward
       int forwardMoveCount = 0;
       int64_t forwardBcDist = deltaBC + 1;
       for (; bc != bcs.end() && int64_t(bc.globalBC()) <= meanBC + deltaBC; ++bc, ++forwardMoveCount) {
-        if (bc.foundFT0() >= 0) {
+        if (bc.has_foundFT0()) {
           forwardBcDist = bc.globalBC() - meanBC;
           break;
         }
@@ -457,7 +456,7 @@ struct EventSelectionTask {
       int backwardMoveCount = 0;
       int64_t backwardBcDist = deltaBC + 1;
       for (; int64_t(bc.globalBC()) >= meanBC - deltaBC; --bc, ++backwardMoveCount) {
-        if (bc.foundFT0() >= 0) {
+        if (bc.has_foundFT0()) {
           backwardBcDist = meanBC - bc.globalBC();
           break;
         }
@@ -471,11 +470,11 @@ struct EventSelectionTask {
         bc.moveByIndex(backwardMoveCount + forwardMoveCount); // move forward
       }                                                       // else keep backward bc
     }
-    
-    int32_t foundBC = bc.index();
-    foundFT0 = bc.foundFT0();
 
-    int32_t foundFV0 = bc.foundFV0();
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
+
     LOGP(debug, "foundFT0 = {}", foundFT0);
 
     // copy alias decisions from bcsel table
