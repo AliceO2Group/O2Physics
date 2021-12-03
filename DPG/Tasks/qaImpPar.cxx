@@ -35,11 +35,11 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-//void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+// void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 //{
-//  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Fill MC histograms."}};
-//  workflowOptions.push_back(optionDoMC);
-//}
+//   ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Fill MC histograms."}};
+//   workflowOptions.push_back(optionDoMC);
+// }
 
 #include "Framework/runDataProcessing.h"
 
@@ -48,9 +48,10 @@ struct QaImpactPar {
 
   /// Input parameters
   ConfigurableAxis binningImpPar{"binningImpPar", {200, -500.f, 500.f}, "Impact parameter binning"};
-  //Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
+  // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
+  Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0) event selection"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
-  //Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
+  // Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum track pt [GeV/c]"};
   Configurable<float> nSigmaTPCPionMin{"nSigmaTPCPionMin", -99999.f, "Minimum nSigma value in TPC, pion hypothesis"};
   Configurable<float> nSigmaTPCPionMax{"nSigmaTPCPionMax", 99999.f, "Maximum nSigma value in TPC, pion hypothesis"};
@@ -131,35 +132,37 @@ struct QaImpactPar {
     histograms.add("MC/h3ImpParZ_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
     histograms.add("MC/h3ImpPar_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackPDGAxis});
     histograms.add("MC/h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
-
   }
 
   /// o2::aod::EvSels makes the execution crash, with the following error message:
   /// [240108:bc-selection-task]: [17:22:28][WARN] CCDB: Did not find an alien token; Cannot serve objects located on alien://
   /// [240108:bc-selection-task]: [17:22:28][ERROR] Requested resource does not exist: http://alice-ccdb.cern.ch/EventSelection/TriggerAliases/1511123421601/
   /// [240108:bc-selection-task]: [17:22:28][FATAL] Trigger aliases are not available in CCDB for run=282341 at timestamp=1511123421601
-  //void process(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>>::iterator& collision,
-  void processData(o2::soa::Filtered<o2::aod::Collisions>::iterator& collision,
-               o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks)
+  void processData(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>>::iterator& collision,
+                   // void processData(o2::soa::Filtered<o2::aod::Collisions>::iterator& collision,
+                   o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks)
   {
-    //o2::dataformats::DCA dca;
-    // FIXME: get this from CCDB
-    //constexpr float magneticField{5.0};      // in kG
+    // o2::dataformats::DCA dca;
+    //  FIXME: get this from CCDB
+    // constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
     const bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
     const bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
     const bool isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
 
     /// trigger selection (remove for the moment, need to join with o2::aod::EvSels)
-    //if (useINT7Trigger) {
-    //    // from Tutorial/src/multiplicityEventTrackSelection.cxx
-    //    if (!collision.alias()[kINT7]) {
-    //        return;
-    //    }
-    //    if (!collision.sel7()) {
-    //        return;
-    //    }
-    //}
+    // if (useINT7Trigger) {
+    //     // from Tutorial/src/multiplicityEventTrackSelection.cxx
+    //     if (!collision.alias()[kINT7]) {
+    //         return;
+    //     }
+    //     if (!collision.sel7()) {
+    //         return;
+    //     }
+    // }
+    if (usesel8 && !collision.sel8()) {
+      return;
+    }
 
     histograms.fill(HIST("Data/vertexZ"), collision.posZ());
     histograms.fill(HIST("Data/numberContributors"), collision.numContrib());
@@ -177,7 +180,7 @@ struct QaImpactPar {
     for (const auto& track : tracks) {
 
       /// Using the Filter instead
-      ///if ((keepOnlyGlobalTracks) && (!track.isGlobalTrack())) {
+      /// if ((keepOnlyGlobalTracks) && (!track.isGlobalTrack())) {
       ///  /// not a global track (FB 4 with tight DCA cuts)
       ///  continue;
       ///}
@@ -200,12 +203,12 @@ struct QaImpactPar {
 
       // propagation to primary vertex for DCA
       // "crude" method not working with Run 3 MC productions
-      //if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) {
+      // if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) {
 
       /// propagation ok! Retrieve impact parameter
       // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
-      impParRPhi = toMicrometers * track.dcaXY(); //dca.getY();
-      impParZ = toMicrometers * track.dcaZ();     //dca.getY();
+      impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
+      impParZ = toMicrometers * track.dcaZ();     // dca.getY();
 
       /// all tracks
       histograms.fill(HIST("Data/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi());
@@ -237,27 +240,26 @@ struct QaImpactPar {
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
 
-
   void processMC(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>>::iterator& collision,
-               const o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::McTrackLabels>>& tracks,
-               const o2::aod::McCollisions&,
-               const o2::aod::McParticles& mcParticles) // this Join should ensure to run over all the MC matched tracks
+                 const o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::McTrackLabels>>& tracks,
+                 const o2::aod::McCollisions&,
+                 const o2::aod::McParticles& mcParticles) // this Join should ensure to run over all the MC matched tracks
   {
-    //o2::dataformats::DCA dca;
-    // FIXME: get this from CCDB
-    //constexpr float magneticField{5.0};      // in kG
+    // o2::dataformats::DCA dca;
+    //  FIXME: get this from CCDB
+    // constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
     /// trigger selection
-    //if (useINT7TriggerMC) {
-    //    // from Tutorial/src/multiplicityEventTrackSelection.cxx
-    //    if (!collision.alias()[kINT7]) {
-    //        return;
-    //    }
-    //    if (!collision.sel7()) {
-    //        return;
-    //    }
-    //}
+    // if (useINT7TriggerMC) {
+    //     // from Tutorial/src/multiplicityEventTrackSelection.cxx
+    //     if (!collision.alias()[kINT7]) {
+    //         return;
+    //     }
+    //     if (!collision.sel7()) {
+    //         return;
+    //     }
+    // }
 
     const auto mccollision = collision.mcCollision();
 
@@ -281,8 +283,8 @@ struct QaImpactPar {
     /// loop over tracks
     float impParRPhi = -999.f;
     float impParZ = -999.f;
-    //o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-    
+    // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
     // obsolete and working only with configuration files in the working directory
     /*if (!o2::base::GeometryManager::isGeometryLoaded()) {
       o2::base::GeometryManager::isGeometryLoaded();
@@ -295,7 +297,7 @@ struct QaImpactPar {
       }
     }*/
     for (const auto& track : tracks) {
-      
+
       histograms.fill(HIST("MC/pt"), track.pt());
       const auto mcparticle = track.mcParticle();
       if (mcparticle.isPhysicalPrimary()) {
@@ -308,11 +310,11 @@ struct QaImpactPar {
       // propagation to primary vertex for DCA
       // NB: do not use 'track.collisions()' if the o2::aod::Collisions are joined with McCollisionLabels
       // "crude" method not working with Run 3 MC productions
-      //if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(/*track.collision()*/ collision), magneticField, &dca, 100.)) {
-      //std::array<float, 2> dca{1e10f, 1e10f};
+      // if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(/*track.collision()*/ collision), magneticField, &dca, 100.)) {
+      // std::array<float, 2> dca{1e10f, 1e10f};
 
       //}
-      
+
       // TODO: need to redo it reimplementing the propagation w/o files in the working directory
       // MC vertex
       /*if (getTrackParCov(track).propagateParamToDCA({mccollision.posX(), mccollision.posY(), mccollision.posZ()}, o2::base::Propagator::Instance()->getNominalBz(), &dca, 100.)) {
@@ -327,14 +329,13 @@ struct QaImpactPar {
         if (mcparticle.isPhysicalPrimary()) {
           histograms.fill(HIST("MC/h3ImpPar_MCvertex_PhysPrimary"), track.pt(), impParRPhi, PDGtoIndex(std::abs(mcparticle.pdgCode())));
           histograms.fill(HIST("MC/h3ImpParZ_MCvertex_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
-          
+
         }
       }
       */
     }
   }
   PROCESS_SWITCH(QaImpactPar, processMC, "process MC", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
