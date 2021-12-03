@@ -368,6 +368,7 @@ struct EventSelectionTask {
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
+    int32_t foundBC = bc.index();
     int32_t foundFT0 = bc.foundFT0();
     int32_t foundFV0 = bc.foundFV0();
 
@@ -425,7 +426,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundFT0, foundFV0);
+          foundBC, foundFT0, foundFV0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -470,6 +471,8 @@ struct EventSelectionTask {
         bc.moveByIndex(backwardMoveCount + forwardMoveCount); // move forward
       }                                                       // else keep backward bc
     }
+    
+    int32_t foundBC = bc.index();
     foundFT0 = bc.foundFT0();
 
     int32_t foundFV0 = bc.foundFV0();
@@ -522,7 +525,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundFT0, foundFV0);
+          foundBC, foundFT0, foundFV0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };
