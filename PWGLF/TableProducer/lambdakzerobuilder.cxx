@@ -181,10 +181,8 @@ struct lambdakzerobuilder {
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}
-    },
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
   };
 
   // Configurables
@@ -202,7 +200,7 @@ struct lambdakzerobuilder {
   Configurable<std::vector<int>> v_labelK0Spos{"v_labelK0Spos", {729, 2866, 4754}, "labels of K0S positive daughters, for debug"};
   Configurable<std::vector<int>> v_labelK0Sneg{"v_labelK0Sneg", {730, 2867, 4755}, "labels of K0S positive daughters, for debug"};
 #endif
-  
+
   void init(InitContext& context)
   {
     //using namespace analysis::lambdakzerobuilder;
@@ -218,7 +216,7 @@ struct lambdakzerobuilder {
       /* it seems this is needed at this level for the material LUT to work properly */
       /* but what happens if the run changes while doing the processing?             */
       constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-      
+
       o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
       o2::base::Propagator::initFieldFromGRP(grpo);
       o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -262,34 +260,38 @@ struct lambdakzerobuilder {
 
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
-      
+
       //Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
       auto nTrackCopy = o2::track::TrackParCov(nTrack);
-      
+
       //---/---/---/
       // Move close to minima
       int nCand = fitter.process(pTrackCopy, nTrackCopy);
-      if (nCand == 0) continue;
-      
+      if (nCand == 0)
+        continue;
+
       double finalXpos = fitter.getTrack(0).getX();
       double finalXneg = fitter.getTrack(1).getX();
-      
+
       //Rotate to desired alpha
       pTrack.rotateParam(fitter.getTrack(0).getAlpha());
       nTrack.rotateParam(fitter.getTrack(1).getAlpha());
-      
+
       //Retry closer to minimum with material corrections
       o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-      if( useMatCorrType == 1 ) matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-      if( useMatCorrType == 2 ) matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-      
-      o2::base::Propagator::Instance()->propagateToX( pTrack , finalXpos , d_bz, 0.85f, 2.0f, matCorr );
-      o2::base::Propagator::Instance()->propagateToX( nTrack , finalXneg , d_bz, 0.85f, 2.0f, matCorr );
-      
+      if (useMatCorrType == 1)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+      if (useMatCorrType == 2)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, 0.85f, 2.0f, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
+
       nCand = fitter.process(pTrack, nTrack);
-      if (nCand == 0) continue;
-      
+      if (nCand == 0)
+        continue;
+
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
 
@@ -297,7 +299,7 @@ struct lambdakzerobuilder {
       for (int i = 0; i < 3; i++) {
         pos[i] = vtx[i];
       }
-      
+
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 0: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
       // Apply selections so a skimmed table is created only
