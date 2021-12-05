@@ -690,7 +690,6 @@ struct AnalysisSameEventPairing {
       histNames = fTrackMuonHistNames;
     }
 
-    
     uint32_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
     dileptonList.reserve(1);
