@@ -691,6 +691,7 @@ struct AnalysisSameEventPairing {
 
     uint32_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
+    dileptonList.reserve(1);
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kJpsiToEE) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -713,7 +714,7 @@ struct AnalysisSameEventPairing {
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
       dileptonFilterMap = twoTrackFilter;
-      dileptonList(event.globalIndex(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
+      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
 
       for (unsigned int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
@@ -815,7 +816,7 @@ struct AnalysisDileptonHadron {
 
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
-    if (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processSkimmed")) {
       DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -832,7 +833,7 @@ struct AnalysisDileptonHadron {
 
   // Template function to run pair - hadron combinations
   template <uint32_t TEventFillMap, typename TEvent, typename TTracks>
-  void runDileptonHadron(TEvent const& event, soa::Filtered<aod::Dileptons> const& dileptons, TTracks const& tracks)
+  void runDileptonHadron(TEvent const& event, TTracks const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -857,9 +858,9 @@ struct AnalysisDileptonHadron {
     }
   }
 
-  void processSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<aod::Dileptons> const& dileptons, MyBarrelTracksSelected const& tracks)
+  void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelected const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
   {
-    runDileptonHadron<gkEventFillMap>(event, dileptons, tracks);
+    runDileptonHadron<gkEventFillMap>(event, tracks, dileptons);
   }
   // TODO: Add process functions which use cov matrices for secondary vertexing (e.g. B->Jpsi + K)
   void processDummy(MyEvents&)
