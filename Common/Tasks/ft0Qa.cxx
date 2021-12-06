@@ -39,28 +39,29 @@ struct FT0Qa {
   OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult;T0Mmult", 500, 0., 15000., 200, 0., 2000.)};
   OutputObj<TH2F> hT0V0time{TH2F("hT0V0time", "T0A vs V0 time ;V0time;T0A", 200, -2, 2., 200, -2, 2)};
 
-  //Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  // Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected>::iterator const& col, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
-    int64_t foundFT0 = col.foundFT0();
     float sumAmpFT0 = 0;
     float sumAmpFV0 = 0;
-    if (foundFT0 != -1) {
-      auto ft0 = ft0s.iteratorAt(foundFT0);
+    if (col.has_foundFT0()) {
+      auto ft0 = col.foundFT0();
       LOGF(debug, "multV0A=%5.0f;  multT0A=%5.0f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ", col.multV0A(), col.multT0A(), col.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), ft0.posZ());
       if (col.t0ACorrectedValid()) {
         hT0A->Fill(col.t0ACorrected());
-        auto fv0 = fv0s.iteratorAt(foundFT0);
-        float fv0Time = fv0.time();
-        hT0V0time->Fill(fv0Time, ft0.timeA());
-        for (int ich = 0; ich < 96; ich++) {
-          sumAmpFT0 += ft0.amplitudeA()[ich];
+        if (col.has_foundFV0()) {
+          auto fv0 = col.foundFV0();
+          float fv0Time = fv0.time();
+          hT0V0time->Fill(fv0Time, ft0.timeA());
+          for (int ich = 0; ich < 96; ich++) {
+            sumAmpFT0 += ft0.amplitudeA()[ich];
+          }
+          for (int ich = 0; ich < 48; ich++) {
+            sumAmpFV0 += fv0.amplitude()[ich];
+          }
+          hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
         }
-        for (int ich = 0; ich < 48; ich++) {
-          sumAmpFV0 += fv0.amplitude()[ich];
-        }
-        hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
       }
       if (col.t0CCorrectedValid()) {
         hT0C->Fill(col.t0CCorrected());

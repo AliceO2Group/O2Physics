@@ -30,13 +30,12 @@ struct FT0CorrectedTable {
   void process(BCsWithMatchings const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::FT0s const& ft0s)
   {
     for (auto& collision : collisions) {
-      int64_t foundFT0 = collision.foundFT0();
       float vertexPV = collision.posZ();
       float vertex_corr = vertexPV / o2::constants::physics::LightSpeedCm2NS;
       float t0A = 1e10;
       float t0C = 1e10;
-      if (foundFT0 != -1) {
-        auto ft0 = ft0s.iteratorAt(foundFT0);
+      if (collision.has_foundFT0()) {
+        auto ft0 = collision.foundFT0();
         int triggersignals = ft0.triggerMask();
         bool ora = (triggersignals & (1 << 0)) != 0;
         bool orc = (triggersignals & (1 << 1)) != 0;
