@@ -503,7 +503,7 @@ struct HfTagSelTracks {
       }
 
       // fill table row
-      rowSelectedTrack(statusProng, dca[0], dca[1], track.px(), track.py(), track.pz());
+      rowSelectedTrack(statusProng, track.px(), track.py(), track.pz());
     }
   }
 };
@@ -691,7 +691,7 @@ struct HfTrackIndexSkimsCreator {
 
       // imp. par. product cut
       if (debug || TESTBIT(isSelected, iDecay2P)) {
-        auto impParProduct = hfTrack0.dcaPrim0() * hfTrack1.dcaPrim0();
+        auto impParProduct = hfTrack0.dcaXY() * hfTrack1.dcaXY();
         if (impParProduct > cut2Prong[iDecay2P].get(pTBin, d0d0Index[iDecay2P])) {
           CLRBIT(isSelected, iDecay2P);
           if (debug) {
@@ -885,7 +885,7 @@ struct HfTrackIndexSkimsCreator {
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::HFSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::HFSelTrack>>;
 
   // FIXME
   //Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;

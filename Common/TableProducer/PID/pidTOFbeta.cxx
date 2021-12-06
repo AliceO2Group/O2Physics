@@ -34,23 +34,23 @@ struct tofPidBeta {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Colls = aod::Collisions;
   Produces<aod::pidTOFbeta> tablePIDBeta;
-  tof::Beta<Trks::iterator, PID::Electron> responseElectron;
+  tof::Beta<Trks::iterator> responseBeta;
   Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
 
   void init(o2::framework::InitContext&)
   {
-    responseElectron.mExpectedResolution = expreso.value;
+    responseBeta.mExpectedResolution = expreso.value;
   }
 
   void process(Trks const& tracks, Colls const&)
   {
     tablePIDBeta.reserve(tracks.size());
     for (auto const& trk : tracks) {
-      tablePIDBeta(responseElectron.GetBeta(trk),
-                   responseElectron.GetExpectedSigma(trk),
-                   responseElectron.GetExpectedSignal(trk),
-                   responseElectron.GetExpectedSigma(trk),
-                   responseElectron.GetSeparation(trk));
+      tablePIDBeta(responseBeta.GetBeta(trk),
+                   responseBeta.GetExpectedSigma(trk),
+                   responseBeta.GetExpectedSignal<o2::track::PID::Electron>(trk),
+                   responseBeta.GetExpectedSigma(trk),
+                   responseBeta.GetSeparation<o2::track::PID::Electron>(trk));
     }
   }
 };
@@ -110,7 +110,7 @@ struct tofPidBetaQa {
     histos.fill(HIST(hexpected_diff[i]), t.p(), exp_diff);
     histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
   }
-  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal> const& tracks,
+  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal> const& tracks,
                aod::Collisions const&)
   {
     for (auto const& track : tracks) {

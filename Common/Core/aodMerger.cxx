@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <map>
+#include <list>
 #include <fstream>
 #include <getopt.h>
 
@@ -30,7 +31,7 @@ int main(int argc, char* argv[])
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
   bool skipNonExistingFiles = false;
-  int exitCode = 0; // 0: success, 1: failure
+  int exitCode = 0; // 0: success, >0: failure
 
   int option_index = 0;
   static struct option long_options[] = {
@@ -86,8 +87,9 @@ int main(int argc, char* argv[])
   TString line;
   bool connectedToAliEn = false;
   TMap* metaData = nullptr;
+  int totalMergedDFs = 0;
   int mergedDFs = 0;
-  while (in.good()) {
+  while (in.good() && exitCode == 0) {
     in >> line;
 
     if (line.Length() == 0) {
@@ -149,16 +151,24 @@ int main(int argc, char* argv[])
 
       printf("  Processing folder %s\n", dfName);
       ++mergedDFs;
+      ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
       auto treeList = folder->GetListOfKeys();
+      std::list<std::string> foundTrees;
 
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
+        foundTrees.push_back(treeName);
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
         printf("    Processing tree %s with %lld entries\n", treeName, inputTree->GetEntries());
 
         if (trees.count(treeName) == 0) {
+          if (mergedDFs > 1) {
+            printf("    *** FATAL ***: The tree %s was not in the previous dataframe(s)\n", treeName);
+            exitCode = 3;
+          }
+
           // clone tree
           // NOTE Basket size etc. are copied in CloneTree()
           if (!outputDir) {
@@ -241,6 +251,20 @@ int main(int argc, char* argv[])
           delete inputTree;
         }
       }
+      if (exitCode > 0) {
+        break;
+      }
+
+      // check if all trees were present
+      if (mergedDFs > 1) {
+        for (auto const& tree : trees) {
+          bool found = (std::find(foundTrees.begin(), foundTrees.end(), tree.first) != foundTrees.end());
+          if (found == false) {
+            printf("  *** FATAL ***: The tree %s was not in the current dataframe\n", tree.first.c_str());
+            exitCode = 4;
+          }
+        }
+      }
 
       // update offsets
       for (auto const& tree : trees) {
@@ -274,8 +298,13 @@ int main(int argc, char* argv[])
   outputFile->Write();
   outputFile->Close();
 
+  if (totalMergedDFs == 0) {
+    printf("ERROR: Did not merge a single DF. This does not seem right.\n");
+    exitCode = 2;
+  }
+
   // in case of failure, remove the incomplete file
-  if (exitCode) {
+  if (exitCode != 0) {
     printf("Removing incomplete output file %s.\n", outputFile->GetName());
     gSystem->Unlink(outputFile->GetName());
   }

@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
   const unsigned int mode = vm["mode"].as<unsigned int>();
   const std::string path = vm["ccdb-path"].as<std::string>();
   std::map<std::string, std::string> metadata;
-  std::map<std::string, std::string>* headers;
+  std::map<std::string, std::string>* headers = nullptr;
   o2::ccdb::CcdbApi api;
   const std::string url = vm["url"].as<std::string>();
   api.init(url);

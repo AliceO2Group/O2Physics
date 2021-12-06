@@ -67,8 +67,8 @@ struct lambdakzeroQA {
 
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
       {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
-      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{2000, -10.0f, 10.0f}}}},
+      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{2000, -10.0f, 10.0f}}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
     },
   };
@@ -103,19 +103,22 @@ struct lambdakzeroanalysisMC {
       {"MCmomID_Lambda", "MCmomID_Lambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
       {"MCmomID_AntiLambda", "MCmomID_AntiLambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
       {"MCmomID_K0Short", "MCmomID_K0Short", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
+      {"V0loopFiltersCounts", "V0loopFiltersCounts", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
     },
   };
   //_MCportion: taking the h3dMassXXX histogram and removing all v0s for which the postrack and negtrack mothers' don't match or are not K0S
 
   ConfigurableAxis dcaBinning{"dca-binning", {200, 0.0f, 1.0f}, ""};
   ConfigurableAxis ptBinning{"pt-binning", {200, 0.0f, 10.0f}, ""};
+  ConfigurableAxis massK0Shortbinning{"K0S-mass-binning", {200, 0.450f, 0.550f}, ""};
+  ConfigurableAxis massLambdabinning{"Lambda-mass-binning", {200, 1.015f, 1.215f}, ""};
 
   void init(InitContext const&)
   {
     AxisSpec dcaAxis = {dcaBinning, "DCA (cm)"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
-    AxisSpec massAxisK0Short = {200, 0.450f, 0.550f, "Inv. Mass (GeV)"};
-    AxisSpec massAxisLambda = {200, 1.015f, 1.215f, "Inv. Mass (GeV)"};
+    AxisSpec massAxisK0Short = {massK0Shortbinning, "Inv. Mass (GeV)"};
+    AxisSpec massAxisLambda = {massLambdabinning, "Inv. Mass (GeV)"};
 
     registry.add("h3dMassK0ShortDca", "h3dMassK0ShortDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisK0Short}});
     registry.add("h3dMassLambdaDca", "h3dMassLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
@@ -123,6 +126,13 @@ struct lambdakzeroanalysisMC {
     registry.add("h3dMassK0ShortDca_MCportion", "h3dMassK0ShortDca_MCportion", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisK0Short}});
     registry.add("h3dMassLambdaDca_MCportion", "h3dMassLambdaDca_MCportion", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
     registry.add("h3dMassAntiLambdaDca_MCportion", "h3dMassAntiLambdaDca_MCportion", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
+
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(1, "V0 Candidates");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(2, "V0Radius and CosPA");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(4, "Lambda Rapidity");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(5, "Lambda lifetime cut");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(7, "K0S Rapidity");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(8, "K0S lifetime cut");
   }
 
   //Selection criteria
@@ -133,6 +143,7 @@ struct lambdakzeroanalysisMC {
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
   Configurable<int> saveDcaHist{"saveDcaHist", 0, "saveDcaHist"};
+  Configurable<int> checksel7{"checksel7", 0, "checksel7"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -145,13 +156,15 @@ struct lambdakzeroanalysisMC {
     // if (!collision.alias()[kINT7]) { //should not use if looking at MC
     //   return;
     // }
-    if (!collision.sel7()) {
+    if (checksel7 == 1 && !collision.sel7()) {
       return;
     }
 
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
+      registry.fill(HIST("V0loopFiltersCounts"), 0.5);
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
         auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
         auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
@@ -159,7 +172,9 @@ struct lambdakzeroanalysisMC {
         bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
+          registry.fill(HIST("V0loopFiltersCounts"), 3.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
+            registry.fill(HIST("V0loopFiltersCounts"), 4.5);
             registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
             registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
 
@@ -185,7 +200,10 @@ struct lambdakzeroanalysisMC {
           }
         }
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
+          registry.fill(HIST("V0loopFiltersCounts"), 6.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
+            registry.fill(HIST("V0loopFiltersCounts"), 7.5);
+
             registry.fill(HIST("h3dMassK0Short"), collision.centV0M(), v0.pt(), v0.mK0Short());
 
             if (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
@@ -231,14 +249,14 @@ struct lambdakzeroParticleCountMC {
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 0.5, "rapidityMCcut"};
 
-  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  // void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void process(aod::McParticles const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
       if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
         if (MC::isPhysicalPrimary(mcparticle)) {
           if (mcparticle.pdgCode() == 310) {
             registry.fill(HIST("hK0ShortCount"), 0.5);
-            registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
             if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
               registry.fill(HIST("hK0ShortCount"), 1.5);
               registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
@@ -246,7 +264,6 @@ struct lambdakzeroParticleCountMC {
           }
           if (mcparticle.pdgCode() == 3122) {
             registry.fill(HIST("hLambdaCount"), 0.5);
-            registry.fill(HIST("hLambdaCount_PtDiff"), mcparticle.pt());
             if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211)) {
               registry.fill(HIST("hLambdaCount"), 1.5);
               registry.fill(HIST("hLambdaCount_PtDiff"), mcparticle.pt());
@@ -254,7 +271,6 @@ struct lambdakzeroParticleCountMC {
           }
           if (mcparticle.pdgCode() == -3122) {
             registry.fill(HIST("hAntiLambdaCount"), 0.5);
-            registry.fill(HIST("hAntiLambdaCount_PtDiff"), mcparticle.pt());
             if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
               registry.fill(HIST("hAntiLambdaCount"), 1.5);
               registry.fill(HIST("hAntiLambdaCount_PtDiff"), mcparticle.pt());
@@ -266,10 +282,56 @@ struct lambdakzeroParticleCountMC {
   }
 };
 
+struct V0daughtersTrackingEfficiency {
+
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hV0DaughterMcParticleIDs", "hV0DaughterMcParticleIDs", {HistType::kTH1I, {{1000000, 0, 1000000}}}},
+      {"hAssociatedMcParticleIDs", "hAssociatedMcParticleIDs", {HistType::kTH1I, {{1000000, 0, 1000000}}}},
+    },
+  };
+
+  void process(aod::McParticles const& mcParticles, MyTracks const& tracks)
+  {
+    for (auto& mcparticle : mcParticles) {
+      if (MC::isPhysicalPrimary(mcparticle)) {
+        if (TMath::Abs(mcparticle.y()) < 0.5) {
+          if (mcparticle.pdgCode() == 310) {
+            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
+              registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter0Id());
+              registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter1Id());
+            }
+          }
+          if (mcparticle.pdgCode() == 3122) {
+            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211)) {
+              registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter0Id());
+              registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter1Id());
+            }
+          }
+          if (mcparticle.pdgCode() == -3122) {
+            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
+              registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter0Id());
+              registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter1Id());
+            }
+          }
+        }
+      }
+    }
+    for (auto& track : tracks) {
+      auto AssociatedMcParticle = track.mcParticle();
+      if (TMath::Abs(AssociatedMcParticle.y()) < 0.5) {
+        registry.fill(HIST("hAssociatedMcParticleIDs"), AssociatedMcParticle.globalIndex());
+      }
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroanalysisMC>(cfgc, TaskName{"lf-lambdakzeroanalysisMC"}),
     adaptAnalysisTask<lambdakzeroQA>(cfgc, TaskName{"lf-lambdakzeroQA"}),
-    adaptAnalysisTask<lambdakzeroParticleCountMC>(cfgc, TaskName{"lf-lambdakzeroParticleCountMC"})};
+    adaptAnalysisTask<lambdakzeroParticleCountMC>(cfgc, TaskName{"lf-lambdakzeroParticleCountMC"}),
+    adaptAnalysisTask<V0daughtersTrackingEfficiency>(cfgc, TaskName{"lf-V0daughtersTrackingEfficiency"})};
 }
