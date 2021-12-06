@@ -423,7 +423,7 @@ struct HfTagSelTracks {
 
       iDebugCut = 4;
       if (doCutQuality.value && (debug || statusProng > 0)) { // FIXME to make a more complete selection e.g track.flags() & o2::aod::track::TPCrefit && track.flags() & o2::aod::track::GoldenChi2 &&
-	bool hasGoodQuality = true;
+        bool hasGoodQuality = true;
         if (useIsGlobalTrack) {
           if (track.isGlobalTrack() != (uint8_t) true) {
             hasGoodQuality = false;
