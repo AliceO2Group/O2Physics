@@ -156,11 +156,17 @@ struct strangenessFilter {
 
   // Tables
   using CollisionCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>>;
-  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
+  using MCCollisionCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
+  using MCDaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::McTrackLabels>;
   using Cascades = aod::CascDataExt;
 
-  void process(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, DaughterTracks& dtracks)
+  ////////////////////////////////////////////////////////
+  ////////// Strangeness Filter - Run 2 conv /////////////
+  ////////////////////////////////////////////////////////
+
+  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, DaughterTracks& dtracks)
   {
     if (kint7 && !collision.alias()[kINT7]) {
       return;
@@ -192,10 +198,10 @@ struct strangenessFilter {
 
     for (auto& casc : fullCasc) { // loop over cascades
 
-      auto v0 = casc.v0_as<aod::V0Datas>();
+      /*auto v0 = casc.v0_as<aod::V0Datas>();
       auto bachelor = casc.bachelor_as<DaughterTracks>();
       auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();
+      auto negdau = v0.negTrack_as<DaughterTracks>();*/
 
       bool isXi = false;
       bool isXiYN = false;
@@ -220,7 +226,7 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
         };
-        if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
+        /*if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
@@ -235,7 +241,7 @@ struct strangenessFilter {
           continue;
         };
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());*/
       } else {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
@@ -243,7 +249,7 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
           continue;
         };
-        if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
+        /*if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
           continue;
         };
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpc) {
@@ -258,10 +264,10 @@ struct strangenessFilter {
           continue;
         };
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());*/
       }
       // this selection differes for Xi and Omegas:
-      if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
+      /*if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
         continue;
       };
       if (TMath::Abs(posdau.eta()) > etadau) {
@@ -272,7 +278,7 @@ struct strangenessFilter {
       };
       if (TMath::Abs(bachelor.eta()) > etadau) {
         continue;
-      };
+      };*/
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
       };
@@ -398,6 +404,245 @@ struct strangenessFilter {
     // Filling the table
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
   }
+  //
+  PROCESS_SWITCH(strangenessFilter, processRun2, "Process data", true);
+
+  //////////////////////////////////////////////////////
+  ////////// Strangeness Filter - Run 3 MC /////////////
+  //////////////////////////////////////////////////////
+
+  void processRun3MC(MCCollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, MCDaughterTracks& dtracks)
+  {
+    if (kint7 && !collision.alias()[kINT7]) {
+      return;
+    }
+    if (sel7 && !collision.sel7()) {
+      return;
+    }
+
+    QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
+    hProcessedEvents->Fill(0.5);
+
+    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
+    bool keepEvent[6]{false};
+
+    // constants
+    const float ctauxi = 4.91;     // from PDG
+    const float ctauomega = 2.461; // from PDG
+
+    // variables
+    float xipos = -1.;
+    float xiproperlifetime = -1.;
+    float omegaproperlifetime = -1.;
+    float xiptotmom = -1.;
+    int xicounter = 0;
+    int xicounterYN = 0;
+    int omegacounter = 0;
+
+    for (auto& casc : fullCasc) { // loop over cascades
+
+      /*auto v0 = casc.v0_as<aod::V0Datas>();
+      auto bachelor = casc.bachelor_as<DaughterTracks>();
+      auto posdau = v0.posTrack_as<DaughterTracks>();
+      auto negdau = v0.negTrack_as<DaughterTracks>();*/
+
+      bool isXi = false;
+      bool isXiYN = false;
+      bool isOmega = false;
+
+      // QA
+      QAHistos.fill(HIST("hMassXiBefSel"), casc.mXi());
+      QAHistos.fill(HIST("hMassOmegaBefSel"), casc.mOmega());
+
+      // Position
+      xipos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
+      // Total momentum
+      xiptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
+      // Proper lifetime
+      xiproperlifetime = RecoDecay::getMassPDG(3312) * xipos / (xiptotmom + 1e-13);
+      omegaproperlifetime = RecoDecay::getMassPDG(3334) * xipos / (xiptotmom + 1e-13);
+
+      if (casc.sign() == 1) {
+        if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
+          continue;
+        };
+        if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
+          continue;
+        };
+        /*if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
+          continue;
+        };
+        if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
+          continue;
+        };
+        QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), negdau.tofNSigmaPr());
+        QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), posdau.tofNSigmaPi());
+        if (
+          (TMath::Abs(posdau.tofNSigmaPi()) > nsigmatof) &&
+          (TMath::Abs(negdau.tofNSigmaPr()) > nsigmatof) &&
+          (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
+          continue;
+        };
+        QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());*/
+      } else {
+        if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
+          continue;
+        };
+        if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
+          continue;
+        };
+        /*if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
+          continue;
+        };
+        if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpc) {
+          continue;
+        };
+        QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), posdau.tofNSigmaPr());
+        QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), negdau.tofNSigmaPi());
+        if (
+          (TMath::Abs(posdau.tofNSigmaPr()) > nsigmatof) &&
+          (TMath::Abs(negdau.tofNSigmaPi()) > nsigmatof) &&
+          (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
+          continue;
+        };
+        QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), posdau.tofNSigmaPr());
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());*/
+      }
+      // this selection differes for Xi and Omegas:
+      /*if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
+        continue;
+      };
+      if (TMath::Abs(posdau.eta()) > etadau) {
+        continue;
+      };
+      if (TMath::Abs(negdau.eta()) > etadau) {
+        continue;
+      };
+      if (TMath::Abs(bachelor.eta()) > etadau) {
+        continue;
+      };*/
+      if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
+        continue;
+      };
+      if (casc.v0radius() > v0radiusupperlimit || casc.v0radius() < v0radius) {
+        continue;
+      };
+      if (casc.cascradius() > cascradiusupperlimit || casc.cascradius() < cascradius) {
+        continue;
+      };
+      if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
+        continue;
+      };
+      if (casc.dcaV0daughters() > dcav0dau) {
+        continue;
+      };
+      if (casc.dcacascdaughters() > dcacascdau) {
+        continue;
+      };
+      if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
+        continue;
+      };
+      if (TMath::Abs(casc.eta()) > eta) {
+        continue;
+      };
+
+      isXi = (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
+             (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
+             (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
+             (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
+             (xiproperlifetime < properlifetimefactor * ctauxi) &&
+             (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
+      isXiYN = (casc.cascradius() > 24.39) &&
+               (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
+               (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
+               (xiproperlifetime < properlifetimefactor * ctauxi) &&
+               (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
+      isOmega = (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
+                (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
+                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
+                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
+                (omegaproperlifetime < properlifetimefactor * ctauomega) &&
+                (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
+
+      if (isXi) {
+        QAHistos.fill(HIST("hMassXiAfterSel"), casc.mXi());
+        QAHistos.fill(HIST("hMassXiAfterSelvsPt"), casc.mXi(), casc.pt());
+        // Count number of Xi candidates
+        xicounter++;
+      }
+      if (isXiYN) {
+        // Xis for YN interactions
+        xicounterYN++;
+      }
+      if (isOmega) {
+        QAHistos.fill(HIST("hMassOmegaAfterSel"), casc.mOmega());
+        QAHistos.fill(HIST("hMassOmegaAfterSelvsPt"), casc.mOmega(), casc.pt());
+        // Count number of Omega candidates
+        omegacounter++;
+      }
+    } // end loop over cascades
+
+    // Omega trigger definition
+    if (omegacounter > 0) {
+      keepEvent[0] = true;
+    }
+
+    // High-pT hadron + Xi trigger definition
+    if (xicounter > 0) {
+      for (auto track : tracks) { // start loop over tracks
+        QAHistos.fill(HIST("hTriggeredParticles"), 1);
+        QAHistos.fill(HIST("hPtTrigger"), track.pt());
+
+        keepEvent[1] = true;
+      } // end loop over tracks
+    }
+
+    // 2Xi trigger definition
+    if (xicounter > 1) {
+      keepEvent[2] = true;
+    }
+
+    // 3Xi trigger definition
+    if (xicounter > 2) {
+      keepEvent[3] = true;
+    }
+
+    // 4Xi trigger definition
+    if (xicounter > 3) {
+      keepEvent[4] = true;
+    }
+
+    // Single-Xi (YN) trigger definition
+    if (xicounterYN > 0) {
+      keepEvent[5] = true;
+    }
+
+    // Fill centrality dependent histos
+    if (keepEvent[0]) {
+      hProcessedEvents->Fill(1.5);
+    }
+    if (keepEvent[1]) {
+      hProcessedEvents->Fill(2.5);
+    }
+    if (keepEvent[2]) {
+      hProcessedEvents->Fill(3.5);
+    }
+    if (keepEvent[3]) {
+      hProcessedEvents->Fill(4.5);
+    }
+    if (keepEvent[4]) {
+      hProcessedEvents->Fill(5.5);
+    }
+    if (keepEvent[5]) {
+      hProcessedEvents->Fill(6.5);
+    }
+
+    // Filling the table
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+  }
+  //
+  PROCESS_SWITCH(strangenessFilter, processRun3MC, "Process Run3 MC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
