@@ -66,19 +66,18 @@ struct PartitionOutside {
 };
 
 // Partition inside process
-// Caveat: partitioned table cannot be passed as const& to process()
+// Caveat: index-bound table cannot be passed as const& to process()
 struct PartitionInside {
-  void process(aod::Collisions const& collisions, aod::Tracks& tracks)
+  void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     for (auto& c : collisions) {
-
       // create the partition groupedTracks
-      Partition<aod::Tracks> groupedTracks = aod::track::collisionId == c.globalIndex();
-      groupedTracks.bindTable(tracks);
+      Partition<aod::Tracks> groupedTracks{aod::track::collisionId == c.globalIndex(), tracks};
+      groupedTracks.bindExternalIndices(&collisions);
 
       // loop over the partition groupedTracks
       for (auto& t : groupedTracks) {
-        LOGF(info, "collision global index: %d grouped track collision id: %d", c.globalIndex(), t.collisionId());
+        LOGP(info, "collision global index: {} grouped track collision id: {}", c.globalIndex(), t.collisionId());
       }
     }
   }
