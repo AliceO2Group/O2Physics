@@ -307,10 +307,6 @@ struct DQFilterPPTask {
   std::vector<AnalysisCompositeCut> fPairCuts;
 
   float* fValues;
-
-  Partition<MyBarrelTracksSelected> posTracks = aod::track::signed1Pt > 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
-  Partition<MyBarrelTracksSelected> negTracks = aod::track::signed1Pt < 0.0f && aod::dqppfilter::isBarrelSelected > uint8_t(0);
-
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID2", "Comma separated list of ADDITIONAL barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairMassLow,pairJpsi", "Comma separated list of ADDITIONAL pair cuts"};
@@ -447,13 +443,14 @@ struct DQFilterPPTask {
       }
 
       uint8_t cutFilter = 0;
-      for (auto tpos : posTracks) {
-        for (auto tneg : negTracks) { // +- pairs
-          cutFilter = tpos.isBarrelSelected() & tneg.isBarrelSelected();
-          if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
-            continue;
-          }
-          VarManager::FillPair<pairTypeEE, gkTrackFillMap>(tpos, tneg, fValues); // compute pair quantities
+      for (auto& [t1, t2] : combinations(tracks, tracks)) {
+        //        for (auto tneg : negTracks) { // +- pairs
+        cutFilter = t1.isBarrelSelected() & t2.isBarrelSelected();
+        if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
+          continue;
+        }
+        VarManager::FillPair<pairTypeEE, gkTrackFillMap>(t1, t2, fValues); // compute pair quantities
+        if (t1.sign() * t2.sign() < 0) {
           for (int i = 0; i < fNTrackCuts; ++i) {
             if (!(cutFilter & (uint8_t(1) << i))) {
               continue;
