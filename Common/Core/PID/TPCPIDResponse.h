@@ -125,7 +125,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     values.push_back((std::sqrt(mMaxClusters/ncl)));
     values.push_back(relReso);
     values.push_back((track.signed1Pt()));
-    values.push_back((collision.multTracklets()) / mMultNormalization);
+    values.push_back((collision.multTPC()) / mMultNormalization);
 
     
     
