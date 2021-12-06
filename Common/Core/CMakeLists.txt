@@ -24,8 +24,6 @@ o2physics_target_root_dictionary(AnalysisCore
                         PID/PIDTOF.h
                         PID/TOFReso.h
                         PID/PIDTPC.h
-                        PID/BetheBloch.h
-                        PID/TPCReso.h
                         PID/TPCPIDResponse.h
               LINKDEF AnalysisCoreLinkDef.h)
 

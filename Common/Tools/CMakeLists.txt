@@ -14,11 +14,6 @@ o2physics_add_executable(aod-data-model-graph
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                  )
 
-o2physics_add_executable(pidparam-tpc-bethe-bloch
-                  SOURCES handleParamTPCBetheBloch.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                 )
-
 o2physics_add_executable(pidparam-tof-reso
                   SOURCES handleParamTOFReso.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
