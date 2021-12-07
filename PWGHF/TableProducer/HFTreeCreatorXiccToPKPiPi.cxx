@@ -59,23 +59,23 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
-// Xic selection variable -- will be implemented resolving seg. error
-/*DECLARE_SOA_COLUMN(XicM, xicM, int8_t);
-DECLARE_SOA_COLUMN(XicCt, xicCt, int8_t);
-DECLARE_SOA_COLUMN(XicY, xicY, int8_t);
-DECLARE_SOA_COLUMN(XicE, xicE, int8_t);
-DECLARE_SOA_COLUMN(XicEta, xicEta, int8_t);
-DECLARE_SOA_COLUMN(XicCPA, xicCPA, int8_t);
-DECLARE_SOA_COLUMN(XicChi2PCA, xicChi2PCA, int8_t);
-DECLARE_SOA_COLUMN(XicDecayLength, xicDecayLength, int8_t);
-DECLARE_SOA_COLUMN(XiccDecayLengthXY, xiccDecayLengthXY, int8_t);
-DECLARE_SOA_COLUMN(XiccDecayLengthNormalised, xiccDecayLengthNormalised, int8_t);
+// Xic selection variable
+DECLARE_SOA_COLUMN(XicM, xicM, float);
+DECLARE_SOA_COLUMN(XicCt, xicCt, float);
+DECLARE_SOA_COLUMN(XicY, xicY, float);
+DECLARE_SOA_COLUMN(XicE, xicE, float);
+DECLARE_SOA_COLUMN(XicEta, xicEta, float);
+DECLARE_SOA_COLUMN(XicCPA, xicCPA, float);
+DECLARE_SOA_COLUMN(XicCPAXY, xicCPAXY, float);
+DECLARE_SOA_COLUMN(XicChi2PCA, xicChi2PCA, float);
+DECLARE_SOA_COLUMN(XicDecayLength, xicDecayLength, float);
+DECLARE_SOA_COLUMN(XicDecayLengthXY, xicDecayLengthXY, float);
+DECLARE_SOA_COLUMN(XicDecayLengthNormalised, xicDecayLengthNormalised, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk1Pr, nSigmaTOFTrk1Pr, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk1Pi, nSigmaTOFTrk1Pi, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk2Ka, nSigmaTOFTrk2Ka, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk3Pr, nSigmaTOFTrk3Pr, float);
-DECLARE_SOA_COLUMN(NSigmaTOFTrk3Pi, nSigmaTOFTrk3Pi, float);*/
-
+DECLARE_SOA_COLUMN(NSigmaTOFTrk3Pi, nSigmaTOFTrk3Pi, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -107,21 +107,22 @@ DECLARE_SOA_TABLE(HfCandXiccFull, "AOD", "HFCANDXiccFull",
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   full::ImpactParameterProduct,
-                  // full::XicM,
-                  // full::XicCt,
-                  // full::XicY,
-                  // full::XicE,
-                  // full::XicEta,
-                  // full::XicCPA,
-                  // full::XicChi2PCA,
-                  // full::XicDecayLength,
-                  // full::XiccDecayLengthXY,
-                  // full::XiccDecayLengthNormalised,
-                  // full::NSigmaTOFTrk1Pr,
-                  // full::NSigmaTOFTrk1Pi,
-                  // full::NSigmaTOFTrk2Ka,
-                  // full::NSigmaTOFTrk3Pr,
-                  // full::NSigmaTOFTrk3Pi,
+                  full::XicM,
+                  full::XicCt,
+                  full::XicY,
+                  full::XicE,
+                  full::XicEta,
+                  full::XicCPA,
+                  full::XicCPAXY,
+                  full::XicChi2PCA,
+                  full::XicDecayLength,
+                  full::XicDecayLengthXY,
+                  full::XicDecayLengthNormalised,
+                  full::NSigmaTOFTrk1Pr,
+                  full::NSigmaTOFTrk1Pi,
+                  full::NSigmaTOFTrk2Ka,
+                  full::NSigmaTOFTrk3Pr,
+                  full::NSigmaTOFTrk3Pi,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -167,7 +168,8 @@ struct HfTreeCreatorXiccTopkpipi {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMCRec, aod::HFSelXiccToPKPiPiCandidate> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMCGen> const& particles,
-               aod::BigTracksPID const& tracks)
+               aod::BigTracksPID const& tracks,
+               aod::HfCandProng3 const&)
   {
 
     // Filling event properties
@@ -192,7 +194,7 @@ struct HfTreeCreatorXiccTopkpipi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          // auto xicCand = candidate.index0(); FIXME
+          auto xicCand = candidate.index0();
 
           rowCandidateFull(
             candidate.rSecondaryVertex(),
@@ -219,21 +221,22 @@ struct HfTreeCreatorXiccTopkpipi {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             candidate.impactParameterProduct(),
-            // o2::aod::hf_cand_prong3::InvMassXicToPKPi(xicCand),
-            // o2::aod::hf_cand_prong3::CtXic(xicCand),
-            // o2::aod::hf_cand_prong3::YXic(xicCand),
-            // o2::aod::hf_cand_prong3::EXic(xicCand),
-            // xicCand.eta(),
-            // xicCand.cpa(),
-            // xicCand.chi2PCA(),
-            // xicCand.decayLength(),
-            // xicCand.decayLengthXY(),
-            // xicCand.decayLengthXYNormalised(),
-            // xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPr(),
-            // xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
-            // xicCand.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            // xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPr(),
-            // xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPi(),
+            o2::aod::hf_cand_prong3::InvMassXicToPKPi(xicCand),
+            o2::aod::hf_cand_prong3::CtXic(xicCand),
+            o2::aod::hf_cand_prong3::YXic(xicCand),
+            o2::aod::hf_cand_prong3::EXic(xicCand),
+            xicCand.eta(),
+            xicCand.cpa(),
+            xicCand.cpaXY(),
+            xicCand.chi2PCA(),
+            xicCand.decayLength(),
+            xicCand.decayLengthXY(),
+            xicCand.decayLengthXYNormalised(),
+            xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPr(),
+            xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
+            xicCand.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
+            xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPr(),
+            xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPi(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
