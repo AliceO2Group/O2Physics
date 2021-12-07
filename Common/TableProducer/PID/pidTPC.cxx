@@ -29,6 +29,9 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "TableHelper.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,7 +96,17 @@ struct tpcPid {
           LOG(info) << "Table disabled: " + table;
         }
       }
-    }
+    };
+    enableFlag("El", pidEl);
+    enableFlag("Mu", pidMu);
+    enableFlag("Pi", pidPi);
+    enableFlag("Ka", pidKa);
+    enableFlag("Pr", pidPr);
+    enableFlag("De", pidDe);
+    enableFlag("Tr", pidTr);
+    enableFlag("He", pidHe);
+    enableFlag("Al", pidAl);
+
     const TString fname = paramfile.value;
     if (fname != "") { // Loading the parametrization from file
       LOGP(info, "Loading TPC response from file {}", fname);
