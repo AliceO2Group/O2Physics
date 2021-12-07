@@ -4,6 +4,7 @@ on:
   pull_request:
     types:
       - auto_merge_enabled
+      - auto_merge_disabled
   pull_request_review:
     types:
       - submitted
@@ -19,22 +20,40 @@ jobs:
     if: >-
       (github.event.action == 'submitted' &&
        github.event.review.state == 'approved' &&
-       github.event.sender.login != 'alibuild') ||
-      (github.event.action == 'auto_merge_enabled' &&
+       github.event.sender.login != 'alibuild' &&
+       contains(github.event.pull_request.labels.*.name, 'auto-approval-requested')) ||
+      ((github.event.action == 'auto_merge_enabled' ||
+        github.event.action == 'auto_merge_disabled') &&
        github.event.sender.login == github.event.pull_request.user.login)
 
     steps:
+      - name: Add label when auto-merge is enabled
+        if: github.event.action == 'auto_merge_enabled'
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: auto-approval-requested
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
+
+      - name: Remove label when auto-merge is disabled
+        if: github.event.action == 'auto_merge_disabled'
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: auto-approval-requested
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
+
       - name: Install dependencies
+        if: github.event.action != 'auto_merge_disabled'
         run: pip install codeowners PyGithub
 
       # Approve the PR, if the author is only editing files owned by themselves.
       - name: Auto-approve PR if permitted
+        if: github.event.action != 'auto_merge_disabled'
         shell: python
         env:
           submitter: ${{ github.event.pull_request.user.login }}
           pr: ${{ github.event.pull_request.number }}
           repo: ${{ github.event.repository.full_name }}
-          github_token: ${{ secrets.alibuild_github_token }}
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
         run: |
           import os
           import sys
