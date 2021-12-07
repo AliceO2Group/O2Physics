@@ -517,8 +517,8 @@ struct AnalysisEventMixing {
     events.bindExternalIndices(&muons);
     auto tracksTuple = std::make_tuple(tracks);
     auto muonsTuple = std::make_tuple(muons);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerMuons(events, muonsTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerMuons(events, muonsTuple);
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
