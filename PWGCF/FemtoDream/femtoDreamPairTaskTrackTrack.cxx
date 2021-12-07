@@ -243,7 +243,7 @@ struct femtoDreamPairTaskTrackTrack {
   {
     cols.bindExternalIndices(&parts);
     auto particlesTuple = std::make_tuple(parts);
-    AnalysisDataProcessorBuilder::GroupSlicer slicer(cols, particlesTuple);
+    GroupSlicer slicer(cols, particlesTuple);
 
     for (auto& [collision1, collision2] : soa::selfCombinations("fBin", ConfNEventsMix, -1, soa::join(hashes, cols), soa::join(hashes, cols))) {
       auto it1 = slicer.begin();

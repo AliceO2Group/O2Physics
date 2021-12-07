@@ -54,7 +54,7 @@ DECLARE_SOA_COLUMN(MixingHash, mixingHash, int);
 DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
 DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
-} // namespace reducedevent
+} // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
 DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHash);
@@ -483,7 +483,7 @@ struct AnalysisEventMixing {
   {
     events.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
@@ -517,8 +517,8 @@ struct AnalysisEventMixing {
     events.bindExternalIndices(&muons);
     auto tracksTuple = std::make_tuple(tracks);
     auto muonsTuple = std::make_tuple(muons);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerMuons(events, muonsTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerMuons(events, muonsTuple);
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
