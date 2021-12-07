@@ -31,7 +31,7 @@ using namespace o2::analysis::hf_cuts_xic_topkpi;
 struct HFXicToPKPiCandidateSelector {
   Produces<aod::HFSelXicToPKPiCandidate> hfSelXicToPKPiCandidate;
 
-  Configurable<double> d_normaliseddecaylengthxyCand{"d_normaliseddecaylengthxyCand", 3., "Normalised decay length"};
+  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length XY"};
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> d_pTCandMax{"d_pTCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> d_FilterPID{"d_FilterPID", true, "Bool to use or not the PID at filtering level"};
@@ -40,8 +40,8 @@ struct HFXicToPKPiCandidateSelector {
   Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 1., "Upper bound of track pT for TPC PID"};
   Configurable<double> d_nSigmaTPC{"d_nSigmaTPC", 3., "Nsigma cut on TPC only"};
   Configurable<double> d_nSigmaTPCCombined{"d_nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
-  // Configurable<double> d_TPCNClsFindablePIDCut{"d_TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
-  //  TOF
+  //Configurable<double> d_TPCNClsFindablePIDCut{"d_TPCNClsFindablePIDCut", 70., "Lower bound of TPC findable clusters for good PID"};
+  // TOF
   Configurable<double> d_pidTOFMinpT{"d_pidTOFMinpT", 0.5, "Lower bound of track pT for TOF PID"};
   Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 4., "Upper bound of track pT for TOF PID"};
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
@@ -98,7 +98,7 @@ struct HFXicToPKPiCandidateSelector {
     }
 
     // candidate normalised decay length (Inspired from Lc selector)
-    if (candidate.decayLengthXYNormalised() < d_normaliseddecaylengthxyCand) {
+    if (candidate.decayLengthXYNormalised() < decayLengthXYNormalisedMin) {
       return false;
     }
     return true;
