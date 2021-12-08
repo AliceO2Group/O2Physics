@@ -320,12 +320,12 @@ struct HfFilter { // Main struct for HF triggers
       return false;
     }
 
-    if(track.isGlobalTrack() != (uint8_t) true) {
+    if (track.isGlobalTrack() != (uint8_t) true) {
       return false; // use only global tracks
     }
 
     unsigned char clusterMapITS = track.itsClusterMap();
-    if(!TESTBIT(clusterMapITS, 0) || !TESTBIT(clusterMapITS, 1)) {
+    if (!TESTBIT(clusterMapITS, 0) || !TESTBIT(clusterMapITS, 1)) {
       return false; // require a hit in one of the first two layers of the ITS
     }
 
