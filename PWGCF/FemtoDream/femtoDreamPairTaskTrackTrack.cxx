@@ -13,16 +13,21 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
+
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamParticleHisto.h"
 #include "FemtoDreamEventHisto.h"
 #include "FemtoDreamPairCleaner.h"
 #include "FemtoDreamContainer.h"
 #include "FemtoDreamDetaDphiStar.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -106,7 +111,6 @@ struct femtoDreamPairTaskTrackTrack {
   ConfigurableAxis CfgmTBins{"CfgmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
-  Configurable<float> ConfBField{"ConfBField", +0.5, "Magnetic Field"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -115,6 +119,8 @@ struct femtoDreamPairTaskTrackTrack {
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb; ///Accessing the CCDB
 
   void init(InitContext&)
   {
@@ -130,11 +136,42 @@ struct femtoDreamPairTaskTrackTrack {
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfBField, false); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, false); /// \todo add config for Δη and ΔΦ cut values
     }
 
     vPIDPartOne = ConfPIDPartOne;
     vPIDPartTwo = ConfPIDPartTwo;
+
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = 0.1 * (grpo->getNominalL3Field());
+    std::cout << "###################################" << std::endl;
+    std::cout << "###################################" << std::endl;
+    std::cout << "Mag Field (T) = " << output << std::endl;
+    std::cout << "###################################" << std::endl;
+    std::cout << "###################################" << std::endl;
+
+    return output;
   }
 
   /// internal function that returns the kPIDselection element corresponding to a specifica n-sigma value
@@ -218,9 +255,9 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      /// close pair rejection
+      auto tmstamp = col.timestamp();
       if (ConfIsCPR) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, getMagneticFieldTesla(tmstamp))) {
           continue;
         }
       }
@@ -289,8 +326,9 @@ struct femtoDreamPairTaskTrackTrack {
         if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
           continue;
         }
+
         if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, getMagneticFieldTesla(collision1.timestamp()))) {
             continue;
           }
         }

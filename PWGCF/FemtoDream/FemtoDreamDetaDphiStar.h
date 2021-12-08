@@ -36,11 +36,10 @@ class FemtoDreamDetaDphiStar
   /// Destructor
   virtual ~FemtoDreamDetaDphiStar() = default;
   /// Initalization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, float lmagfield, bool lplotForEveryRadii)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
-    magfield = lmagfield;
     plotForEveryRadii = lplotForEveryRadii;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
@@ -70,8 +69,10 @@ class FemtoDreamDetaDphiStar
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
-  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles)
+  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield)
   {
+    magfield = lmagfield;
+
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
@@ -149,6 +150,7 @@ class FemtoDreamDetaDphiStar
   std::array<std::array<std::shared_ptr<TH2>, 9>, 2> histdetadpiRadii{};
 
   ///  Calculate phi at all required radii stored in tmpRadiiTPC
+  /// Magnetic field to be provided in Tesla
   template <typename T>
   void PhiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
   {
