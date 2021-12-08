@@ -71,7 +71,7 @@ struct TrackExtension {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbpath_geo);
+      //  ccdb->get<TGeoManager>(ccdbpath_geo);
     }
     mRunNumber = 0;
     mMagField = 0.0;
