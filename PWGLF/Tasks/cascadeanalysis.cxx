@@ -115,18 +115,52 @@ struct cascadeanalysis {
   Configurable<float> v0radius{"v0radius", 2.0, "v0radius"};
   Configurable<float> cascradius{"cascradius", 1.0, "cascradius"};
   Configurable<float> v0masswindow{"v0masswindow", 0.008, "v0masswindow"};
+  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   Filter preFilterV0 =
-    aod::cascdata::dcapostopv > dcapostopv&& aod::cascdata::dcanegtopv > dcanegtopv&&
-                                                                           aod::cascdata::dcabachtopv > dcabachtopv&&
+    nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&&
+                                                                           nabs(aod::cascdata::dcabachtopv) > dcabachtopv&&
                                                                                                           aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
+  // void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
-    if (!collision.alias()[kINT7]) {
+    if (eventSelection && !collision.sel8()) {
       return;
     }
-    if (!collision.sel7()) {
+    for (auto& casc : Cascades) {
+      //FIXME: dynamic columns cannot be filtered on?
+      if (casc.v0radius() > v0radius &&
+          casc.cascradius() > cascradius &&
+          casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
+          casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa &&
+          casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
+        if (casc.sign() < 0) { //FIXME: could be done better...
+          if (TMath::Abs(casc.yXi()) < 0.5) {
+            h3dMassXiMinus->Fill(0., casc.pt(), casc.mXi());
+          }
+          if (TMath::Abs(casc.yOmega()) < 0.5) {
+            h3dMassOmegaMinus->Fill(0, casc.pt(), casc.mOmega());
+          }
+        } else {
+          if (TMath::Abs(casc.yXi()) < 0.5) {
+            h3dMassXiPlus->Fill(0., casc.pt(), casc.mXi());
+          }
+          if (TMath::Abs(casc.yOmega()) < 0.5) {
+            h3dMassOmegaPlus->Fill(0., casc.pt(), casc.mOmega());
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(cascadeanalysis, processRun3, "Process Run 3 data", true);
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
+  {
+    if (eventSelection && !collision.alias()[kINT7]) {
+      return;
+    }
+    if (eventSelection && !collision.sel7()) {
       return;
     }
     for (auto& casc : Cascades) {
@@ -154,6 +188,8 @@ struct cascadeanalysis {
       }
     }
   }
+  PROCESS_SWITCH(cascadeanalysis, processRun2, "Process Run 2 data", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
