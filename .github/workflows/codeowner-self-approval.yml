@@ -1,7 +1,8 @@
 name: PR self-approval
 
 on:
-  pull_request:
+  # We need pull_request_target so we can use ${{ secrets.* }}.
+  pull_request_target:
     types:
       - auto_merge_enabled
 
