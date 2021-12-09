@@ -4,10 +4,6 @@ on:
   pull_request:
     types:
       - auto_merge_enabled
-      - auto_merge_disabled
-  pull_request_review:
-    types:
-      - submitted
 
 jobs:
   approve:
@@ -18,36 +14,15 @@ jobs:
     # submit our review, that'll trigger this workflow again, so only run if
     # someone other than us (i.e. alibuild) reviewed.
     if: >-
-      (github.event.action == 'submitted' &&
-       github.event.review.state == 'approved' &&
-       github.event.sender.login != 'alibuild' &&
-       contains(github.event.pull_request.labels.*.name, 'auto-approval-requested')) ||
-      ((github.event.action == 'auto_merge_enabled' ||
-        github.event.action == 'auto_merge_disabled') &&
+      (github.event.action == 'auto_merge_enabled' &&
        github.event.sender.login == github.event.pull_request.user.login)
 
     steps:
-      - name: Add label when auto-merge is enabled
-        if: github.event.action == 'auto_merge_enabled'
-        uses: actions-ecosystem/action-add-labels@v1
-        with:
-          labels: auto-approval-requested
-          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
-
-      - name: Remove label when auto-merge is disabled
-        if: github.event.action == 'auto_merge_disabled'
-        uses: actions-ecosystem/action-remove-labels@v1
-        with:
-          labels: auto-approval-requested
-          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
-
       - name: Install dependencies
-        if: github.event.action != 'auto_merge_disabled'
         run: pip install codeowners PyGithub
 
       # Approve the PR, if the author is only editing files owned by themselves.
       - name: Auto-approve PR if permitted
-        if: github.event.action != 'auto_merge_disabled'
         shell: python
         env:
           submitter: ${{ github.event.pull_request.user.login }}
@@ -131,5 +106,5 @@ jobs:
           else:
               print('::warning::Not approving PR. You can see whose approval'
                     ' you need in the messages above. This check will run again'
-                    " when someone approves this PR, or when the PR's author"
-                    ' disables and reenables auto-merge.', file=sys.stderr)
+                    " when the PR's author disables and reenables auto-merge.",
+                    file=sys.stderr)
