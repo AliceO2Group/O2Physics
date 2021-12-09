@@ -75,7 +75,7 @@ jobs:
               if owner_type == 'USERNAME':
                   return owner_name.lstrip('@') == os.environ['submitter']
               elif owner_type == 'TEAM':
-                  org, _, team_name = user_or_team.lstrip('@').partition('/')
+                  org, _, team_name = owner_name.lstrip('@').partition('/')
                   try:
                       gh.get_organization(org) \
                         .get_team_by_slug(team_name) \
