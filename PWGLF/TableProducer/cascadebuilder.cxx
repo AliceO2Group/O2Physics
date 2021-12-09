@@ -271,7 +271,7 @@ struct cascadeinitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadedoindexing>(cfgc, TaskName{"lf-cascadedoindexing"}),
-    adaptAnalysisTask<cascadebuilder>(cfgc, TaskName{"lf-cascadebuilder"}),
-    adaptAnalysisTask<cascadeinitializer>(cfgc, TaskName{"lf-cascadeinitializer"})};
+    adaptAnalysisTask<cascadedoindexing>(cfgc),
+    adaptAnalysisTask<cascadebuilder>(cfgc),
+    adaptAnalysisTask<cascadeinitializer>(cfgc)};
 }

@@ -181,6 +181,6 @@ struct lambdakzeroanalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroanalysis>(cfgc, TaskName{"lf-lambdakzeroanalysis"}),
-    adaptAnalysisTask<lambdakzeroQA>(cfgc, TaskName{"lf-lambdakzeroQA"})};
+    adaptAnalysisTask<lambdakzeroanalysis>(cfgc),
+    adaptAnalysisTask<lambdakzeroQA>(cfgc)};
 }

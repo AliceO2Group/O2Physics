@@ -330,8 +330,8 @@ struct V0daughtersTrackingEfficiency {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroanalysisMC>(cfgc, TaskName{"lf-lambdakzeroanalysisMC"}),
-    adaptAnalysisTask<lambdakzeroQA>(cfgc, TaskName{"lf-lambdakzeroQA"}),
-    adaptAnalysisTask<lambdakzeroParticleCountMC>(cfgc, TaskName{"lf-lambdakzeroParticleCountMC"}),
-    adaptAnalysisTask<V0daughtersTrackingEfficiency>(cfgc, TaskName{"lf-V0daughtersTrackingEfficiency"})};
+    adaptAnalysisTask<lambdakzeroanalysisMC>(cfgc),
+    adaptAnalysisTask<lambdakzeroQA>(cfgc),
+    adaptAnalysisTask<lambdakzeroParticleCountMC>(cfgc),
+    adaptAnalysisTask<V0daughtersTrackingEfficiency>(cfgc)};
 }

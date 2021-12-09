@@ -159,6 +159,6 @@ struct cascadeanalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadeanalysis>(cfgc, TaskName{"lf-cascadeanalysis"}),
-    adaptAnalysisTask<cascadeQA>(cfgc, TaskName{"lf-cascadeQA"})};
+    adaptAnalysisTask<cascadeanalysis>(cfgc),
+    adaptAnalysisTask<cascadeQA>(cfgc)};
 }
