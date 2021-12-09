@@ -23,7 +23,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
-#include "DetectorsCommonDataFormats/NameConf.h"
+#include "CommonUtils/NameConf.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 

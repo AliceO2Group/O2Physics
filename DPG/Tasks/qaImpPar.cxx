@@ -26,7 +26,7 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "DetectorsCommonDataFormats/NameConf.h"
+#include "CommonUtils/NameConf.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/TrackSelection.h"
 
