@@ -153,9 +153,9 @@ struct lambdakzeroAnalysis {
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaStorePr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {      //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
-                registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());               //collision.centV0M() instead of 0. once available
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) { //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
+                registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());          //collision.centV0M() instead of 0. once available
                 registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
                 if (saveDcaHist == 1) {
                   registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
@@ -195,8 +195,8 @@ struct lambdakzeroAnalysis {
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaStorePr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {      //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) { //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
                 registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
                 registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
                 if (saveDcaHist == 1) {
