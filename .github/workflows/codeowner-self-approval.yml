@@ -1,12 +1,10 @@
 name: PR self-approval
 
 on:
-  pull_request:
+  # We need pull_request_target so we can use ${{ secrets.* }}.
+  pull_request_target:
     types:
       - auto_merge_enabled
-  pull_request_review:
-    types:
-      - submitted
 
 jobs:
   approve:
@@ -17,9 +15,6 @@ jobs:
     # submit our review, that'll trigger this workflow again, so only run if
     # someone other than us (i.e. alibuild) reviewed.
     if: >-
-      (github.event.action == 'submitted' &&
-       github.event.review.state == 'approved' &&
-       github.event.sender.login != 'alibuild') ||
       (github.event.action == 'auto_merge_enabled' &&
        github.event.sender.login == github.event.pull_request.user.login)
 
@@ -34,7 +29,7 @@ jobs:
           submitter: ${{ github.event.pull_request.user.login }}
           pr: ${{ github.event.pull_request.number }}
           repo: ${{ github.event.repository.full_name }}
-          github_token: ${{ secrets.alibuild_github_token }}
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
         run: |
           import os
           import sys
@@ -56,7 +51,7 @@ jobs:
               if owner_type == 'USERNAME':
                   return owner_name.lstrip('@') == os.environ['submitter']
               elif owner_type == 'TEAM':
-                  org, _, team_name = user_or_team.lstrip('@').partition('/')
+                  org, _, team_name = owner_name.lstrip('@').partition('/')
                   try:
                       gh.get_organization(org) \
                         .get_team_by_slug(team_name) \
@@ -112,5 +107,5 @@ jobs:
           else:
               print('::warning::Not approving PR. You can see whose approval'
                     ' you need in the messages above. This check will run again'
-                    " when someone approves this PR, or when the PR's author"
-                    ' disables and reenables auto-merge.', file=sys.stderr)
+                    " when the PR's author disables and reenables auto-merge.",
+                    file=sys.stderr)

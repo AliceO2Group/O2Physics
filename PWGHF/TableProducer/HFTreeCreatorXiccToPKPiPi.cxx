@@ -41,6 +41,7 @@ DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float);
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
@@ -48,6 +49,8 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(NSigmaTOFBachPi, nSigmaTOFBachPi, float);
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -56,6 +59,23 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+// Xic selection variable
+DECLARE_SOA_COLUMN(XicM, xicM, float);
+DECLARE_SOA_COLUMN(XicCt, xicCt, float);
+DECLARE_SOA_COLUMN(XicY, xicY, float);
+DECLARE_SOA_COLUMN(XicE, xicE, float);
+DECLARE_SOA_COLUMN(XicEta, xicEta, float);
+DECLARE_SOA_COLUMN(XicCPA, xicCPA, float);
+DECLARE_SOA_COLUMN(XicCPAXY, xicCPAXY, float);
+DECLARE_SOA_COLUMN(XicChi2PCA, xicChi2PCA, float);
+DECLARE_SOA_COLUMN(XicDecayLength, xicDecayLength, float);
+DECLARE_SOA_COLUMN(XicDecayLengthXY, xicDecayLengthXY, float);
+DECLARE_SOA_COLUMN(XicDecayLengthNormalised, xicDecayLengthNormalised, float);
+DECLARE_SOA_COLUMN(NSigmaTOFTrk1Pr, nSigmaTOFTrk1Pr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFTrk1Pi, nSigmaTOFTrk1Pi, float);
+DECLARE_SOA_COLUMN(NSigmaTOFTrk2Ka, nSigmaTOFTrk2Ka, float);
+DECLARE_SOA_COLUMN(NSigmaTOFTrk3Pr, nSigmaTOFTrk3Pr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFTrk3Pi, nSigmaTOFTrk3Pi, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -80,10 +100,29 @@ DECLARE_SOA_TABLE(HfCandXiccFull, "AOD", "HFCANDXiccFull",
                   hf_cand::PxProng1,
                   hf_cand::PyProng1,
                   hf_cand::PzProng1,
+                  hf_cand::Chi2PCA,
+                  full::NSigmaTOFBachPi,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
+                  full::ImpactParameterProduct,
+                  full::XicM,
+                  full::XicCt,
+                  full::XicY,
+                  full::XicE,
+                  full::XicEta,
+                  full::XicCPA,
+                  full::XicCPAXY,
+                  full::XicChi2PCA,
+                  full::XicDecayLength,
+                  full::XicDecayLengthXY,
+                  full::XicDecayLengthNormalised,
+                  full::NSigmaTOFTrk1Pr,
+                  full::NSigmaTOFTrk1Pi,
+                  full::NSigmaTOFTrk2Ka,
+                  full::NSigmaTOFTrk3Pr,
+                  full::NSigmaTOFTrk3Pi,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -129,7 +168,8 @@ struct HfTreeCreatorXiccTopkpipi {
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandXicc, aod::HfCandXiccMCRec, aod::HFSelXiccToPKPiPiCandidate> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMCGen> const& particles,
-               aod::BigTracksPID const& tracks)
+               aod::BigTracksPID const& tracks,
+               aod::HfCandProng3 const&)
   {
 
     // Filling event properties
@@ -154,6 +194,8 @@ struct HfTreeCreatorXiccTopkpipi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
+          auto xicCand = candidate.index0();
+
           rowCandidateFull(
             candidate.rSecondaryVertex(),
             candidate.decayLength(),
@@ -172,10 +214,29 @@ struct HfTreeCreatorXiccTopkpipi {
             candidate.pxProng1(),
             candidate.pyProng1(),
             candidate.pzProng1(),
+            candidate.chi2PCA(),
+            candidate.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
+            candidate.impactParameterProduct(),
+            o2::aod::hf_cand_prong3::InvMassXicToPKPi(xicCand),
+            o2::aod::hf_cand_prong3::CtXic(xicCand),
+            o2::aod::hf_cand_prong3::YXic(xicCand),
+            o2::aod::hf_cand_prong3::EXic(xicCand),
+            xicCand.eta(),
+            xicCand.cpa(),
+            xicCand.cpaXY(),
+            xicCand.chi2PCA(),
+            xicCand.decayLength(),
+            xicCand.decayLengthXY(),
+            xicCand.decayLengthXYNormalised(),
+            xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPr(),
+            xicCand.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
+            xicCand.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
+            xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPr(),
+            xicCand.index2_as<aod::BigTracksPID>().tofNSigmaPi(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),

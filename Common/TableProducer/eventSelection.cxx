@@ -441,7 +441,7 @@ struct EventSelectionTask {
       deltaBC = customDeltaBC;
     }
 
-    if (bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
+    if (!bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
       // search forward
       int forwardMoveCount = 0;
       int64_t forwardBcDist = deltaBC + 1;
