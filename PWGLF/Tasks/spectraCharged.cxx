@@ -12,6 +12,9 @@
 // task for charged particle pt spectra vs multiplicity analysis with 2d unfolding for run3+
 // mimics https://github.com/alisw/AliPhysics/blob/master/PWGLF/SPECTRA/ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTask.cxx
 
+// run for data as: o2-analysis-timestamp | o2-analysis-event-selection | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_data.root
+// run for mc as: o2-analysis-timestamp --isRun2MC | o2-analysis-event-selection --isMC | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_mc.root --isMC
+
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -56,6 +59,7 @@ struct chargedSpectra {
     bool isAcceptedEventMC{false};
     bool isAcceptedParticle{false};
     bool isAcceptedTrack{false};
+    bool isChargedPrimary{false};
   };
   varContainer vars;
 
@@ -134,8 +138,8 @@ void chargedSpectra::init(InitContext const&)
   const int nBinsMultMeas = maxMultMeas + 1;
   const AxisSpec multMeasAxis = {nBinsMultMeas, -0.5, nBinsMultMeas - 0.5, "#it{N}^{ meas}_{ch}", "mult_meas"};
 
-  histos.add("multDist_evt_meas", "", kTH1D, {multMeasAxis});
-  histos.add("multPtSpec_trk_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});
+  histos.add("multDist_evt_meas", "", kTH1D, {multMeasAxis});               // measured event distribution (contains contamination from events not in specified class or with wrong vertex position)
+  histos.add("multPtSpec_trk_meas", "", kTH2D, {multMeasAxis, ptMeasAxis}); // measured tracks (contains contamination from secondary particles, particles smeared into acceptance and tracks originating from background events as defined above )
 
   if (isMC) {
 
@@ -144,20 +148,21 @@ void chargedSpectra::init(InitContext const&)
     const int nBinsMultTrue = maxMultTrue + 1;
     const AxisSpec multTrueAxis = {nBinsMultTrue, -0.5, nBinsMultTrue - 0.5, "#it{N}_{ch}", "mult_true"};
 
-    histos.add("multDist_evt_gen", "", kTH1D, {multTrueAxis});
-    histos.add("multDist_evt_gen_trig", "", kTH1D, {multTrueAxis});
+    histos.add("multDist_evt_gen", "", kTH1D, {multTrueAxis});      // generated event distribution  (from events within specified class and with proper vertex position)
+    histos.add("multDist_evt_gen_trig", "", kTH1D, {multTrueAxis}); // generated event distribution (from events within specified class and with proper vertex position) that in addition fulfils the trigger condition [to disentangle trigger eff from reco eff ]
 
-    histos.add("multCorrel_evt", "", kTH2D, {multMeasAxis, multTrueAxis});
-    histos.add("multCorrel_prim", "", kTH2D, {multMeasAxis, multTrueAxis});
-    histos.add("ptCorrel_prim", "", kTH2D, {ptMeasAxis, ptTrueAxis});
+    histos.add("multCorrel_evt", "", kTH2D, {multMeasAxis, multTrueAxis});  // multiplicity correlation of measured events (excluding background events)
+    histos.add("multCorrel_prim", "", kTH2D, {multMeasAxis, multTrueAxis}); // multiplicity correlation of measured primary charged particles (excluding particles from background events)
+    histos.add("ptCorrel_prim", "", kTH2D, {ptMeasAxis, ptTrueAxis});       // pT correlation of measured primary charged particles  (excluding particles from background events)
 
-    histos.add("multPtSpec_prim_gen", "", kTH2D, {multTrueAxis, ptTrueAxis});
-    histos.add("multPtSpec_prim_gen_sigloss", "", kTH2D, {multTrueAxis, ptTrueAxis});
-    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis});
-    histos.add("multPtSpec_prim_meas", "", kTH2D, {multTrueAxis, ptTrueAxis});
+    histos.add("multPtSpec_prim_gen", "", kTH2D, {multTrueAxis, ptTrueAxis});         // generated primary charged particles as function of true properties (from events within specified class and with proper vertex position)
+    histos.add("multPtSpec_prim_gen_evtloss", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of events that did not pass the event selection as function of multiplicity and pt
+    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis});  // generated primary charged particles of events that did not fulfil physics selection and trigger condition as function of multiplicity and pt
+    histos.add("multPtSpec_prim_meas", "", kTH2D, {multTrueAxis, ptTrueAxis});        // measured primary charged particles as function of true properties (no contamination from background events)
 
-    histos.add("multPtSpec_trk_prim_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});
-    histos.add("multPtSpec_trk_sec_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});
+    histos.add("multPtSpec_trk_prim_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});    // tracks from measured primaries (no contamination from secondaries, particles smeared into acceptance or background events)
+    histos.add("multPtSpec_trk_sec_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});     // tracks from measured secondaries (no contamination from particles smeared into acceptance or background events)  [for QA to disentangle secondaries from other contamination]
+    histos.add("multPtSpec_trk_meas_evtcont", "", kTH2D, {multMeasAxis, ptMeasAxis}); // tracks from events that are measured, but do not belong to the desired class of events
   }
 }
 
@@ -214,12 +219,7 @@ bool chargedSpectra::initParticle(const P& particle)
   if (particle.pt() <= ptMinCut || particle.pt() >= ptMaxCut) {
     return false;
   }
-  if (!MC::isPhysicalPrimary(particle)) {
-    return false;
-  }
-  // TODO: find out if particle is charged primary or charged secondary
-  // fMCIsChargedPrimary = fMCEvent->IsPhysicalPrimary(particleID);
-  // fMCIsChargedSecondary = (fMCIsChargedPrimary) ? false : (fMCEvent->IsSecondaryFromWeakDecay(particleID) || fMCEvent->IsSecondaryFromMaterial(particleID));
+  vars.isChargedPrimary = particle.isPhysicalPrimary();
 
   return true;
 }
@@ -261,7 +261,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   }
 
   vars.isAcceptedEvent = false;
-  if (!(isRun3 ? collision.sel8() : collision.sel7())) { // currently only  sel8 is defined for run3
+  if (isRun3 ? collision.sel8() : collision.sel7()) { // currently only  sel8 is defined for run3
     vars.isAcceptedEvent = true;
   }
 }
@@ -282,7 +282,7 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
     ++vars.multTrue;
   }
   // TODO: also determine event class and check if true z vtx positin is good
-  vars.isAcceptedEventMC = collision.posZ() < 10.f;
+  vars.isAcceptedEventMC = ((collision.posZ() < 10.f) && (vars.multTrue > 0));
 }
 
 //**************************************************************************************************
@@ -293,11 +293,19 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
 template <typename C, typename P>
 void chargedSpectra::processTrue(const C& collision, const P& particles)
 {
-  histos.fill(HIST("multDist_evt_gen"), vars.multTrue);
+  if (vars.isAcceptedEventMC) {
+    histos.fill(HIST("multDist_evt_gen"), vars.multTrue);
+  }
+
   for (auto& particle : particles) {
-    if (initParticle(particle)) {
-      // TODO: event class selection, etc.
-      histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
+    if (initParticle(particle) && vars.isChargedPrimary) {
+      if (vars.isAcceptedEventMC) {
+        // TODO: event class selection, etc.
+        histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
+        if (!vars.isAcceptedEvent) {
+          histos.fill(HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+        }
+      }
     }
   }
 }
@@ -315,27 +323,44 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
 
   // TODO: break processing here if event does not survive event selection
 
-  histos.fill(HIST("multDist_evt_meas"), vars.multMeas);
-
-  if constexpr (IS_MC) {
-    // TODO: fill this only if additional requirements to MC event are fulfilled (event class, zvtx pos)
-    histos.fill(HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
-  }
-
-  for (auto& track : tracks) {
-
-    if (!initTrack(track)) {
-      continue;
-    }
-
-    histos.fill(HIST("multPtSpec_trk_meas"), vars.multMeas, track.pt());
+  if (vars.isAcceptedEvent) {
+    histos.fill(HIST("multDist_evt_meas"), vars.multMeas);
 
     if constexpr (IS_MC) {
-      const auto& particle = track.mcParticle();
-      if (initParticle(particle)) {
-        // TODO: fill only if isAcceptedEventMC is true as well
-        histos.fill(HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
-        histos.fill(HIST("ptCorrel_prim"), track.pt(), particle.pt());
+      if (vars.isAcceptedEventMC) {
+        // TODO: fill this only if additional requirements to MC event are fulfilled (event class, zvtx pos)
+        histos.fill(HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
+      }
+    }
+
+    for (auto& track : tracks) {
+
+      if (!initTrack(track)) {
+        continue;
+      }
+
+      histos.fill(HIST("multPtSpec_trk_meas"), vars.multMeas, track.pt());
+
+      if constexpr (IS_MC) {
+
+        const auto& particle = track.mcParticle();
+
+        if (!vars.isAcceptedEventMC) {
+          histos.fill(HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
+          continue;
+        }
+
+        if (initParticle(particle)) {
+
+          if (!vars.isChargedPrimary) {
+            histos.fill(HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
+          } else {
+            histos.fill(HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
+            histos.fill(HIST("ptCorrel_prim"), track.pt(), particle.pt());
+            histos.fill(HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
+            histos.fill(HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
+          }
+        }
       }
     }
   }
