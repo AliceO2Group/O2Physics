@@ -56,13 +56,12 @@ using std::array;
 using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtended>;
 using MyTracks = soa::Join<FullTracksExt, aod::McTrackLabels>;
 
-struct lambdakzeroQA {
+struct lambdakzeroQa {
   //Basic checks
   HistogramRegistry registry{
     "registry",
     {
-      {"hMassK0ShortMCportion", "hMassK0ShortMCportion", {HistType::kTH1F, {{800, 0.0f, 3.0f}}}},
-      {"hMassV0MCmass", "hMassV0MCmass", {HistType::kTH1F, {{800, 0.0f, 3.0f}}}},
+      {"hMassK0ShortMCportion", "hMassK0ShortMCportion", {HistType::kTH1F, {{800, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
 
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
       {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
@@ -74,8 +73,8 @@ struct lambdakzeroQA {
 
   void init(InitContext const&)
   {
-    AxisSpec massAxisK0Short = {600, 0.0f, 3.0f, "Inv. Mass (GeV)"};
-    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "Inv. Mass (GeV)"};
+    AxisSpec massAxisK0Short = {600, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("hMassK0Short", "hMassK0Short", {HistType::kTH1F, {massAxisK0Short}});
     registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {massAxisLambda}});
@@ -102,24 +101,22 @@ struct lambdakzeroQA {
 
       if (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
         registry.fill(HIST("hMassK0ShortMCportion"), v0.mK0Short());
-        float v0mass = RecoDecay::M(array{array{mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz()}, array{mcpostrack.px(), mcpostrack.py(), mcpostrack.pz()}}, array{RecoDecay::getMassPDG(mcnegtrack.pdgCode()), RecoDecay::getMassPDG(mcpostrack.pdgCode())});
-        registry.fill(HIST("hMassV0MCmass"), v0mass);
       }
     }
   }
 };
 
-struct lambdakzeroanalysisMC {
+struct lambdakzeroAnalysisMc {
 
   HistogramRegistry registry{
     "registry",
     {
-      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 0.450f, 0.550f}}}},
-      {"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
-      {"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
-      {"h3dMassK0Short_MC_truePt", "h3dMassK0Short_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 0.450f, 0.550f}}}},
-      {"h3dMassLambda_MC_truePt", "h3dMassLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
-      {"h3dMassAntiLambda_MC_truePt", "h3dMassAntiLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
+      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassK0Short_MC_truePt", "h3dMassK0Short_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassLambda_MC_truePt", "h3dMassLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassAntiLambda_MC_truePt", "h3dMassAntiLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
       {"MCmomID_Lambda", "MCmomID_Lambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
       {"MCmomID_AntiLambda", "MCmomID_AntiLambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
       {"MCmomID_K0Short", "MCmomID_K0Short", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
@@ -139,8 +136,8 @@ struct lambdakzeroanalysisMC {
   {
     AxisSpec dcaAxis = {dcaBinning, "DCA (cm)"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
-    AxisSpec massAxisK0Short = {massK0Shortbinning, "Inv. Mass (GeV)"};
-    AxisSpec massAxisLambda = {massLambdabinning, "Inv. Mass (GeV)"};
+    AxisSpec massAxisK0Short = {massK0Shortbinning, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxisLambda = {massLambdabinning, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("h3dMassK0ShortDca", "h3dMassK0ShortDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisK0Short}});
     registry.add("h3dMassLambdaDca", "h3dMassLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
@@ -183,10 +180,8 @@ struct lambdakzeroanalysisMC {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("V0loopFiltersCounts"), 0.5);
-      registry.fill(HIST("hMassK0ShortCut0"), v0.mK0Short());
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
-        registry.fill(HIST("hMassK0ShortCut1"), v0.mK0Short());
 
         auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
         auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
@@ -243,7 +238,7 @@ struct lambdakzeroanalysisMC {
       }
     }
   }
-  PROCESS_SWITCH(lambdakzeroanalysisMC, processRun3, "Process Run 3 data", true);
+  PROCESS_SWITCH(lambdakzeroAnalysisMc, processRun3, "Process Run 3 data", true);
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
@@ -315,10 +310,10 @@ struct lambdakzeroanalysisMC {
       }
     }
   }
-  PROCESS_SWITCH(lambdakzeroanalysisMC, processRun2, "Process Run 2 data", false);
+  PROCESS_SWITCH(lambdakzeroAnalysisMc, processRun2, "Process Run 2 data", false);
 };
 
-struct lambdakzeroParticleCountMC {
+struct lambdakzeroParticleCountMc {
   //Basic checks
   HistogramRegistry registry{
     "registry",
@@ -424,8 +419,8 @@ struct V0daughtersTrackingEfficiency {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroanalysisMC>(cfgc),
-    adaptAnalysisTask<lambdakzeroQA>(cfgc),
-    adaptAnalysisTask<lambdakzeroParticleCountMC>(cfgc),
+    adaptAnalysisTask<lambdakzeroAnalysisMc>(cfgc),
+    adaptAnalysisTask<lambdakzeroQa>(cfgc),
+    adaptAnalysisTask<lambdakzeroParticleCountMc>(cfgc),
     adaptAnalysisTask<V0daughtersTrackingEfficiency>(cfgc)};
 }

@@ -54,7 +54,7 @@ using std::array;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr>;
 
-struct lambdakzeroQA {
+struct lambdakzeroQa {
   //Basic checks
   HistogramRegistry registry{
     "registry",
@@ -70,8 +70,8 @@ struct lambdakzeroQA {
   };
   void init(InitContext const&)
   {
-    AxisSpec massAxisK0Short = {600, 0.0f, 3.0f, "Inv. Mass (GeV)"};
-    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "Inv. Mass (GeV)"};
+    AxisSpec massAxisK0Short = {600, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("hMassK0Short", "hMassK0Short", {HistType::kTH1F, {massAxisK0Short}});
     registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {massAxisLambda}});
@@ -95,14 +95,14 @@ struct lambdakzeroQA {
   }
 };
 
-struct lambdakzeroanalysis {
+struct lambdakzeroAnalysis {
 
   HistogramRegistry registry{
     "registry",
     {
-      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 0.450f, 0.550f}}}},
-      {"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
-      {"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
+      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
       {"hSelectedEventCounter", "hSelectedEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
     },
   };
@@ -114,8 +114,8 @@ struct lambdakzeroanalysis {
   {
     AxisSpec dcaAxis = {dcaBinning, "DCA (cm)"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
-    AxisSpec massAxisK0Short = {200, 0.450f, 0.550f, "Inv. Mass (GeV)"};
-    AxisSpec massAxisLambda = {200, 1.015f, 1.215f, "Inv. Mass (GeV)"};
+    AxisSpec massAxisK0Short = {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxisLambda = {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("h3dMassK0ShortDca", "h3dMassK0ShortDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisK0Short}});
     registry.add("h3dMassLambdaDca", "h3dMassLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
@@ -154,7 +154,7 @@ struct lambdakzeroanalysis {
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaStorePr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {                     //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
+              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {      //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
                 registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());               //collision.centV0M() instead of 0. once available
                 registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
                 if (saveDcaHist == 1) {
@@ -178,7 +178,7 @@ struct lambdakzeroanalysis {
       }
     }
   }
-  PROCESS_SWITCH(lambdakzeroanalysis, processRun3, "Process Run 3 data", true);
+  PROCESS_SWITCH(lambdakzeroAnalysis, processRun3, "Process Run 3 data", true);
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, MyTracks const& tracks)
   {
@@ -196,7 +196,7 @@ struct lambdakzeroanalysis {
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaStorePr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {                     //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
+              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {      //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
                 registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
                 registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
                 if (saveDcaHist == 1) {
@@ -220,12 +220,12 @@ struct lambdakzeroanalysis {
       }
     }
   }
-  PROCESS_SWITCH(lambdakzeroanalysis, processRun2, "Process Run 2 data", false);
+  PROCESS_SWITCH(lambdakzeroAnalysis, processRun2, "Process Run 2 data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroanalysis>(cfgc),
-    adaptAnalysisTask<lambdakzeroQA>(cfgc)};
+    adaptAnalysisTask<lambdakzeroAnalysis>(cfgc),
+    adaptAnalysisTask<lambdakzeroQa>(cfgc)};
 }

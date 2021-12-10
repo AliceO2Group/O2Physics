@@ -52,15 +52,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-struct cascadeQA {
+struct cascadeQa {
   //Basic checks
   HistogramRegistry registry{
     "registry",
     {
-      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
-      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
-      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
-      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
+      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2}²)"}}}},
+      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"}}}},
 
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
       {"hCascRadius", "hCascRadius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
@@ -102,16 +102,24 @@ struct cascadeQA {
   }
 };
 
-struct cascadeanalysis {
+struct cascadeAnalysis {
   HistogramRegistry registry{
     "registry",
-    {
-      {"h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.222f, 1.422f}}}},
-      {"h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.222f, 1.422f}}}},
-      {"h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.572f, 1.772f}}}},
-      {"h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.572f, 1.772f}}}},
-    },
+    {},
   };
+
+  void init(InitContext const&)
+  {
+    AxisSpec centAxis = {20, 0.0f, 100.0f, "Centrality (%)"};
+    AxisSpec ptAxis = {200, 0.0f, 10.0f, "it{p}_{T} (GeV/c)"};
+    AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+
+    registry.add("h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {centAxis, ptAxis, massAxisXi}});
+    registry.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisXi}});
+    registry.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
+    registry.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
+  }
 
   //Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.999, "V0 CosPA"};       //double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -161,7 +169,7 @@ struct cascadeanalysis {
       }
     }
   }
-  PROCESS_SWITCH(cascadeanalysis, processRun3, "Process Run 3 data", true);
+  PROCESS_SWITCH(cascadeAnalysis, processRun3, "Process Run 3 data", true);
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
@@ -196,12 +204,12 @@ struct cascadeanalysis {
       }
     }
   }
-  PROCESS_SWITCH(cascadeanalysis, processRun2, "Process Run 2 data", false);
+  PROCESS_SWITCH(cascadeAnalysis, processRun2, "Process Run 2 data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadeanalysis>(cfgc),
-    adaptAnalysisTask<cascadeQA>(cfgc)};
+    adaptAnalysisTask<cascadeAnalysis>(cfgc),
+    adaptAnalysisTask<cascadeQa>(cfgc)};
 }
