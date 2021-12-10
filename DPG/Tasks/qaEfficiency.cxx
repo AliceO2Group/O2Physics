@@ -20,6 +20,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -59,6 +60,8 @@ struct QaTrackingEfficiency {
   Configurable<float> etaMax{"eta-max", 3.f, "Upper limit in eta"};
   Configurable<float> phiMin{"phi-min", 0.f, "Lower limit in phi"};
   Configurable<float> phiMax{"phi-max", 6.284f, "Upper limit in phi"};
+  Configurable<float> yMin{"y-min", -0.5f, "Lower limit in y"};
+  Configurable<float> yMax{"y-max", 0.5f, "Upper limit in y"};
   Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<int> selPrim{"sel-prim", 1, "1 select primaries, 0 select all particles"};
@@ -72,6 +75,7 @@ struct QaTrackingEfficiency {
   Configurable<int> ptBins{"pt-bins", 500, "Number of pT bins"};
   Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis"};
   Configurable<int> etaBins{"eta-bins", 500, "Number of eta bins"};
+  Configurable<int> yBins{"y-bins", 500, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 500, "Number of phi bins"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
@@ -93,13 +97,15 @@ struct QaTrackingEfficiency {
       axisP.makeLogaritmic();
     }
     const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
+    const AxisSpec axisY{yBins, yMin, yMax, "#it{y}"};
     const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
 
-    const AxisSpec axisSel{9, 0.5, 9.5, "Selection"};
+    const AxisSpec axisSel{20, 0.5, 20.5, "Selection"};
     histos.add("eventSelection", "Event Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Contrib.");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Position");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Ev. Sel.");
 
     histos.add("trackSelection", "Track Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -107,9 +113,14 @@ struct QaTrackingEfficiency {
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(6, "Passed Prim.");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(7, Form("Passed PDG %i", pdg));
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(8, "Passed Fake");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(6, "Passed y");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(7, "Passed Prim.");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(8, Form("Passed PDG %i", pdg));
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(9, "Passed Prim. MC");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(10, "Passed Fake");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(11, "Passed standard quality cuts");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(12, "Passed has collision");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(13, "Passed hasTOF");
 
     histos.add("partSelection", "Particle Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(1, "Particles read");
@@ -117,42 +128,62 @@ struct QaTrackingEfficiency {
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, "Passed Prim.");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7, Form("Passed PDG %i", pdg));
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, "Passed y");
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7, "Passed Prim.");
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(8, Form("Passed PDG %i", pdg));
+    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(9, "Passed Prim. MC");
 
     histos.add("eventMultiplicity", "Event Selection", kTH1D, {{1000, 0, 5000}});
     histos.add("trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
 
-    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
+    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
                                o2::track::pid_constants::sNames[particle],
                                etaMin.value, etaMax.value,
+                               yMin.value, yMax.value,
                                phiMin.value, phiMax.value,
                                selPrim.value);
     histos.add("pt/num", "Numerator " + tagPt, kTH1D, {axisPt});
+    histos.add("pt/numtof", "Numerator TOF " + tagPt, kTH1D, {axisPt});
     histos.add("pt/den", "Denominator " + tagPt, kTH1D, {axisPt});
 
     histos.add("p/num", "Numerator " + tagPt, kTH1D, {axisP});
+    histos.add("p/numtof", "Numerator TOF " + tagPt, kTH1D, {axisP});
     histos.add("p/den", "Denominator " + tagPt, kTH1D, {axisP});
 
-    const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
+    const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
                                 o2::track::pid_constants::sNames[particle],
                                 ptMin.value, ptMax.value,
+                                yMin.value, yMax.value,
                                 phiMin.value, phiMax.value,
                                 selPrim.value);
     histos.add("eta/num", "Numerator " + tagEta, kTH1D, {axisEta});
+    histos.add("eta/numtof", "Numerator TOF " + tagEta, kTH1D, {axisEta});
     histos.add("eta/den", "Denominator " + tagEta, kTH1D, {axisEta});
 
-    const TString tagPhi = Form("%s #it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f] Prim %i",
+    const TString tagY = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
+                              o2::track::pid_constants::sNames[particle],
+                              ptMin.value, ptMax.value,
+                              etaMin.value, etaMax.value,
+                              phiMin.value, phiMax.value,
+                              selPrim.value);
+    histos.add("y/num", "Numerator " + tagY, kTH1D, {axisY});
+    histos.add("y/numtof", "Numerator TOF " + tagY, kTH1D, {axisY});
+    histos.add("y/den", "Denominator " + tagY, kTH1D, {axisY});
+
+    const TString tagPhi = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] Prim %i",
                                 o2::track::pid_constants::sNames[particle],
-                                etaMin.value, etaMax.value,
                                 ptMin.value, ptMax.value,
+                                etaMin.value, etaMax.value,
+                                yMin.value, yMax.value,
                                 selPrim.value);
     histos.add("phi/num", "Numerator " + tagPhi, kTH1D, {axisPhi});
+    histos.add("phi/numtof", "Numerator TOF " + tagPhi, kTH1D, {axisPhi});
     histos.add("phi/den", "Denominator " + tagPhi, kTH1D, {axisPhi});
 
-    const TString tagPtEta = Form("%s #it{#varphi} [%.2f,%.2f] Prim %i",
+    const TString tagPtEta = Form("%s #it{#varphi} [%.2f,%.2f] #it{y} [%.2f,%.2f] Prim %i",
                                   o2::track::pid_constants::sNames[particle],
                                   phiMin.value, phiMax.value,
+                                  yMin.value, yMax.value,
                                   selPrim.value);
     histos.add("pteta/num", "Numerator " + tagPtEta, kTH2D, {axisPt, axisEta});
     histos.add("pteta/den", "Denominator " + tagPtEta, kTH2D, {axisPt, axisEta});
@@ -186,8 +217,8 @@ struct QaTrackingEfficiency {
   }
 
   void process(const o2::aod::McParticles& mcParticles,
-               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels>& tracks,
+               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>& tracks,
                const o2::aod::McCollisions&)
   {
 
@@ -204,6 +235,10 @@ struct QaTrackingEfficiency {
         continue;
       }
       histos.fill(HIST("eventSelection"), 3);
+      if (!collision.sel8()) {
+        continue;
+      }
+      histos.fill(HIST("eventSelection"), 4);
       recoEvt[nevts++] = mcCollision.globalIndex();
     }
     recoEvt.resize(nevts);
@@ -228,10 +263,14 @@ struct QaTrackingEfficiency {
         return true;
       }
       histos.fill(h, 5);
-      if ((selPrim == 1) && (!MC::isPhysicalPrimary(p))) { // Requiring is physical primary
+      if ((p.y() < yMin || p.y() > yMax)) { // Check rapidity
         return true;
       }
       histos.fill(h, 6);
+      if ((selPrim == 1) && (!MC::isPhysicalPrimary(p))) { // Requiring is physical primary
+        return true;
+      }
+      histos.fill(h, 7);
 
       // Selecting PDG code
       switch ((int)pdgSign) {
@@ -254,7 +293,15 @@ struct QaTrackingEfficiency {
           LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
           break;
       }
-      histos.fill(h, 7);
+      histos.fill(h, 8);
+      // Select primaries based on position
+      const float dx = p.vx() - p.mcCollision().posX();
+      const float dy = p.vy() - p.mcCollision().posY();
+      const float dz = p.vz() - p.mcCollision().posZ();
+      if (sqrt(dx * dx + dy * dy + dz * dz) > 0.0001) {
+        return true;
+      }
+      histos.fill(h, 9);
 
       return false;
     };
@@ -278,13 +325,31 @@ struct QaTrackingEfficiency {
         }
       }
 
-      histos.fill(HIST("trackSelection"), 8);
+      histos.fill(HIST("trackSelection"), 10);
+      if (!track.isGlobalTrack()) { // Check general cuts
+        continue;
+      }
+      histos.fill(HIST("trackSelection"), 11);
+      if (!track.has_collision()) {
+        continue;
+      }
+      histos.fill(HIST("trackSelection"), 12);
       histos.fill(HIST("trackLength"), track.length());
       histos.fill(HIST("p/num"), mcParticle.p());
       histos.fill(HIST("pt/num"), mcParticle.pt());
       histos.fill(HIST("eta/num"), mcParticle.eta());
+      histos.fill(HIST("y/num"), mcParticle.y());
       histos.fill(HIST("phi/num"), mcParticle.phi());
       histos.fill(HIST("pteta/num"), mcParticle.pt(), mcParticle.eta());
+      if (!track.hasTOF()) {
+        continue;
+      }
+      histos.fill(HIST("trackSelection"), 13);
+      histos.fill(HIST("p/numtof"), mcParticle.p());
+      histos.fill(HIST("pt/numtof"), mcParticle.pt());
+      histos.fill(HIST("eta/numtof"), mcParticle.eta());
+      histos.fill(HIST("y/numtof"), mcParticle.y());
+      histos.fill(HIST("phi/numtof"), mcParticle.phi());
     }
 
     float dNdEta = 0;
@@ -299,6 +364,7 @@ struct QaTrackingEfficiency {
       histos.fill(HIST("p/den"), mcParticle.p());
       histos.fill(HIST("pt/den"), mcParticle.pt());
       histos.fill(HIST("eta/den"), mcParticle.eta());
+      histos.fill(HIST("y/den"), mcParticle.y());
       histos.fill(HIST("phi/den"), mcParticle.phi());
       histos.fill(HIST("pteta/den"), mcParticle.pt(), mcParticle.eta());
     }

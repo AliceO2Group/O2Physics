@@ -20,64 +20,50 @@ using namespace o2::framework;
 
 using Particles = aod::McParticles;
 
-//First approach to analysing an AO2D.root file
-//written thanks to https://aliceo2group.github.io/analysis-framework/docs/tutorials/analysistask.html
+//the task analyseMFTTracks loops over MFT tracks and generated particles and fills basic histograms
 
 struct analyseMFTTracks {
   int icoll = 0;
-
+  Service<TDatabasePDG> pdg;
   HistogramRegistry registry{
     "registry",
     {
-      {"TracksPhiEta_in_coll", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}},
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}},                                                           //
-      {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {35, -4.5, -1.}}}},                                                        //
-      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{35, -4.5, -1.}, {201, -20.1, 20.1}}}},                                                          //
-      {"NtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},                                                         //
-      {"NtrkEta", "; N_{trk}; #eta; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {35, -4.5, -1.}}}},                                                                //
-      {"Multiplicity", "alibi_nightlies/O2DPG_pp_minbias_testbeam.sh/15-11-2021-18:00 - tf13; collisionID; N_{trk}^{MFT}", {HistType::kTH1F, {{101, 0., 100.}}}, true} //
-    }                                                                                                                                                                  //
+      {"TracksPhiEta_in_coll", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{35, -4.5, -1.}, {201, -20.1, 20.1}}}},        //
+      {"NtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},       //
+      {"NtrkEta", "#eta; N_{trk}; events", {HistType::kTH1F, {{35, -4.5, -1.}}}},                                    //
+      {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {35, -4.5, -1.}}}},      //
+      {"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{35, -4.5, -1.}, {201, -20.1, 20.1}}}},     //
+      //{"NtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},            //
+      {"NtrkEtaGen", "#eta; N_{trk}; events", {HistType::kTH1F, {{35, -4.5, -1.}}}}, //
+    }                                                                                //
   };
 
-  void process(o2::aod::Collision const& collision, o2::aod::MFTTracks const& tracks)
+  void processRec(o2::aod::Collision const& collision, o2::aod::MFTTracks const& tracks)
   {
 
     auto z = collision.posZ();
     registry.fill(HIST("NtrkZvtx"), tracks.size(), z);
+    double zLastCls = 0;
 
     for (auto& track : tracks) {
       registry.fill(HIST("TracksPhiEta_in_coll"), track.phi(), track.eta());
       registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
-      registry.fill(HIST("Multiplicity"), icoll);
-      registry.fill(HIST("NtrkEta"), tracks.size(), track.eta());
+      registry.fill(HIST("NtrkEta"), track.eta());
     }
     icoll++;
   }
-  //end of process
+  //end of processRec
+  PROCESS_SWITCH(analyseMFTTracks, processRec, "Process rec level", true);
 
-  //aod::McCollisions
-};
-//end of MyTask
-
-struct analyseGenTracks {
-
-  HistogramRegistry registryGen{
-    "registryGen",
-    {
-      {"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {35, -4.5, -1.}}}},   //
-      {"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{35, -4.5, -1.}, {201, -20.1, 20.1}}}},  //
-      {"NtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
-      {"NtrkEtaGen", "; N_{trk}; #eta; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {35, -4.5, -1.}}}},        //
-    }                                                                                                             //
-  };
-
-  void process(aod::McCollisions::iterator const& mcCollision, Particles const& particles)
+  void processGen(aod::McCollisions::iterator const& mcCollision, Particles const& particles)
   {
+
     int nChargedPrimaryParticles = 0;
     auto z = mcCollision.posZ();
 
     for (auto& particle : particles) {
-      auto p = TDatabasePDG::Instance()->GetParticle(particle.pdgCode());
+      auto p = pdg->GetParticle(particle.pdgCode());
       int charge = 0;
       if (p == nullptr) {
         // unknown particles will be skipped
@@ -92,23 +78,25 @@ struct analyseGenTracks {
         charge = p->Charge();
       }
       if (charge != 0 && particle.isPhysicalPrimary()) {
-        registryGen.fill(HIST("TracksEtaZvtxGen"), particle.eta(), z);
-        registryGen.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+        registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), z);
+        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
 
-        registryGen.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+        registry.fill(HIST("NtrkEtaGen"), particle.eta());
         nChargedPrimaryParticles++;
       }
     }
 
-    registryGen.fill(HIST("NtrkZvtxGen"), nChargedPrimaryParticles, mcCollision.posZ());
+    registry.fill(HIST("NtrkZvtxGen"), nChargedPrimaryParticles, mcCollision.posZ());
   }
+
+  PROCESS_SWITCH(analyseMFTTracks, processGen, "Process gen level", true);
 };
-//end of the gen task
+//end of the task analyseMFTTracks
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<analyseMFTTracks>(cfgc),
-    adaptAnalysisTask<analyseGenTracks>(cfgc),
   };
 }

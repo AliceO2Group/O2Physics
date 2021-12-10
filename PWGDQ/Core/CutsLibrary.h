@@ -73,6 +73,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("highPtHadron")) {
+    cut->AddCut(GetAnalysisCut("highPtHadron"));
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalib")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -319,6 +324,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("jpsiStandardKine")) {
     cut->AddCut(VarManager::kPt, 1.0, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    return cut;
+  }
+
+  if (!nameStr.compare("highPtHadron")) {
+    cut->AddCut(VarManager::kPt, 4.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsTPCrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kITSchi2, 0.1, 36.0);
+    cut->AddCut(VarManager::kTPCncls, 70.0, 161.);
     return cut;
   }
 

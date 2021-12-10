@@ -21,25 +21,23 @@ class cutHolder
 {
  public:
   // constructor
-  cutHolder(bool isRun2 = false,
-            bool isMC = false,
+  cutHolder(int ndtcoll = 4,
             int MinNTracks = 0, int MaxNTracks = 10000,
             int MinNTracksWithTOFHit = 0,
-            int deltaBC = 7,
+            int MinNetCharge = 0, int MaxNetCharge = 0,
             float MinPosz = -1000., float MaxPosz = 1000.,
             float minPt = 0., float maxPt = 1000.,
             float minEta = -1.0, float maxEta = 1.0,
             float maxTOFChi2 = 10.,
-            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : misMC{isMC}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mdeltaBC{deltaBC}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
+            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : mNDtcoll{ndtcoll}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
   {
   }
 
   // setter
-  void SetisRun2(bool isRun2);
-  void SetisMC(bool isMC);
+  void SetNDtcoll(int);
   void SetNTracks(int MinNTracks, int MaxNTracks);
   void SetMinNTracksWithTOFHit(int MinNTracksWithTOFHit);
-  void SetDeltaBC(int deltaBC);
+  void SetNetCharge(int minNetCharge, int maxNetCharge);
   void SetPoszRange(float MinPosz, float MaxPosz);
   void SetPtRange(float minPt, float maxPt);
   void SetEtaRange(float minEta, float maxEta);
@@ -48,12 +46,12 @@ class cutHolder
   void SetMaxnSigmaTOF(float maxnSigma);
 
   // getter
-  bool isRun2() const;
-  bool isMC() const;
+  int NDtcoll() const;
   int minNTracks() const;
   int maxNTracks() const;
   int minNTracksWithTOFHit() const;
-  int deltaBC() const;
+  int minNetCharge() const;
+  int maxNetCharge() const;
   float minPosz() const;
   float maxPosz() const;
   float minPt() const;
@@ -65,10 +63,8 @@ class cutHolder
   float maxnSigmaTOF() const;
 
  private:
-  bool misRun2;
-
-  // data or MC
-  bool misMC;
+  // number of collision time resolutions to consider
+  int mNDtcoll;
 
   // number of tracks
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
@@ -76,8 +72,9 @@ class cutHolder
   // number of tracks with TOF hit
   int mMinNTracksWithTOFHit;
 
-  // BC range for past-future protection
-  int mdeltaBC;
+  // net charge of all tracks
+  int mMinNetCharge;
+  int mMaxNetCharge;
 
   // vertex z-position
   float mMinVertexPosz, mMaxVertexPosz; // Vertex z-position
