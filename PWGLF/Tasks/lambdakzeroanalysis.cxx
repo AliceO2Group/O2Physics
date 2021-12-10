@@ -64,8 +64,8 @@ struct lambdakzeroQA {
       {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f}}}},
       {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"hArmenteros", "hArmenteros", {HistType::kTH2F, {{1000, -1.0f, 1.0f},{1000, 0.0f, 0.30f}}}},
-      
+      {"hArmenteros", "hArmenteros", {HistType::kTH2F, {{1000, -1.0f, 1.0f}, {1000, 0.0f, 0.30f}}}},
+
     },
   };
   void init(InitContext const&)
@@ -132,6 +132,7 @@ struct lambdakzeroanalysis {
   Configurable<int> saveDcaHist{"saveDcaHist", 0, "saveDcaHist"};
   Configurable<int> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
+  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
@@ -153,8 +154,8 @@ struct lambdakzeroanalysis {
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaStorePr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              if ((v0.qtarm() < 0.2*v0.alpha()) || !boolArmenterosCut ) { //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
-                registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda()); //collision.centV0M() instead of 0. once available
+              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {                     //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
+                registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());               //collision.centV0M() instead of 0. once available
                 registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
                 if (saveDcaHist == 1) {
                   registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
@@ -166,7 +167,7 @@ struct lambdakzeroanalysis {
         }
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
-            if ((v0.qtarm() > 0.2*v0.alpha()) || !boolArmenterosCut ) {
+            if ((v0.qtarm() > paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {
               registry.fill(HIST("h3dMassK0Short"), 0., v0.pt(), v0.mK0Short());
               if (saveDcaHist == 1) {
                 registry.fill(HIST("h3dMassK0ShortDca"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
@@ -195,7 +196,7 @@ struct lambdakzeroanalysis {
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaStorePr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              if ((v0.qtarm() < 0.2*v0.alpha()) || !boolArmenterosCut ) { //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
+              if ((v0.qtarm() < paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {                     //p82 CERN-THESIS-2014-103 Lambda K0s analysis pp
                 registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
                 registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
                 if (saveDcaHist == 1) {
@@ -208,7 +209,7 @@ struct lambdakzeroanalysis {
         }
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
-            if ((v0.qtarm() > 0.2*v0.alpha()) || !boolArmenterosCut ) {
+            if ((v0.qtarm() > paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {
               registry.fill(HIST("h3dMassK0Short"), collision.centV0M(), v0.pt(), v0.mK0Short());
               if (saveDcaHist == 1) {
                 registry.fill(HIST("h3dMassK0ShortDca"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
@@ -220,7 +221,6 @@ struct lambdakzeroanalysis {
     }
   }
   PROCESS_SWITCH(lambdakzeroanalysis, processRun2, "Process Run 2 data", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -95,7 +95,6 @@ struct lambdakzeroQA {
       registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
       registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
 
-
       auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
       auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
       auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
@@ -106,7 +105,6 @@ struct lambdakzeroQA {
         float v0mass = RecoDecay::M(array{array{mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz()}, array{mcpostrack.px(), mcpostrack.py(), mcpostrack.pz()}}, array{RecoDecay::getMassPDG(mcnegtrack.pdgCode()), RecoDecay::getMassPDG(mcpostrack.pdgCode())});
         registry.fill(HIST("hMassV0MCmass"), v0mass);
       }
-
     }
   }
 };
@@ -185,10 +183,10 @@ struct lambdakzeroanalysisMC {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("V0loopFiltersCounts"), 0.5);
-      registry.fill(HIST("hMassK0ShortCut0"),v0.mK0Short());
+      registry.fill(HIST("hMassK0ShortCut0"), v0.mK0Short());
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
-        registry.fill(HIST("hMassK0ShortCut1"),v0.mK0Short());
+        registry.fill(HIST("hMassK0ShortCut1"), v0.mK0Short());
 
         auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
         auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
@@ -318,7 +316,6 @@ struct lambdakzeroanalysisMC {
     }
   }
   PROCESS_SWITCH(lambdakzeroanalysisMC, processRun2, "Process Run 2 data", false);
-
 };
 
 struct lambdakzeroParticleCountMC {

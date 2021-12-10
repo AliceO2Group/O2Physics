@@ -54,54 +54,64 @@ using std::array;
 
 struct cascadeQA {
   //Basic checks
-  OutputObj<TH1F> hMassXiMinus{TH1F("hMassXiMinus", "", 3000, 0.0, 3.0)};
-  OutputObj<TH1F> hMassXiPlus{TH1F("hMassXiPlus", "", 3000, 0.0, 3.0)};
-  OutputObj<TH1F> hMassOmegaMinus{TH1F("hMassOmegaMinus", "", 3000, 0.0, 3.0)};
-  OutputObj<TH1F> hMassOmegaPlus{TH1F("hMassOmegaPlus", "", 3000, 0.0, 3.0)};
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
+      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
+      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
+      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH1F, {{3000, 0.0f, 3.0f}}}},
 
-  OutputObj<TH1F> hV0Radius{TH1F("hV0Radius", "", 1000, 0.0, 100)};
-  OutputObj<TH1F> hCascRadius{TH1F("hCascRadius", "", 1000, 0.0, 100)};
-  OutputObj<TH1F> hV0CosPA{TH1F("hV0CosPA", "", 1000, 0.95, 1.0)};
-  OutputObj<TH1F> hCascCosPA{TH1F("hCascCosPA", "", 1000, 0.95, 1.0)};
-  OutputObj<TH1F> hDCAPosToPV{TH1F("hDCAPosToPV", "", 1000, 0.0, 10.0)};
-  OutputObj<TH1F> hDCANegToPV{TH1F("hDCANegToPV", "", 1000, 0.0, 10.0)};
-  OutputObj<TH1F> hDCABachToPV{TH1F("hDCABachToPV", "", 1000, 0.0, 10.0)};
-  OutputObj<TH1F> hDCAV0ToPV{TH1F("hDCAV0ToPV", "", 1000, 0.0, 10.0)};
-  OutputObj<TH1F> hDCAV0Dau{TH1F("hDCAV0Dau", "", 1000, 0.0, 10.0)};
-  OutputObj<TH1F> hDCACascDau{TH1F("hDCACascDau", "", 1000, 0.0, 10.0)};
-  OutputObj<TH1F> hLambdaMass{TH1F("hLambdaMass", "", 1000, 0.0, 10.0)};
+      {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
+      {"hCascRadius", "hCascRadius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
+      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
+      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
+      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+      {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+    },
+  };
 
   void process(aod::Collision const& collision, aod::CascDataExt const& Cascades)
   {
     for (auto& casc : Cascades) {
       if (casc.sign() < 0) { //FIXME: could be done better...
-        hMassXiMinus->Fill(casc.mXi());
-        hMassOmegaMinus->Fill(casc.mOmega());
+        registry.fill(HIST("hMassXiMinus"), casc.mXi());
+        registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
       } else {
-        hMassXiPlus->Fill(casc.mXi());
-        hMassOmegaPlus->Fill(casc.mOmega());
+        registry.fill(HIST("hMassXiPlus"), casc.mXi());
+        registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
       }
       //The basic eleven!
-      hV0Radius->Fill(casc.v0radius());
-      hCascRadius->Fill(casc.cascradius());
-      hV0CosPA->Fill(casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-      hCascCosPA->Fill(casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
-      hDCAPosToPV->Fill(casc.dcapostopv());
-      hDCANegToPV->Fill(casc.dcanegtopv());
-      hDCABachToPV->Fill(casc.dcabachtopv());
-      hDCAV0ToPV->Fill(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
-      hDCAV0Dau->Fill(casc.dcaV0daughters());
-      hDCACascDau->Fill(casc.dcacascdaughters());
-      hLambdaMass->Fill(casc.mLambda());
+      registry.fill(HIST("hV0Radius"), casc.v0radius());
+      registry.fill(HIST("hCascRadius"), casc.cascradius());
+      registry.fill(HIST("hV0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("hDCAPosToPV"), casc.dcapostopv());
+      registry.fill(HIST("hDCANegToPV"), casc.dcanegtopv());
+      registry.fill(HIST("hDCABachToPV"), casc.dcabachtopv());
+      registry.fill(HIST("hDCAV0ToPV"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("hDCAV0Dau"), casc.dcaV0daughters());
+      registry.fill(HIST("hDCACascDau"), casc.dcacascdaughters());
+      registry.fill(HIST("hLambdaMass"), casc.mLambda());
     }
   }
 };
 
 struct cascadeanalysis {
-  OutputObj<TH3F> h3dMassXiMinus{TH3F("h3dMassXiMinus", "", 20, 0, 100, 200, 0, 10, 200, 1.322 - 0.100, 1.322 + 0.100)};
-  OutputObj<TH3F> h3dMassXiPlus{TH3F("h3dMassXiPlus", "", 20, 0, 100, 200, 0, 10, 200, 1.322 - 0.100, 1.322 + 0.100)};
-  OutputObj<TH3F> h3dMassOmegaMinus{TH3F("h3dMassOmegaMinus", "", 20, 0, 100, 200, 0, 10, 200, 1.672 - 0.100, 1.672 + 0.100)};
-  OutputObj<TH3F> h3dMassOmegaPlus{TH3F("h3dMassOmegaPlus", "", 20, 0, 100, 200, 0, 10, 200, 1.672 - 0.100, 1.672 + 0.100)};
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.222f, 1.422f}}}},
+      {"h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.222f, 1.422f}}}},
+      {"h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.572f, 1.772f}}}},
+      {"h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.572f, 1.772f}}}},
+    },
+  };
 
   //Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.999, "V0 CosPA"};       //double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -118,9 +128,7 @@ struct cascadeanalysis {
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   Filter preFilterV0 =
-    nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&&
-                                                                           nabs(aod::cascdata::dcabachtopv) > dcabachtopv&&
-                                                                                                          aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
+    nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
   // void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
@@ -137,17 +145,17 @@ struct cascadeanalysis {
           casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
         if (casc.sign() < 0) { //FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            h3dMassXiMinus->Fill(0., casc.pt(), casc.mXi());
+            registry.fill(HIST("h3dMassXiMinus"), 0., casc.pt(), casc.mXi());
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            h3dMassOmegaMinus->Fill(0, casc.pt(), casc.mOmega());
+            registry.fill(HIST("h3dMassOmegaMinus"), 0., casc.pt(), casc.mOmega());
           }
         } else {
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            h3dMassXiPlus->Fill(0., casc.pt(), casc.mXi());
+            registry.fill(HIST("h3dMassXiPlus"), 0., casc.pt(), casc.mXi());
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            h3dMassOmegaPlus->Fill(0., casc.pt(), casc.mOmega());
+            registry.fill(HIST("h3dMassOmegaPlus"), 0., casc.pt(), casc.mOmega());
           }
         }
       }
@@ -172,24 +180,23 @@ struct cascadeanalysis {
           casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
         if (casc.sign() < 0) { //FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            h3dMassXiMinus->Fill(collision.centV0M(), casc.pt(), casc.mXi());
+            registry.fill(HIST("h3dMassXiMinus"), collision.centV0M(), casc.pt(), casc.mXi());
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            h3dMassOmegaMinus->Fill(collision.centV0M(), casc.pt(), casc.mOmega());
+            registry.fill(HIST("h3dMassOmegaMinus"), collision.centV0M(), casc.pt(), casc.mOmega());
           }
         } else {
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            h3dMassXiPlus->Fill(collision.centV0M(), casc.pt(), casc.mXi());
+            registry.fill(HIST("h3dMassXiPlus"), collision.centV0M(), casc.pt(), casc.mXi());
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            h3dMassOmegaPlus->Fill(collision.centV0M(), casc.pt(), casc.mOmega());
+            registry.fill(HIST("h3dMassOmegaPlus"), collision.centV0M(), casc.pt(), casc.mOmega());
           }
         }
       }
     }
   }
   PROCESS_SWITCH(cascadeanalysis, processRun2, "Process Run 2 data", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
