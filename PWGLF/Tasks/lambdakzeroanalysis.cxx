@@ -130,7 +130,7 @@ struct lambdakzeroAnalysis {
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
   Configurable<int> saveDcaHist{"saveDcaHist", 0, "saveDcaHist"};
-  Configurable<int> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
