@@ -171,7 +171,7 @@ struct BcSelectionTask {
       float multV0C = 0;
       if (bc.has_fv0a()) {
         for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
-          int ring = bc.fv0a().channel()[i] % 8;
+          int ring = bc.fv0a().channel()[i] / 8;
           multRingV0A[ring] += bc.fv0a().amplitude()[i];
           multV0A += bc.fv0a().amplitude()[i];
         }
@@ -179,7 +179,7 @@ struct BcSelectionTask {
 
       if (bc.has_fv0c()) {
         for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
-          int ring = bc.fv0c().channel()[i] % 8;
+          int ring = bc.fv0c().channel()[i] / 8;
           multRingV0C[ring] += bc.fv0c().amplitude()[i];
           multV0C += bc.fv0c().amplitude()[i];
         }
@@ -266,7 +266,7 @@ struct BcSelectionTask {
       float multRingV0C[4] = {0.};
       if (bc.has_fv0a()) {
         for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
-          int ring = bc.fv0a().channel()[i] % 8;
+          int ring = bc.fv0a().channel()[i] / 8;
           if (ring == 5) {
             ring = 4; // Outermost ring has 16 channels
           }
