@@ -42,15 +42,13 @@ struct MultiplicityTableTaskIndexed {
     int multTPC = tracksWithTPC.size();
 
     if (collision.has_fv0a()) {
-      auto v0a = collision.fv0a();
-      for (int i = 0; i < 48; i++) {
-        multV0A += v0a.amplitude()[i];
+      for (auto amplitude : collision.fv0a().amplitude()) {
+        multV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
-      auto v0c = collision.fv0c();
-      for (int i = 0; i < 32; i++) {
-        multV0C += v0c.amplitude()[i];
+      for (auto amplitude : collision.fv0c().amplitude()) {
+        multV0C += amplitude;
       }
     }
     if (collision.has_ft0()) {

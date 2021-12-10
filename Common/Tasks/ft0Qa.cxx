@@ -57,8 +57,8 @@ struct FT0Qa {
           for (auto amplitude : ft0.amplitudeA()) {
             sumAmpFT0 += amplitude;
           }
-          for (int ich = 0; ich < 48; ich++) {
-            sumAmpFV0 += fv0.amplitude()[ich];
+          for (auto amplitude : fv0.amplitude()) {
+            sumAmpFV0 += amplitude;
           }
           hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
         }
