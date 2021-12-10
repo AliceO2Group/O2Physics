@@ -44,7 +44,6 @@ namespace analysis
 {
 namespace trackextension
 {
-constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
 const char* ccdbpath_geo = "GLO/Config/Geometry";
 const char* ccdbpath_grp = "GLO/GRP/GRP";
@@ -57,6 +56,7 @@ struct TrackExtension {
   Produces<aod::TracksExtended> extendedTrackQuantities;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  o2::base::MatLayerCylSet* lut;
   int mRunNumber;
   float mMagField;
 
@@ -68,15 +68,10 @@ struct TrackExtension {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(ccdbpath_geo);
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, analysis::trackextension::run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
     mRunNumber = 0;
     mMagField = 0.0;
@@ -86,24 +81,20 @@ struct TrackExtension {
   {
     using namespace analysis::trackextension;
 
-    int lastCollId = -1;
     for (auto& track : tracks) {
       std::array<float, 2> dca{1e10f, 1e10f};
       if (track.has_collision()) {
         if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Track && track.itsChi2NCl() != 0.f && track.tpcChi2NCl() != 0.f && std::abs(track.x()) < 10.f) {
-          if (lastCollId != track.collisionId()) {
-            auto bc = track.collision_as<aod::Collisions>().bc_as<aod::BCsWithTimestamps>();
-            if (mRunNumber != bc.runNumber()) {
-              o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
-              if (grpo != nullptr) {
-                mMagField = grpo->getNominalL3Field();
-                LOGF(info, "Setting magnetic field to %f kG for run %d", mMagField, bc.runNumber());
-              } else {
-                LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-              }
-              mRunNumber = bc.runNumber();
+          auto bc = track.collision_as<aod::Collisions>().bc_as<aod::BCsWithTimestamps>();
+          if (mRunNumber != bc.runNumber()) {
+            o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+            if (grpo != nullptr) {
+              mMagField = grpo->getNominalL3Field();
+              LOGF(info, "Setting magnetic field to %f kG for run %d", mMagField, bc.runNumber());
+            } else {
+              LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
             }
-            lastCollId = track.collisionId();
+            mRunNumber = bc.runNumber();
           }
           auto trackPar = getTrackPar(track);
           auto const& collision = track.collision();
@@ -111,14 +102,11 @@ struct TrackExtension {
         }
       }
       extendedTrackQuantities(dca[0], dca[1]);
-
-      // TODO: add realtive pt resolution sigma(pt)/pt \approx pt * sigma(1/pt)
-      // TODO: add geometrical length / fiducial volume
     }
   }
   PROCESS_SWITCH(TrackExtension, processRun2, "Process Run2 track extension task", true);
 
-  void processRun3(aod::FullTracks const& tracks, aod::Collisions const&)
+  void processRun3(aod::Tracks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
     using namespace analysis::trackextension;
 
@@ -135,6 +123,18 @@ struct TrackExtension {
       std::array<float, 2> dca{1e10f, 1e10f};
       if (track.has_collision()) {
         if (track.trackType() == o2::aod::track::TrackTypeEnum::Track) {
+          auto bc = track.collision_as<aod::Collisions>().bc_as<aod::BCsWithTimestamps>();
+          if (mRunNumber != bc.runNumber()) {
+            auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+            if (grpo != nullptr) {
+              o2::base::Propagator::initFieldFromGRP(grpo);
+              o2::base::Propagator::Instance()->setMatLUT(lut);
+              LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+            } else {
+              LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+            }
+            mRunNumber = bc.runNumber();
+          }
           auto trackPar = getTrackPar(track);
           auto const& collision = track.collision();
           gpu::gpustd::array<float, 2> dcaInfo;
@@ -145,9 +145,6 @@ struct TrackExtension {
         }
       }
       extendedTrackQuantities(dca[0], dca[1]);
-
-      // TODO: add realtive pt resolution sigma(pt)/pt \approx pt * sigma(1/pt)
-      // TODO: add geometrical length / fiducial volume
     }
   }
   PROCESS_SWITCH(TrackExtension, processRun3, "Process Run3 track extension task", false);

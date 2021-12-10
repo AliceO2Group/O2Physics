@@ -84,7 +84,7 @@ struct HFCandidateCreator3Prong {
       }
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
-      auto covMatrixPCA = df.calcPCACovMatrix().Array();
+      auto covMatrixPCA = df.calcPCACovMatrixFlat();
       hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       trackParVar0 = df.getTrack(0);
       trackParVar1 = df.getTrack(1);

@@ -58,7 +58,7 @@ struct TaskD0ALICE3ForwardMC {
       }
 
       auto massD0 = InvMassD0(candidate);
-      auto massD0bar = InvMassD0bar(candidate);
+      //auto massD0bar = InvMassD0bar(candidate);
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(YD0(candidate));
 

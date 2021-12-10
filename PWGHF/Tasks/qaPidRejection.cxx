@@ -377,9 +377,9 @@ struct QaRejectionGeneral {
       }
 
       bool isRICHhpElectron = !(selectorElectron.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
-      bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
+      //bool isRICHhpPion = !(selectorPion.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
+      //bool isRICHhpKaon = !(selectorKaon.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
+      //bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
       bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Status::PIDAccepted);
 
       bool isRICHElLoose = isRICHhpElectron;

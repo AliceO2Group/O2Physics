@@ -63,9 +63,9 @@ struct TaskD0parametrizedPIDMC {
   {
     //float ncontributor = collision.numContrib();
     for (auto& candidate : candidates) {
-      /*if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
-	continue;
-	}*/
+      //if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
+      //  continue;
+      //}
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {
         continue;
       }
@@ -74,7 +74,7 @@ struct TaskD0parametrizedPIDMC {
       }
 
       auto massD0 = InvMassD0(candidate);
-      auto massD0bar = InvMassD0bar(candidate);
+      //auto massD0bar = InvMassD0bar(candidate);
       auto ptCandidate = candidate.pt();
       auto rapidityCandidate = std::abs(YD0(candidate));
 
@@ -110,9 +110,9 @@ struct TaskD0parametrizedPIDMC {
     }
 
     for (auto& particle : particlesMC) {
-      /*if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
-	continue;
-      }*/
+      //if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
+      //  continue;
+      //}
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;

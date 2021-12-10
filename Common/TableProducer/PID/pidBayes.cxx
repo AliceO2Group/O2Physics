@@ -150,8 +150,7 @@ struct bayesPid {
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec device : workflows.devices) {
       for (auto input : device.inputs) {
-        auto enableFlag = [&input, this](const PID::ID& id,
-                                         Configurable<int>& flag) {
+        auto enableFlag = [&input](const PID::ID& id, Configurable<int>& flag) {
           const std::string particles[PID::NIDs] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
           const std::string particle = particles[id];
           const std::string table = "pidBayes" + particle;
@@ -313,7 +312,7 @@ struct bayesPid {
     }
     constexpr respTOF<pid> responseTOFPID;
 
-    const float pt = track.pt();
+    // const float pt = track.pt();
     float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
     // In the O2 this cannot be done because the cluster information is missing in the AOD
     // if (!fNoTOFmism) {                                                                  // this flag allows to disable mismatch for iterative procedure to get prior probabilities
@@ -416,7 +415,7 @@ struct bayesPid {
     }
     if (sum <= 0) {
       LOG(warning) << "Invalid probability densities or prior probabilities";
-      for (int i = 0; i < Probability[kBayesian].size(); i++) {
+      for (long unsigned int i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
       return;
