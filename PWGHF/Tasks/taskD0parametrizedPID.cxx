@@ -41,12 +41,12 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct TaskD0parametrizedPIDMC {
   HistogramRegistry registry{
     "registry",
-    {{"hMassGen", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
-     {"hGenFixCMSYNoEta", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
-     {"hGenPtDepYNoEta", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
-     {"hGenFixCMSYCMSEta", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
-     {"hGenPtDepYALICE2Eta", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
-     {"hGenPtDepYCMSEta", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
+    {{"hGenPtVsY", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},
+     {"hGenPtCMSYCutNoDaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
+     {"hGenPtFiducialYCutNoDaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
+     {"hGenPtCMSYCutCMSDaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
+     {"hGenPtFiducialYCutALICE2DaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
+     {"hGenPtFiducialYCutCMSDaughterEtaCut", "2-prong candidates (generated); #it{p}_{T}", {HistType::kTH1F, {{150, 0., 30.}}}},
      {"hMassSigBkgD0NoPID", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0, 4.0}}}},
      {"hMassSigD0NoPID", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
      {"hMassBkgD0NoPID", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {8, 0., 4.}}}},
@@ -118,41 +118,40 @@ struct TaskD0parametrizedPIDMC {
       //if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //  continue;
       //}
-      Double_t maxFiducialY = 0.8;
-      Double_t minFiducialY = -0.8;
+      Float_t maxFiducialY = 0.8;
+      Float_t minFiducialY = -0.8;
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
-        registry.fill(HIST("hMassGen"), ptGen, std::abs(yGen));
+        registry.fill(HIST("hGenPtVsY"), ptGen, std::abs(yGen));
         if (ptGen < 5.0) {
           maxFiducialY = -0.2 / 15 * ptGen * ptGen + 1.9 / 15 * ptGen + 0.5;
           minFiducialY = 0.2 / 15 * ptGen * ptGen - 1.9 / 15 * ptGen - 0.5;
         }
         float etaProngs[2];
-        for (int iD = particle.daughter0Id(), counter = 0; iD <= particle.daughter1Id(); ++iD, counter++) {
-          auto daught = particlesMC.iteratorAt(iD);
-          etaProngs[counter] = std::abs(daught.eta());
-        }
-
+        auto daught0 = particlesMC.iteratorAt(particle.daughter0Id());
+        auto daught1 = particlesMC.iteratorAt(particle.daughter1Id());
+        etaProngs[0] = std::abs(daught0.eta());
+        etaProngs[1] = std::abs(daught1.eta());
         if (std::abs(yGen) < 2.5) {
-          registry.fill(HIST("hGenFixCMSYNoEta"), ptGen);
+          registry.fill(HIST("hGenPtCMSYCutNoDaughterEtaCut"), ptGen);
         }
 
         if (yGen > minFiducialY && yGen < maxFiducialY) {
-          registry.fill(HIST("hGenPtDepYNoEta"), ptGen);
+          registry.fill(HIST("hGenPtFiducialYCutNoDaughterEtaCut"), ptGen);
         }
 
         if (etaProngs[0] < 2.5 && etaProngs[1] < 2.5) {
           if (std::abs(yGen) < 2.5) {
-            registry.fill(HIST("hGenFixCMSYCMSEta"), ptGen);
+            registry.fill(HIST("hGenPtCMSYCutCMSDaughterEtaCut"), ptGen);
           }
           if (yGen > minFiducialY && yGen < maxFiducialY) {
-            registry.fill(HIST("hGenPtDepYCMSEta"), ptGen);
+            registry.fill(HIST("hGenPtFiducialYCutCMSDaughterEtaCut"), ptGen);
             if (etaProngs[0] < 0.8 && etaProngs[1] < 0.8) {
-              registry.fill(HIST("hGenPtDepYALICE2Eta"), ptGen);
+              registry.fill(HIST("hGenPtFiducialYCutALICE2DaughterEtaCut"), ptGen);
             }
           }
         }
