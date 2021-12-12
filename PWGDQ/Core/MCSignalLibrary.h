@@ -85,31 +85,32 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng prong(2, {443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Prompt jpsi (not from beauty)", {prong}, {-1});
     return signal;
-    if (!nameStr.compare("eFromNonpromptPsi2S")) {
-      MCProng prong(3, {11, 100443, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-      signal = new MCSignal(name, "Electrons from beauty psi2s decays", {prong}, {-1});
-      return signal;
-    }
-    if (!nameStr.compare("eFromPromptPsi2S")) {
-      MCProng prong(3, {11, 100443, 503}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-      signal = new MCSignal(name, "Electrons from prompt psi2s decays", {prong}, {-1});
-      return signal;
-    }
-    if (!nameStr.compare("Psi2S")) {
-      MCProng prong(1, {100443}, {true}, {false}, {0}, {0}, {false});
-      signal = new MCSignal(name, "Inclusive psi2s", {prong}, {-1});
-      return signal;
-    }
-    if (!nameStr.compare("nonPromptPsi2S")) {
-      MCProng prong(2, {100443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-      signal = new MCSignal(name, "Non-prompt psi2s", {prong}, {-1});
-      return signal;
-    }
-    if (!nameStr.compare("promptPsi2S")) {
-      MCProng prong(2, {100443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false});
-      signal = new MCSignal(name, "Prompt psi2s (not from beauty)", {prong}, {-1});
-      return signal;
-    }
+  }
+  if (!nameStr.compare("eFromNonpromptPsi2S")) {
+    MCProng prong(3, {11, 100443, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from beauty psi2s decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromPromptPsi2S")) {
+    MCProng prong(3, {11, 100443, 503}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from prompt psi2s decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Psi2S")) {
+    MCProng prong(1, {100443}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive psi2s", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("nonPromptPsi2S")) {
+    MCProng prong(2, {100443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Non-prompt psi2s", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("promptPsi2S")) {
+    MCProng prong(2, {100443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Prompt psi2s (not from beauty)", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("anyBeautyHadron")) {
     MCProng prong(1, {503}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
