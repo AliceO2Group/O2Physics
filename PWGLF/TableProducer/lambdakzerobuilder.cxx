@@ -44,7 +44,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "DetectorsCommonDataFormats/NameConf.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
 
