@@ -9,7 +9,7 @@
 #granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(run2 - dndeta
+o2physics_add_dpl_workflow(run2-dndeta
                                     SOURCES run2dndeta.cxx dndeta.h
                                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                                         COMPONENT_NAME Analysis)
@@ -19,9 +19,12 @@ o2physics_add_dpl_workflow(run2 - dndeta
                                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                                    COMPONENT_NAME Analysis)
 
-    o2physics_add_dpl_workflow(analyse - mft - tracks SOURCES analyse - mft - tracks.cxx PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(analyse-mft-tracks
+    SOURCES analyse-mft-tracks.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
-      o2physics_add_dpl_workflow(ue - charged
+      o2physics_add_dpl_workflow(ue-charged
                                         SOURCES uecharged.cxx
                                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                                             COMPONENT_NAME Analysis)
