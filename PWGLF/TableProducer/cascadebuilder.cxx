@@ -62,13 +62,13 @@ using std::array;
 
 using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended>;
 
-struct cascadedoindexing {
+struct cascadeDoIndexing {
   Builds<aod::MatchedV0Cascades> var;
   void init(InitContext const&) {}
 };
 
 /// Cascade builder task: rebuilds cascades
-struct cascadebuilder {
+struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
 
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
@@ -263,7 +263,7 @@ struct cascadebuilder {
 };
 
 /// Extends the cascdata table with expression columns
-struct cascadeinitializer {
+struct cascadeInitializer {
   Spawns<aod::CascDataExt> cascdataext;
   void init(InitContext const&) {}
 };
@@ -271,7 +271,7 @@ struct cascadeinitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadedoindexing>(cfgc, TaskName{"lf-cascadedoindexing"}),
-    adaptAnalysisTask<cascadebuilder>(cfgc, TaskName{"lf-cascadebuilder"}),
-    adaptAnalysisTask<cascadeinitializer>(cfgc, TaskName{"lf-cascadeinitializer"})};
+    adaptAnalysisTask<cascadeDoIndexing>(cfgc),
+    adaptAnalysisTask<cascadeBuilder>(cfgc),
+    adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }

@@ -92,7 +92,7 @@ using MyTracks = FullTracksExt;
 // This prefilter creates a skimmed list of good V0s to re-reconstruct so that
 // CPU is saved in case there are specific selections that are to be done
 // Note: more configurables, more options to be added as needed
-struct lambdakzeroprefilterpairs {
+struct lambdakzeroPrefilterPairs {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
@@ -169,7 +169,7 @@ struct lambdakzeroprefilterpairs {
 };
 
 /// Cascade builder task: rebuilds cascades
-struct lambdakzerobuilder {
+struct lambdakzeroBuilder {
 
   Produces<aod::StoredV0Datas> v0data;
 
@@ -291,7 +291,7 @@ struct lambdakzerobuilder {
 };
 
 /// Extends the v0data table with expression columns
-struct lambdakzeroinitializer {
+struct lambdakzeroInitializer {
   Spawns<aod::V0Datas> v0datas;
   void init(InitContext const&) {}
 };
@@ -299,7 +299,7 @@ struct lambdakzeroinitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroprefilterpairs>(cfgc, TaskName{"lf-lambdakzeroprefilterpairs"}),
-    adaptAnalysisTask<lambdakzerobuilder>(cfgc, TaskName{"lf-lambdakzerobuilder"}),
-    adaptAnalysisTask<lambdakzeroinitializer>(cfgc, TaskName{"lf-lambdakzeroinitializer"})};
+    adaptAnalysisTask<lambdakzeroPrefilterPairs>(cfgc),
+    adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
+    adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }
