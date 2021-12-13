@@ -62,7 +62,7 @@ struct TaskD0parametrizedPIDMC {
   //Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0_parametrizedPID::isSelD0NoPID >= 1 || aod::hf_selcandidate_d0_parametrizedPID::isSelD0barNoPID >= 1);
-
+  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
@@ -118,8 +118,8 @@ struct TaskD0parametrizedPIDMC {
       //if (ncontributor<=centralitySelectionMin && ncontributor>centralitySelectionMax) {
       //  continue;
       //}
-      Float_t maxFiducialY = 0.8;
-      Float_t minFiducialY = -0.8;
+      float maxFiducialY = 0.8;
+      float minFiducialY = -0.8;
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::D0ToPiK) {
         if (std::abs(RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()))) > 4.0) {
           continue;
@@ -131,11 +131,13 @@ struct TaskD0parametrizedPIDMC {
           maxFiducialY = -0.2 / 15 * ptGen * ptGen + 1.9 / 15 * ptGen + 0.5;
           minFiducialY = 0.2 / 15 * ptGen * ptGen - 1.9 / 15 * ptGen - 0.5;
         }
-        float etaProngs[2];
+        /*float etaProngs[2];
         auto daught0 = particlesMC.iteratorAt(particle.daughter0Id());
         auto daught1 = particlesMC.iteratorAt(particle.daughter1Id());
         etaProngs[0] = std::abs(daught0.eta());
-        etaProngs[1] = std::abs(daught1.eta());
+        etaProngs[1] = std::abs(daught1.eta());*/
+        auto etaProng0 = std::abs(particle.daughter0_as<McParticlesHf>().eta());
+        auto etaProng1 = std::abs(particle.daughter1_as<McParticlesHf>().eta());
         if (std::abs(yGen) < 2.5) {
           registry.fill(HIST("hGenPtCMSYCutNoDaughterEtaCut"), ptGen);
         }
@@ -144,13 +146,15 @@ struct TaskD0parametrizedPIDMC {
           registry.fill(HIST("hGenPtFiducialYCutNoDaughterEtaCut"), ptGen);
         }
 
-        if (etaProngs[0] < 2.5 && etaProngs[1] < 2.5) {
+        // if (etaProngs[0] < 2.5 && etaProngs[1] < 2.5) {
+        if (etaProng0 < 2.5 && etaProng1 < 2.5) {
           if (std::abs(yGen) < 2.5) {
             registry.fill(HIST("hGenPtCMSYCutCMSDaughterEtaCut"), ptGen);
           }
           if (yGen > minFiducialY && yGen < maxFiducialY) {
             registry.fill(HIST("hGenPtFiducialYCutCMSDaughterEtaCut"), ptGen);
-            if (etaProngs[0] < 0.8 && etaProngs[1] < 0.8) {
+            // if (etaProngs[0] < 0.8 && etaProngs[1] < 0.8) {
+            if (etaProng0 < 0.8 && etaProng1 < 0.8) {
               registry.fill(HIST("hGenPtFiducialYCutALICE2DaughterEtaCut"), ptGen);
             }
           }
