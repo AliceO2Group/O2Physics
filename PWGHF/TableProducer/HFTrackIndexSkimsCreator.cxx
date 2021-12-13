@@ -433,7 +433,7 @@ struct HfTagSelTracks {
           if (!(track.tpcNClsFound() >= tpcNClsFound.value && // is this the number of TPC clusters? It should not be used
                 track.flags() & o2::aod::track::ITSrefit &&
                 (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
-            hasGoodQuality = 0;
+            hasGoodQuality = false;
           }
         }
         if (!hasGoodQuality) {
