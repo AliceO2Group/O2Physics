@@ -42,6 +42,10 @@
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -172,13 +176,12 @@ struct lambdakzeroPrefilterPairs {
 struct lambdakzeroBuilder {
 
   Produces<aod::StoredV0Datas> v0data;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-    },
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
   };
 
   // Configurables
@@ -189,6 +192,7 @@ struct lambdakzeroBuilder {
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -196,9 +200,27 @@ struct lambdakzeroBuilder {
   Configurable<std::vector<int>> v_labelK0Sneg{"v_labelK0Sneg", {730, 2867, 4755}, "labels of K0S positive daughters, for debug"};
 #endif
 
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
+  void init(InitContext& context)
+  {
+    //using namespace analysis::lambdakzerobuilder;
+
+    ccdb->setURL("https://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>("GLO/Config/Geometry");
+      /* it seems this is needed at this level for the material LUT to work properly */
+      /* but what happens if the run changes while doing the processing?             */
+      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
+
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+  }
 
   void process(aod::Collision const& collision, aod::V0GoodIndices const& V0s, MyTracks const& tracks
 #ifdef MY_DEBUG
@@ -237,18 +259,44 @@ struct lambdakzeroBuilder {
 
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
-      int nCand = fitter.process(pTrack, nTrack);
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "fitter: nCand = " << nCand << " for posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-      if (nCand != 0) {
-        fitter.propagateTracksToVertex();
-        const auto& vtx = fitter.getPCACandidate();
-        for (int i = 0; i < 3; i++) {
-          pos[i] = vtx[i];
-        }
-        fitter.getTrack(0).getPxPyPzGlo(pvec0);
-        fitter.getTrack(1).getPxPyPzGlo(pvec1);
-      } else {
+
+      //Act on copies for minimization
+      auto pTrackCopy = o2::track::TrackParCov(pTrack);
+      auto nTrackCopy = o2::track::TrackParCov(nTrack);
+
+      //---/---/---/
+      // Move close to minima
+      int nCand = fitter.process(pTrackCopy, nTrackCopy);
+      if (nCand == 0)
         continue;
+
+      double finalXpos = fitter.getTrack(0).getX();
+      double finalXneg = fitter.getTrack(1).getX();
+
+      //Rotate to desired alpha
+      pTrack.rotateParam(fitter.getTrack(0).getAlpha());
+      nTrack.rotateParam(fitter.getTrack(1).getAlpha());
+
+      //Retry closer to minimum with material corrections
+      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+      if (useMatCorrType == 1)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+      if (useMatCorrType == 2)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, 0.85f, 2.0f, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
+
+      nCand = fitter.process(pTrack, nTrack);
+      if (nCand == 0)
+        continue;
+
+      pTrack.getPxPyPzGlo(pvec0);
+      nTrack.getPxPyPzGlo(pvec1);
+
+      const auto& vtx = fitter.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        pos[i] = vtx[i];
       }
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 0: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
