@@ -54,7 +54,7 @@ DECLARE_SOA_COLUMN(MixingHash, mixingHash, int);
 DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
 DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
-} // namespace reducedevent
+} // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
 DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHash);
@@ -82,9 +82,9 @@ using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuo
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
-constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
+//constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
-constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
+//constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 
 constexpr static int pairTypeEE = VarManager::kJpsiToEE;
 constexpr static int pairTypeMuMu = VarManager::kJpsiToMuMu;
@@ -483,7 +483,7 @@ struct AnalysisEventMixing {
   {
     events.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
@@ -517,8 +517,8 @@ struct AnalysisEventMixing {
     events.bindExternalIndices(&muons);
     auto tracksTuple = std::make_tuple(tracks);
     auto muonsTuple = std::make_tuple(muons);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerMuons(events, muonsTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerMuons(events, muonsTuple);
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
@@ -691,6 +691,7 @@ struct AnalysisSameEventPairing {
 
     uint32_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
+    dileptonList.reserve(1);
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kJpsiToEE) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -713,7 +714,7 @@ struct AnalysisSameEventPairing {
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
       dileptonFilterMap = twoTrackFilter;
-      dileptonList(event.globalIndex(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
+      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
 
       for (unsigned int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
@@ -815,7 +816,7 @@ struct AnalysisDileptonHadron {
 
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
-    if (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processSkimmed")) {
       DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -832,7 +833,7 @@ struct AnalysisDileptonHadron {
 
   // Template function to run pair - hadron combinations
   template <uint32_t TEventFillMap, typename TEvent, typename TTracks>
-  void runDileptonHadron(TEvent const& event, soa::Filtered<aod::Dileptons> const& dileptons, TTracks const& tracks)
+  void runDileptonHadron(TEvent const& event, TTracks const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -857,9 +858,9 @@ struct AnalysisDileptonHadron {
     }
   }
 
-  void processSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<aod::Dileptons> const& dileptons, MyBarrelTracksSelected const& tracks)
+  void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelected const& tracks, soa::Filtered<aod::Dileptons> const& dileptons)
   {
-    runDileptonHadron<gkEventFillMap>(event, dileptons, tracks);
+    runDileptonHadron<gkEventFillMap>(event, tracks, dileptons);
   }
   // TODO: Add process functions which use cov matrices for secondary vertexing (e.g. B->Jpsi + K)
   void processDummy(MyEvents&)

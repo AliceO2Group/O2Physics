@@ -31,6 +31,7 @@ using namespace o2::analysis::hf_cuts_xic_topkpi;
 struct HFXicToPKPiCandidateSelector {
   Produces<aod::HFSelXicToPKPiCandidate> hfSelXicToPKPiCandidate;
 
+  Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Min. normalised decay length XY"};
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> d_pTCandMax{"d_pTCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> d_FilterPID{"d_FilterPID", true, "Bool to use or not the PID at filtering level"};
@@ -93,6 +94,11 @@ struct HFXicToPKPiCandidateSelector {
 
     // candidate decay length
     if (candidate.decayLength() <= cuts->get(pTBin, "decay length")) {
+      return false;
+    }
+
+    // candidate normalised decay length (Inspired from Lc selector)
+    if (candidate.decayLengthXYNormalised() < decayLengthXYNormalisedMin) {
       return false;
     }
     return true;

@@ -13,6 +13,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "Framework/GroupSlicer.h"
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -325,7 +326,7 @@ struct CorrelationTask {
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicer(collisions, tracksTuple);
+    GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
@@ -375,7 +376,7 @@ struct CorrelationTask {
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicer(collisions, tracksTuple);
+    GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {

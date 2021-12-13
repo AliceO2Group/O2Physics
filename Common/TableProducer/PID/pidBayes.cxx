@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct bayesPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Coll = aod::Collisions;
 
   // Tables to produce
@@ -579,7 +579,7 @@ struct bayesPidQa {
     histos.add("event/length", ";Track length (cm);Entries", HistType::kTH1F, {{100, 0, 500}});
     histos.add("event/pt", "", HistType::kTH1F, {axisPt});
     histos.add("event/p", "", HistType::kTH1F, {axisP});
-    histos.add("event/ptreso", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {100, 0, 0.1}});
+    // histos.add("event/ptreso", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {100, 0, 0.1}});
     histos.add("mostProbable", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {nBinsProb, MinProb, MaxProb}});
 
     addParticleHistos<0>();
@@ -599,7 +599,7 @@ struct bayesPidQa {
     histos.fill(HIST(hprob[i]), t.p(), prob);
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
                                                           aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesPi,
                                                           aod::pidBayesKa, aod::pidBayesPr, aod::pidBayesDe,
                                                           aod::pidBayesTr, aod::pidBayesHe, aod::pidBayesAl,
@@ -623,7 +623,7 @@ struct bayesPidQa {
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());
       histos.fill(HIST("event/pt"), t.pt());
-      histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
+      // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
       histos.fill(HIST("mostProbable"), t.p(), t.bayesProb());
       //
       fillParticleHistos<0>(t, t.bayesEl());

@@ -31,6 +31,12 @@ class TOFReso : public Parametrization
  public:
   TOFReso() : Parametrization("TOFReso", 5){};
   ~TOFReso() override = default;
+  /// Operator to compute the expected value of the TOF Resolution
+  /// \param x Array with the input used to compute the response:
+  /// x[0] -> track momentum
+  /// x[1] -> TOF signal
+  /// x[2] -> event time resolution
+  /// x[3] -> particle mass
   float operator()(const float* x) const override
   {
     const float mom = abs(x[0]);
@@ -46,22 +52,6 @@ class TOFReso : public Parametrization
   }
   ClassDef(TOFReso, 1);
 };
-
-float TOFResoParam(const float& momentum, const float& time, const float& evtimereso, const float& mass, const Parameters& parameters)
-{
-  if (momentum <= 0) {
-    return -999;
-  }
-  const float dpp = parameters[0] + parameters[1] * momentum + parameters[2] * mass / momentum; // mean relative pt resolution;
-  const float sigma = dpp * time / (1. + momentum * momentum / (mass * mass));
-  return sqrt(sigma * sigma + parameters[3] * parameters[3] / momentum / momentum + parameters[4] * parameters[4] + evtimereso * evtimereso);
-}
-
-template <o2::track::PID::ID id, typename C, typename T>
-float TOFResoParamTrack(const C& collision, const T& track, const Parameters& parameters)
-{
-  return TOFResoParam(track.p(), track.tofSignal(), collision.collisionTimeRes() * 1000.f, o2::track::pid_constants::sMasses[id], parameters);
-}
 
 } // namespace o2::pid::tof
 

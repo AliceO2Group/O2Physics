@@ -24,7 +24,7 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "DetectorsCommonDataFormats/NameConf.h"
+#include "CommonUtils/NameConf.h"
 #include "CCDB/CcdbApi.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "CCDB/BasicCCDBManager.h"
