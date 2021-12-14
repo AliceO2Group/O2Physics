@@ -127,10 +127,10 @@ struct MixedEventsPartitionedTracks {
   }
 };
 
-struct PairSubscribe {
-  using joinedCollisions = soa::Join<aod::Hashes, aod::Collisions>::table_t;
+struct MixedEvents {
   SameKindPair<aod::Hashes, aod::Collisions, aod::Tracks> pair{"fBin", 5, -1};
 
+  // Collisions must be first, not hashes!
   void process(aod::Collisions const& collisions, aod::Hashes const& hashes, aod::Tracks const& tracks)
   {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
@@ -144,7 +144,7 @@ struct PairSubscribe {
   }
 };
 
-struct PairInsideProcess {
+struct MixedEventsInsideProcess {
   void process(aod::Collisions& collisions, aod::Hashes& hashes, aod::Tracks& tracks)
   {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
@@ -165,8 +165,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HashTask>(cfgc),
+    adaptAnalysisTask<MixedEvents>(cfgc),
+    adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
-    adaptAnalysisTask<PairSubscribe>(cfgc),
-    adaptAnalysisTask<PairInsideProcess>(cfgc),
   };
 }
