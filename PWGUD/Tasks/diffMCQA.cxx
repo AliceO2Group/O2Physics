@@ -22,7 +22,7 @@ using namespace o2::framework::expressions;
 struct DiffQA {
 
   // define histograms
-  HistogramRegistry registry {
+  HistogramRegistry registry{
     "registry",
     {
       {"timeResolution", "#timeResolution", {HistType::kTH1F, {{200, 0., 1.E3}}}},
@@ -141,7 +141,7 @@ struct DiffQA {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec {
+  return WorkflowSpec{
     adaptAnalysisTask<DiffQA>(cfgc, TaskName{"diffqa"}),
   };
 }

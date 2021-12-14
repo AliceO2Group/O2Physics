@@ -415,7 +415,7 @@ struct TPCnSigma {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   if (cfgc.options().get<int>("runCase") == 0) {
-    return WorkflowSpec{ 
+    return WorkflowSpec{
       // adaptAnalysisTask<CompatibleBCs>(cfgc),
       adaptAnalysisTask<collisionsInfo>(cfgc, TaskName{"collisioninformation"}),
       adaptAnalysisTask<BCInfo>(cfgc, TaskName{"bcinformation"}),
