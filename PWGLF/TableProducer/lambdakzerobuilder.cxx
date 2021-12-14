@@ -193,6 +193,7 @@ struct lambdakzeroBuilder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -259,6 +260,10 @@ struct lambdakzeroBuilder {
 
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
+
+      //Require collision-ID
+      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks)
+        continue;
 
       //Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
