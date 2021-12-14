@@ -146,15 +146,15 @@ struct cascadeBuilder {
         continue;
       }
       hCascFiltered->Fill(6.5);
-      if (v0.posTrack_as<FullTracksExt>().dcaXY() < dcapostopv) {
+      if (fabs(v0.posTrack_as<FullTracksExt>().dcaXY()) < dcapostopv) {
         continue;
       }
       hCascFiltered->Fill(7.5);
-      if (v0.negTrack_as<FullTracksExt>().dcaXY() < dcanegtopv) {
+      if (fabs(v0.negTrack_as<FullTracksExt>().dcaXY()) < dcanegtopv) {
         continue;
       }
       hCascFiltered->Fill(8.5);
-      if (casc.bachelor_as<FullTracksExt>().dcaXY() < dcabachtopv) {
+      if (fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) < dcabachtopv) {
         continue;
       }
       hCascFiltered->Fill(9.5);
