@@ -82,7 +82,7 @@ struct PseudorapidityDensity {
       {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
       {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},        //
       {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},         //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                                       //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{6, 0.5, 6.5}}}}                                       //
     }                                                                                                                //
   };
 
@@ -95,8 +95,7 @@ struct PseudorapidityDensity {
     x->SetBinLabel(3, "Rejected");
     x->SetBinLabel(4, "Good BCs");
     x->SetBinLabel(5, "BCs with collisions");
-    x->SetBinLabel(6, "BCs with selected collisions");
-    x->SetBinLabel(7, "BCs with pile-up");
+    x->SetBinLabel(6, "BCs with pile-up");
 
     if (doprocessGen) {
       registry.add({"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}});
@@ -141,32 +140,32 @@ struct PseudorapidityDensity {
   }
 
   expressions::Filter etaFilter = (aod::track::eta < etaMax) && (aod::track::eta > etaMin);
+  expressions::Filter etaFilterMC = (aod::mcparticle::eta < etaMax) && (aod::mcparticle::eta > etaMin);
   expressions::Filter trackTypeFilter = (aod::track::trackType == TRACKTYPE);
   expressions::Filter DCAFilter = ifnode(useDCA.node(), nabs(aod::track::dcaXY) <= maxDCAXY && nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
-  expressions::Filter posZFilter = (aod::collision::posZ < vtxZMax) && (aod::collision::posZ > vtxZMin);
-  expressions::Filter posZFilterMC = (aod::mccollision::posZ < vtxZMax) && (aod::mccollision::posZ > vtxZMin);
 
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-  void processTagging(FullBCs const& bcs, soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>> const& collisions, aod::FT0s const& ft0s)
+  void processTagging(FullBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
       if (selectBC(bc)) {
-        registry.fill(HIST("EventSelection"), 4);
+        registry.fill(HIST("EventSelection"), 4.);
         cols.clear();
         for (auto& collision : collisions) {
-          if ((collision.has_foundFT0()) && (collision.foundFT0().bcId() == bc.globalIndex())) {
+          if (collision.has_foundBC()) {
+            if (collision.foundBCId() == bc.globalIndex()) {
+              cols.emplace_back(collision);
+            }
+          } else if (collision.bcId() == bc.globalIndex()) {
             cols.emplace_back(collision);
           }
         }
         LOGP(info, "BC {} has {} collisions", bc.globalBC(), cols.size());
         if (!cols.empty()) {
-          registry.fill(HIST("EventSelection"), 5);
-          if (std::any_of(cols.begin(), cols.end(), [&](auto const& x) { return select(x); })) {
-            registry.fill(HIST("EventSelection"), 6);
-          }
+          registry.fill(HIST("EventSelection"), 5.);
           if (cols.size() > 1) {
-            registry.fill(HIST("EventSelection"), 7);
+            registry.fill(HIST("EventSelection"), 6.);
           }
         }
       }
@@ -175,13 +174,13 @@ struct PseudorapidityDensity {
 
   PROCESS_SWITCH(PseudorapidityDensity<TRACKTYPE>, processTagging, "Collect event sample stats", false);
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
     registry.fill(HIST("EventSelection"), 1.);
     if (select(collision)) {
       registry.fill(HIST("EventSelection"), 2.);
       auto z = collision.posZ();
-      registry.fill(HIST("EventsNtrkZvtx"), tracks.size(), z);
+      registry.fill(HIST("EventsNtrkZvtx"), collision.numContrib(), z);
       for (auto& track : tracks) {
         registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
         registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
@@ -191,7 +190,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  void processBinned(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
+  void processBinned(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
     auto p = collision.centV0M();
     registry.fill(HIST("EventSelectionBin"), 1., p);
@@ -212,15 +211,14 @@ struct PseudorapidityDensity {
 
   using Particles = aod::McParticles;
 
-  void processGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
+  void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
     registry.fill(HIST("EventEfficiency"), 1.);
     for (auto& collision : collisions) {
       registry.fill(HIST("EventEfficiency"), 2.);
       if (select(collision)) {
         registry.fill(HIST("EventEfficiency"), 3.);
-        auto stracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-        registry.fill(HIST("EventsNtrkZvtxGen"), stracks.size(), mcCollision.posZ());
+        registry.fill(HIST("EventsNtrkZvtxGen"), collision.numContrib(), mcCollision.posZ());
       }
     }
     for (auto& particle : particles) {
