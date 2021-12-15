@@ -23,7 +23,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
+#include "Common/Core/PID/ParamBase.h"
 #include "Common/Core/MC.h"
 
 using namespace o2;
