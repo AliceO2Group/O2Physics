@@ -68,49 +68,6 @@ struct HashTask {
   }
 };
 
-// Version 1: Using categorised combinations
-struct MixedEventsTracks {
-  o2::framework::expressions::Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < 0.8f) && (aod::track::y > 1.0f);
-
-  void process(aod::Hashes const& hashes, aod::Collisions& collisions, soa::Filtered<aod::Tracks>& tracks)
-  {
-    LOGF(info, "Input data Hashes %d, Collisions %d, filtered Tracks %d ", hashes.size(), collisions.size(), tracks.size());
-
-    // grouping of tracks according to collision
-    collisions.bindExternalIndices(&tracks);
-    auto tracksTuple = std::make_tuple(tracks);
-    GroupSlicer slicer(collisions, tracksTuple);
-
-    // Strictly upper categorised collisions
-    for (auto& [c1, c2] : selfCombinations("fBin", 5, -1, join(hashes, collisions), join(hashes, collisions))) {
-      LOGF(info, "Collisions bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", c1.bin(), c1.index(), c1.posX(), c1.posY(), c1.posZ(), c2.index(), c2.posX(), c2.posY(), c2.posZ());
-
-      auto it1 = slicer.begin();
-      auto it2 = slicer.begin();
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == c1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == c2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
-      auto tracks1 = std::get<soa::Filtered<aod::Tracks>>(it1.associatedTables());
-      tracks1.bindExternalIndices(&collisions);
-      auto tracks2 = std::get<soa::Filtered<aod::Tracks>>(it2.associatedTables());
-      tracks2.bindExternalIndices(&collisions);
-
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index());
-      }
-    }
-  }
-};
-
 struct MixedEventsPartitionedTracks {
   Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < 0.8f) && (aod::track::y > 1.0f);
   using myTracks = soa::Filtered<aod::Tracks>;
@@ -170,28 +127,36 @@ struct MixedEventsPartitionedTracks {
   }
 };
 
-// Version 2: Filtering instead of combinations
-// Possible only after filters & grouping upgrades
-// struct CollisionsFilteringTask {
-// Alternatively: filter/partition directly on collisions
-// expressions::Filter aod::hash::bin{0} == aod::hash::bin{1};
+struct MixedEvents {
+  SameKindPair<aod::Hashes, aod::Collisions, aod::Tracks> pair{"fBin", 5, -1};
 
-// Currently multiple grouping and grouping by Joins is not possible
-// void process(soa::Filtered<soa::Join<aod::Hashes, aod::Collisions>>::iterator const& hashedCol1, aod::Tracks const& tracks1,
-//              soa::Filtered<soa::Join<aod::Hashes, aod::Collisions>>::iterator const& hashedCol2, aod::Tracks const& tracks2)
-//{
-//  for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-//    LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), hashedCol1.index(), hashedCol2.index());
-//  }
-//}
-// };
-
-// What we would like to have
-struct MixedEventsTask {
-  void process(aod::Collision const& col1, aod::Tracks const& tracks1, aod::Collision const& col2, aod::Tracks const& tracks2)
+  // Collisions must be first, not hashes!
+  void process(aod::Collisions const& collisions, aod::Hashes const& hashes, aod::Tracks const& tracks)
   {
-    for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), col1.index(), col2.index());
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", c1.bin(), c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+      }
+    }
+  }
+};
+
+struct MixedEventsInsideProcess {
+  void process(aod::Collisions& collisions, aod::Hashes& hashes, aod::Tracks& tracks)
+  {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<aod::Hashes, aod::Collisions, aod::Tracks> pair{"fBin", 5, -1, hashes, collisions, tracksTuple};
+
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", c1.bin(), c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.globalIndex(), t2.globalIndex(), c1.globalIndex(), c2.globalIndex());
+      }
     }
   }
 };
@@ -200,7 +165,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HashTask>(cfgc),
-    adaptAnalysisTask<MixedEventsTracks>(cfgc),
+    adaptAnalysisTask<MixedEvents>(cfgc),
+    adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
   };
 }
