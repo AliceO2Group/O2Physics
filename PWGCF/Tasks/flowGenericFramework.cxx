@@ -148,7 +148,7 @@ struct GenericFramework {
 
     if (tracks.size() < 1)
       return;
-    LOGF(INFO, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
+    LOGF(info, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
 
