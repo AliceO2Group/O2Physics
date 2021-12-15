@@ -425,7 +425,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     return WorkflowSpec{
       adaptAnalysisTask<MCTracks>(cfgc, TaskName{"mctracks"}),
     };
-  } else if (cfgc.options().get<int>("runCase") == 2) {
+  } else (cfgc.options().get<int>("runCase") == 2) {
     return WorkflowSpec{
       adaptAnalysisTask<TPCnSigma>(cfgc, TaskName{"tpcnsigma"}),
     };
