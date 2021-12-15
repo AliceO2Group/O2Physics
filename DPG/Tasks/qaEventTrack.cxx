@@ -17,7 +17,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/MC.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -223,7 +222,7 @@ bool qaEventTrack::isSelectedTrack(const T& track)
   }
   if constexpr (IS_MC) {
     auto particle = track.mcParticle();
-    const bool isPrimary = MC::isPhysicalPrimary(track.mcParticle());
+    const bool isPrimary = particle.isPhysicalPrimary();
     if (selectPrim && !isPrimary) {
       return false;
     }

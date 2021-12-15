@@ -18,7 +18,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -267,7 +266,7 @@ struct QaTrackingEfficiency {
         return true;
       }
       histos.fill(h, 6);
-      if ((selPrim == 1) && (!MC::isPhysicalPrimary(p))) { // Requiring is physical primary
+      if ((selPrim == 1) && !p.isPhysicalPrimary()) { // Requiring is physical primary
         return true;
       }
       histos.fill(h, 7);
