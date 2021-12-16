@@ -171,8 +171,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       // check each source
       uint64_t sourcesDecision = 0;
       // Check kPhysicalPrimary
-      if(fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
-        if((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
           sourcesDecision |= (uint64_t(1) << MCProng::kPhysicalPrimary);
         }
       }

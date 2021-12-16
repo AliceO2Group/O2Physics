@@ -397,7 +397,7 @@ struct TableMakerMC {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fConfigDetailedQA) {
-                j = 0;      
+                j = 0;
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
