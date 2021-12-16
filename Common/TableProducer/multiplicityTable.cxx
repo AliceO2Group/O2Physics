@@ -42,24 +42,22 @@ struct MultiplicityTableTaskIndexed {
     int multTPC = tracksWithTPC.size();
 
     if (collision.has_fv0a()) {
-      auto v0a = collision.fv0a();
-      for (int i = 0; i < 48; i++) {
-        multV0A += v0a.amplitude()[i];
+      for (auto amplitude : collision.fv0a().amplitude()) {
+        multV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
-      auto v0c = collision.fv0c();
-      for (int i = 0; i < 32; i++) {
-        multV0C += v0c.amplitude()[i];
+      for (auto amplitude : collision.fv0c().amplitude()) {
+        multV0C += amplitude;
       }
     }
     if (collision.has_ft0()) {
       auto ft0 = collision.ft0();
-      for (int i = 0; i < 96; i++) {
-        multT0A += ft0.amplitudeA()[i];
+      for (auto amplitude : ft0.amplitudeA()) {
+        multT0A += amplitude;
       }
-      for (int i = 0; i < 112; i++) {
-        multT0C += ft0.amplitudeC()[i];
+      for (auto amplitude : ft0.amplitudeC()) {
+        multT0C += amplitude;
       }
     }
     if (collision.has_zdc()) {
@@ -83,19 +81,15 @@ struct MultiplicityTableTaskIndexed {
     float multZNC = -1.f;
     int multTracklets = -1;
     int multTPC = tracksWithTPC.size();
-    const float* aAmplitudesA;
-    const float* aAmplitudesC;
 
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
-      aAmplitudesA = ft0.amplitudeA();
-      aAmplitudesC = ft0.amplitudeC();
-      for (int i = 0; i < 96; i++) {
-        multT0A += aAmplitudesA[i];
+      for (auto amplitude : ft0.amplitudeA()) {
+        multT0A += amplitude;
       }
-      for (int i = 0; i < 112; i++) {
-        multT0C += aAmplitudesC[i];
+      for (auto amplitude : ft0.amplitudeC()) {
+        multT0C += amplitude;
       }
     }
 

@@ -170,20 +170,18 @@ struct BcSelectionTask {
       float multV0A = 0;
       float multV0C = 0;
       if (bc.has_fv0a()) {
-        for (int ring = 0; ring < 4; ring++) { // TODO adjust for Run3 V0A
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
-          }
-          multV0A += multRingV0A[ring];
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
+          multV0A += bc.fv0a().amplitude()[i];
         }
       }
 
       if (bc.has_fv0c()) {
-        for (int ring = 0; ring < 4; ring++) {
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0C[ring] += bc.fv0c().amplitude()[ring * 8 + sector];
-          }
-          multV0C += multRingV0C[ring];
+        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+          int ring = bc.fv0c().channel()[i] / 8;
+          multRingV0C[ring] += bc.fv0c().amplitude()[i];
+          multV0C += bc.fv0c().amplitude()[i];
         }
       }
       uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
@@ -267,10 +265,12 @@ struct BcSelectionTask {
       float multRingV0A[5] = {0.};
       float multRingV0C[4] = {0.};
       if (bc.has_fv0a()) {
-        for (int ring = 0; ring < 5; ring++) {
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          if (ring == 5) {
+            ring = 4; // Outermost ring has 16 channels
           }
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
         }
       }
 
