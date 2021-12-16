@@ -147,6 +147,7 @@ void chargedSpectra::init(InitContext const&)
     const AxisSpec multTrueAxis = {nBinsMultTrue, -0.5, nBinsMultTrue - 0.5, "#it{N}_{ch}", "mult_true"};
 
     histos.add("collision_ambiguity", "", kTH1D, {{6, -0.5, 5.5, "reco collisions per true collision"}}); // log the number of collisions that were reconstructed for a MC collision
+    histos.add("track_ambiguity", "", kTH1D, {{6, 0.5, 6.5, "reco tracks per true particle"}});           // log the number of tracks that were reconstructed for a MC particle
 
     histos.add("multDist_evt_gen", "", kTH1D, {multTrueAxis});      // generated event distribution  (from events within specified class and with proper vertex position)
     histos.add("multDist_evt_gen_trig", "", kTH1D, {multTrueAxis}); // generated event distribution (from events within specified class and with proper vertex position) that in addition fulfils the trigger condition [to disentangle trigger eff from reco eff ]
@@ -192,19 +193,22 @@ void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision
     return;
   }
   // MEMO: this ambiguity of the reconstructed collisions raises several questions:
-  // 1st: how to select most probable collision?
-  // 2nd: how to avoid double or triple counting of an actual collision in data (or how to treat this as additional contamination of the measurement based on MC info)
-  // 3rd: how does this pollute the event reconstruction efficiency
+  // - how to select most probable collision?
+  // - how to avoid double or triple counting of an actual collision in data (or how to treat this as additional contamination of the measurement based on MC info)
+  // - how does this pollute the event reconstruction efficiency
 
   initEventMC(mcCollision, particles);
-  processTrue(mcCollision, particles);
-
-  for (auto& collision : collisions) {
-    auto curTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-    initEvent(collision, curTracks);
-    processMeas<true>(collision, curTracks);
-    break; // for now look only at one collision...
+  if (collisions.size() == 0) {
+    vars.isAcceptedEvent = false;
+  } else {
+    for (auto& collision : collisions) {
+      auto curTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      initEvent(collision, curTracks);
+      processMeas<true>(collision, curTracks);
+      break; // for now look only at first collision...
+    }
   }
+  processTrue(mcCollision, particles);
 }
 
 //**************************************************************************************************
@@ -245,7 +249,7 @@ bool chargedSpectra::initTrack(const T& track)
     return false;
   }
   // TODO: with Filters we could skip this in data, but not in MC (maybe add IS_MC template paramter so we can skip it in data via if constexpr)
-  if (!track.isGlobalTrack() /*track.trackType() !=  o2::aod::track::Track*/) {
+  if (isRun3 ? (track.trackType() != o2::aod::track::Track) : !track.isGlobalTrack()) {
     return false;
     // MEMO: current version of the track selection cuts too harshly (to be studied why) and therefore many events have multMeas==0
     // as temporary workaround to look at unselected tracks use the commented out condition instead
@@ -296,24 +300,23 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
 
 //**************************************************************************************************
 /**
- * Function to processes MC truth info. Assumes initEventMC havs been called previously.
+ * Function to processes MC truth info. Assumes initEvent and initEventMC have been called previously.
  */
 //**************************************************************************************************
 template <typename C, typename P>
 void chargedSpectra::processTrue(const C& collision, const P& particles)
 {
-  if (vars.isAcceptedEventMC) {
-    histos.fill(HIST("multDist_evt_gen"), vars.multTrue);
+  if (!vars.isAcceptedEventMC) {
+    return;
   }
+
+  histos.fill(HIST("multDist_evt_gen"), vars.multTrue);
 
   for (auto& particle : particles) {
     if (initParticle(particle) && vars.isChargedPrimary) {
-      if (vars.isAcceptedEventMC) {
-        // TODO: event class selection, etc.
-        histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
-        if (!vars.isAcceptedEvent) {
-          histos.fill(HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
-        }
+      histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
+      if (!vars.isAcceptedEvent) {
+        histos.fill(HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
       }
     }
   }
@@ -339,6 +342,7 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
     }
   }
 
+  std::vector<int> foundParticles;
   for (auto& track : tracks) {
 
     if (!initTrack(track)) {
@@ -348,6 +352,18 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
     histos.fill(HIST("multPtSpec_trk_meas"), vars.multMeas, track.pt());
 
     if constexpr (IS_MC) {
+      if (!track.has_mcParticle()) {
+        continue;
+      }
+
+      /*
+      if(count(foundParticles.begin(), foundParticles.end(), track.mcParticleId()){
+        //LOGP(info, "Multiple tracks reconstructed for particle with label {}", track.mcParticleId());
+       // for now only consider first particle that is found...
+        continue;
+      }
+      */
+      foundParticles.push_back(track.mcParticleId());
 
       const auto& particle = track.mcParticle();
 
@@ -357,7 +373,6 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
       }
 
       if (initParticle(particle)) {
-
         if (!vars.isChargedPrimary) {
           histos.fill(HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
         } else {
@@ -368,5 +383,10 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
         }
       }
     }
+  }
+
+  std::unordered_set<int> uniqueIndices(foundParticles.begin(), foundParticles.end());
+  for (auto mcParticleID : uniqueIndices) {
+    histos.fill(HIST("track_ambiguity"), std::count(foundParticles.begin(), foundParticles.end(), mcParticleID));
   }
 }
