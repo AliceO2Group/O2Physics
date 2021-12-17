@@ -192,7 +192,7 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/dcaXYvsPt", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH2D, {{200, -0.15, 0.15}, axisPt});
   histos.add("Tracks/dcaZvsPt", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH2D, {{200, -0.15, 0.15}, axisPt});
 
-  histos.add("Tracks/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}}); // FIXME: why is this zero most of the time?
+  histos.add("Tracks/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
 
   // its histograms
   histos.add("Tracks/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
@@ -203,9 +203,9 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
   histos.add("Tracks/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
   histos.add("Tracks/TPC/tpcNClsShared", "number of shared TPC clusters;# shared clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-  histos.add("Tracks/TPC/tpcNClsCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
+  histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
   histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
-  histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{120, 0.0, 1.2}});
+  histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
   histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
 }
 
@@ -221,6 +221,13 @@ bool qaEventTrack::isSelectedTrack(const T& track)
     return false;
   }
   if constexpr (IS_MC) {
+    if (!track.has_mcParticle()) {
+      if (selectPrim || selectSec || selectPID) {
+        return false;
+      } else {
+        return true;
+      }
+    }
     auto particle = track.mcParticle();
     const bool isPrimary = particle.isPhysicalPrimary();
     if (selectPrim && !isPrimary) {
@@ -334,7 +341,7 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
     histos.fill(HIST("Tracks/TPC/tpcNClsFindable"), track.tpcNClsFindable());
     histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcNClsShared"), track.tpcNClsShared());
-    histos.fill(HIST("Tracks/TPC/tpcNClsCrossedRows"), track.tpcNClsCrossedRows());
+    histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
     histos.fill(HIST("Tracks/TPC/tpcFractionSharedCls"), track.tpcFractionSharedCls());
     histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
