@@ -56,7 +56,6 @@ process(aod::McParticles const& mcTracks) {
 #ifndef MCSignal_H
 #define MCSignal_H
 
-//#include "Common/Core/MC.h"
 #include "MCProng.h"
 #include "TNamed.h"
 
@@ -172,22 +171,27 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       // check each source
       uint64_t sourcesDecision = 0;
       // Check kPhysicalPrimary
-      //TODO: compilation fails if MC.h is included (error: multiple definition of MC::isStable()). Check it out!
-      /*if(fProngs[i].fSourceBits[j] & MCProng::kPhysicalPrimary) { 
-        cout << "request kPhysicalPrimary, pdg " << currentMCParticle.pdgCode() << endl;    
-        if((fProngs[i].fExcludeSource[j] & MCProng::kPhysicalPrimary) != MC::isPhysicalPrimary<U>(track)) {
-          sourcesDecision |= MCProng::kPhysicalPrimary;
-          cout << "good " << sourcesDecision << endl;
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kPhysicalPrimary);
         }
-      }*/
+      }
       // Check kProducedInTransport
-      if (fProngs[i].fSourceBits[j] & MCProng::kProducedInTransport) {
-        cout << "request kProducedInTransport, pdg " << currentMCParticle.pdgCode() << endl;
-        cout << "1::" << (fProngs[i].fExcludeSource[j] & MCProng::kProducedInTransport) << endl;
-        cout << "2::" << (currentMCParticle.flags() & (uint8_t(1) << 0)) << endl;
-        if ((fProngs[i].fExcludeSource[j] & MCProng::kProducedInTransport) != (currentMCParticle.flags() & (uint8_t(1) << 0))) {
-          sourcesDecision |= MCProng::kProducedInTransport;
-          cout << "good " << sourcesDecision << endl;
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kProducedInTransport)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedInTransport);
+        }
+      }
+      // Check kProducedByGenerator
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kProducedByGenerator)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kProducedByGenerator);
+        }
+      }
+      // Check kFromBackgroundEvent
+      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) {
+        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
+          sourcesDecision |= (uint64_t(1) << MCProng::kFromBackgroundEvent);
         }
       }
       // no source bit is fulfilled
