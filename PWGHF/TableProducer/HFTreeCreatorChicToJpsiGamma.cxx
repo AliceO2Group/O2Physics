@@ -148,33 +148,16 @@ struct HfTreeCreatorChicToJpsiGamma {
     int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      auto pxchic = candidate.px();
-      auto pychic = candidate.py();
-      auto pzchic = candidate.pz();
-      auto pchicold = RecoDecay::P(candidate.px(), candidate.py(), candidate.pz());
-      auto pxjpsi = candidate.pxProng0();
-      auto pyjpsi = candidate.pyProng0();
-      auto pzjpsi = candidate.pzProng0();
-      auto pjpsiold = RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0());
-      auto pxgamma = candidate.pxProng1();
-      auto pygamma = candidate.pyProng1();
-      auto pzgamma = candidate.pzProng1();
-      auto pgammaold = RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
-      auto pl1old = abs(pxchic * pxjpsi + pychic * pyjpsi + pzchic * pzjpsi) / pchicold;
-      auto pl2old = abs(pxchic * pxgamma + pychic * pygamma + pzchic * pzgamma) / pchicold;
-      auto alphaold = (pl1old - pl2old) / (pl1old + pl2old);
-      auto qtold = sqrt(pjpsiold * pjpsiold - pl1old * pl1old);
-
       array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
       array<float, 3> pvecJpsi = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
       array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
       auto pchic = RecoDecay::P(pvecChic);
       auto pjpsi = RecoDecay::P(pvecJpsi);
       auto pgamma = RecoDecay::P(pvecGamma);
-      auto pl1 = std::abs(RecoDecay::dotProd(pvecChic,pvecJpsi)) / pchic; 
-      auto pl2 = std::abs(RecoDecay::dotProd(pvecChic,pvecGamma)) / pchic; 
-      auto alpha = ( pl1 - pl2 ) / ( pl1 + pl2 ); 
-      auto qt = std::sqrt(pjpsi * pjpsi - pl1 * pl1); 
+      auto pl1 = std::abs(RecoDecay::dotProd(pvecChic, pvecJpsi)) / pchic;
+      auto pl2 = std::abs(RecoDecay::dotProd(pvecChic, pvecGamma)) / pchic;
+      auto alpha = (pl1 - pl2) / (pl1 + pl2);
+      auto qt = std::sqrt(pjpsi * pjpsi - pl1 * pl1);
 
       auto jpsi = candidate.index0();
       indexCand++;
