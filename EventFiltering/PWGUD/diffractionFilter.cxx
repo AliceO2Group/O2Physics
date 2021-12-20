@@ -39,55 +39,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// The associations between collsisions and BCs can be ambiguous.
-// By default a collision is associated with the BC closest in time.
-// The collision time t_coll is determined by the tracks which are used to
-// reconstruct the vertex. t_coll has an uncertainty dt_coll.
-// Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
-// around t_coll could potentially be the true BC. ndt is typically 4.
-
-template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs)
-{
-  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
-
-  auto bcIter = collision.bc_as<T>();
-
-  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
-  uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  int64_t minBC = meanBC - deltaBC;
-  uint64_t maxBC = meanBC + deltaBC;
-  if (minBC < 0) {
-    minBC = 0;
-  }
-
-  // find slice of BCs table with BC in [minBC, maxBC]
-  int64_t maxBCId = bcIter.globalIndex();
-  int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    maxBCId = bcIter.globalIndex();
-    ++bcIter;
-    ++moveCount;
-  }
-
-  bcIter.moveByIndex(-moveCount); // Move back to original position
-  int64_t minBCId = collision.bcId();
-  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    minBCId = bcIter.globalIndex();
-    --bcIter;
-  }
-
-  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
-
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  return slice;
-}
-
 // Run 3
 struct DGFilterRun3 {
 
@@ -99,6 +50,12 @@ struct DGFilterRun3 {
 
   // DG selector
   DGSelector dgSelector;
+
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"aftercut", "#aftercut", {HistType::kTH1F, {{7, -0.5, 6.5}}}},
+    }};
 
   // some general Collisions and Tracks filter
 
@@ -114,7 +71,7 @@ struct DGFilterRun3 {
   void process(CC const& collision,
                BCs const& bcs,
                TCs& tracks,
-               //               MFs& mfttracks,
+               // MFs& mfttracks,
                FWs& fwdtracks,
                aod::Zdcs& zdcs,
                aod::FT0s& ft0s,
@@ -127,28 +84,19 @@ struct DGFilterRun3 {
 
     // obtain slice of compatible BCs
     auto bcRange = compatibleBCs(collision, diffCuts->NDtcoll(), bcs);
-    LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts->NDtcoll(), bcRange.size());
+    LOGF(info, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts->NDtcoll(), bcRange.size());
 
-    // check that there are no FIT signals in any of the compatible BCs
-    // Double Gap (DG) condition
-    auto isDGEvent = true;
-    for (auto& bc : bcRange) {
-      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
-        isDGEvent = false;
-        break;
-      }
-    }
-
-    // additional cuts
-    if (isDGEvent) {
-      isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
-    }
+    // apply DG selection
+    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
 
     // fill filterTable
-    if (isDGEvent) {
+    if (isDGEvent == 0) {
       LOGF(info, "This collision is a DG candidate!");
     }
-    filterTable(isDGEvent);
+    filterTable(isDGEvent == 0);
+
+    // update histogram
+    registry.get<TH1>(HIST("aftercut"))->Fill(isDGEvent);
   }
 };
 
