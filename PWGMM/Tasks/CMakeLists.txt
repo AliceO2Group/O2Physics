@@ -1,4 +1,4 @@
-#Copyright 2019 - 2020 CERN and copyright holders of ALICE O2.
+#Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 #See https: //alice-o2.web.cern.ch/copyright for details of the copyright holders.
 #All rights not expressly granted are reserved.
 #
@@ -10,26 +10,26 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(run2-dndeta
-                                    SOURCES run2dndeta.cxx dndeta.h
-                                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                                        COMPONENT_NAME Analysis)
+                           SOURCES run2dndeta.cxx dndeta.h
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
 
-  o2physics_add_dpl_workflow(dndeta
-                               SOURCES dndeta.cxx dndeta.h
-                                 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                                   COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(dndeta
+                           SOURCES dndeta.cxx dndeta.h
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
 
-    o2physics_add_dpl_workflow(analyse-mft-tracks
-    SOURCES analyse-mft-tracks.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(analyse-mft-tracks
+                           SOURCES analyse-mft-tracks.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
 
-      o2physics_add_dpl_workflow(ue-charged
-                                        SOURCES uecharged.cxx
-                                          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                                            COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(ue-charged
+                           SOURCES uecharged.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
 
-        o2physics_add_dpl_workflow(lumi
-                                     SOURCES lumi.cxx
-                                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                                         COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(lumi
+                           SOURCES lumi.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
