@@ -11,26 +11,26 @@
 
 
 o2physics_add_dpl_workflow(run2-dndeta
-                           SOURCES run2dndeta.cxx dndeta.h
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+                    SOURCES run2dndeta.cxx dndeta.h
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dndeta
-                           SOURCES dndeta.cxx dndeta.h
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+                    SOURCES dndeta.cxx dndeta.h
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(analyse-mft-tracks
-                           SOURCES analyse-mft-tracks.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+                    SOURCES analyse-mft-tracks.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(ue-charged
-                           SOURCES uecharged.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+                    SOURCES uecharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lumi
-                           SOURCES lumi.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+                    SOURCES lumi.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
