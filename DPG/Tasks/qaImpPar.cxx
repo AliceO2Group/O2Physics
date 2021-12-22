@@ -29,8 +29,11 @@
 #include "DetectorsCommonDataFormats/NameConf.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/TrackSelection.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
 #include "iostream"
+#include "vector"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -84,9 +87,15 @@ struct QaImpactPar {
     // Primary vertex
     const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
+    const AxisSpec collisionDeltaX_PVrefit{1000, -1, 1, "#Delta x_{PV} (cm)"};
+    const AxisSpec collisionDeltaY_PVrefit{1000, -1, 1, "#Delta y_{PV} (cm)"};
+    const AxisSpec collisionDeltaZ_PVrefit{1000, -1, 1, "#Delta z_{PV} (cm)"};
 
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
+    histograms.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaX_PVrefit});
+    histograms.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaY_PVrefit});
+    histograms.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaZ_PVrefit});
 
     // tracks
     const AxisSpec trackPtAxis{100, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
@@ -134,6 +143,8 @@ struct QaImpactPar {
     histograms.add("MC/h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
   }
 
+  using FullTrack = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+
   /// o2::aod::EvSels makes the execution crash, with the following error message:
   /// [240108:bc-selection-task]: [17:22:28][WARN] CCDB: Did not find an alien token; Cannot serve objects located on alien://
   /// [240108:bc-selection-task]: [17:22:28][ERROR] Requested resource does not exist: http://alice-ccdb.cern.ch/EventSelection/TriggerAliases/1511123421601/
@@ -166,6 +177,35 @@ struct QaImpactPar {
 
     histograms.fill(HIST("Data/vertexZ"), collision.posZ());
     histograms.fill(HIST("Data/numberContributors"), collision.numContrib());
+
+    /// retrieve the tracks contributing to the primary vertex fitting
+    std::vector<int64_t> vec_globID_contr = {};
+    std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
+    for (const auto& track : tracks) {
+      if (!track.isPVContributor()) {
+        /// the track di not contribute to fit the primary vertex
+        continue;
+      }
+      vec_globID_contr.push_back(track.globalIndex());
+      vec_TrkContributos.push_back(getTrackParCov(track));
+    }
+    std::vector<bool> vec_useTrk_PVrefit (vec_globID_contr.size(), true);
+
+    /// Prepare the vertex refitting
+    // build the VertexBase to initialize the vertexer
+    o2::dataformats::VertexBase Pvtx;
+    Pvtx.setX(collision.posX());
+    Pvtx.setY(collision.posY());
+    Pvtx.setZ(collision.posZ());
+    Pvtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    // configure PVertexer
+    o2::vertexing::PVertexer vertexer;
+    o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
+    vertexer.init();
+    bool doPVrefit = vertexer.prepareVertexRefit(vec_TrkContributos,Pvtx);
+    if (!doPVrefit) {
+      LOG(info) << "Not enough tracks accepted for the refit";
+    }
 
     /// loop over tracks
     float pt = -999.f;
@@ -236,6 +276,32 @@ struct QaImpactPar {
         histograms.fill(HIST("Data/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
       //}
+
+      /// PV refitting, if the tracks contributed to this at the beginning
+      if (doPVrefit) {
+        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
+        if( it_trk==vec_globID_contr.end() ) {
+          /// not found: this track did not contribute to the initial PV fitting
+          continue;
+        }
+        const int entry = std::distance(vec_globID_contr.begin(), it_trk);
+        vec_useTrk_PVrefit[entry] = false;  /// remove the track from the PV refitting
+        // vertex refit
+        auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
+        if (Pvtx_refitted.getChi2() < 0) {
+          LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
+          continue;
+        }
+        
+        // fill the histograms
+        const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
+        const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
+        const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
+        histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
+        histograms.fill(HIST("Data/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
+        histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaZ);
+      }
+
     }
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
