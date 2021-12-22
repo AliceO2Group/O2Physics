@@ -170,20 +170,18 @@ struct BcSelectionTask {
       float multV0A = 0;
       float multV0C = 0;
       if (bc.has_fv0a()) {
-        for (int ring = 0; ring < 4; ring++) { // TODO adjust for Run3 V0A
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
-          }
-          multV0A += multRingV0A[ring];
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
+          multV0A += bc.fv0a().amplitude()[i];
         }
       }
 
       if (bc.has_fv0c()) {
-        for (int ring = 0; ring < 4; ring++) {
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0C[ring] += bc.fv0c().amplitude()[ring * 8 + sector];
-          }
-          multV0C += multRingV0C[ring];
+        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+          int ring = bc.fv0c().channel()[i] / 8;
+          multRingV0C[ring] += bc.fv0c().amplitude()[i];
+          multV0C += bc.fv0c().amplitude()[i];
         }
       }
       uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
@@ -267,10 +265,12 @@ struct BcSelectionTask {
       float multRingV0A[5] = {0.};
       float multRingV0C[4] = {0.};
       if (bc.has_fv0a()) {
-        for (int ring = 0; ring < 5; ring++) {
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          if (ring == 5) {
+            ring = 4; // Outermost ring has 16 channels
           }
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
         }
       }
 
@@ -368,8 +368,9 @@ struct EventSelectionTask {
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
-    int32_t foundFT0 = bc.foundFT0();
-    int32_t foundFV0 = bc.foundFV0();
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -425,7 +426,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundFT0, foundFV0);
+          foundBC, foundFT0, foundFV0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -440,13 +441,12 @@ struct EventSelectionTask {
       deltaBC = customDeltaBC;
     }
 
-    int32_t foundFT0 = bc.foundFT0();
-    if (foundFT0 < 0) { // search in +/-4 sigma around meanBC
+    if (!bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
       // search forward
       int forwardMoveCount = 0;
       int64_t forwardBcDist = deltaBC + 1;
       for (; bc != bcs.end() && int64_t(bc.globalBC()) <= meanBC + deltaBC; ++bc, ++forwardMoveCount) {
-        if (bc.foundFT0() >= 0) {
+        if (bc.has_foundFT0()) {
           forwardBcDist = bc.globalBC() - meanBC;
           break;
         }
@@ -456,7 +456,7 @@ struct EventSelectionTask {
       int backwardMoveCount = 0;
       int64_t backwardBcDist = deltaBC + 1;
       for (; int64_t(bc.globalBC()) >= meanBC - deltaBC; --bc, ++backwardMoveCount) {
-        if (bc.foundFT0() >= 0) {
+        if (bc.has_foundFT0()) {
           backwardBcDist = meanBC - bc.globalBC();
           break;
         }
@@ -470,9 +470,11 @@ struct EventSelectionTask {
         bc.moveByIndex(backwardMoveCount + forwardMoveCount); // move forward
       }                                                       // else keep backward bc
     }
-    foundFT0 = bc.foundFT0();
 
-    int32_t foundFV0 = bc.foundFV0();
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
+
     LOGP(debug, "foundFT0 = {}", foundFT0);
 
     // copy alias decisions from bcsel table
@@ -522,7 +524,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundFT0, foundFV0);
+          foundBC, foundFT0, foundFV0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };

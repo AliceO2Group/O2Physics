@@ -53,7 +53,7 @@ using std::array;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr>; //, aod::McTrackLabels>;
 using MyTracksMC = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
 
-struct v0cascadesqa {
+struct v0cascadesQA {
 
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
 
@@ -154,7 +154,7 @@ struct v0cascadesqa {
   {
     histos_eve.fill(HIST("hEventCounter"), 0.5);
   }
-  PROCESS_SWITCH(v0cascadesqa, processReconstructedEvent, "Process reconstructed level Event", true);
+  PROCESS_SWITCH(v0cascadesQA, processReconstructedEvent, "Process reconstructed level Event", true);
 
   ///////////////////////////////////////
   ////////// Collision QA - MC //////////
@@ -183,7 +183,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processMcEvent, "Process MC level Event", false);
+  PROCESS_SWITCH(v0cascadesQA, processMcEvent, "Process MC level Event", false);
 
   ////////////////////////////////////////////
   ////////// V0 QA - Reconstructed ///////////
@@ -241,7 +241,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processReconstructedV0, "Process reconstructed level V0s", true);
+  PROCESS_SWITCH(v0cascadesQA, processReconstructedV0, "Process reconstructed level V0s", true);
 
   ////////////////////////////////
   ////////// V0 QA - MC //////////
@@ -293,7 +293,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processMcV0, "Process MC level V0s", false);
+  PROCESS_SWITCH(v0cascadesQA, processMcV0, "Process MC level V0s", false);
 
   //////////////////////////////////////
   ///// Cascade QA - Reconstructed /////
@@ -392,7 +392,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processReconstructedCascade, "Process reconstructed level Cascades", true);
+  PROCESS_SWITCH(v0cascadesQA, processReconstructedCascade, "Process reconstructed level Cascades", true);
 
   //////////////////////////////////////
   ////////// Cascade QA - MC ///////////
@@ -461,11 +461,11 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processMcCascade, "Process MC level Cascades", false);
+  PROCESS_SWITCH(v0cascadesQA, processMcCascade, "Process MC level Cascades", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<v0cascadesqa>(cfgc, TaskName{"lf-v0cascades-qa"})};
+    adaptAnalysisTask<v0cascadesQA>(cfgc)};
 }

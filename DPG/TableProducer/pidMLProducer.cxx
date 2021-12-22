@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -60,7 +59,7 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   aod::track::DcaZ,
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
-} //namespace o2::aod
+} // namespace o2::aod
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -80,7 +79,7 @@ struct CreateTableMc {
   {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle();
-      uint8_t isPrimary = (uint8_t)MC::isPhysicalPrimary(mcParticle);
+      uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
       pidTracksTable(track.tpcSignal(), track.tofSignal(),
                      track.px(), track.py(), track.pz(),
                      track.sign(),

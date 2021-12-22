@@ -13,6 +13,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "Framework/GroupSlicer.h"
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -148,6 +149,9 @@ struct CorrelationTask {
                                       {axisVertexEfficiency, "z-vtx (cm)"}};
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", axisList));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", axisList));
+
+    same->setTrackEtaCut(cfgCutEta);
+    mixed->setTrackEtaCut(cfgCutEta);
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
@@ -325,7 +329,7 @@ struct CorrelationTask {
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicer(collisions, tracksTuple);
+    GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
@@ -375,7 +379,7 @@ struct CorrelationTask {
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicer(collisions, tracksTuple);
+    GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
