@@ -26,6 +26,7 @@ o2physics_add_dpl_workflow(qa-impact-parameter
                                           O2::ReconstructionDataFormats
                                           O2::DetectorsBase
                                           O2::DetectorsCommonDataFormats
+                                          O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 
