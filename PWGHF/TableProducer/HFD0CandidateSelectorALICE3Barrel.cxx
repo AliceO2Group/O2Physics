@@ -231,10 +231,10 @@ struct HFD0CandidateSelectorALICE3Barrel {
 
       int pdgPositive = 0;
       int pdgNegative = 0;
-      if(trackPos.has_mcParticle()) {
+      if (trackPos.has_mcParticle()) {
         pdgPositive = trackPos.mcParticle().pdgCode();
       }
-      if(trackNeg.has_mcParticle()) {
+      if (trackNeg.has_mcParticle()) {
         pdgNegative = trackNeg.mcParticle().pdgCode();
       }
 

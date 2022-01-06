@@ -205,13 +205,13 @@ struct HFLcCandidateSelectorparametrizedPID {
       int pdgPositive1 = 0;
       int pdgPositive2 = 0;
       int pdgNegative = 0;
-      if(trackPos1.has_mcParticle()) {
+      if (trackPos1.has_mcParticle()) {
         pdgPositive1 = trackPos1.mcParticle().pdgCode();
       }
-      if(trackPos2.has_mcParticle()) {
+      if (trackPos2.has_mcParticle()) {
         pdgPositive2 = trackPos2.mcParticle().pdgCode();
       }
-      if(trackNeg.has_mcParticle()) {
+      if (trackNeg.has_mcParticle()) {
         pdgNegative = trackNeg.mcParticle().pdgCode();
       }
 
