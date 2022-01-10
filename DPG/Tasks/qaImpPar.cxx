@@ -32,7 +32,6 @@
 #include "DetectorsVertexing/PVertexer.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "CCDB/BasicCCDBManager.h"
-//#include "Common/TableProducer/trackextension.cxx"
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "iostream"
@@ -71,6 +70,7 @@ struct QaImpactPar {
   Configurable<float> nSigmaTOFKaonMax{"nSigmaTOFKaonMax", 99999.f, "Maximum nSigma value in TOF, kaon hypothesis"};
   Configurable<float> nSigmaTOFProtonMin{"nSigmaTOFProtonMin", -99999.f, "Minimum nSigma value in TOF, proton hypothesis"};
   Configurable<float> nSigmaTOFProtonMax{"nSigmaTOFProtonMax", 99999.f, "Maximum nSigma value in TOF, proton hypothesis"};
+  Configurable<bool> doPVrefit{"doPVrefit", true, "Do PV refit"};
   Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit",1000, "Number of bins of DeltaX for PV refit"};
   Configurable<int> nBins_DeltaY_PVrefit{"nBins_DeltaY_PVrefit",1000, "Number of bins of DeltaY for PV refit"};
   Configurable<int> nBins_DeltaZ_PVrefit{"nBins_DeltaZ_PVrefit",1000, "Number of bins of DeltaZ for PV refit"};
@@ -103,7 +103,7 @@ struct QaImpactPar {
   const char* ccdbpath_geo = "GLO/Config/Geometry";
   const char* ccdbpath_grp = "GLO/GRP/GRP";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
-  o2::base::Propagator::MatCorrType matCorr;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
   /// init function - declare and define histograms
@@ -118,9 +118,12 @@ struct QaImpactPar {
 
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
-    histograms.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaX_PVrefit});
-    histograms.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaY_PVrefit});
-    histograms.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaZ_PVrefit});
+    if (doPVrefit) {
+      histograms.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaX_PVrefit});
+      histograms.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaY_PVrefit});
+      histograms.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaZ_PVrefit});
+      histograms.add("Data/nContrib_vs_Chi2PVrefit", "", kTH2D, {collisionNumberContributorAxis,{102,-1.5,100.5,"#chi^{2} PV refit"}});
+    }
 
     // Needed for PV refitting
     ccdb->setURL(ccdburl);
@@ -250,8 +253,8 @@ struct QaImpactPar {
     o2::vertexing::PVertexer vertexer;
     o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
     vertexer.init();
-    bool doPVrefit = vertexer.prepareVertexRefit(vec_TrkContributos,Pvtx);
-    if (!doPVrefit) {
+    bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos,Pvtx);
+    if (!PVrefit_doable) {
       LOG(info) << "Not enough tracks accepted for the refit";
     }
 
@@ -288,9 +291,61 @@ struct QaImpactPar {
       histograms.fill(HIST("Data/hNSigmaTOFPion"), pt, tofNSigmaPion);
       histograms.fill(HIST("Data/hNSigmaTOFKaon"), pt, tofNSigmaKaon);
       histograms.fill(HIST("Data/hNSigmaTOFProton"), pt, tofNSigmaProton);
+
+
+      /// PV refitting, if the tracks contributed to this at the beginning
+      o2::dataformats::VertexBase PVbase_recalculated;
+      bool recalc_imppar = false;
+      if (doPVrefit && PVrefit_doable) {
+        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
+        //if( it_trk==vec_globID_contr.end() ) {
+        //  /// not found: this track did not contribute to the initial PV fitting
+        //  continue;
+        //}
+        if (it_trk!=vec_globID_contr.end()) {
+          recalc_imppar = true;
+          const int entry = std::distance(vec_globID_contr.begin(), it_trk);
+          vec_useTrk_PVrefit[entry] = false;  /// remove the track from the PV refitting
+          // vertex refit
+          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
+          if (Pvtx_refitted.getChi2() < 0) {
+            LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
+            //continue;   /// this kills many tracks!!! Only thos propagated to GOOD recalculated PV are considered
+            //recalc_imppar = false; /// this keeps everything (*)
+          }
+          histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
+        
+          //if (recalc_imppar) { /// (*)
+            // fill the histograms
+            const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
+            const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
+            const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
+            histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
+            histograms.fill(HIST("Data/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
+            histograms.fill(HIST("Data/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
+
+            // fill the newly calculated PV
+            PVbase_recalculated.setX(Pvtx_refitted.getX());
+            PVbase_recalculated.setY(Pvtx_refitted.getY());
+            PVbase_recalculated.setZ(Pvtx_refitted.getZ());
+            PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
+          //} /// (*)
+        }
+      }
       
+      /// impact parameter to the PV
+      // value calculated wrt global PV (not recalculated) ---> coming from trackextension workflow
       impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
+      // updated value after PV recalculation
+      if (recalc_imppar) {
+        auto trackPar = getTrackPar(track);
+        o2::gpu::gpustd::array<float, 2> dcaInfo {-999., -999.};
+        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+          impParRPhi = dcaInfo[0]*toMicrometers;
+          impParZ = dcaInfo[1]*toMicrometers;
+        }
+      }
 
       /// all tracks
       histograms.fill(HIST("Data/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi());
@@ -319,30 +374,6 @@ struct QaImpactPar {
       }
       //}
 
-      /// PV refitting, if the tracks contributed to this at the beginning
-      if (doPVrefit) {
-        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
-        if( it_trk==vec_globID_contr.end() ) {
-          /// not found: this track did not contribute to the initial PV fitting
-          continue;
-        }
-        const int entry = std::distance(vec_globID_contr.begin(), it_trk);
-        vec_useTrk_PVrefit[entry] = false;  /// remove the track from the PV refitting
-        // vertex refit
-        auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
-        if (Pvtx_refitted.getChi2() < 0) {
-          LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
-          continue;
-        }
-        
-        // fill the histograms
-        const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
-        const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
-        const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
-        histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
-        histograms.fill(HIST("Data/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
-        histograms.fill(HIST("Data/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
-      }
 
     }
   }
