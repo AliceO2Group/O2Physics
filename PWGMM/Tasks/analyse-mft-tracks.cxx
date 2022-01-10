@@ -44,7 +44,6 @@ struct analyseMFTTracks {
 
     auto z = collision.posZ();
     registry.fill(HIST("NtrkZvtx"), tracks.size(), z);
-    double zLastCls = 0;
 
     for (auto& track : tracks) {
       registry.fill(HIST("TracksPhiEta_in_coll"), track.phi(), track.eta());
