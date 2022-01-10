@@ -29,7 +29,7 @@ struct UseJoins {
 };
 
 struct LoopAmbiguousTracks {
-  void process(aod::AmbiguousTracks const& tracks)
+  void process(aod::AmbiguousTracks const& tracks, aod::BCs const&)
   {
     for (auto& track : tracks) {
       LOGF(info, "We look at track %d which has %d possible BCs", track.globalIndex(), track.bc().size());

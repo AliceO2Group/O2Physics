@@ -72,8 +72,8 @@ struct ConfigurableObjectDemo {
   Configurable<Array2D<float>> vmatrix{"matrix", {&defaultm[0][0], 3, 4}, "generic matrix"};
   Configurable<LabeledArray<float>> vla{"vla", {defaultm[0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array"};
 
-  // Configurables can be grouped into structs
-  // Their names must be unique
+  // Configurables can be grouped into `ConfigurableGroup`s.
+  // Their names must be unique.
   struct : ConfigurableGroup {
     Configurable<float> max_eta{"max_eta", 0.8f, "Maximal eta"};
     Configurable<float> min_clusters{"min_clusters", 70, "Minimal required number of clusters"};
