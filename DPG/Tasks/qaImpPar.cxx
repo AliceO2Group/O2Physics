@@ -31,6 +31,9 @@
 #include "Common/Core/TrackSelection.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "ReconstructionDataFormats/Vertex.h"
+#include "CCDB/BasicCCDBManager.h"
+//#include "Common/TableProducer/trackextension.cxx"
+#include "DataFormatsParameters/GRPObject.h"
 
 #include "iostream"
 #include "vector"
@@ -81,21 +84,41 @@ struct QaImpactPar {
   /// Histogram registry (from o2::framework)
   HistogramRegistry histograms{"HistogramsImpParQA"};
 
+  // Needed for PV refitting
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  const char* ccdbpath_lut = "GLO/Param/MatLUT";
+  const char* ccdbpath_geo = "GLO/Config/Geometry";
+  const char* ccdbpath_grp = "GLO/GRP/GRP";
+  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  o2::base::Propagator::MatCorrType matCorr;
+  int mRunNumber;
+
   /// init function - declare and define histograms
   void init(InitContext&)
   {
     // Primary vertex
     const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
-    const AxisSpec collisionDeltaX_PVrefit{1000, -1, 1, "#Delta x_{PV} (cm)"};
-    const AxisSpec collisionDeltaY_PVrefit{1000, -1, 1, "#Delta y_{PV} (cm)"};
-    const AxisSpec collisionDeltaZ_PVrefit{1000, -1, 1, "#Delta z_{PV} (cm)"};
+    const AxisSpec collisionDeltaX_PVrefit{1000, -0.5, 0.5, "#Delta x_{PV} (cm)"};
+    const AxisSpec collisionDeltaY_PVrefit{1000, -0.5, 0.5, "#Delta y_{PV} (cm)"};
+    const AxisSpec collisionDeltaZ_PVrefit{1000, -0.5, 0.5, "#Delta z_{PV} (cm)"};
 
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
     histograms.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaX_PVrefit});
     histograms.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaY_PVrefit});
     histograms.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaZ_PVrefit});
+
+    // Needed for PV refitting
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbpath_geo);
+    }
+    mRunNumber = 0;
 
     // tracks
     const AxisSpec trackPtAxis{100, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
@@ -143,15 +166,12 @@ struct QaImpactPar {
     histograms.add("MC/h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
   }
 
-  using FullTrack = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
-
-  /// o2::aod::EvSels makes the execution crash, with the following error message:
-  /// [240108:bc-selection-task]: [17:22:28][WARN] CCDB: Did not find an alien token; Cannot serve objects located on alien://
-  /// [240108:bc-selection-task]: [17:22:28][ERROR] Requested resource does not exist: http://alice-ccdb.cern.ch/EventSelection/TriggerAliases/1511123421601/
-  /// [240108:bc-selection-task]: [17:22:28][FATAL] Trigger aliases are not available in CCDB for run=282341 at timestamp=1511123421601
+  //using FullTrack = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+  
   void processData(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>>::iterator& collision,
                    // void processData(o2::soa::Filtered<o2::aod::Collisions>::iterator& collision,
-                   o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks)
+                   o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks,
+                   o2::aod::BCsWithTimestamps const&)
   {
     // o2::dataformats::DCA dca;
     //  FIXME: get this from CCDB
@@ -192,6 +212,19 @@ struct QaImpactPar {
     std::vector<bool> vec_useTrk_PVrefit (vec_globID_contr.size(), true);
 
     /// Prepare the vertex refitting
+    // Get the magnetic field for the Propagator
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    if (mRunNumber != bc.runNumber()) {
+      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+      if (grpo != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      mRunNumber = bc.runNumber();
+    }
     // build the VertexBase to initialize the vertexer
     o2::dataformats::VertexBase Pvtx;
     Pvtx.setX(collision.posX());
@@ -299,7 +332,7 @@ struct QaImpactPar {
         const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
         histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
         histograms.fill(HIST("Data/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
-        histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaZ);
+        histograms.fill(HIST("Data/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
       }
 
     }
