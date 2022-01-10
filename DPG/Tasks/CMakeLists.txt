@@ -28,7 +28,7 @@ o2physics_add_dpl_workflow(qa-impact-parameter
                                           O2::DetectorsCommonDataFormats
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-analysis
-                  SOURCES pidAnalysis.cxx
+o2physics_add_dpl_workflow(qa-pid
+                  SOURCES qaPid.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
