@@ -177,13 +177,13 @@ struct Alice3SingleParticle {
           continue;
         }
         auto mother = mcParticle.mother0_as<aod::McParticles>();
-        if (MC::isPhysicalPrimary(mcParticle)) {
+        if (mcParticle.isPhysicalPrimary()) {
           histos.get<TH1>(HIST("track/primaries"))->Fill(Form("%i", mother.pdgCode()), 1.f);
         } else {
           histos.get<TH1>(HIST("track/secondaries"))->Fill(Form("%i", mother.pdgCode()), 1.f);
         }
         if (doPrint) {
-          LOG(info) << "Track " << track.globalIndex() << " is a " << mcParticle.pdgCode() << " and comes from a " << mother.pdgCode() << " and is " << (MC::isPhysicalPrimary(mcParticle) ? "" : "not") << " a primary";
+          LOG(info) << "Track " << track.globalIndex() << " is a " << mcParticle.pdgCode() << " and comes from a " << mother.pdgCode() << " and is " << (mcParticle.isPhysicalPrimary() ? "" : "not") << " a primary";
         }
       }
     }
