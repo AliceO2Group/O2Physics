@@ -71,6 +71,15 @@ struct QaImpactPar {
   Configurable<float> nSigmaTOFKaonMax{"nSigmaTOFKaonMax", 99999.f, "Maximum nSigma value in TOF, kaon hypothesis"};
   Configurable<float> nSigmaTOFProtonMin{"nSigmaTOFProtonMin", -99999.f, "Minimum nSigma value in TOF, proton hypothesis"};
   Configurable<float> nSigmaTOFProtonMax{"nSigmaTOFProtonMax", 99999.f, "Maximum nSigma value in TOF, proton hypothesis"};
+  Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit",1000, "Number of bins of DeltaX for PV refit"};
+  Configurable<int> nBins_DeltaY_PVrefit{"nBins_DeltaY_PVrefit",1000, "Number of bins of DeltaY for PV refit"};
+  Configurable<int> nBins_DeltaZ_PVrefit{"nBins_DeltaZ_PVrefit",1000, "Number of bins of DeltaZ for PV refit"};
+  Configurable<float> minDeltaX_PVrefit{"minDeltaX_PVrefit",-0.5,"Min. DeltaX value for PV refit (cm)"};
+  Configurable<float> maxDeltaX_PVrefit{"maxDeltaX_PVrefit", 0.5,"Max. DeltaX value for PV refit (cm)"};
+  Configurable<float> minDeltaY_PVrefit{"minDeltaY_PVrefit",-0.5,"Min. DeltaY value for PV refit (cm)"};
+  Configurable<float> maxDeltaY_PVrefit{"maxDeltaY_PVrefit", 0.5,"Max. DeltaY value for PV refit (cm)"};
+  Configurable<float> minDeltaZ_PVrefit{"minDeltaZ_PVrefit",-0.5,"Min. DeltaZ value for PV refit (cm)"};
+  Configurable<float> maxDeltaZ_PVrefit{"maxDeltaZ_PVrefit", 0.5,"Max. DeltaZ value for PV refit (cm)"};
 
   /// Selections with Filter (from o2::framework::expressions)
   // Primary vertex |z_vtx|<XXX cm
@@ -100,9 +109,9 @@ struct QaImpactPar {
     // Primary vertex
     const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
-    const AxisSpec collisionDeltaX_PVrefit{1000, -0.5, 0.5, "#Delta x_{PV} (cm)"};
-    const AxisSpec collisionDeltaY_PVrefit{1000, -0.5, 0.5, "#Delta y_{PV} (cm)"};
-    const AxisSpec collisionDeltaZ_PVrefit{1000, -0.5, 0.5, "#Delta z_{PV} (cm)"};
+    const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
+    const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
+    const AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
 
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
