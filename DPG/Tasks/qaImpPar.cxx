@@ -92,6 +92,9 @@ struct QaImpactPar {
 
   /// Histogram registry (from o2::framework)
   HistogramRegistry histograms{"HistogramsImpParQA"};
+  bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
+  bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
+  bool isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -146,12 +149,18 @@ struct QaImpactPar {
     histograms.add("Data/pt", "", kTH1D, {trackPtAxis});
     histograms.add("Data/h4ImpPar", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("Data/h4ImpParZ", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpPar_Pion", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpParZ_Pion", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpPar_Kaon", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpParZ_Kaon", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpPar_Proton", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpParZ_Proton", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    if (isPIDPionApplied) {
+      histograms.add("Data/h4ImpPar_Pion", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+      histograms.add("Data/h4ImpParZ_Pion", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    }
+    if (isPIDKaonApplied) {
+      histograms.add("Data/h4ImpPar_Kaon", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+      histograms.add("Data/h4ImpParZ_Kaon", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    }
+    if (isPIDProtonApplied) {
+      histograms.add("Data/h4ImpPar_Proton", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+      histograms.add("Data/h4ImpParZ_Proton", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    }
     histograms.add("Data/hNSigmaTPCPion", "", kTH2D, {trackPtAxis, trackNSigmaTPCPionAxis});
     histograms.add("Data/hNSigmaTPCKaon", "", kTH2D, {trackPtAxis, trackNSigmaTPCKaonAxis});
     histograms.add("Data/hNSigmaTPCProton", "", kTH2D, {trackPtAxis, trackNSigmaTPCProtonAxis});
@@ -186,9 +195,6 @@ struct QaImpactPar {
     //  FIXME: get this from CCDB
     // constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
-    const bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
-    const bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
-    const bool isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
 
     /// trigger selection (remove for the moment, need to join with o2::aod::EvSels)
     // if (useINT7Trigger) {
@@ -282,13 +288,7 @@ struct QaImpactPar {
       histograms.fill(HIST("Data/hNSigmaTOFPion"), pt, tofNSigmaPion);
       histograms.fill(HIST("Data/hNSigmaTOFKaon"), pt, tofNSigmaKaon);
       histograms.fill(HIST("Data/hNSigmaTOFProton"), pt, tofNSigmaProton);
-
-      // propagation to primary vertex for DCA
-      // "crude" method not working with Run 3 MC productions
-      // if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) {
-
-      /// propagation ok! Retrieve impact parameter
-      // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
+      
       impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
 
