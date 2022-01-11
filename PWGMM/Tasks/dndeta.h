@@ -188,15 +188,15 @@ struct PseudorapidityDensity {
     if (select(collision)) {
       registry.fill(HIST("EventSelection"), 2.);
       auto z = collision.posZ();
-      auto localSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      if (localSample.size() > 0) {
+      auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      if (perCollisionSample.size() > 0) {
         registry.fill(HIST("EventSelection"), 3.);
       }
-      registry.fill(HIST("EventsNtrkZvtx"), localSample.size(), z);
+      registry.fill(HIST("EventsNtrkZvtx"), perCollisionSample.size(), z);
       for (auto& track : tracks) {
         registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
         registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
-        if (localSample.size() > 0) {
+        if (perCollisionSample.size() > 0) {
           registry.fill(HIST("TracksEtaZvtx_gt0"), track.eta(), z);
         }
       }
@@ -231,15 +231,16 @@ struct PseudorapidityDensity {
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, soa::Filtered<Particles> const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& /*tracks*/)
   {
-    auto localMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto nCharged = 0;
-    for (auto& particle : localMCSample) {
+    for (auto& particle : perCollisionMCSample) {
+      auto charge = 0;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
-        auto charge = (int)p->Charge();
-        if (charge != 0) {
-          nCharged++;
-        }
+        charge = (int)p->Charge();
+      }
+      if (charge != 0) {
+        nCharged++;
       }
     }
     registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
@@ -250,18 +251,18 @@ struct PseudorapidityDensity {
     }
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
-    LOGP(warn, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
+    LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     for (auto& collision : collisions) {
       registry.fill(HIST("EventEfficiency"), 3.);
       if (select(collision)) {
         atLeastOne = true;
-        auto localSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
         registry.fill(HIST("EventEfficiency"), 4.);
-        if (localSample.size() > 0) {
+        if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;
           registry.fill(HIST("EventEfficiency"), 5.);
         }
-        registry.fill(HIST("EventsNtrkZvtxGen"), localSample.size(), collision.posZ());
+        registry.fill(HIST("EventsNtrkZvtxGen"), perCollisionSample.size(), collision.posZ());
       }
     }
     if (collisions.size() == 0) {
@@ -270,19 +271,12 @@ struct PseudorapidityDensity {
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
-      if (p == nullptr) {
-        // unknown particles will be skipped
-        if (particle.pdgCode() > 1000000000) {
-          LOGP(debug, "[{}] Nucleus with PDG code {}", particle.globalIndex(), particle.pdgCode());
-        } else {
-          LOGP(debug, "[{}] Unknown particle with PDG code {}", particle.globalIndex(), particle.pdgCode());
-        }
-      } else {
+      if (p != nullptr) {
         charge = (int)p->Charge();
       }
       if (charge != 0) {
         registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-        if (localMCSample.size() > 0) {
+        if (perCollisionMCSample.size() > 0) {
           registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
         }
         if (atLeastOne) {
