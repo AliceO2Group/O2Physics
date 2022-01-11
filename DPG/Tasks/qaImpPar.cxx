@@ -103,7 +103,7 @@ struct QaImpactPar {
   const char* ccdbpath_geo = "GLO/Config/Geometry";
   const char* ccdbpath_grp = "GLO/GRP/GRP";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  //o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
   /// init function - declare and define histograms
@@ -231,6 +231,7 @@ struct QaImpactPar {
 
     /// Prepare the vertex refitting
     // Get the magnetic field for the Propagator
+    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
       auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
@@ -297,13 +298,14 @@ struct QaImpactPar {
       o2::dataformats::VertexBase PVbase_recalculated;
       bool recalc_imppar = false;
       if (doPVrefit && PVrefit_doable) {
+        recalc_imppar = true;
         auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
         //if( it_trk==vec_globID_contr.end() ) {
         //  /// not found: this track did not contribute to the initial PV fitting
         //  continue;
         //}
         if (it_trk!=vec_globID_contr.end()) {
-          recalc_imppar = true;
+          //recalc_imppar = true;
           const int entry = std::distance(vec_globID_contr.begin(), it_trk);
           vec_useTrk_PVrefit[entry] = false;  /// remove the track from the PV refitting
           // vertex refit
@@ -341,7 +343,8 @@ struct QaImpactPar {
       if (recalc_imppar) {
         auto trackPar = getTrackPar(track);
         o2::gpu::gpustd::array<float, 2> dcaInfo {-999., -999.};
-        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+        //if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
           impParRPhi = dcaInfo[0]*toMicrometers;
           impParZ = dcaInfo[1]*toMicrometers;
         }
