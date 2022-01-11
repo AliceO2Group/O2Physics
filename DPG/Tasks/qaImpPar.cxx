@@ -110,19 +110,35 @@ struct QaImpactPar {
   void init(InitContext&)
   {
     // Primary vertex
+    const AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
+    const AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
     const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
+    const AxisSpec collisionXOrigAxis{100, -20.f, 20.f, "X original PV (cm)"};
+    const AxisSpec collisionYOrigAxis{100, -20.f, 20.f, "Y original PV (cm)"};
+    const AxisSpec collisionZOrigAxis{100, -20.f, 20.f, "Z original PV (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
     const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
     const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
     const AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
 
+    histograms.add("Data/vertices", "", kTH1D, {{2, 0.5f, 2.5f, ""}});
+    histograms.get<TH1>(HIST("Data/vertices"))->GetXaxis()->SetBinLabel(1,"All PV");
+    histograms.get<TH1>(HIST("Data/vertices"))->GetXaxis()->SetBinLabel(2,"PV refit doable");
+    histograms.add("Data/vertices_perTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3,"All PV");
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3,"PV refit doable");
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3,"PV refit #chi^{2}!=-1");
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
-    histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
+    histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis}); 
     if (doPVrefit) {
       histograms.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaX_PVrefit});
       histograms.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaY_PVrefit});
       histograms.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis,collisionDeltaZ_PVrefit});
       histograms.add("Data/nContrib_vs_Chi2PVrefit", "", kTH2D, {collisionNumberContributorAxis,{102,-1.5,100.5,"#chi^{2} PV refit"}});
+      histograms.add("Data/X_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionXAxis,collisionXOrigAxis});
+      histograms.add("Data/Y_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionYAxis,collisionYOrigAxis});
+      histograms.add("Data/Z_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionZAxis,collisionZOrigAxis});
+      histograms.add("Data/nContrib_PVrefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {collisionNumberContributorAxis});
     }
 
     // Needed for PV refitting
@@ -213,6 +229,7 @@ struct QaImpactPar {
       return;
     }
 
+    histograms.fill(HIST("Data/vertices"), 1);
     histograms.fill(HIST("Data/vertexZ"), collision.posZ());
     histograms.fill(HIST("Data/numberContributors"), collision.numContrib());
 
@@ -258,6 +275,9 @@ struct QaImpactPar {
     if (!PVrefit_doable) {
       LOG(info) << "Not enough tracks accepted for the refit";
     }
+    else {
+      histograms.fill(HIST("Data/vertices"), 2);
+    }
 
     /// loop over tracks
     float pt = -999.f;
@@ -293,7 +313,10 @@ struct QaImpactPar {
       histograms.fill(HIST("Data/hNSigmaTOFKaon"), pt, tofNSigmaKaon);
       histograms.fill(HIST("Data/hNSigmaTOFProton"), pt, tofNSigmaProton);
 
-
+      histograms.fill(HIST("Data/vertices_perTrack"), 1);
+      if(PVrefit_doable) {
+        histograms.fill(HIST("Data/vertices_perTrack"), 2);
+      }
       /// PV refitting, if the tracks contributed to this at the beginning
       o2::dataformats::VertexBase PVbase_recalculated;
       bool recalc_imppar = false;
@@ -312,8 +335,15 @@ struct QaImpactPar {
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
           if (Pvtx_refitted.getChi2() < 0) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
+            histograms.fill(HIST("Data/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
+            histograms.fill(HIST("Data/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
+            histograms.fill(HIST("Data/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
+            histograms.fill(HIST("Data/nContrib_PVrefitChi2minus1"), collision.numContrib());
             //continue;   /// this kills many tracks!!! Only thos propagated to GOOD recalculated PV are considered
             //recalc_imppar = false; /// this keeps everything (*)
+          }
+          else {
+            histograms.fill(HIST("Data/vertices_perTrack"), 3);
           }
           histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
         
