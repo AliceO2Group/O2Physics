@@ -182,7 +182,7 @@ struct ueCharged {
       nchm_top[i] = 0;
       sumptm_top[i] = 0;
     }
-    //LOGF (INFO, "--------------------   FLAG 0!!!!!!!!!!!");
+    //LOGF(info, "--------------------   FLAG 0!!!!!!!!!!!");
     vector<Float_t> ptArray;
     vector<Float_t> phiArray;
     vector<int> indexArray;

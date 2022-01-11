@@ -44,7 +44,7 @@ struct MultiplicityEventTrackSelection {
       return;
     }
 
-    LOGP(INFO, "Collision with {} tracks", tracks.size());
+    LOGP(info, "Collision with {} tracks", tracks.size());
     multiplicity->Fill(tracks.size());
   }
 };

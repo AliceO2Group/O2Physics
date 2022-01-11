@@ -192,7 +192,11 @@ DECLARE_SOA_TABLE_FULL(ReducedMCTracks, "ReducedMCTracks", "AOD", "RTMC", //!  M
                        reducedtrackMC::Pz<reducedtrackMC::Pt, reducedtrackMC::Eta>,
                        reducedtrackMC::P<reducedtrackMC::Pt, reducedtrackMC::Eta>,
                        reducedtrackMC::Y<reducedtrackMC::Pt, reducedtrackMC::Eta, reducedtrackMC::E>,
-                       mcparticle::ProducedByGenerator<mcparticle::Flags>);
+                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using ReducedMCTrack = ReducedMCTracks::iterator;
 

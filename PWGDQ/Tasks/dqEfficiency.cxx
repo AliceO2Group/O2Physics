@@ -637,16 +637,16 @@ struct AnalysisSameEventPairing {
   void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
-    unsigned int ncuts = fBarrelHistNames.size() / 3; // we have 3 hist classes for each cut
+    unsigned int ncuts = fBarrelHistNames.size();
     std::vector<std::vector<TString>> histNames = fBarrelHistNames;
     std::vector<std::vector<TString>> histNamesMCmatched = fBarrelHistNamesMCmatched;
     if constexpr (TPairType == VarManager::kJpsiToMuMu) {
-      ncuts = fMuonHistNames.size() / 3;
+      ncuts = fMuonHistNames.size();
       histNames = fMuonHistNames;
       histNamesMCmatched = fMuonHistNamesMCmatched;
     }
     if constexpr (TPairType == VarManager::kElectronMuon) {
-      ncuts = fBarrelMuonHistNames.size() / 3;
+      ncuts = fBarrelMuonHistNames.size();
       histNames = fBarrelMuonHistNames;
       histNamesMCmatched = fBarrelMuonHistNamesMCmatched;
     }
@@ -692,7 +692,7 @@ struct AnalysisSameEventPairing {
       for (unsigned int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint8_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
-            fHistMan->FillHistClass(histNames[icut][0], VarManager::fgValues);
+            fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
@@ -731,7 +731,6 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    cout << "entries in groupedMCTracks = " << groupedMCTracks.size() << endl;
     //    // loop over mc stack and fill histograms for pure MC truth signals
     for (auto& sig : fGenMCSignals) {
       if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required

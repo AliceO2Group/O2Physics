@@ -35,7 +35,8 @@ DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
-                  femtodreamcollision::Sphericity);
+                  femtodreamcollision::Sphericity,
+                  timestamp::Timestamp);
 using FemtoDreamCollision = FemtoDreamCollisions::iterator;
 
 /// FemtoDreamTrack

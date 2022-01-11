@@ -20,25 +20,30 @@ using namespace o2;
 using namespace o2::framework;
 
 struct UseJoins {
-  void init(InitContext&)
-  {
-    count = 0;
-  }
-
   void process(soa::Join<aod::Tracks, aod::TracksExtra> const& fullTracks)
   {
     for (auto& track : fullTracks) {
-      LOGF(info, "%d, %f %f", count, track.alpha(), track.tpcSignal());
-      count++;
+      LOGF(info, "%d, %f %f", track.globalIndex(), track.alpha(), track.tpcSignal());
     }
   }
+};
 
-  size_t count = 2016927;
+struct LoopAmbiguousTracks {
+  void process(aod::AmbiguousTracks const& tracks, aod::BCs const&)
+  {
+    for (auto& track : tracks) {
+      LOGF(info, "We look at track %d which has %d possible BCs", track.globalIndex(), track.bc().size());
+      for (auto& bc : track.bc()) {
+        LOGF(info, "  BC %d with global BC %lld", bc.globalIndex(), bc.globalBC());
+      }
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<UseJoins>(cfgc),
+    adaptAnalysisTask<LoopAmbiguousTracks>(cfgc),
   };
 }

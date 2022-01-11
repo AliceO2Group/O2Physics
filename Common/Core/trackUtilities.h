@@ -22,27 +22,27 @@
 #include "Common/Core/RecoDecay.h"
 
 /// Extracts track parameters from a track.
-template <typename T>
-o2::track::TrackPar getTrackPar(const T& track)
+template <typename TrackPrecision = float, typename T>
+o2::track::TrackParametrization<TrackPrecision> getTrackPar(const T& track)
 {
-  std::array<float, 5> arraypar = {track.y(), track.z(), track.snp(),
-                                   track.tgl(), track.signed1Pt()};
-  return o2::track::TrackPar(track.x(), track.alpha(), std::move(arraypar));
+  std::array<TrackPrecision, 5> arraypar = {track.y(), track.z(), track.snp(),
+                                            track.tgl(), track.signed1Pt()};
+  return o2::track::TrackParametrization<TrackPrecision>(track.x(), track.alpha(), std::move(arraypar));
 }
 
 /// Extracts track parameters and covariance matrix from a track.
-template <typename T>
-o2::track::TrackParCov getTrackParCov(const T& track)
+template <typename TrackPrecision = float, typename T>
+o2::track::TrackParametrizationWithError<TrackPrecision> getTrackParCov(const T& track)
 {
-  std::array<float, 5> arraypar = {track.y(), track.z(), track.snp(),
-                                   track.tgl(), track.signed1Pt()};
-  std::array<float, 15> covpar = {track.cYY(), track.cZY(), track.cZZ(),
-                                  track.cSnpY(), track.cSnpZ(),
-                                  track.cSnpSnp(), track.cTglY(), track.cTglZ(),
-                                  track.cTglSnp(), track.cTglTgl(),
-                                  track.c1PtY(), track.c1PtZ(), track.c1PtSnp(),
-                                  track.c1PtTgl(), track.c1Pt21Pt2()};
-  return o2::track::TrackParCov(track.x(), track.alpha(), std::move(arraypar), std::move(covpar));
+  std::array<TrackPrecision, 5> arraypar = {track.y(), track.z(), track.snp(),
+                                            track.tgl(), track.signed1Pt()};
+  std::array<TrackPrecision, 15> covpar = {track.cYY(), track.cZY(), track.cZZ(),
+                                           track.cSnpY(), track.cSnpZ(),
+                                           track.cSnpSnp(), track.cTglY(), track.cTglZ(),
+                                           track.cTglSnp(), track.cTglTgl(),
+                                           track.c1PtY(), track.c1PtZ(), track.c1PtSnp(),
+                                           track.c1PtTgl(), track.c1Pt21Pt2()};
+  return o2::track::TrackParametrizationWithError<TrackPrecision>(track.x(), track.alpha(), std::move(arraypar), std::move(covpar));
 }
 
 /// Extracts primary vertex position and covariance matrix from a collision.

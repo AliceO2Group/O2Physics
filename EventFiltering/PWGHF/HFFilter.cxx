@@ -316,11 +316,24 @@ struct HfFilter { // Main struct for HF triggers
       return false;
     }
 
+    if (std::abs(track.eta()) < 0.8) {
+      return false;
+    }
+
+    if (track.isGlobalTrack() != (uint8_t) true) {
+      return false; // use only global tracks
+    }
+
+    unsigned char clusterMapITS = track.itsClusterMap();
+    if (!TESTBIT(clusterMapITS, 0) || !TESTBIT(clusterMapITS, 1)) {
+      return false; // require a hit in one of the first two layers of the ITS
+    }
+
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; //minimum DCAxy
+      return false; // minimum DCAxy
     }
     if (std::abs(track.dcaXY()) > cutsSingleTrackBeauty[candType].get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; //maximum DCAxy
+      return false; // maximum DCAxy
     }
     return true;
   }
@@ -332,6 +345,10 @@ struct HfFilter { // Main struct for HF triggers
   bool isSelectedProton(const T& track)
   {
     if (track.pt() < femtoMinProtonPt) {
+      return false;
+    }
+
+    if (std::abs(track.eta()) < 0.8) {
       return false;
     }
 
@@ -382,7 +399,7 @@ struct HfFilter { // Main struct for HF triggers
 
   using HfTrackIndexProng2withColl = soa::Join<aod::HfTrackIndexProng2, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::HfTrackIndexProng3, aod::Colls3Prong>;
-  using BigTracksWithProtonPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using BigTracksWithProtonPID = soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using BigTracksMCPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::BigTracksMC>;
 
   void process(aod::Collision const& collision,
@@ -430,7 +447,7 @@ struct HfFilter { // Main struct for HF triggers
         std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
 
         if (!keepEvent[kBeauty]) {
-          if (isSelectedTrackForBeauty(track, kBeauty3Prong)) {                                           // TODO: add more single track cuts
+          if (isSelectedTrackForBeauty(track, kBeauty3Prong)) {
             auto massCandB = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi}); // TODO: retrieve D0-D0bar hypothesis to pair with proper signed track
             if (std::abs(massCandB - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
@@ -512,7 +529,7 @@ struct HfFilter { // Main struct for HF triggers
         float massCharmHypos[3] = {massDPlus, massDs, massLc};
         float massBeautyHypos[3] = {massB0, massBs, massLb};
         float deltaMassHypos[3] = {deltaMassB0, deltaMassBs, deltaMassLb};
-        if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong)) { // TODO: add more single track cuts
+        if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong)) {
           for (int iHypo{0}; iHypo < 3 && !keepEvent[kBeauty]; ++iHypo) {
             if (specieCharmHypos[iHypo]) {
               auto massCandB = RecoDecay::M(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
@@ -554,7 +571,7 @@ struct HfFilter { // Main struct for HF triggers
 
     tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
 
-    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && keepEvent[kDoubleCharm]) {
+    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && !keepEvent[kDoubleCharm]) {
       hProcessedEvents->Fill(1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersHF; ++iTrigger) {
