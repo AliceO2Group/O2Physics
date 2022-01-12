@@ -138,6 +138,7 @@ struct QaImpactPar {
       histograms.add("Data/X_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionXAxis,collisionXOrigAxis});
       histograms.add("Data/Y_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionYAxis,collisionYOrigAxis});
       histograms.add("Data/Z_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionZAxis,collisionZOrigAxis});
+      histograms.add("Data/nContrib_PVrefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {collisionNumberContributorAxis});
       histograms.add("Data/nContrib_PVrefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {collisionNumberContributorAxis});
     }
 
@@ -274,6 +275,7 @@ struct QaImpactPar {
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos,Pvtx);
     if (!PVrefit_doable) {
       LOG(info) << "Not enough tracks accepted for the refit";
+      histograms.fill(HIST("Data/nContrib_PVrefitNotDoable"), collision.numContrib());
     }
     else {
       histograms.fill(HIST("Data/vertices"), 2);
