@@ -113,9 +113,9 @@ struct QaImpactPar {
     const AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
     const AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
     const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
-    const AxisSpec collisionXOrigAxis{100, -20.f, 20.f, "X original PV (cm)"};
-    const AxisSpec collisionYOrigAxis{100, -20.f, 20.f, "Y original PV (cm)"};
-    const AxisSpec collisionZOrigAxis{100, -20.f, 20.f, "Z original PV (cm)"};
+    const AxisSpec collisionXOrigAxis{1000, -20.f, 20.f, "X original PV (cm)"};
+    const AxisSpec collisionYOrigAxis{1000, -20.f, 20.f, "Y original PV (cm)"};
+    const AxisSpec collisionZOrigAxis{1000, -20.f, 20.f, "Z original PV (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
     const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
     const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
