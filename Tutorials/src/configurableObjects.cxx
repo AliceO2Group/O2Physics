@@ -58,16 +58,31 @@ static constexpr float defaultm[3][4] = {{1.1, 1.2, 1.3, 1.4}, {2.1, 2.2, 2.3, 2
 static LabeledArray<float> la{&defaultm[0][0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}};
 
 struct ConfigurableObjectDemo {
+  // Simple type configurables
+  Configurable<float> min_pt{"min_pt", 0.5f, "Lower p_T cut"};
+  Configurable<bool> require_tof{"require_tof", false, "Check for TOF hit"};
+
+  // Configurable based on a struct
   Configurable<configurableCut> cut{"cut", {0.5, 1, true}, "generic cut"};
   MutableConfigurable<configurableCut> mutable_cut{"mutable_cut", {1., 2, false}, "generic cut"};
 
+  // Array type configurables
   // note that size is fixed by this declaration - externally supplied vector needs to be the same size!
   Configurable<std::vector<int>> array{"array", {0, 0, 0, 0, 0, 0, 0}, "generic array"};
   Configurable<Array2D<float>> vmatrix{"matrix", {&defaultm[0][0], 3, 4}, "generic matrix"};
   Configurable<LabeledArray<float>> vla{"vla", {defaultm[0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array"};
 
+  // Configurables can be grouped into `ConfigurableGroup`s.
+  // Their names must be unique.
+  struct : ConfigurableGroup {
+    Configurable<float> max_eta{"max_eta", 0.8f, "Maximal eta"};
+    Configurable<float> min_clusters{"min_clusters", 70, "Minimal required number of clusters"};
+  } trackcuts;
+
   void init(InitContext const&)
   {
+    LOGF(info, "min_pt: %f; require_tof: %d", min_pt, require_tof);
+    LOGF(info, "max_eta: %f; min_clusters: %d", trackcuts.max_eta, trackcuts.min_clusters);
     LOGF(info, "Cut1 bins: %s; Cut2 bins: %s", printArray(cut->getBins()), printArray(mutable_cut->getBins()));
     LOGF(info, "Cut1 labels: %s; Cut2 labels: %s", printArray(cut->getLabels()), printArray(mutable_cut->getLabels()));
     auto vec = (std::vector<int>)array;

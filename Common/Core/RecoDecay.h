@@ -724,6 +724,9 @@ class RecoDecay
     }
     // Loop over decay candidate prongs
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
+      if (!arrDaughters[iProng].has_mcParticle()) {
+        return -1;
+      }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.

@@ -202,12 +202,18 @@ struct HFLcCandidateSelectorparametrizedPID {
       auto etaPos2Track = std::abs(trackPos2.eta());
       auto etaNegTrack = std::abs(trackNeg.eta());
 
-      const auto mcParticlePositive1 = trackPos1.mcParticle();
-      const auto mcParticlePositive2 = trackPos2.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      int pdgPositive1 = mcParticlePositive1.pdgCode();
-      int pdgPositive2 = mcParticlePositive2.pdgCode();
-      int pdgNegative = mcParticleNegative.pdgCode();
+      int pdgPositive1 = 0;
+      int pdgPositive2 = 0;
+      int pdgNegative = 0;
+      if (trackPos1.has_mcParticle()) {
+        pdgPositive1 = trackPos1.mcParticle().pdgCode();
+      }
+      if (trackPos2.has_mcParticle()) {
+        pdgPositive2 = trackPos2.mcParticle().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle().pdgCode();
+      }
 
       bool selectPos1Proton = false;
       bool selectPos1Pion = false;

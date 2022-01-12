@@ -229,10 +229,15 @@ struct HFD0CandidateSelectorALICE3Barrel {
         continue;
       }
 
-      const auto mcParticlePositive = trackPos.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      int pdgPositive = mcParticlePositive.pdgCode();
-      int pdgNegative = mcParticleNegative.pdgCode();
+      int pdgPositive = 0;
+      int pdgNegative = 0;
+      if (trackPos.has_mcParticle()) {
+        pdgPositive = trackPos.mcParticle().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle().pdgCode();
+      }
+
       //std::cout << "barrel= " << pdgPositive <<"\t"<< pdgNegative << "\n";
       float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
