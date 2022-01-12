@@ -208,6 +208,7 @@ struct QaImpactPar {
   
   void processData(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>>::iterator& collision,
                    // void processData(o2::soa::Filtered<o2::aod::Collisions>::iterator& collision,
+                   o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra> const& unfiltered_tracks,
                    o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks,
                    o2::aod::BCsWithTimestamps const&)
   {
@@ -237,14 +238,29 @@ struct QaImpactPar {
     /// retrieve the tracks contributing to the primary vertex fitting
     std::vector<int64_t> vec_globID_contr = {};
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
-    for (const auto& track : tracks) {
-      if (!track.isPVContributor()) {
+    LOG(info) << "\n === New collision";
+    const int nTrk = unfiltered_tracks.size();
+    int nContrib = 0;
+    int nNonContrib = 0;
+    for (const auto& unfiltered_track : unfiltered_tracks) {
+      if (!unfiltered_track.isPVContributor()) {
         /// the track di not contribute to fit the primary vertex
+        nNonContrib++;
         continue;
       }
-      vec_globID_contr.push_back(track.globalIndex());
-      vec_TrkContributos.push_back(getTrackParCov(track));
+      vec_globID_contr.push_back(unfiltered_track.globalIndex());
+      vec_TrkContributos.push_back(getTrackParCov(unfiltered_track));
+      LOG(info) << "---> a contributor! stu saved";
+      nContrib++;
+      LOG(info) << "vec_contrib size: " << vec_TrkContributos.size() << ", nContrib: " << nContrib;
     }
+    LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
+
+    if (vec_TrkContributos.size() != collision.numContrib()) {
+      LOG(info) << "!!! something wrong in the number of contributor tracks for PV fit !!! " << vec_TrkContributos.size() << " vs. " << collision.numContrib();
+      return;
+    }
+
     std::vector<bool> vec_useTrk_PVrefit (vec_globID_contr.size(), true);
 
     /// Prepare the vertex refitting
@@ -281,6 +297,8 @@ struct QaImpactPar {
       histograms.fill(HIST("Data/vertices"), 2);
     }
 
+    LOG(info) << "prepareVertexRefit = " << PVrefit_doable << " Ncontrib= " << vec_TrkContributos.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << Pvtx.asString();
+
     /// loop over tracks
     float pt = -999.f;
     float impParRPhi = -999.f;
@@ -291,6 +309,8 @@ struct QaImpactPar {
     float tofNSigmaPion = -999.f;
     float tofNSigmaKaon = -999.f;
     float tofNSigmaProton = -999.f;
+    int ntr = tracks.size();
+    int cnt = 0;
     for (const auto& track : tracks) {
 
       /// Using the Filter instead
@@ -335,6 +355,7 @@ struct QaImpactPar {
           vec_useTrk_PVrefit[entry] = false;  /// remove the track from the PV refitting
           // vertex refit
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
+          LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
             histograms.fill(HIST("Data/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
@@ -349,6 +370,8 @@ struct QaImpactPar {
           }
           histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
         
+          vec_useTrk_PVrefit[entry] = true; /// restore the track for the next PV refitting
+
           //if (recalc_imppar) { /// (*)
             // fill the histograms
             const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
@@ -364,6 +387,8 @@ struct QaImpactPar {
             PVbase_recalculated.setZ(Pvtx_refitted.getZ());
             PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
           //} /// (*)
+          
+            cnt++;
         }
       }
       
