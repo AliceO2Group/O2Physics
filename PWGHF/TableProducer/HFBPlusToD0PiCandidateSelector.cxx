@@ -121,7 +121,7 @@ struct HfBplusTod0piCandidateSelector {
     if (std::abs(hfCandBPlus.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
       return false;
     }
-    if (std::abs(hfCandBPlus.impactParameter1()) < cuts->get(pTBin, "d0 Pi")){
+    if (std::abs(hfCandBPlus.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
       return false;
     }
     //D0 CPA
