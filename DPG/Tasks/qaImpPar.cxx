@@ -29,8 +29,13 @@
 #include "CommonUtils/NameConf.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/TrackSelection.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "ReconstructionDataFormats/Vertex.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
 
 #include "iostream"
+#include "vector"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -65,6 +70,16 @@ struct QaImpactPar {
   Configurable<float> nSigmaTOFKaonMax{"nSigmaTOFKaonMax", 99999.f, "Maximum nSigma value in TOF, kaon hypothesis"};
   Configurable<float> nSigmaTOFProtonMin{"nSigmaTOFProtonMin", -99999.f, "Minimum nSigma value in TOF, proton hypothesis"};
   Configurable<float> nSigmaTOFProtonMax{"nSigmaTOFProtonMax", 99999.f, "Maximum nSigma value in TOF, proton hypothesis"};
+  Configurable<bool> doPVrefit{"doPVrefit", true, "Do PV refit"};
+  Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
+  Configurable<int> nBins_DeltaY_PVrefit{"nBins_DeltaY_PVrefit", 1000, "Number of bins of DeltaY for PV refit"};
+  Configurable<int> nBins_DeltaZ_PVrefit{"nBins_DeltaZ_PVrefit", 1000, "Number of bins of DeltaZ for PV refit"};
+  Configurable<float> minDeltaX_PVrefit{"minDeltaX_PVrefit", -0.5, "Min. DeltaX value for PV refit (cm)"};
+  Configurable<float> maxDeltaX_PVrefit{"maxDeltaX_PVrefit", 0.5, "Max. DeltaX value for PV refit (cm)"};
+  Configurable<float> minDeltaY_PVrefit{"minDeltaY_PVrefit", -0.5, "Min. DeltaY value for PV refit (cm)"};
+  Configurable<float> maxDeltaY_PVrefit{"maxDeltaY_PVrefit", 0.5, "Max. DeltaY value for PV refit (cm)"};
+  Configurable<float> minDeltaZ_PVrefit{"minDeltaZ_PVrefit", -0.5, "Min. DeltaZ value for PV refit (cm)"};
+  Configurable<float> maxDeltaZ_PVrefit{"maxDeltaZ_PVrefit", 0.5, "Max. DeltaZ value for PV refit (cm)"};
 
   /// Selections with Filter (from o2::framework::expressions)
   // Primary vertex |z_vtx|<XXX cm
@@ -77,16 +92,65 @@ struct QaImpactPar {
 
   /// Histogram registry (from o2::framework)
   HistogramRegistry histograms{"HistogramsImpParQA"};
+  bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
+  bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
+  bool isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
+
+  // Needed for PV refitting
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  const char* ccdbpath_lut = "GLO/Param/MatLUT";
+  const char* ccdbpath_geo = "GLO/Config/Geometry";
+  const char* ccdbpath_grp = "GLO/GRP/GRP";
+  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int mRunNumber;
 
   /// init function - declare and define histograms
   void init(InitContext&)
   {
     // Primary vertex
+    const AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
+    const AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
     const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
+    const AxisSpec collisionXOrigAxis{1000, -20.f, 20.f, "X original PV (cm)"};
+    const AxisSpec collisionYOrigAxis{1000, -20.f, 20.f, "Y original PV (cm)"};
+    const AxisSpec collisionZOrigAxis{1000, -20.f, 20.f, "Z original PV (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
+    const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
+    const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
+    const AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
 
+    histograms.add("Data/vertices", "", kTH1D, {{2, 0.5f, 2.5f, ""}});
+    histograms.get<TH1>(HIST("Data/vertices"))->GetXaxis()->SetBinLabel(1, "All PV");
+    histograms.get<TH1>(HIST("Data/vertices"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
+    histograms.add("Data/vertices_perTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(1, "All PV");
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
+    if (doPVrefit) {
+      histograms.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaX_PVrefit});
+      histograms.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaY_PVrefit});
+      histograms.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaZ_PVrefit});
+      histograms.add("Data/nContrib_vs_Chi2PVrefit", "", kTH2D, {collisionNumberContributorAxis, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+      histograms.add("Data/X_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionXAxis, collisionXOrigAxis});
+      histograms.add("Data/Y_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionYAxis, collisionYOrigAxis});
+      histograms.add("Data/Z_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionZAxis, collisionZOrigAxis});
+      histograms.add("Data/nContrib_PVrefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {collisionNumberContributorAxis});
+      histograms.add("Data/nContrib_PVrefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {collisionNumberContributorAxis});
+    }
+
+    // Needed for PV refitting
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>(ccdbpath_geo);
+    }
+    mRunNumber = 0;
 
     // tracks
     const AxisSpec trackPtAxis{100, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
@@ -105,12 +169,18 @@ struct QaImpactPar {
     histograms.add("Data/pt", "", kTH1D, {trackPtAxis});
     histograms.add("Data/h4ImpPar", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("Data/h4ImpParZ", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpPar_Pion", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpParZ_Pion", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpPar_Kaon", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpParZ_Kaon", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpPar_Proton", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
-    histograms.add("Data/h4ImpParZ_Proton", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    if (isPIDPionApplied) {
+      histograms.add("Data/h4ImpPar_Pion", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+      histograms.add("Data/h4ImpParZ_Pion", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    }
+    if (isPIDKaonApplied) {
+      histograms.add("Data/h4ImpPar_Kaon", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+      histograms.add("Data/h4ImpParZ_Kaon", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    }
+    if (isPIDProtonApplied) {
+      histograms.add("Data/h4ImpPar_Proton", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
+      histograms.add("Data/h4ImpParZ_Proton", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
+    }
     histograms.add("Data/hNSigmaTPCPion", "", kTH2D, {trackPtAxis, trackNSigmaTPCPionAxis});
     histograms.add("Data/hNSigmaTPCKaon", "", kTH2D, {trackPtAxis, trackNSigmaTPCKaonAxis});
     histograms.add("Data/hNSigmaTPCProton", "", kTH2D, {trackPtAxis, trackNSigmaTPCProtonAxis});
@@ -134,21 +204,18 @@ struct QaImpactPar {
     histograms.add("MC/h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
   }
 
-  /// o2::aod::EvSels makes the execution crash, with the following error message:
-  /// [240108:bc-selection-task]: [17:22:28][WARN] CCDB: Did not find an alien token; Cannot serve objects located on alien://
-  /// [240108:bc-selection-task]: [17:22:28][ERROR] Requested resource does not exist: http://alice-ccdb.cern.ch/EventSelection/TriggerAliases/1511123421601/
-  /// [240108:bc-selection-task]: [17:22:28][FATAL] Trigger aliases are not available in CCDB for run=282341 at timestamp=1511123421601
+  // using FullTrack = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+
   void processData(o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>>::iterator& collision,
                    // void processData(o2::soa::Filtered<o2::aod::Collisions>::iterator& collision,
-                   o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks)
+                   o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra> const& unfiltered_tracks,
+                   o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>> const& tracks,
+                   o2::aod::BCsWithTimestamps const&)
   {
     // o2::dataformats::DCA dca;
     //  FIXME: get this from CCDB
     // constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
-    const bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
-    const bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
-    const bool isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
 
     /// trigger selection (remove for the moment, need to join with o2::aod::EvSels)
     // if (useINT7Trigger) {
@@ -164,8 +231,72 @@ struct QaImpactPar {
       return;
     }
 
+    histograms.fill(HIST("Data/vertices"), 1);
     histograms.fill(HIST("Data/vertexZ"), collision.posZ());
     histograms.fill(HIST("Data/numberContributors"), collision.numContrib());
+
+    /// retrieve the tracks contributing to the primary vertex fitting
+    std::vector<int64_t> vec_globID_contr = {};
+    std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
+    LOG(info) << "\n === New collision";
+    const int nTrk = unfiltered_tracks.size();
+    int nContrib = 0;
+    int nNonContrib = 0;
+    for (const auto& unfiltered_track : unfiltered_tracks) {
+      if (!unfiltered_track.isPVContributor()) {
+        /// the track di not contribute to fit the primary vertex
+        nNonContrib++;
+        continue;
+      }
+      vec_globID_contr.push_back(unfiltered_track.globalIndex());
+      vec_TrkContributos.push_back(getTrackParCov(unfiltered_track));
+      LOG(info) << "---> a contributor! stuff saved";
+      nContrib++;
+      LOG(info) << "vec_contrib size: " << vec_TrkContributos.size() << ", nContrib: " << nContrib;
+    }
+    LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
+
+    if (vec_TrkContributos.size() != collision.numContrib()) {
+      LOG(info) << "!!! something wrong in the number of contributor tracks for PV fit !!! " << vec_TrkContributos.size() << " vs. " << collision.numContrib();
+      return;
+    }
+
+    std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
+
+    /// Prepare the vertex refitting
+    // Get the magnetic field for the Propagator
+    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    if (mRunNumber != bc.runNumber()) {
+      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+      if (grpo != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+        o2::base::Propagator::Instance()->setMatLUT(lut);
+        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      mRunNumber = bc.runNumber();
+    }
+    // build the VertexBase to initialize the vertexer
+    o2::dataformats::VertexBase Pvtx;
+    Pvtx.setX(collision.posX());
+    Pvtx.setY(collision.posY());
+    Pvtx.setZ(collision.posZ());
+    Pvtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    // configure PVertexer
+    o2::vertexing::PVertexer vertexer;
+    o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
+    vertexer.init();
+    bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
+    if (!PVrefit_doable) {
+      LOG(info) << "Not enough tracks accepted for the refit";
+      histograms.fill(HIST("Data/nContrib_PVrefitNotDoable"), collision.numContrib());
+    } else {
+      histograms.fill(HIST("Data/vertices"), 2);
+    }
+
+    LOG(info) << "prepareVertexRefit = " << PVrefit_doable << " Ncontrib= " << vec_TrkContributos.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << Pvtx.asString();
 
     /// loop over tracks
     float pt = -999.f;
@@ -177,6 +308,8 @@ struct QaImpactPar {
     float tofNSigmaPion = -999.f;
     float tofNSigmaKaon = -999.f;
     float tofNSigmaProton = -999.f;
+    int ntr = tracks.size();
+    int cnt = 0;
     for (const auto& track : tracks) {
 
       /// Using the Filter instead
@@ -201,14 +334,75 @@ struct QaImpactPar {
       histograms.fill(HIST("Data/hNSigmaTOFKaon"), pt, tofNSigmaKaon);
       histograms.fill(HIST("Data/hNSigmaTOFProton"), pt, tofNSigmaProton);
 
-      // propagation to primary vertex for DCA
-      // "crude" method not working with Run 3 MC productions
-      // if (getTrackParCov(track).propagateToDCA(getPrimaryVertex(track.collision()), magneticField, &dca, 100.)) {
+      histograms.fill(HIST("Data/vertices_perTrack"), 1);
+      if (PVrefit_doable) {
+        histograms.fill(HIST("Data/vertices_perTrack"), 2);
+      }
+      /// PV refitting, if the tracks contributed to this at the beginning
+      o2::dataformats::VertexBase PVbase_recalculated;
+      bool recalc_imppar = false;
+      if (doPVrefit && PVrefit_doable) {
+        recalc_imppar = true;
+        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
+        // if( it_trk==vec_globID_contr.end() ) {
+        //   /// not found: this track did not contribute to the initial PV fitting
+        //   continue;
+        // }
+        if (it_trk != vec_globID_contr.end()) {
+          /// this track contributed to the PV fit: let's do the refit without it
+          const int entry = std::distance(vec_globID_contr.begin(), it_trk);
+          vec_useTrk_PVrefit[entry] = false;                                   /// remove the track from the PV refitting
+          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
+          LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
+          if (Pvtx_refitted.getChi2() < 0) {
+            LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
+            histograms.fill(HIST("Data/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
+            histograms.fill(HIST("Data/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
+            histograms.fill(HIST("Data/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
+            histograms.fill(HIST("Data/nContrib_PVrefitChi2minus1"), collision.numContrib());
+            recalc_imppar = false;
+          } else {
+            histograms.fill(HIST("Data/vertices_perTrack"), 3);
+          }
+          // histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
+          histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), vec_useTrk_PVrefit.size() - 1, Pvtx_refitted.getChi2());
 
-      /// propagation ok! Retrieve impact parameter
-      // PR "Run 3 DCA extraction #187" required - correct calculation of DCAxy of tracks propagated to the PV
+          vec_useTrk_PVrefit[entry] = true; /// restore the track for the next PV refitting
+
+          if (recalc_imppar) {
+            // fill the histograms for refitted PV with good Chi2
+            const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
+            const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
+            const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
+            histograms.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
+            histograms.fill(HIST("Data/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
+            histograms.fill(HIST("Data/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
+
+            // fill the newly calculated PV
+            PVbase_recalculated.setX(Pvtx_refitted.getX());
+            PVbase_recalculated.setY(Pvtx_refitted.getY());
+            PVbase_recalculated.setZ(Pvtx_refitted.getZ());
+            PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
+          }
+
+          cnt++;
+        }
+      }
+
+      /// impact parameter to the PV
+      // value calculated wrt global PV (not recalculated) ---> coming from trackextension workflow
       impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
+      // updated value after PV recalculation
+      if (recalc_imppar) {
+        auto trackPar = getTrackPar(track);
+        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+          // if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+          impParRPhi = dcaInfo[0] * toMicrometers;
+          impParZ = dcaInfo[1] * toMicrometers;
+        }
+      }
 
       /// all tracks
       histograms.fill(HIST("Data/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi());
@@ -235,7 +429,6 @@ struct QaImpactPar {
         histograms.fill(HIST("Data/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("Data/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
-      //}
     }
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
