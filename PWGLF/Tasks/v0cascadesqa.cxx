@@ -163,7 +163,7 @@ struct v0cascadesQA {
   void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
-      if (MC::isPhysicalPrimary(mcparticle)) {
+      if (mcparticle.isPhysicalPrimary()) {
         if (mcparticle.pdgCode() == 310)
           histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); //K0s
         if (mcparticle.pdgCode() == 3122)
@@ -260,7 +260,7 @@ struct v0cascadesQA {
           auto mcnegtrack = v0.negTrack_as<MyTracksMC>().mcParticle();
           auto mcpostrack = v0.posTrack_as<MyTracksMC>().mcParticle();
           auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-          bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+          bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
           bool isK0sV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) &&
                          ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211) ||
@@ -412,11 +412,11 @@ struct v0cascadesQA {
         auto mcnegtrack = casc.v0_as<aod::V0Datas>().negTrack_as<MyTracksMC>().mcParticle();
         auto mcpostrack = casc.v0_as<aod::V0Datas>().posTrack_as<MyTracksMC>().mcParticle();
         auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-        bool MomOfV0IsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+        bool MomOfV0IsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
         auto bachelor = casc.bachelor_as<MyTracksMC>().mcParticle();
         auto particleMotherOfBach = bachelor.mother0_as<aod::McParticles>();
-        bool MomOfBachIsPrimary = MC::isPhysicalPrimary(particleMotherOfBach);
+        bool MomOfBachIsPrimary = particleMotherOfBach.isPhysicalPrimary();
 
         bool isXiMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&
                                  mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&

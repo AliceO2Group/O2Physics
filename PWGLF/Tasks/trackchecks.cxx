@@ -110,7 +110,7 @@ struct TrackCheckTaskEvSel {
         const auto particle = track.mcParticle();
         int pdgcode = particle.pdgCode();
 
-        if (MC::isPhysicalPrimary(particle)) { //is primary?
+        if (particle.isPhysicalPrimary()) { //is primary?
           isPrimary = true;
         }
 
@@ -208,7 +208,7 @@ struct TrackCheckTaskEvSelTrackSel {
         const auto particle = track.mcParticle();
         int pdgcode = particle.pdgCode();
 
-        if (MC::isPhysicalPrimary(particle)) { //is primary?
+        if (particle.isPhysicalPrimary()) { //is primary?
           isPrimary = true;
         }
         //Calculate y

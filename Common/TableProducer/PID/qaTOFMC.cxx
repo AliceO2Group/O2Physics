@@ -158,7 +158,7 @@ struct pidTOFTaskQA {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
       // Selecting primaries
-      if (MC::isPhysicalPrimary(particle)) {
+      if (particle.isPhysicalPrimary()) {
         histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
       } else {
         histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
@@ -227,7 +227,7 @@ struct pidTOFTaskQA {
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
       histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
       const auto particle = t.mcParticle();
-      if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+      if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
       } else {
@@ -236,7 +236,7 @@ struct pidTOFTaskQA {
       }
       if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
         histos.fill(HIST("event/tofbetaMC"), t.pt(), t.beta());
-        if (MC::isPhysicalPrimary(particle)) {
+        if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("event/tofbetaMCPrm"), t.pt(), t.beta());
         } else {
           histos.fill(HIST("event/tofbetaMCSec"), t.pt(), t.beta());

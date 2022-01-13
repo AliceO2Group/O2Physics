@@ -97,7 +97,7 @@ struct lambdakzeroQa {
       auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
       auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
       auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-      bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+      bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
       if (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
         registry.fill(HIST("hMassK0ShortMCportion"), v0.mK0Short());
@@ -186,7 +186,7 @@ struct lambdakzeroAnalysisMc {
         auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
         auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
         auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-        bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+        bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 3.5);
@@ -259,7 +259,7 @@ struct lambdakzeroAnalysisMc {
         auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
         auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
         auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-        bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+        bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 3.5);
@@ -343,7 +343,7 @@ struct lambdakzeroParticleCountMc {
   {
     for (auto& mcparticle : mcParticles) {
       if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
-        if (MC::isPhysicalPrimary(mcparticle)) {
+        if (mcparticle.isPhysicalPrimary()) {
           if (mcparticle.pdgCode() == 310) {
             registry.fill(HIST("hK0ShortCount"), 0.5);
             if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
@@ -384,7 +384,7 @@ struct V0daughtersTrackingEfficiency {
   void process(aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     for (auto& mcparticle : mcParticles) {
-      if (MC::isPhysicalPrimary(mcparticle)) {
+      if (mcparticle.isPhysicalPrimary()) {
         if (TMath::Abs(mcparticle.y()) < 0.5) {
           if (mcparticle.pdgCode() == 310) {
             if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
