@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 

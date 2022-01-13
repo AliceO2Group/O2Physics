@@ -16,7 +16,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"

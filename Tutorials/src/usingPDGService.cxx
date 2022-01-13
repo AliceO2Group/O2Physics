@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 
 #include "Framework/AnalysisTask.h"
-#include "Common/Core/MC.h"
 #include "TDatabasePDG.h"
 #include "Framework/runDataProcessing.h"
 
