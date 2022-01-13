@@ -15,33 +15,34 @@
 using namespace o2;
 using namespace o2::framework;
 
-// Tasks to build transient indices to group V0s and cascades to collisions
+// Converts V0 and cascade version 000 to 001
+// Build indices to group V0s and cascades to collisions
 
 struct WeakDecayIndicesV0 {
-  Produces<aod::TransientV0s> transientV0s;
+  Produces<aod::V0s_001> v0s_001;
 
-  void process(aod::StoredV0s const& v0s, aod::Tracks const& tracks)
+  void process(aod::V0s_000 const& v0s, aod::Tracks const& tracks)
   {
     for (auto& v0 : v0s) {
       if (v0.posTrack().collisionId() != v0.negTrack().collisionId()) {
-        LOGF(warning, "V0 %d has inconsistent collision information (%d, %d)", v0.globalIndex(), v0.posTrack().collisionId(), v0.negTrack().collisionId());
+        LOGF(fatal, "V0 %d has inconsistent collision information (%d, %d)", v0.globalIndex(), v0.posTrack().collisionId(), v0.negTrack().collisionId());
       }
-      transientV0s(v0.posTrack().collisionId());
+      v0s_001(v0.posTrack().collisionId(), v0.posTrackId(), v0.negTrackId());
     }
   }
 };
 
 // NOTE These tasks have to be split because for the cascades, V0s and not StoredV0s are needed
 struct WeakDecayIndicesCascades {
-  Produces<aod::TransientCascades> transientCascades;
+  Produces<aod::Cascades_001> cascades_001;
 
-  void process(aod::V0s const& v0s, aod::StoredCascades const& cascades, aod::Tracks const& tracks)
+  void process(aod::V0s const& v0s, aod::Cascades_000 const& cascades, aod::Tracks const& tracks)
   {
     for (auto& cascade : cascades) {
       if (cascade.bachelor().collisionId() != cascade.v0().posTrack().collisionId() || cascade.v0().posTrack().collisionId() != cascade.v0().negTrack().collisionId()) {
         LOGF(warning, "Cascade %d has inconsistent collision information (%d, %d, %d)", cascade.globalIndex(), cascade.bachelor().collisionId(), cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId());
       }
-      transientCascades(cascade.bachelor().collisionId());
+      cascades_001(cascade.bachelor().collisionId(), cascade.v0Id(), cascade.bachelorId());
     }
   }
 };
