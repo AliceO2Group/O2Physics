@@ -125,8 +125,8 @@ struct QaImpactPar {
     histograms.get<TH1>(HIST("Data/vertices"))->GetXaxis()->SetBinLabel(1,"All PV");
     histograms.get<TH1>(HIST("Data/vertices"))->GetXaxis()->SetBinLabel(2,"PV refit doable");
     histograms.add("Data/vertices_perTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
-    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3,"All PV");
-    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3,"PV refit doable");
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(1,"All PV");
+    histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(2,"PV refit doable");
     histograms.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3,"PV refit #chi^{2}!=-1");
     histograms.add("Data/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Data/numberContributors", "", kTH1D, {collisionNumberContributorAxis}); 
@@ -250,7 +250,7 @@ struct QaImpactPar {
       }
       vec_globID_contr.push_back(unfiltered_track.globalIndex());
       vec_TrkContributos.push_back(getTrackParCov(unfiltered_track));
-      LOG(info) << "---> a contributor! stu saved";
+      LOG(info) << "---> a contributor! stuff saved";
       nContrib++;
       LOG(info) << "vec_contrib size: " << vec_TrkContributos.size() << ", nContrib: " << nContrib;
     }
@@ -350,11 +350,10 @@ struct QaImpactPar {
         //  continue;
         //}
         if (it_trk!=vec_globID_contr.end()) {
-          //recalc_imppar = true;
+          /// this track contributed to the PV fit: let's do the refit without it
           const int entry = std::distance(vec_globID_contr.begin(), it_trk);
           vec_useTrk_PVrefit[entry] = false;  /// remove the track from the PV refitting
-          // vertex refit
-          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
+          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);  // vertex refit
           LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
@@ -362,18 +361,18 @@ struct QaImpactPar {
             histograms.fill(HIST("Data/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
             histograms.fill(HIST("Data/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
             histograms.fill(HIST("Data/nContrib_PVrefitChi2minus1"), collision.numContrib());
-            //continue;   /// this kills many tracks!!! Only thos propagated to GOOD recalculated PV are considered
-            //recalc_imppar = false; /// this keeps everything (*)
+            recalc_imppar = false;
           }
           else {
             histograms.fill(HIST("Data/vertices_perTrack"), 3);
           }
-          histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
+          //histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
+          histograms.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), vec_useTrk_PVrefit.size()-1, Pvtx_refitted.getChi2());
         
           vec_useTrk_PVrefit[entry] = true; /// restore the track for the next PV refitting
 
-          //if (recalc_imppar) { /// (*)
-            // fill the histograms
+          if (recalc_imppar) {
+            // fill the histograms for refitted PV with good Chi2
             const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
             const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
             const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
@@ -386,7 +385,7 @@ struct QaImpactPar {
             PVbase_recalculated.setY(Pvtx_refitted.getY());
             PVbase_recalculated.setZ(Pvtx_refitted.getZ());
             PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
-          //} /// (*)
+            }
           
             cnt++;
         }
@@ -432,9 +431,7 @@ struct QaImpactPar {
         histograms.fill(HIST("Data/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("Data/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
-      //}
-
-
+      
     }
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
