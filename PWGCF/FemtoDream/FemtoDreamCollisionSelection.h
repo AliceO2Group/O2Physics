@@ -41,13 +41,14 @@ class FemtoDreamCollisionSelection
   /// \param checkTrigger whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
   /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline)
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
     mCheckTrigger = checkTrigger;
     mTrigger = static_cast<triggerAliases>(trig);
     mCheckOffline = checkOffline;
+    mCheckIsRun3 = checkRun3;
   }
 
   /// Initializes histograms for the task
@@ -60,6 +61,7 @@ class FemtoDreamCollisionSelection
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
     mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultT0A", "; vMultT0A; Entries", kTH1F, {{600, 0, 600}});
   }
 
   /// Print some debug information
@@ -75,19 +77,25 @@ class FemtoDreamCollisionSelection
   template <typename T>
   bool isSelected(T const& col)
   {
-    if (std::abs(col.posZ()) > mZvtxMax) {
-      return false;
+    bool pass = false;
+    if (!mCheckIsRun3) {
+      if (std::abs(col.posZ()) > mZvtxMax) {
+        return pass;
+      }
+      if (mCheckTrigger && col.alias()[mTrigger] != 1) {
+        return pass;
+      }
+      if (mCheckOffline && col.sel7() != 1) {
+        return pass;
+      }
+      pass = true;
+    } else if (mCheckIsRun3) {
+      if (!col.sel8()) {
+        return pass;
+      }
+      pass = true;
     }
-
-    if (mCheckTrigger && col.alias()[mTrigger] != 1) {
-      return false;
-    }
-
-    if (mCheckOffline && col.sel7() != 1) {
-      return false;
-    }
-
-    return true;
+    return pass;
   }
 
   /// Some basic QA of the event
@@ -99,6 +107,7 @@ class FemtoDreamCollisionSelection
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multV0M());
+      mHistogramRegistry->fill(HIST("Event/MultT0A"), col.multT0A());
     }
   }
 
@@ -122,6 +131,7 @@ class FemtoDreamCollisionSelection
   bool mCutsSet = false;                           ///< Protection against running without cuts
   bool mCheckTrigger = false;                      ///< Check for trigger
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
+  bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
