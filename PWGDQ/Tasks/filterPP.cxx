@@ -637,8 +637,6 @@ struct DQCentralFilterPPTask {
   void runCentralDQFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
   {
     bool keepEvent[kNTriggersDQ]{false};
-    constexpr int pairTypeEE = VarManager::kJpsiToEE;
-    constexpr int pairTypeMuMu = VarManager::kJpsiToMuMu;
 
     if (!collision.isDQEventSelected()) {
       return;
