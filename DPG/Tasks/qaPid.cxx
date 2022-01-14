@@ -356,7 +356,7 @@ struct pid {
     const float p = track.p();
 
     // list of Nsigmas for particles
-    float particleNSigma[arrLen] = {};
+    float particleNSigma[arrLen];
 
     bool isPidFalse = false;
 
@@ -417,7 +417,7 @@ struct pid {
     bool isPidFalse = false;
 
     // list of Nsigmas for particles
-    float particleNSigma[arrLen] = {};
+    float particleNSigma[arrLen];
 
     // calculate Nsigmas for every particle
     for (int j = 0; j < arrLen; ++j) {
