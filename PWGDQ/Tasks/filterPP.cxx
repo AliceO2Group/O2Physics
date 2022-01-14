@@ -623,16 +623,6 @@ struct DQCentralFilterPPTask {
     TString muonCutNamesStr = "muonLowPt,muonHighPt";
     fMuonCutsNameArray = muonCutNamesStr.Tokenize(",");
     fNMuonCuts = fMuonCutsNameArray->GetEntries();
-    TString histNames = "";
-    for (int i = 0; i < fNTrackCuts; i++) {
-      histNames += Form("TrackBarrel_%s;PairsBarrelPM_%s;", fTrkCutsNameArray->At(i)->GetName(), fTrkCutsNameArray->At(i)->GetName());
-    }
-    for (int i = 0; i < fNMuonCuts; i++) {
-      histNames += Form("TrackMuons_%s;PairsMuonsPM_%s;PairsMuonsPP_%s;PairsMuonsMM_%s;", fMuonCutsNameArray->At(i)->GetName(), fMuonCutsNameArray->At(i)->GetName(), fMuonCutsNameArray->At(i)->GetName(), fMuonCutsNameArray->At(i)->GetName());
-    }
-    DefineHistograms(fHistMan, histNames.Data());    // define all histograms
-    VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
-    fOutputList.setObject(fHistMan->GetMainHistogramList());
 
     // configure the stats histogram
     fStatsTriggers.setObject(new TH1I("statsTriggers", "statsTriggers", kNTriggersDQ, -0.5, -0.5 + kNTriggersDQ));
@@ -667,8 +657,6 @@ struct DQCentralFilterPPTask {
         if (!(cutSingleFilter & (uint8_t(1) << i))) {
           continue;
         }
-        VarManager::FillTrack<TTrackFillMap>(track);
-        fHistMan->FillHistClass("TrackBarrel_jpsiPID1", VarManager::fgValues);
         keepEvent[0] = true; // Single Electron
       }
     }
@@ -680,13 +668,11 @@ struct DQCentralFilterPPTask {
       if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
       }
-      VarManager::FillPair<pairTypeEE, TTrackFillMap>(t1, t2); // compute pair quantities
       if (t1.sign() * t2.sign() < 0) {
         for (int i = 0; i < 1; ++i) {
           if (!(cutFilter & (uint8_t(1) << i))) {
             continue;
           }
-          fHistMan->FillHistClass("PairsBarrelPM_pairNoCut", VarManager::fgValues);
           keepEvent[3] = true; // Di-Electron
         }
       }
@@ -702,8 +688,6 @@ struct DQCentralFilterPPTask {
         if (!(cutSingleMuonFilter & (uint8_t(1) << i))) {
           continue;
         }
-        VarManager::FillTrack<TMuonFillMap>(muon1);
-        fHistMan->FillHistClass(Form("TrackMuons_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
         keepEvent[i + 1] = true; // Low pT muon (keepEvent[1]) ang High pT muons (keepEvent[2])
       }
     }
@@ -714,23 +698,20 @@ struct DQCentralFilterPPTask {
       if (!cutMuonFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
       }
-      VarManager::FillPair<pairTypeMuMu, TMuonFillMap>(muon1, muon2); // compute pair quantities
       for (int i = 0; i < 1; ++i) {
         if (!(cutMuonFilter & (uint8_t(1) << i))) {
           continue;
         }
         if (muon1.sign() * muon2.sign() < 0) {
-          fHistMan->FillHistClass(Form("PairsMuonsPM_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
-        } else {
-          if (muon1.sign() > 0) {
-            fHistMan->FillHistClass(Form("PairsMuonsPP_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
-          } else {
-            fHistMan->FillHistClass(Form("PairsMuonsMM_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
-          }
+            keepEvent[4] = true; // Di-Muon (low pT muons, no pair cut)
         }
-        keepEvent[4] = true; // Di-Muon (low pT muons, no pair cut)
       }
     }
+      for (int i = 0; i < kNTriggersDQ; ++i) {
+          if (keepEvent[i] > 0) { // the tracks must have at least one filter bit in common to continue
+              fStatsTriggers->Fill(i);
+          }
+      }
     // Filling the table
     dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
   }
