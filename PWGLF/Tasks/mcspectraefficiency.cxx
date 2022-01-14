@@ -12,7 +12,6 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/Core/MC.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -23,7 +22,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace MC;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -68,7 +66,7 @@ struct GeneratedTask {
       if (abs(mcParticle.eta()) > 0.8) {
         continue;
       }
-      if (isPhysicalPrimary(mcParticle)) {
+      if (mcParticle.isPhysicalPrimary()) {
         const auto pdg = Form("%i", mcParticle.pdgCode());
         pdgH->Fill(pdg, 1);
         const float pdgbin = pdgH->GetXaxis()->GetBinCenter(pdgH->GetXaxis()->FindBin(pdg));
@@ -115,7 +113,7 @@ struct ReconstructedTask {
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
-      if (!isPhysicalPrimary(particle)) {
+      if (!particle.isPhysicalPrimary()) {
         pdgsecH->Fill(pdg, 1);
         const float pdgbinsec = pdgH->GetXaxis()->GetBinCenter(pdgsecH->GetXaxis()->FindBin(pdg));
         dcaxysecH->Fill(track.dcaXY(), pdgbinsec);

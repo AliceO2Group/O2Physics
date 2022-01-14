@@ -19,7 +19,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/MC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "Common/Core/TrackSelectorPID.h"

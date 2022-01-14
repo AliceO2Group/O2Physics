@@ -18,7 +18,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/MC.h"
 #include <TParameter.h>
 
 using namespace o2;

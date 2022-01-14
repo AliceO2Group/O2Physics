@@ -13,7 +13,6 @@
 #include "Framework/AnalysisTask.h"
 
 #include "TDatabasePDG.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;

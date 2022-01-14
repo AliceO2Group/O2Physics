@@ -24,7 +24,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;

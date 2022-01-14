@@ -22,7 +22,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/MC.h"
 
 #include "CommonConstants/MathConstants.h"
 

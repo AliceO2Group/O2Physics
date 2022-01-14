@@ -24,7 +24,6 @@
 /// o2-analysis-pid-tpc-full,  o2-analysis-trackextension,
 /// o2-analysis-pid-tof-full, o2-analysis-id-raa
 
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"

@@ -19,7 +19,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h" // for propagation to primary vertex
-#include "Common/Core/MC.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
