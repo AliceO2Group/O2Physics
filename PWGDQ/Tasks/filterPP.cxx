@@ -318,13 +318,13 @@ struct DQMuonsSelection {
   {
     runDQMuonSelection<gkEventFillMap, gkMuonFillMap>(collision, bcs, muons);
   }
-  void processDummy(MyEvents&)
+  void processDQDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(DQMuonsSelection, processDQMuonSelection, "Run muon selection", false);
-  PROCESS_SWITCH(DQMuonsSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DQMuonsSelection, processDQDummy, "Dummy function", false);
 };
 
 struct DQFilterPPTask {
@@ -586,13 +586,13 @@ struct DQFilterPPTask {
     runDQFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
   }
   // TODO: dummy function for the case when no process function is enabled
-  void processDummy(MyEvents&)
+  void processDQDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(DQFilterPPTask, processDQFilterPP, "Run filter task", false);
-  PROCESS_SWITCH(DQFilterPPTask, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DQFilterPPTask, processDQDummy, "Dummy function", false);
 };
 
 struct DQCentralFilterPPTask {
@@ -720,13 +720,13 @@ struct DQCentralFilterPPTask {
     runCentralDQFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
   }
   // TODO: dummy function for the case when no process function is enabled
-  void processDummy(MyEvents&)
+  void processDQDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(DQCentralFilterPPTask, processCentralDQFilterPP, "Run central filter task", false);
-  PROCESS_SWITCH(DQCentralFilterPPTask, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DQCentralFilterPPTask, processDQDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
