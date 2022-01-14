@@ -204,7 +204,7 @@ struct QaImpactPar {
     histograms.add("MC/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
     histograms.add("MC/vertexZ_MCColl", "", kTH1D, {collisionZAxis});
     histograms.add("MC/pt", "", kTH1D, {trackPtAxis});
-    if (doPVrefit){
+    if (doPVrefit) {
       histograms.add("MC/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaX_PVrefit});
       histograms.add("MC/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaY_PVrefit});
       histograms.add("MC/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaZ_PVrefit});
@@ -217,8 +217,8 @@ struct QaImpactPar {
     }
     histograms.add("MC/h3ImpPar_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackPDGAxis});
     histograms.add("MC/h3ImpParZ_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
-    //histograms.add("MC/h3ImpPar_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackPDGAxis});
-    //histograms.add("MC/h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
+    // histograms.add("MC/h3ImpPar_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackPDGAxis});
+    // histograms.add("MC/h3ImpParZ_MCvertex_PhysPrimary", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackPDGAxis});
   }
 
   // using FullTrack = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
@@ -482,14 +482,12 @@ struct QaImpactPar {
       return;
     }
 
-
     histograms.fill(HIST("MC/vertexZ"), collision.posZ());
     histograms.fill(HIST("MC/numberContributors"), collision.numContrib());
-    if(collision.has_mcCollision()){
+    if (collision.has_mcCollision()) {
       const auto mccollision = collision.mcCollision();
       histograms.fill(HIST("MC/vertexZ_MCColl"), mccollision.posZ());
     }
-    
 
     auto PDGtoIndex = [](const int pdg) {
       switch (pdg) {
@@ -634,7 +632,7 @@ struct QaImpactPar {
           cnt++;
         }
       }
-      if(track.has_mcParticle()){
+      if (track.has_mcParticle()) {
         const auto mcparticle = track.mcParticle();
         if (mcparticle.isPhysicalPrimary()) {
           impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
@@ -652,8 +650,6 @@ struct QaImpactPar {
           histograms.fill(HIST("MC/h3ImpParZ_PhysPrimary"), track.pt(), impParZ, PDGtoIndex(std::abs(mcparticle.pdgCode())));
         }
       }
-      
-      
     }
   }
   PROCESS_SWITCH(QaImpactPar, processMC, "process MC", false);
