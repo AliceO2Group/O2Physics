@@ -456,8 +456,7 @@ struct HfFilter { // Main struct for HF triggers
               if (activateQA) {
                 hMassB[kBplus]->Fill(massCand);
               }
-            }
-            else if (std::abs(massCand - massDStar) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
+            } else if (std::abs(massCand - massDStar) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
               for (const auto& trackB : tracks) { // start loop over tracks
                 if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong)) {
                   std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
