@@ -703,15 +703,15 @@ struct DQCentralFilterPPTask {
           continue;
         }
         if (muon1.sign() * muon2.sign() < 0) {
-            keepEvent[4] = true; // Di-Muon (low pT muons, no pair cut)
+          keepEvent[4] = true; // Di-Muon (low pT muons, no pair cut)
         }
       }
     }
-      for (int i = 0; i < kNTriggersDQ; ++i) {
-          if (keepEvent[i] > 0) { // the tracks must have at least one filter bit in common to continue
-              fStatsTriggers->Fill(i);
-          }
+    for (int i = 0; i < kNTriggersDQ; ++i) {
+      if (keepEvent[i] > 0) { // the tracks must have at least one filter bit in common to continue
+        fStatsTriggers->Fill(i);
       }
+    }
     // Filling the table
     dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
   }
