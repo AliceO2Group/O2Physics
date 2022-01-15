@@ -10,56 +10,12 @@
 // or submit itself to any jurisdiction.
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/PIDML/pidML.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-namespace o2::aod
-{
-namespace pidtracks
-{
-DECLARE_SOA_COLUMN(Px, px, float);                                 //! Non-dynamic column with track x-momentum
-DECLARE_SOA_COLUMN(Py, py, float);                                 //! Non-dynamic column with track y-momentum
-DECLARE_SOA_COLUMN(Pz, pz, float);                                 //! Non-dynamic column with track z-momentum
-DECLARE_SOA_COLUMN(Sign, sign, float);                             //! Non-dynamic column with track sign
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t); //!
-} // namespace pidtracks
-DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for prediction and domain adaptation
-                  aod::track::TPCSignal,
-                  aod::pidtofsignal::TOFSignal,
-                  pidtracks::Px,
-                  pidtracks::Py,
-                  pidtracks::Pz,
-                  pidtracks::Sign,
-                  aod::track::X,
-                  aod::track::Y,
-                  aod::track::Z,
-                  aod::track::Alpha,
-                  aod::track::TrackType,
-                  aod::track::TPCNClsShared,
-                  aod::track::DcaXY,
-                  aod::track::DcaZ);
-DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
-                  aod::track::TPCSignal,
-                  aod::pidtofsignal::TOFSignal,
-                  pidtracks::Px,
-                  pidtracks::Py,
-                  pidtracks::Pz,
-                  pidtracks::Sign,
-                  aod::track::X,
-                  aod::track::Y,
-                  aod::track::Z,
-                  aod::track::Alpha,
-                  aod::track::TrackType,
-                  aod::track::TPCNClsShared,
-                  aod::track::DcaXY,
-                  aod::track::DcaZ,
-                  aod::mcparticle::PdgCode,
-                  pidtracks::IsPhysicalPrimary);
-} // namespace o2::aod
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -73,21 +29,32 @@ struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
 
   void process(BigTracksMC const& tracks, aod::McParticles const& mctracks)
   {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
-      pidTracksTable(track.tpcSignal(), track.tofSignal(),
-                     track.px(), track.py(), track.pz(),
+      pidTracksTable(track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
+                     track.tofSignal(), track.beta(),
+                     track.p(), track.pt(), track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
                      track.alpha(),
                      track.trackType(),
                      track.tpcNClsShared(),
                      track.dcaXY(), track.dcaZ(),
+                     track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
+                     track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
+                     track.tpcNSigmaMu(), track.tpcExpSigmaMu(), track.tpcExpSignalDiffMu(),
+                     track.tofNSigmaMu(), track.tofExpSigmaMu(), track.tofExpSignalDiffMu(),
+                     track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
+                     track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
+                     track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
+                     track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
+                     track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
+                     track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
                      mcParticle.pdgCode(),
                      isPrimary);
     }
@@ -98,19 +65,30 @@ struct CreateTableReal {
   Produces<aod::PidTracksReal> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
 
   void process(BigTracks const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTable(track.tpcSignal(), track.tofSignal(),
-                     track.px(), track.py(), track.pz(),
+      pidTracksTable(track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
+                     track.tofSignal(), track.beta(),
+                     track.p(), track.pt(), track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
                      track.alpha(),
                      track.trackType(),
                      track.tpcNClsShared(),
-                     track.dcaXY(), track.dcaZ());
+                     track.dcaXY(), track.dcaZ(),
+                     track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
+                     track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
+                     track.tpcNSigmaMu(), track.tpcExpSigmaMu(), track.tpcExpSignalDiffMu(),
+                     track.tofNSigmaMu(), track.tofExpSigmaMu(), track.tofExpSignalDiffMu(),
+                     track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
+                     track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
+                     track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
+                     track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
+                     track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
+                     track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
     }
   }
 };
