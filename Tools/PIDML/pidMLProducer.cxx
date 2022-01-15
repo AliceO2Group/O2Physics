@@ -11,7 +11,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGPP/DataModel/PIDML.h"
+#include "Tools/PIDML/pidML.h"
 
 using namespace o2;
 using namespace o2::framework;
