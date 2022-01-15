@@ -21,18 +21,18 @@ using namespace o2::framework;
 
 struct ApplyOnnxModelTask {
   Configurable<std::string> onnxFileConf{"ONNX file", "/home/maja/CERN_part/CERN/PID_ML_in_O2/models/Simple_example.onnx", "ONNX file"};
-  std::string onnxFile = (std::string)onnxFileConf;
 
-  std::vector<std::string> input_names;
-  std::vector<std::vector<int64_t>> input_shapes;
-  std::vector<std::string> output_names;
-  std::vector<std::vector<int64_t>> output_shapes;
+  std::vector<std::string> mInputNames;
+  std::vector<std::vector<int64_t>> mInputShapes;
+  std::vector<std::string> mOutputNames;
+  std::vector<std::vector<int64_t>> mOutputShapes;
 
-  Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "example-model-explorer"};
-  Ort::SessionOptions session_options;
-  Ort::Experimental::Session session{env, onnxFile, session_options};
-
-  HistogramRegistry onnxResults{"onnxResults", {{"results", "results", {HistType::kTH1F, {{2, 0., 1.}}}}}};
+  Ort::Env mEnv;
+  Ort::SessionOptions mSessionOptions;
+  Ort::Experimental::Session mSession;
+  // TODO: What is this allocator for? How is it initialized?
+  //Ort::AllocatorWithDefaultOptions mAllocator;
+  //Ort::MemoryInfo mMemoryInfo;
 
   // pretty prints a shape dimension vector
   std::string print_shape(const std::vector<int64_t>& v)
@@ -46,55 +46,63 @@ struct ApplyOnnxModelTask {
 
   void init(InitContext const&)
   {
-    input_names = session.GetInputNames();
-    input_shapes = session.GetInputShapes();
-    output_names = session.GetOutputNames();
-    output_shapes = session.GetOutputShapes();
+    mEnv = Ort::Env{ORT_LOGGING_LEVEL_WARNING, "pid-ml-model-inference"};
+    mSession = Ort::Experimental::Session{mEnv, (std::string)onnxFileConf, mSessionOptions};
+    // TODO: Ask what these are needed for
+    //OrtAllocatorType allocatorType;
+    //OrtMemType memoryType;
+    //mMemoryInfo(Ort::MemoryInfo::CreateCpu(allocatorType, memoryType)) {}
+
+    // TODO: In their code is more manual. Why?
+    mInputNames = session.GetInputNames();
+    mInputShapes = session.GetInputShapes();
+    mOutputNames = session.GetOutputNames();
+    mOutputShapes = session.GetOutputShapes();
 
     // print name/shape of inputs
-    LOG(info) << "Input Node Name/Shape (" << input_names.size() << "):";
-    for (size_t i = 0; i < input_names.size(); i++) {
-      LOG(info) << "\t" << input_names[i] << " : " << print_shape(input_shapes[i]);
+    LOG(info) << "Input Node Name/Shape (" << mInputNames.size() << "):";
+    for (size_t i = 0; i < mInputNames.size(); i++) {
+      LOG(info) << "\t" << mInputNames[i] << " : " << print_shape(mInputShapes[i]);
     }
 
     // print name/shape of outputs
-    LOG(info) << "Output Node Name/Shape (" << output_names.size() << "):";
-    for (size_t i = 0; i < output_names.size(); i++) {
-      LOG(info) << "\t" << output_names[i] << " : " << print_shape(output_shapes[i]);
+    LOG(info) << "Output Node Name/Shape (" << mOutputNames.size() << "):";
+    for (size_t i = 0; i < mOutputNames.size(); i++) {
+      LOG(info) << "\t" << mOutputNames[i] << " : " << print_shape(mOutputShapes[i]);
     }
 
     // Assume model has 1 input node and 1 output node.
-    assert(input_names.size() == 1 && output_names.size() == 1);
+    //assert(mInputNames.size() == 1 && mOutputNames.size() == 1);
   }
 
   void process(aod::Tracks const& tracks)
   {
-    auto input_shape = input_shapes[0];
+    auto input_shape = mInputShapes[0];
     for (auto& track : tracks) {
       LOGF(info, "collision id: %d; eta: %.3f; p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.eta(), track.p(), track.x(), track.y(), track.z());
 
-      std::vector<float> input_tensor_values{track.eta(), track.p(), track.x(), track.y(), track.z()};
-      std::vector<Ort::Value> input_tensors;
-      input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float>(input_tensor_values.data(), input_tensor_values.size(), input_shape));
+      std::vector<float> inputTensorValues{track.eta(), track.p(), track.x(), track.y(), track.z()};
+      std::vector<Ort::Value> inputTensors;
+      inputTensors.push_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), input_shape));
 
       // double-check the dimensions of the input tensor
-      assert(input_tensors[0].IsTensor()
-               input_tensors[0]
+      assert(inputTensors[0].IsTensor()
+               inputTensors[0]
                  .GetTensorTypeAndShapeInfo()
                  .GetShape() == input_shape);
-      LOG(info) << "input_tensor shape: " << print_shape(input_tensors[0].GetTensorTypeAndShapeInfo().GetShape());
+      LOG(info) << "input_tensor shape: " << print_shape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
       // pass data through model
       LOG(info) << "Running model...";
       try {
-        auto output_tensors = session.Run(input_names, input_tensors, output_names);
+        auto output_tensors = session.Run(mInputNames, inputTensors, mOutputNames);
         LOG(info) << "done";
         //LOG(info) << "Number of output tensors: " << output_tensors.size();
 
         // double-check the dimensions of the output tensors
         // NOTE: the number of output tensors is equal to the number of output nodes specifed in the Run() call
-        assert(output_tensors.size() == output_names.size() &&
+        assert(output_tensors.size() == mOutputNames.size() &&
                output_tensors[0].IsTensor());
         LOG(info) << "output_tensor_shape: " << print_shape(output_tensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
