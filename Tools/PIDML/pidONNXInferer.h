@@ -26,7 +26,7 @@
 
 // Temporary solution for Hyperloop tests - model files placed on CCDB. In the future, they will be taken probably from cvmfs (to be discussed).
 #ifndef USE_CCDB
-#define USE_CCDB 1
+#define USE_CCDB 0
 #endif
 
 #if USE_CCDB == 0
@@ -58,11 +58,11 @@ struct PidONNXInferer {
     TString* onnxModel = nullptr;
     loadInputFiles(modelFile, trainColumnsFile, scalingParamsFile, url, nolaterthan, onnxModel);
 #if USE_CCDB == 1
-    if (onnxModel) {
-      LOG(info) << "Loaded ONNX model: " << onnxModel->Data();
-    } else {
-      LOG(error) << "ONNX model is null!";
-    }
+    //if (onnxModel) {
+    //  LOG(info) << "Loaded ONNX model: " << onnxModel->Data();
+    //} else {
+    //  LOG(error) << "ONNX model is null!";
+    //}
 #endif
 
     Ort::SessionOptions sessionOptions;
@@ -79,7 +79,7 @@ struct PidONNXInferer {
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
 #if USE_CCDB == 1
     char* onnxData = (char*)onnxModel->Data(); // to get rid of const in TString::Data
-    mSession = std::make_shared<Ort::Experimental::Session>(*mEnv, onnxData, onnxModel->Length(), sessionOptions);
+    mSession = std::make_shared<Ort::Experimental::Session>(*mEnv, onnxData, onnxModel->Length() * sizeof(char), sessionOptions);
 #else
     mSession.reset(new Ort::Experimental::Session{*mEnv, modelFile, sessionOptions});
 #endif
@@ -194,34 +194,37 @@ struct PidONNXInferer {
   }
 
   // TODO: Any more elegant way to select columns? This doesn't compile.
-#define GET_VALUE_FOR_COLUMN(_TableIt_, _ColumnName_, _Val_) \
-  _Val_ = static_cast<o2::aod::track::#_ColumnName_>(_TableIt_).getIterator().mCurrentPos;
+#define GET_VALUE_FOR_COLUMN(_TableIt_, _ColumnGetter_, _Val_) \
+  _Val_ = static_cast<o2::aod::track::#_ColumnGetter_>(_TableIt_).getIterator().mCurrentPos;
 
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
   {
     //TODO: Hardcoded for now, needs to be modifiable
     // sign is short, trackType and tpcNClsShared uint8_t
-    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-    float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
-    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-    float scaledTPCNClsShared = ((float)track.tpcNClsShared() - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
+    //float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
+    //float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+    //float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
+    //float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
+    //float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
+    //float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
+    //float scaledTPCNClsShared = ((float)track.tpcNClsShared() - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
+    //float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
+    //float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
 
-    std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
-    //for (auto& columnName : mTrainColumns) {
-    //  float* val;
-    //  GET_VALUE_FOR_COLUMN(track, columnName, val);
-    //  auto scaleIt = std::find(mScalingParams.begin(), mScalingParams.end(), columnName);
-    //  if (scaleIt != mScalingParams.end() {
-    //    *val = (*val - scaleIt->second.first) / scaleIt->second.second;
-    //  }
-    //  inputValues.push_back(*val);
-    //}
+    //std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
+
+    for (auto& columnLabel : mTrainColumns) {
+      std::string columnGetter = columnLabel.substring(1, columnLabel.size() - 1);
+      columnGetter[0] = std::tolower(columnGetter[0]);
+      float* val;
+      GET_VALUE_FOR_COLUMN(track, columnGetter, val);
+      auto scaleIt = std::find(mScalingParams.begin(), mScalingParams.end(), columnLabel);
+      if (scaleIt != mScalingParams.end() {
+        *val = (*val - scaleIt->second.first) / scaleIt->second.second;
+      }
+      inputValues.push_back(*val);
+    }
     return inputValues;
   }
 
