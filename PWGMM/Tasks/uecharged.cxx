@@ -27,6 +27,7 @@
 #include <TF1.h>
 #include <TRandom.h>
 #include <cmath>
+#include <vector>
 
 // TODO: implement flags for all, phys. sel., good vertex, ...
 
@@ -174,7 +175,7 @@ struct ueCharged {
       }
     }
     ue.fill(HIST("hPtLeadingRecPS"), flPt);
-    vector<double> ue_rec;
+    std::vector<double> ue_rec;
     ue_rec.clear();
     int nchm_top[3];
     double sumptm_top[3];
@@ -183,9 +184,9 @@ struct ueCharged {
       sumptm_top[i] = 0;
     }
     //LOGF(info, "--------------------   FLAG 0!!!!!!!!!!!");
-    vector<Float_t> ptArray;
-    vector<Float_t> phiArray;
-    vector<int> indexArray;
+    std::vector<Float_t> ptArray;
+    std::vector<Float_t> phiArray;
+    std::vector<int> indexArray;
 
     for (auto& track : tracks) {
 
