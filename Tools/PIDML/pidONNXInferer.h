@@ -9,7 +9,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file pidONNXInferer.h
-/// \brief A class that wraps PID ML ONNX model inference
+/// \brief A class that wraps PID ML ONNX model inference. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
@@ -24,10 +24,16 @@
 #include <string>
 #include <chrono>
 
+// Temporary solution for Hyperloop tests - model files placed on CCDB. In the future, they will be taken probably from cvmfs (to be discussed).
+#ifndef USE_CCDB
+#define USE_CCDB 1
+#endif
+
+#if USE_CCDB == 0
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
 {
-bool readJsonFile(std::string& config, rapidjson::Document& d)
+bool readJsonFile(const std::string& config, rapidjson::Document& d)
 {
   FILE* fp = fopen(config.data(), "rb");
   if (!fp) {
@@ -43,13 +49,21 @@ bool readJsonFile(std::string& config, rapidjson::Document& d)
   return true;
 }
 } // namespace
+#endif
 
 struct PidONNXInferer {
  public:
-  PidONNXInferer(const std::string& modelFile, const std::string& trainColumnsFile, const std::string& scalingParamsFile, const std::string& url, long nolaterthan, bool useGPU)
+  PidONNXInferer(std::string& modelFile, const std::string& trainColumnsFile, const std::string& scalingParamsFile, const std::string& url, long nolaterthan, bool useGPU) : mUseGPU(useGPU)
   {
     TString* onnxModel = nullptr;
     loadInputFiles(modelFile, trainColumnsFile, scalingParamsFile, url, nolaterthan, onnxModel);
+#if USE_CCDB == 1
+    if (onnxModel) {
+      LOG(info) << "Loaded ONNX model: " << onnxModel->Data();
+    } else {
+      LOG(error) << "ONNX model is null!";
+    }
+#endif
 
     Ort::SessionOptions sessionOptions;
     if (useGPU) {
@@ -58,75 +72,63 @@ struct PidONNXInferer {
       // Do we need GPU for inference?
       //Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(sessionOptions, 0));
     } else {
-      //mMemoryInfo = std::make_shared<Ort::MemoryInfo>(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU));
+      LOG(info) << "Using CPU";
+      // Memory info is set each time in Ort::Experimental::Value::CreateTensor()
     }
+    LOG(info) << "Creating ONNX env";
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
-    void* onnxData = (void*)onnxModel->Data(); // to get rid of const in TString::Data
+#if USE_CCDB == 1
+    char* onnxData = (char*)onnxModel->Data(); // to get rid of const in TString::Data
     mSession = std::make_shared<Ort::Experimental::Session>(*mEnv, onnxData, onnxModel->Length(), sessionOptions);
-    // TODO: This will be used when we will have direct access to the ONNX model file
-    //mSession = Ort::Session{mEnv, modelFile, sessionOptions};
-    //
+#else
+    mSession.reset(new Ort::Experimental::Session{*mEnv, modelFile, sessionOptions});
+#endif
+
     mInputNames = mSession->GetInputNames();
     mInputShapes = mSession->GetInputShapes();
     mOutputNames = mSession->GetOutputNames();
     mOutputShapes = mSession->GetOutputShapes();
 
-    // print name/shape of inputs
-    LOG(info) << "Input Node Name/Shape (" << mInputNames.size() << "):";
+    LOG(debug) << "Input Node Name/Shape (" << mInputNames.size() << "):";
     for (size_t i = 0; i < mInputNames.size(); i++) {
-      LOG(info) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);
+      LOG(debug) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);
     }
 
-    // print name/shape of outputs
-    LOG(info) << "Output Node Name/Shape (" << mOutputNames.size() << "):";
+    LOG(debug) << "Output Node Name/Shape (" << mOutputNames.size() << "):";
     for (size_t i = 0; i < mOutputNames.size(); i++) {
-      LOG(info) << "\t" << mOutputNames[i] << " : " << printShape(mOutputShapes[i]);
+      LOG(debug) << "\t" << mOutputNames[i] << " : " << printShape(mOutputShapes[i]);
     }
 
     // Assume model has 1 input node and 1 output node.
     assert(mInputNames.size() == 1 && mOutputNames.size() == 1);
   }
   PidONNXInferer() = default;
-  PidONNXInferer(PidONNXInferer& other) = default; // Ort::Env and unique pointers aren't copyable
+  PidONNXInferer(PidONNXInferer& other) = default;
   ~PidONNXInferer() = default;
 
   template <typename T>
   float applyModel(const T& track)
   {
     auto input_shape = mInputShapes[0];
-    // TODO: We have different data types in the input but vector/tensor must have a single type. Narrowing conversion warnings.
     std::vector<float> inputTensorValues = createInputsSingle(track);
     std::vector<Ort::Value> inputTensors;
-    if (mMemoryInfo != nullptr) {
-      inputTensors.emplace_back(Ort::Value::CreateTensor<float>(*mMemoryInfo, inputTensorValues.data(), inputTensorValues.size(), input_shape.data(), input_shape.size()));
-    } else {
-      inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), input_shape));
-    }
+    inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), input_shape));
 
-    // double-check the dimensions of the input tensor
+    // Double-check the dimensions of the input tensor
     assert(inputTensors[0].IsTensor() &&
            inputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == input_shape);
-    LOG(info) << "input tensor shape: " << printShape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
+    LOG(debug) << "input tensor shape: " << printShape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
-    // pass data through model
-    LOG(info) << "Running model...";
     try {
       auto outputTensors = mSession->Run(mInputNames, inputTensors, mOutputNames);
-      LOG(info) << "done";
-      LOG(info) << "Number of output tensors: " << outputTensors.size();
 
-      // double-check the dimensions of the output tensors
-      // NOTE: the number of output tensors is equal to the number of output nodes specifed in the Run() call
+      // Double-check the dimensions of the output tensors
+      // The number of output tensors is equal to the number of output nodes specifed in the Run() call
       assert(outputTensors.size() == mOutputNames.size() && outputTensors[0].IsTensor());
-      LOG(info) << "output tensor shape: " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
+      LOG(debug) << "output tensor shape: " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
-      for (auto& output : outputTensors) {
-        const float* output_value = output.GetTensorData<float>();
-        LOG(info) << "output: " << *output_value;
-      }
       const float* output_value = outputTensors[0].GetTensorData<float>();
       return *output_value;
-
     } catch (const Ort::Exception& exception) {
       LOG(error) << "Error running model inference: " << exception.what();
     }
@@ -134,9 +136,13 @@ struct PidONNXInferer {
   }
 
  private:
-  // TODO: Temporary quick solution with CCDB and TStrings in ROOT files
-  void loadInputFiles(const std::string& modelFile, const std::string& trainColumnsFile, const std::string& scalingParamsFile, const std::string& url, long nolaterthan, TString* onnxModel)
+  void loadInputFiles(std::string& modelFile, const std::string& trainColumnsFile, const std::string& scalingParamsFile, const std::string& url, long nolaterthan, TString* onnxModel)
   {
+    rapidjson::Document trainColumnsDoc;
+    rapidjson::Document scalingParamsDoc;
+
+#if USE_CCDB == 1
+    // TODO: Temporary quick solution with CCDB and TStrings in ROOT files
     o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
     // Set CCDB url
     ccdb->setURL(url);
@@ -163,8 +169,6 @@ struct PidONNXInferer {
       LOGF(fatal, "Scaling parameters file %s not found!", scalingParamsFile);
     }
 
-    rapidjson::Document trainColumnsDoc;
-    rapidjson::Document scalingParamsDoc;
     trainColumnsDoc.Parse(trainColumnsJson->Data());
     for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
       mTrainColumns.emplace_back(param.GetString());
@@ -174,15 +178,19 @@ struct PidONNXInferer {
       mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
     }
 
+#else
     // TODO: This will be used when we will have direct access to JSON files
-    //if (readJsonFile(trainColumnsFile, trainColumnsDoc)) {
-    //  mTrainColumns = trainColumnsDoc["columns_for_training"].GetArray();
-    //}
-    //if (readJsonFile(scalingParamsFile, scalingParamsDoc)) {
-    //  for (auto& param : scalingParamsDoc["data"].GetArray()) {
-    //    mScalingParams[param[0]] = std::make_pair(param[1], param[2]);
-    //  }
-    //}
+    if (readJsonFile(trainColumnsFile, trainColumnsDoc)) {
+      for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
+        mTrainColumns.emplace_back(param.GetString());
+      }
+    }
+    if (readJsonFile(scalingParamsFile, scalingParamsDoc)) {
+      for (auto& param : scalingParamsDoc["data"].GetArray()) {
+        mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
+      }
+    }
+#endif
   }
 
   // TODO: Any more elegant way to select columns? This doesn't compile.
@@ -192,10 +200,26 @@ struct PidONNXInferer {
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
   {
-    std::vector<float> inputValues{track.tpcSignal(), track.beta(), track.px(), track.py(), track.pz(), track.sign(), track.x(), track.y(), track.z(), track.alpha(), track.trackType(), track.tpcNClsShared(), track.dcaXY(), track.dcaZ(), track.p()};
+    //TODO: Hardcoded for now, needs to be modifiable
+    // sign is short, trackType and tpcNClsShared uint8_t
+    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
+    float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
+    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
+    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
+    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
+    float scaledTPCNClsShared = ((float)track.tpcNClsShared() - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
+    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
+    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
+
+    std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
     //for (auto& columnName : mTrainColumns) {
     //  float* val;
     //  GET_VALUE_FOR_COLUMN(track, columnName, val);
+    //  auto scaleIt = std::find(mScalingParams.begin(), mScalingParams.end(), columnName);
+    //  if (scaleIt != mScalingParams.end() {
+    //    *val = (*val - scaleIt->second.first) / scaleIt->second.second;
+    //  }
     //  inputValues.push_back(*val);
     //}
     return inputValues;
@@ -214,11 +238,10 @@ struct PidONNXInferer {
   std::vector<std::string> mTrainColumns;
   std::map<std::string, std::pair<float, float>> mScalingParams;
 
+  bool mUseGPU;
   std::shared_ptr<Ort::Env> mEnv = nullptr;
-  // No empty constructors for Session and MemoryInfo, we need pointers
+  // No empty constructors for Session, we need a pointer
   std::shared_ptr<Ort::Experimental::Session> mSession = nullptr;
-  // Optional - manage memory (CPU vs GPU)
-  std::shared_ptr<Ort::MemoryInfo> mMemoryInfo = nullptr;
 
   std::vector<std::string> mInputNames;
   std::vector<std::vector<int64_t>> mInputShapes;

@@ -7,6 +7,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file simpleApplyPidModelTask
+/// \brief A simple example for using PID obtained from the PID ML ONNX Inferer. See https://github.com/saganatt/PID_ML_in_O2 for more detailed instructions.
+///
+/// \author Maja Kabus <mkabus@cern.ch>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -18,8 +24,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// See https://github.com/saganatt/PID_ML_in_O2 for instructions
 
 namespace o2::aod
 {
@@ -35,19 +39,28 @@ struct SimpleApplyOnnxModelTask {
   PidONNXInferer pidInferer; // We cannot use copy constructor, so it needs to be a pointer
   Configurable<bool> useGPU{"useGPU", false, "Use GPU for ML inference if true"};
 
+#if USE_CCDB == 1
   // TODO: This is a quick solution that uses CCDB to store files for Hyperloop.
   // In the future, they should be on cvmfs or somewhere else, where files different from ROOT can be stored.
   // modelFile should be in ONNX format, and trainColumnsFile and scalingParamsFile in JSON format.
   // For now ONNX and JSONs are converted to ROOT TStrings
-  Configurable<std::string> modelFile{"ccdb-onnx", "Users/m/mkabus/pidml/onnx_models/All/simple_model_211.root", "base path to the ccdb ONNX model file"};
+  Configurable<std::string> modelFile{"onnx-model", "Users/m/mkabus/pidml/onnx_models/All/simple_model_211_json.root", "base path to the ccdb ONNX model file"};
   Configurable<std::string> trainColumnsFile{"train-columns", "Users/m/mkabus/pidml/onnx_models/All/columns_for_training.root", "base path to the ccdb JSON file with track properties used for training"};
   Configurable<std::string> scalingParamsFile{"scaling-params", "Users/m/mkabus/pidml/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.root", "base path to the ccdb JSON file with scaling parameters from training"};
+#else
+  Configurable<std::string> modelFile{"onnx-model", "/home/maja/CERN_part/CERN/PIDML/onnx_models/All/simple_model_211.onnx", "ONNX model file"};
+  Configurable<std::string> trainColumnsFile{"train-columns", "/home/maja/CERN_part/CERN/PIDML/onnx_models/All/columns_for_training.json", "JSON file with track properties used for training"};
+  Configurable<std::string> scalingParamsFile{"scaling-params", "/home/maja/CERN_part/CERN/PIDML/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "JSON file with scaling parameters from training"};
+#endif
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   Produces<o2::aod::MlPidResults> pidMLResults;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  // Minimum table requirements for sample model:
+  // TPC signal (FullTracks), TOF signal (TOFSignal), TOF beta (pidTOFbeta), dcaXY and dcaZ (TracksExtended)
+  // Filter on isGlobalTrack (TracksSelection)
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
 
   void init(InitContext const&)
@@ -59,7 +72,7 @@ struct SimpleApplyOnnxModelTask {
   {
     for (auto& track : tracks) {
       float pid = pidInferer.applyModel(track);
-      LOGF(info, "collision id: %d track id: %d pid: %d eta: %.3f; p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+      LOGF(info, "collision id: %d track id: %d pid: %.3f eta: %.3f; p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.index(), pid, track.eta(), track.p(), track.x(), track.y(), track.z());
       pidMLResults(track.index(), pid);
     }
