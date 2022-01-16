@@ -22,6 +22,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 #include <string>
+#include <cctype>
 #include <chrono>
 
 // Temporary solution for Hyperloop tests - model files placed on CCDB. In the future, they will be taken probably from cvmfs (to be discussed).
@@ -193,38 +194,38 @@ struct PidONNXInferer {
 #endif
   }
 
-  // TODO: Any more elegant way to select columns? This doesn't compile.
-#define GET_VALUE_FOR_COLUMN(_TableIt_, _ColumnGetter_, _Val_) \
-  _Val_ = static_cast<o2::aod::track::#_ColumnGetter_>(_TableIt_).getIterator().mCurrentPos;
+#define GET_VALUE_FOR_COLUMN(_TableIt_, _ColumnGetter_) \
+  static_assert(false, _ColumnGetter_);                 \
+  float INPUT = static_cast<o2::aod::track::#_ColumnGetter_>(_TableIt_).getIterator().mCurrentPos;
 
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
   {
     //TODO: Hardcoded for now, needs to be modifiable
-    // sign is short, trackType and tpcNClsShared uint8_t
-    //float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-    //float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
-    //float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-    //float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-    //float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-    //float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-    //float scaledTPCNClsShared = ((float)track.tpcNClsShared() - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-    //float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-    //float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
+    //sign is short, trackType and tpcNClsShared uint8_t
+    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
+    float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
+    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
+    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
+    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
+    float scaledTPCNClsShared = ((float)track.tpcNClsShared() - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
+    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
+    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
 
-    //std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
+    std::vector<float> inputValues{scaledTPCSignal, scaledTOFSignal, track.beta(), track.px(), track.py(), track.pz(), (float)track.sign(), scaledX, scaledY, scaledZ, scaledAlpha, (float)track.trackType(), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ, track.p()};
 
-    for (auto& columnLabel : mTrainColumns) {
-      std::string columnGetter = columnLabel.substring(1, columnLabel.size() - 1);
-      columnGetter[0] = std::tolower(columnGetter[0]);
-      float* val;
-      GET_VALUE_FOR_COLUMN(track, columnGetter, val);
-      auto scaleIt = std::find(mScalingParams.begin(), mScalingParams.end(), columnLabel);
-      if (scaleIt != mScalingParams.end() {
-        *val = (*val - scaleIt->second.first) / scaleIt->second.second;
-      }
-      inputValues.push_back(*val);
-    }
+    // TODO: Any more elegant way to select columns? This doesn't compile, a macro cannot interpret a string.
+    //for (auto& columnLabel : mTrainColumns) {
+    //  std::string columnGetter = columnLabel.substr(1);
+    //  columnGetter[0] = std::tolower((unsigned char)columnGetter[0]);
+    //  GET_VALUE_FOR_COLUMN(track, columnGetter);
+    //  auto scaleIt = std::find(mScalingParams.begin(), mScalingParams.end(), columnLabel);
+    //  if (scaleIt != mScalingParams.end()) {
+    //    INPUT = (INPUT - scaleIt->second.first) / scaleIt->second.second;
+    //  }
+    //  inputValues.push_back(INPUT);
+    //}
     return inputValues;
   }
 
