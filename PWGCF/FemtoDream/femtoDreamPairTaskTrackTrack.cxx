@@ -120,7 +120,7 @@ struct femtoDreamPairTaskTrackTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; ///Accessing the CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
   {
