@@ -14,6 +14,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
@@ -25,10 +26,10 @@ namespace o2
 {
 namespace aod
 {
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
-using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels>;
-using CollisionEvSel = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentV0Ms>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentV0Ms>::iterator;
+using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
+using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
 } // namespace aod
 namespace analysis
@@ -196,7 +197,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
 
 /// \brief Trigger selection by default: unknow subscribed collision table
 template <typename CollisionObject>
-inline bool triggerSelection(CollisionObject const& collision)
+inline bool triggerSelection(CollisionObject const&)
 {
   LOGF(fatal, "Trigger selection not implemented for this kind of collisions");
   return false;
@@ -232,9 +233,37 @@ inline bool triggerSelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisio
 
 /// \brief Trigger selection for generator level collison table
 template <>
-inline bool triggerSelection<aod::McCollision>(aod::McCollision const& collision)
+inline bool triggerSelection<aod::McCollision>(aod::McCollision const&)
 {
   return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// Multiplicity extraction
+//////////////////////////////////////////////////////////////////////////////////
+
+/// \brief Extract the collision multiplicity from the event selection information
+template <typename CollisionObject>
+inline float extractMultiplicity(CollisionObject const& collision)
+{
+  float mult = 0.0;
+  switch (fSystem) {
+    case kpp:
+    case kpPb:
+    case kPbp:
+    case kPbPb:
+    case kXeXe:
+      /* for the time being let's extract V0M */
+      mult = collision.multV0M();
+      break;
+    case kppRun3:
+      /* for the time being let's extract T0M */
+      mult = collision.multT0M();
+      break;
+    default:
+      break;
+  }
+  return mult;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +306,7 @@ inline bool centralitySelectionNoMult(CollisionObject collision, float& centmult
 
 /// \brief Centrality selection by default: unknown subscribed collision table
 template <typename CollisionObject>
-inline bool centralitySelection(CollisionObject const& collision, float& centmult)
+inline bool centralitySelection(CollisionObject const&, float&)
 {
   LOGF(fatal, "Centrality selection not implemented for this kind of collisions");
   return false;

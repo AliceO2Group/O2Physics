@@ -77,6 +77,8 @@ TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
 TH1F* fhVertexZA = nullptr;
+TH1F* fhMultB = nullptr;
+TH1F* fhMultA = nullptr;
 TH1F* fhPB = nullptr;
 TH1F* fhPA[kDptDptNoOfSpecies] = {nullptr};
 TH1F* fhPtB = nullptr;
@@ -430,10 +432,14 @@ struct DptDptFilter {
       if (fSystem > kPbp) {
         fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", 100, 0, 100);
         fhCentMultA = new TH1F("CentralityA", "Centrality; centrality (%)", 100, 0, 100);
+        fhMultB = new TH1F("V0MB", "V0 Multiplicity before cut;V0 Multiplicity;Collisions", 4001, -0.5, 4000.5);
+        fhMultA = new TH1F("V0MA", "V0 Multiplicity;V0 Multiplicity;Collisions", 4001, -0.5, 4000.5);
       } else {
         /* for pp, pPb and Pbp systems use multiplicity instead */
         fhCentMultB = new TH1F("MultiplicityB", "Multiplicity before cut; multiplicity (%)", 100, 0, 100);
         fhCentMultA = new TH1F("MultiplicityA", "Multiplicity; multiplicity (%)", 100, 0, 100);
+        fhMultB = new TH1F("V0MB", "V0 Multiplicity before cut;V0 Multiplicity;Collisions", 601, -0.5, 600.5);
+        fhMultA = new TH1F("V0MA", "V0 Multiplicity;V0 Multiplicity;Collisions", 601, -0.5, 600.5);
       }
 
       fhVertexZB = new TH1F("VertexZB", "Vertex Z; z_{vtx}", 60, -15, 15);
@@ -476,6 +482,8 @@ struct DptDptFilter {
       /* add the hstograms to the output list */
       fOutputList->Add(fhCentMultB);
       fOutputList->Add(fhCentMultA);
+      fOutputList->Add(fhMultB);
+      fOutputList->Add(fhMultA);
       fOutputList->Add(fhVertexZB);
       fOutputList->Add(fhVertexZA);
       fOutputList->Add(fhPB);
@@ -726,7 +734,7 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
 }
 
 template <typename TrackListObject>
-void DptDptFilter::filterTracks(TrackListObject const& ftracks, int colix)
+void DptDptFilter::filterTracks(TrackListObject const&, int)
 {
   LOGF(fatal, "Track filtering not implemented for the passed track table");
 }
@@ -806,13 +814,17 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
   LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processReconstructed(). New collision with %d tracks", ftracks.size());
 
+  float mult = extractMultiplicity(collision);
+
   fhCentMultB->Fill(passedcent);
+  fhMultB->Fill(mult);
   fhVertexZB->Fill(collision.posZ());
   bool acceptedevent = false;
   float centormult = passedcent;
   if (IsEvtSelected(collision, centormult)) {
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
+    fhMultA->Fill(mult);
     fhVertexZA->Fill(collision.posZ());
     acceptedcollisions(collision.bcId(), collision.posZ(), acceptedevent, centormult);
 
