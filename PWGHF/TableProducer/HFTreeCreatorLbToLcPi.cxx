@@ -150,8 +150,7 @@ struct HfTreeCreatorLbToLcPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
+      auto fillTable = [&](int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
@@ -193,7 +192,7 @@ struct HfTreeCreatorLbToLcPi {
         }
       };
 
-      fillTable(0, candidate.isSelLbToLcPi(), InvMassLbToLcPi(candidate), CtLb(candidate), YLb(candidate));
+      fillTable(candidate.isSelLbToLcPi(), InvMassLbToLcPi(candidate), CtLb(candidate), YLb(candidate));
     }
 
     // Filling particle properties
