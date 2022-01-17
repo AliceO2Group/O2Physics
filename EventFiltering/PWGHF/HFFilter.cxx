@@ -72,6 +72,7 @@ enum charmParticles {
 
 enum beautyParticles {
   kBplus = 0,
+  kB0toDStar,
   kB0,
   kBs,
   kLb,
@@ -81,7 +82,7 @@ enum beautyParticles {
 
 static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
-static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0", "Bs", "Lb", "Xib"};
+static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 
 static const float massPi = RecoDecay::getMassPDG(211);
 static const float massK = RecoDecay::getMassPDG(321);
@@ -90,6 +91,7 @@ static const float massD0 = RecoDecay::getMassPDG(421);
 static const float massDPlus = RecoDecay::getMassPDG(411);
 static const float massDs = RecoDecay::getMassPDG(431);
 static const float massLc = RecoDecay::getMassPDG(4122);
+static const float massDStar = RecoDecay::getMassPDG(413);
 static const float massBPlus = RecoDecay::getMassPDG(511);
 static const float massB0 = RecoDecay::getMassPDG(521);
 static const float massBs = RecoDecay::getMassPDG(531);
@@ -246,6 +248,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> deltaMassB0{"deltaMassB0", 0.3, "invariant-mass delta with respect to the B0 mass"};
   Configurable<float> deltaMassBs{"deltaMassBs", 0.3, "invariant-mass delta with respect to the Bs mass"};
   Configurable<float> deltaMassLb{"deltaMassLb", 0.3, "invariant-mass delta with respect to the Lb mass"};
+  Configurable<float> deltaMassDStar{"deltaMassDStar", 0.1, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
   Configurable<float> pTMinBeautyBachelor{"pTMinBeautyBachelor", 0.5, "minumum pT for bachelor pion track used to build b-hadron candidates"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
@@ -324,11 +327,6 @@ struct HfFilter { // Main struct for HF triggers
       return false; // use only global tracks
     }
 
-    unsigned char clusterMapITS = track.itsClusterMap();
-    if (!TESTBIT(clusterMapITS, 0) || !TESTBIT(clusterMapITS, 1)) {
-      return false; // require a hit in one of the first two layers of the ITS
-    }
-
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
       return false; // minimum DCAxy
     }
@@ -350,6 +348,10 @@ struct HfFilter { // Main struct for HF triggers
 
     if (std::abs(track.eta()) < 0.8) {
       return false;
+    }
+
+    if (track.isGlobalTrack() != (uint8_t) true) {
+      return false; // use only global tracks
     }
 
     float NSigmaTPC = track.tpcNSigmaPr();
@@ -448,11 +450,24 @@ struct HfFilter { // Main struct for HF triggers
 
         if (!keepEvent[kBeauty]) {
           if (isSelectedTrackForBeauty(track, kBeauty3Prong)) {
-            auto massCandB = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi}); // TODO: retrieve D0-D0bar hypothesis to pair with proper signed track
-            if (std::abs(massCandB - massBPlus) <= deltaMassBPlus) {
+            auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi}); // TODO: retrieve D0-D0bar hypothesis to pair with proper signed track
+            if (std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
               if (activateQA) {
-                hMassB[kBplus]->Fill(massCandB);
+                hMassB[kBplus]->Fill(massCand);
+              }
+            } else if (std::abs(massCand - massDStar) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
+              for (const auto& trackB : tracks) {                          // start loop over tracks
+                if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong)) {
+                  std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
+                  auto massCandB0 = RecoDecay::M(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
+                  if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
+                    keepEvent[kBeauty] = true;
+                    if (activateQA) {
+                      hMassB[kB0toDStar]->Fill(massCand);
+                    }
+                  }
+                }
               }
             }
           }
@@ -536,7 +551,7 @@ struct HfFilter { // Main struct for HF triggers
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
                 if (activateQA) {
-                  hMassB[iHypo + 1]->Fill(massCandB);
+                  hMassB[iHypo + 2]->Fill(massCandB);
                 }
               }
             }
