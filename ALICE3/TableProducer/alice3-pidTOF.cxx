@@ -26,6 +26,7 @@
 #include "ALICE3/Core/TOFResoALICE3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -120,9 +121,15 @@ struct ALICE3pidTOFTask {
   template <o2::track::PID::ID id>
   float nsigma(Trks::iterator track)
   {
-    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - tof::ExpTimes<Trks::iterator, id>::GetExpectedSignal(track)) / sigma<id>(track);
+    if (!track.hasTOF()) {
+      return -999.f;
+    }
+    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - tof::ExpTimes<Trks::iterator, id>::ComputeExpectedTime(track.tofExpMom() / o2::pid::tof::kCSPEED,
+                                                                                                                                      track.length(),
+                                                                                                                                      o2::track::PID::getMass2Z(id))) /
+           sigma<id>(track);
   }
-  void process(Coll const& collisions, Trks const& tracks)
+  void process(Trks const& tracks, Coll const&)
   {
     tablePIDEl.reserve(tracks.size());
     tablePIDMu.reserve(tracks.size());
@@ -167,8 +174,8 @@ struct ALICE3pidTOFTaskQA {
 
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", -2.f, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 2.f, "Maximum momentum in range"};
+  Configurable<float> minP{"minP", 0.01f, "Minimum momentum in range"};
+  Configurable<float> maxP{"maxP", 20.f, "Maximum momentum in range"};
   Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
   Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
   Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
@@ -181,15 +188,8 @@ struct ALICE3pidTOFTaskQA {
   Configurable<int> minMult{"minMult", 1, "Minimum track multiplicity with TOF"};
 
   template <uint8_t i>
-  void addParticleHistos()
+  void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
-      ptAxis.makeLogaritmic();
-    }
-
     // Exp signal
     const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s)", pT[i])};
     histos.add(hexpected[i].data(), "", kTH2F, {pAxis, expAxis});
@@ -210,7 +210,6 @@ struct ALICE3pidTOFTaskQA {
   void init(o2::framework::InitContext&)
   {
 
-    const AxisSpec pExpAxis{100, 0, 10, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
     const AxisSpec multAxis{100, 0, 100, "TOF multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
@@ -221,9 +220,11 @@ struct ALICE3pidTOFTaskQA {
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec pExpAxis{nBinsP, minP, maxP, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogaritmic();
       pAxis.makeLogaritmic();
+      pExpAxis.makeLogaritmic();
     }
 
     // Event properties
@@ -239,15 +240,9 @@ struct ALICE3pidTOFTaskQA {
     histos.add("event/p", "", kTH1F, {pAxis});
     histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
 
-    addParticleHistos<0>();
-    addParticleHistos<1>();
-    addParticleHistos<2>();
-    addParticleHistos<3>();
-    addParticleHistos<4>();
-    addParticleHistos<5>();
-    addParticleHistos<6>();
-    addParticleHistos<7>();
-    addParticleHistos<8>();
+    static_for<0, 8>([&](auto i) {
+      addParticleHistos<i>(pAxis, ptAxis);
+    });
   }
 
   template <uint8_t i, typename T>
@@ -301,7 +296,7 @@ struct ALICE3pidTOFTaskQA {
       //
       // histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
       histos.fill(HIST("event/tofsignal"), t.p(), tofSignal);
-      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom());
+      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom() / o2::pid::tof::kCSPEED);
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());
       histos.fill(HIST("event/pt"), t.pt());
