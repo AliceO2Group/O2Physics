@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
@@ -232,10 +231,14 @@ struct HFD0CandidateSelectorparametrizedPID {
         continue;
       }
 
-      const auto mcParticlePositive = trackPos.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      int pdgPositive = mcParticlePositive.pdgCode();
-      int pdgNegative = mcParticleNegative.pdgCode();
+      int pdgPositive = 0;
+      int pdgNegative = 0;
+      if (trackPos.has_mcParticle()) {
+        pdgPositive = trackPos.mcParticle().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle().pdgCode();
+      }
 
       bool selectPosPion = false;
       bool selectNegKaon = false;
@@ -256,7 +259,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackPos.hasTOF()) {
           if (std::abs(trackPos.tofNSigmaPi()) < 3.0) {
             selectPosPion = true;
-          } else if (std::abs(trackPos.tofNSigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackPos.tofNSigmaKa()) < 3.0) {
             selectPosKaon = true;
           }
         }
@@ -264,7 +268,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackPos.has_rich() && !trackPos.hasTOF()) {
           if (std::abs(trackPos.rich().richNsigmaPi()) < 3.0) {
             selectPosPion = true;
-          } else if (std::abs(trackPos.rich().richNsigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackPos.rich().richNsigmaKa()) < 3.0) {
             selectPosKaon = true;
           }
         }
@@ -272,7 +277,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackPos.has_rich() && trackPos.hasTOF()) {
           if ((trackPos.rich().richNsigmaPi() * trackPos.rich().richNsigmaPi() + trackPos.tofNSigmaPi() * trackPos.tofNSigmaPi()) < 9.0) {
             selectPosPion = true;
-          } else if ((trackPos.rich().richNsigmaKa() * trackPos.rich().richNsigmaKa() + trackPos.tofNSigmaKa() * trackPos.tofNSigmaKa()) < 9.0) {
+          }
+          if ((trackPos.rich().richNsigmaKa() * trackPos.rich().richNsigmaKa() + trackPos.tofNSigmaKa() * trackPos.tofNSigmaKa()) < 9.0) {
             selectPosKaon = true;
           }
         }
@@ -292,7 +298,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackNeg.hasTOF()) {
           if (std::abs(trackNeg.tofNSigmaPi()) < 3.0) {
             selectNegPion = true;
-          } else if (std::abs(trackNeg.tofNSigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackNeg.tofNSigmaKa()) < 3.0) {
             selectNegKaon = true;
           }
         }
@@ -300,7 +307,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackNeg.has_rich() && !trackNeg.hasTOF()) {
           if (std::abs(trackNeg.rich().richNsigmaPi()) < 3.0) {
             selectNegPion = true;
-          } else if (std::abs(trackNeg.rich().richNsigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackNeg.rich().richNsigmaKa()) < 3.0) {
             selectNegKaon = true;
           }
         }
@@ -308,7 +316,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackNeg.has_rich() && trackNeg.hasTOF()) {
           if ((trackNeg.rich().richNsigmaPi() * trackNeg.rich().richNsigmaPi() + trackNeg.tofNSigmaPi() * trackNeg.tofNSigmaPi()) < 9.0) {
             selectNegPion = true;
-          } else if ((trackNeg.rich().richNsigmaKa() * trackNeg.rich().richNsigmaKa() + trackNeg.tofNSigmaKa() * trackNeg.tofNSigmaKa()) < 9.0) {
+          }
+          if ((trackNeg.rich().richNsigmaKa() * trackNeg.rich().richNsigmaKa() + trackNeg.tofNSigmaKa() * trackNeg.tofNSigmaKa()) < 9.0) {
             selectNegKaon = true;
           }
         }
@@ -322,7 +331,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (selectPosPion && selectNegKaon) {
           statusD0 = 1;
         }
-      } else if (topolD0bar) {
+      }
+      if (topolD0bar) {
         statusD0barNoPID = 1;
         if (pdgPositive == 321 && pdgNegative == -211) {
           statusD0barPerfectPID = 1;

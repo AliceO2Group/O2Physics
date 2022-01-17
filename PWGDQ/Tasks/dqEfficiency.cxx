@@ -118,10 +118,10 @@ struct AnalysisEventSelection {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
 
     VarManager::FillEvent<TEventFillMap>(event);
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::CollisionMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
     }
     if (fConfigQA) {
@@ -217,10 +217,10 @@ struct AnalysisTrackSelection {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::CollisionMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
     }
 
@@ -265,12 +265,12 @@ struct AnalysisTrackSelection {
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack) {
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           if ((*sig).CheckSignal(false, tracksMC, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
-        if constexpr (TTrackFillMap & VarManager::ObjTypes::Track) {
+        if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if ((*sig).CheckSignal(false, tracksMC, track.mcParticle())) {
             mcDecision |= (uint32_t(1) << isig);
           }
@@ -372,10 +372,10 @@ struct AnalysisMuonSelection {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::ReducedEventMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.reducedMCevent());
     }
-    if constexpr (TEventMCFillMap & VarManager::ObjTypes::CollisionMC) {
+    if constexpr ((TEventMCFillMap & VarManager::ObjTypes::CollisionMC) > 0) {
       VarManager::FillEvent<TEventMCFillMap>(event.mcCollision());
     }
 
@@ -386,10 +386,10 @@ struct AnalysisMuonSelection {
       VarManager::FillTrack<TMuonFillMap>(muon); // compute muon quantities
 
       // compute MC matched quantities using either the DQ skimmed or the Framework data models
-      if constexpr (TMuonFillMap & VarManager::ObjTypes::ReducedMuon) {
+      if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.reducedMCTrack());
       }
-      if constexpr (TMuonFillMap & VarManager::ObjTypes::Muon) {
+      if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.mcParticle());
       }
 
@@ -423,12 +423,12 @@ struct AnalysisMuonSelection {
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
-        if constexpr (TMuonFillMap & VarManager::ObjTypes::ReducedMuon) {
+        if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
           if ((*sig).CheckSignal(false, muonsMC, muon.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
-        if constexpr (TMuonFillMap & VarManager::ObjTypes::Muon) {
+        if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
           if ((*sig).CheckSignal(false, muonsMC, muon.mcParticle())) {
             mcDecision |= (uint32_t(1) << isig);
           }
@@ -637,16 +637,16 @@ struct AnalysisSameEventPairing {
   void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
-    unsigned int ncuts = fBarrelHistNames.size() / 3; // we have 3 hist classes for each cut
+    unsigned int ncuts = fBarrelHistNames.size();
     std::vector<std::vector<TString>> histNames = fBarrelHistNames;
     std::vector<std::vector<TString>> histNamesMCmatched = fBarrelHistNamesMCmatched;
     if constexpr (TPairType == VarManager::kJpsiToMuMu) {
-      ncuts = fMuonHistNames.size() / 3;
+      ncuts = fMuonHistNames.size();
       histNames = fMuonHistNames;
       histNamesMCmatched = fMuonHistNamesMCmatched;
     }
     if constexpr (TPairType == VarManager::kElectronMuon) {
-      ncuts = fBarrelMuonHistNames.size() / 3;
+      ncuts = fBarrelMuonHistNames.size();
       histNames = fBarrelMuonHistNames;
       histNamesMCmatched = fBarrelMuonHistNamesMCmatched;
     }
@@ -692,7 +692,7 @@ struct AnalysisSameEventPairing {
       for (unsigned int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint8_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
-            fHistMan->FillHistClass(histNames[icut][0], VarManager::fgValues);
+            fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
@@ -731,7 +731,6 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    cout << "entries in groupedMCTracks = " << groupedMCTracks.size() << endl;
     //    // loop over mc stack and fill histograms for pure MC truth signals
     for (auto& sig : fGenMCSignals) {
       if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required

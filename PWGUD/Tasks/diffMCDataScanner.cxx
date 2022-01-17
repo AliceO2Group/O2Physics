@@ -10,9 +10,6 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief
-///   ATTENTION Nov. 2021:
-///   MFT is not implemented yet and can not be used
-///   releated code is commented
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
@@ -26,70 +23,20 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, else - tree"}});
 }
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "PWGUD/DataModel/McPIDTable.h"
-
-#include "CommonConstants/LHCConstants.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/MC.h"
+#include "PWGUD/Tasks/diffMCHelpers.h"
 
 using namespace o2::framework::expressions;
 
-template <typename T>
-T getCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, T const& bcs)
-{
-  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
-
-  auto bcIter = collision.bc_as<T>();
-
-  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
-  uint64_t mostProbableBC = bcIter.globalBC();
-  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
-  int64_t minBC = meanBC - deltaBC;
-  uint64_t maxBC = meanBC + deltaBC;
-  if (minBC < 0) {
-    minBC = 0;
-  }
-
-  // find slice of BCs table with BC in [minBC, maxBC]
-  int64_t maxBCId = bcIter.globalIndex();
-  int moveCount = 0; // optimize to avoid to re-create the iterator
-  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    maxBCId = bcIter.globalIndex();
-    ++bcIter;
-    ++moveCount;
-  }
-
-  bcIter.moveByIndex(-moveCount); // Move back to original position
-  int64_t minBCId = collision.bcId();
-  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
-    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
-    minBCId = bcIter.globalIndex();
-    --bcIter;
-  }
-
-  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
-
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  return slice;
-}
-
 // Loop over collisions
 // find for each collision the number of compatible BCs
+// runCase = 1
 struct CompatibleBCs {
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
 
   void process(CC const& collision, aod::BCs const& bcs)
   {
-    auto bcSlice = getCompatibleBCs(collision, bcs);
+    auto bcSlice = getMCCompatibleBCs(collision, 4, bcs);
     LOGF(debug, "  Number of possible BCs: %i", bcSlice.size());
     for (auto& bc : bcSlice) {
       LOGF(debug, "    This collision may belong to BC %lld", bc.globalBC());
@@ -97,8 +44,8 @@ struct CompatibleBCs {
   }
 };
 
-// Loop over collisions
 // Fill histograms with collision and compatible BCs related information
+// runCase = 1
 struct collisionsInfo {
   int cnt = 0;
   HistogramRegistry registry{
@@ -107,7 +54,7 @@ struct collisionsInfo {
       {"timeResolution", "#timeResolution", {HistType::kTH1F, {{200, 0., 1.E3}}}},
       {"numberBCs", "#numberBCs", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"DGCandidate", "#DGCandidate", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-      {"numberTracks", "#numberTracks", {HistType::kTH1F, {{301, -0.5, 300.5}}}},
+      {"numberTracks", "#numberTracks", {HistType::kTH1F, {{5001, -0.5, 5000.5}}}},
       {"numberVtxTracks", "#numberVtxTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"numberGlobalTracks", "#numberGlobalTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"netCharge", "#netCharge", {HistType::kTH1F, {{3, -1.5, 1.5}}}},
@@ -119,6 +66,8 @@ struct collisionsInfo {
       {"etaFWDDG", "#etaFWDDG", {HistType::kTH1F, {{100, -5.0, 5.0}}}},
       //      {"globalVsMFTAll", "#globalVsMFTAll", {HistType::kTH2F, {{21, -0.5, 20.5}, {21, -0.5, 20.5}}}},
       //      {"globalVsMFTDG", "#globalVsMFTDG", {HistType::kTH2F, {{21, -0.5, 20.5}, {21, -0.5, 20.5}}}},
+      {"VtxvsTracks", "#VtxvsTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {5001, -0.5, 5000.5}}}},
+      {"VtxvsGlobalTracks", "#VtxvsGlobalTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}}},
     }};
 
   void init(o2::framework::InitContext&)
@@ -139,6 +88,10 @@ struct collisionsInfo {
     //    registry.get<TH2>(HIST("globalVsMFTAll"))->GetYaxis()->SetTitle("Number of MFT tracks");
     //    registry.get<TH2>(HIST("globalVsMFTDG"))->GetXaxis()->SetTitle("Number of global tracks");
     //    registry.get<TH2>(HIST("globalVsMFTDG"))->GetYaxis()->SetTitle("Number of MFT tracks");
+    registry.get<TH2>(HIST("VtxvsTracks"))->GetXaxis()->SetTitle("Number of Vtx tracks");
+    registry.get<TH2>(HIST("VtxvsTracks"))->GetYaxis()->SetTitle("Number of tracks");
+    registry.get<TH2>(HIST("VtxvsGlobalTracks"))->GetXaxis()->SetTitle("Number of Vtx tracks");
+    registry.get<TH2>(HIST("VtxvsGlobalTracks"))->GetYaxis()->SetTitle("Number of global tracks");
   }
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -154,7 +107,7 @@ struct collisionsInfo {
   {
 
     // obtain slice of compatible BCs
-    auto bcSlice = getCompatibleBCs(collision, bct0s);
+    auto bcSlice = getMCCompatibleBCs(collision, 4, bct0s);
     LOGF(debug, "  Number of compatible BCs: %i", bcSlice.size());
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
@@ -166,18 +119,22 @@ struct collisionsInfo {
         break;
       }
     }
+
+    // global tracks
+    Partition<TCs> goodTracks = aod::track::isGlobalTrack > uint8_t(0);
+    goodTracks.bindTable(tracks);
+    int cntGlobal = goodTracks.size();
+
     // count tracks
     int cntAll = 0;
-    int cntGlobal = 0;
     int netCharge = 0;
     for (auto track : tracks) {
       cntAll++;
       netCharge += track.sign();
-      if (track.isGlobalTrack()) {
-        cntGlobal++;
-      }
     }
     // netCharge /= abs(netCharge);
+
+    LOGF(info, "Global tracks: %i", cntGlobal);
 
     if (isDGcandidate) {
       LOGF(info, "  This is a DG candidate with %d tracks and %d net charge.", tracks.size(), netCharge);
@@ -196,6 +153,8 @@ struct collisionsInfo {
     //    registry.get<TH1>(HIST("numberMFTTracks"))->Fill(mfttracks.size());
     registry.get<TH1>(HIST("numberFWDTracks"))->Fill(fwdtracks.size());
     //    registry.get<TH2>(HIST("globalVsMFTAll"))->Fill(cntGlobal, mfttracks.size());
+    registry.get<TH2>(HIST("VtxvsTracks"))->Fill(collision.numContrib(), cntAll);
+    registry.get<TH2>(HIST("VtxvsGlobalTracks"))->Fill(collision.numContrib(), cntGlobal);
 
     // loop over MFT tracks
     //    LOGF(debug, "MFT tracks: %i", mfttracks.size());
@@ -231,6 +190,7 @@ struct collisionsInfo {
 
 // Loop over BCs
 // check aliases, selection, and FIT signals per BC
+// runCase = 1
 struct BCInfo {
   int cnt = 0;
   HistogramRegistry registry{
@@ -303,6 +263,7 @@ struct BCInfo {
 
 // Loop over tracks
 // Make histograms with track type and time resolution
+// runCase = 1
 struct TrackTypes {
   HistogramRegistry registry{
     "registry",
@@ -375,6 +336,7 @@ struct TrackTypes {
 };
 
 // MCTruth tracks
+// runCase = 2
 struct MCTracks {
 
   using CCs = soa::Join<aod::Collisions, aod::McCollisionLabels>;
@@ -431,6 +393,7 @@ struct MCTracks {
 };
 
 // TPC nSigma
+// runCase = 3
 struct TPCnSigma {
   Produces<aod::UDnSigmas> nSigmas;
 

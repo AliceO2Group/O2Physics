@@ -384,7 +384,7 @@ struct DQEventMixing {
 
     events.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
 
     // Strictly upper categorised collisions, for 100 combinations per bin, skipping those in entry -1
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 10, -1, events, events)) {

@@ -155,9 +155,7 @@ struct lambdakzerofinder {
 
     Long_t lNCand = 0;
 
-    // std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
-
-    for (auto& t0id : ptracks) { // FIXME: turn into combination(...)
+    for (auto& t0id : ptracks) { //FIXME: turn into combination(...)
       auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
       auto Track1 = getTrackParCov(t0);
       for (auto& t1id : ntracks) {

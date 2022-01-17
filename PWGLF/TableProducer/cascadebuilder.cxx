@@ -62,13 +62,13 @@ using std::array;
 
 using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended>;
 
-struct cascadedoindexing {
+struct cascadeDoIndexing {
   Builds<aod::MatchedV0Cascades> var;
   void init(InitContext const&) {}
 };
 
 /// Cascade builder task: rebuilds cascades
-struct cascadebuilder {
+struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
 
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
@@ -90,7 +90,7 @@ struct cascadebuilder {
   Configurable<bool> tpcrefit{"tpcrefit", true, "demand TPC refit"};
   Configurable<double> v0radius{"v0radius", 0.9, "v0radius"};
 
-  void process(aod::MatchedV0Cascades const& MatchedV0Cascades, aod::V0Datas const&, aod::Cascades const&, aod::Collisions const&, soa::Join<aod::FullTracks, aod::TracksExtended> const&)
+  void process(aod::MatchedV0Cascades const& MatchedV0Cascades, aod::V0Datas const&, aod::Cascades const&, aod::Collisions const&, FullTracksExt const&)
   {
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
@@ -120,8 +120,6 @@ struct cascadebuilder {
 
       std::array<float, 3> pVtx = {v0.collision().posX(), v0.collision().posY(), v0.collision().posZ()};
 
-      // auto b = casc.bachelor_as<FullTracksExt>();
-
       if (tpcrefit) {
         if (!(v0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
           continue; // TPC refit
@@ -148,15 +146,15 @@ struct cascadebuilder {
         continue;
       }
       hCascFiltered->Fill(6.5);
-      if (v0.posTrack_as<FullTracksExt>().dcaXY() < dcapostopv) {
+      if (fabs(v0.posTrack_as<FullTracksExt>().dcaXY()) < dcapostopv) {
         continue;
       }
       hCascFiltered->Fill(7.5);
-      if (v0.negTrack_as<FullTracksExt>().dcaXY() < dcanegtopv) {
+      if (fabs(v0.negTrack_as<FullTracksExt>().dcaXY()) < dcanegtopv) {
         continue;
       }
       hCascFiltered->Fill(8.5);
-      if (casc.bachelor_as<FullTracksExt>().dcaXY() < dcabachtopv) {
+      if (fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) < dcabachtopv) {
         continue;
       }
       hCascFiltered->Fill(9.5);
@@ -265,7 +263,7 @@ struct cascadebuilder {
 };
 
 /// Extends the cascdata table with expression columns
-struct cascadeinitializer {
+struct cascadeInitializer {
   Spawns<aod::CascDataExt> cascdataext;
   void init(InitContext const&) {}
 };
@@ -273,7 +271,7 @@ struct cascadeinitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadedoindexing>(cfgc, TaskName{"lf-cascadedoindexing"}),
-    adaptAnalysisTask<cascadebuilder>(cfgc, TaskName{"lf-cascadebuilder"}),
-    adaptAnalysisTask<cascadeinitializer>(cfgc, TaskName{"lf-cascadeinitializer"})};
+    adaptAnalysisTask<cascadeDoIndexing>(cfgc),
+    adaptAnalysisTask<cascadeBuilder>(cfgc),
+    adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }

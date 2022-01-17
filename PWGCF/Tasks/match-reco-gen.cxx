@@ -16,7 +16,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
@@ -63,6 +62,7 @@ std::vector<std::vector<int64_t>> mclabelneg[2];
 struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
+  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
@@ -137,6 +137,8 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
     traceCollId0 = cfgTraceCollId0;
 
+    /* if the system type is not known at this time, we have to put the initalization somewhere else */
+    fSystem = getSystemType(cfgSystem);
     fDataType = getDataType(cfgDataType);
     fPDG = TDatabasePDG::Instance();
 

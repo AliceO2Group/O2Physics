@@ -24,7 +24,6 @@
 /// o2-analysis-pid-tpc-full,  o2-analysis-trackextension,
 /// o2-analysis-pid-tof-full, o2-analysis-id-raa
 
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -144,7 +143,7 @@ struct identifiedraaTask {
       if (!globalTrackswoPrim.IsSelected(track)) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(mcParticle)) {
+      if (!mcParticle.isPhysicalPrimary()) {
         if (mcParticle.pdgCode() == pdg_num[i]) {
           histos.fill(HIST(dca_xy_sec[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(dca_z_sec[i]), track.pt(), track.dcaZ());
@@ -190,7 +189,7 @@ struct identifiedraaTask {
       if (std::abs(0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()))) > 0.5) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(particle)) {
+      if (!particle.isPhysicalPrimary()) {
         continue;
       }
       if (particle.pdgCode() != pdg_num[i]) {

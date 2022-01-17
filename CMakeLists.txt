@@ -38,7 +38,7 @@ endif()
 
 # Dependencies
 find_package(O2 CONFIG REQUIRED)
-find_package(ONNXRuntime::ONNXRuntime CONFIG REQUIRED)
+find_package(ONNXRuntime::ONNXRuntime CONFIG)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
@@ -78,5 +78,6 @@ add_subdirectory(PWGLF)
 add_subdirectory(PWGMM)
 add_subdirectory(PWGUD)
 
+add_subdirectory(Tools)
 add_subdirectory(Tutorials)
 add_subdirectory(EventFiltering)

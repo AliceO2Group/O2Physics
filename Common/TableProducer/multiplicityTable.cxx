@@ -42,24 +42,22 @@ struct MultiplicityTableTaskIndexed {
     int multTPC = tracksWithTPC.size();
 
     if (collision.has_fv0a()) {
-      auto v0a = collision.fv0a();
-      for (int i = 0; i < 48; i++) {
-        multV0A += v0a.amplitude()[i];
+      for (auto amplitude : collision.fv0a().amplitude()) {
+        multV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
-      auto v0c = collision.fv0c();
-      for (int i = 0; i < 32; i++) {
-        multV0C += v0c.amplitude()[i];
+      for (auto amplitude : collision.fv0c().amplitude()) {
+        multV0C += amplitude;
       }
     }
     if (collision.has_ft0()) {
       auto ft0 = collision.ft0();
-      for (int i = 0; i < 96; i++) {
-        multT0A += ft0.amplitudeA()[i];
+      for (auto amplitude : ft0.amplitudeA()) {
+        multT0A += amplitude;
       }
-      for (int i = 0; i < 112; i++) {
-        multT0C += ft0.amplitudeC()[i];
+      for (auto amplitude : ft0.amplitudeC()) {
+        multT0C += amplitude;
       }
     }
     if (collision.has_zdc()) {
@@ -75,34 +73,28 @@ struct MultiplicityTableTaskIndexed {
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s)
   {
-      float multV0A = -1.f;
-      float multV0C = -1.f;
-      float multT0A = -1.f;
-      float multT0C = -1.f;
-      float multZNA = -1.f;
-      float multZNC = -1.f;
-      int multTracklets = -1;
-      int multTPC = tracksWithTPC.size();
-      const float* aAmplitudesA;
-      const float* aAmplitudesC;
+    float multV0A = -1.f;
+    float multV0C = -1.f;
+    float multT0A = -1.f;
+    float multT0C = -1.f;
+    float multZNA = -1.f;
+    float multZNC = -1.f;
+    int multTracklets = -1;
+    int multTPC = tracksWithTPC.size();
 
-      // using FT0 row index from event selection task
-      int64_t foundFT0 = collision.foundFT0();
-
-      if (foundFT0 != -1) {
-        auto ft0 = ft0s.iteratorAt(foundFT0);
-        aAmplitudesA = ft0.amplitudeA();
-        aAmplitudesC = ft0.amplitudeC();
-        for (int i = 0; i < 96; i++) {
-          multT0A += aAmplitudesA[i];
-        }
-        for (int i = 0; i < 112; i++) {
-          multT0C += aAmplitudesC[i];
-        }
+    // using FT0 row index from event selection task
+    if (collision.has_foundFT0()) {
+      auto ft0 = collision.foundFT0();
+      for (auto amplitude : ft0.amplitudeA()) {
+        multT0A += amplitude;
       }
+      for (auto amplitude : ft0.amplitudeC()) {
+        multT0C += amplitude;
+      }
+    }
 
-      LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
-      mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
+    LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
+    mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
 };

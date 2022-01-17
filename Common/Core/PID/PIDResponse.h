@@ -65,6 +65,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference be
 namespace pidtof
 {
 // Expected times
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalEl, tofExpSignalEl, //! Expected time for electron
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalMu, tofExpSignalMu, //! Expected time for muon
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalPi, tofExpSignalPi, //! Expected time for pion
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalKa, tofExpSignalKa, //! Expected time for kaon
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalPr, tofExpSignalPr, //! Expected time for proton
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDe, tofExpSignalDe, //! Expected time for deuteron
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalTr, tofExpSignalTr, //! Expected time for triton
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalHe, tofExpSignalHe, //! Expected time for helium3
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalAl, tofExpSignalAl, //! Expected time for alpha
+                           [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
+// Delta with respect to signal
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffEl, tofExpSignalDiffEl, //! Difference between signal and expected for electron
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffMu, tofExpSignalDiffMu, //! Difference between signal and expected for muon
@@ -209,23 +228,41 @@ DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
 
 // Per particle tables
 DECLARE_SOA_TABLE(pidTOFFullEl, "AOD", "pidTOFFullEl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for electron
-                  pidtof::TOFExpSignalDiffEl<pidtof::TOFNSigmaEl, pidtof::TOFExpSigmaEl>, pidtof::TOFExpSigmaEl, pidtof::TOFNSigmaEl);
+                  pidtof::TOFExpSignalDiffEl<pidtof::TOFNSigmaEl, pidtof::TOFExpSigmaEl>,
+                  pidtof::TOFExpSignalEl<pidtof::TOFNSigmaEl, pidtof::TOFExpSigmaEl>,
+                  pidtof::TOFExpSigmaEl, pidtof::TOFNSigmaEl);
 DECLARE_SOA_TABLE(pidTOFFullMu, "AOD", "pidTOFFullMu", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for muon
-                  pidtof::TOFExpSignalDiffMu<pidtof::TOFNSigmaMu, pidtof::TOFExpSigmaMu>, pidtof::TOFExpSigmaMu, pidtof::TOFNSigmaMu);
+                  pidtof::TOFExpSignalDiffMu<pidtof::TOFNSigmaMu, pidtof::TOFExpSigmaMu>,
+                  pidtof::TOFExpSignalMu<pidtof::TOFNSigmaMu, pidtof::TOFExpSigmaMu>,
+                  pidtof::TOFExpSigmaMu, pidtof::TOFNSigmaMu);
 DECLARE_SOA_TABLE(pidTOFFullPi, "AOD", "pidTOFFullPi", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for pion
-                  pidtof::TOFExpSignalDiffPi<pidtof::TOFNSigmaPi, pidtof::TOFExpSigmaPi>, pidtof::TOFExpSigmaPi, pidtof::TOFNSigmaPi);
+                  pidtof::TOFExpSignalDiffPi<pidtof::TOFNSigmaPi, pidtof::TOFExpSigmaPi>,
+                  pidtof::TOFExpSignalPi<pidtof::TOFNSigmaPi, pidtof::TOFExpSigmaPi>,
+                  pidtof::TOFExpSigmaPi, pidtof::TOFNSigmaPi);
 DECLARE_SOA_TABLE(pidTOFFullKa, "AOD", "pidTOFFullKa", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for kaon
-                  pidtof::TOFExpSignalDiffKa<pidtof::TOFNSigmaKa, pidtof::TOFExpSigmaKa>, pidtof::TOFExpSigmaKa, pidtof::TOFNSigmaKa);
+                  pidtof::TOFExpSignalDiffKa<pidtof::TOFNSigmaKa, pidtof::TOFExpSigmaKa>,
+                  pidtof::TOFExpSignalKa<pidtof::TOFNSigmaKa, pidtof::TOFExpSigmaKa>,
+                  pidtof::TOFExpSigmaKa, pidtof::TOFNSigmaKa);
 DECLARE_SOA_TABLE(pidTOFFullPr, "AOD", "pidTOFFullPr", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for proton
-                  pidtof::TOFExpSignalDiffPr<pidtof::TOFNSigmaPr, pidtof::TOFExpSigmaPr>, pidtof::TOFExpSigmaPr, pidtof::TOFNSigmaPr);
+                  pidtof::TOFExpSignalDiffPr<pidtof::TOFNSigmaPr, pidtof::TOFExpSigmaPr>,
+                  pidtof::TOFExpSignalPr<pidtof::TOFNSigmaPr, pidtof::TOFExpSigmaPr>,
+                  pidtof::TOFExpSigmaPr, pidtof::TOFNSigmaPr);
 DECLARE_SOA_TABLE(pidTOFFullDe, "AOD", "pidTOFFullDe", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for deuteron
-                  pidtof::TOFExpSignalDiffDe<pidtof::TOFNSigmaDe, pidtof::TOFExpSigmaDe>, pidtof::TOFExpSigmaDe, pidtof::TOFNSigmaDe);
+                  pidtof::TOFExpSignalDiffDe<pidtof::TOFNSigmaDe, pidtof::TOFExpSigmaDe>,
+                  pidtof::TOFExpSignalDe<pidtof::TOFNSigmaDe, pidtof::TOFExpSigmaDe>,
+                  pidtof::TOFExpSigmaDe, pidtof::TOFNSigmaDe);
 DECLARE_SOA_TABLE(pidTOFFullTr, "AOD", "pidTOFFullTr", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for triton
-                  pidtof::TOFExpSignalDiffTr<pidtof::TOFNSigmaTr, pidtof::TOFExpSigmaTr>, pidtof::TOFExpSigmaTr, pidtof::TOFNSigmaTr);
+                  pidtof::TOFExpSignalDiffTr<pidtof::TOFNSigmaTr, pidtof::TOFExpSigmaTr>,
+                  pidtof::TOFExpSignalTr<pidtof::TOFNSigmaTr, pidtof::TOFExpSigmaTr>,
+                  pidtof::TOFExpSigmaTr, pidtof::TOFNSigmaTr);
 DECLARE_SOA_TABLE(pidTOFFullHe, "AOD", "pidTOFFullHe", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for helium3
-                  pidtof::TOFExpSignalDiffHe<pidtof::TOFNSigmaHe, pidtof::TOFExpSigmaHe>, pidtof::TOFExpSigmaHe, pidtof::TOFNSigmaHe);
+                  pidtof::TOFExpSignalDiffHe<pidtof::TOFNSigmaHe, pidtof::TOFExpSigmaHe>,
+                  pidtof::TOFExpSignalHe<pidtof::TOFNSigmaHe, pidtof::TOFExpSigmaHe>,
+                  pidtof::TOFExpSigmaHe, pidtof::TOFNSigmaHe);
 DECLARE_SOA_TABLE(pidTOFFullAl, "AOD", "pidTOFFullAl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for alpha
-                  pidtof::TOFExpSignalDiffAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>, pidtof::TOFExpSigmaAl, pidtof::TOFNSigmaAl);
+                  pidtof::TOFExpSignalDiffAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>,
+                  pidtof::TOFExpSignalAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>,
+                  pidtof::TOFExpSigmaAl, pidtof::TOFNSigmaAl);
 DECLARE_SOA_TABLE(pidTOFFull, "AOD", "pidTOFFull", //! Table of the TOF NSigmas with full tables
                   pidtof::TOFNSigma<pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi,
                                     pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr, pidtof::TOFNSigmaDe,

@@ -11,7 +11,7 @@
 
 ///
 /// \file   pidTPCFull.cxx
-/// \author Nicolo' Jacazio
+/// \author Nicolò Jacazio
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
@@ -25,6 +25,9 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "TableHelper.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,6 +43,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Task to produce the TPC response table
 struct tpcPidFull {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
   using Coll = aod::Collisions;
@@ -76,34 +80,31 @@ struct tpcPidFull {
   void init(o2::framework::InitContext& initContext)
   {
     // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
-        auto enableFlag = [&input](const std::string particle, Configurable<int>& flag) {
-          const std::string table = "pidTPCFull" + particle;
-          if (input.matcher.binding == table) {
-            if (flag < 0) {
-              flag.value = 1;
-              LOG(info) << "Auto-enabling table: " + table;
-            } else if (flag > 0) {
-              flag.value = 1;
-              LOG(info) << "Table enabled: " + table;
-            } else {
-              LOG(info) << "Table disabled: " + table;
-            }
-          }
-        };
-        enableFlag("El", pidEl);
-        enableFlag("Mu", pidMu);
-        enableFlag("Pi", pidPi);
-        enableFlag("Ka", pidKa);
-        enableFlag("Pr", pidPr);
-        enableFlag("De", pidDe);
-        enableFlag("Tr", pidTr);
-        enableFlag("He", pidHe);
-        enableFlag("Al", pidAl);
+    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+      const std::string table = "pidTPCFull" + particle;
+      if (isTableRequiredInWorkflow(initContext, table)) {
+        if (flag < 0) {
+          flag.value = 1;
+          LOG(info) << "Auto-enabling table: " + table;
+        } else if (flag > 0) {
+          flag.value = 1;
+          LOG(info) << "Table enabled: " + table;
+        } else {
+          LOG(info) << "Table disabled: " + table;
+        }
       }
-    }
+    };
+
+    enableFlag("El", pidEl);
+    enableFlag("Mu", pidMu);
+    enableFlag("Pi", pidPi);
+    enableFlag("Ka", pidKa);
+    enableFlag("Pr", pidPr);
+    enableFlag("De", pidDe);
+    enableFlag("Tr", pidTr);
+    enableFlag("He", pidHe);
+    enableFlag("Al", pidAl);
+
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
     ccdb->setTimestamp(timestamp.value);
@@ -167,6 +168,7 @@ struct tpcPidFull {
   }
 };
 
+/// Task to produce the TPC QA plots
 struct tpcPidFullQa {
   static constexpr int Np = 9;
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
@@ -176,9 +178,22 @@ struct tpcPidFullQa {
   static constexpr std::string_view hexpected_diff[Np] = {"expected_diff/El", "expected_diff/Mu", "expected_diff/Pi",
                                                           "expected_diff/Ka", "expected_diff/Pr", "expected_diff/De",
                                                           "expected_diff/Tr", "expected_diff/He", "expected_diff/Al"};
+  static constexpr std::string_view hexpsigma[Np] = {"expsigma/El", "expsigma/Mu", "expsigma/Pi",
+                                                     "expsigma/Ka", "expsigma/Pr", "expsigma/De",
+                                                     "expsigma/Tr", "expsigma/He", "expsigma/Al"};
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
                                                    "nsigma/Ka", "nsigma/Pr", "nsigma/De",
                                                    "nsigma/Tr", "nsigma/He", "nsigma/Al"};
+  static constexpr std::string_view hnsigmapt[Np] = {"nsigmapt/El", "nsigmapt/Mu", "nsigmapt/Pi",
+                                                     "nsigmapt/Ka", "nsigmapt/Pr", "nsigmapt/De",
+                                                     "nsigmapt/Tr", "nsigmapt/He", "nsigmapt/Al"};
+  static constexpr std::string_view hnsigmapospt[Np] = {"nsigmapospt/El", "nsigmapospt/Mu", "nsigmapospt/Pi",
+                                                        "nsigmapospt/Ka", "nsigmapospt/Pr", "nsigmapospt/De",
+                                                        "nsigmapospt/Tr", "nsigmapospt/He", "nsigmapospt/Al"};
+  static constexpr std::string_view hnsigmanegpt[Np] = {"nsigmanegpt/El", "nsigmanegpt/Mu", "nsigmanegpt/Pi",
+                                                        "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
+                                                        "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
 
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
@@ -188,18 +203,19 @@ struct tpcPidFullQa {
   Configurable<int> nBinsDelta{"nBinsDelta", 200, "Number of bins for the Delta"};
   Configurable<float> minDelta{"minDelta", -1000.f, "Minimum Delta in range"};
   Configurable<float> maxDelta{"maxDelta", 1000.f, "Maximum Delta in range"};
+  Configurable<int> nBinsExpSigma{"nBinsExpSigma", 200, "Number of bins for the ExpSigma"};
+  Configurable<float> minExpSigma{"minExpSigma", 0.f, "Minimum ExpSigma in range"};
+  Configurable<float> maxExpSigma{"maxExpSigma", 200.f, "Maximum ExpSigma in range"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
   template <uint8_t i>
-  void addParticleHistos()
+  void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
-    }
-
     // Exp signal
     const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[i])};
     histos.add(hexpected[i].data(), "", kTH2F, {pAxis, expAxis});
@@ -208,66 +224,125 @@ struct tpcPidFullQa {
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[i])};
     histos.add(hexpected_diff[i].data(), "", kTH2F, {pAxis, deltaAxis});
 
+    // Exp Sigma
+    const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TPC}(%s)", pT[i])};
+    histos.add(hexpsigma[i].data(), "", kTH2F, {pAxis, expSigmaAxis});
+
     // NSigma
     const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TPC}(%s)", pT[i])};
-    histos.add(hnsigma[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigma[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
   {
-
+    const AxisSpec multAxis{1000, 0.f, 1000.f, "Track multiplicity"};
+    const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
+    const AxisSpec pAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
+      ptAxis.makeLogaritmic();
       pAxis.makeLogaritmic();
     }
-    const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} A.U."};
 
     // Event properties
+    auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
+    h->GetXaxis()->SetBinLabel(1, "Events read");
+    h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
+    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
+    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
+
     histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
+    histos.add("event/multiplicity", "", kTH1F, {multAxis});
     histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
+    histos.add("event/signedtpcsignal", "", kTH2F, {pAxisPosNeg, dedxAxis});
 
-    addParticleHistos<0>();
-    addParticleHistos<1>();
-    addParticleHistos<2>();
-    addParticleHistos<3>();
-    addParticleHistos<4>();
-    addParticleHistos<5>();
-    addParticleHistos<6>();
-    addParticleHistos<7>();
-    addParticleHistos<8>();
+    static_for<0, 8>([&](auto i) {
+      addParticleHistos<i>(pAxis, ptAxis);
+    });
   }
 
-  template <uint8_t i, typename T>
-  void fillParticleHistos(const T& t, const float mom, const float exp_diff, const float nsigma)
+  template <o2::track::PID::ID id, typename T>
+  void fillParticleHistos(const T& t, const float& mom, const float& exp_diff, const float& expsigma, const float& nsigma)
   {
-    histos.fill(HIST(hexpected[i]), mom, t.tpcSignal() - exp_diff);
-    histos.fill(HIST(hexpected_diff[i]), mom, exp_diff);
-    histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
+    if (applyRapidityCut) {
+      const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
+      if (abs(y) > 0.5) {
+        return;
+      }
+    }
+    // Fill histograms
+    histos.fill(HIST(hexpected[id]), mom, t.tpcSignal() - exp_diff);
+    histos.fill(HIST(hexpected_diff[id]), mom, exp_diff);
+    histos.fill(HIST(hexpsigma[id]), t.p(), expsigma);
+    histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
+    histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
+    if (t.sign() > 0) {
+      histos.fill(HIST(hnsigmapospt[id]), t.pt(), nsigma);
+    } else {
+      histos.fill(HIST(hnsigmanegpt[id]), t.pt(), nsigma);
+    }
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
-                                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                                          aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                                          aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                                                          aod::TrackSelection> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+               soa::Join<aod::Tracks, aod::TracksExtra,
+                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                         aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                         aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
+                         aod::TrackSelection> const& tracks)
   {
+    histos.fill(HIST("event/evsel"), 1);
+    if (applyEvSel == 1) {
+      if (!collision.sel7()) {
+        return;
+      }
+    } else if (applyEvSel == 2) {
+      if (!collision.sel8()) {
+        return;
+      }
+    }
+    histos.fill(HIST("event/evsel"), 2);
+
+    float ntracks = 0;
+    for (auto t : tracks) {
+      if (applyTrackCut && !t.isGlobalTrack()) {
+        continue;
+      }
+      ntracks += 1;
+    }
+    // if (0 && ntracks < 1) {
+    //   return;
+    // }
+    histos.fill(HIST("event/evsel"), 3);
+    if (abs(collision.posZ()) > 10.f) {
+      return;
+    }
+    histos.fill(HIST("event/evsel"), 4);
     histos.fill(HIST("event/vertexz"), collision.posZ());
+    histos.fill(HIST("event/multiplicity"), ntracks);
 
     for (auto t : tracks) {
+      if (applyTrackCut && !t.isGlobalTrack()) {
+        continue;
+      }
       // const float mom = t.p();
       const float mom = t.tpcInnerParam();
       histos.fill(HIST("event/tpcsignal"), mom, t.tpcSignal());
+      histos.fill(HIST("event/signedtpcsignal"), mom * t.sign(), t.tpcSignal());
       //
-      fillParticleHistos<0>(t, mom, t.tpcExpSignalDiffEl(), t.tpcNSigmaEl());
-      fillParticleHistos<1>(t, mom, t.tpcExpSignalDiffMu(), t.tpcNSigmaMu());
-      fillParticleHistos<2>(t, mom, t.tpcExpSignalDiffPi(), t.tpcNSigmaPi());
-      fillParticleHistos<3>(t, mom, t.tpcExpSignalDiffKa(), t.tpcNSigmaKa());
-      fillParticleHistos<4>(t, mom, t.tpcExpSignalDiffPr(), t.tpcNSigmaPr());
-      fillParticleHistos<5>(t, mom, t.tpcExpSignalDiffDe(), t.tpcNSigmaDe());
-      fillParticleHistos<6>(t, mom, t.tpcExpSignalDiffTr(), t.tpcNSigmaTr());
-      fillParticleHistos<7>(t, mom, t.tpcExpSignalDiffHe(), t.tpcNSigmaHe());
-      fillParticleHistos<8>(t, mom, t.tpcExpSignalDiffAl(), t.tpcNSigmaAl());
+      fillParticleHistos<PID::Electron>(t, mom, t.tpcExpSignalDiffEl(), t.tpcExpSigmaEl(), t.tpcNSigmaEl());
+      fillParticleHistos<PID::Muon>(t, mom, t.tpcExpSignalDiffMu(), t.tpcExpSigmaMu(), t.tpcNSigmaMu());
+      fillParticleHistos<PID::Pion>(t, mom, t.tpcExpSignalDiffPi(), t.tpcExpSigmaPi(), t.tpcNSigmaPi());
+      fillParticleHistos<PID::Kaon>(t, mom, t.tpcExpSignalDiffKa(), t.tpcExpSigmaKa(), t.tpcNSigmaKa());
+      fillParticleHistos<PID::Proton>(t, mom, t.tpcExpSignalDiffPr(), t.tpcExpSigmaPr(), t.tpcNSigmaPr());
+      fillParticleHistos<PID::Deuteron>(t, mom, t.tpcExpSignalDiffDe(), t.tpcExpSigmaDe(), t.tpcNSigmaDe());
+      fillParticleHistos<PID::Triton>(t, mom, t.tpcExpSignalDiffTr(), t.tpcExpSigmaTr(), t.tpcNSigmaTr());
+      fillParticleHistos<PID::Helium3>(t, mom, t.tpcExpSignalDiffHe(), t.tpcExpSigmaHe(), t.tpcNSigmaHe());
+      fillParticleHistos<PID::Alpha>(t, mom, t.tpcExpSignalDiffAl(), t.tpcExpSigmaAl(), t.tpcNSigmaAl());
     }
   }
 };
