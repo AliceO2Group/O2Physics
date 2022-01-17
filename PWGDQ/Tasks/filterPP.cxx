@@ -11,6 +11,7 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -63,23 +64,23 @@ namespace o2::aod
 namespace dqppfilter
 {
 DECLARE_SOA_COLUMN(IsDQEventSelected, isDQEventSelected, int);
-DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, uint8_t);
-DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, uint8_t);
+DECLARE_SOA_COLUMN(IsDQBarrelSelected, isDQBarrelSelected, uint8_t);
+DECLARE_SOA_COLUMN(IsDQMuonSelected, isDQMuonSelected, uint8_t);
 } // namespace dqppfilter
 
 DECLARE_SOA_TABLE(DQEventCuts, "AOD", "DQEVENTCUTS", dqppfilter::IsDQEventSelected);
-DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqppfilter::IsBarrelSelected);
-DECLARE_SOA_TABLE(DQMuonsCuts, "AOD", "DQMUONCUTS", dqppfilter::IsMuonSelected);
+DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqppfilter::IsDQBarrelSelected);
+DECLARE_SOA_TABLE(DQMuonsCuts, "AOD", "DQMUONCUTS", dqppfilter::IsDQMuonSelected);
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventCuts>;
-using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
@@ -89,7 +90,7 @@ using MyMuons = aod::FwdTracks;
 using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::DQMuonsCuts>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -97,16 +98,15 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses);
 struct DQEventSelectionTask {
   Produces<aod::DQEventCuts> eventSel;
   OutputObj<THashList> fOutputList{"output"};
-  HistogramManager* fHistMan;
-  AnalysisCompositeCut fEventCut{true};
+  HistogramManager* fHistMan = nullptr;
+  AnalysisCompositeCut* fEventCut;
 
-  float* fValues;
-
-  Configurable<std::string> fConfigCuts{"cfgEventCuts", "eventStandard", "Comma separated list of event cuts; multiple cuts are applied with a logical AND"};
+  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Comma separated list of event cuts; multiple cuts are applied with a logical AND"};
 
   void init(o2::framework::InitContext&)
   {
-    fValues = new float[VarManager::kNVars];
+    DefineCuts();
+
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -115,18 +115,18 @@ struct DQEventSelectionTask {
     DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
-    DefineCuts();
   }
 
   void DefineCuts()
   {
     // default cut is "eventStandard" (kINT7 and vtxZ selection)
-    TString cutNamesStr = fConfigCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+    fEventCut = new AnalysisCompositeCut(true);
+    TString eventCutStr = fConfigEventCuts.value;
+    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    if (!eventCutStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(eventCutStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fEventCut.AddCut(dqcuts::GetAnalysisCut(objArray->At(icut)->GetName()));
+        fEventCut->AddCut(dqcuts::GetAnalysisCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -135,20 +135,32 @@ struct DQEventSelectionTask {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void process(MyEvents::iterator const& event, aod::BCs const& bcs)
+  template <uint32_t TEventFillMap, typename TEvent>
+  void runDQEventSelection(TEvent const& collision, aod::BCs const& bcs)
   {
-    // Reset the fValues array
-    VarManager::ResetValues(0, VarManager::kNEventWiseVariables, fValues);
+    // Reset the Values array
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
 
-    VarManager::FillEvent<gkEventFillMap>(event, fValues);
-    fHistMan->FillHistClass("Event_BeforeCuts", fValues); // automatically fill all the histograms in the class Event
-    if (fEventCut.IsSelected(fValues)) {
-      fHistMan->FillHistClass("Event_AfterCuts", fValues);
+    VarManager::FillEvent<TEventFillMap>(collision);
+    fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       eventSel(1);
     } else {
       eventSel(0);
     }
   }
+  void processDQEventSelection(MyEvents::iterator const& collision, aod::BCs const& bcs)
+  {
+    runDQEventSelection<gkEventFillMap>(collision, bcs);
+  }
+  void processDQDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(DQEventSelectionTask, processDQEventSelection, "Run event selection", false);
+  PROCESS_SWITCH(DQEventSelectionTask, processDQDummy, "Dummy function", false);
 };
 
 struct DQBarrelTrackSelectionTask {
@@ -157,15 +169,12 @@ struct DQBarrelTrackSelectionTask {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
 
-  float* fValues; // array to be used by the VarManager
-
   Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID2", "Comma separated list of ADDITIONAL barrel track cuts"};
 
   void init(o2::framework::InitContext&)
   {
     DefineCuts();
 
-    fValues = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -197,30 +206,43 @@ struct DQBarrelTrackSelectionTask {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void process(MyEvents::iterator const& event, MyBarrelTracks const& tracks, aod::BCs const& bcs)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
+  void runDQTrackSelection(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel)
   {
     uint8_t filterMap = uint8_t(0);
-    trackSel.reserve(tracks.size());
+    trackSel.reserve(tracksBarrel.size());
 
-    VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables, fValues);
+    VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     // fill event information which might be needed in histograms that combine track and event properties
-    VarManager::FillEvent<gkEventFillMap>(event, fValues);
+    VarManager::FillEvent<TEventFillMap>(collision);
 
-    for (auto& track : tracks) {
+    for (auto& track : tracksBarrel) {
       filterMap = uint8_t(0);
       // TODO: if a condition on the event selection is applied, the histogram output is missing
-      VarManager::FillTrack<gkTrackFillMap>(track, fValues);
-      fHistMan->FillHistClass("TrackBarrel_BeforeCuts", fValues);
+      VarManager::FillTrack<TTrackFillMap>(track);
+      fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(fValues)) {
+        if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (uint8_t(1) << i);
-          fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), fValues);
+          fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
         }
       }
       trackSel(filterMap);
-    }
+    } // end loop over tracks
   }
+
+  void processDQTrackSelection(MyEvents::iterator const& collision, aod::BCs const& bcs, MyBarrelTracks const& tracks)
+  {
+    runDQTrackSelection<gkEventFillMap, gkTrackFillMap>(collision, bcs, tracks);
+  }
+  void processDQDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(DQBarrelTrackSelectionTask, processDQTrackSelection, "Run barrel track selection", false);
+  PROCESS_SWITCH(DQBarrelTrackSelectionTask, processDQDummy, "Dummy function", false);
 };
 
 struct DQMuonsSelection {
@@ -229,15 +251,12 @@ struct DQMuonsSelection {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
 
-  float* fValues;
-
   Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
 
   void init(o2::framework::InitContext&)
   {
     DefineCuts();
 
-    fValues = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -269,35 +288,47 @@ struct DQMuonsSelection {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void process(MyEvents::iterator const& event, MyMuons const& muons, aod::BCs const& bcs)
+  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuons>
+  void runDQMuonSelection(TEvent const& collision, aod::BCs const& bcs, TMuons const& muons)
   {
     uint8_t filterMap = uint8_t(0);
     trackSel.reserve(muons.size());
 
-    VarManager::ResetValues(0, VarManager::kNMuonTrackVariables, fValues);
+    VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
     // fill event information which might be needed in histograms that combine track and event properties
-    VarManager::FillEvent<gkEventFillMap>(event, fValues);
+    VarManager::FillEvent<TEventFillMap>(collision);
 
     for (auto& muon : muons) {
       filterMap = uint8_t(0);
       // TODO: if a condition on the event selection is applied, the histogram output is missing
-      VarManager::FillTrack<gkMuonFillMap>(muon, fValues);
-      fHistMan->FillHistClass("TrackMuons_BeforeCuts", fValues);
+      VarManager::FillTrack<TMuonFillMap>(muon);
+      fHistMan->FillHistClass("TrackMuons_BeforeCuts", VarManager::fgValues);
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(fValues)) {
+        if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (uint8_t(1) << i);
-          fHistMan->FillHistClass(Form("TrackMuons_%s", (*cut).GetName()), fValues);
+          fHistMan->FillHistClass(Form("TrackMuons_%s", (*cut).GetName()), VarManager::fgValues);
         }
       }
       trackSel(filterMap);
     }
   }
+
+  void processDQMuonSelection(MyEvents::iterator const& collision, aod::BCs const& bcs, MyMuons const& muons)
+  {
+    runDQMuonSelection<gkEventFillMap, gkMuonFillMap>(collision, bcs, muons);
+  }
+  void processDQDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(DQMuonsSelection, processDQMuonSelection, "Run muon selection", false);
+  PROCESS_SWITCH(DQMuonsSelection, processDQDummy, "Dummy function", false);
 };
 
 struct DQFilterPPTask {
   Produces<aod::DQEventFilter> eventFilter;
-  Produces<aod::DqFilters> dqtable;
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TH1I> fStatsSingleBarrel{"statsSingleBarrel"};
   OutputObj<TH1I> fStatsSingleMuon{"statsSingleMuon"};
@@ -306,7 +337,6 @@ struct DQFilterPPTask {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fPairCuts;
 
-  float* fValues;
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID2", "Comma separated list of ADDITIONAL barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairMassLow,pairJpsi", "Comma separated list of ADDITIONAL pair cuts"};
@@ -337,8 +367,6 @@ struct DQFilterPPTask {
   void init(o2::framework::InitContext&)
   {
     DefineCuts();
-
-    fValues = new float[VarManager::kNVars];
 
     // initialize the variable manager
     VarManager::SetDefaultVarNames();
@@ -392,187 +420,311 @@ struct DQFilterPPTask {
     }
   }
 
-  void
-    process(MyEventsSelected::iterator const& event, MyBarrelTracksSelected const& tracks, MyMuonsSelected const& muons, aod::BCs const& bcs)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
+  void runDQFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
   {
-    uint64_t filter = 0; // first 32 bits for dielectron, last 32 for dimuons
-
-    //[0] = SingleE, [1] = SingleMulow, [2] = SingleMuHigh, [3] = DiElectron, [4] = DiMuon
-    bool keepEvent[kNTriggersDQ]{false};
-
+    uint64_t filter = 0; // first
     constexpr int pairTypeEE = VarManager::kJpsiToEE;
     constexpr int pairTypeMuMu = VarManager::kJpsiToMuMu;
-    if (event.isDQEventSelected() == 1) {
-      // Reset the fValues array
-      VarManager::ResetValues(0, VarManager::kNVars, fValues);
-      VarManager::FillEvent<gkEventFillMap>(event, fValues);
-      uint8_t* singleBarrelCount = new uint8_t[fNTrackCuts];                 // single electron trigger
-      uint8_t* singleMuonsCount = new uint8_t[fNMuonCuts];                   // single muon trigger
-      uint8_t* pairsBarrelCount = new uint8_t[fNPairCuts * fNTrackCuts];     // dielectron trigger
-      uint8_t* pairsUnlikeMuonsCount = new uint8_t[fNPairCuts * fNMuonCuts]; // dimuon trigger Unlike
-      uint8_t* pairsLikeMuonsCount = new uint8_t[fNPairCuts * fNMuonCuts];   // dimuon trigger like
 
-      for (int i = 0; i < fNPairCuts * fNTrackCuts; i++) {
-        pairsBarrelCount[i] = 0;
-      }
-      for (int i = 0; i < fNPairCuts * fNMuonCuts; i++) {
-        pairsUnlikeMuonsCount[i] = 0;
-        pairsLikeMuonsCount[i] = 0;
-      }
-      for (int i = 0; i < fNMuonCuts; i++) {
-        singleMuonsCount[i] = 0;
-      }
-      for (int i = 0; i < fNTrackCuts; i++) {
-        singleBarrelCount[i] = 0;
-      }
+    if (!collision.isDQEventSelected()) {
+      return;
+    }
+    // Reset the Values array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<TEventFillMap>(collision);
+    uint8_t* singleBarrelCount = new uint8_t[fNTrackCuts];                 // single electron trigger
+    uint8_t* singleMuonsCount = new uint8_t[fNMuonCuts];                   // single muon trigger
+    uint8_t* pairsBarrelCount = new uint8_t[fNPairCuts * fNTrackCuts];     // dielectron trigger
+    uint8_t* pairsUnlikeMuonsCount = new uint8_t[fNPairCuts * fNMuonCuts]; // dimuon trigger Unlike
+    uint8_t* pairsLikeMuonsCount = new uint8_t[fNPairCuts * fNMuonCuts];   // dimuon trigger like
 
-      uint8_t cutSingleFilter = 0;
-      for (auto track : tracks) {
-        cutSingleFilter = track.isBarrelSelected();
-        if (!cutSingleFilter) {
+    for (int i = 0; i < fNPairCuts * fNTrackCuts; i++) {
+      pairsBarrelCount[i] = 0;
+    }
+    for (int i = 0; i < fNPairCuts * fNMuonCuts; i++) {
+      pairsUnlikeMuonsCount[i] = 0;
+      pairsLikeMuonsCount[i] = 0;
+    }
+    for (int i = 0; i < fNMuonCuts; i++) {
+      singleMuonsCount[i] = 0;
+    }
+    for (int i = 0; i < fNTrackCuts; i++) {
+      singleBarrelCount[i] = 0;
+    }
+
+    uint8_t cutSingleFilter = 0;
+    for (auto track : tracksBarrel) {
+      cutSingleFilter = track.isDQBarrelSelected();
+      if (!cutSingleFilter) {
+        continue;
+      }
+      for (int i = 0; i < fNTrackCuts; ++i) {
+        if (!(cutSingleFilter & (uint8_t(1) << i))) {
           continue;
         }
+        VarManager::FillTrack<TTrackFillMap>(track);
+        fHistMan->FillHistClass(Form("TrackBarrel_%s", fTrkCutsNameArray->At(i)->GetName()), VarManager::fgValues);
+        singleBarrelCount[i] += 1;
+      }
+    }
+
+    uint8_t cutFilter = 0;
+    for (auto& [t1, t2] : combinations(tracksBarrel, tracksBarrel)) {
+      //        for (auto tneg : negTracks) { // +- pairs
+      cutFilter = t1.isDQBarrelSelected() & t2.isDQBarrelSelected();
+      if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
+        continue;
+      }
+      VarManager::FillPair<pairTypeEE, TTrackFillMap>(t1, t2); // compute pair quantities
+      if (t1.sign() * t2.sign() < 0) {
         for (int i = 0; i < fNTrackCuts; ++i) {
-          if (!(cutSingleFilter & (uint8_t(1) << i))) {
+          if (!(cutFilter & (uint8_t(1) << i))) {
             continue;
           }
-          VarManager::FillTrack<gkTrackFillMap>(track, fValues);
-          fHistMan->FillHistClass(Form("TrackBarrel_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
-          singleBarrelCount[i] += 1;
-        }
-      }
-
-      uint8_t cutFilter = 0;
-      for (auto& [t1, t2] : combinations(tracks, tracks)) {
-        //        for (auto tneg : negTracks) { // +- pairs
-        cutFilter = t1.isBarrelSelected() & t2.isBarrelSelected();
-        if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
-          continue;
-        }
-        VarManager::FillPair<pairTypeEE, gkTrackFillMap>(t1, t2, fValues); // compute pair quantities
-        if (t1.sign() * t2.sign() < 0) {
-          for (int i = 0; i < fNTrackCuts; ++i) {
-            if (!(cutFilter & (uint8_t(1) << i))) {
-              continue;
-            }
-            fHistMan->FillHistClass(Form("PairsBarrelPM_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
-            int j = 0;
-            for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, j++) {
-              if ((*cut).IsSelected(fValues)) {
-                pairsBarrelCount[j + i * fNPairCuts] += 1;
-              }
-            }
-          }
-        }
-      }
-
-      uint8_t cutSingleMuonFilter = 0;
-      for (auto muon1 : muons) {
-        cutSingleMuonFilter = muon1.isMuonSelected();
-        if (!cutSingleMuonFilter) {
-          continue;
-        }
-        for (int i = 0; i < fNMuonCuts; ++i) {
-          if (!(cutSingleMuonFilter & (uint8_t(1) << i))) {
-            continue;
-          }
-          VarManager::FillTrack<gkMuonFillMap>(muon1, fValues);
-          fHistMan->FillHistClass(Form("TrackMuons_%s", fMuonCutsNameArray->At(i)->GetName()), fValues);
-          singleMuonsCount[i] += 1;
-        }
-      }
-
-      uint8_t cutMuonFilter = 0;
-      for (auto& [muon1, muon2] : combinations(muons, muons)) {
-        cutMuonFilter = muon1.isMuonSelected() & muon2.isMuonSelected();
-        if (!cutMuonFilter) { // the tracks must have at least one filter bit in common to continue
-          continue;
-        }
-        VarManager::FillPair<pairTypeMuMu, gkMuonFillMap>(muon1, muon2, fValues); // compute pair quantities
-        for (int i = 0; i < fNMuonCuts; ++i) {
-          if (!(cutMuonFilter & (uint8_t(1) << i))) {
-            continue;
-          }
-          if (muon1.sign() * muon2.sign() < 0) {
-            fHistMan->FillHistClass(Form("PairsMuonsPM_%s", fMuonCutsNameArray->At(i)->GetName()), fValues);
-          } else {
-            if (muon1.sign() > 0) {
-              fHistMan->FillHistClass(Form("PairsMuonsPP_%s", fMuonCutsNameArray->At(i)->GetName()), fValues);
-            } else {
-              fHistMan->FillHistClass(Form("PairsMuonsMM_%s", fMuonCutsNameArray->At(i)->GetName()), fValues);
-            }
-          }
-
+          fHistMan->FillHistClass(Form("PairsBarrelPM_%s", fTrkCutsNameArray->At(i)->GetName()), VarManager::fgValues);
           int j = 0;
           for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, j++) {
-            if ((*cut).IsSelected(fValues)) {
-              if (muon1.sign() * muon2.sign() < 0) {
-                pairsUnlikeMuonsCount[j + i * fNPairCuts] += 1;
-              } else {
-                pairsLikeMuonsCount[j + i * fNPairCuts] += 1;
-              }
+            if ((*cut).IsSelected(VarManager::fgValues)) {
+              pairsBarrelCount[j + i * fNPairCuts] += 1;
             }
           }
         }
       }
-
-      // Fill event selections tag for central event filtering
-      if (singleBarrelCount[0] > 0) { // Single Barrel count : bit 0 corresponds to "jpsiPID1" cut
-        keepEvent[0] = true;
-      }
-      if (singleMuonsCount[0] > 0) { // Single Muon count : bit 0 corresponds to "muonLowPt" cut
-        keepEvent[1] = true;
-      }
-      if (singleMuonsCount[1] > 0) { // Single Muon count : bit 1 corresponds to "muonHighPt" cut
-        keepEvent[2] = true;
-      }
-      if (pairsBarrelCount[0] > 0) { // Pair Barrel count : bit 0 corresponds "jpsiPID1" & "pairNoCut"  [jPaircut + iTrackCut * fNPairCuts]
-        keepEvent[3] = true;
-      }
-      if (pairsUnlikeMuonsCount[0] > 0) { // Pair Muon count : bit 0 corresponds "muonLowPt" & "pairNoCut"  [jPaircut + iMuonCut * fNPairCuts]
-        keepEvent[4] = true;
-      }
-      // Filling the table
-      dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
-
-      // Fill DQ bit map
-      for (int i = 0; i < fNTrackCuts; i++) {
-        if (singleBarrelCount[i] > 0) {
-          filter |= (uint64_t(1) << i);
-          fStatsSingleBarrel->Fill(i);
-        }
-        for (int j = 0; j < fNPairCuts; j++) {
-          if (pairsBarrelCount[j + i * fNPairCuts] > 0) {
-            filter |= (uint64_t(1) << (8 + j + i * fNPairCuts));
-            fStatsBarrel->Fill(j, i);
-          }
-        }
-      }
-      for (int i = 0; i < fNMuonCuts; i++) {
-        if (singleMuonsCount[i] > 0) {
-          filter |= (uint64_t(1) << (32 + i));
-          fStatsSingleMuon->Fill(i);
-        }
-        for (int j = 0; j < fNPairCuts; j++) {
-          if (pairsUnlikeMuonsCount[j + i * fNPairCuts] > 0) {
-            filter |= (uint64_t(1) << (40 + j + i * fNPairCuts));
-            fStatsMuon->Fill(j, i);
-          }
-          if (pairsLikeMuonsCount[j + i * fNPairCuts] > 0) {
-            filter |= (uint64_t(1) << (52 + j + i * fNPairCuts));
-            //            fStatsMuon->Fill(j, i);
-          }
-        }
-      }
-
-      delete[] pairsBarrelCount;
-      delete[] pairsUnlikeMuonsCount;
-      delete[] pairsLikeMuonsCount;
-      delete[] singleMuonsCount;
-      delete[] singleBarrelCount;
     }
+
+    uint8_t cutSingleMuonFilter = 0;
+    for (auto muon1 : muons) {
+      cutSingleMuonFilter = muon1.isDQMuonSelected();
+      if (!cutSingleMuonFilter) {
+        continue;
+      }
+      for (int i = 0; i < fNMuonCuts; ++i) {
+        if (!(cutSingleMuonFilter & (uint8_t(1) << i))) {
+          continue;
+        }
+        VarManager::FillTrack<TMuonFillMap>(muon1);
+        fHistMan->FillHistClass(Form("TrackMuons_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
+        singleMuonsCount[i] += 1;
+      }
+    }
+
+    uint8_t cutMuonFilter = 0;
+    for (auto& [muon1, muon2] : combinations(muons, muons)) {
+      cutMuonFilter = muon1.isDQMuonSelected() & muon2.isDQMuonSelected();
+      if (!cutMuonFilter) { // the tracks must have at least one filter bit in common to continue
+        continue;
+      }
+      VarManager::FillPair<pairTypeMuMu, TMuonFillMap>(muon1, muon2); // compute pair quantities
+      for (int i = 0; i < fNMuonCuts; ++i) {
+        if (!(cutMuonFilter & (uint8_t(1) << i))) {
+          continue;
+        }
+        if (muon1.sign() * muon2.sign() < 0) {
+          fHistMan->FillHistClass(Form("PairsMuonsPM_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
+        } else {
+          if (muon1.sign() > 0) {
+            fHistMan->FillHistClass(Form("PairsMuonsPP_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
+          } else {
+            fHistMan->FillHistClass(Form("PairsMuonsMM_%s", fMuonCutsNameArray->At(i)->GetName()), VarManager::fgValues);
+          }
+        }
+
+        int j = 0;
+        for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, j++) {
+          if ((*cut).IsSelected(VarManager::fgValues)) {
+            if (muon1.sign() * muon2.sign() < 0) {
+              pairsUnlikeMuonsCount[j + i * fNPairCuts] += 1;
+            } else {
+              pairsLikeMuonsCount[j + i * fNPairCuts] += 1;
+            }
+          }
+        }
+      }
+    }
+
+    // Fill DQ bit map
+    for (int i = 0; i < fNTrackCuts; i++) {
+      if (singleBarrelCount[i] > 0) {
+        filter |= (uint64_t(1) << i);
+        fStatsSingleBarrel->Fill(i);
+      }
+      for (int j = 0; j < fNPairCuts; j++) {
+        if (pairsBarrelCount[j + i * fNPairCuts] > 0) {
+          filter |= (uint64_t(1) << (8 + j + i * fNPairCuts));
+          fStatsBarrel->Fill(j, i);
+        }
+      }
+    }
+    for (int i = 0; i < fNMuonCuts; i++) {
+      if (singleMuonsCount[i] > 0) {
+        filter |= (uint64_t(1) << (32 + i));
+        fStatsSingleMuon->Fill(i);
+      }
+      for (int j = 0; j < fNPairCuts; j++) {
+        if (pairsUnlikeMuonsCount[j + i * fNPairCuts] > 0) {
+          filter |= (uint64_t(1) << (40 + j + i * fNPairCuts));
+          fStatsMuon->Fill(j, i);
+        }
+        if (pairsLikeMuonsCount[j + i * fNPairCuts] > 0) {
+          filter |= (uint64_t(1) << (52 + j + i * fNPairCuts));
+          //            fStatsMuon->Fill(j, i);
+        }
+      }
+    }
+
+    delete[] pairsBarrelCount;
+    delete[] pairsUnlikeMuonsCount;
+    delete[] pairsLikeMuonsCount;
+    delete[] singleMuonsCount;
+    delete[] singleBarrelCount;
+
     eventFilter(filter);
   }
+  void processDQFilterPP(MyEventsSelected::iterator const& collision, aod::BCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuonsSelected const& muons)
+  {
+    runDQFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
+  }
+  // TODO: dummy function for the case when no process function is enabled
+  void processDQDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(DQFilterPPTask, processDQFilterPP, "Run filter task", false);
+  PROCESS_SWITCH(DQFilterPPTask, processDQDummy, "Dummy function", false);
+};
+
+struct DQCentralFilterPPTask {
+  Produces<aod::DqFilters> dqtable;
+  OutputObj<THashList> fOutputList{"output"};
+  OutputObj<TH1I> fStatsTriggers{"statsTriggers"};
+  HistogramManager* fHistMan;
+
+  int fNTrackCuts;
+  int fNMuonCuts;
+  int fNPairCuts;
+  TObjArray* fTrkCutsNameArray;
+  TObjArray* fMuonCutsNameArray;
+
+  void init(o2::framework::InitContext&)
+  {
+
+    // initialize the variable manager
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    // configure histograms
+    TString trackCutNamesStr = "jpsiPID1";
+    fTrkCutsNameArray = trackCutNamesStr.Tokenize(",");
+    fNTrackCuts = fTrkCutsNameArray->GetEntries();
+    TString muonCutNamesStr = "muonLowPt,muonHighPt";
+    fMuonCutsNameArray = muonCutNamesStr.Tokenize(",");
+    fNMuonCuts = fMuonCutsNameArray->GetEntries();
+
+    // configure the stats histogram
+    fStatsTriggers.setObject(new TH1I("statsTriggers", "statsTriggers", kNTriggersDQ, -0.5, -0.5 + kNTriggersDQ));
+    fStatsTriggers->GetXaxis()->SetBinLabel(1, "Single Electron");
+    fStatsTriggers->GetXaxis()->SetBinLabel(2, "Single Low pT Muon");
+    fStatsTriggers->GetXaxis()->SetBinLabel(3, "Single High pT Muon");
+    fStatsTriggers->GetXaxis()->SetBinLabel(4, "Di-Electron");
+    fStatsTriggers->GetXaxis()->SetBinLabel(5, "Di-Muon");
+  }
+
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
+  void runCentralDQFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
+  {
+    bool keepEvent[kNTriggersDQ]{false};
+
+    if (!collision.isDQEventSelected()) {
+      return;
+    }
+    // Reset the Values array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<TEventFillMap>(collision);
+
+    uint8_t cutSingleFilter = 0;
+    for (auto track : tracksBarrel) {
+      cutSingleFilter = track.isDQBarrelSelected();
+      if (!cutSingleFilter) {
+        continue;
+      }
+      for (int i = 0; i < 1; ++i) { // Single Barrel count : bit 0 corresponds to "jpsiPID1" cut
+        if (!(cutSingleFilter & (uint8_t(1) << i))) {
+          continue;
+        }
+        keepEvent[0] = true; // Single Electron
+      }
+    }
+
+    uint8_t cutFilter = 0;
+    for (auto& [t1, t2] : combinations(tracksBarrel, tracksBarrel)) {
+      //        for (auto tneg : negTracks) { // +- pairs
+      cutFilter = t1.isDQBarrelSelected() & t2.isDQBarrelSelected();
+      if (!cutFilter) { // the tracks must have at least one filter bit in common to continue
+        continue;
+      }
+      if (t1.sign() * t2.sign() < 0) {
+        for (int i = 0; i < 1; ++i) {
+          if (!(cutFilter & (uint8_t(1) << i))) {
+            continue;
+          }
+          keepEvent[3] = true; // Di-Electron
+        }
+      }
+    }
+
+    uint8_t cutSingleMuonFilter = 0;
+    for (auto muon1 : muons) {
+      cutSingleMuonFilter = muon1.isDQMuonSelected();
+      if (!cutSingleMuonFilter) {
+        continue;
+      }
+      for (int i = 0; i < 2; ++i) {
+        if (!(cutSingleMuonFilter & (uint8_t(1) << i))) {
+          continue;
+        }
+        keepEvent[i + 1] = true; // Low pT muon (keepEvent[1]) ang High pT muons (keepEvent[2])
+      }
+    }
+
+    uint8_t cutMuonFilter = 0;
+    for (auto& [muon1, muon2] : combinations(muons, muons)) {
+      cutMuonFilter = muon1.isDQMuonSelected() & muon2.isDQMuonSelected();
+      if (!cutMuonFilter) { // the tracks must have at least one filter bit in common to continue
+        continue;
+      }
+      for (int i = 0; i < 1; ++i) {
+        if (!(cutMuonFilter & (uint8_t(1) << i))) {
+          continue;
+        }
+        if (muon1.sign() * muon2.sign() < 0) {
+          keepEvent[4] = true; // Di-Muon (low pT muons, no pair cut)
+        }
+      }
+    }
+    for (int i = 0; i < kNTriggersDQ; ++i) {
+      if (keepEvent[i] > 0) { // the tracks must have at least one filter bit in common to continue
+        fStatsTriggers->Fill(i);
+      }
+    }
+    // Filling the table
+    dqtable(keepEvent[kSingleE], keepEvent[kSingleMuLow], keepEvent[kSingleMuHigh], keepEvent[kDiElectron], keepEvent[kDiMuon]);
+  }
+  void processCentralDQFilterPP(MyEventsSelected::iterator const& collision, aod::BCs const& bcs, MyBarrelTracksSelected const& tracks, MyMuonsSelected const& muons)
+  {
+    runCentralDQFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
+  }
+  // TODO: dummy function for the case when no process function is enabled
+  void processDQDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(DQCentralFilterPPTask, processCentralDQFilterPP, "Run central filter task", false);
+  PROCESS_SWITCH(DQCentralFilterPPTask, processDQDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -581,7 +733,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DQEventSelectionTask>(cfgc),
     adaptAnalysisTask<DQBarrelTrackSelectionTask>(cfgc),
     adaptAnalysisTask<DQMuonsSelection>(cfgc),
-    adaptAnalysisTask<DQFilterPPTask>(cfgc)};
+    adaptAnalysisTask<DQFilterPPTask>(cfgc),
+    adaptAnalysisTask<DQCentralFilterPPTask>(cfgc)};
 }
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses)
