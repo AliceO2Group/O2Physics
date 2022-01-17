@@ -104,7 +104,7 @@ struct PidONNXModel {
   }
 
  private:
-  void loadInputFiles(const std::string& modelDir, const std::string& scalingParamsFile, bool useTOF, int pid, const std::string& url, long nolaterthan, std::string& modelFile)
+  void loadInputFiles(const std::string& modelDir, const std::string& scalingParamsFile, bool useTOF, int pid, std::string& modelFile)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;

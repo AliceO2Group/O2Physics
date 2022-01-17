@@ -58,15 +58,16 @@ struct SimpleApplyOnnxModelTask {
 
   void init(InitContext const&)
   {
-    pidModel = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, cfgUrl.value, cfgNoLaterThan.value, cfgPid.value, cfgUseTOF.value);
+    pidModel = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, cfgPid.value, cfgUseTOF.value);
   }
 
   void process(BigTracks const& tracks)
   {
     for (auto& track : tracks) {
       float pid = pidModel.applyModel(track);
-      LOGF(info, "collision id: %d track id: %d pid: %.3f eta: %.3f; p: %.3f; x: %.3f, y: %.3f, z: %.3f",
-           track.collisionId(), track.index(), pid, track.eta(), track.p(), track.x(), track.y(), track.z());
+      // pid > 0 --> track is predicted to be of this kind; pid < 0 --> rejected
+      LOGF(info, "collision id: %d track id: %d pid: %.3f p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+           track.collisionId(), track.index(), pid, track.p(), track.x(), track.y(), track.z());
       pidMLResults(track.index(), pid);
     }
   }
