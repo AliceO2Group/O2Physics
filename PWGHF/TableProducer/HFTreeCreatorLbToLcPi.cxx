@@ -178,7 +178,7 @@ struct HfTreeCreatorLbToLcPi {
             candidate.impactParameter1(),
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
-            1 << CandFlag,
+            FunctionSelection,
             FunctionInvMass,
             candidate.pt(),
             candidate.p(),
