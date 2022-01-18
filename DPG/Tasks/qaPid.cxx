@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include <TParameter.h>
@@ -25,12 +26,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct pid {
-  double combindeSignal(float val1, float val2)
+  double combinedSignal(float val1, float val2)
   {
     return sqrt(pow(val1, 2) + pow(val2, 2));
   }
 
-  int indexofSmallestElement(const float array[], int size)
+  int indexOfSmallestElement(const float array[], int size)
   {
     int index = 0;
     for (int i = 1; i < size; i++) {
@@ -40,113 +41,113 @@ struct pid {
     return index;
   }
 
-  void fillContaminationRegistry(int i, int PdgCode, double pt)
+  void fillContaminationRegistry(int i, int pdgCode, double pt)
   {
     if (i == 0) {
-      if (PdgCode == 211) {
+      if (pdgCode == 211) {
         histReg.fill(HIST("contamination/211in211"), pt);
       }
-      if (PdgCode == -211) {
+      if (pdgCode == -211) {
         histReg.fill(HIST("contamination/0211in211"), pt);
       }
 
-      if (PdgCode == 2212) {
+      if (pdgCode == 2212) {
         histReg.fill(HIST("contamination/2212in211"), pt);
       }
-      if (PdgCode == -2212) {
+      if (pdgCode == -2212) {
         histReg.fill(HIST("contamination/02212in211"), pt);
       }
 
-      if (PdgCode == 321) {
+      if (pdgCode == 321) {
         histReg.fill(HIST("contamination/321in211"), pt);
       }
-      if (PdgCode == -321) {
+      if (pdgCode == -321) {
         histReg.fill(HIST("contamination/0321in211"), pt);
       }
 
-      if (PdgCode == 11) {
+      if (pdgCode == 11) {
         histReg.fill(HIST("contamination/11in211"), pt);
       }
-      if (PdgCode == -11) {
+      if (pdgCode == -11) {
         histReg.fill(HIST("contamination/011in211"), pt);
       }
 
-      if (PdgCode == 13) {
+      if (pdgCode == 13) {
         histReg.fill(HIST("contamination/13in211"), pt);
       }
-      if (PdgCode == -13) {
+      if (pdgCode == -13) {
         histReg.fill(HIST("contamination/013in211"), pt);
       }
 
     } else if (i == 1) {
-      if (PdgCode == 211) {
+      if (pdgCode == 211) {
         histReg.fill(HIST("contamination/211in2212"), pt);
       }
-      if (PdgCode == -211) {
+      if (pdgCode == -211) {
         histReg.fill(HIST("contamination/0211in2212"), pt);
       }
 
-      if (PdgCode == 2212) {
+      if (pdgCode == 2212) {
         histReg.fill(HIST("contamination/2212in221"), pt);
       }
-      if (PdgCode == -2212) {
+      if (pdgCode == -2212) {
         histReg.fill(HIST("contamination/02212in221"), pt);
       }
 
-      if (PdgCode == 321) {
+      if (pdgCode == 321) {
         histReg.fill(HIST("contamination/321in2212"), pt);
       }
-      if (PdgCode == -321) {
+      if (pdgCode == -321) {
         histReg.fill(HIST("contamination/0321in2212"), pt);
       }
 
-      if (PdgCode == 11) {
+      if (pdgCode == 11) {
         histReg.fill(HIST("contamination/11in2212"), pt);
       }
-      if (PdgCode == -11) {
+      if (pdgCode == -11) {
         histReg.fill(HIST("contamination/011in2212"), pt);
       }
 
-      if (PdgCode == 13) {
+      if (pdgCode == 13) {
         histReg.fill(HIST("contamination/13in2212"), pt);
       }
-      if (PdgCode == -13) {
+      if (pdgCode == -13) {
         histReg.fill(HIST("contamination/013in2212"), pt);
       }
 
     } else if (i == 2) {
-      if (PdgCode == 211) {
+      if (pdgCode == 211) {
         histReg.fill(HIST("contamination/211in321"), pt);
       }
-      if (PdgCode == -211) {
+      if (pdgCode == -211) {
         histReg.fill(HIST("contamination/0211in321"), pt);
       }
 
-      if (PdgCode == 2212) {
+      if (pdgCode == 2212) {
         histReg.fill(HIST("contamination/2212in321"), pt);
       }
-      if (PdgCode == -2212) {
+      if (pdgCode == -2212) {
         histReg.fill(HIST("contamination/02212in321"), pt);
       }
 
-      if (PdgCode == 321) {
+      if (pdgCode == 321) {
         histReg.fill(HIST("contamination/321in321"), pt);
       }
-      if (PdgCode == -321) {
+      if (pdgCode == -321) {
         histReg.fill(HIST("contamination/0321in321"), pt);
       }
 
-      if (PdgCode == 11) {
+      if (pdgCode == 11) {
         histReg.fill(HIST("contamination/11in321"), pt);
       }
-      if (PdgCode == -11) {
+      if (pdgCode == -11) {
         histReg.fill(HIST("contamination/011in321"), pt);
       }
 
-      if (PdgCode == 13) {
+      if (pdgCode == 13) {
         histReg.fill(HIST("contamination/13in321"), pt);
       }
-      if (PdgCode == -13) {
+      if (pdgCode == -13) {
         histReg.fill(HIST("contamination/013in321"), pt);
       }
     }
@@ -164,8 +165,8 @@ struct pid {
   static constexpr std::string_view TOFPidTrueRegistryNames[numParticles] = {"TOFPidTrue/211", "TOFPidTrue/2212", "TOFPidTrue/321", "TOFPidTrue/11", "TOFPidTrue/13", "TOFPidTrue/0211", "TOFPidTrue/02212", "TOFPidTrue/0321", "TOFPidTrue/011", "TOFPidTrue/013"};
   static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321", "TOFPidFalse/11", "TOFPidFalse/13", "TOFPidFalse/0211", "TOFPidFalse/02212", "TOFPidFalse/0321", "TOFPidFalse/011", "TOFPidFalse/013"};
 
-  static constexpr int PdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
-  // charge with index i corresponds to i-th particle from PdgCodes array
+  static constexpr int pdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
+  // charge with index i corresponds to i-th particle from pdgCodes array
   static constexpr int particleCharge[numParticles] = {1, 1, 1, -1, -1, -1, -1, -1, 1, 1};
   // momentum value when to switch from pid based only on TPC (below the value) to combination of TPC and TOF (above the value)
   // i-th momentum corresponds to the i-th particle
@@ -179,75 +180,75 @@ struct pid {
 
   HistogramRegistry histReg{
     "allHistograms",
-    {{"MC/211", "MC #pi^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/11", "MC e^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/321", "MC K^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/2212", "MC p;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/13", "MC #mu^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/0211", "MC #pi^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/011", "MC e^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/0321", "MC K^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/02212", "MC #bar{p};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/013", "MC #mu^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"MC/else", "MC else;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+    {{"MC/211", "MC #pi^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/11", "MC e^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/321", "MC K^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/2212", "MC p;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/13", "MC #mu^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/0211", "MC #pi^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/011", "MC e^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/0321", "MC K^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/02212", "MC #bar{p};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/013", "MC #mu^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"MC/else", "MC else;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"pidTrue/211", "PID true #pi^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/11", "PID true e^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/321", "PID true K^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/2212", "PID true p;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/13", "PID true #mu^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/0211", "PID true #pi^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/011", "PID true e^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/0321", "PID true K^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/02212", "PID true #bar{p};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidTrue/013", "PID true #mu^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/211", "PID true #pi^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/11", "PID true e^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/321", "PID true K^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/2212", "PID true p;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/13", "PID true #mu^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/0211", "PID true #pi^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/011", "PID true e^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/0321", "PID true K^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/02212", "PID true #bar{p};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidTrue/013", "PID true #mu^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"pidFalse/211", "PID false #pi^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/11", "PID false e^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/321", "PID false K^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/2212", "PID false p;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/13", "PID false #mu^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/0211", "PID false #pi^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/011", "PID false e^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/0321", "PID false K^{-};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/02212", "PID false #bar{p};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"pidFalse/013", "PID false #mu^{+};p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/211", "PID false #pi^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/11", "PID false e^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/321", "PID false K^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/2212", "PID false p;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/13", "PID false #mu^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/0211", "PID false #pi^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/011", "PID false e^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/0321", "PID false K^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/02212", "PID false #bar{p};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"pidFalse/013", "PID false #mu^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"contamination/211in211", "#pi^{+} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/2212in211", "p in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/321in211", "K^{+} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/11in211", "e^{-} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/13in211", "#mu^{-} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/211in211", "#pi^{+} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/2212in211", "p in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/321in211", "K^{+} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/11in211", "e^{-} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/13in211", "#mu^{-} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"contamination/0211in211", "#pi^{-} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/02212in211", "#bar{p} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/0321in211", "K^{-} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/011in211", "e^{+} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/013in211", "#mu^{+} in #pi^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/0211in211", "#pi^{-} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/02212in211", "#bar{p} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/0321in211", "K^{-} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/011in211", "e^{+} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/013in211", "#mu^{+} in #pi^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"contamination/211in2212", "#pi^{+} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/2212in2212", "p in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/321in2212", "K^{+} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/11in2212", "e^{-} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/13in2212", "#mu^{-} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/211in2212", "#pi^{+} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/2212in2212", "p in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/321in2212", "K^{+} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/11in2212", "e^{-} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/13in2212", "#mu^{-} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"contamination/0211in2212", "#pi^{-} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/02212in2212", "#bar{p} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/0321in2212", "K^{-} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/011in2212", "e^{+} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/013in2212", "#mu^{+} in p sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/0211in2212", "#pi^{-} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/02212in2212", "#bar{p} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/0321in2212", "K^{-} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/011in2212", "e^{+} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/013in2212", "#mu^{+} in p sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"contamination/211in321", "#pi^{+} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/2212in321", "p in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/321in321", "K^{+} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/11in321", "e^{-} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/13in321", "#mu^{-} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/211in321", "#pi^{+} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/2212in321", "p in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/321in321", "K^{+} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/11in321", "e^{-} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/13in321", "#mu^{-} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
-     {"contamination/0211in321", "#pi^{-} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/02212in321", "#bar{p} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/0321in321", "K^{-} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/011in321", "e^{+} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
-     {"contamination/013in321", "#mu^{+} in K^{+} sample;p^{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/0211in321", "#pi^{-} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/02212in321", "#bar{p} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/0321in321", "K^{-} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/011in321", "e^{+} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
+     {"contamination/013in321", "#mu^{+} in K^{+} sample;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
 
      {"TPCSignalPidTrue", "PID true;p (GeV/c); TPC Signal (dE/dx)", {HistType::kTH2F, {{binsNb2D, 0, 10}, {binsNb2D, 0, 300}}}},
      {"TPCSignalPidFalse", "PID false;p (GeV/c); TPC Signal (dE/dx)", {HistType::kTH2F, {{binsNb2D, 0, 10}, {binsNb2D, 0, 300}}}},
@@ -300,7 +301,7 @@ struct pid {
      {"TOFPidFalse/011", "PID false e^{+};p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}}}};
 
   template <std::size_t i, typename T>
-  void pidSimple(const T& track, const int PdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
+  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     /*
     Simsplest possibile PID, accept particle when:
@@ -313,7 +314,7 @@ struct pid {
 
     if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
       if (abs(tpcNSigmas[i]) < nsigmacut.value) {
-        if (PdgCode == PdgCodes[i]) {
+        if (pdgCode == pdgCodes[i]) {
           histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
           histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
           histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
@@ -325,7 +326,7 @@ struct pid {
       }
     } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
       if (sqrt(pow(tpcNSigmas[i], 2) + pow(tofNSigmas[i], 2)) < nsigmacut.value) {
-        if (PdgCode == PdgCodes[i]) {
+        if (pdgCode == pdgCodes[i]) {
           histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
           histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
           histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
@@ -345,12 +346,12 @@ struct pid {
       histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
 
       double pt = track.pt();
-      fillContaminationRegistry(i, PdgCode, pt);
+      fillContaminationRegistry(i, pdgCode, pt);
     }
   }
 
   template <std::size_t i, typename T>
-  void pidMinStrategy(const T& track, const int PdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
+  void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     const float p = track.p();
 
@@ -364,14 +365,14 @@ struct pid {
       if (p < pSwitch[j]) {
         particleNSigma[j] = abs(tpcNSigmas[j]);
       } else if (p >= pSwitch[j]) {
-        particleNSigma[j] = combindeSignal(tpcNSigmas[j], tofNSigmas[j]);
+        particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
 
     if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
       float tmp_NSigma = abs(tpcNSigmas[i]);
-      if ((tmp_NSigma < nsigmacut.value) & (indexofSmallestElement(particleNSigma, arrLen) == i)) {
-        if (PdgCode == PdgCodes[i]) {
+      if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+        if (pdgCode == pdgCodes[i]) {
           histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
           histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
           histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
@@ -382,9 +383,9 @@ struct pid {
         }
       }
     } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      float tmp_NSigma = combindeSignal(tpcNSigmas[i], tofNSigmas[i]);
-      if ((tmp_NSigma < nsigmacut.value) & (indexofSmallestElement(particleNSigma, arrLen) == i)) {
-        if (PdgCode == PdgCodes[i]) {
+      float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
+      if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+        if (pdgCode == pdgCodes[i]) {
           histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
           histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
           histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
@@ -404,12 +405,12 @@ struct pid {
       histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
 
       double pt = track.pt();
-      fillContaminationRegistry(i, PdgCode, pt);
+      fillContaminationRegistry(i, pdgCode, pt);
     }
   }
 
   template <std::size_t i, typename T>
-  void pidExclusiveStrategy(const T& track, const int PdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
+  void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     const float p = track.p();
 
@@ -423,7 +424,7 @@ struct pid {
       if (p < pSwitch[j]) {
         particleNSigma[j] = abs(tpcNSigmas[j]);
       } else if (p >= pSwitch[j]) {
-        particleNSigma[j] = combindeSignal(tpcNSigmas[j], tofNSigmas[j]);
+        particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
 
@@ -438,8 +439,8 @@ struct pid {
     if (counts == 1) {
       if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
         float tmp_NSigma = abs(tpcNSigmas[i]);
-        if ((tmp_NSigma < nsigmacut.value) & (indexofSmallestElement(particleNSigma, arrLen) == i)) {
-          if (PdgCode == PdgCodes[i]) {
+        if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+          if (pdgCode == pdgCodes[i]) {
             histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
             histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
             histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
@@ -450,9 +451,9 @@ struct pid {
           }
         }
       } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-        float tmp_NSigma = combindeSignal(tpcNSigmas[i], tofNSigmas[i]);
-        if ((tmp_NSigma < nsigmacut.value) & (indexofSmallestElement(particleNSigma, arrLen) == i)) {
-          if (PdgCode == PdgCodes[i]) {
+        float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
+        if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+          if (pdgCode == pdgCodes[i]) {
             histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
             histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
             histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
@@ -471,51 +472,13 @@ struct pid {
         histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
 
         double pt = track.pt();
-        fillContaminationRegistry(i, PdgCode, pt);
+        fillContaminationRegistry(i, pdgCode, pt);
       }
     }
   }
 
-  void init(o2::framework::InitContext&)
-  {
-    histReg.get<TH1>(HIST("MC/211"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/2212"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/321"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/11"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/13"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/0211"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/02212"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/0321"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/011"))->Sumw2();
-    histReg.get<TH1>(HIST("MC/013"))->Sumw2();
-
-    histReg.get<TH1>(HIST("pidTrue/211"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/2212"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/321"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/11"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/13"))->Sumw2();
-
-    histReg.get<TH1>(HIST("pidTrue/0211"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/02212"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/0321"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/011"))->Sumw2();
-    histReg.get<TH1>(HIST("pidTrue/013"))->Sumw2();
-
-    histReg.get<TH1>(HIST("pidFalse/211"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/2212"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/321"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/11"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/13"))->Sumw2();
-
-    histReg.get<TH1>(HIST("pidFalse/0211"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/02212"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/0321"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/011"))->Sumw2();
-    histReg.get<TH1>(HIST("pidFalse/013"))->Sumw2();
-  }
-
   Configurable<float> nsigmacut{"nsigmacut", 2.5, "Value of the NSigma cut"};
-  Configurable<int> strategy{"Strategy", 1, "1-Simple, 2-Minimum, 3-Exclusive"};
+  Configurable<int> strategy{"Strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exlcusive condition for NSigma"};
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu>>;
@@ -523,37 +486,37 @@ struct pid {
   {
     for (auto& track : tracks) {
       auto particle = track.mcParticle();
-      int PdgCode = particle.pdgCode();
+      int pdgCode = particle.pdgCode();
 
       // pions
-      if (PdgCode == 211) {
+      if (pdgCode == 211) {
         histReg.fill(HIST("MC/211"), track.pt());
-      } else if (PdgCode == -211) {
+      } else if (pdgCode == -211) {
         histReg.fill(HIST("MC/0211"), track.pt());
       }
       // protons
-      else if (PdgCode == 2212) {
+      else if (pdgCode == 2212) {
         histReg.fill(HIST("MC/2212"), track.pt());
-      } else if (PdgCode == -2212) {
+      } else if (pdgCode == -2212) {
         histReg.fill(HIST("MC/02212"), track.pt());
       }
       // kaons
-      else if (PdgCode == 321) {
+      else if (pdgCode == 321) {
         histReg.fill(HIST("MC/321"), track.pt());
-      } else if (PdgCode == -321) {
+      } else if (pdgCode == -321) {
         histReg.fill(HIST("MC/0321"), track.pt());
       }
       // electrons
-      else if (PdgCode == 11) {
+      else if (pdgCode == 11) {
         histReg.fill(HIST("MC/11"), track.pt());
         ;
-      } else if (PdgCode == -11) {
+      } else if (pdgCode == -11) {
         histReg.fill(HIST("MC/011"), track.pt());
       }
       // muons
-      else if (PdgCode == 13) {
+      else if (pdgCode == 13) {
         histReg.fill(HIST("MC/13"), track.pt());
-      } else if (PdgCode == -13) {
+      } else if (pdgCode == -13) {
         histReg.fill(HIST("MC/013"), track.pt());
       } else {
         histReg.fill(HIST("MC/else"), track.pt());
@@ -565,41 +528,20 @@ struct pid {
       const float tofNSigmas[numParticles] = {track.tofNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaEl(), track.tofNSigmaMu()};
 
       if (strategy.value == 1) {
-        // a) strategia 1. tylko cutNSigma
-        pidSimple<0>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<1>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<2>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<3>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<4>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<5>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<6>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<7>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<8>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidSimple<9>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
+        // Simplest strategy. PID with Nsigma method only
+        static_for<0, 9>([&](auto i) {
+          pidSimple<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
+        });
       } else if (strategy.value == 2) {
-        // b) strategia 2. NCutSigma + warunek na minimalne NSigma
-        pidMinStrategy<0>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<1>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<2>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<3>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<4>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<5>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<6>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<7>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<8>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidMinStrategy<9>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
+        // PID with Nsigma method and additional condition. Selected particle's Nsigma value must be the lowest in order to count particle
+        static_for<0, 9>([&](auto i) {
+          pidMinStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
+        });
       } else if (strategy.value == 3) {
-        // c) strategia 3. exclusive NSigma
-        pidExclusiveStrategy<0>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<1>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<2>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<3>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<4>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<5>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<6>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<7>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<8>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
-        pidExclusiveStrategy<9>(track, PdgCode, tpcNSigmas, tofNSigmas, 5);
+        // Particle is counted only if one can satisfy the PID NSigma condition
+        static_for<0, 9>([&](auto i) {
+          pidExclusiveStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
+        });
       }
     }
   }
