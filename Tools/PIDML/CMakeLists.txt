@@ -14,3 +14,8 @@ o2physics_add_dpl_workflow(pid-ml-producer
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qa-pid
+                  SOURCES qaPid.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
