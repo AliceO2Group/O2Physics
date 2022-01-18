@@ -39,6 +39,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive electrons", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("electronPrimary")) {
+    MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false});      // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary electrons", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
   if (!nameStr.compare("kaonFromPhi")) {
     MCProng prong(2, {321, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // define 2-generation prong using the full constructor
     signal = new MCSignal(name, "Kaons from phi-mesons", {prong}, {-1});                        // define the signal using the full constructor
@@ -68,7 +74,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromPromptJpsi")) {
     MCProng prong(3, {11, 443, 503}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    signal = new MCSignal(name, "Electrons from beauty jpsi decays", {prong}, {-1});
+    signal = new MCSignal(name, "Electrons from prompt jpsi decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("Jpsi")) {
@@ -84,6 +90,31 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("promptJpsi")) {
     MCProng prong(2, {443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Prompt jpsi (not from beauty)", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromNonpromptPsi2S")) {
+    MCProng prong(3, {11, 100443, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from beauty psi2s decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromPromptPsi2S")) {
+    MCProng prong(3, {11, 100443, 503}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from prompt psi2s decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Psi2S")) {
+    MCProng prong(1, {100443}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive psi2s", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("nonPromptPsi2S")) {
+    MCProng prong(2, {100443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Non-prompt psi2s", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("promptPsi2S")) {
+    MCProng prong(2, {100443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Prompt psi2s (not from beauty)", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("anyBeautyHadron")) {
@@ -224,6 +255,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from psi2s decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("muFromPsi2S")) {
+    MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from psi2s decays", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromLMeeLFQ")) {
     MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from LF meson + quarkonia decays", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s mesons
@@ -319,7 +355,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eeFromPsi2S")) {
     MCProng prong(2, {11, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    signal = new MCSignal(name, "ee pairs from psi2S decays", {prong, prong}, {1, 1}); // signal at pair level
+    signal = new MCSignal(name, "ee pairs from psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromPsi2S")) {
+    MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
   if (!nameStr.compare("eeFromLMeeLFQ")) {

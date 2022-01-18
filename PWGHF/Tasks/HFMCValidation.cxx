@@ -172,7 +172,9 @@ struct ValidationRecLevel {
         continue;
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_prong2::DecayType::D0ToPiK) {
-        indexParticle = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kD0, true);
+        if (candidate.index0_as<aod::BigTracksMC>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kD0, true);
+        }
         auto mother = particlesMC.iteratorAt(indexParticle);
         registry.fill(HIST("histPt"), candidate.pt() - mother.pt());
         registry.fill(HIST("histPx"), candidate.px() - mother.px());

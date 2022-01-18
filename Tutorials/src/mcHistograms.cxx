@@ -72,6 +72,10 @@ struct AccessMcTruth {
       //  continue;
       //if (track.labelMask() != 0)
       //  continue;
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "No MC particle for track, skip...");
+        continue;
+      }
       auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
         etaDiff->Fill(particle.eta() - track.eta());
@@ -108,6 +112,10 @@ struct LoopOverMcMatched {
       auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
       LOGF(info, "  which has %d tracks", groupedTracks.size());
       for (auto& track : groupedTracks) {
+        if (!track.has_mcParticle()) {
+          LOGF(warning, "No MC particle for track, skip...");
+          continue;
+        }
         etaDiff->Fill(track.mcParticle().eta() - track.eta());
       }
     }

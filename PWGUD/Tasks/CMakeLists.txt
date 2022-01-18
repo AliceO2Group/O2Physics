@@ -23,3 +23,8 @@ o2physics_add_dpl_workflow(diff-mcdatascanner
                   SOURCES diffMCDataScanner.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsVertexing
                   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(diff-mcqa
+                  SOURCES diffMCQA.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsVertexing
+                  COMPONENT_NAME Analysis)

@@ -30,7 +30,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/Core/MC.h"
 #include "PID/PIDResponse.h"
 
 #include <TFile.h>
@@ -53,7 +52,7 @@ using std::array;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr>; //, aod::McTrackLabels>;
 using MyTracksMC = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
 
-struct v0cascadesqa {
+struct v0cascadesQA {
 
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
 
@@ -154,7 +153,7 @@ struct v0cascadesqa {
   {
     histos_eve.fill(HIST("hEventCounter"), 0.5);
   }
-  PROCESS_SWITCH(v0cascadesqa, processReconstructedEvent, "Process reconstructed level Event", true);
+  PROCESS_SWITCH(v0cascadesQA, processReconstructedEvent, "Process reconstructed level Event", true);
 
   ///////////////////////////////////////
   ////////// Collision QA - MC //////////
@@ -163,7 +162,7 @@ struct v0cascadesqa {
   void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
-      if (MC::isPhysicalPrimary(mcparticle)) {
+      if (mcparticle.isPhysicalPrimary()) {
         if (mcparticle.pdgCode() == 310)
           histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); //K0s
         if (mcparticle.pdgCode() == 3122)
@@ -183,7 +182,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processMcEvent, "Process MC level Event", false);
+  PROCESS_SWITCH(v0cascadesQA, processMcEvent, "Process MC level Event", false);
 
   ////////////////////////////////////////////
   ////////// V0 QA - Reconstructed ///////////
@@ -241,7 +240,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processReconstructedV0, "Process reconstructed level V0s", true);
+  PROCESS_SWITCH(v0cascadesQA, processReconstructedV0, "Process reconstructed level V0s", true);
 
   ////////////////////////////////
   ////////// V0 QA - MC //////////
@@ -260,7 +259,7 @@ struct v0cascadesqa {
           auto mcnegtrack = v0.negTrack_as<MyTracksMC>().mcParticle();
           auto mcpostrack = v0.posTrack_as<MyTracksMC>().mcParticle();
           auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-          bool MomIsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+          bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
           bool isK0sV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) &&
                          ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211) ||
@@ -293,7 +292,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processMcV0, "Process MC level V0s", false);
+  PROCESS_SWITCH(v0cascadesQA, processMcV0, "Process MC level V0s", false);
 
   //////////////////////////////////////
   ///// Cascade QA - Reconstructed /////
@@ -392,7 +391,7 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processReconstructedCascade, "Process reconstructed level Cascades", true);
+  PROCESS_SWITCH(v0cascadesQA, processReconstructedCascade, "Process reconstructed level Cascades", true);
 
   //////////////////////////////////////
   ////////// Cascade QA - MC ///////////
@@ -412,11 +411,11 @@ struct v0cascadesqa {
         auto mcnegtrack = casc.v0_as<aod::V0Datas>().negTrack_as<MyTracksMC>().mcParticle();
         auto mcpostrack = casc.v0_as<aod::V0Datas>().posTrack_as<MyTracksMC>().mcParticle();
         auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
-        bool MomOfV0IsPrimary = MC::isPhysicalPrimary(particleMotherOfNeg);
+        bool MomOfV0IsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
         auto bachelor = casc.bachelor_as<MyTracksMC>().mcParticle();
         auto particleMotherOfBach = bachelor.mother0_as<aod::McParticles>();
-        bool MomOfBachIsPrimary = MC::isPhysicalPrimary(particleMotherOfBach);
+        bool MomOfBachIsPrimary = particleMotherOfBach.isPhysicalPrimary();
 
         bool isXiMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&
                                  mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.mother0Id() == bachelor.mother0Id() &&
@@ -461,11 +460,11 @@ struct v0cascadesqa {
       }
     }
   }
-  PROCESS_SWITCH(v0cascadesqa, processMcCascade, "Process MC level Cascades", false);
+  PROCESS_SWITCH(v0cascadesQA, processMcCascade, "Process MC level Cascades", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<v0cascadesqa>(cfgc, TaskName{"lf-v0cascades-qa"})};
+    adaptAnalysisTask<v0cascadesQA>(cfgc)};
 }

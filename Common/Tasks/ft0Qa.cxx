@@ -54,11 +54,11 @@ struct FT0Qa {
           auto fv0 = col.foundFV0();
           float fv0Time = fv0.time();
           hT0V0time->Fill(fv0Time, ft0.timeA());
-          for (int ich = 0; ich < 96; ich++) {
-            sumAmpFT0 += ft0.amplitudeA()[ich];
+          for (auto amplitude : ft0.amplitudeA()) {
+            sumAmpFT0 += amplitude;
           }
-          for (int ich = 0; ich < 48; ich++) {
-            sumAmpFV0 += fv0.amplitude()[ich];
+          for (auto amplitude : fv0.amplitude()) {
+            sumAmpFV0 += amplitude;
           }
           hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
         }

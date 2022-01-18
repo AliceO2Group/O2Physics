@@ -16,7 +16,6 @@
 /// \since
 
 #include "Framework/AnalysisTask.h"
-#include "Common/Core/MC.h"
 
 #include <cmath>
 

@@ -13,7 +13,6 @@
 #include "Framework/AnalysisTask.h"
 
 #include "TDatabasePDG.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -143,8 +142,8 @@ struct analyseMFTTracks {
     auto z = mcCollision.posZ();
 
     for (auto& particle : particles) {
-      //auto p = pdg->GetParticle(particle.pdgCode());
-      auto p = TDatabasePDG::Instance()->GetParticle(particle.pdgCode());
+      auto p = pdg->GetParticle(particle.pdgCode());
+      //auto p = TDatabasePDG::Instance()->GetParticle(particle.pdgCode());
       int charge = 0;
       if (p == nullptr) {
         // unknown particles will be skipped

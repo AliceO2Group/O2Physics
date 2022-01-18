@@ -15,7 +15,6 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/Core/MC.h"
 #include "TLorentzVector.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"

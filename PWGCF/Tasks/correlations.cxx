@@ -150,6 +150,9 @@ struct CorrelationTask {
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", axisList));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", axisList));
 
+    same->setTrackEtaCut(cfgCutEta);
+    mixed->setTrackEtaCut(cfgCutEta);
+
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
     ccdb->setURL("http://alice-ccdb.cern.ch");

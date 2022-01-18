@@ -18,7 +18,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -121,6 +120,7 @@ struct QaTrackingEfficiency {
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(11, "Passed standard quality cuts");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(12, "Passed has collision");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(13, "Passed hasTOF");
+    histos.add("fakeTrackNoiseHits", "Fake tracks from noise hits", kTH1D, {{1, 0, 1}});
 
     histos.add("partSelection", "Particle Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(1, "Particles read");
@@ -267,7 +267,7 @@ struct QaTrackingEfficiency {
         return true;
       }
       histos.fill(h, 6);
-      if ((selPrim == 1) && (!MC::isPhysicalPrimary(p))) { // Requiring is physical primary
+      if ((selPrim == 1) && !p.isPhysicalPrimary()) { // Requiring is physical primary
         return true;
       }
       histos.fill(h, 7);
@@ -307,6 +307,10 @@ struct QaTrackingEfficiency {
     };
 
     for (const auto& track : tracks) {
+      if (!track.has_mcParticle()) {
+        histos.fill(HIST("fakeTrackNoiseHits"), 0.5);
+        continue;
+      }
       const auto mcParticle = track.mcParticle();
       if (rejectParticle(mcParticle, HIST("trackSelection"))) {
         continue;

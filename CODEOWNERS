@@ -25,4 +25,5 @@
 /PWGDQ @alibuild @iarsene
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar
 /PWGLF @alibuild @njacazio
-/PWGMM @alibuild @aalkin 
+/PWGMM @alibuild @aalkin
+/Tools/PIDML @alibuild @saganatt

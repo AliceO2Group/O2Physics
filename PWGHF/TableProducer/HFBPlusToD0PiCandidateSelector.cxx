@@ -118,10 +118,12 @@ struct HfBplusTod0piCandidateSelector {
     // }
 
     //d0 of D0 and pi
-    //if ((std::abs(hfCandBPlus.impactParameter0()) > cuts->get(pTBin, "d0 D0")) ||
-    //    (std::abs(hfCandBPlus.impactParameter1()) > cuts->get(pTBin, "d0 Pi"))){
-    //  return false;
-    //}
+    if (std::abs(hfCandBPlus.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
+      return false;
+    }
+    if (std::abs(hfCandBPlus.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
     //D0 CPA
     // if (std::abs(hfCandD0.cpa()) < cuts->get(pTBin, "CPA D0")){
     //  return false;

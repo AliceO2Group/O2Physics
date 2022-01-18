@@ -9,8 +9,4 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(pid-ml-producer
-                           SOURCES pidMLProducer.cxx
-                           JOB_POOL analysis
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+add_subdirectory(PIDML)
