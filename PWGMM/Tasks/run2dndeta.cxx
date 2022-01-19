@@ -14,28 +14,24 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RuntimeError.h"
+#include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
-
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "CommonConstants/MathConstants.h"
-
 #include "TDatabasePDG.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
-
-struct Run2PseudorapidityDensity {
+struct PseudorapidityDensity {
   Service<TDatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
-
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   ConfigurableAxis percentileBinning{"pBins",
                                      {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100},
@@ -96,7 +92,7 @@ struct Run2PseudorapidityDensity {
     }
   }
 
-  expressions::Filter trackTypeFilter = (aod::track::trackType == aod::track::TrackTypeEnum::Run2Tracklet);
+  expressions::Filter trackTypeFilter = (aod::track::trackType == (uint8_t)aod::track::TrackTypeEnum::Run2Tracklet);
 
   using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>>;
   Partition<Trks> sample = nabs(aod::track::eta) < estimatorEta;
@@ -142,7 +138,7 @@ struct Run2PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(Run2PseudorapidityDensity, processBinned, "Process centrality/mult. percentile binned", false);
+  PROCESS_SWITCH(PseudorapidityDensity, processBinned, "Process centrality/mult. percentile binned", false);
 
   using Particles = aod::McParticles;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
@@ -209,10 +205,10 @@ struct Run2PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(Run2PseudorapidityDensity, processGen, "Process generator-level info", false);
+  PROCESS_SWITCH(PseudorapidityDensity, processGen, "Process generator-level info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Run2PseudorapidityDensity>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensity>(cfgc)};
 }

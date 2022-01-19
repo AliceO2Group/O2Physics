@@ -15,23 +15,19 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RuntimeError.h"
+#include "Framework/runDataProcessing.h"
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
-
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "CommonConstants/MathConstants.h"
-
 #include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 struct PseudorapidityDensity {
   Service<TDatabasePDG> pdg;
@@ -118,7 +114,7 @@ struct PseudorapidityDensity {
 
   PROCESS_SWITCH(PseudorapidityDensity, processTagging, "Collect event sample stats", false);
 
-  expressions::Filter trackTypeFilter = (aod::track::trackType == o2::dataformats::GlobalTrackID::ITS);
+  expressions::Filter trackTypeFilter = (aod::track::trackType == (uint8_t)o2::dataformats::GlobalTrackID::ITS);
   expressions::Filter DCAFilter = ifnode(useDCA.node(), nabs(aod::track::dcaXY) <= maxDCAXY && nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
 
   using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>>;
