@@ -320,8 +320,8 @@ struct HfFilter { // Main struct for HF triggers
         hCharmProtonKstarDistr[iCharmPart] = registry.add<TH1>(Form("f%sProtonKstarDistr", charmParticleNames[iCharmPart].data()), Form("#it{k}* distribution of triggered p#minus%s pairs;#it{k}* (GeV/#it{c});events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
         if (applyML) {
           hBDTScoreBkg[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT background score distribution for %s;BDT background score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
-          hBDTScorePrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT prompt score distribution for %s;BDT prompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
-          hBDTScoreNonPrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT nonprompt score distribution for %s;BDT nonprompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+          hBDTScorePrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScorePromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT prompt score distribution for %s;BDT prompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+          hBDTScoreNonPrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreNonPromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT nonprompt score distribution for %s;BDT nonprompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
         }
       }
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
@@ -484,7 +484,7 @@ struct HfFilter { // Main struct for HF triggers
           assert(typeInfo.GetElementCount() == 3); // we need multiclass
           auto scores = outputTensor2P[1].GetTensorMutableData<float>();
 
-          if(applyML) {
+          if (applyML) {
             hBDTScoreBkg[kD0]->Fill(scores[0]);
             hBDTScorePrompt[kD0]->Fill(scores[1]);
             hBDTScoreNonPrompt[kD0]->Fill(scores[2]);
