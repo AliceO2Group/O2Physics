@@ -138,7 +138,7 @@ struct Run2PseudorapidityDensity {
         registry.fill(HIST("TracksPhiEtaBin"), track.phi(), track.eta(), p);
       }
     } else {
-      registry.fill(HIST("EventSelectionBin"), 3., p);
+      registry.fill(HIST("EventSelectionBin"), 4., p);
     }
   }
 
