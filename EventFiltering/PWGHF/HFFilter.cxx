@@ -319,7 +319,7 @@ struct HfFilter { // Main struct for HF triggers
       return false;
     }
 
-    if (std::abs(track.eta()) < 0.8) {
+    if (std::abs(track.eta()) > 0.8) {
       return false;
     }
 
@@ -346,7 +346,7 @@ struct HfFilter { // Main struct for HF triggers
       return false;
     }
 
-    if (std::abs(track.eta()) < 0.8) {
+    if (std::abs(track.eta()) > 0.8) {
       return false;
     }
 
