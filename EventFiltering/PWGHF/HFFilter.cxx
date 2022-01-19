@@ -33,6 +33,10 @@
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
 
+// ML application
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include <string>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -268,6 +272,14 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
   Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
+  // parameters for ML application with ONNX
+  Configurable<bool> applyML{"applyML", true, "Flag to enable or disable ML application"};
+  Configurable<std::string> onnxFile2ProngConf{"onnxFile2ProngConf", "/Users/fgrosa/cernbox/alice_work/HFTriggerStudies/O2/ML/test/XGBoostModel_D0ToKPi.onnx", "ONNX file for ML model for charm 2-prong candidates"};
+  Configurable<float> thresholdBkgScore2Prong{"thresholdBkgScore2Prong", 0.5, "Threshold value for BDT output score on background candidates"};
+  Configurable<float> thresholdPromptScore2Prong{"thresholdPromptScore2Prong", 0.1, "Threshold value for BDT output score on prompt candidates"};
+  Configurable<float> thresholdNonpromptScore2Prong{"thresholdNonpromptScore2Prong", 0.4, "Threshold value for BDT output score on nonprompt candidates"};
+  std::string onnxFile2Prong = (std::string)onnxFile2ProngConf;
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   std::shared_ptr<TH1> hProcessedEvents;
 
@@ -278,9 +290,17 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNBeautyParticles> hMassB{};
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
 
+  // ONNX
+  std::vector<std::string> inputNamesML2P{};
+  std::vector<std::vector<int64_t>> inputShapesML2P{};
+  std::vector<std::string> outputNamesML2P{};
+  std::vector<std::vector<int64_t>> outputShapesML2P{};
+  std::shared_ptr<Ort::Experimental::Session> session2Prong = nullptr;
+  Ort::SessionOptions sessionOptions;
+  Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "ml-model-hf-triggers"};
+
   void init(o2::framework::InitContext&)
   {
-
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 5.5}});
@@ -301,6 +321,16 @@ struct HfFilter { // Main struct for HF triggers
       }
       hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
       hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
+    }
+
+    // init ONNX runtime session
+    if (applyML) {
+      session2Prong.reset(new Ort::Experimental::Session{env, onnxFile2Prong, sessionOptions});
+
+      inputNamesML2P = session2Prong->GetInputNames();
+      inputShapesML2P = session2Prong->GetInputShapes();
+      outputNamesML2P = session2Prong->GetOutputNames();
+      outputShapesML2P = session2Prong->GetOutputShapes();
     }
   }
 
@@ -428,8 +458,40 @@ struct HfFilter { // Main struct for HF triggers
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
 
-      // TODO: add ML selections here
-      n2Prongs++;
+      bool isCharmTagged{true}, isBeautyTagged{true};
+
+      // apply ML models
+      if (applyML) {
+        // TODO: add more feature configurations
+        std::vector<float> inputFeatures2P{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        std::vector<Ort::Value> inputTensor2P;
+        inputTensor2P.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures2P.data(), inputFeatures2P.size(), inputShapesML2P[0]));
+
+        // double-check the dimensions of the input tensor
+        assert(inputTensor2P[0].IsTensor() && inputTensor2P[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapesML2P[0]);
+        try {
+          auto outputTensor2P = session2Prong->Run(inputNamesML2P, inputTensor2P, outputNamesML2P);
+          assert(outputTensor2P.size() == outputNamesML2P.size() && outputTensor2P[1].IsTensor());
+          auto typeInfo = outputTensor2P[1].GetTensorTypeAndShapeInfo();
+          assert(typeInfo.GetElementCount() == 3); // we need multiclass
+          auto scores = outputTensor2P[1].GetTensorMutableData<float>();
+          if (scores[0] > thresholdBkgScore2Prong) {
+            continue;
+          }
+          if (scores[1] < thresholdPromptScore2Prong) {
+            isCharmTagged = false;
+          }
+          if (scores[2] < thresholdNonpromptScore2Prong) {
+            isBeautyTagged = false;
+          }
+        } catch (const Ort::Exception& exception) {
+          LOG(error) << "Error running model inference: " << exception.what();
+        }
+      }
+
+      if (!isCharmTagged && !isBeautyTagged) {
+        continue;
+      }
 
       auto pVec2Prong = RecoDecay::PVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::Pt(pVec2Prong);
@@ -438,7 +500,11 @@ struct HfFilter { // Main struct for HF triggers
         if (activateQA) {
           hCharmHighPt[kD0]->Fill(pt2Prong);
         }
-      }
+      } // end high-pT selection
+
+      if (isCharmTagged) {
+        n2Prongs++;
+      } // end multi-charm selection
 
       for (const auto& track : tracks) { // start loop over tracks
 
@@ -448,7 +514,7 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
 
-        if (!keepEvent[kBeauty]) {
+        if (!keepEvent[kBeauty] && isBeautyTagged) {
           if (isSelectedTrackForBeauty(track, kBeauty3Prong)) {
             auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi}); // TODO: retrieve D0-D0bar hypothesis to pair with proper signed track
             if (std::abs(massCand - massBPlus) <= deltaMassBPlus) {
@@ -471,10 +537,10 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
-        }
+        } // end beauty selection
 
         // 2-prong femto
-        if (!keepEvent[kFemto]) {
+        if (!keepEvent[kFemto] && isCharmTagged) {
           bool isProton = isSelectedProton(track);
           if (isProton) {
             float relativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
@@ -485,7 +551,7 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
-        } //if(!keepEvent[kFemto])
+        } // end femto selection
 
       } // end loop over tracks
     }   // end loop over 2-prong candidates
@@ -530,7 +596,7 @@ struct HfFilter { // Main struct for HF triggers
             hCharmHighPt[kXic]->Fill(pt3Prong);
           }
         }
-      }
+      } // end high-pT selection
 
       for (const auto& track : tracks) { // start loop over tracks
 
@@ -556,7 +622,7 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
-        }
+        } // end beauty selection
 
         // 3-prong femto
         if (isSelectedProton(track)) {
@@ -571,7 +637,8 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
-        }
+        } // end femto selection
+
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 
