@@ -273,7 +273,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   // parameters for ML application with ONNX
-  Configurable<bool> applyML{"applyML", true, "Flag to enable or disable ML application"};
+  Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
   Configurable<std::string> onnxFile2ProngConf{"onnxFile2ProngConf", "/Users/fgrosa/cernbox/alice_work/HFTriggerStudies/O2/ML/test/XGBoostModel_D0ToKPi.onnx", "ONNX file for ML model for charm 2-prong candidates"};
   Configurable<float> thresholdBkgScore2Prong{"thresholdBkgScore2Prong", 0.5, "Threshold value for BDT output score on background candidates"};
   Configurable<float> thresholdPromptScore2Prong{"thresholdPromptScore2Prong", 0.1, "Threshold value for BDT output score on prompt candidates"};
@@ -289,6 +289,9 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH1>, kNBeautyParticles> hMassB{};
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
 
   // ONNX
   std::vector<std::string> inputNamesML2P{};
@@ -315,6 +318,11 @@ struct HfFilter { // Main struct for HF triggers
       for (int iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         hCharmHighPt[iCharmPart] = registry.add<TH1>(Form("f%sHighPt", charmParticleNames[iCharmPart].data()), Form("#it{p}_{T} distribution of triggered high-#it{p}_{T} %s candidates;#it{p}_{T} (GeV/#it{c});events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 50.}});
         hCharmProtonKstarDistr[iCharmPart] = registry.add<TH1>(Form("f%sProtonKstarDistr", charmParticleNames[iCharmPart].data()), Form("#it{k}* distribution of triggered p#minus%s pairs;#it{k}* (GeV/#it{c});events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+        if (applyML) {
+          hBDTScoreBkg[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT background score distribution for %s;BDT background score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+          hBDTScorePrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScorePromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT prompt score distribution for %s;BDT prompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+          hBDTScoreNonPrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreNonPromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT nonprompt score distribution for %s;BDT nonprompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+        }
       }
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassB[iBeautyPart] = registry.add<TH1>(Form("fMass%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} distribution of triggered %s candidates;#it{M} (GeV/#it{c}^{2});events", beautyParticleNames[iBeautyPart].data()), HistType::kTH1F, {{220, 4.9, 6.0}});
@@ -475,6 +483,13 @@ struct HfFilter { // Main struct for HF triggers
           auto typeInfo = outputTensor2P[1].GetTensorTypeAndShapeInfo();
           assert(typeInfo.GetElementCount() == 3); // we need multiclass
           auto scores = outputTensor2P[1].GetTensorMutableData<float>();
+
+          if (applyML) {
+            hBDTScoreBkg[kD0]->Fill(scores[0]);
+            hBDTScorePrompt[kD0]->Fill(scores[1]);
+            hBDTScoreNonPrompt[kD0]->Fill(scores[2]);
+          }
+
           if (scores[0] > thresholdBkgScore2Prong) {
             continue;
           }
@@ -530,7 +545,7 @@ struct HfFilter { // Main struct for HF triggers
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
                     keepEvent[kBeauty] = true;
                     if (activateQA) {
-                      hMassB[kB0toDStar]->Fill(massCand);
+                      hMassB[kB0toDStar]->Fill(massCandB0);
                     }
                   }
                 }
