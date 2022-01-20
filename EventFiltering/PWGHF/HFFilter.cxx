@@ -291,7 +291,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmHighPt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH1>, kNBeautyParticles> hMassB{};
-  std::array<std::shared_ptr<TH1>, kNCharmParticles+1> hMassC{};
+  std::array<std::shared_ptr<TH1>, kNCharmParticles + 1> hMassC{};
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
@@ -438,10 +438,10 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     int retValue = 0;
-    if (std::abs(invMassD0-massD0) < 0.04) {
+    if (std::abs(invMassD0 - massD0) < 0.04) {
       retValue += 1;
     }
-    if (std::abs(invMassD0bar-massD0) < 0.04) {
+    if (std::abs(invMassD0bar - massD0) < 0.04) {
       retValue += 2;
     }
 
@@ -461,7 +461,7 @@ struct HfFilter { // Main struct for HF triggers
       hMassC[kDplus]->Fill(invMassDplus);
     }
 
-    if (std::abs(invMassDplus-massDPlus) > 0.04) {
+    if (std::abs(invMassDplus - massDPlus) > 0.04) {
       return false;
     }
 
@@ -488,16 +488,16 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     int retValue = 0;
-    if (std::abs(invMassDsToKKPi-massDs) < 0.04) {
+    if (std::abs(invMassDsToKKPi - massDs) < 0.04) {
       retValue |= BIT(0);
     }
-    if (std::abs(invMassDsToPiKK-massDs) < 0.04) {
+    if (std::abs(invMassDsToPiKK - massDs) < 0.04) {
       retValue |= BIT(1);
     }
-    if (std::abs(invMassKKFirst-massPhi) < 0.02) {
+    if (std::abs(invMassKKFirst - massPhi) < 0.02) {
       retValue |= BIT(2);
     }
-    if (std::abs(invMassKKSecond-massPhi) < 0.02) {
+    if (std::abs(invMassKKSecond - massPhi) < 0.02) {
       retValue |= BIT(3);
     }
 
@@ -521,10 +521,10 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     int retValue = 0;
-    if (std::abs(invMassLcToPKPi-massLc) < 0.04) {
+    if (std::abs(invMassLcToPKPi - massLc) < 0.04) {
       retValue += 1;
     }
-    if (std::abs(invMassLcToPiKP-massLc) < 0.04) {
+    if (std::abs(invMassLcToPiKP - massLc) < 0.04) {
       retValue += 2;
     }
 
@@ -548,10 +548,10 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     int retValue = 0;
-    if (std::abs(invMassXicToPKPi-massXic) < 0.04) {
+    if (std::abs(invMassXicToPKPi - massXic) < 0.04) {
       retValue += 1;
     }
-    if (std::abs(invMassXicToPiKP-massXic) < 0.04) {
+    if (std::abs(invMassXicToPiKP - massXic) < 0.04) {
       retValue += 2;
     }
 
@@ -675,7 +675,7 @@ struct HfFilter { // Main struct for HF triggers
         std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
 
         if (!keepEvent[kBeauty] && isBeautyTagged) {
-          if (isSelectedTrackForBeauty(track, kBeauty3Prong) && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0)) ) {
+          if (isSelectedTrackForBeauty(track, kBeauty3Prong) && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0))) {
             auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
             if (std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
@@ -786,11 +786,11 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
 
-        bool specieCharmHypos[kNBeautyParticles-2] = {isDPlus, isDs, isLc, isXic};
-        int specieCharmHyposInMass[kNBeautyParticles-2] = {(int)isDPlusInMass, isDsInMass, isLcInMass, isXicInMass};
-        float massCharmHypos[kNBeautyParticles-2] = {massDPlus, massDs, massLc, massXic};
-        float massBeautyHypos[kNBeautyParticles-2] = {massB0, massBs, massLb, massXib};
-        float deltaMassHypos[kNBeautyParticles-2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
+        bool specieCharmHypos[kNBeautyParticles - 2] = {isDPlus, isDs, isLc, isXic};
+        int specieCharmHyposInMass[kNBeautyParticles - 2] = {(int)isDPlusInMass, isDsInMass, isLcInMass, isXicInMass};
+        float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
+        float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
+        float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong)) {
           for (int iHypo{0}; iHypo < kNBeautyParticles-2 && !keepEvent[kBeauty]; ++iHypo) {
             if ((iHypo != 1 && specieCharmHyposInMass[iHypo] > 0) || (iHypo == 1 && ((TESTBIT(specieCharmHyposInMass[iHypo], 0) && TESTBIT(specieCharmHyposInMass[iHypo], 2)) || (TESTBIT(specieCharmHyposInMass[iHypo], 1) && TESTBIT(specieCharmHyposInMass[iHypo], 3))))) {
@@ -807,7 +807,7 @@ struct HfFilter { // Main struct for HF triggers
 
         // 3-prong femto
         if (isSelectedProton(track)) {
-          for (int iHypo{0}; iHypo < kNCharmParticles-1 && !keepEvent[kFemto]; ++iHypo) {
+          for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
             if ((iHypo != 1 && specieCharmHypos[iHypo]) || (iHypo != 1 && specieCharmHypos[iHypo] && (TESTBIT(specieCharmHyposInMass[iHypo], 2) || TESTBIT(specieCharmHyposInMass[iHypo], 3)))) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (relativeMomentum < femtoMaxRelativeMomentum) {
