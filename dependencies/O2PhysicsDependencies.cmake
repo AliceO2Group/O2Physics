@@ -13,9 +13,8 @@ include_guard()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
 
-#set(KFParticle_DIR "$ENV{KFPARTICLE_ROOT}")
+# Find required packages
 find_package(KFParticle)
 set_package_properties(KFParticle PROPERTIES TYPE REQUIRED)
-feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
-# Required
+feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
