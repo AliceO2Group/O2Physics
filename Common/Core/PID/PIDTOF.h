@@ -57,7 +57,7 @@ class Beta
 
   /// Gets the beta for the track of interest
   /// \param track Track of interest
-  static float GetBeta(const TrackType& track) { return GetBeta(track, track.collision().collisionTime() * 1000.f); }
+  static float GetBeta(const TrackType& track) { return track.has_collision() ? GetBeta(track, track.collision().collisionTime() * 1000.f) : defaultReturnValue; }
 
   /// Computes the expected uncertainty on the beta measurement
   /// \param length Length in cm of the track
@@ -68,7 +68,7 @@ class Beta
 
   /// Gets the expected uncertainty on the beta measurement of the track of interest
   /// \param track Track of interest
-  float GetExpectedSigma(const TrackType& track) const { return GetExpectedSigma(track.length(), track.tofSignal(), track.collision().collisionTime() * 1000.f, mExpectedResolution); }
+  float GetExpectedSigma(const TrackType& track) const { return track.has_collision() ? GetExpectedSigma(track.length(), track.tofSignal(), track.collision().collisionTime() * 1000.f, mExpectedResolution) : defaultReturnValue; }
 
   /// Gets the expected beta for a given mass hypothesis (no energy loss taken into account)
   /// \param momentum momentum in GeV/c of the track

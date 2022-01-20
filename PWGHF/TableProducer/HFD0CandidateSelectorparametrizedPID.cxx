@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
@@ -232,10 +231,14 @@ struct HFD0CandidateSelectorparametrizedPID {
         continue;
       }
 
-      const auto mcParticlePositive = trackPos.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      int pdgPositive = mcParticlePositive.pdgCode();
-      int pdgNegative = mcParticleNegative.pdgCode();
+      int pdgPositive = 0;
+      int pdgNegative = 0;
+      if (trackPos.has_mcParticle()) {
+        pdgPositive = trackPos.mcParticle().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle().pdgCode();
+      }
 
       bool selectPosPion = false;
       bool selectNegKaon = false;

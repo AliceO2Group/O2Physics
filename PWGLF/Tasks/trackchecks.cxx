@@ -13,7 +13,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -110,7 +109,7 @@ struct TrackCheckTaskEvSel {
         const auto particle = track.mcParticle();
         int pdgcode = particle.pdgCode();
 
-        if (MC::isPhysicalPrimary(particle)) { //is primary?
+        if (particle.isPhysicalPrimary()) { //is primary?
           isPrimary = true;
         }
 
@@ -208,7 +207,7 @@ struct TrackCheckTaskEvSelTrackSel {
         const auto particle = track.mcParticle();
         int pdgcode = particle.pdgCode();
 
-        if (MC::isPhysicalPrimary(particle)) { //is primary?
+        if (particle.isPhysicalPrimary()) { //is primary?
           isPrimary = true;
         }
         //Calculate y

@@ -33,6 +33,10 @@
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
 
+// ML application
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#include <string>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -72,6 +76,7 @@ enum charmParticles {
 
 enum beautyParticles {
   kBplus = 0,
+  kB0toDStar,
   kB0,
   kBs,
   kLb,
@@ -81,7 +86,7 @@ enum beautyParticles {
 
 static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
-static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0", "Bs", "Lb", "Xib"};
+static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 
 static const float massPi = RecoDecay::getMassPDG(211);
 static const float massK = RecoDecay::getMassPDG(321);
@@ -90,6 +95,7 @@ static const float massD0 = RecoDecay::getMassPDG(421);
 static const float massDPlus = RecoDecay::getMassPDG(411);
 static const float massDs = RecoDecay::getMassPDG(431);
 static const float massLc = RecoDecay::getMassPDG(4122);
+static const float massDStar = RecoDecay::getMassPDG(413);
 static const float massBPlus = RecoDecay::getMassPDG(511);
 static const float massB0 = RecoDecay::getMassPDG(521);
 static const float massBs = RecoDecay::getMassPDG(531);
@@ -246,6 +252,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> deltaMassB0{"deltaMassB0", 0.3, "invariant-mass delta with respect to the B0 mass"};
   Configurable<float> deltaMassBs{"deltaMassBs", 0.3, "invariant-mass delta with respect to the Bs mass"};
   Configurable<float> deltaMassLb{"deltaMassLb", 0.3, "invariant-mass delta with respect to the Lb mass"};
+  Configurable<float> deltaMassDStar{"deltaMassDStar", 0.1, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
   Configurable<float> pTMinBeautyBachelor{"pTMinBeautyBachelor", 0.5, "minumum pT for bachelor pion track used to build b-hadron candidates"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
@@ -265,6 +272,14 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> fillBackground{"fillBackground", true, "Flag to fill derived tables with background for ML trainings"};
   Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
+  // parameters for ML application with ONNX
+  Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
+  Configurable<std::string> onnxFile2ProngConf{"onnxFile2ProngConf", "/Users/fgrosa/cernbox/alice_work/HFTriggerStudies/O2/ML/test/XGBoostModel_D0ToKPi.onnx", "ONNX file for ML model for charm 2-prong candidates"};
+  Configurable<float> thresholdBkgScore2Prong{"thresholdBkgScore2Prong", 0.5, "Threshold value for BDT output score on background candidates"};
+  Configurable<float> thresholdPromptScore2Prong{"thresholdPromptScore2Prong", 0.1, "Threshold value for BDT output score on prompt candidates"};
+  Configurable<float> thresholdNonpromptScore2Prong{"thresholdNonpromptScore2Prong", 0.4, "Threshold value for BDT output score on nonprompt candidates"};
+  std::string onnxFile2Prong = (std::string)onnxFile2ProngConf;
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   std::shared_ptr<TH1> hProcessedEvents;
 
@@ -274,10 +289,21 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH1>, kNBeautyParticles> hMassB{};
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
+
+  // ONNX
+  std::vector<std::string> inputNamesML2P{};
+  std::vector<std::vector<int64_t>> inputShapesML2P{};
+  std::vector<std::string> outputNamesML2P{};
+  std::vector<std::vector<int64_t>> outputShapesML2P{};
+  std::shared_ptr<Ort::Experimental::Session> session2Prong = nullptr;
+  Ort::SessionOptions sessionOptions;
+  Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "ml-model-hf-triggers"};
 
   void init(o2::framework::InitContext&)
   {
-
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 5.5}});
@@ -292,12 +318,27 @@ struct HfFilter { // Main struct for HF triggers
       for (int iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         hCharmHighPt[iCharmPart] = registry.add<TH1>(Form("f%sHighPt", charmParticleNames[iCharmPart].data()), Form("#it{p}_{T} distribution of triggered high-#it{p}_{T} %s candidates;#it{p}_{T} (GeV/#it{c});events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 50.}});
         hCharmProtonKstarDistr[iCharmPart] = registry.add<TH1>(Form("f%sProtonKstarDistr", charmParticleNames[iCharmPart].data()), Form("#it{k}* distribution of triggered p#minus%s pairs;#it{k}* (GeV/#it{c});events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+        if (applyML) {
+          hBDTScoreBkg[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT background score distribution for %s;BDT background score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+          hBDTScorePrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScorePromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT prompt score distribution for %s;BDT prompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+          hBDTScoreNonPrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreNonPromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT nonprompt score distribution for %s;BDT nonprompt score;events", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
+        }
       }
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassB[iBeautyPart] = registry.add<TH1>(Form("fMass%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} distribution of triggered %s candidates;#it{M} (GeV/#it{c}^{2});events", beautyParticleNames[iBeautyPart].data()), HistType::kTH1F, {{220, 4.9, 6.0}});
       }
       hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
       hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
+    }
+
+    // init ONNX runtime session
+    if (applyML) {
+      session2Prong.reset(new Ort::Experimental::Session{env, onnxFile2Prong, sessionOptions});
+
+      inputNamesML2P = session2Prong->GetInputNames();
+      inputShapesML2P = session2Prong->GetInputShapes();
+      outputNamesML2P = session2Prong->GetOutputNames();
+      outputShapesML2P = session2Prong->GetOutputShapes();
     }
   }
 
@@ -316,17 +357,12 @@ struct HfFilter { // Main struct for HF triggers
       return false;
     }
 
-    if (std::abs(track.eta()) < 0.8) {
+    if (std::abs(track.eta()) > 0.8) {
       return false;
     }
 
     if (track.isGlobalTrack() != (uint8_t) true) {
       return false; // use only global tracks
-    }
-
-    unsigned char clusterMapITS = track.itsClusterMap();
-    if (!TESTBIT(clusterMapITS, 0) || !TESTBIT(clusterMapITS, 1)) {
-      return false; // require a hit in one of the first two layers of the ITS
     }
 
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
@@ -348,8 +384,12 @@ struct HfFilter { // Main struct for HF triggers
       return false;
     }
 
-    if (std::abs(track.eta()) < 0.8) {
+    if (std::abs(track.eta()) > 0.8) {
       return false;
+    }
+
+    if (track.isGlobalTrack() != (uint8_t) true) {
+      return false; // use only global tracks
     }
 
     float NSigmaTPC = track.tpcNSigmaPr();
@@ -426,8 +466,47 @@ struct HfFilter { // Main struct for HF triggers
       std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
 
-      // TODO: add ML selections here
-      n2Prongs++;
+      bool isCharmTagged{true}, isBeautyTagged{true};
+
+      // apply ML models
+      if (applyML) {
+        // TODO: add more feature configurations
+        std::vector<float> inputFeatures2P{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        std::vector<Ort::Value> inputTensor2P;
+        inputTensor2P.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures2P.data(), inputFeatures2P.size(), inputShapesML2P[0]));
+
+        // double-check the dimensions of the input tensor
+        assert(inputTensor2P[0].IsTensor() && inputTensor2P[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapesML2P[0]);
+        try {
+          auto outputTensor2P = session2Prong->Run(inputNamesML2P, inputTensor2P, outputNamesML2P);
+          assert(outputTensor2P.size() == outputNamesML2P.size() && outputTensor2P[1].IsTensor());
+          auto typeInfo = outputTensor2P[1].GetTensorTypeAndShapeInfo();
+          assert(typeInfo.GetElementCount() == 3); // we need multiclass
+          auto scores = outputTensor2P[1].GetTensorMutableData<float>();
+
+          if (applyML) {
+            hBDTScoreBkg[kD0]->Fill(scores[0]);
+            hBDTScorePrompt[kD0]->Fill(scores[1]);
+            hBDTScoreNonPrompt[kD0]->Fill(scores[2]);
+          }
+
+          if (scores[0] > thresholdBkgScore2Prong) {
+            continue;
+          }
+          if (scores[1] < thresholdPromptScore2Prong) {
+            isCharmTagged = false;
+          }
+          if (scores[2] < thresholdNonpromptScore2Prong) {
+            isBeautyTagged = false;
+          }
+        } catch (const Ort::Exception& exception) {
+          LOG(error) << "Error running model inference: " << exception.what();
+        }
+      }
+
+      if (!isCharmTagged && !isBeautyTagged) {
+        continue;
+      }
 
       auto pVec2Prong = RecoDecay::PVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::Pt(pVec2Prong);
@@ -436,7 +515,11 @@ struct HfFilter { // Main struct for HF triggers
         if (activateQA) {
           hCharmHighPt[kD0]->Fill(pt2Prong);
         }
-      }
+      } // end high-pT selection
+
+      if (isCharmTagged) {
+        n2Prongs++;
+      } // end multi-charm selection
 
       for (const auto& track : tracks) { // start loop over tracks
 
@@ -446,20 +529,33 @@ struct HfFilter { // Main struct for HF triggers
 
         std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
 
-        if (!keepEvent[kBeauty]) {
+        if (!keepEvent[kBeauty] && isBeautyTagged) {
           if (isSelectedTrackForBeauty(track, kBeauty3Prong)) {
-            auto massCandB = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi}); // TODO: retrieve D0-D0bar hypothesis to pair with proper signed track
-            if (std::abs(massCandB - massBPlus) <= deltaMassBPlus) {
+            auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi}); // TODO: retrieve D0-D0bar hypothesis to pair with proper signed track
+            if (std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
               if (activateQA) {
-                hMassB[kBplus]->Fill(massCandB);
+                hMassB[kBplus]->Fill(massCand);
+              }
+            } else if (std::abs(massCand - massDStar) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
+              for (const auto& trackB : tracks) {                          // start loop over tracks
+                if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong)) {
+                  std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
+                  auto massCandB0 = RecoDecay::M(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
+                  if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
+                    keepEvent[kBeauty] = true;
+                    if (activateQA) {
+                      hMassB[kB0toDStar]->Fill(massCandB0);
+                    }
+                  }
+                }
               }
             }
           }
-        }
+        } // end beauty selection
 
         // 2-prong femto
-        if (!keepEvent[kFemto]) {
+        if (!keepEvent[kFemto] && isCharmTagged) {
           bool isProton = isSelectedProton(track);
           if (isProton) {
             float relativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
@@ -470,7 +566,7 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
-        } //if(!keepEvent[kFemto])
+        } // end femto selection
 
       } // end loop over tracks
     }   // end loop over 2-prong candidates
@@ -515,7 +611,7 @@ struct HfFilter { // Main struct for HF triggers
             hCharmHighPt[kXic]->Fill(pt3Prong);
           }
         }
-      }
+      } // end high-pT selection
 
       for (const auto& track : tracks) { // start loop over tracks
 
@@ -536,12 +632,12 @@ struct HfFilter { // Main struct for HF triggers
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
                 if (activateQA) {
-                  hMassB[iHypo + 1]->Fill(massCandB);
+                  hMassB[iHypo + 2]->Fill(massCandB);
                 }
               }
             }
           }
-        }
+        } // end beauty selection
 
         // 3-prong femto
         if (isSelectedProton(track)) {
@@ -556,7 +652,8 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
-        }
+        } // end femto selection
+
       } // end loop over tracks
     }   // end loop over 3-prong candidates
 

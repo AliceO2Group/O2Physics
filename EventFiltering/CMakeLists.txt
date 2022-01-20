@@ -35,7 +35,7 @@ o2physics_add_dpl_workflow(diffraction-filter
 
 o2physics_add_dpl_workflow(hf-filter
                            SOURCES PWGHF/HFFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing ONNXRuntime::ONNXRuntime
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-threebodyfemto-filter

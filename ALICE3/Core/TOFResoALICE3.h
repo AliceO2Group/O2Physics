@@ -59,7 +59,7 @@ class TOFResoALICE3 : public Parametrization
 float TOFResoALICE3Param(const float& momentum, const float& momentumError, const float& evtimereso, const float& length, const float& mass, const Parameters& parameters)
 {
   if (momentum <= 0) {
-    return -999;
+    return -999.f;
   }
 
   const float p2 = momentum * momentum;

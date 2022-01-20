@@ -22,6 +22,7 @@
 #include "TObjString.h"
 #include <TGrid.h>
 #include <TMap.h>
+#include <TLeaf.h>
 
 // AOD merger with correct index rewriting
 // No need to know the datamodel because the branch names follow a canonical standard (identified by fIndex)
@@ -187,12 +188,26 @@ int main(int argc, char* argv[])
 
           outputTree->CopyAddresses(inputTree);
 
-          // register index columns
+          // register index and connect VLA columns
           std::vector<std::pair<int*, int>> indexList;
+          std::vector<char*> vlaPointers;
           TObjArray* branches = inputTree->GetListOfBranches();
           for (int i = 0; i < branches->GetEntriesFast(); ++i) {
             TBranch* br = (TBranch*)branches->UncheckedAt(i);
             TString branchName(br->GetName());
+
+            // detect VLA
+            if (((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount() != nullptr) {
+              int maximum = ((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount()->GetMaximum();
+              // HACK for some reason this memory is not enough
+              maximum *= 2;
+              char* buffer = new char[maximum * 8]; // assume 64 bit as largest case
+              printf("      Allocated VLA buffer of size %d for branch name %s\n", maximum, br->GetName());
+              inputTree->SetBranchAddress(br->GetName(), buffer);
+              outputTree->SetBranchAddress(br->GetName(), buffer);
+              vlaPointers.push_back(buffer);
+            }
+
             if (branchName.BeginsWith("fIndex")) {
               // Syntax: fIndex<Table>[_<Suffix>]
               branchName.Remove(0, 6);
@@ -244,11 +259,14 @@ int main(int argc, char* argv[])
           }
           unassignedIndexOffset[treeName] -= 1;
 
+          delete inputTree;
+
           for (const auto& idx : indexList) {
             delete idx.first;
           }
-
-          delete inputTree;
+          for (auto& buffer : vlaPointers) {
+            delete[] buffer;
+          }
         }
       }
       if (exitCode > 0) {

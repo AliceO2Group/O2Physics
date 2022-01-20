@@ -17,7 +17,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "ALICE3/DataModel/FTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -122,7 +121,7 @@ struct ftofPidQaMC {
       if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
         continue;
       }
-      if (useOnlyPhysicsPrimary == 1 && !MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
+      if (useOnlyPhysicsPrimary == 1 && !mcParticle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST("p/Sec"), track.p());
         continue;
       }
