@@ -419,7 +419,6 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     return true;
-
   }
 
   /// Basic additional selection of D0 candidates
@@ -792,7 +791,7 @@ struct HfFilter { // Main struct for HF triggers
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong)) {
-          for (int iHypo{0}; iHypo < kNBeautyParticles-2 && !keepEvent[kBeauty]; ++iHypo) {
+          for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty]; ++iHypo) {
             if ((iHypo != 1 && specieCharmHyposInMass[iHypo] > 0) || (iHypo == 1 && ((TESTBIT(specieCharmHyposInMass[iHypo], 0) && TESTBIT(specieCharmHyposInMass[iHypo], 2)) || (TESTBIT(specieCharmHyposInMass[iHypo], 1) && TESTBIT(specieCharmHyposInMass[iHypo], 3))))) {
               auto massCandB = RecoDecay::M(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
