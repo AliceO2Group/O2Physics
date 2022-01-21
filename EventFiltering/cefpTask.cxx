@@ -108,6 +108,12 @@ struct centralEventFilterTask {
 
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
+  FILTER_CONFIGURABLE(DqFilters);
+  FILTER_CONFIGURABLE(HfFilters);
+  FILTER_CONFIGURABLE(CFFilters);
+  FILTER_CONFIGURABLE(JetFilters);
+  FILTER_CONFIGURABLE(StrangenessFilters);
+  FILTER_CONFIGURABLE(MultFilters);
 
   void init(o2::framework::InitContext& initc)
   {
