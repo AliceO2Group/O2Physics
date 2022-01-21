@@ -279,9 +279,9 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for ML application with ONNX
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
   Configurable<std::string> onnxFile2ProngConf{"onnxFile2ProngConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220119/PWGHF/o2/trigger/XGBoostModel_D0ToKPi.onnx", "ONNX file for ML model for charm 2-prong candidates"};
-  Configurable<float> thresholdBkgScore2Prong{"thresholdBkgScore2Prong", 0.5, "Threshold value for BDT output score on background candidates"};
-  Configurable<float> thresholdPromptScore2Prong{"thresholdPromptScore2Prong", 0.1, "Threshold value for BDT output score on prompt candidates"};
-  Configurable<float> thresholdNonpromptScore2Prong{"thresholdNonpromptScore2Prong", 0.4, "Threshold value for BDT output score on nonprompt candidates"};
+  Configurable<float> thresholdBkgScore2Prong{"thresholdBkgScore2Prong", 0.4, "Threshold value for BDT output score on background candidates"};
+  Configurable<float> thresholdPromptScore2Prong{"thresholdPromptScore2Prong", 0.5, "Threshold value for BDT output score on prompt candidates"};
+  Configurable<float> thresholdNonpromptScore2Prong{"thresholdNonpromptScore2Prong", 0.1, "Threshold value for BDT output score on nonprompt candidates"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   std::shared_ptr<TH1> hProcessedEvents;
@@ -807,7 +807,7 @@ struct HfFilter { // Main struct for HF triggers
         // 3-prong femto
         if (isSelectedProton(track)) {
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
-            if ((iHypo != 1 && specieCharmHypos[iHypo]) || (iHypo != 1 && specieCharmHypos[iHypo] && (TESTBIT(specieCharmHyposInMass[iHypo], 2) || TESTBIT(specieCharmHyposInMass[iHypo], 3)))) {
+            if ((iHypo != 1 && specieCharmHypos[iHypo]) || (iHypo == 1 && specieCharmHypos[iHypo] && (TESTBIT(specieCharmHyposInMass[iHypo], 2) || TESTBIT(specieCharmHyposInMass[iHypo], 3)))) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
