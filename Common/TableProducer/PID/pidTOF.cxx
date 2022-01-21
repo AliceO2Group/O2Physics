@@ -11,7 +11,7 @@
 
 ///
 /// \file   pidTOF.cxx
-/// \author Nicolò Jacazio
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TOF split for each particle with only the Nsigma information.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
@@ -234,10 +234,10 @@ struct tofPidQa {
     addParticleHistos<8>();
   }
 
-  template <uint8_t i, typename T>
-  void fillParticleHistos(const T& t, const float nsigma)
+  template <o2::track::PID::ID i, typename T>
+  void fillParticleHistos(const T& t)
   {
-    histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
+    histos.fill(HIST(hnsigma[i]), t.p(), o2::aod::pidutils::tofNSigma(i, t));
   }
 
   void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
@@ -268,15 +268,15 @@ struct tofPidQa {
       histos.fill(HIST("event/pt"), t.pt());
       // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
       //
-      fillParticleHistos<0>(t, t.tofNSigmaEl());
-      fillParticleHistos<1>(t, t.tofNSigmaMu());
-      fillParticleHistos<2>(t, t.tofNSigmaPi());
-      fillParticleHistos<3>(t, t.tofNSigmaKa());
-      fillParticleHistos<4>(t, t.tofNSigmaPr());
-      fillParticleHistos<5>(t, t.tofNSigmaDe());
-      fillParticleHistos<6>(t, t.tofNSigmaTr());
-      fillParticleHistos<7>(t, t.tofNSigmaHe());
-      fillParticleHistos<8>(t, t.tofNSigmaAl());
+      fillParticleHistos<o2::track::PID::Electron>(t);
+      fillParticleHistos<o2::track::PID::Muon>(t);
+      fillParticleHistos<o2::track::PID::Pion>(t);
+      fillParticleHistos<o2::track::PID::Kaon>(t);
+      fillParticleHistos<o2::track::PID::Proton>(t);
+      fillParticleHistos<o2::track::PID::Deuteron>(t);
+      fillParticleHistos<o2::track::PID::Triton>(t);
+      fillParticleHistos<o2::track::PID::Helium3>(t);
+      fillParticleHistos<o2::track::PID::Alpha>(t);
     }
   }
 };
