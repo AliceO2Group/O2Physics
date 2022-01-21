@@ -52,13 +52,9 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "sigmaOROC3", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC3")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
-<<<<<<< HEAD
-    "mode", bpo::value<int>()->default_value(0), "Running mode (0 = offline, 1 = CCDB)")(
-=======
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
     "paramMaxClusters", bpo::value<float>()->default_value(63.), "Maximum Number of Clusters")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(
->>>>>>> 3273916... include vectors for resolution parameters
     "help,h", "Print this help.");
   try {
     bpo::store(parse_command_line(argc, argv, options), vm);
@@ -170,20 +166,12 @@ int main(int argc, char* argv[])
     }
   }
 
-  if (!outFilename.empty()) { // Write new object to file
-    TFile fout(outFilename.data(), "RECREATE");
-    tpc = new Response();
-    tpc->SetBetheBlochParams(BBparams);
-    tpc->SetResolutionParams(sigparams);
-    tpc->SetMIP(mipval);
-    tpc->SetChargeFactor(chargefacval);
-    fout.cd();
-    //   tpc->Print();
-    fout.WriteObject(tpc, objname.c_str());
-    fout.Close();
-  }
+  if (optMode.compare("read") == 0) { // Read existing object from local file
+    if (inFilename.empty()) {
+      LOG(error) << "read mode defined with no input file, please set --read-from-file";
+      return 1;
+    }
 
-  if (!inFilename.empty()) { // Read and execute object from file
     TFile fin(inFilename.data(), "READ");
     if (!fin.IsOpen()) {
       LOG(error) << "Input file " << inFilename << " could not be read";
@@ -271,13 +259,6 @@ int main(int argc, char* argv[])
     }
 
     tpc->PrintAll();
-<<<<<<< HEAD
-    //   tpc->Print();
-  }
-  
-  return 0;
-} //main
-=======
 
     if (!outFilename.empty()) {
       LOG(info) << "Writing pulled object to local file";
@@ -300,4 +281,3 @@ int main(int argc, char* argv[])
     return 1;
   }
 } // main
->>>>>>> a318100... Added suggestions of @wiechula
