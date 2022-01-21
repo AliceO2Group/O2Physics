@@ -22,7 +22,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
-//#include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 ////
 
 //#include <Math/GenVector/PxPyPzE4D.h>
@@ -30,16 +29,14 @@
 #include <Math/LorentzVector.h>
 #include <TRandom.h>
 
+#include "jflucCatalyst.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using namespace ROOT;
 using namespace ROOT::Math;
-
-/*namespace o2::aod
-{
-}*/
 
 //typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiE4D<double>> LorentzVectorD;
 
@@ -52,6 +49,7 @@ public:
 	O2_DEFINE_CONFIGURABLE(ptmax,double,5.0,"Maximal pT for tracks");
 	O2_DEFINE_CONFIGURABLE(charge,int,0,"Particle charge: 0 = all; 1 = positive; -1 = negative");
 	O2_DEFINE_CONFIGURABLE(trackingMode,int,0,"Tracking mode: 0 = global; 1 = hybrid");
+	O2_DEFINE_CONFIGURABLE(centEst,int,0,"Centrality estimator: 0 = V0M; 1 = CL0; 2 = CL1");
 	Configurable<bool> cutOutliers{"cutOutliers",false,"Cut outlier events"};
 
 	Service<ccdb::BasicCCDBManager> ccdb;
@@ -62,6 +60,10 @@ public:
 
 	TH1D *pcentFlatteningMap = 0;
 	TList *pnuaMapList = 0;
+	//int collisionId;
+
+	Produces<aod::ParticleTrack> particleTrack;
+	Produces<aod::CollisionData> collisionData;
 
 	//XXX this will be virtual
 	Int_t GetCentBin(Double_t cent){
@@ -74,6 +76,8 @@ public:
 		ccdb->setURL(url.value);
 		ccdb->setCaching(true);
 		ccdb->setCreatedNotAfter(nolaterthan.value);
+
+		gRandom->SetSeed(15122022);
 
 		if(!mapCentFlattening.value.empty()){
 			pcentFlatteningMap = ccdb->getForTimeStamp<TH1D>(mapCentFlattening.value,nolaterthan.value);
@@ -88,31 +92,31 @@ public:
 			else LOGF(info,"Failed to load NUA correction catalog %s. Correction will be disabled.",mapNUACorrection.value.c_str());
 		}
 
-		//fInputList = new TClonesArray("AliJBaseTrack",2500);
-		//fInputList = new TClonesArray("PtEtaPhiEVector",2500);
-		//fInputList->SetOwner(kTRUE);
-		fInputList = new std::vector<PtEtaPhiEVector>();
-		fInputList->reserve(2500);
-
-		collisionId = 0;
+		//collisionId = 0;
 	}
 
 	//void process(aod::Collision const& collision, aod::Tracks const& tracks){
-	void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::CentRun2CL0s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal> const& tracks){
+	void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal> const& tracks){
+		Double_t cent[3] = {
+			collision.centV0M(),
+			collision.centRun2CL0(),
+			collision.centRun2CL1()
+		};
+		collisionData(collision.globalIndex(),cent[centEst]);
+
 		if(!collision.alias()[kINT7] || !collision.sel7())
 			return;
 		if(std::abs(collision.posZ()) > zvertex)
 			return;
 
-		Double_t cent = collision.centV0M();
 		if(pcentFlatteningMap){
-			Int_t bin = pcentFlatteningMap->GetXaxis()->FindBin(cent);
+			Int_t bin = pcentFlatteningMap->GetXaxis()->FindBin(cent[centEst]);
 			if(gRandom->Uniform(0,1) > pcentFlatteningMap->GetBinContent(bin))
 				return;
 		}
 
 		//TODO: outlier cutting
-		UInt_t FB32Tracks = 0;
+		/*UInt_t FB32Tracks = 0;
 		UInt_t FB32TOFTracks = 0;
 		for(auto &track : tracks){
 			//fb
@@ -120,7 +124,7 @@ public:
 			//track.tofDz();
 			//if(track.hasTOF() && std::abs
 			//track.isGlobalTrackSDD(); //hybrid
-		}
+		}*/
 
 		if(cutOutliers.value){
 			//--
@@ -144,21 +148,21 @@ public:
 			}*/
 
 			//TODO: how to get SPD primary vertex?
-			collision.posX();
+			/*collision.posX();
 			collision.covXX();//[5] = covYZ
 			auto primaryVertex = getPrimaryVertex(collision);
 			primaryVertex.getZ();
-			auto covMatrix = primaryVertex.getCov();
+			auto covMatrix = primaryVertex.getCov();*/
 			//auto primaryVertexSPD = getPrimaryVertexSPD(collision);
 
 			double centCL0 = collision.centRun2CL0();
 			double center = 0.973488*centCL0+0.0157497;
 			double sigma = 0.673612+centCL0*(0.0290718+centCL0*(-0.000546728+centCL0*5.82749e-06));
-			if(cent < center-5.0*sigma || cent > center+5.5*sigma || cent < 0.0 || cent > 60.0)
+			if(cent[0] < center-5.0*sigma || cent[0] > center+5.5*sigma || cent[0] < 0.0 || cent[0] > 60.0)
 				return;
 		}
 
-		Int_t cbin = GetCentBin(cent);
+		Int_t cbin = GetCentBin(cent[centEst]);
 		if(cbin < 0)
 			return;
 
@@ -167,11 +171,7 @@ public:
 			(TH1*)pnuaMapList->FindObject(Form("PhiWeights_%u_%02u",bc.runNumber(),cbin)):0;
 
 		
-		fInputList->clear();
 		for(auto &track : tracks){
-			//if(!track.hasTOF())
-			//	continue;
-
 			if(trackingMode == 0 && !track.isGlobalTrack())
 				continue;
 			else
@@ -195,27 +195,12 @@ public:
 				phiWeight = pweightMap->GetBinContent(bin);
 			}
 
-			//AliJBaseTrack *ptrack = new ((*fInputList)[ntrack++])AliJBaseTrack;
-			//PtEtaPhiEVector *ptrack = ((*fInputList)[ntrack++]) PtEtaPhiEVector;
-			fInputList->emplace_back();
-			PtEtaPhiEVector t = fInputList->back();
-			
-			//ptrack->SetLabel(ntrack);
-			//ptrack->SetParticleType(0);
-			t.SetPt(pt);
-			t.SetEta(eta);
-			t.SetPhi(phi);
-			//ptrack->SetE(track.E());
-			//ptrack->SetCharge(ch);
-			//ptrack->SetTrackEff(1.0);
-			//ptrack->SetWeight(1.0); // phi weight
+			particleTrack(track.collisionId(),pt,eta,phi,phiWeight,1.0f);
+			//particleTrack(pt,eta,phi,phiWeight,1.0f);
 		}
-		++collisionId;
-		LOGF(info,"event %u processed with %u tracks.",collisionId,fInputList->size());
+		//++collisionId;
+		//LOGF(info,"event %u processed with %u tracks.",collisionId,tracks.size());
 	}
-
-	std::vector<PtEtaPhiEVector> *fInputList;
-	int collisionId;
 
 };
 
