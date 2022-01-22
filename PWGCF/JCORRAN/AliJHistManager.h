@@ -4,7 +4,6 @@
 #define UTILS_ALIJARRAY_H
 
 #include <vector>
-#include <map>
 #include <TString.h>
 #include <TDirectory.h>
 #include <TH1D.h>
@@ -16,13 +15,13 @@
 #include <TSystem.h>
 #include <TROOT.h>
 #include <TObjString.h>
-#include <iostream>
 #include <TClass.h>
+#include "Framework/Logger.h"
 
-#define JERROR(x)  {std::cout<<"!!! JERROR : "<<x<<" "<<__LINE__<<" "<<__FILE__<<" "<<std::endl , gSystem->Exit(100); }
-#define JDEBUG(x,y)  if(x<100){std::cout<<"JDEBUG : "<<#x<<" : "<<(y)<<" "<<__LINE__<<" "<<__FILE__<<" "<<std::endl;}
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+#define JERROR(...) LOGF(error,"JERROR: " __FILE__ ":" STR(__LINE__) ": " __VA_ARGS__)
 
-//class AliJMap;
 class AliJArrayBase;
 class AliJBin;
 class AliJArrayAlgorithm;
@@ -356,7 +355,7 @@ class AliJTH1DerivedPlayer {
         AliJTH1DerivedPlayer( AliJTH1Derived<T> * cmd ):fLevel(0),fCMD(cmd){};
         AliJTH1DerivedPlayer<T>& operator[](int i){
             if( fLevel > fCMD->Dimension() ) { JERROR("Exceed Dimension"); }
-            if( OutOf( i, 0,  fCMD->SizeOf(fLevel)-1) ){ JERROR(Form("wrong Index %d of %dth in ",i, fLevel)+fCMD->GetName()); }
+            if( OutOf( i, 0,  fCMD->SizeOf(fLevel)-1) ){ JERROR("wrong Index %d of %dth in %s",i,fLevel,fCMD->GetName()); }
             fCMD->SetIndex(i, fLevel++);
             return *this;
         }

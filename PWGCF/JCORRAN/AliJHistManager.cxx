@@ -63,7 +63,8 @@ AliJBin::AliJBin(TString config, AliJHistManager * hmg):
     fIndexName("H"), 
     fHMG(NULL)
 {
-    cout<< config<<endl;
+    //cout<< config<<endl;
+	LOGF(info,"AliJBin: %s",config.Data());
     std::vector<TString> t = Tokenize(config, " \t,");
     TString type = t[0];
     SetName( t[1] );
@@ -172,13 +173,13 @@ AliJBin& AliJBin::SetBin(const int  n){
 }
 //_____________________________________________________
 void AliJBin::AddBin( const TString& v ){
-    if( fIsFixedBin ) { JERROR( "You can't Add Bini "+GetName()); }
+    if( fIsFixedBin ) { JERROR("You can't Add Bini %s",GetName().Data()); }
     fBinStr.push_back( (v=="_")?"":v );
     fBinD.push_back( v.Atof() );
 }
 //_____________________________________________________
 void AliJBin::AddBin( float v ){
-    if( fIsFixedBin ) { JERROR( "You can't Add Bin "+GetName()); }
+    if( fIsFixedBin ) { JERROR("You can't Add Bin %s",GetName().Data()); }
     fBinD.push_back( v ); 
     fBinStr.push_back(Form("%f",v));
 }
@@ -191,7 +192,7 @@ TString AliJBin::BuildTitle( int i ){
         return TString(Form(fTitle.Data(), fBinD[i], fBinD[i+1]));
     if( fMode == kString )
         return TString( Form(fTitle.Data(), fBinStr[i].Data()) );
-    JERROR( TString("Bad Mode of AliJBin type ") + char(fMode) + " in " + fName+ "!!!" );
+    JERROR("Bad Mode of AliJBin type %d in %s",fMode,fName.Data());
     return "";
 }
 //_____________________________________________________
@@ -202,7 +203,8 @@ TString AliJBin::GetString(){
 }
 //_____________________________________________________
 void AliJBin::Print(){
-    std::cout<<"*"+GetString()<<std::endl;
+    //std::cout<<"*"+GetString()<<std::endl;
+	printf("*%s",GetString().Data());
 }
 
 int AliJBin::GetBin(double x){
@@ -291,7 +293,7 @@ int AliJArrayBase::Index(int d){
     return fIndex[d];
 }
 void AliJArrayBase::SetIndex(int i, int d ){
-    if( OutOfSize( i, d ) ) JERROR( "Wrong Index" );
+    if( OutOfSize( i, d ) ) JERROR("Wrong Index");
     fIndex[d] = i;
 }
 
@@ -493,7 +495,7 @@ int AliJTH1::AddDim(TString v) {
             AliJBin * b = NULL;
             if( fHMG ) b = fHMG->GetBin(s);
             if( b ) this->AddDim(b);
-            else {JERROR("Wrong terminator of Array : \"" + s+"\" in " + fName ); }
+            else {JERROR("Wrong terminator of Array : \"%s\" in %s",s.Data(),fName.Data()); }
         }
     }
     return Dimension();
@@ -545,7 +547,8 @@ void AliJTH1::AddToManager(AliJHistManager *hmg){
 }
 //_____________________________________________________
 void AliJTH1::Print(){
-    std::cout<<"*"<<GetString()<<std::endl;
+    //std::cout<<"*"<<GetString()<<std::endl;
+	printf("*%s",GetString().Data());
     // TODO more details.
 }
 //_____________________________________________________
@@ -606,14 +609,14 @@ void * AliJTH1::BuildItem(){
             }
             if( item ) {
                 item = dynamic_cast<TH1*>((static_cast<TH1*>(item))->Clone(name));
-                if( !item ){ JERROR("Any of "+fName+" doesn't exists. I need at least one"); return NULL;}
+                if( !item ){ JERROR("Any of %s doesn't exists. I need at least one",fName.Data()); return NULL;}
                 item->Reset();
                 item->SetTitle( BuildTitle() );
                 item->SetDirectory(0);
                 *rawItem = (void*)item;
             }
         }
-        if( !item ){ JERROR("Any of "+fName+" doesn't exists. I need at least one"); return NULL;}
+        if( !item ){ JERROR("Any of %s doesn't exists. I need at least one",fName.Data()); return NULL;}
     }
     else{ //  Gen Mode
         TH1 * titem = NULL;
@@ -680,7 +683,7 @@ AliJHistManager::AliJHistManager(TString name, TString dirname):
     if( dirname.Length() > 0 ) {
         fDirectory = (TDirectory*)gDirectory->Get(dirname);
         if( fDirectory ){
-            std::cout<<"JWARNING : "<<Form("Hist directory %s exists", dirname.Data() )<<std::endl;
+			LOGF(warning,"Hist directory %s exists",dirname.Data());
             // gSystem->Exit(1);  // We might actually want the directory to exist, so no exit
         }
         if( !fDirectory ){
@@ -688,8 +691,8 @@ AliJHistManager::AliJHistManager(TString name, TString dirname):
         }
     }
     if( !fDirectory ){
-        std::cout<<"JERROR : "<<Form("Fail to generate Hist directory %s", dirname.Data() )<<std::endl;
-        gSystem->Exit(1);
+		JERROR("Fail to generate Hist directory %s",dirname.Data());
+        //gSystem->Exit(1);
     }
     this->cd();
 }
@@ -778,17 +781,16 @@ void AliJHistManager::Add(AliJTH1 *o ){
 }
 void AliJHistManager::Print(){
     if( IsLoadMode() ) {
-        cout<<fConfigStr<<endl;
+        //cout<<fConfigStr<<endl;
+		LOGF(info,"%s",fConfigStr.Data());
         return;
     }
-    cout<<"============ AliJHistManager : "<<fName<<" ==================="<<endl;
-    cout<<endl;
-    cout<<"---- AliJBin ----"<<endl;
+    printf("============ AliJHistManager : %s ===================\n",fName.Data());
+    printf("\n---- AliJBin ----\n");
     for( int i=0;i<GetNBin();i++ ){
         fBin[i]->Print();
     }
-    cout<<endl;
-    cout<<"---- AliJTH1 ----"<<endl;
+    printf("\n---- AliJTH1 ----\n");
     for( int i=0;i<GetNHist();i++ ){
         fHist[i]->Print();
     }
@@ -818,7 +820,7 @@ int AliJHistManager::LoadConfig(){
     TString config = strobj->String();
     fConfigStr = config;
     vector<TString> lines = Tokenize(config, "\n");
-    cout<< Form("Read Config.%d objects found\n", (int)lines.size() );
+    LOGF(info,"Read Config.%d objects found",(int)lines.size());
     for( UInt_t i=0;i < lines.size();i++ ){
         TString line = lines.at(i);
         std::vector<TString> t = Tokenize(line, " \t,");
