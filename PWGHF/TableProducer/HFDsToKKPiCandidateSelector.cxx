@@ -47,12 +47,12 @@ struct HfDsTokkpiCandidateSelector {
 
   /// Candidate selections
   /// \param candidate is candidate
-  /// \param trackPion1 is the first track with the pion hypothesis
-  /// \param trackKaon is the track with the kaon hypothesis
-  /// \param trackPion2 is the second track with the pion hypothesis
+  /// \param trackKaon1 is the first track with the kaon hypothesis
+  /// \param trackKaon2 is the track with the kaon hypothesis
+  /// \param trackPion is the second track with the pion hypothesis
   /// \return true if candidate passes all cuts
   template <typename T1, typename T2>
-  bool selection(const T1& candidate, const T2& trackPion1, const T2& trackKaon, const T2& trackPion2)
+  bool selection(const T1& candidate, const T2& trackKaon1, const T2& trackKaon2, const T2& trackPion)
   {
     auto candpT = candidate.pt();
     int pTBin = findBin(pTBins, candpT);
@@ -64,14 +64,11 @@ struct HfDsTokkpiCandidateSelector {
       return false;
     }
     // cut on daughter pT
-    if (trackPion1.pt() < cuts->get(pTBin, "pT Pi") || trackKaon.pt() < cuts->get(pTBin, "pT K") || trackPion2.pt() < cuts->get(pTBin, "pT Pi")) {
+    if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(InvMassDsKKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "deltaM")) {
-      return false;
-    }
-    if (std::abs(InvMassDsPiKK(candidate) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(InvMassDsKKPi(candidate) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "deltaM") && (std::abs(InvMassDsPiKK(candidate) - RecoDecay::getMassPDG(pdg::Code::kDs)) > cuts->get(pTBin, "deltaM"))) {
       return false;
     }
     // decay length cut
@@ -110,9 +107,10 @@ struct HfDsTokkpiCandidateSelector {
 
       // final selection flag:
       auto statusDsToKKPi = 0;
+      auto statusDsToPiKK = 0;
 
       if (!(candidate.hfflag() & 1 << DecayType::DsToKKPi)) {
-        hfSelDsToKKPiCandidate(statusDsToKKPi);
+        hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         continue;
       }
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoSkims);
@@ -122,26 +120,59 @@ struct HfDsTokkpiCandidateSelector {
       auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
 
       // topological selection
-      if ((!selection(candidate, trackPos1, trackNeg, trackPos2)) || !selection(candidate, trackPos2, trackNeg, trackPos1)) {
-        hfSelDsToKKPiCandidate(statusDsToKKPi);
+      if ((!selection(candidate, trackPos1, trackNeg, trackPos2)) && (!selection(candidate, trackPos2, trackNeg, trackPos1))) {
+        hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         continue;
       }
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoTopol);
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
-      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
-      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDAll(trackPos2);
+      auto pidDsKKPi = -1;
+      auto pidDsPiKK = -1;
 
-      if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
-          pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
-          pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) { // exclude D±
-        hfSelDsToKKPiCandidate(statusDsToKKPi);
+      int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
+      int pidTrackPos2Pion = selectorPion.getStatusTrackPIDAll(trackPos2);
+      int pidTrackPos1Kaon = selectorKaon.getStatusTrackPIDAll(trackPos1);
+      int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDAll(trackPos2);
+      int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
+
+      // excluding candidates with negative track rejected as K
+      if (pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected) {
+        hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
+        continue;
+      }
+      // checking PID for Ds to KKPi hypothesis
+      if (pidTrackPos1Kaon == TrackSelectorPID::Status::PIDAccepted &&
+          pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+          pidTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+        pidDsKKPi = 1; // accept DsKKPi
+      } else if (pidTrackPos1Kaon == TrackSelectorPID::Status::PIDRejected ||
+                 pidTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+        pidDsKKPi = 0; // exclude DsKKPi
+      }
+      // checking PID for Ds to PiKK hypothesis
+      if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted &&
+          pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+          pidTrackPos2Kaon == TrackSelectorPID::Status::PIDAccepted) {
+        pidDsPiKK = 1; // accept DsPiKK
+      } else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
+                 pidTrackPos2Kaon == TrackSelectorPID::Status::PIDRejected) {
+          pidDsPiKK = 0; // exclude DsKKPi
+      }
+      if (pidDsKKPi == 0 && pidDsPiKK == 0) {
+        hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         continue;
       }
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoPID);
+      
+      if ((pidDsKKPi == 1 || pidDsKKPi == -1) && selection(candidate, trackPos1, trackNeg, trackPos2)){
+        statusDsToKKPi = 1; // Ds to KKPi hypotesis matched
+      }
+      if ((pidDsPiKK == 1 || pidDsPiKK == -1) && selection(candidate, trackPos2, trackNeg, trackPos1)){
+        statusDsToPiKK = 1; // Ds to PiKK hypotesis matched
+      }
 
-      hfSelDsToKKPiCandidate(statusDsToKKPi);
+      hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
     }
   }
 };
