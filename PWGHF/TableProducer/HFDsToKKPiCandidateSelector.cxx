@@ -157,18 +157,18 @@ struct HfDsTokkpiCandidateSelector {
         pidDsPiKK = 1; // accept DsPiKK
       } else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
                  pidTrackPos2Kaon == TrackSelectorPID::Status::PIDRejected) {
-          pidDsPiKK = 0; // exclude DsKKPi
+        pidDsPiKK = 0; // exclude DsKKPi
       }
       if (pidDsKKPi == 0 && pidDsPiKK == 0) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         continue;
       }
       SETBIT(statusDsToKKPi, aod::SelectionStep::RecoPID);
-      
-      if ((pidDsKKPi == 1 || pidDsKKPi == -1) && selection(candidate, trackPos1, trackNeg, trackPos2)){
+
+      if ((pidDsKKPi == 1 || pidDsKKPi == -1) && selection(candidate, trackPos1, trackNeg, trackPos2)) {
         statusDsToKKPi = 1; // Ds to KKPi hypotesis matched
       }
-      if ((pidDsPiKK == 1 || pidDsPiKK == -1) && selection(candidate, trackPos2, trackNeg, trackPos1)){
+      if ((pidDsPiKK == 1 || pidDsPiKK == -1) && selection(candidate, trackPos2, trackNeg, trackPos1)) {
         statusDsToPiKK = 1; // Ds to PiKK hypotesis matched
       }
 
