@@ -506,7 +506,7 @@ struct EvaluatePid {
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu>>;
   using pidBayesTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
 
-  void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
+  void processStandard(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto& track : tracks) {
       auto particle = track.mcParticle();
@@ -537,7 +537,7 @@ struct EvaluatePid {
       }
     }
   }
-  PROCESS_SWITCH(EvaluatePid, process, "Process standard strategies", true);
+  PROCESS_SWITCH(EvaluatePid, processStandard, "Process standard strategies", true);
 
   void processBayes(pidBayesTracks const& tracks, aod::McParticles const& mcParticles)
   {
