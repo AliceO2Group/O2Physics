@@ -199,8 +199,6 @@ int main(int argc, char* argv[])
             // detect VLA
             if (((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount() != nullptr) {
               int maximum = ((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount()->GetMaximum();
-              // HACK for some reason this memory is not enough
-              maximum *= 2;
               char* buffer = new char[maximum * 8]; // assume 64 bit as largest case
               printf("      Allocated VLA buffer of size %d for branch name %s\n", maximum, br->GetName());
               inputTree->SetBranchAddress(br->GetName(), buffer);
@@ -228,13 +226,18 @@ int main(int argc, char* argv[])
           // on the first appending pass we need to find out the most negative index in the existing output
           // to correctly continue negative index assignment
           if (mergedDFs == 2) {
-            auto outentries = outputTree->GetEntries();
             int minIndex = -1;
-            for (int i = 0; i < outentries; ++i) {
-              outputTree->GetEntry(i);
-              for (const auto& idx : indexList) {
-                minIndex = std::min(*(idx.first), minIndex);
+            if (indexList.size() > 0) {
+              outputTree->SetBranchStatus("*", 0);
+              outputTree->SetBranchStatus("fIndex*", 1);
+              auto outentries = outputTree->GetEntries();
+              for (int i = 0; i < outentries; ++i) {
+                outputTree->GetEntry(i);
+                for (const auto& idx : indexList) {
+                  minIndex = std::min(*(idx.first), minIndex);
+                }
               }
+              outputTree->SetBranchStatus("*", 1);
             }
             unassignedIndexOffset[treeName] = minIndex;
           }

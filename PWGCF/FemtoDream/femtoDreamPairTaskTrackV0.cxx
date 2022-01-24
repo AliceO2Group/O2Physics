@@ -30,6 +30,7 @@ using namespace o2;
 using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::soa;
 
 namespace
 {
@@ -104,7 +105,7 @@ struct femtoDreamPairTaskTrackV0 {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; ///Accessing the CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
   {
@@ -207,20 +208,22 @@ struct femtoDreamPairTaskTrackV0 {
   void processSameEvent(o2::aod::FemtoDreamCollision& col,
                         o2::aod::FemtoDreamParticles& parts)
   {
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
     /// Histogramming same event
-    for (auto& part : partsOne) {
+    for (auto& part : groupPartsOne) {
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutArray->get("PIDthr"), vPIDPartOne, cfgCutArray->get("nSigmaTPC"), cfgCutArray->get("nSigmaTPCTOF"))) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
     }
-    for (auto& part : partsTwo) {
+    for (auto& part : groupPartsTwo) {
       trackHistoPartTwo.fillQA(part);
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
+    for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
       if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutArray->get("PIDthr"), vPIDPartOne, cfgCutArray->get("nSigmaTPC"), cfgCutArray->get("nSigmaTPCTOF"))) {
         continue;
       }
@@ -248,33 +251,10 @@ struct femtoDreamPairTaskTrackV0 {
                          o2::aod::Hashes& hashes,
                          o2::aod::FemtoDreamParticles& parts)
   {
-    cols.bindExternalIndices(&parts);
-    auto particlesTuple = std::make_tuple(parts);
-    GroupSlicer slicer(cols, particlesTuple);
-
     for (auto& [collision1, collision2] : soa::selfCombinations("fBin", ConfNEventsMix, -1, soa::join(hashes, cols), soa::join(hashes, cols))) {
-      auto it1 = slicer.begin();
-      auto it2 = slicer.begin();
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
 
-      auto particles1 = std::get<aod::FemtoDreamParticles>(it1.associatedTables());
-      particles1.bindExternalIndices(&cols);
-      auto particles2 = std::get<aod::FemtoDreamParticles>(it2.associatedTables());
-      particles2.bindExternalIndices(&cols);
-
-      partsOne.bindTable(particles1);
-      partsTwo.bindTable(particles2);
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
 
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       /// could work like that, but only if PID is contained within the partitioning!
@@ -292,7 +272,7 @@ struct femtoDreamPairTaskTrackV0 {
       // partsTwo.bindTable(particlesEvent2);
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
-      for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutArray->get("PIDthr"), vPIDPartOne, cfgCutArray->get("nSigmaTPC"), cfgCutArray->get("nSigmaTPCTOF"))) {
           continue;
         }

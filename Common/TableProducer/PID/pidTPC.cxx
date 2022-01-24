@@ -245,7 +245,7 @@ struct tpcPidQa {
   }
 
   template <o2::track::PID::ID id, typename T>
-  void fillParticleHistos(const T& t, const float& nsigma)
+  void fillParticleHistos(const T& t)
   {
     if (applyRapidityCut) {
       const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
@@ -254,6 +254,7 @@ struct tpcPidQa {
       }
     }
     // Fill histograms
+    const auto& nsigma = o2::aod::pidutils::tpcNSigma(id, t);
     histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
     histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
     if (t.sign() > 0) {
@@ -309,15 +310,15 @@ struct tpcPidQa {
       histos.fill(HIST("event/tpcsignal"), mom, t.tpcSignal());
       histos.fill(HIST("event/signedtpcsignal"), mom * t.sign(), t.tpcSignal());
       //
-      fillParticleHistos<PID::Electron>(t, t.tpcNSigmaEl());
-      fillParticleHistos<PID::Muon>(t, t.tpcNSigmaMu());
-      fillParticleHistos<PID::Pion>(t, t.tpcNSigmaPi());
-      fillParticleHistos<PID::Kaon>(t, t.tpcNSigmaKa());
-      fillParticleHistos<PID::Proton>(t, t.tpcNSigmaPr());
-      fillParticleHistos<PID::Deuteron>(t, t.tpcNSigmaDe());
-      fillParticleHistos<PID::Triton>(t, t.tpcNSigmaTr());
-      fillParticleHistos<PID::Helium3>(t, t.tpcNSigmaHe());
-      fillParticleHistos<PID::Alpha>(t, t.tpcNSigmaAl());
+      fillParticleHistos<PID::Electron>(t);
+      fillParticleHistos<PID::Muon>(t);
+      fillParticleHistos<PID::Pion>(t);
+      fillParticleHistos<PID::Kaon>(t);
+      fillParticleHistos<PID::Proton>(t);
+      fillParticleHistos<PID::Deuteron>(t);
+      fillParticleHistos<PID::Triton>(t);
+      fillParticleHistos<PID::Helium3>(t);
+      fillParticleHistos<PID::Alpha>(t);
     }
   }
 };

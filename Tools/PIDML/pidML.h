@@ -138,4 +138,4 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   pidtracks::TOFExpSignalDiffPr,
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
-} //namespace o2::aod
+} // namespace o2::aod

@@ -9,5 +9,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-include("${CMAKE_CURRENT_LIST_DIR}/O2PhysicsCompileFlags.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/O2PhysicsDependencies.cmake")
+include_guard()
+
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+
+# Find required packages
+find_package(KFParticle)
+set_package_properties(KFParticle PROPERTIES TYPE REQUIRED)
+
+feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
