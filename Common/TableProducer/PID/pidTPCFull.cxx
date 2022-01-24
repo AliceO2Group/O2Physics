@@ -11,7 +11,7 @@
 
 ///
 /// \file   pidTPCFull.cxx
-/// \author Nicolò Jacazio
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
@@ -267,7 +267,7 @@ struct tpcPidFullQa {
   }
 
   template <o2::track::PID::ID id, typename T>
-  void fillParticleHistos(const T& t, const float& mom, const float& exp_diff, const float& expsigma, const float& nsigma)
+  void fillParticleHistos(const T& t, const float& mom, const float& exp_diff, const float& expsigma)
   {
     if (applyRapidityCut) {
       const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
@@ -279,6 +279,7 @@ struct tpcPidFullQa {
     histos.fill(HIST(hexpected[id]), mom, t.tpcSignal() - exp_diff);
     histos.fill(HIST(hexpected_diff[id]), mom, exp_diff);
     histos.fill(HIST(hexpsigma[id]), t.p(), expsigma);
+    const auto& nsigma = o2::aod::pidutils::tpcNSigma(id, t);
     histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
     histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
     if (t.sign() > 0) {
@@ -334,15 +335,15 @@ struct tpcPidFullQa {
       histos.fill(HIST("event/tpcsignal"), mom, t.tpcSignal());
       histos.fill(HIST("event/signedtpcsignal"), mom * t.sign(), t.tpcSignal());
       //
-      fillParticleHistos<PID::Electron>(t, mom, t.tpcExpSignalDiffEl(), t.tpcExpSigmaEl(), t.tpcNSigmaEl());
-      fillParticleHistos<PID::Muon>(t, mom, t.tpcExpSignalDiffMu(), t.tpcExpSigmaMu(), t.tpcNSigmaMu());
-      fillParticleHistos<PID::Pion>(t, mom, t.tpcExpSignalDiffPi(), t.tpcExpSigmaPi(), t.tpcNSigmaPi());
-      fillParticleHistos<PID::Kaon>(t, mom, t.tpcExpSignalDiffKa(), t.tpcExpSigmaKa(), t.tpcNSigmaKa());
-      fillParticleHistos<PID::Proton>(t, mom, t.tpcExpSignalDiffPr(), t.tpcExpSigmaPr(), t.tpcNSigmaPr());
-      fillParticleHistos<PID::Deuteron>(t, mom, t.tpcExpSignalDiffDe(), t.tpcExpSigmaDe(), t.tpcNSigmaDe());
-      fillParticleHistos<PID::Triton>(t, mom, t.tpcExpSignalDiffTr(), t.tpcExpSigmaTr(), t.tpcNSigmaTr());
-      fillParticleHistos<PID::Helium3>(t, mom, t.tpcExpSignalDiffHe(), t.tpcExpSigmaHe(), t.tpcNSigmaHe());
-      fillParticleHistos<PID::Alpha>(t, mom, t.tpcExpSignalDiffAl(), t.tpcExpSigmaAl(), t.tpcNSigmaAl());
+      fillParticleHistos<PID::Electron>(t, mom, t.tpcExpSignalDiffEl(), t.tpcExpSigmaEl());
+      fillParticleHistos<PID::Muon>(t, mom, t.tpcExpSignalDiffMu(), t.tpcExpSigmaMu());
+      fillParticleHistos<PID::Pion>(t, mom, t.tpcExpSignalDiffPi(), t.tpcExpSigmaPi());
+      fillParticleHistos<PID::Kaon>(t, mom, t.tpcExpSignalDiffKa(), t.tpcExpSigmaKa());
+      fillParticleHistos<PID::Proton>(t, mom, t.tpcExpSignalDiffPr(), t.tpcExpSigmaPr());
+      fillParticleHistos<PID::Deuteron>(t, mom, t.tpcExpSignalDiffDe(), t.tpcExpSigmaDe());
+      fillParticleHistos<PID::Triton>(t, mom, t.tpcExpSignalDiffTr(), t.tpcExpSigmaTr());
+      fillParticleHistos<PID::Helium3>(t, mom, t.tpcExpSignalDiffHe(), t.tpcExpSigmaHe());
+      fillParticleHistos<PID::Alpha>(t, mom, t.tpcExpSignalDiffAl(), t.tpcExpSigmaAl());
     }
   }
 };
