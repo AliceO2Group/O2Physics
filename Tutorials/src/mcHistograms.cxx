@@ -50,9 +50,9 @@ struct AccessMcData {
         phiH->Fill(mcParticle.phi());
         etaH->Fill(mcParticle.eta());
         count++;
-      // for (auto& m : mcParticle.mothers()) {
-      //   LOGF(info, "M %d", m.globalIndex());
-      // }
+        // for (auto& m : mcParticle.mothers()) {
+        //   LOGF(info, "M %d", m.globalIndex());
+        // }
         // for (auto& m : mcParticle.mothersIds()) {
         //   LOGF(info, "M1 %d %d", mcParticle.globalIndex(), m);
         // }
@@ -83,19 +83,24 @@ struct AccessMcTruth {
   // group according to reconstructed Collisions
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks,
                aod::McParticles_001 const& mcParticles, aod::McCollisions const& mcCollisions)
+  //  aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
     LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
     for (auto& track : tracks) {
-      //if (track.trackType() != 0)
-      //  continue;
-      //if (track.labelMask() != 0)
-      //  continue;
+      // if (track.trackType() != 0)
+      //   continue;
+      // if (track.labelMask() != 0)
+      //   continue;
+      LOGF(info, "Checking has_mcParticle");
       if (!track.has_mcParticle()) {
         LOGF(warning, "No MC particle for track, skip...");
         continue;
       }
+      LOGF(info, "Getting mcParticle");
       auto particle = track.mcParticle_as<aod::McParticles_001>();
+      LOGF(info, "Got mcParticle");
+      // auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
         etaDiff->Fill(particle.eta() - track.eta());
         auto delta = particle.phi() - track.phi();
@@ -107,7 +112,7 @@ struct AccessMcTruth {
         }
         phiDiff->Fill(delta);
       }
-      //LOGF(info, "eta: %.2f %.2f \t phi: %.2f %.2f | %d", track.mcParticle().eta(), track.eta(), track.mcParticle().phi(), track.phi(), track.mcParticle().index());
+      // LOGF(info, "eta: %.2f %.2f \t phi: %.2f %.2f | %d", track.mcParticle().eta(), track.eta(), track.mcParticle().phi(), track.phi(), track.mcParticle().index());
     }
   }
 };
