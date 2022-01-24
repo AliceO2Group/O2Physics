@@ -427,7 +427,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param ptD is the pt of the D0 meson candidate
   /// \return 1 for D0, 2 for D0bar, 3 for both
   template <typename T>
-  int isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float &ptD)
+  int isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD)
   {
     auto invMassD0 = RecoDecay::M(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
     auto invMassD0bar = RecoDecay::M(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
@@ -455,7 +455,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param ptD is the pt of the D+ meson candidate
   /// \return true for D+
   template <typename T>
-  bool isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float &ptD)
+  bool isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
     auto invMassDplus = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
     if (activateQA) {
@@ -476,7 +476,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param ptD is the pt of the Ds meson candidate
   /// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
   template <typename T>
-  int isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float &ptD)
+  int isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
     auto invMassKKFirst = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
     auto invMassKKSecond = RecoDecay::M(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
@@ -513,7 +513,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param ptLc is the pt of the D0 meson candidate
   /// \return 1 for pKpi, 2 for piKp, 3 for both
   template <typename T>
-  int isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float &ptLc)
+  int isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc)
   {
     auto invMassLcToPKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     auto invMassLcToPiKP = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
@@ -541,7 +541,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param ptXic is the pt of the D0 meson candidate
   /// \return 1 for pKpi, 2 for piKp, 3 for both
   template <typename T>
-  int isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float &ptXic)
+  int isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic)
   {
     auto invMassXicToPKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     auto invMassXicToPiKP = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
