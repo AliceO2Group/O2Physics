@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pid {
+struct EvaluatePid {
   double combinedSignal(float val1, float val2)
   {
     return sqrt(pow(val1, 2) + pow(val2, 2));
@@ -461,50 +461,58 @@ struct pid {
     }
   }
 
+  template <typename T>
+  void fillMcHistos(const T& track, const int pdgCode)
+  {
+    // pions
+    if (pdgCode == 211) {
+      histReg.fill(HIST("MC/211"), track.pt());
+    } else if (pdgCode == -211) {
+      histReg.fill(HIST("MC/0211"), track.pt());
+    }
+    // protons
+    else if (pdgCode == 2212) {
+      histReg.fill(HIST("MC/2212"), track.pt());
+    } else if (pdgCode == -2212) {
+      histReg.fill(HIST("MC/02212"), track.pt());
+    }
+    // kaons
+    else if (pdgCode == 321) {
+      histReg.fill(HIST("MC/321"), track.pt());
+    } else if (pdgCode == -321) {
+      histReg.fill(HIST("MC/0321"), track.pt());
+    }
+    // electrons
+    else if (pdgCode == 11) {
+      histReg.fill(HIST("MC/11"), track.pt());
+      ;
+    } else if (pdgCode == -11) {
+      histReg.fill(HIST("MC/011"), track.pt());
+    }
+    // muons
+    else if (pdgCode == 13) {
+      histReg.fill(HIST("MC/13"), track.pt());
+    } else if (pdgCode == -13) {
+      histReg.fill(HIST("MC/013"), track.pt());
+    } else {
+      histReg.fill(HIST("MC/else"), track.pt());
+    }
+  }
+
   Configurable<float> nsigmacut{"nsigmacut", 2.5, "Value of the NSigma cut"};
   Configurable<int> strategy{"strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exlcusive condition for NSigma, 4-Bayesian PID"};
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
-  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
+  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu>>;
+  using pidBayesTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
+
   void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto& track : tracks) {
       auto particle = track.mcParticle();
       int pdgCode = particle.pdgCode();
 
-      // pions
-      if (pdgCode == 211) {
-        histReg.fill(HIST("MC/211"), track.pt());
-      } else if (pdgCode == -211) {
-        histReg.fill(HIST("MC/0211"), track.pt());
-      }
-      // protons
-      else if (pdgCode == 2212) {
-        histReg.fill(HIST("MC/2212"), track.pt());
-      } else if (pdgCode == -2212) {
-        histReg.fill(HIST("MC/02212"), track.pt());
-      }
-      // kaons
-      else if (pdgCode == 321) {
-        histReg.fill(HIST("MC/321"), track.pt());
-      } else if (pdgCode == -321) {
-        histReg.fill(HIST("MC/0321"), track.pt());
-      }
-      // electrons
-      else if (pdgCode == 11) {
-        histReg.fill(HIST("MC/11"), track.pt());
-        ;
-      } else if (pdgCode == -11) {
-        histReg.fill(HIST("MC/011"), track.pt());
-      }
-      // muons
-      else if (pdgCode == 13) {
-        histReg.fill(HIST("MC/13"), track.pt());
-      } else if (pdgCode == -13) {
-        histReg.fill(HIST("MC/013"), track.pt());
-      } else {
-        histReg.fill(HIST("MC/else"), track.pt());
-      }
+      fillMcHistos(track, pdgCode);
 
       // PID
       // indexes for particles: 0-Pi, 1-Pr, 2-Ka, 3-El, 4-Mu
@@ -526,19 +534,31 @@ struct pid {
         static_for<0, 9>([&](auto i) {
           pidExclusiveStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
         });
-      } else if (strategy.value == 4) {
-        int bayesPdg = getPdgFromPid(track);
-        static_for<0, 9>([&](auto i) {
-          pidBayes<i>(track, pdgCode, bayesPdg);
-        });
       }
     }
   }
+  PROCESS_SWITCH(EvaluatePid, process, "Process standard strategies", true);
+
+  void processBayes(pidBayesTracks const& tracks, aod::McParticles const& mcParticles)
+  {
+    for (auto& track : tracks) {
+      auto particle = track.mcParticle();
+      int pdgCode = particle.pdgCode();
+
+      fillMcHistos(track, pdgCode);
+
+      int bayesPdg = getPdgFromPid(track);
+      static_for<0, 9>([&](auto i) {
+        pidBayes<i>(track, pdgCode, bayesPdg);
+      });
+    }
+  }
+  PROCESS_SWITCH(EvaluatePid, processBayes, "Process Bayesian strategy", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<pid>(cfgc),
+    adaptAnalysisTask<EvaluatePid>(cfgc),
   };
 }
