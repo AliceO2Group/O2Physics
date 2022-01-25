@@ -370,9 +370,6 @@ inline TComplex SixGap33(const TComplex (*pQq)[AliJFFlucAnalysis::kNH][AliJFFluc
 
 //________________________________________________________________________
 void AliJFFlucAnalysis::UserExec(Option_t *) {
-	if(fCBin == -1)
-		return;
-	
 	size_t trk_number = fInputList->size();
 	fh_ntracks[fCBin]->Fill( trk_number ) ;
 	fh_cent->Fill(fCent) ;
