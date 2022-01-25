@@ -19,9 +19,10 @@
 #ifndef O2_ANALYSIS_PID_BETHEBLOCH_H_
 #define O2_ANALYSIS_PID_BETHEBLOCH_H_
 
-#include "TPCSimulation/Detector.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Common/Core/PID/ParamBase.h"
 #include "ReconstructionDataFormats/PID.h"
+#include <cmath>
 
 namespace o2::pid::tpc
 {
@@ -33,14 +34,14 @@ class BetheBloch : public Parametrization
   ~BetheBloch() override = default;
   float operator()(const float* x) const override
   {
-    return mParameters[5] * o2::tpc::Detector::BetheBlochAleph(x[0], mParameters[0], mParameters[1], mParameters[2], mParameters[3], mParameters[4]) * TMath::Power(x[1], mParameters[6]);
+    return mParameters[5] * o2::tpc::BetheBlochAleph(x[0], mParameters[0], mParameters[1], mParameters[2], mParameters[3], mParameters[4]) * std::pow(x[1], mParameters[6]);
   }
   ClassDef(BetheBloch, 1);
 };
 
 float BetheBlochParam(const float& momentum, const float& mass, const float& charge, const Parameters& parameters)
 {
-  return parameters[5] * o2::tpc::Detector::BetheBlochAleph(momentum / mass, parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]) * pow(charge, parameters[6]);
+  return parameters[5] * o2::tpc::BetheBlochAleph(momentum / mass, parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]) * std::pow(charge, parameters[6]);
 }
 
 template <o2::track::PID::ID id, typename T>
