@@ -295,7 +295,7 @@ struct pidml {
     }
   }
 
-  int getParticlePdg(const int pidLogits[])
+  int getParticlePdg(float pidLogits[])
   {
     // index of the biggest value in an array
     int index = 0;
