@@ -244,6 +244,7 @@ int main(int argc, char* argv[])
 
           auto entries = inputTree->GetEntries();
           int minIndexOffset = unassignedIndexOffset[treeName];
+          auto newMinIndexOffset = minIndexOffset;
           for (int i = 0; i < entries; i++) {
             inputTree->GetEntry(i);
             // shift index columns by offset
@@ -251,6 +252,7 @@ int main(int argc, char* argv[])
               // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
               if (*(idx.first) < 0) {
                 *(idx.first) += minIndexOffset;
+                newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
               } else {
                 *(idx.first) += idx.second;
               }
@@ -260,7 +262,7 @@ int main(int argc, char* argv[])
               currentDirSize += nbytes;
             }
           }
-          unassignedIndexOffset[treeName] -= 1;
+          unassignedIndexOffset[treeName] = newMinIndexOffset;
 
           delete inputTree;
 
