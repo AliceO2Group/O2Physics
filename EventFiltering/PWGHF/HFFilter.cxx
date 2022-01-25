@@ -278,7 +278,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for ML application with ONNX
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
-  Configurable<std::string> onnxFile2ProngConf{"onnxFile2ProngConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220119/PWGHF/o2/trigger/XGBoostModel_D0ToKPi.onnx", "ONNX file for ML model for charm 2-prong candidates"};
+  Configurable<std::string> onnxFile2ProngConf{"onnxFile2ProngConf", "/cvmfs/alice.cern.ch/data/analysis/2022/vAN-20220124/PWGHF/o2/trigger/XGBoostModel_D0ToKPi.onnx", "ONNX file for ML model for charm 2-prong candidates"};
   Configurable<float> thresholdBkgScore2Prong{"thresholdBkgScore2Prong", 0.4, "Threshold value for BDT output score on background candidates"};
   Configurable<float> thresholdPromptScore2Prong{"thresholdPromptScore2Prong", 0.5, "Threshold value for BDT output score on prompt candidates"};
   Configurable<float> thresholdNonpromptScore2Prong{"thresholdNonpromptScore2Prong", 0.1, "Threshold value for BDT output score on nonprompt candidates"};
@@ -290,8 +290,8 @@ struct HfFilter { // Main struct for HF triggers
   std::shared_ptr<TH1> hN2ProngCharmCand, hN3ProngCharmCand;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmHighPt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
-  std::array<std::shared_ptr<TH1>, kNBeautyParticles> hMassB{};
-  std::array<std::shared_ptr<TH1>, kNCharmParticles + 1> hMassC{};
+  std::array<std::shared_ptr<TH2>, kNBeautyParticles> hMassVsPtB{};
+  std::array<std::shared_ptr<TH2>, kNCharmParticles + 1> hMassVsPtC{};
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
@@ -322,16 +322,16 @@ struct HfFilter { // Main struct for HF triggers
       for (int iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         hCharmHighPt[iCharmPart] = registry.add<TH1>(Form("f%sHighPt", charmParticleNames[iCharmPart].data()), Form("#it{p}_{T} distribution of triggered high-#it{p}_{T} %s candidates;#it{p}_{T} (GeV/#it{c});counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 50.}});
         hCharmProtonKstarDistr[iCharmPart] = registry.add<TH1>(Form("f%sProtonKstarDistr", charmParticleNames[iCharmPart].data()), Form("#it{k}* distribution of triggered p#minus%s pairs;#it{k}* (GeV/#it{c});counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
-        hMassC[iCharmPart] = registry.add<TH1>(Form("fMass%s", charmParticleNames[iCharmPart].data()), Form("#it{M} distribution of triggered %s candidates;#it{M} (GeV/#it{c}^{2});counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{300, 1.60, 2.60}});
+        hMassVsPtC[iCharmPart] = registry.add<TH2>(Form("fMassVsPt%s", charmParticleNames[iCharmPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", charmParticleNames[iCharmPart].data()), HistType::kTH2F, {{100, 0., 50.}, {300, 1.60, 2.60}});
         if (applyML) {
           hBDTScoreBkg[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT background score distribution for %s;BDT background score;counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
           hBDTScorePrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScorePromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT prompt score distribution for %s;BDT prompt score;counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
           hBDTScoreNonPrompt[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreNonPromptDistr", charmParticleNames[iCharmPart].data()), Form("BDT nonprompt score distribution for %s;BDT nonprompt score;counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {{100, 0., 1.}});
         }
       }
-      hMassC[kNCharmParticles] = registry.add<TH1>("fMassDStar", "#it{M} distribution of triggered DStar candidates;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH1F, {{300, 1.60, 2.60}});
+      hMassVsPtC[kNCharmParticles] = registry.add<TH2>("fMassVsPtDStar", "#it{M} vs. #it{p}_{T} distribution of triggered DStar candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {{100, 0., 50.}, {300, 1.60, 2.60}});
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
-        hMassB[iBeautyPart] = registry.add<TH1>(Form("fMass%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} distribution of triggered %s candidates;#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH1F, {{220, 4.9, 6.0}});
+        hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {{100, 0., 50.}, {220, 4.9, 6.0}});
       }
       hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
       hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {{100, 0., 10.}, {200, -10., 10.}});
@@ -424,16 +424,17 @@ struct HfFilter { // Main struct for HF triggers
   /// Basic additional selection of D0 candidates
   /// \param pTrackPos is the positive track momentum
   /// \param pTrackNeg is the negative track momentum
+  /// \param ptD is the pt of the D0 meson candidate
   /// \return 1 for D0, 2 for D0bar, 3 for both
   template <typename T>
-  int isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg)
+  int isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD)
   {
     auto invMassD0 = RecoDecay::M(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
     auto invMassD0bar = RecoDecay::M(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
 
     if (activateQA) {
-      hMassC[kD0]->Fill(invMassD0);
-      hMassC[kD0]->Fill(invMassD0bar);
+      hMassVsPtC[kD0]->Fill(ptD, invMassD0);
+      hMassVsPtC[kD0]->Fill(ptD, invMassD0bar);
     }
 
     int retValue = 0;
@@ -447,17 +448,18 @@ struct HfFilter { // Main struct for HF triggers
     return retValue;
   }
 
-  /// Basic additional selection of D0 candidates
+  /// Basic additional selection of D+ candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeFirst is the second same-charge track momentum
   /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param ptD is the pt of the D+ meson candidate
   /// \return true for D+
   template <typename T>
-  bool isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge)
+  bool isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
     auto invMassDplus = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
     if (activateQA) {
-      hMassC[kDplus]->Fill(invMassDplus);
+      hMassVsPtC[kDplus]->Fill(ptD, invMassDplus);
     }
 
     if (std::abs(invMassDplus - massDPlus) > 0.04) {
@@ -467,13 +469,14 @@ struct HfFilter { // Main struct for HF triggers
     return true;
   }
 
-  /// Basic additional selection of D0 candidates
+  /// Basic additional selection of Ds candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeFirst is the second same-charge track momentum
   /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param ptD is the pt of the Ds meson candidate
   /// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
   template <typename T>
-  int isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge)
+  int isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
     auto invMassKKFirst = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
     auto invMassKKSecond = RecoDecay::M(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
@@ -482,8 +485,8 @@ struct HfFilter { // Main struct for HF triggers
     auto invMassDsToPiKK = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
 
     if (activateQA) {
-      hMassC[kDs]->Fill(invMassDsToKKPi);
-      hMassC[kDs]->Fill(invMassDsToPiKK);
+      hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
+      hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
     }
 
     int retValue = 0;
@@ -503,20 +506,21 @@ struct HfFilter { // Main struct for HF triggers
     return retValue;
   }
 
-  /// Basic additional selection of D0 candidates
+  /// Basic additional selection of Lc candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeFirst is the second same-charge track momentum
   /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param ptLc is the pt of the D0 meson candidate
   /// \return 1 for pKpi, 2 for piKp, 3 for both
   template <typename T>
-  int isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge)
+  int isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc)
   {
     auto invMassLcToPKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     auto invMassLcToPiKP = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
 
     if (activateQA) {
-      hMassC[kLc]->Fill(invMassLcToPKPi);
-      hMassC[kLc]->Fill(invMassLcToPiKP);
+      hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPKPi);
+      hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPiKP);
     }
 
     int retValue = 0;
@@ -530,20 +534,21 @@ struct HfFilter { // Main struct for HF triggers
     return retValue;
   }
 
-  /// Basic additional selection of D0 candidates
+  /// Basic additional selection of Xic candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeFirst is the second same-charge track momentum
   /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param ptXic is the pt of the D0 meson candidate
   /// \return 1 for pKpi, 2 for piKp, 3 for both
   template <typename T>
-  int isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge)
+  int isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic)
   {
     auto invMassXicToPKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     auto invMassXicToPiKP = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
 
     if (activateQA) {
-      hMassC[kXic]->Fill(invMassXicToPKPi);
-      hMassC[kXic]->Fill(invMassXicToPiKP);
+      hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPKPi);
+      hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPiKP);
     }
 
     int retValue = 0;
@@ -613,7 +618,7 @@ struct HfFilter { // Main struct for HF triggers
       // apply ML models
       if (applyML) {
         // TODO: add more feature configurations
-        std::vector<float> inputFeatures2P{trackPos.pt(), trackPos.dcaXY(), trackNeg.dcaXY(), trackNeg.pt(), trackPos.dcaZ(), trackNeg.dcaZ()}; //FIXME: order of variables once new model uploaded
+        std::vector<float> inputFeatures2P{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
         std::vector<Ort::Value> inputTensor2P;
         inputTensor2P.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures2P.data(), inputFeatures2P.size(), inputShapesML2P[0]));
 
@@ -650,10 +655,11 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      auto selD0 = isSelectedD0InMassRange(pVecPos, pVecNeg);
-
       auto pVec2Prong = RecoDecay::PVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::Pt(pVec2Prong);
+
+      auto selD0 = isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong);
+
       if (pt2Prong >= pTThreshold2Prong) {
         keepEvent[kHighPt] = true;
         if (activateQA) {
@@ -676,14 +682,16 @@ struct HfFilter { // Main struct for HF triggers
         if (!keepEvent[kBeauty] && isBeautyTagged) {
           if (isSelectedTrackForBeauty(track, kBeauty3Prong) && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0))) {
             auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
+            auto pVecBeauty3Prong = RecoDecay::PVec(pVec2Prong, pVecThird);
+            auto ptCand = RecoDecay::Pt(pVecBeauty3Prong);
             if (std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
               if (activateQA) {
-                hMassB[kBplus]->Fill(massCand);
+                hMassVsPtB[kBplus]->Fill(ptCand, massCand);
               }
             } else if (std::abs(massCand - massDStar) <= deltaMassDStar) { // additional check for B0->D*pi polarization studies
               if (activateQA) {
-                hMassC[kNCharmParticles]->Fill(massCand);
+                hMassVsPtC[kNCharmParticles]->Fill(ptCand, massCand);
               }
               for (const auto& trackB : tracks) { // start loop over tracks
                 if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong)) {
@@ -692,7 +700,9 @@ struct HfFilter { // Main struct for HF triggers
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
                     keepEvent[kBeauty] = true;
                     if (activateQA) {
-                      hMassB[kB0toDStar]->Fill(massCandB0);
+                      auto pVecBeauty4Prong = RecoDecay::PVec(pVec2Prong, pVecThird, pVecFourth);
+                      auto ptCandBeauty4Prong = RecoDecay::Pt(pVecBeauty4Prong);
+                      hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
                     }
                   }
                 }
@@ -735,23 +745,6 @@ struct HfFilter { // Main struct for HF triggers
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
       std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
 
-      bool isDPlusInMass = false;
-      int isDsInMass = 0;
-      int isLcInMass = 0;
-      int isXicInMass = 0;
-      if (isDPlus) {
-        isDPlusInMass = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond);
-      }
-      if (isDs) {
-        isDsInMass = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond);
-      }
-      if (isLc) {
-        isLcInMass = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond);
-      }
-      if (isXic) {
-        isXicInMass = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond);
-      }
-
       float sign3Prong = trackFirst.signed1Pt() * trackSecond.signed1Pt() * trackThird.signed1Pt();
 
       // TODO: add ML selections here
@@ -759,6 +752,24 @@ struct HfFilter { // Main struct for HF triggers
 
       auto pVec3Prong = RecoDecay::PVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::Pt(pVec3Prong);
+
+      bool isDPlusInMass = false;
+      int isDsInMass = 0;
+      int isLcInMass = 0;
+      int isXicInMass = 0;
+      if (isDPlus) {
+        isDPlusInMass = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+      }
+      if (isDs) {
+        isDsInMass = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+      }
+      if (isLc) {
+        isLcInMass = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+      }
+      if (isXic) {
+        isXicInMass = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+      }
+
       if (pt3Prong >= pTThreshold3Prong) {
         keepEvent[kHighPt] = true;
         if (activateQA) {
@@ -797,7 +808,9 @@ struct HfFilter { // Main struct for HF triggers
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
                 if (activateQA) {
-                  hMassB[iHypo + 2]->Fill(massCandB);
+                  auto pVecBeauty4Prong = RecoDecay::PVec(pVec3Prong, pVecFourth);
+                  auto ptCandBeauty4Prong = RecoDecay::Pt(pVecBeauty4Prong);
+                  hMassVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, massCandB);
                 }
               }
             }
