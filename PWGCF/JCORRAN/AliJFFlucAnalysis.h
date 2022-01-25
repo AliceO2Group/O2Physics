@@ -34,7 +34,6 @@ public:
 	
 	void SetInputList(std::vector<PtEtaPhiEVector> *_fInputList){fInputList = _fInputList;}
 	//void SetInputList(TClonesArray *inputarray){fInputList = inputarray;}
-	//TClonesArray * GetInputList() const{return fInputList;}
 	void SetEventCentralityAndBin( float cent, UInt_t cbin ){
 		fCent = cent;
 		fCBin = cbin;
@@ -43,14 +42,18 @@ public:
 	void SetEventImpactParameter( float ip ){ fImpactParameter = ip; }
 	void SetEventVertex( const double *vtx ){ fVertex = vtx; }
 
-	void SetEtaRange( double eta_min, double eta_max){fEta_min = eta_min; fEta_max = eta_max; }
-	/*void SetQCEtaCut( Double_t QC_eta_cut_min, Double_t QC_eta_cut_max){
-		fQC_eta_cut_min = QC_eta_cut_min;
-		fQC_eta_cut_max = QC_eta_cut_max;
-		std::cout<<"setting eta range for QC" << fQC_eta_cut_min << "~" << fQC_eta_cut_max << std::endl;
-	}*/
-	void SetEventTracksQA(unsigned int tpc, unsigned int glb){ fTPCtrks = (float)tpc; fGlbtrks = (float)glb;}
-	void SetEventFB32TracksQA(unsigned int fb32, unsigned int fb32tof){ fFB32trks = (float)fb32; fFB32TOFtrks = (float)fb32tof;}
+	void SetEtaRange( double eta_min, double eta_max){
+		fEta_min = eta_min;
+		fEta_max = eta_max;
+	}
+	void SetEventTracksQA(unsigned int tpc, unsigned int glb){
+		fTPCtrks = (float)tpc;
+		fGlbtrks = (float)glb;
+	}
+	void SetEventFB32TracksQA(unsigned int fb32, unsigned int fb32tof){
+		fFB32trks = (float)fb32;
+		fFB32TOFtrks = (float)fb32tof;
+	}
 	
 	void Fill_QA_plot(double eta1, double eta2 );
 
@@ -67,22 +70,10 @@ public:
 	void SelectSubevents(UInt_t _subeventMask){
 		subeventMask = _subeventMask;
 	}
-	/*enum BINNING{
-		BINNING_CENT_PbPb,
-		BINNING_MULT_PbPb_1,
-		BINNING_MULT_pPb_1
-	};
-	void SetBinning(BINNING _binning){
-		binning = _binning;
-	}*/
 	//set the number of bins before initialization (UserCreateOutputObjects)
 	void SetNumBins(UInt_t _numBins){
 		numBins = _numBins;
 	}
-	//set bin id before every event
-	/*void SetEventBin(UInt_t _bin){
-		bin = _bin;
-	}*/
 	enum{
 		FLUC_PHI_CORRECTION = 0x2,
 		FLUC_EBE_WEIGHTING = 0x4
@@ -96,10 +87,8 @@ public:
 	static Double_t MultBin_pPb_1[][2];
 	static Double_t (*pBin[3])[2];*/
 	static Double_t pttJacek[74];
-	//static UInt_t NBin[3];
 	static UInt_t NpttJacek;
 
-	//static int GetBin(Double_t, BINNING);
 	enum{kH0, kH1, kH2, kH3, kH4, kH5, kH6, kH7, kH8, kH9, kH10, kH11, kH12, kNH}; //harmonics
 	enum{kK0, kK1, kK2, kK3, kK4, nKL}; // order
 #define kcNH kH6 //max second dimension + 1
@@ -183,7 +172,7 @@ private:
 	//AliJTH1D fh_QvectorQCphi;//!
 	AliJTH1D fh_evt_SP_QC_ratio_2p;//! // check SP QC evt by evt ratio
 	AliJTH1D fh_evt_SP_QC_ratio_4p;//! // check SP QC evt by evt ratio
-	//ClassDef(AliJFFlucAnalysis, 1); // example of analysis
+	//ClassDef(AliJFFlucAnalysis, 1);
 };
 
 #endif
