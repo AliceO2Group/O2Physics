@@ -331,9 +331,10 @@ struct pidml {
       }
     }
   }
+  
   Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
-  Configurable<std::string> cfgModelDir{"model-dir", "/home/lsawicki/inz/PID/ONNX_models/", "base path to the directory with ONNX models"};
-  Configurable<std::string> cfgScalingParamsFile{"scaling-params", "/home/lsawicki/inz/PID/ONNX_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
+  Configurable<std::string> cfgModelDir{"model-dir", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models", "base path to the directory with ONNX models"};
+  Configurable<std::string> cfgScalingParamsFile{"scaling-params", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
 
   PidONNXModel model211 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, cfgUseTOF.value);
   PidONNXModel model2212 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, cfgUseTOF.value);
