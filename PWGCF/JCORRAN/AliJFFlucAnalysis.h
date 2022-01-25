@@ -35,28 +35,24 @@ public:
 	void SetInputList(std::vector<PtEtaPhiEVector> *_fInputList){fInputList = _fInputList;}
 	//void SetInputList(TClonesArray *inputarray){fInputList = inputarray;}
 	//TClonesArray * GetInputList() const{return fInputList;}
-	void SetEventCentrality( float cent ){fCent = cent;}
+	void SetEventCentralityAndBin( float cent, UInt_t cbin ){
+		fCent = cent;
+		fCBin = cbin;
+	}
 	float GetEventCentrality() const{return fCent;}
 	void SetEventImpactParameter( float ip ){ fImpactParameter = ip; }
 	void SetEventVertex( const double *vtx ){ fVertex = vtx; }
-	//void SetIsPhiModule( Bool_t isphi ){//{ IsPhiModule = isphi ; }
-	//void SetPhiModuleHistos( int cent, int sub, TH1D *hModuledPhi);
 
 	void SetEtaRange( double eta_min, double eta_max){fEta_min = eta_min; fEta_max = eta_max; }
-	void SetQCEtaCut( Double_t QC_eta_cut_min, Double_t QC_eta_cut_max){
+	/*void SetQCEtaCut( Double_t QC_eta_cut_min, Double_t QC_eta_cut_max){
 		fQC_eta_cut_min = QC_eta_cut_min;
 		fQC_eta_cut_max = QC_eta_cut_max;
 		std::cout<<"setting eta range for QC" << fQC_eta_cut_min << "~" << fQC_eta_cut_max << std::endl;
-	}
+	}*/
 	void SetEventTracksQA(unsigned int tpc, unsigned int glb){ fTPCtrks = (float)tpc; fGlbtrks = (float)glb;}
 	void SetEventFB32TracksQA(unsigned int fb32, unsigned int fb32tof){ fFB32trks = (float)fb32; fFB32TOFtrks = (float)fb32tof;}
 	
-	//TComplex CalculateQnSP( double eta1, double eta2, int harmonics);
-
 	void Fill_QA_plot(double eta1, double eta2 );
-
-	double Get_ScaledMoments( int k, int harmonics);
-	//AliJEfficiency* GetAliJEfficiency() const{return fEfficiency;}
 
 	// new function for QC method //
 	void CalculateQvectorsQC(double, double);
@@ -71,36 +67,39 @@ public:
 	void SelectSubevents(UInt_t _subeventMask){
 		subeventMask = _subeventMask;
 	}
-	enum BINNING{
+	/*enum BINNING{
 		BINNING_CENT_PbPb,
 		BINNING_MULT_PbPb_1,
 		BINNING_MULT_pPb_1
 	};
 	void SetBinning(BINNING _binning){
 		binning = _binning;
+	}*/
+	//set the number of bins before initialization (UserCreateOutputObjects)
+	void SetNumBins(UInt_t _numBins){
+		numBins = _numBins;
 	}
+	//set bin id before every event
+	/*void SetEventBin(UInt_t _bin){
+		bin = _bin;
+	}*/
 	enum{
 		FLUC_PHI_CORRECTION = 0x2,
 		FLUC_EBE_WEIGHTING = 0x4
 	};
-	void AddFlags(UInt_t nflags){
-		flags |= nflags;
+	void AddFlags(UInt_t _flags){
+		flags |= _flags;
 	}
 
-	static Double_t CentBin_PbPb_default[][2];
+	/*static Double_t CentBin_PbPb_default[][2];
 	static Double_t MultBin_PbPb_1[][2];
 	static Double_t MultBin_pPb_1[][2];
-	static Double_t (*pBin[3])[2];
+	static Double_t (*pBin[3])[2];*/
 	static Double_t pttJacek[74];
-	//static UInt_t CentralityTranslationMap[CENTN_NAT];
-	//static UInt_t NCentBin;
-	static UInt_t NBin[3];
+	//static UInt_t NBin[3];
 	static UInt_t NpttJacek;
 
-	//static int GetCentralityClass(Double_t);
-	//static int GetMultiplicityBin(Double_t, BINNING);
-	static int GetBin(Double_t, BINNING);
-
+	//static int GetBin(Double_t, BINNING);
 	enum{kH0, kH1, kH2, kH3, kH4, kH5, kH6, kH7, kH8, kH9, kH10, kH11, kH12, kNH}; //harmonics
 	enum{kK0, kK1, kK2, kK3, kK4, nKL}; // order
 #define kcNH kH6 //max second dimension + 1
@@ -110,28 +109,20 @@ private:
 	//TClonesArray *fInputList;
 	//AliJEfficiency *fEfficiency;
 	const Double_t *fVertex;//!
-	//TH1 *pPhiWeights;//!
-	//TF3 *pPhiWeightsAna;//!
 	Float_t	fCent;
 	Float_t	fImpactParameter;
-	int fCBin;
-	//int fEffMode;
-	//int fEffFilterBit;
+	UInt_t fCBin;
 	float fTPCtrks;
 	float fGlbtrks;
 	float fFB32trks;
 	float fFB32TOFtrks;
 	UInt_t subeventMask;
-	BINNING binning;
+	UInt_t numBins; //total number of bins
 	UInt_t flags;
 
 	double fEta_min;
 	double fEta_max;
-	double NSubTracks[2];
-
-	Double_t fQC_eta_cut_min;
-	Double_t fQC_eta_cut_max;
-	Double_t fQC_eta_gap_half;
+	//double NSubTracks[2];
 
 	TComplex QvectorQC[kNH][nKL];
 	TComplex QvectorQCeta10[2][kNH][nKL]; // ksub
