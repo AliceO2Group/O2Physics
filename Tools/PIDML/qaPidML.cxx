@@ -28,26 +28,26 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct pidml {
-    static const int maxP = 5;
-    // nb of bins for TH1 hists
-    static const int binsNb = 100;
-    // nb of bins for TH2 hists
-    static const int binsNb2D = 1000;
-    static const int numParticles = 3;
+  static const int maxP = 5;
+  // nb of bins for TH1 hists
+  static const int binsNb = 100;
+  // nb of bins for TH2 hists
+  static const int binsNb2D = 1000;
+  static const int numParticles = 3;
 
-    static constexpr std::string_view pidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321"};
-    static constexpr std::string_view pidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321"};
+  static constexpr std::string_view pidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321"};
+  static constexpr std::string_view pidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321"};
 
-    static constexpr std::string_view TPCPidTrueRegistryNames[numParticles] = {"TPCPidTrue/211", "TPCPidTrue/2212", "TPCPidTrue/321"};
-    static constexpr std::string_view TPCPidFalseRegistryNames[numParticles] = {"TPCPidFalse/211", "TPCPidFalse/2212", "TPCPidFalse/321"};
+  static constexpr std::string_view TPCPidTrueRegistryNames[numParticles] = {"TPCPidTrue/211", "TPCPidTrue/2212", "TPCPidTrue/321"};
+  static constexpr std::string_view TPCPidFalseRegistryNames[numParticles] = {"TPCPidFalse/211", "TPCPidFalse/2212", "TPCPidFalse/321"};
 
-    static constexpr std::string_view TOFPidTrueRegistryNames[numParticles] = {"TOFPidTrue/211", "TOFPidTrue/2212", "TOFPidTrue/321"};
-    static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321"};
+  static constexpr std::string_view TOFPidTrueRegistryNames[numParticles] = {"TOFPidTrue/211", "TOFPidTrue/2212", "TOFPidTrue/321"};
+  static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321"};
 
-    // available particles: 211, 2212, 321
-    static constexpr int particlesPdgCode[numParticles] = {211, 2212, 321};
+  // available particles: 211, 2212, 321
+  static constexpr int particlesPdgCode[numParticles] = {211, 2212, 321};
 
-    HistogramRegistry histReg{
+  HistogramRegistry histReg{
     "allHistograms",
     {{"MC/211", "MC #pi^{+};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
      {"MC/11", "MC e^{-};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{binsNb, 0, maxP}}}},
@@ -237,7 +237,66 @@ struct pidml {
     }
   }
 
-  int pidParticle(const int pidLogits[]) {
+  template <typename T>
+  void fillMcHistos(const T& track, const int pdgCode)
+  {
+    // pions
+    if (pdgCode == 211) {
+      histReg.fill(HIST("MC/211"), track.pt());
+    } else if (pdgCode == -211) {
+      histReg.fill(HIST("MC/0211"), track.pt());
+    }
+    // protons
+    else if (pdgCode == 2212) {
+      histReg.fill(HIST("MC/2212"), track.pt());
+    } else if (pdgCode == -2212) {
+      histReg.fill(HIST("MC/02212"), track.pt());
+    }
+    // kaons
+    else if (pdgCode == 321) {
+      histReg.fill(HIST("MC/321"), track.pt());
+    } else if (pdgCode == -321) {
+      histReg.fill(HIST("MC/0321"), track.pt());
+    }
+    // electrons
+    else if (pdgCode == 11) {
+      histReg.fill(HIST("MC/11"), track.pt());
+    } else if (pdgCode == -11) {
+      histReg.fill(HIST("MC/011"), track.pt());
+    }
+    // muons
+    else if (pdgCode == 13) {
+      histReg.fill(HIST("MC/13"), track.pt());
+    } else if (pdgCode == -13) {
+      histReg.fill(HIST("MC/013"), track.pt());
+    } else {
+      histReg.fill(HIST("MC/else"), track.pt());
+    }
+  }
+
+  template <std::size_t i, typename T>
+  void fillPidHistos(const T& track, const int pdgCode, bool isPidTrue)
+  {
+    if (isPidTrue) {
+      histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
+      histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
+      histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+    } else {
+      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
+      histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
+      histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
+
+      double pt = track.pt();
+      fillContaminationRegistry(i, pdgCode, pt);
+    }
+  }
+
+  int pidParticle(const int pidLogits[])
+  {
     // index of the biggest value in an array
     int index = 0;
     // index of the second biggest value in an array
@@ -264,88 +323,36 @@ struct pidml {
   {
     int pidLogits[3] = {model211.applyModel(track), model2212.applyModel(track), model321.applyModel(track)};
     int pid = pidParticle(pidLogits);
-    if (pid == particlesPdgCode[i]){
+    if (pid == particlesPdgCode[i]) {
       if (pdgCodeMC == particlesPdgCode[i]) {
-        histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-        histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-        histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
-        histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-        histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
+        fillPidHistos<i>(track, pdgCodeMC, true);
       } else {
-        histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
-        histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
-        histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
-        histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
-        histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
-
-        double pt = track.pt();
-        fillContaminationRegistry(i, pdgCodeMC, pt);
+        fillPidHistos<i>(track, pdgCodeMC, false);
       }
     }
   }
+  Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
+  Configurable<std::string> cfgModelDir{"model-dir", "/home/lsawicki/inz/PID/ONNX_models/", "base path to the directory with ONNX models"};
+  Configurable<std::string> cfgScalingParamsFile{"scaling-params", "/home/lsawicki/inz/PID/ONNX_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
 
-    // prepare ML models for analysis, one instance per particle to predict
-    // std::vector <PidONNXModel&> pidModels;
-
-    Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
-    Configurable<std::string> cfgModelDir{"model-dir", "/home/lsawicki/inz/PID/ONNX_models/", "base path to the directory with ONNX models"};
-    Configurable<std::string> cfgScalingParamsFile{"scaling-params", "/home/lsawicki/inz/PID/ONNX_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
-
-    PidONNXModel model211 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, cfgUseTOF.value);
-    PidONNXModel model2212 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, cfgUseTOF.value);
-    PidONNXModel model321 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, cfgUseTOF.value);
-
-
-    void init(InitContext const&) {
-        // for (auto& particlePdg : particlesPdgCode) {
-            // pidModels.push_back(PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, particlePdg, cfgUseTOF.value));
-        // }
-    }
+  PidONNXModel model211 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, cfgUseTOF.value);
+  PidONNXModel model2212 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, cfgUseTOF.value);
+  PidONNXModel model321 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, cfgUseTOF.value);
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
-  
-  void process(pidTracks const& tracks, aod::McParticles const& mcParticles) {
+
+  void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
+  {
     for (auto& track : tracks) {
       auto particle = track.mcParticle();
       int pdgCodeMC = particle.pdgCode();
 
-      // fill MC histogram
-      // pions
-      if (pdgCodeMC == 211) {
-        histReg.fill(HIST("MC/211"), track.pt());
-      } else if (pdgCodeMC == -211) {
-        histReg.fill(HIST("MC/0211"), track.pt());
-      }
-      // protons
-      else if (pdgCodeMC == 2212) {
-        histReg.fill(HIST("MC/2212"), track.pt());
-      } else if (pdgCodeMC == -2212) {
-        histReg.fill(HIST("MC/02212"), track.pt());
-      }
-      // kaons
-      else if (pdgCodeMC == 321) {
-        histReg.fill(HIST("MC/321"), track.pt());
-      } else if (pdgCodeMC == -321) {
-        histReg.fill(HIST("MC/0321"), track.pt());
-      }
-      // electrons
-      else if (pdgCodeMC == 11) {
-        histReg.fill(HIST("MC/11"), track.pt());
-      } else if (pdgCodeMC == -11) {
-        histReg.fill(HIST("MC/011"), track.pt());
-      }
-      // muons
-      else if (pdgCodeMC == 13) {
-        histReg.fill(HIST("MC/13"), track.pt());
-      } else if (pdgCodeMC == -13) {
-        histReg.fill(HIST("MC/013"), track.pt());
-      } else {
-        histReg.fill(HIST("MC/else"), track.pt());
-      }
+      fillMcHistos(track, pdgCodeMC);
 
+      // only 3 particles can be predicted by model
       static_for<0, 2>([&](auto i) {
-          pidML<i>(track, pdgCodeMC);
+        pidML<i>(track, pdgCodeMC);
       });
     }
   }
