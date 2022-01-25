@@ -88,10 +88,10 @@ struct EvaluatePid {
       }
 
       if (pdgCode == 2212) {
-        histReg.fill(HIST("contamination/2212in221"), pt);
+        histReg.fill(HIST("contamination/2212in2212"), pt);
       }
       if (pdgCode == -2212) {
-        histReg.fill(HIST("contamination/02212in221"), pt);
+        histReg.fill(HIST("contamination/02212in2212"), pt);
       }
 
       if (pdgCode == 321) {
