@@ -60,14 +60,17 @@ public:
 
 	TH1D *pcentFlatteningMap = 0;
 	TList *pnuaMapList = 0;
-	//int collisionId;
 
 	Produces<aod::ParticleTrack> particleTrack;
 	Produces<aod::CollisionData> collisionData;
 
-	//XXX this will be virtual
 	Int_t GetCentBin(Double_t cent){
-		return 0;
+		for(Int_t i = 1, bins = sizeof(jflucCentBins)/sizeof(jflucCentBins[0]);
+			i < bins; ++i){
+			if(cent < jflucCentBins[i])
+				return i-1;
+		}
+		return -1;
 	}
 
 	void init(InitContext const &ic){
@@ -77,7 +80,7 @@ public:
 		ccdb->setCaching(true);
 		ccdb->setCreatedNotAfter(nolaterthan.value);
 
-		gRandom->SetSeed(15122022);
+		gRandom->SetSeed(15122022); //for centrality flattening
 
 		if(!mapCentFlattening.value.empty()){
 			pcentFlatteningMap = ccdb->getForTimeStamp<TH1D>(mapCentFlattening.value,nolaterthan.value);
@@ -91,8 +94,6 @@ public:
 				LOGF(info,"NUA correction enabled. Loaded %s.",mapNUACorrection.value.c_str());
 			else LOGF(info,"Failed to load NUA correction catalog %s. Correction will be disabled.",mapNUACorrection.value.c_str());
 		}
-
-		//collisionId = 0;
 	}
 
 	//void process(aod::Collision const& collision, aod::Tracks const& tracks){
@@ -102,8 +103,12 @@ public:
 			collision.centRun2CL0(),
 			collision.centRun2CL1()
 		};
-		collisionData(collision.globalIndex(),cent[centEst]);
+		Int_t cbin = GetCentBin(cent[centEst]);
 
+		collisionData(collision.globalIndex(),cent[centEst],cbin);
+
+		if(cbin < 0)
+			return;
 		if(!collision.alias()[kINT7] || !collision.sel7())
 			return;
 		if(std::abs(collision.posZ()) > zvertex)
@@ -162,10 +167,6 @@ public:
 				return;
 		}
 
-		Int_t cbin = GetCentBin(cent[centEst]);
-		if(cbin < 0)
-			return;
-
 		auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 		TH1 *pweightMap = pnuaMapList?
 			(TH1*)pnuaMapList->FindObject(Form("PhiWeights_%u_%02u",bc.runNumber(),cbin)):0;
@@ -198,7 +199,6 @@ public:
 			particleTrack(track.collisionId(),pt,eta,phi,phiWeight,1.0f);
 			//particleTrack(pt,eta,phi,phiWeight,1.0f);
 		}
-		//++collisionId;
 		//LOGF(info,"event %u processed with %u tracks.",collisionId,tracks.size());
 	}
 
