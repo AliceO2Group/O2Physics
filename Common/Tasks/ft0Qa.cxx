@@ -77,7 +77,7 @@ struct FT0Qa {
             sumAmpFV0 += fv0.amplitude()[ich];
           }
         }
-        if (sumAmpFV0>0 && sumAmpFT0>0 ) {
+        if (sumAmpFV0 > 0 && sumAmpFT0 > 0) {
           hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
           LOG(debug) << "V0 amp  " << sumAmpFV0 << " T0 amp " << sumAmpFT0;
         }
@@ -86,8 +86,8 @@ struct FT0Qa {
           hNcontribC->Fill(nContrib);
         }
         if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
-          LOGF(debug, "multV0A=%f;  multT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ColTime=%f", col.multV0A(), col.multT0A(), col.posZ(),  ft0.posZ(),col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
-          hT0AC->Fill( col.t0AC());
+          LOGF(debug, "multV0A=%f;  multT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ColTime=%f", col.multV0A(), col.multT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
+          hT0AC->Fill(col.t0AC());
           hT0Vertex->Fill(ft0.posZ());
           hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
           hPV->Fill(col.posZ());
