@@ -295,7 +295,7 @@ struct pidml {
     }
   }
 
-  int pidParticle(const int pidLogits[])
+  int getParticlePdg(const int pidLogits[])
   {
     // index of the biggest value in an array
     int index = 0;
@@ -321,8 +321,8 @@ struct pidml {
   template <std::size_t i, typename T>
   void pidML(const T& track, const int pdgCodeMC)
   {
-    float pidLogits[3] = {int(model211.applyModel(track)), model2212.applyModel(track), model321.applyModel(track)};
-    int pid = pidParticle(pidLogits);
+    float pidLogits[3] = {model211.applyModel(track), model2212.applyModel(track), model321.applyModel(track)};
+    int pid = getParticlePdg(pidLogits);
     if (pid == particlesPdgCode[i]) {
       if (pdgCodeMC == particlesPdgCode[i]) {
         fillPidHistos<i>(track, pdgCodeMC, true);
