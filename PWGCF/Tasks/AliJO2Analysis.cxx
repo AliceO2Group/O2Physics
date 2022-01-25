@@ -13,7 +13,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "ReconstructionDataFormats/V0.h"
 
-#include "jflucCatalyst.h"
+#include "AliJO2Catalyst.h"
 #include "AliJFFlucAnalysis.h"
 
 using namespace o2;
@@ -39,7 +39,7 @@ public:
 		fInputList.reserve(2500);
 
 		pcf = new AliJFFlucAnalysis("jflucAnalysis");
-		pcf->SetBinning(AliJFFlucAnalysis::BINNING_CENT_PbPb);
+		pcf->SetNumBins(sizeof(jflucCentBins)/sizeof(jflucCentBins[0]));
 		pcf->AddFlags(AliJFFlucAnalysis::FLUC_EBE_WEIGHTING);
 
 		output->cd();
@@ -68,7 +68,7 @@ public:
 
 		pcf->Init();
 		pcf->SetInputList(&fInputList);
-		pcf->SetEventCentrality(collision.cent());
+		pcf->SetEventCentralityAndBin(collision.cent(),collision.cbin());
 		pcf->SetEventVertex(fVertex);
 		pcf->SetEtaRange(etamin,etamax);
 		pcf->UserExec("");

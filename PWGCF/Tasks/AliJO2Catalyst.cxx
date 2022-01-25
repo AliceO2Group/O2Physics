@@ -29,7 +29,7 @@
 #include <Math/LorentzVector.h>
 #include <TRandom.h>
 
-#include "jflucCatalyst.h"
+#include "AliJO2Catalyst.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,7 +42,7 @@ using namespace ROOT::Math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-class JFlucCatalyst{
+class AliJO2Catalyst{
 public:
 	O2_DEFINE_CONFIGURABLE(zvertex,double,8.0,"Accepted z-vertex range");
 	O2_DEFINE_CONFIGURABLE(ptmin,double,0.2,"Minimal pT for tracks");
@@ -206,7 +206,7 @@ public:
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc){
 	return WorkflowSpec{
-		adaptAnalysisTask<JFlucCatalyst>(cfgc)
+		adaptAnalysisTask<AliJO2Catalyst>(cfgc)
 	};
 }
 
