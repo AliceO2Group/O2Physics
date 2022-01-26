@@ -16,7 +16,7 @@ o2physics_add_dpl_workflow(central-event-filter-task
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_add_dpl_workflow(nuclei-filter
-                           SOURCES nucleiFilter.cxx
+                           SOURCES PWGLF/nucleiFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
@@ -40,18 +40,18 @@ o2physics_add_dpl_workflow(hf-filter
 
 o2physics_add_dpl_workflow(cf-threebodyfemto-filter
                             SOURCES PWGCF/CFFilter.cxx
-                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore 
+                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(je-filter
                            SOURCES PWGJE/jetFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                            COMPONENT_NAME Analysis)
-                            
+
 o2physics_add_dpl_workflow(lf-strangeness-filter
                            SOURCES PWGLF/strangenessFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)  
+                           COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mult-filter
                            SOURCES PWGMM/multFilter.cxx
