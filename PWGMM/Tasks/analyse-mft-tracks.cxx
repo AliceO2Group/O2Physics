@@ -13,6 +13,7 @@
 #include "Framework/AnalysisTask.h"
 
 #include "TDatabasePDG.h"
+#include "TVector3.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,11 +31,13 @@ struct analyseMFTTracks {
       {"TracksPhiEta_in_coll", "; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
       {"TracksPhiEta", "; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}},         //
 
-      {"TracksPhiEta_5", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #\geq 5; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
-      {"TracksPhiEta_6", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #\geq 6; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
-      {"TracksPhiEta_7", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #\geq 7; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
-      {"TracksPhiEta_8", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #\geq 8; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
-      {"TracksPhiEta_9", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #\geq 9; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+      {"TracksPhiEta_5", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #geq 5; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+      {"TracksPhiEta_6", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #geq 6; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+      {"TracksPhiEta_7", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #geq 7; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+      {"TracksPhiEta_8", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #geq 8; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+      {"TracksPhiEta_9", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #geq 9; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
+
+      {"TracksPhiEta_nclustersgt5", "#eta_{kin} versus #varphi_{kin} of MFT tracks with ncls #geq 5; #varphi; #eta; ", {HistType::kTH2F, {{600, -M_PI, M_PI}, {35, -4.5, -1.}}}}, //
 
       {"TracksEtaZvtx", "; #eta; Z_{vtx}; ", {HistType::kTH2F, {{35, -4.5, -1.}, {201, -20.1, 20.1}}}},                            //
       {"NtrkZvtx", "; N_{trk}; Z_{vtx}; ", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}},                           //
@@ -96,6 +99,8 @@ struct analyseMFTTracks {
 
   void processTracks(o2::aod::MFTTracks const& tracks)
   {
+    using namespace aod::track;
+    registry.fill<Phi, Eta>(HIST("TracksPhiEta_nclustersgt5"), tracks, nClusters >= 5);
 
     for (auto& track : tracks) {
       registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
