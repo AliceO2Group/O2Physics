@@ -332,17 +332,23 @@ struct pidml {
     }
   }
 
+  PidONNXModel model211;
+  PidONNXModel model2212;
+  PidONNXModel model321;
+
   Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
   Configurable<std::string> cfgModelDir{"model-dir", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models", "base path to the directory with ONNX models"};
   Configurable<std::string> cfgScalingParamsFile{"scaling-params", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
 
-  PidONNXModel model211 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, cfgUseTOF.value);
-  PidONNXModel model2212 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, cfgUseTOF.value);
-  PidONNXModel model321 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, cfgUseTOF.value);
+  void init(InitContext const&)
+  {
+    model211 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, cfgUseTOF.value);
+    model2212 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, cfgUseTOF.value);
+    model321 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, cfgUseTOF.value);
+  }
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
-
   void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto& track : tracks) {
