@@ -21,7 +21,7 @@ o2physics_add_dpl_workflow(validation
 
 o2physics_add_dpl_workflow(event-selection-qa
                     SOURCES eventSelectionQa.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(multiplicity-qa
@@ -37,7 +37,13 @@ o2physics_add_dpl_workflow(centrality-qa
 o2physics_add_dpl_workflow(check-data-model
                   SOURCES checkDataModel.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                  COMPONENT_NAME AnalysisTutorial)
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(orbit-range
+                  SOURCES orbitRangeTask.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+                  
 o2physics_add_dpl_workflow(ft0-qa
                     SOURCES ft0Qa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase

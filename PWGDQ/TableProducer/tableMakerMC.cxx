@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -114,7 +115,7 @@ struct TableMakerMC {
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
-  Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f && o2::aod::track::tpcSignal >= 70.0f && o2::aod::track::tpcSignal <= 100.0f && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
+  Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f;
 
   Filter muonFilter = o2::aod::fwdtrack::pt >= fConfigMuonPtLow;
 
@@ -349,6 +350,8 @@ struct TableMakerMC {
           trackFilteringTag = uint64_t(0);
           trackTempFilterMap = uint8_t(0);
           VarManager::FillTrack<TTrackFillMap>(track);
+          auto mctrack = track.mcParticle();
+          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
           if (fConfigDetailedQA) {
             fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
@@ -386,9 +389,6 @@ struct TableMakerMC {
           }
           trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
 
-          auto mctrack = track.mcParticle();
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
-
           mcflags = 0;
           i = 0;     // runs over the MC signals
           int j = 0; // runs over the track cuts
@@ -397,6 +397,7 @@ struct TableMakerMC {
             if (sig.CheckSignal(true, mcTracks, mctrack)) {
               mcflags |= (uint16_t(1) << i);
               if (fConfigDetailedQA) {
+                j = 0;
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth

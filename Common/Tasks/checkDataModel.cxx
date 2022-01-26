@@ -31,9 +31,12 @@ using namespace o2::framework::expressions;
 
 template <typename Table>
 struct LoadTable {
-  void process(Table const& tracks)
+  OutputObj<TH1F> counter{TH1F("counter", "counter", 2, 0., 2)};
+  void process(Table const& table)
   {
-    LOGF(info, "Table has %d entries", tracks.size());
+    LOGF(info, "Table has %d entries", table.size());
+    counter->Fill(0.5);
+    counter->Fill(1.5, table.size());
   }
 };
 
@@ -48,7 +51,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
       adaptAnalysisTask<LoadTable<aod::Tracks>>(cfgc, TaskName("Tracks")),
       adaptAnalysisTask<LoadTable<aod::TracksCov>>(cfgc, TaskName("TracksCov")),
-      //adaptAnalysisTask<LoadTable<aod::TracksExtra>>(cfgc, TaskName("TracksExtra")),
+      adaptAnalysisTask<LoadTable<aod::TracksExtra>>(cfgc, TaskName("TracksExtra")),
 
       adaptAnalysisTask<LoadTable<aod::FwdTracks>>(cfgc, TaskName("FwdTracks")),
       adaptAnalysisTask<LoadTable<aod::FwdTracksCov>>(cfgc, TaskName("FwdTracksCov")),
@@ -62,8 +65,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::FT0s>>(cfgc, TaskName("FT0s")),
       adaptAnalysisTask<LoadTable<aod::FDDs>>(cfgc, TaskName("FDDs")),
 
-      adaptAnalysisTask<LoadTable<aod::StoredV0s>>(cfgc, TaskName("StoredV0s")),
-      adaptAnalysisTask<LoadTable<aod::StoredCascades>>(cfgc, TaskName("StoredCascades")),
+      adaptAnalysisTask<LoadTable<aod::V0s_000>>(cfgc, TaskName("V0s_000")),
+      adaptAnalysisTask<LoadTable<aod::Cascades_000>>(cfgc, TaskName("Cascades_000")),
 
       adaptAnalysisTask<LoadTable<aod::Run2BCInfos>>(cfgc, TaskName("Run2BCInfos")),
       adaptAnalysisTask<LoadTable<aod::FV0Cs>>(cfgc, TaskName("FV0Cs")),
@@ -89,8 +92,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::FT0s>>(cfgc, TaskName("FT0s")),
       adaptAnalysisTask<LoadTable<aod::FDDs>>(cfgc, TaskName("FDDs")),
 
-      adaptAnalysisTask<LoadTable<aod::StoredV0s>>(cfgc, TaskName("StoredV0s")),
-      adaptAnalysisTask<LoadTable<aod::StoredCascades>>(cfgc, TaskName("StoredCascades")),
+      adaptAnalysisTask<LoadTable<aod::V0s>>(cfgc, TaskName("V0s")),
+      adaptAnalysisTask<LoadTable<aod::Cascades>>(cfgc, TaskName("Cascades")),
 
       adaptAnalysisTask<LoadTable<aod::AmbiguousTracks>>(cfgc, TaskName("AmbiguousTracks")),
       adaptAnalysisTask<LoadTable<aod::MFTTracks>>(cfgc, TaskName("MFTTracks")),

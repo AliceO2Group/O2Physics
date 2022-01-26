@@ -265,7 +265,7 @@ struct EventSelectionQaPerCollisionRun3 {
     histos.fill(HIST("hNcontrib"), nContributors);
     uint64_t globalBc = col.bc().globalBC();
     histos.fill(HIST("hGlobalBcCol"), globalBc);
-    if (col.foundFT0() >= 0) {
+    if (col.has_foundFT0()) {
       histos.fill(HIST("hNcontribFT0"), nContributors);
       histos.fill(HIST("hGlobalBcColFT0"), globalBc);
     }

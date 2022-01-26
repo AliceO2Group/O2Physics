@@ -65,9 +65,11 @@ class MCProng
  public:
   enum Source {
     // TODO: add more sources, see Run-2 code
-    kPhysicalPrimary = BIT(0),     // Physical primary, ALICE definition
-    kProducedInTransport = BIT(1), // Produced during transport through the detector (e.g. GEANT)
-    kNSources = 2
+    kPhysicalPrimary = 0, // Physical primary, ALICE definition
+    kProducedInTransport, // Produced during transport through the detector (e.g. GEANT)
+    kProducedByGenerator, // Produced by generator (if not, then produced by GEANT)
+    kFromBackgroundEvent, // Produced in the underlying event
+    kNSources
   };
 
   enum Constants {
@@ -89,13 +91,13 @@ class MCProng
   bool TestPDG(int i, int pdgCode) const;
   bool ComparePDG(int pdg, int prongPDG, bool checkBothCharges = false, bool exclude = false) const;
 
+  int fNGenerations;
   std::vector<int> fPDGcodes;
   std::vector<bool> fCheckBothCharges;
   std::vector<bool> fExcludePDG;
   std::vector<uint64_t> fSourceBits;
   std::vector<uint64_t> fExcludeSource;
   std::vector<bool> fUseANDonSourceBitMap;
-  int fNGenerations;
 
   ClassDef(MCProng, 1);
 };

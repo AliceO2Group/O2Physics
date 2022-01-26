@@ -49,13 +49,13 @@ MCProng::MCProng(int n) : fNGenerations(n)
 //________________________________________________________________________________________________________________
 MCProng::MCProng(int n, const std::vector<int> pdgs, const std::vector<bool> checkBothCharges, const std::vector<bool> excludePDG,
                  const std::vector<uint64_t> sourceBits, const std::vector<uint64_t> excludeSource,
-                 const std::vector<bool> useANDonSourceBitMap) : fPDGcodes(pdgs),
+                 const std::vector<bool> useANDonSourceBitMap) : fNGenerations(n),
+                                                                 fPDGcodes(pdgs),
                                                                  fCheckBothCharges(checkBothCharges),
                                                                  fExcludePDG(excludePDG),
                                                                  fSourceBits(sourceBits),
                                                                  fExcludeSource(excludeSource),
-                                                                 fUseANDonSourceBitMap(useANDonSourceBitMap),
-                                                                 fNGenerations(n){};
+                                                                 fUseANDonSourceBitMap(useANDonSourceBitMap){};
 
 //________________________________________________________________________________________________________________
 void MCProng::SetPDGcode(int generation, int code, bool checkBothCharges /*= false*/, bool exclude /*= false*/)

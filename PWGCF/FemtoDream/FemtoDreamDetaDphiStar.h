@@ -1,8 +1,9 @@
-// Copyright CERN and copyright holders of ALICE O2. This software is
-// distributed under the terms of the GNU General Public License v3 (GPL
-// Version 3), copied verbatim in the file "COPYING".
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
-// See http://alice-o2.web.cern.ch/license for full licensing information.
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
@@ -35,11 +36,10 @@ class FemtoDreamDetaDphiStar
   /// Destructor
   virtual ~FemtoDreamDetaDphiStar() = default;
   /// Initalization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, float lmagfield, bool lplotForEveryRadii)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
-    magfield = lmagfield;
     plotForEveryRadii = lplotForEveryRadii;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
@@ -69,8 +69,10 @@ class FemtoDreamDetaDphiStar
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
-  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles)
+  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield)
   {
+    magfield = lmagfield;
+
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
@@ -148,6 +150,7 @@ class FemtoDreamDetaDphiStar
   std::array<std::array<std::shared_ptr<TH2>, 9>, 2> histdetadpiRadii{};
 
   ///  Calculate phi at all required radii stored in tmpRadiiTPC
+  /// Magnetic field to be provided in Tesla
   template <typename T>
   void PhiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
   {
@@ -181,7 +184,7 @@ class FemtoDreamDetaDphiStar
     PhiAtRadiiTPC(part2, tmpVec2);
     const int num = tmpVec1.size();
     float dPhiAvg = 0;
-    for (size_t i = 0; i < num; i++) {
+    for (int i = 0; i < num; i++) {
       float dphi = tmpVec1.at(i) - tmpVec2.at(i);
       dphi = TVector2::Phi_mpi_pi(dphi);
       dPhiAvg += dphi;

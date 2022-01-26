@@ -18,7 +18,6 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
@@ -216,7 +215,7 @@ struct richPidQaMc {
     }
     histos.fill(HIST(hbRICHNSigmaMC[pidIndex]), track.pt(), nsigma);
 
-    if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+    if (particle.isPhysicalPrimary()) { // Selecting primaries
       histos.fill(HIST(hbRICHNSigmaMCPrm[pidIndex]), track.pt(), nsigma);
     } else {
       histos.fill(HIST(hbRICHNSigmaMCSec[pidIndex]), track.pt(), nsigma);
@@ -232,7 +231,7 @@ struct richPidQaMc {
     histos.fill(HIST(hfRICHNSigmaMC[pidIndex]), track.pt(), nsigma);
     histos.fill(HIST(hfRICHNSigmaMCVsp[pidIndex]), track.p(), nsigma);
 
-    if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+    if (particle.isPhysicalPrimary()) { // Selecting primaries
       histos.fill(HIST(hfRICHNSigmaMCPrm[pidIndex]), track.pt(), nsigma);
       histos.fill(HIST(hfRICHNSigmaMCPrmVsp[pidIndex]), track.p(), nsigma);
     } else {
@@ -338,7 +337,7 @@ struct richPidQaMc {
       histos.fill(HIST(hbRICHDelta[pid_type]), track.p(), delta);
       // const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
       const auto mcParticle = track.mcParticle();
-      if (MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
+      if (mcParticle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hbRICHNSigmaPrm[pid_type]), track.pt(), nsigma);
         histos.fill(HIST("bRICH/signalvsPPrm"), track.p(), track.rich().richSignal());
         histos.fill(HIST("bRICH/pPrm"), track.p());
@@ -379,7 +378,7 @@ struct richPidQaMc {
       histos.fill(HIST(hfRICHNSigma[pid_type]), track.pt(), nsigma);
       histos.fill(HIST(hfRICHDelta[pid_type]), track.p(), delta);
       const auto mcParticle = track.mcParticle();
-      if (MC::isPhysicalPrimary(mcParticle)) { // Selecting primaries
+      if (mcParticle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hfRICHNSigmaPrm[pid_type]), track.pt(), nsigma);
         histos.fill(HIST("fRICH/signalvsPPrm"), track.p(), track.frich().frichSignal());
         histos.fill(HIST("fRICH/pPrm"), track.p());

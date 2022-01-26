@@ -14,9 +14,9 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
@@ -26,10 +26,10 @@ namespace o2
 {
 namespace aod
 {
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
-using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels>;
-using CollisionEvSel = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentV0Ms>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentV0Ms>::iterator;
+using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
+using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
 } // namespace aod
 namespace analysis
@@ -45,17 +45,19 @@ enum SystemType {
   kPbp,          ///< **Pb-p** system
   kPbPb,         ///< **Pb-Pb** system
   kXeXe,         ///< **Xe-Xe** system
-  knSystems      ///< number of handled systems
+  kppRun3,
+  knSystems ///< number of handled systems
 };
 
 /// \enum DataType
 /// \brief Which kind of data is the task addressing
 enum DataType {
-  kData = 0, ///< actual data, not generated
-  kMC,       ///< Generator level and detector level
-  kFastMC,   ///< Gererator level but stored dataset
-  kOnTheFly, ///< On the fly generator level data
-  knGenData  ///< number of different generator data types
+  kData = 0,     ///< actual data, not generated
+  kMC,           ///< Generator level and detector level
+  kFastMC,       ///< Gererator level but stored dataset
+  kOnTheFly,     ///< On the fly generator level data
+  kDataNoEvtSel, ///< actual data but not event selection available yet
+  knGenData      ///< number of different generator data types
 };
 
 /// \enum CentMultEstimatorType
@@ -98,8 +100,8 @@ int recoIdMethod = 0;
 bool useOwnTrackSelection = false;
 TrackSelection ownTrackSelection = getGlobalTrackSelection();
 bool useOwnParticleSelection = false;
-bool particleMaxDCAxy = 999.9;
-bool particleMaxDCAZ = 999.9;
+float particleMaxDCAxy = 999.9f;
+float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
 TDatabasePDG* fPDG = nullptr;
@@ -119,6 +121,8 @@ inline SystemType getSystemType(std::string const& sysstr)
     return kpPb;
   } else if (sysstr == "XeXe") {
     return kXeXe;
+  } else if (sysstr == "ppRun3") {
+    return kppRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %d", sysstr.c_str());
   }
@@ -133,6 +137,8 @@ inline DataType getDataType(std::string const& datastr)
   /* we have to figure out how extract the type of data*/
   if (datastr.empty() or (datastr == "data")) {
     return kData;
+  } else if (datastr == "datanoevsel") {
+    return kDataNoEvtSel;
   } else if (datastr == "MC") {
     return kMC;
   } else if (datastr == "FastMC") {
@@ -166,19 +172,32 @@ template <typename CollisionObject>
 inline bool triggerSelectionReco(CollisionObject const& collision)
 {
   bool trigsel = false;
-  if (fDataType != kData) {
-    trigsel = true;
-  } else if (collision.alias()[kINT7]) {
-    if (collision.sel7()) {
-      trigsel = true;
-    }
+  switch (fSystem) {
+    case kpp:
+    case kpPb:
+    case kPbp:
+    case kPbPb:
+    case kXeXe:
+      if (collision.alias()[kINT7]) {
+        if (collision.sel7()) {
+          trigsel = true;
+        }
+      }
+      break;
+    case kppRun3:
+      if (collision.sel8()) {
+        trigsel = true;
+      }
+      break;
+    default:
+      break;
   }
   return trigsel;
 }
 
 /// \brief Trigger selection by default: unknow subscribed collision table
 template <typename CollisionObject>
-inline bool triggerSelection(CollisionObject const& collision)
+inline bool triggerSelection(CollisionObject const&)
 {
   LOGF(fatal, "Trigger selection not implemented for this kind of collisions");
   return false;
@@ -214,9 +233,37 @@ inline bool triggerSelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisio
 
 /// \brief Trigger selection for generator level collison table
 template <>
-inline bool triggerSelection<aod::McCollision>(aod::McCollision const& collision)
+inline bool triggerSelection<aod::McCollision>(aod::McCollision const&)
 {
   return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// Multiplicity extraction
+//////////////////////////////////////////////////////////////////////////////////
+
+/// \brief Extract the collision multiplicity from the event selection information
+template <typename CollisionObject>
+inline float extractMultiplicity(CollisionObject const& collision)
+{
+  float mult = 0.0;
+  switch (fSystem) {
+    case kpp:
+    case kpPb:
+    case kPbp:
+    case kPbPb:
+    case kXeXe:
+      /* for the time being let's extract V0M */
+      mult = collision.multV0M();
+      break;
+    case kppRun3:
+      /* for the time being let's extract T0M */
+      mult = collision.multT0M();
+      break;
+    default:
+      break;
+  }
+  return mult;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -259,7 +306,7 @@ inline bool centralitySelectionNoMult(CollisionObject collision, float& centmult
 
 /// \brief Centrality selection by default: unknown subscribed collision table
 template <typename CollisionObject>
-inline bool centralitySelection(CollisionObject const& collision, float& centmult)
+inline bool centralitySelection(CollisionObject const&, float&)
 {
   LOGF(fatal, "Centrality selection not implemented for this kind of collisions");
   return false;
@@ -382,7 +429,7 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
 
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
-  if (MC::isPhysicalPrimary(particle)) {
+  if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) and traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
@@ -404,7 +451,7 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
             auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
             LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
             LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
-            LOGF(info, "   Passed  isPhysicalPrimary(): %s", MC::isPhysicalPrimary(newcurrparticle) ? "YES" : "NO");
+            LOGF(info, "   Passed  isPhysicalPrimary(): %s", newcurrparticle.isPhysicalPrimary() ? "YES" : "NO");
             currparticle = newcurrparticle;
           }
         }

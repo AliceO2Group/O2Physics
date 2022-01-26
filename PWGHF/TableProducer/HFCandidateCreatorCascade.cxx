@@ -48,7 +48,6 @@ using MyBigTracks = aod::BigTracks;
 
 /// Reconstruction of heavy-flavour cascade decay candidates
 struct HFCandidateCreatorCascade {
-
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
   Configurable<double> bZ{"bZ", 5., "magnetic field"};
@@ -138,7 +137,7 @@ struct HFCandidateCreatorCascade {
 
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
-      auto covMatrixPCA = df.calcPCACovMatrix().Array();
+      auto covMatrixPCA = df.calcPCACovMatrixFlat();
       hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       // do I have to call "df.propagateTracksToVertex();"?
       auto trackParVarV0 = df.getTrack(0);
@@ -240,11 +239,10 @@ struct HFCandidateCreatorCascadeMC {
       LOG(debug) << "\n";
       LOG(debug) << "Checking MC for candidate!";
       LOG(debug) << "Looking for K0s";
+#ifdef MY_DEBUG
       auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
       auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
       auto indexBach = bach.mcParticleId();
-
-#ifdef MY_DEBUG
       bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
       bool isK0SfromLc = isK0SfromLcFunc(indexV0DaughPos, indexV0DaughNeg, indexK0Spos, indexK0Sneg);
 #endif
@@ -275,7 +273,7 @@ struct HFCandidateCreatorCascadeMC {
         // checking that the final daughters (decay depth = 3) are p, pi+, pi-
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
         if (arrDaughLcIndex.size() == 3) {
-          for (auto iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
+          for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
             auto daughI = particlesMC.iteratorAt(arrDaughLcIndex[iProng]);
             arrDaughLcPDG[iProng] = daughI.pdgCode();
           }

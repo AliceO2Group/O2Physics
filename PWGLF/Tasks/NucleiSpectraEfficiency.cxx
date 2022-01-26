@@ -14,7 +14,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -79,7 +78,7 @@ struct NucleiSpectraEfficiencyGen {
       if (mcParticleGen.pdgCode() != -1000020030) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(mcParticleGen)) {
+      if (!mcParticleGen.isPhysicalPrimary()) {
         continue;
       }
       if (abs(mcParticleGen.y()) > 0.5) {

@@ -14,7 +14,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -76,7 +75,7 @@ struct NucleiSpectraEfficiencyLightGen {
     // loop over generated particles and fill generated particles
     //
     for (auto& mcParticleGen : mcParticles) {
-      if (!MC::isPhysicalPrimary(mcParticleGen)) {
+      if (!mcParticleGen.isPhysicalPrimary()) {
         continue;
       }
       if (abs(mcParticleGen.y()) > 0.5) {
@@ -197,7 +196,7 @@ struct NucleiSpectraEfficiencyLightRec {
       //
       if (nSigmaPi > nsigmacutLow && nSigmaPi < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() == 211 && MC::isPhysicalPrimary(track.mcParticle())) {
+        if (track.mcParticle().pdgCode() == 211 && track.mcParticle().isPhysicalPrimary()) {
           TLorentzVector lorentzVector{};
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPionCharged);
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
@@ -210,7 +209,7 @@ struct NucleiSpectraEfficiencyLightRec {
       //
       if (nSigmaPr > nsigmacutLow && nSigmaPr < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() == -2212 && MC::isPhysicalPrimary(track.mcParticle())) {
+        if (track.mcParticle().pdgCode() == -2212 && track.mcParticle().isPhysicalPrimary()) {
           TLorentzVector lorentzVector{};
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
