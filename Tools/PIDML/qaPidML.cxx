@@ -321,9 +321,15 @@ struct pidml {
   template <std::size_t i, typename T>
   void pidML(const T& track, const int pdgCodeMC)
   {
-    float pidLogits[3] = {model211.applyModel(track), model2212.applyModel(track), model321.applyModel(track)};
+    float pidLogits[3];
+    if (track.p() <= 0.5) {
+      pidLogits[3] = {model211TPC.applyModel(track), model2212TPC.applyModel(track), model321TPC.applyModel(track)};
+    } else {
+      pidLogits[3] = {model211All.applyModel(track), model2212All.applyModel(track), model321All.applyModel(track)};
+    }
     int pid = getParticlePdg(pidLogits);
-    if (pid == particlesPdgCode[i]) {
+    // condition for sign: we want to work only with pi, p and K, without antiparticles
+    if ((pid == particlesPdgCode[i]) & (track.sign() == 1)) {
       if (pdgCodeMC == particlesPdgCode[i]) {
         fillPidHistos<i>(track, pdgCodeMC, true);
       } else {
@@ -332,19 +338,28 @@ struct pidml {
     }
   }
 
-  PidONNXModel model211;
-  PidONNXModel model2212;
-  PidONNXModel model321;
+  // one model for one particle; Model with all TPC and TOF signal
+  PidONNXModel model211All;
+  PidONNXModel model2212All;
+  PidONNXModel model321All;
+  // Model with only TPC model
+  PidONNXModel model211TPC;
+  PidONNXModel model2212TPC;
+  PidONNXModel model321TPC;
 
-  Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
+  // Configurable<bool> cfgUseTOF{"useTOF", true, "Use ML model with TOF signal"};
   Configurable<std::string> cfgModelDir{"model-dir", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models", "base path to the directory with ONNX models"};
   Configurable<std::string> cfgScalingParamsFile{"scaling-params", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
 
   void init(InitContext const&)
   {
-    model211 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, cfgUseTOF.value);
-    model2212 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, cfgUseTOF.value);
-    model321 = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, cfgUseTOF.value);
+    model211All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, True);
+    model2212All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, True);
+    model321All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, True);
+
+    model211TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, False);
+    model2212TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, False);
+    model321TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, False);
   }
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
