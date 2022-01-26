@@ -153,13 +153,11 @@ struct HfTreeCreatorChicToJpsiGamma {
       array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
       auto pchic = RecoDecay::P(pvecChic);
       auto pjpsi = RecoDecay::P(pvecJpsi);
-      auto pgamma = RecoDecay::P(pvecGamma);
       auto pl1 = std::abs(RecoDecay::dotProd(pvecChic, pvecJpsi)) / pchic;
       auto pl2 = std::abs(RecoDecay::dotProd(pvecChic, pvecGamma)) / pchic;
       auto alpha = (pl1 - pl2) / (pl1 + pl2);
       auto qt = std::sqrt(pjpsi * pjpsi - pl1 * pl1);
 
-      auto jpsi = candidate.index0();
       indexCand++;
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
