@@ -29,15 +29,24 @@ using namespace o2;
 using namespace o2::framework;
 
 struct FT0Qa {
-  OutputObj<TH1F> hT0A{TH1F("hT0A", "T0A; ns", 200, -1, 1)};
-  OutputObj<TH1F> hT0C{TH1F("hT0C", "T0C; ns", 200, -1, 1)};
-  OutputObj<TH1F> hT0AC{TH1F("hT0AC", "(T0C+T0A)/2; ns", 200, -1, 1)};
+  OutputObj<TH1F> hT0A{TH1F("hT0A", "T0A; ns", 200, -2, 2)};
+  OutputObj<TH1F> hT0C{TH1F("hT0C", "T0C; ns", 200, -2, 2)};
+  OutputObj<TH1F> hT0AC{TH1F("hT0AC", "(T0C+T0A)/2; ns", 200, -2, 2)};
   OutputObj<TH1F> hT0res{TH1F("hT0res", "T0 resolution; ns", 200, -0.5, 0.5)};
   OutputObj<TH1F> hT0Vertex{TH1F("hT0vertex", "T0 vertex; cm", 200, -30, 30.)};
+  OutputObj<TH1F> hPV{TH1F("hPV", "Primary vertex; cm", 200, -30, 30.)};
+  OutputObj<TH1F> hT0VertexDiff{TH1F("hT0vertexDiff", "T0 vertex -  PV; cm", 200, -30, 30.)};
   OutputObj<TH2F> hVertex_T0_PV{TH2F(" hVertex_T0_PV", "T0 vertex vs Primary Vertex; T0 vertex, cm; PV, cm", 200, -30, 30., 200, -30, 30.)};
-  OutputObj<TH2F> hResMult{TH2F("hResMult", "T0 resolution vs event multiplicity", 200, 0., 2000, 100, -0.5, 0.5)};
-  OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult;T0Mmult", 500, 0., 15000., 200, 0., 2000.)};
+  OutputObj<TH2F> hResMult{TH2F("hResMult", "T0 resolution vs event multiplicity", 100, 0., 100, 100, -0.5, 0.5)};
+  OutputObj<TH2F> hResColMult{TH2F("hResCol", "Col. time resolution vs event multiplicity", 100, 0., 100, 100, -0.5, 0.5)};
+  OutputObj<TH1F> hColTimeDiff{TH1F("hColTimeDiffDiff", "T0AC - ColTime;T0, ns; Coiilisions, ns", 200, -1, 1.)};
+  OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult;T0Mmult", 200, 0., 3000., 200, 0., 1000.)};
   OutputObj<TH2F> hT0V0time{TH2F("hT0V0time", "T0A vs V0 time ;V0time;T0A", 200, -2, 2., 200, -2, 2)};
+  OutputObj<TH1F> hNcontrib{TH1F("hContrib", "Ncontributers;#contributers", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribAC{TH1F("hContribAC", "Ncontributers with T0AC;#contributers", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribA{TH1F("hContribA", "Ncontributers with T0A;#contributers", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribC{TH1F("hContribC", "Ncontributers with T0C;#contributers", 100, -0.5, 99.5)};
+  OutputObj<TH1F> hNcontribV0{TH1F("hContribV0", "Ncontributers with V0A;#contributers", 100, -0.5, 99.5)};
 
   // Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
@@ -45,33 +54,50 @@ struct FT0Qa {
   {
     float sumAmpFT0 = 0;
     float sumAmpFV0 = 0;
-    if (col.has_foundFT0()) {
-      auto ft0 = col.foundFT0();
-      LOGF(debug, "multV0A=%5.0f;  multT0A=%5.0f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ", col.multV0A(), col.multT0A(), col.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), ft0.posZ());
-      if (col.t0ACorrectedValid()) {
-        hT0A->Fill(col.t0ACorrected());
-        if (col.has_foundFV0()) {
-          auto fv0 = col.foundFV0();
-          float fv0Time = fv0.time();
+    int innerFV0 = 24;
+    uint16_t nContrib = col.numContrib();
+    hNcontrib->Fill(nContrib);
+    float colTime = col.collisionTime();
+    if (col.has_foundFV0()) {
+      auto fv0 = col.foundFV0();
+      float fv0Time = fv0.time();
+      hNcontribV0->Fill(nContrib);
+      if (col.has_foundFT0()) {
+        auto ft0 = col.foundFT0();
+        if (col.t0ACorrectedValid()) {
+          hT0A->Fill(col.t0ACorrected());
+          hNcontribA->Fill(nContrib);
           hT0V0time->Fill(fv0Time, ft0.timeA());
           for (auto amplitude : ft0.amplitudeA()) {
             sumAmpFT0 += amplitude;
           }
-          for (auto amplitude : fv0.amplitude()) {
-            sumAmpFV0 += amplitude;
+          for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
+            if (int(fv0.channel()[ich]) > innerFV0)
+              continue;
+            sumAmpFV0 += fv0.amplitude()[ich];
           }
-          hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
         }
-      }
-      if (col.t0CCorrectedValid()) {
-        hT0C->Fill(col.t0CCorrected());
-      }
-      if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
-        hT0AC->Fill(col.t0AC());
-        hT0Vertex->Fill(ft0.posZ());
-        hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
-        hT0res->Fill((col.t0ACorrected() - col.t0CCorrected()) / 2.);
-        hResMult->Fill(sumAmpFT0, (col.t0ACorrected() - col.t0CCorrected()) / 2.);
+        if (sumAmpFV0 > 0 && sumAmpFT0 > 0) {
+          hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
+          LOG(debug) << "V0 amp  " << sumAmpFV0 << " T0 amp " << sumAmpFT0;
+        }
+        if (col.t0CCorrectedValid()) {
+          hT0C->Fill(col.t0CCorrected());
+          hNcontribC->Fill(nContrib);
+        }
+        if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
+          LOGF(debug, "multV0A=%f;  multT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ColTime=%f", col.multV0A(), col.multT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
+          hT0AC->Fill(col.t0AC());
+          hT0Vertex->Fill(ft0.posZ());
+          hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
+          hPV->Fill(col.posZ());
+          hT0res->Fill((col.t0ACorrected() - col.t0CCorrected()) / 2.);
+          hT0VertexDiff->Fill(ft0.posZ() - col.posZ());
+          hResMult->Fill(nContrib, (col.t0ACorrected() - col.t0CCorrected()) / 2.);
+          hColTimeDiff->Fill(float(col.t0AC()) - colTime);
+          hResColMult->Fill(nContrib, colTime);
+          hNcontribAC->Fill(nContrib);
+        }
       }
     }
   }
