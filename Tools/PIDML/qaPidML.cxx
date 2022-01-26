@@ -326,7 +326,7 @@ struct pidml {
   void pidML(const T& track, const int pdgCodeMC)
   {
     float pidLogits[3];
-    if (track.p() <= pSwitchValue[i]) {
+    if (track.p() < pSwitchValue[i]) {
       pidLogits = {model211TPC.applyModel(track), model2212TPC.applyModel(track), model321TPC.applyModel(track)};
     } else {
       pidLogits = {model211All.applyModel(track), model2212All.applyModel(track), model321All.applyModel(track)};
