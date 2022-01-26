@@ -542,7 +542,7 @@ struct tofPidFullQa {
   }
 
   template <o2::track::PID::ID id, typename T>
-  void fillParticleHistos(const T& t, const float& tof, const float& exp_diff, const float& expsigma, const float& nsigma)
+  void fillParticleHistos(const T& t, const float& tof, const float& exp_diff, const float& expsigma)
   {
     const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
     if (abs(y) > 0.5) {
@@ -552,6 +552,7 @@ struct tofPidFullQa {
     histos.fill(HIST(hexpected[id]), t.p(), tof - exp_diff);
     histos.fill(HIST(hexpected_diff[id]), t.p(), exp_diff);
     histos.fill(HIST(hexpsigma[id]), t.p(), expsigma);
+    const auto& nsigma = o2::aod::pidutils::tofNSigma(id, t);
     histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
     histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
   }
@@ -619,15 +620,15 @@ struct tofPidFullQa {
       histos.fill(HIST("event/pt"), t.pt());
       // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
       //
-      fillParticleHistos<PID::Electron>(t, tof, t.tofExpSignalDiffEl(), t.tofExpSigmaEl(), t.tofNSigmaEl());
-      fillParticleHistos<PID::Muon>(t, tof, t.tofExpSignalDiffMu(), t.tofExpSigmaMu(), t.tofNSigmaMu());
-      fillParticleHistos<PID::Pion>(t, tof, t.tofExpSignalDiffPi(), t.tofExpSigmaPi(), t.tofNSigmaPi());
-      fillParticleHistos<PID::Kaon>(t, tof, t.tofExpSignalDiffKa(), t.tofExpSigmaKa(), t.tofNSigmaKa());
-      fillParticleHistos<PID::Proton>(t, tof, t.tofExpSignalDiffPr(), t.tofExpSigmaPr(), t.tofNSigmaPr());
-      fillParticleHistos<PID::Deuteron>(t, tof, t.tofExpSignalDiffDe(), t.tofExpSigmaDe(), t.tofNSigmaDe());
-      fillParticleHistos<PID::Triton>(t, tof, t.tofExpSignalDiffTr(), t.tofExpSigmaTr(), t.tofNSigmaTr());
-      fillParticleHistos<PID::Helium3>(t, tof, t.tofExpSignalDiffHe(), t.tofExpSigmaHe(), t.tofNSigmaHe());
-      fillParticleHistos<PID::Alpha>(t, tof, t.tofExpSignalDiffAl(), t.tofExpSigmaAl(), t.tofNSigmaAl());
+      fillParticleHistos<PID::Electron>(t, tof, t.tofExpSignalDiffEl(), t.tofExpSigmaEl());
+      fillParticleHistos<PID::Muon>(t, tof, t.tofExpSignalDiffMu(), t.tofExpSigmaMu());
+      fillParticleHistos<PID::Pion>(t, tof, t.tofExpSignalDiffPi(), t.tofExpSigmaPi());
+      fillParticleHistos<PID::Kaon>(t, tof, t.tofExpSignalDiffKa(), t.tofExpSigmaKa());
+      fillParticleHistos<PID::Proton>(t, tof, t.tofExpSignalDiffPr(), t.tofExpSigmaPr());
+      fillParticleHistos<PID::Deuteron>(t, tof, t.tofExpSignalDiffDe(), t.tofExpSigmaDe());
+      fillParticleHistos<PID::Triton>(t, tof, t.tofExpSignalDiffTr(), t.tofExpSigmaTr());
+      fillParticleHistos<PID::Helium3>(t, tof, t.tofExpSignalDiffHe(), t.tofExpSigmaHe());
+      fillParticleHistos<PID::Alpha>(t, tof, t.tofExpSignalDiffAl(), t.tofExpSigmaAl());
     }
   }
 };

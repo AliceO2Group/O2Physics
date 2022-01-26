@@ -11,13 +11,15 @@
 
 ///
 /// \file   PIDResponse.h
-/// \author Nicolo' Jacazio
-/// \brief Set of tables, tasks and utilities to provide the interface between
-///        the analysis data model and the PID response
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief  Set of tables, tasks and utilities to provide the interface between
+///         the analysis data model and the PID response
 ///
 
 #ifndef O2_FRAMEWORK_PIDRESPONSE_H_
 #define O2_FRAMEWORK_PIDRESPONSE_H_
+
+#include <experimental/type_traits>
 
 // O2 includes
 #include "Framework/ASoA.h"
@@ -42,6 +44,173 @@ void packInTable(const float& separation, tableType& table, const float& lowest,
     table(static_cast<T>(separation / width - 0.5f));
   }
 }
+
+static constexpr float defaultNSigma = -999.f; /// Default return value in case N sigma measurement is not available
+
+template <class T>
+using hasTOFEl = decltype(std::declval<T&>().tofNSigmaEl());
+template <class T>
+using hasTOFMu = decltype(std::declval<T&>().tofNSigmaMu());
+template <class T>
+using hasTOFPi = decltype(std::declval<T&>().tofNSigmaPi());
+template <class T>
+using hasTOFKa = decltype(std::declval<T&>().tofNSigmaKa());
+template <class T>
+using hasTOFPr = decltype(std::declval<T&>().tofNSigmaPr());
+template <class T>
+using hasTOFDe = decltype(std::declval<T&>().tofNSigmaDe());
+template <class T>
+using hasTOFTr = decltype(std::declval<T&>().tofNSigmaTr());
+template <class T>
+using hasTOFHe = decltype(std::declval<T&>().tofNSigmaHe());
+template <class T>
+using hasTOFAl = decltype(std::declval<T&>().tofNSigmaAl());
+
+template <typename TrackType>
+const auto tofNSigma(const o2::track::PID::ID& index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTOFEl, TrackType>::value) {
+        return track.tofNSigmaEl();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTOFMu, TrackType>::value) {
+        return track.tofNSigmaMu();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTOFPi, TrackType>::value) {
+        return track.tofNSigmaPi();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTOFKa, TrackType>::value) {
+        return track.tofNSigmaKa();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTOFPr, TrackType>::value) {
+        return track.tofNSigmaPr();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTOFDe, TrackType>::value) {
+        return track.tofNSigmaDe();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTOFTr, TrackType>::value) {
+        return track.tofNSigmaTr();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTOFHe, TrackType>::value) {
+        return track.tofNSigmaHe();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTOFAl, TrackType>::value) {
+        return track.tofNSigmaAl();
+      } else {
+        return defaultNSigma;
+      }
+    default:
+      return defaultNSigma;
+  }
+}
+
+template <class T>
+using hasTPCEl = decltype(std::declval<T&>().tpcNSigmaEl());
+template <class T>
+using hasTPCMu = decltype(std::declval<T&>().tpcNSigmaMu());
+template <class T>
+using hasTPCPi = decltype(std::declval<T&>().tpcNSigmaPi());
+template <class T>
+using hasTPCKa = decltype(std::declval<T&>().tpcNSigmaKa());
+template <class T>
+using hasTPCPr = decltype(std::declval<T&>().tpcNSigmaPr());
+template <class T>
+using hasTPCDe = decltype(std::declval<T&>().tpcNSigmaDe());
+template <class T>
+using hasTPCTr = decltype(std::declval<T&>().tpcNSigmaTr());
+template <class T>
+using hasTPCHe = decltype(std::declval<T&>().tpcNSigmaHe());
+template <class T>
+using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
+
+template <typename TrackType>
+const auto tpcNSigma(const o2::track::PID::ID& index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTPCEl, TrackType>::value) {
+        return track.tpcNSigmaEl();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTPCMu, TrackType>::value) {
+        return track.tpcNSigmaMu();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTPCPi, TrackType>::value) {
+        return track.tpcNSigmaPi();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTPCKa, TrackType>::value) {
+        return track.tpcNSigmaKa();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTPCPr, TrackType>::value) {
+        return track.tpcNSigmaPr();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTPCDe, TrackType>::value) {
+        return track.tpcNSigmaDe();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTPCTr, TrackType>::value) {
+        return track.tpcNSigmaTr();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTPCHe, TrackType>::value) {
+        return track.tpcNSigmaHe();
+      } else {
+        return defaultNSigma;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTPCAl, TrackType>::value) {
+        return track.tpcNSigmaAl();
+      } else {
+        return defaultNSigma;
+      }
+    default:
+      return defaultNSigma;
+  }
+}
+
 } // namespace pidutils
 
 namespace pidtofsignal
@@ -122,34 +291,6 @@ DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
 DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
 DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with the TOF detector for alpha
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,     //! Nsigma separation with the TOF detector for the combined species
-                           [](const float& El, const float& Mu, const float& Pi,
-                              const float& Ka, const float& Pr, const float& De,
-                              const float& Tr, const float& He, const float& Al,
-                              const o2::track::PID::ID& index) -> float {
-                             switch (index) {
-                               case o2::track::PID::Electron:
-                                 return El;
-                               case o2::track::PID::Muon:
-                                 return Mu;
-                               case o2::track::PID::Pion:
-                                 return Pi;
-                               case o2::track::PID::Kaon:
-                                 return Ka;
-                               case o2::track::PID::Proton:
-                                 return Pr;
-                               case o2::track::PID::Deuteron:
-                                 return De;
-                               case o2::track::PID::Triton:
-                                 return Tr;
-                               case o2::track::PID::Helium3:
-                                 return He;
-                               case o2::track::PID::Alpha:
-                                 return Al;
-                               default:
-                                 return -999.f;
-                             }
-                           });
 } // namespace pidtof
 
 // Macro to convert the stored Nsigmas to floats
@@ -186,34 +327,6 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaDe, tofNSigmaDe); //! Unwrapped (float) nsi
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaTr, tofNSigmaTr); //! Unwrapped (float) nsigma with the TOF detector for triton
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaHe, tofNSigmaHe); //! Unwrapped (float) nsigma with the TOF detector for helium3
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsigma with the TOF detector for alpha
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,       //! Nsigma separation with the TOF detector for the combined species
-                           [](const float& El, const float& Mu, const float& Pi,
-                              const float& Ka, const float& Pr, const float& De,
-                              const float& Tr, const float& He, const float& Al,
-                              const o2::track::PID::ID& index) -> float {
-                             switch (index) {
-                               case o2::track::PID::Electron:
-                                 return bin_width * static_cast<float>(El);
-                               case o2::track::PID::Muon:
-                                 return bin_width * static_cast<float>(Mu);
-                               case o2::track::PID::Pion:
-                                 return bin_width * static_cast<float>(Pi);
-                               case o2::track::PID::Kaon:
-                                 return bin_width * static_cast<float>(Ka);
-                               case o2::track::PID::Proton:
-                                 return bin_width * static_cast<float>(Pr);
-                               case o2::track::PID::Deuteron:
-                                 return bin_width * static_cast<float>(De);
-                               case o2::track::PID::Triton:
-                                 return bin_width * static_cast<float>(Tr);
-                               case o2::track::PID::Helium3:
-                                 return bin_width * static_cast<float>(He);
-                               case o2::track::PID::Alpha:
-                                 return bin_width * static_cast<float>(Al);
-                               default:
-                                 return -999.f;
-                             }
-                           });
 
 } // namespace pidtof_tiny
 
@@ -263,10 +376,7 @@ DECLARE_SOA_TABLE(pidTOFFullAl, "AOD", "pidTOFFullAl", //! Table of the TOF (ful
                   pidtof::TOFExpSignalDiffAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>,
                   pidtof::TOFExpSignalAl<pidtof::TOFNSigmaAl, pidtof::TOFExpSigmaAl>,
                   pidtof::TOFExpSigmaAl, pidtof::TOFNSigmaAl);
-DECLARE_SOA_TABLE(pidTOFFull, "AOD", "pidTOFFull", //! Table of the TOF NSigmas with full tables
-                  pidtof::TOFNSigma<pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi,
-                                    pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr, pidtof::TOFNSigmaDe,
-                                    pidtof::TOFNSigmaTr, pidtof::TOFNSigmaHe, pidtof::TOFNSigmaAl>);
+
 // Tiny size tables
 DECLARE_SOA_TABLE(pidTOFEl, "AOD", "pidTOFEl", //! Table of the TOF response with binned Nsigma for electron
                   pidtof_tiny::TOFNSigmaStoreEl, pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>);
@@ -286,10 +396,7 @@ DECLARE_SOA_TABLE(pidTOFHe, "AOD", "pidTOFHe", //! Table of the TOF response wit
                   pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaHe<pidtof_tiny::TOFNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response with binned Nsigma for alpha
                   pidtof_tiny::TOFNSigmaStoreAl, pidtof_tiny::TOFNSigmaAl<pidtof_tiny::TOFNSigmaStoreAl>);
-DECLARE_SOA_TABLE(pidTOF, "AOD", "pidTOF", //! Table of the TOF NSigmas with binned Nsigma
-                  pidtof_tiny::TOFNSigma<pidtof_tiny::TOFNSigmaStoreEl, pidtof_tiny::TOFNSigmaStoreMu, pidtof_tiny::TOFNSigmaStorePi,
-                                         pidtof_tiny::TOFNSigmaStoreKa, pidtof_tiny::TOFNSigmaStorePr, pidtof_tiny::TOFNSigmaStoreDe,
-                                         pidtof_tiny::TOFNSigmaStoreTr, pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaStoreAl>);
+
 namespace pidtpc
 {
 // Expected signals
@@ -331,34 +438,6 @@ DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TPCNSigmaTr, tpcNSigmaTr, float); //! Nsigma separation with the TPC detector for triton
 DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma separation with the TPC detector for helium3
 DECLARE_SOA_COLUMN(TPCNSigmaAl, tpcNSigmaAl, float); //! Nsigma separation with the TPC detector for alpha
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,     //! Nsigma separation with the TPC detector for the combined species
-                           [](const float& El, const float& Mu, const float& Pi,
-                              const float& Ka, const float& Pr, const float& De,
-                              const float& Tr, const float& He, const float& Al,
-                              const o2::track::PID::ID& index) -> float {
-                             switch (index) {
-                               case o2::track::PID::Electron:
-                                 return El;
-                               case o2::track::PID::Muon:
-                                 return Mu;
-                               case o2::track::PID::Pion:
-                                 return Pi;
-                               case o2::track::PID::Kaon:
-                                 return Ka;
-                               case o2::track::PID::Proton:
-                                 return Pr;
-                               case o2::track::PID::Deuteron:
-                                 return De;
-                               case o2::track::PID::Triton:
-                                 return Tr;
-                               case o2::track::PID::Helium3:
-                                 return He;
-                               case o2::track::PID::Alpha:
-                                 return Al;
-                               default:
-                                 return -999.f;
-                             }
-                           });
 
 } // namespace pidtpc
 
@@ -391,34 +470,7 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaDe, tpcNSigmaDe); //! Unwrapped (float) nsi
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaTr, tpcNSigmaTr); //! Unwrapped (float) nsigma with the TPC detector for triton
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaHe, tpcNSigmaHe); //! Unwrapped (float) nsigma with the TPC detector for helium3
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaAl, tpcNSigmaAl); //! Unwrapped (float) nsigma with the TPC detector for alpha
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,       //! Nsigma separation with the TPC detector for the combined species
-                           [](const float& El, const float& Mu, const float& Pi,
-                              const float& Ka, const float& Pr, const float& De,
-                              const float& Tr, const float& He, const float& Al,
-                              const o2::track::PID::ID& index) -> float {
-                             switch (index) {
-                               case o2::track::PID::Electron:
-                                 return bin_width * static_cast<float>(El);
-                               case o2::track::PID::Muon:
-                                 return bin_width * static_cast<float>(Mu);
-                               case o2::track::PID::Pion:
-                                 return bin_width * static_cast<float>(Pi);
-                               case o2::track::PID::Kaon:
-                                 return bin_width * static_cast<float>(Ka);
-                               case o2::track::PID::Proton:
-                                 return bin_width * static_cast<float>(Pr);
-                               case o2::track::PID::Deuteron:
-                                 return bin_width * static_cast<float>(De);
-                               case o2::track::PID::Triton:
-                                 return bin_width * static_cast<float>(Tr);
-                               case o2::track::PID::Helium3:
-                                 return bin_width * static_cast<float>(He);
-                               case o2::track::PID::Alpha:
-                                 return bin_width * static_cast<float>(Al);
-                               default:
-                                 return -999.f;
-                             }
-                           });
+
 } // namespace pidtpc_tiny
 
 // Per particle tables
@@ -440,10 +492,6 @@ DECLARE_SOA_TABLE(pidTPCFullHe, "AOD", "pidTPCFullHe", //! Table of the TPC (ful
                   pidtpc::TPCExpSignalDiffHe<pidtpc::TPCNSigmaHe, pidtpc::TPCExpSigmaHe>, pidtpc::TPCExpSigmaHe, pidtpc::TPCNSigmaHe);
 DECLARE_SOA_TABLE(pidTPCFullAl, "AOD", "pidTPCFullAl", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for alpha
                   pidtpc::TPCExpSignalDiffAl<pidtpc::TPCNSigmaAl, pidtpc::TPCExpSigmaAl>, pidtpc::TPCExpSigmaAl, pidtpc::TPCNSigmaAl);
-DECLARE_SOA_TABLE(pidTPCFull, "AOD", "pidTPCFull", //! Table of the TPC NSigmas with full tables
-                  pidtpc::TPCNSigma<pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi,
-                                    pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr, pidtpc::TPCNSigmaDe,
-                                    pidtpc::TPCNSigmaTr, pidtpc::TPCNSigmaHe, pidtpc::TPCNSigmaAl>);
 
 // Tiny size tables
 DECLARE_SOA_TABLE(pidTPCEl, "AOD", "pidTPCEl", //! Table of the TPC response with binned Nsigma for electron
@@ -464,10 +512,6 @@ DECLARE_SOA_TABLE(pidTPCHe, "AOD", "pidTPCHe", //! Table of the TPC response wit
                   pidtpc_tiny::TPCNSigmaStoreHe, pidtpc_tiny::TPCNSigmaHe<pidtpc_tiny::TPCNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTPCAl, "AOD", "pidTPCAl", //! Table of the TPC response with binned Nsigma for alpha
                   pidtpc_tiny::TPCNSigmaStoreAl, pidtpc_tiny::TPCNSigmaAl<pidtpc_tiny::TPCNSigmaStoreAl>);
-DECLARE_SOA_TABLE(pidTPC, "AOD", "pidTPC", //! Table of the TPC NSigmas with binned Nsigma
-                  pidtpc_tiny::TPCNSigma<pidtpc_tiny::TPCNSigmaStoreEl, pidtpc_tiny::TPCNSigmaStoreMu, pidtpc_tiny::TPCNSigmaStorePi,
-                                         pidtpc_tiny::TPCNSigmaStoreKa, pidtpc_tiny::TPCNSigmaStorePr, pidtpc_tiny::TPCNSigmaStoreDe,
-                                         pidtpc_tiny::TPCNSigmaStoreTr, pidtpc_tiny::TPCNSigmaStoreHe, pidtpc_tiny::TPCNSigmaStoreAl>);
 
 #undef DEFINE_UNWRAP_NSIGMA_COLUMN
 
