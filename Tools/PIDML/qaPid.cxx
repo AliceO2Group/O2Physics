@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pid {
+struct EvaluatePid {
   double combinedSignal(float val1, float val2)
   {
     return sqrt(pow(val1, 2) + pow(val2, 2));
@@ -153,6 +153,27 @@ struct pid {
     }
   }
 
+  template <std::size_t i, typename T>
+  void fillPidHistos(const T& track, const int pdgCode, bool isPidTrue)
+  {
+    if (isPidTrue) {
+      histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
+      histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
+      histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+    } else {
+      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
+      histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
+      histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
+      histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
+
+      double pt = track.pt();
+      fillContaminationRegistry(i, pdgCode, pt);
+    }
+  }
+
   // nb of particles (5 particles - Pi, Pr, Ka, e, mu, and 5 antiparticles)
   static const int numParticles = 10;
 
@@ -166,6 +187,7 @@ struct pid {
   static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321", "TOFPidFalse/11", "TOFPidFalse/13", "TOFPidFalse/0211", "TOFPidFalse/02212", "TOFPidFalse/0321", "TOFPidFalse/011", "TOFPidFalse/013"};
 
   static constexpr int pdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
+  static constexpr int pidToPdg[numParticles] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
   // charge with index i corresponds to i-th particle from pdgCodes array
   static constexpr int particleCharge[numParticles] = {1, 1, 1, -1, -1, -1, -1, -1, 1, 1};
   // momentum value when to switch from pid based only on TPC (below the value) to combination of TPC and TOF (above the value)
@@ -310,43 +332,22 @@ struct pid {
     */
     const float p = track.p();
 
-    bool isPidFalse = false;
-
     if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
       if (abs(tpcNSigmas[i]) < nsigmacut.value) {
         if (pdgCode == pdgCodes[i]) {
-          histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-          histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
-          histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+          fillPidHistos<i>(track, pdgCode, true);
         } else {
-          isPidFalse = true;
+          fillPidHistos<i>(track, pdgCode, false);
         }
       }
     } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
       if (sqrt(pow(tpcNSigmas[i], 2) + pow(tofNSigmas[i], 2)) < nsigmacut.value) {
         if (pdgCode == pdgCodes[i]) {
-          histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-          histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
-          histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+          fillPidHistos<i>(track, pdgCode, true);
         } else {
-          isPidFalse = true;
+          fillPidHistos<i>(track, pdgCode, false);
         }
       }
-    }
-
-    if (isPidFalse) {
-      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
-      histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
-      histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
-      histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
-      histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
-
-      double pt = track.pt();
-      fillContaminationRegistry(i, pdgCode, pt);
     }
   }
 
@@ -357,8 +358,6 @@ struct pid {
 
     // list of Nsigmas for particles
     float particleNSigma[arrLen];
-
-    bool isPidFalse = false;
 
     // calculate Nsigmas for every particle
     for (int j = 0; j < arrLen; ++j) {
@@ -373,39 +372,20 @@ struct pid {
       float tmp_NSigma = abs(tpcNSigmas[i]);
       if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
         if (pdgCode == pdgCodes[i]) {
-          histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-          histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
-          histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+          fillPidHistos<i>(track, pdgCode, true);
         } else {
-          isPidFalse = true;
+          fillPidHistos<i>(track, pdgCode, false);
         }
       }
     } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
       float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
       if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
         if (pdgCode == pdgCodes[i]) {
-          histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-          histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-          histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
-          histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+          fillPidHistos<i>(track, pdgCode, true);
         } else {
-          isPidFalse = true;
+          fillPidHistos<i>(track, pdgCode, false);
         }
       }
-    }
-
-    if (isPidFalse) {
-      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
-      histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
-      histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
-      histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
-      histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
-
-      double pt = track.pt();
-      fillContaminationRegistry(i, pdgCode, pt);
     }
   }
 
@@ -413,8 +393,6 @@ struct pid {
   void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     const float p = track.p();
-
-    bool isPidFalse = false;
 
     // list of Nsigmas for particles
     float particleNSigma[arrLen];
@@ -441,86 +419,99 @@ struct pid {
         float tmp_NSigma = abs(tpcNSigmas[i]);
         if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
           if (pdgCode == pdgCodes[i]) {
-            histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-            histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-            histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-            histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
-            histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+            fillPidHistos<i>(track, pdgCode, true);
           } else {
-            isPidFalse = true;
+            fillPidHistos<i>(track, pdgCode, false);
           }
         }
       } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
         float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
         if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
           if (pdgCode == pdgCodes[i]) {
-            histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
-            histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
-            histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
-            histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
-            histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
+            fillPidHistos<i>(track, pdgCode, true);
           } else {
-            isPidFalse = true;
+            fillPidHistos<i>(track, pdgCode, false);
           }
         }
-      }
-      if (isPidFalse) {
-        histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
-        histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
-        histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
-        histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
-        histReg.fill(HIST(TOFPidFalseRegistryNames[i]), track.p(), track.beta());
-
-        double pt = track.pt();
-        fillContaminationRegistry(i, pdgCode, pt);
       }
     }
   }
 
+  template <typename T>
+  int getPdgFromPid(const T& track)
+  {
+    // Convert PID to PDG code
+    // We don't identify particles with PID bigger than Proton, putting dummy code so they will be skipped.
+    int bayesPdg = track.bayesID() > o2::track::PID::Proton ? 999 : pidToPdg[track.bayesID()];
+    if (track.bayesID() <= o2::track::PID::Proton && track.sign() == -1 * particleCharge[track.bayesID()]) { // Check if antiparticle
+      bayesPdg += numParticles / 2;
+    }
+    return bayesPdg;
+  }
+
+  template <std::size_t i, typename T>
+  void pidBayes(const T& track, const int pdgCode, const int bayesPdg)
+  {
+    if (bayesPdg == pdgCode) {
+      if (pdgCode == pdgCodes[i]) {
+        fillPidHistos<i>(track, pdgCode, true);
+      } else {
+        fillPidHistos<i>(track, pdgCode, false);
+      }
+    }
+  }
+
+  template <typename T>
+  void fillMcHistos(const T& track, const int pdgCode)
+  {
+    // pions
+    if (pdgCode == 211) {
+      histReg.fill(HIST("MC/211"), track.pt());
+    } else if (pdgCode == -211) {
+      histReg.fill(HIST("MC/0211"), track.pt());
+    }
+    // protons
+    else if (pdgCode == 2212) {
+      histReg.fill(HIST("MC/2212"), track.pt());
+    } else if (pdgCode == -2212) {
+      histReg.fill(HIST("MC/02212"), track.pt());
+    }
+    // kaons
+    else if (pdgCode == 321) {
+      histReg.fill(HIST("MC/321"), track.pt());
+    } else if (pdgCode == -321) {
+      histReg.fill(HIST("MC/0321"), track.pt());
+    }
+    // electrons
+    else if (pdgCode == 11) {
+      histReg.fill(HIST("MC/11"), track.pt());
+      ;
+    } else if (pdgCode == -11) {
+      histReg.fill(HIST("MC/011"), track.pt());
+    }
+    // muons
+    else if (pdgCode == 13) {
+      histReg.fill(HIST("MC/13"), track.pt());
+    } else if (pdgCode == -13) {
+      histReg.fill(HIST("MC/013"), track.pt());
+    } else {
+      histReg.fill(HIST("MC/else"), track.pt());
+    }
+  }
+
   Configurable<float> nsigmacut{"nsigmacut", 2.5, "Value of the NSigma cut"};
-  Configurable<int> strategy{"Strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exlcusive condition for NSigma"};
+  Configurable<int> strategy{"strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exlcusive condition for NSigma, 4-Bayesian PID"};
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
-  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu>>;
+  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
+
   void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto& track : tracks) {
       auto particle = track.mcParticle();
       int pdgCode = particle.pdgCode();
 
-      // pions
-      if (pdgCode == 211) {
-        histReg.fill(HIST("MC/211"), track.pt());
-      } else if (pdgCode == -211) {
-        histReg.fill(HIST("MC/0211"), track.pt());
-      }
-      // protons
-      else if (pdgCode == 2212) {
-        histReg.fill(HIST("MC/2212"), track.pt());
-      } else if (pdgCode == -2212) {
-        histReg.fill(HIST("MC/02212"), track.pt());
-      }
-      // kaons
-      else if (pdgCode == 321) {
-        histReg.fill(HIST("MC/321"), track.pt());
-      } else if (pdgCode == -321) {
-        histReg.fill(HIST("MC/0321"), track.pt());
-      }
-      // electrons
-      else if (pdgCode == 11) {
-        histReg.fill(HIST("MC/11"), track.pt());
-        ;
-      } else if (pdgCode == -11) {
-        histReg.fill(HIST("MC/011"), track.pt());
-      }
-      // muons
-      else if (pdgCode == 13) {
-        histReg.fill(HIST("MC/13"), track.pt());
-      } else if (pdgCode == -13) {
-        histReg.fill(HIST("MC/013"), track.pt());
-      } else {
-        histReg.fill(HIST("MC/else"), track.pt());
-      }
+      fillMcHistos(track, pdgCode);
 
       // PID
       // indexes for particles: 0-Pi, 1-Pr, 2-Ka, 3-El, 4-Mu
@@ -542,6 +533,11 @@ struct pid {
         static_for<0, 9>([&](auto i) {
           pidExclusiveStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
         });
+      } else if (strategy.value == 4) {
+        int bayesPdg = getPdgFromPid(track);
+        static_for<0, 9>([&](auto i) {
+          pidBayes<i>(track, pdgCode, bayesPdg);
+        });
       }
     }
   }
@@ -550,6 +546,6 @@ struct pid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<pid>(cfgc),
+    adaptAnalysisTask<EvaluatePid>(cfgc),
   };
 }
