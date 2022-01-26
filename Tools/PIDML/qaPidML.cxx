@@ -356,13 +356,13 @@ struct pidml {
 
   void init(InitContext const&)
   {
-    model211All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, True);
-    model2212All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, True);
-    model321All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, True);
+    model211All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, true);
+    model2212All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, true);
+    model321All = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, true);
 
-    model211TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, False);
-    model2212TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, False);
-    model321TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, False);
+    model211TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 211, false);
+    model2212TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 2212, false);
+    model321TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, false);
   }
 
   Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
