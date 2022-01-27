@@ -289,15 +289,26 @@ int main(int argc, char* argv[])
         }
       }
 
+      // set to -1 to identify not found tables
+      for (auto& offset : offsets) {
+        offset.second = -1;
+      }
+
       // update offsets
       for (auto const& tree : trees) {
-        offsets[tree.first] = tree.second->GetEntries();
+        // remove version suffix, e.g. O2v0_001 becomes O2v0
+        TString treeName(tree.first);
+        if (treeName.First("_") > 0) {
+          treeName.Remove(treeName.First("_"));
+        }
+        offsets[treeName.Data()] = tree.second->GetEntries();
       }
 
       // check for not found tables
-      for (auto const& offset : offsets) {
-        if (trees.count(offset.first) == 0) {
+      for (auto& offset : offsets) {
+        if (offset.second < 0) {
           printf("ERROR: Index on %s but no tree found\n", offset.first.c_str());
+          offset.second = 0;
         }
       }
 
