@@ -433,7 +433,7 @@ struct HfCorrelatorDplusDminus {
   void processccbar(aod::McCollision const& mccollision, MCParticlesPlus2Prong const& particlesMC)
   {
     registry.fill(HIST("hMCEvtCount"), 0);
-    int counterccbar = 0, counterccbarBeforeEtasel = 0;
+    int counterCCbar = 0, counterCCbarBeforeEtasel = 0;
 
     // loop over particles at MC gen level
     for (auto& particle1 : particlesMC) {
@@ -445,7 +445,7 @@ struct HfCorrelatorDplusDminus {
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }
-      counterccbarBeforeEtasel++; // count c or cbar (before kinematic selection)
+      counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
       double yC = RecoDecay::Y(array{particle1.px(), particle1.py(), particle1.pz()}, RecoDecay::getMassPDG(particle1.pdgCode()));
       if (cutYCandMax >= 0. && std::abs(yC) > cutYCandMax) {
         continue;
@@ -457,7 +457,7 @@ struct HfCorrelatorDplusDminus {
       registry.fill(HIST("hEtaMCGen"), particle1.eta());
       registry.fill(HIST("hPhiMCGen"), particle1.phi());
       registry.fill(HIST("hYMCGen"), yC);
-      counterccbar++; // count if c or cbar don't come from themselves during fragmentation (after kinematic selection)
+      counterCCbar++; // count if c or cbar don't come from themselves during fragmentation (after kinematic selection)
 
       // c-cbar correlation dedicated section
       // if it's c, search for cbar and evaluate correlations.
@@ -489,8 +489,8 @@ struct HfCorrelatorDplusDminus {
                                  8); // Dummy
       }                              // end inner loop
     }                                // end outer loop
-    registry.fill(HIST("hCountCCbarPerEvent"), counterccbar);
-    registry.fill(HIST("hCountCCbarPerEventBeforeEtaCut"), counterccbarBeforeEtasel);
+    registry.fill(HIST("hCountCCbarPerEvent"), counterCCbar);
+    registry.fill(HIST("hCountCCbarPerEventBeforeEtaCut"), counterCCbarBeforeEtasel);
   }
 
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processccbar, "Process ccbar pairs", false);
