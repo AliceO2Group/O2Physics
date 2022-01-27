@@ -327,9 +327,13 @@ struct pidml {
   {
     float pidLogits[3];
     if (track.p() < pSwitchValue[i]) {
-      pidLogits = {model211TPC.applyModel(track), model2212TPC.applyModel(track), model321TPC.applyModel(track)};
+      pidLogits[0] = model211TPC.applyModel(track);
+      pidLogits[1] = model2212TPC.applyModel(track);
+      pidLogits[2] = model321TPC.applyModel(track);
     } else {
-      pidLogits = {model211All.applyModel(track), model2212All.applyModel(track), model321All.applyModel(track)};
+      pidLogits[0] = model211All.applyModel(track);
+      pidLogits[1] = model2212All.applyModel(track);
+      pidLogits[2] = model321All.applyModel(track);
     }
     int pid = getParticlePdg(pidLogits);
     // condition for sign: we want to work only with pi, p and K, without antiparticles
