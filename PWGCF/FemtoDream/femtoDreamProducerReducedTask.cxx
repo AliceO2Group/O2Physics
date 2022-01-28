@@ -134,9 +134,7 @@ struct femtoDreamProducerReducedTask {
       outputCollision(vtxZ, mult, spher, bc.timestamp());
     }
 
-    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
-    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-
+    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -147,15 +145,34 @@ struct femtoDreamProducerReducedTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
-      outputTracks(outputCollision.lastIndex(), track.pt(), track.eta(), track.phi(), aod::femtodreamparticle::ParticleType::kTrack, cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts), cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID), track.dcaXY(), childIDs);
-      tmpIDtrack.push_back(track.globalIndex());
+      outputTracks(outputCollision.lastIndex(),
+                   track.pt(),
+                   track.eta(),
+                   track.phi(),
+                   aod::femtodreamparticle::ParticleType::kTrack,
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                   track.dcaXY(),
+                   childIDs);
       if (ConfDebugOutput) {
-        outputDebugTracks(outputCollision.lastIndex(),
-                          track.sign(), track.tpcNClsFound(),
+        outputDebugTracks(track.sign(),
+                          (uint8_t)track.tpcNClsFound(),
                           track.tpcNClsFindable(),
-                          track.tpcNClsCrossedRows(), track.tpcNClsShared(), track.dcaXY(), track.dcaZ(),
-                          track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(),
-                          track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe());
+                          (uint8_t)track.tpcNClsCrossedRows(),
+                          track.tpcNClsShared(),
+                          track.tpcInnerParam(),
+                          track.dcaXY(),
+                          track.dcaZ(),
+                          track.tpcNSigmaStoreEl(),
+                          track.tpcNSigmaStorePi(),
+                          track.tpcNSigmaStoreKa(),
+                          track.tpcNSigmaStorePr(),
+                          track.tpcNSigmaStoreDe(),
+                          track.tofNSigmaStoreEl(),
+                          track.tofNSigmaStorePi(),
+                          track.tofNSigmaStoreKa(),
+                          track.tofNSigmaStorePr(),
+                          track.tofNSigmaStoreDe());
       }
     }
   }
