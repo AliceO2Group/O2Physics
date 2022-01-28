@@ -156,9 +156,9 @@ struct femtoDreamProducerReducedTask {
                    childIDs);
       if (ConfDebugOutput) {
         outputDebugTracks(track.sign(),
-                          track.tpcNClsFound(),
+                          (uint8_t)track.tpcNClsFound(),
                           track.tpcNClsFindable(),
-                          track.tpcNClsCrossedRows(),
+                          (uint8_t)track.tpcNClsCrossedRows(),
                           track.tpcNClsShared(),
                           track.tpcInnerParam(),
                           track.dcaXY(),
