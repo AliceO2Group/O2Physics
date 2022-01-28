@@ -65,9 +65,9 @@ struct femtoDreamDebugTrack {
 
   using FemtoFullTracks = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
 
-  Partition<FemtoFullTracks> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)); // &&
-                                                                                                                                       //(aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt"));// &&
-                                                                                                                                       // ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FemtoFullTracks> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+                                        (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
+                                        ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -95,7 +95,7 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/tpcnsharedhist", "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hDCAxy", "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCAz", "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-    FullQaRegistry.add("FullTrackQA/hDCA", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH1F, {{301, 0., 1.5}});
+    FullQaRegistry.add("FullTrackQA/hDCA", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTPC_el", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTPC_pi", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTPC_K", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
@@ -106,6 +106,11 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/nSigmaTOF_K", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTOF_p", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTOF_d", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    FullQaRegistry.add("FullTrackQA/nSigmaComb_el", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    FullQaRegistry.add("FullTrackQA/nSigmaComb_pi", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    FullQaRegistry.add("FullTrackQA/nSigmaComb_K", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    FullQaRegistry.add("FullTrackQA/nSigmaComb_p", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    FullQaRegistry.add("FullTrackQA/nSigmaComb_d", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
 
     vPIDPartOne = ConfPIDPartOne;
 
@@ -197,9 +202,9 @@ struct femtoDreamDebugTrack {
 
     for (auto& part : groupPartsOne) {
 
-      // if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
-      //   continue;
-      // }
+      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
+        continue;
+      }
 
       FullQaRegistry.fill(HIST("FullTrackQA/hPt"), part.pt());
       FullQaRegistry.fill(HIST("FullTrackQA/hEta"), part.eta());
@@ -211,7 +216,7 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCcrossedRows"), part.tpcNClsCrossedRows());
       FullQaRegistry.fill(HIST("FullTrackQA/tpcnsharedhist"), part.tpcNClsShared());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCAz"), part.pt(), part.dcaZ());
-      FullQaRegistry.fill(HIST("FullTrackQA/hDCA"), std::sqrt(pow(part.dcaXY(), 2.) + pow(part.dcaZ(), 2.)));
+      FullQaRegistry.fill(HIST("FullTrackQA/hDCA"), part.pt(), std::sqrt(pow(part.dcaXY(), 2.) + pow(part.dcaZ(), 2.)));
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_el"), part.tpcInnerParam(), part.tpcNSigmaEl());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_pi"), part.tpcInnerParam(), part.tpcNSigmaPi());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_K"), part.tpcInnerParam(), part.tpcNSigmaKa());
@@ -222,6 +227,11 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTOF_K"), part.p(), part.tofNSigmaKa());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTOF_p"), part.p(), part.tofNSigmaPr());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTOF_d"), part.p(), part.tofNSigmaDe());
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_el"), part.p(), std::sqrt(part.tpcNSigmaEl() * part.tpcNSigmaEl() + part.tofNSigmaEl() * part.tofNSigmaEl()));
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_pi"), part.p(), std::sqrt(part.tpcNSigmaPi() * part.tpcNSigmaPi() + part.tofNSigmaPi() * part.tofNSigmaPi()));
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_K"), part.p(), std::sqrt(part.tpcNSigmaKa() * part.tpcNSigmaKa() + part.tofNSigmaKa() * part.tofNSigmaKa()));
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_p"), part.p(), std::sqrt(part.tpcNSigmaPr() * part.tpcNSigmaPr() + part.tofNSigmaPr() * part.tofNSigmaPr()));
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaComb_d"), part.p(), std::sqrt(part.tpcNSigmaDe() * part.tpcNSigmaDe() + part.tofNSigmaDe() * part.tofNSigmaDe()));
     }
   }
 };
