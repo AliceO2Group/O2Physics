@@ -92,7 +92,8 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/hTPCfound", "; TPC found clusters; Entries", kTH1F, {{163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hTPCcrossedOverFindalbe", "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
     FullQaRegistry.add("FullTrackQA/hTPCcrossedRows", "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
-    FullQaRegistry.add("FullTrackQA/tpcnsharedhist", "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
+    FullQaRegistry.add("FullTrackQA/hTPCfindableVsCrossed", ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
+    FullQaRegistry.add("FullTrackQA/hTPCshared", "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hDCAxy", "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCAz", "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCA", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
@@ -214,7 +215,8 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCfound"), part.tpcNClsFound());
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCcrossedOverFindalbe"), part.tpcCrossedRowsOverFindableCls());
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCcrossedRows"), part.tpcNClsCrossedRows());
-      FullQaRegistry.fill(HIST("FullTrackQA/tpcnsharedhist"), part.tpcNClsShared());
+      FullQaRegistry.fill(HIST("FullTrackQA/hTPCfindableVsCrossed"), part.tpcNClsFindable(), part.tpcNClsCrossedRows());
+      FullQaRegistry.fill(HIST("FullTrackQA/hTPCshared"), part.tpcNClsShared());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCAz"), part.pt(), part.dcaZ());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCA"), part.pt(), std::sqrt(pow(part.dcaXY(), 2.) + pow(part.dcaZ(), 2.)));
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_el"), part.tpcInnerParam(), part.tpcNSigmaEl());
