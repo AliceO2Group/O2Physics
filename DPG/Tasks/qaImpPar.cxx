@@ -380,8 +380,9 @@ struct QaImpactPar {
         if (it_trk != vec_globID_contr.end()) {
           /// this track contributed to the PV fit: let's do the refit without it
           const int entry = std::distance(vec_globID_contr.begin(), it_trk);
-          if (!keepAllTracksPVrefit)
-            vec_useTrk_PVrefit[entry] = false;                                 /// remove the track from the PV refitting
+          if (!keepAllTracksPVrefit) {
+            vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
+          }
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
           LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {
@@ -605,8 +606,9 @@ struct QaImpactPar {
         if (it_trk != vec_globID_contr.end()) {
           /// this track contributed to the PV fit: let's do the refit without it
           const int entry = std::distance(vec_globID_contr.begin(), it_trk);
-          if (!keepAllTracksPVrefit)
-            vec_useTrk_PVrefit[entry] = false;                                 /// remove the track from the PV refitting
+          if (!keepAllTracksPVrefit) {
+            vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
+          }
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
           LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {
