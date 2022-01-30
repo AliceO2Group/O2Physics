@@ -26,24 +26,24 @@ struct McConverter {
 
       std::vector<int> mothers;
       if (p.mother0Id() >= 0) {
-          mothers.push_back(p.mother0Id());
+        mothers.push_back(p.mother0Id());
       }
       if (p.mother1Id() >= 0) {
-          mothers.push_back(p.mother1Id());
+        mothers.push_back(p.mother1Id());
       }
 
-      int daughters[2] = { -1, -1 };
+      int daughters[2] = {-1, -1};
       if (p.daughter0Id() >= 0 && p.daughter1Id() >= 0) {
-          daughters[0] = p.daughter0Id();
-          daughters[1] = p.daughter1Id();
+        daughters[0] = p.daughter0Id();
+        daughters[1] = p.daughter1Id();
       } else if (p.daughter0Id() >= 0) {
-          daughters[0] = p.daughter0Id();
-          daughters[1] = p.daughter0Id();
+        daughters[0] = p.daughter0Id();
+        daughters[1] = p.daughter0Id();
       }
 
       mcParticles_001(p.mcCollisionId(), p.pdgCode(), p.statusCode(), p.flags(),
-        mothers, daughters, p.weight(), p.px(), p.py(), p.pz(), p.e(),
-        p.vx(), p.vy(), p.vz(), p.vt());
+                      mothers, daughters, p.weight(), p.px(), p.py(), p.pz(), p.e(),
+                      p.vx(), p.vy(), p.vz(), p.vt());
     }
   }
 };
