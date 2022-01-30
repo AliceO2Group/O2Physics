@@ -116,8 +116,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg =  p/mass;
-    const double dEdx = o2::tpc::Detector::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
-
+    const double dEdx = mMIP * o2::tpc::Detector::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
     const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[mReadOutChamber][3]);
 
     values.push_back((1./dEdx));
@@ -131,7 +130,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     
     fSigmaParametrization->SetParameters(mResolutionParams[mReadOutChamber].data());
     
-    return fSigmaParametrization->EvalPar(values.data())*(mMIP/values[0]);
+    return fSigmaParametrization->EvalPar(values.data())*(dEdx);
   }
   else{
     const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
