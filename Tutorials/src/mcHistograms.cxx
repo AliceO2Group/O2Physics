@@ -127,7 +127,7 @@ struct LoopOverMcMatched {
           LOGF(warning, "No MC particle for track, skip...");
           continue;
         }
-        etaDiff->Fill(track.mcParticle_as<aod::McParticles_000>().eta() - track.eta());
+        etaDiff->Fill(track.mcParticle().eta() - track.eta());
       }
     }
   }
