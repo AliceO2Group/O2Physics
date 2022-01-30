@@ -81,7 +81,7 @@ struct HFCandidateCreatorCascade {
                aod::V0Datas const& V0s
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles_000& mcParticles
 #endif
   )
   {
@@ -218,7 +218,7 @@ struct HFCandidateCreatorCascadeMC {
 
   void process(aod::HfCandCascade const& candidates,
                aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles_000 const& particlesMC)
   {
     int8_t sign = 0;
     std::vector<int> arrDaughLcIndex;

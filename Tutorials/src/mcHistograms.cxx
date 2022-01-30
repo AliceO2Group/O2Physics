@@ -92,15 +92,12 @@ struct AccessMcTruth {
       //   continue;
       // if (track.labelMask() != 0)
       //   continue;
-      LOGF(info, "Checking has_mcParticle");
       if (!track.has_mcParticle()) {
         LOGF(warning, "No MC particle for track, skip...");
         continue;
       }
-      LOGF(info, "Getting mcParticle");
       auto particle = track.mcParticle_as<aod::McParticles_001>();
-      LOGF(info, "Got mcParticle");
-      // auto particle = track.mcParticle();
+      // auto particle = track.mcParticle_as<aod::McParticles_000>();
       if (particle.isPhysicalPrimary()) {
         etaDiff->Fill(particle.eta() - track.eta());
         auto delta = particle.phi() - track.phi();
@@ -112,7 +109,7 @@ struct AccessMcTruth {
         }
         phiDiff->Fill(delta);
       }
-      // LOGF(info, "eta: %.2f %.2f \t phi: %.2f %.2f | %d", track.mcParticle().eta(), track.eta(), track.mcParticle().phi(), track.phi(), track.mcParticle().index());
+      // LOGF(info, "eta: %.2f %.2f \t phi: %.2f %.2f | %d", track.mcParticle_as<aod::McParticles_000>().eta(), track.eta(), track.mcParticle_as<aod::McParticles_000>().phi(), track.phi(), track.mcParticle_as<aod::McParticles_000>().index());
     }
   }
 };
@@ -140,7 +137,7 @@ struct LoopOverMcMatched {
           LOGF(warning, "No MC particle for track, skip...");
           continue;
         }
-        etaDiff->Fill(track.mcParticle().eta() - track.eta());
+        etaDiff->Fill(track.mcParticle_as<aod::McParticles_000>().eta() - track.eta());
       }
     }
   }
@@ -150,8 +147,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     // adaptAnalysisTask<VertexDistribution>(cfgc),
-    // adaptAnalysisTask<AccessMcData>(cfgc),
+    adaptAnalysisTask<AccessMcData>(cfgc),
     adaptAnalysisTask<AccessMcTruth>(cfgc),
-    // adaptAnalysisTask<LoopOverMcMatched>(cfgc)
+    adaptAnalysisTask<LoopOverMcMatched>(cfgc)
   };
 }

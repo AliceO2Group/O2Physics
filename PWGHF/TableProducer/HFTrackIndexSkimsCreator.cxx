@@ -322,7 +322,7 @@ struct HfTagSelTracks {
                MY_TYPE1 const& tracks
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles_000& mcParticles
 #endif
   )
   {
@@ -1416,7 +1416,7 @@ struct HfTrackIndexSkimsCreatorCascades {
                MyTracks const& tracks
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles_000& mcParticles
 #endif
                ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {

@@ -52,7 +52,7 @@ struct TaskLcparametrizedPIDMC {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lc_parametrizedPID::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_parametrizedPID::isSelLcPiKPNoPID == 1);
   void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidateparametrizedPID, aod::HfCandProng3MCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles_000, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {

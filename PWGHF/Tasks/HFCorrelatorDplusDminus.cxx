@@ -365,7 +365,7 @@ struct HfCorrelatorDplusDminusMcRec {
   }
 };
 
-using MCParticlesPlus = soa::Join<aod::McParticles, aod::HfCandProng3MCGen>;
+using MCParticlesPlus = soa::Join<aod::McParticles_000, aod::HfCandProng3MCGen>;
 
 /// Dplus-Dminus correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
 struct HfCorrelatorDplusDminusMcGen {
@@ -710,7 +710,7 @@ struct HfCorrelatorDplusDminusMcGenLs {
     registry.add("hcountDplustriggersMCGen", "Dplus trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  void process(aod::McCollision const& mccollision, soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC)
+  void process(aod::McCollision const& mccollision, soa::Join<aod::McParticles_000, aod::HfCandProng3MCGen> const& particlesMC)
   {
     int counterDplusDminus = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
@@ -763,7 +763,7 @@ struct HfCorrelatorDplusDminusMcGenLs {
   }
 };
 
-using MCParticlesPlus2 = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+using MCParticlesPlus2 = soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen>;
 
 /// c-cbar correlator table builder - for MC gen-level analysis
 struct HfCorrelatorCCbarMcGen {

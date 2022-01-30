@@ -448,7 +448,7 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
           while (currparticle.has_mother0()) {
             LOGF(info, "   mother0 index: %d, mother1 index: %d", currparticle.mother0Id(), currparticle.mother1Id());
             LOGF(info, "  Tracking back mother0 index");
-            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
+            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles_000>();
             LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
             LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
             LOGF(info, "   Passed  isPhysicalPrimary(): %s", newcurrparticle.isPhysicalPrimary() ? "YES" : "NO");

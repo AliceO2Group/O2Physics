@@ -188,7 +188,7 @@ struct TaskJpsiMC {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEETopol >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMuTopol >= d_selectionFlagJpsi);
 
-  using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+  using McParticlesHf = soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen>;
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelJpsiCandidate, aod::HfCandProng2MCRec>> const& candidates,
                McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)

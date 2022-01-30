@@ -62,7 +62,7 @@ const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_topik::npTBins;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
-using MCParticlesPlus = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
+using MCParticlesPlus = soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen>;
 
 /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorD0D0bar {
