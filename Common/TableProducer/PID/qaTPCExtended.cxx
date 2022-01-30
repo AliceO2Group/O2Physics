@@ -28,13 +28,8 @@ using TPCV0Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, 
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-<<<<<<< HEAD
-  std::vector<ConfigParamSpec> options{         //runtime customisation goes here
-  };
-=======
   std::vector<ConfigParamSpec> options{//runtime customisation goes here
     {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}};
->>>>>>> 649f636... formatting
   std::swap(workflowOptions, options);
 }
 
@@ -42,12 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 using namespace o2::dataformats;
 
-<<<<<<< HEAD
-
-struct QaTpcPid {
-=======
 struct QaTpcTof {
->>>>>>> 649f636... formatting
   //Configurables
   Configurable<float> cutTOF{"cutTOF", 3.f, "TOF nsigma cut for TPC-TOF PID"};
   Configurable<int> pBins{"pBins", 400, "Number of momentum bins"};
@@ -82,16 +72,6 @@ struct QaTpcTof {
     pAxis.makeLogaritmic();
     AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TPC n_{#sigma}"};
     AxisSpec tofnSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, "TOF n_{#sigma}"};
-<<<<<<< HEAD
-    
-    hists.add(hnsigmaTPC[i].data(), Form("TPC signal (%s) without TOF cut",partName[i]), kTH2F, {pAxis, nSigmaAxis}); 
-    hists.add(hnsigmaTPCTOF[i].data(), Form("TPC signal (%s) after TOF cut",partName[i],cutTOF), kTH2F, {pAxis, nSigmaAxis}); 
-    hists.add(hnsigmaTOF[i].data(), "TOF signal", kTH2F, {pAxis, tofnSigmaAxis}); 
-    hists.add(hnsigmaTOFAfter[i].data(), "TOF signal after TOF cut", kTH2F, {pAxis, tofnSigmaAxis}); 
-    
-  }//addParticleHistos
-  
-=======
 
     hists.add(hnsigmaTPC[i].data(), Form("TPC signal (%s) without TOF cut", partName[i]), kTH2F, {pAxis, nSigmaAxis});
     hists.add(hnsigmaTPCTOF[i].data(), Form("TPC signal (%s) after %.2f#sigma TOF cut", partName[i], double(cutTOF)), kTH2F, {pAxis, nSigmaAxis});
@@ -99,7 +79,6 @@ struct QaTpcTof {
     hists.add(hnsigmaTOFAfter[i].data(), "TOF signal after TOF cut", kTH2F, {pAxis, tofnSigmaAxis});
 
   } //addParticleHistos
->>>>>>> 649f636... formatting
 
   void init(InitContext&)
   {
@@ -267,6 +246,10 @@ struct QaTpcV0 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w;
-  w.push_back(adaptAnalysisTask<QaTpcPid>(cfgc));
+  w.push_back(adaptAnalysisTask<QaTpcTof>(cfgc));
+  if (cfgc.options().get<int>("useV0")) {
+    w.push_back(adaptAnalysisTask<QaTpcV0>(cfgc));
+  }
+
   return w;
 }
