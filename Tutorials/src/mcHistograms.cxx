@@ -139,6 +139,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<VertexDistribution>(cfgc),
     adaptAnalysisTask<AccessMcData>(cfgc),
     adaptAnalysisTask<AccessMcTruth>(cfgc),
-    adaptAnalysisTask<LoopOverMcMatched>(cfgc)
-  };
+    adaptAnalysisTask<LoopOverMcMatched>(cfgc)};
 }
