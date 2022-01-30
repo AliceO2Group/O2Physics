@@ -81,8 +81,8 @@ struct MultipleProcessExample {
   {
     LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
     for (auto& track : tracks) {
-      registry.fill(HIST("etaDiff"), track.mcParticle_as<aod::McParticles_000>().eta() - track.eta());
-      registry.fill(HIST("phiDiff"), normalize(track.mcParticle_as<aod::McParticles_000>().phi() - track.phi()));
+      registry.fill(HIST("etaDiff"), track.mcParticle().eta() - track.eta());
+      registry.fill(HIST("phiDiff"), normalize(track.mcParticle().phi() - track.phi()));
     }
   }
 
