@@ -672,19 +672,22 @@ bool DptDptFilter::selectTrack(TrackObject const& track, int64_t colix)
 
   /* track selection */
   /* tricky because the boolean columns issue */
-  bool asone, astwo;
+  uint8_t asone, astwo;
   AcceptTrack(track, asone, astwo);
-  if (asone or astwo) {
+  if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
     /* the track has been accepted */
     fillTrackHistosAfterSelection(track, kDptDptCharged);
     /* let's identify it */
+    /* TODO: probably this needs to go inside AcceptTrack */
     MatchRecoGenSpecies sp = trackIdentification(track);
-    if (sp != kWrongSpecies) {
+    if (sp != kWrongSpecies and sp != kDptDptCharged) {
       /* fill the species histograms */
       fillTrackHistosAfterSelection(track, sp);
     }
-    scannedtracks(colix, asone, astwo, track.pt(), track.eta(), track.phi());
-    return true;
+    if (sp != kWrongSpecies) {
+      scannedtracks(colix, asone, astwo, track.pt(), track.eta(), track.phi());
+      return true;
+    }
   }
   return false;
 }
@@ -703,8 +706,8 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
       charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
     }
 
-    bool asone = false;
-    bool astwo = false;
+    uint8_t asone = uint8_t(false);
+    uint8_t astwo = uint8_t(false);
     if (charge != 0) {
       /* before particle selection */
       fillParticleHistosBeforeSelection(particle, mccollision, charge);
@@ -712,17 +715,19 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
       /* track selection */
       /* tricky because the boolean columns issue */
       AcceptParticle(particle, mccollision, asone, astwo);
-      if (asone or astwo) {
-        /* the track has been accepted */
+      if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
+        /* the particle has been accepted */
         /* fill the charged particle histograms */
         fillParticleHistosAfterSelection(particle, mccollision, charge, kDptDptCharged);
         /* let's identify the particle */
         MatchRecoGenSpecies sp = IdentifyParticle(particle);
-        if (sp != kWrongSpecies) {
+        if (sp != kWrongSpecies and sp != kDptDptCharged) {
           fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
         }
-        acceptedparticles++;
-        scannedtruetracks(colix, asone, astwo, particle.pt(), particle.eta(), particle.phi());
+        if (sp != kWrongSpecies) {
+          acceptedparticles++;
+          scannedtruetracks(colix, asone, astwo, particle.pt(), particle.eta(), particle.phi());
+        }
       }
     } else {
       if ((particle.mcCollisionId() == 0) and traceCollId0) {
@@ -819,7 +824,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   fhCentMultB->Fill(passedcent);
   fhMultB->Fill(mult);
   fhVertexZB->Fill(collision.posZ());
-  bool acceptedevent = false;
+  uint8_t acceptedevent = uint8_t(false);
   float centormult = passedcent;
   if (IsEvtSelected(collision, centormult)) {
     acceptedevent = true;
@@ -832,7 +837,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   } else {
     acceptedcollisions(collision.bcId(), collision.posZ(), acceptedevent, centormult);
     for (auto& track : ftracks) {
-      scannedtracks(acceptedcollisions.lastIndex(), false, false, track.pt(), track.eta(), track.phi());
+      scannedtracks(acceptedcollisions.lastIndex(), uint8_t(false), uint8_t(false), track.pt(), track.eta(), track.phi());
     }
   }
 }
@@ -884,7 +889,7 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McP
 
   fhTrueCentMultB->Fill(centormult);
   fhTrueVertexZB->Fill(mccollision.posZ());
-  bool acceptedevent = false;
+  uint8_t acceptedevent = uint8_t(false);
   if (IsEvtSelected(mccollision, centormult)) {
     acceptedevent = true;
     fhTrueCentMultA->Fill(centormult);
@@ -895,7 +900,7 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McP
   } else {
     acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
     for (auto& particle : mcparticles) {
-      scannedtruetracks(acceptedtrueevents.lastIndex(), false, false, particle.pt(), particle.eta(), particle.phi());
+      scannedtruetracks(acceptedtrueevents.lastIndex(), uint8_t(false), uint8_t(false), particle.pt(), particle.eta(), particle.phi());
     }
   }
 }
