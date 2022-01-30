@@ -41,15 +41,6 @@ using namespace o2::framework::expressions;
 #define DPTDPTLOGCOLLISIONS debug
 #define DPTDPTLOGTRACKS debug
 
-namespace o2
-{
-namespace aod
-{
-using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::ScannedTracks>>;
-using FilteredTrackData = Partition<aod::FilteredTracks>::filtered_iterator;
-} // namespace aod
-} // namespace o2
-
 namespace correlationstask
 {
 using namespace o2::analysis::dptdptfilter;
@@ -546,8 +537,8 @@ struct DptDptCorrelationsTask {
     return ixDCE;
   }
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == true);
-  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == true) or (aod::dptdptfilter::trackacceptedastwo == true));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
+  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == uint8_t(true)) or (aod::dptdptfilter::trackacceptedastwo == uint8_t(true)));
 
   void processRecLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
   {
@@ -556,8 +547,8 @@ struct DptDptCorrelationsTask {
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == true;
-      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == true;
+      Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == uint8_t(true);
+      Partition<o2::aod::ScannedTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == uint8_t(true);
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
@@ -575,8 +566,8 @@ struct DptDptCorrelationsTask {
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == true;
-      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == true;
+      Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == uint8_t(true);
+      Partition<o2::aod::ScannedTrueTracks> TracksTwo = aod::dptdptfilter::trackacceptedastwo == uint8_t(true);
       TracksOne.bindTable(tracks);
       TracksTwo.bindTable(tracks);
 
