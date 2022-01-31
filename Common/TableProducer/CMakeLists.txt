@@ -63,4 +63,4 @@ o2physics_add_dpl_workflow(track-propagation
 o2physics_add_dpl_workflow(mc-converter
                     SOURCES mcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
-                    COMPONENT_NAME Analysis)                    
+                    COMPONENT_NAME Analysis)
