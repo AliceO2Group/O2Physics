@@ -403,29 +403,29 @@ inline bool matchTrackType(TrackObject const& track)
 }
 
 template <typename TrackObject>
-inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
+inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo)
 {
-  asone = false;
-  astwo = false;
+  asone = uint8_t(false);
+  astwo = uint8_t(false);
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if (matchTrackType(track)) {
     if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
       if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
-        asone = true;
+        asone = uint8_t(true);
       }
       if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
-        astwo = true;
+        astwo = uint8_t(true);
       }
     }
   }
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
-inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, bool& asone, bool& astwo)
+inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, uint8_t& asone, uint8_t& astwo)
 {
-  asone = false;
-  astwo = false;
+  asone = uint8_t(false);
+  astwo = uint8_t(false);
 
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
@@ -460,10 +460,10 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
     }
     if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
       if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
-        asone = true;
+        asone = uint8_t(true);
       }
       if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
-        astwo = true;
+        astwo = uint8_t(true);
       }
     }
   } else {
