@@ -344,6 +344,10 @@ struct HfFilter { // Main struct for HF triggers
 
       inputNamesML2P = session2Prong->GetInputNames();
       inputShapesML2P = session2Prong->GetInputShapes();
+      if (inputShapesML2P[0][0] < 0) {
+        LOG(warning) << "Model with negative input shape likely because converted with ummingbird, setting it to 1.";
+        inputShapesML2P[0][0] = 1;
+      }
       outputNamesML2P = session2Prong->GetOutputNames();
       outputShapesML2P = session2Prong->GetOutputShapes();
     }
@@ -623,7 +627,9 @@ struct HfFilter { // Main struct for HF triggers
         inputTensor2P.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures2P.data(), inputFeatures2P.size(), inputShapesML2P[0]));
 
         // double-check the dimensions of the input tensor
-        assert(inputTensor2P[0].IsTensor() && inputTensor2P[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapesML2P[0]);
+        if (inputTensor2P[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
+          assert(inputTensor2P[0].IsTensor() && inputTensor2P[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapesML2P[0]);
+        }
         try {
           auto outputTensor2P = session2Prong->Run(inputNamesML2P, inputTensor2P, outputNamesML2P);
           assert(outputTensor2P.size() == outputNamesML2P.size() && outputTensor2P[1].IsTensor());
