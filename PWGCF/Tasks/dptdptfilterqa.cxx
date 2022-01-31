@@ -26,15 +26,6 @@ using namespace o2::framework::expressions;
 #define DPTDPTFILTERLOGCOLLISIONS debug
 #define DPTDPTFILTERLOGTRACKS debug
 
-namespace o2
-{
-namespace aod
-{
-using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::ScannedTracks>>;
-using FilteredTrackData = Partition<aod::FilteredTracks>::filtered_iterator;
-} // namespace aod
-} // namespace o2
-
 namespace o2::analysis::dptdptfilterqa
 {
 typedef enum { kRECO = 0,
@@ -67,7 +58,7 @@ struct DptDptFilterQA {
     histos.get<TH1>(HIST(dirname[dir]) + HIST("SelectedEvents"))->GetXaxis()->SetBinLabel(2, "Selected events");
   };
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     using namespace o2::analysis::dptdptfilter;
     using namespace o2::analysis::dptdptfilterqa;
@@ -96,7 +87,7 @@ struct DptDptFilterQA {
   {
     using namespace o2::analysis::dptdptfilterqa;
 
-    if (!collision.collisionaccepted()) {
+    if (collision.collisionaccepted() != uint8_t(true)) {
       histos.fill(HIST(dirname[dir]) + HIST("SelectedEvents"), 0.5);
     } else {
       histos.fill(HIST(dirname[dir]) + HIST("SelectedEvents"), 1.5);
@@ -107,20 +98,20 @@ struct DptDptFilterQA {
     int ntracks_one_and_two = 0;
     int ntracks_none = 0;
     for (auto& track : tracks) {
-      if (!track.trackacceptedasone() and !track.trackacceptedastwo()) {
+      if (track.trackacceptedasone() != uint8_t(true) and track.trackacceptedastwo() != uint8_t(true)) {
         ntracks_none++;
       }
-      if (track.trackacceptedasone() and track.trackacceptedastwo()) {
+      if (track.trackacceptedasone() == uint8_t(true) and track.trackacceptedastwo() == uint8_t(true)) {
         ntracks_one_and_two++;
       }
-      if (track.trackacceptedasone()) {
+      if (track.trackacceptedasone() == uint8_t(true)) {
         ntracks_one++;
       }
-      if (track.trackacceptedastwo()) {
+      if (track.trackacceptedastwo() == uint8_t(true)) {
         ntracks_two++;
       }
     }
-    if (!collision.collisionaccepted()) {
+    if (collision.collisionaccepted() != uint8_t(true)) {
       /* control for non selected events */
       histos.fill(HIST(dirname[dir]) + HIST("TracksOneUnsel"), ntracks_one);
       histos.fill(HIST(dirname[dir]) + HIST("TracksTwoUnsel"), ntracks_two);
@@ -134,8 +125,8 @@ struct DptDptFilterQA {
     }
   }
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == true);
-  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == true) or (aod::dptdptfilter::trackacceptedastwo == true));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
+  Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == uint8_t(true)) or (aod::dptdptfilter::trackacceptedastwo == uint8_t(true)));
 
   void processGeneratorLevel(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {

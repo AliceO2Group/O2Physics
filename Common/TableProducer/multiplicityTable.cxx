@@ -92,7 +92,13 @@ struct MultiplicityTableTaskIndexed {
         multT0C += amplitude;
       }
     }
-
+    // using FV0 row index from event selection task
+    if (collision.has_foundFV0()) {
+      auto fv0 = collision.foundFV0();
+      for (auto amplitude : fv0.amplitude()) {
+        multV0A += amplitude;
+      }
+    }
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
     mult(multV0A, multV0C, multT0A, multT0C, multZNA, multZNC, multTracklets, multTPC);
   }

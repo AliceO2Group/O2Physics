@@ -79,10 +79,15 @@ struct QaImpactPar {
   Configurable<float> maxDeltaY_PVrefit{"maxDeltaY_PVrefit", 0.5, "Max. DeltaY value for PV refit (cm)"};
   Configurable<float> minDeltaZ_PVrefit{"minDeltaZ_PVrefit", -0.5, "Min. DeltaZ value for PV refit (cm)"};
   Configurable<float> maxDeltaZ_PVrefit{"maxDeltaZ_PVrefit", 0.5, "Max. DeltaZ value for PV refit (cm)"};
+  Configurable<uint16_t> minPVcontrib{"minPVcontrib", 0, "Minimum number of PV contributors"};
+  Configurable<uint16_t> maxPVcontrib{"maxPVcontrib", 1000, "Maximum number of PV contributors"};
+  Configurable<bool> removeDiamondConstraint{"removeDiamondConstraint", true, "Remove the diamond constraint for the PV refit"};
+  Configurable<bool> keepAllTracksPVrefit{"keepAllTracksPVrefit", false, "Keep all tracks for PV refit (for debug)"};
 
   /// Selections with Filter (from o2::framework::expressions)
   // Primary vertex |z_vtx|<XXX cm
-  Filter collisionZVtxFilter = nabs(o2::aod::collision::posZ) < zVtxMax;
+  Filter collisionZVtxFilter = (nabs(o2::aod::collision::posZ) < zVtxMax);
+  Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
   // Global tracks
   // with Run 3 data/MC enable '--isRun3 1' option
   Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
@@ -306,7 +311,9 @@ struct QaImpactPar {
     Pvtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
     // configure PVertexer
     o2::vertexing::PVertexer vertexer;
-    o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
+    if (removeDiamondConstraint) {
+      o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
+    }
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
     if (!PVrefit_doable) {
@@ -373,7 +380,9 @@ struct QaImpactPar {
         if (it_trk != vec_globID_contr.end()) {
           /// this track contributed to the PV fit: let's do the refit without it
           const int entry = std::distance(vec_globID_contr.begin(), it_trk);
-          vec_useTrk_PVrefit[entry] = false;                                   /// remove the track from the PV refitting
+          if (!keepAllTracksPVrefit) {
+            vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
+          }
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
           LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {
@@ -556,7 +565,9 @@ struct QaImpactPar {
     Pvtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
     // configure PVertexer
     o2::vertexing::PVertexer vertexer;
-    o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
+    if (removeDiamondConstraint) {
+      o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
+    }
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
     if (!PVrefit_doable) {
@@ -595,7 +606,9 @@ struct QaImpactPar {
         if (it_trk != vec_globID_contr.end()) {
           /// this track contributed to the PV fit: let's do the refit without it
           const int entry = std::distance(vec_globID_contr.begin(), it_trk);
-          vec_useTrk_PVrefit[entry] = false;                                   /// remove the track from the PV refitting
+          if (!keepAllTracksPVrefit) {
+            vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
+          }
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
           LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {

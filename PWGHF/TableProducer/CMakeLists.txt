@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(candidate-creator-xicc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-chic
+                    SOURCES HFCandidateCreatorChic.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-creator-lb
                     SOURCES HFCandidateCreatorLb.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
@@ -51,11 +56,6 @@ o2physics_add_dpl_workflow(candidate-creator-lb
 
 o2physics_add_dpl_workflow(candidate-creator-x
                     SOURCES HFCandidateCreatorX.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(candidate-creator-chic
-                    SOURCES HFCandidateCreatorChic.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
@@ -73,6 +73,11 @@ o2physics_add_dpl_workflow(tree-creator-xicc-topkpipi
                     SOURCES HFTreeCreatorXiccToPKPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-chic-tojpsigamma
+                   SOURCES HFTreeCreatorChicToJpsiGamma.cxx
+                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
+                   COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(d0-candidate-selector
                     SOURCES HFD0CandidateSelector.cxx
