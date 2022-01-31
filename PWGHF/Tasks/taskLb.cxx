@@ -174,7 +174,7 @@ struct HfTaskLbMc {
   Filter filterSelectCandidates = (aod::hf_selcandidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
   void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HFSelLbToLcPiCandidate, aod::HfCandLbMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandLbMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
+               soa::Join<aod::McParticles_000, aod::HfCandLbMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng3 const&)
   {
     //MC rec
     for (auto& candidate : candidates) {
@@ -188,7 +188,7 @@ struct HfTaskLbMc {
       auto candLc = candidate.index0_as<aod::HfCandProng3>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMCGen>>(), pdg::Code::kLambdaB0, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles_000, aod::HfCandLbMCGen>>(), pdg::Code::kLambdaB0, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());

@@ -859,7 +859,7 @@ struct HfFilter { // Main struct for HF triggers
 
   void processTraining(aod::HfTrackIndexProng2 const& cand2Prongs,
                        aod::HfTrackIndexProng3 const& cand3Prongs,
-                       aod::McParticles const& particlesMC,
+                       aod::McParticles_000 const& particlesMC,
                        BigTracksMCPID const&)
   {
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs

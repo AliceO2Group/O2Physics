@@ -154,7 +154,7 @@ struct TaskXMC {
   Filter filterSelectCandidates = (aod::hf_selcandidate_x::isSelXToJpsiToEEPiPi >= d_selectionFlagX || aod::hf_selcandidate_x::isSelXToJpsiToMuMuPiPi >= d_selectionFlagX);
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HFSelXToJpsiPiPiCandidate, aod::HfCandXMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandXMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles_000, aod::HfCandXMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -167,7 +167,7 @@ struct TaskXMC {
         continue;
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXMCGen>>(), 9920443, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles_000, aod::HfCandXMCGen>>(), 9920443, true);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());

@@ -216,7 +216,7 @@ struct QaTrackingEfficiency {
     }
   }
 
-  void process(const o2::aod::McParticles& mcParticles,
+  void process(const o2::aod::McParticles_000& mcParticles,
                const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>& tracks,
                const o2::aod::McCollisions&)
@@ -311,7 +311,7 @@ struct QaTrackingEfficiency {
         histos.fill(HIST("fakeTrackNoiseHits"), 0.5);
         continue;
       }
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<o2::aod::McParticles_000>();
       if (rejectParticle(mcParticle, HIST("trackSelection"))) {
         continue;
       }

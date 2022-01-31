@@ -159,7 +159,7 @@ struct HFLcCandidateSelectorALICE3 {
   }
 
   using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
-  void process(aod::HfCandProng3 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCandProng3 const& candidates, Trks const& barreltracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
     for (auto& candidate : candidates) {
 
@@ -201,9 +201,9 @@ struct HFLcCandidateSelectorALICE3 {
         continue;
       }
 
-      const auto mcParticlePositive1 = trackPos1.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      const auto mcParticlePositive2 = trackPos2.mcParticle();
+      const auto mcParticlePositive1 = trackPos1.mcParticle_as<aod::McParticles_000>();
+      const auto mcParticleNegative = trackNeg.mcParticle_as<aod::McParticles_000>();
+      const auto mcParticlePositive2 = trackPos2.mcParticle_as<aod::McParticles_000>();
 
       int pdgPositive1 = mcParticlePositive1.pdgCode();
       int pdgNegative = mcParticleNegative.pdgCode();

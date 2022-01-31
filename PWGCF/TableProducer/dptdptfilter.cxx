@@ -626,15 +626,15 @@ struct DptDptFilter {
   PROCESS_SWITCH(DptDptFilter, processWithoutCentPIDDetectorLevel, "Process PID MC detector level without centrality", false);
 
   template <typename CollisionObject>
-  void processGenerated(CollisionObject const& mccollision, aod::McParticles const& mcparticles, float centormult);
+  void processGenerated(CollisionObject const& mccollision, aod::McParticles_000 const& mcparticles, float centormult);
 
   void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
                                      soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentV0Ms> const& collisions,
-                                     aod::McParticles const& mcparticles);
+                                     aod::McParticles_000 const& mcparticles);
   PROCESS_SWITCH(DptDptFilter, processWithCentGeneratorLevel, "Process generated with centrality", false);
 
   void processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
-                                        aod::McParticles const& mcparticles);
+                                        aod::McParticles_000 const& mcparticles);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
 };
 
@@ -654,7 +654,7 @@ MatchRecoGenSpecies DptDptFilter::trackIdentification(TrackObject const& track)
     }
   } else if (recoIdMethod == 2) {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-      sp = IdentifyParticle(track.mcParticle());
+      sp = IdentifyParticle(track.template mcParticle_as<aod::McParticles_000>());
     } else {
       LOGF(fatal, "Track identification required from MC particle but MC information not present");
     }
@@ -883,7 +883,7 @@ void DptDptFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const&
 }
 
 template <typename CollisionObject>
-void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McParticles const& mcparticles, float centormult)
+void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McParticles_000 const& mcparticles, float centormult)
 {
   using namespace dptdptfilter;
 
@@ -907,7 +907,7 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McP
 
 void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccollision,
                                                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentV0Ms> const& collisions,
-                                                 aod::McParticles const& mcparticles)
+                                                 aod::McParticles_000 const& mcparticles)
 {
   using namespace dptdptfilter;
 
@@ -931,7 +931,7 @@ void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccolli
 }
 
 void DptDptFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
-                                                    aod::McParticles const& mcparticles)
+                                                    aod::McParticles_000 const& mcparticles)
 {
   using namespace dptdptfilter;
 

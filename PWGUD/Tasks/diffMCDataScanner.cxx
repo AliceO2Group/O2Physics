@@ -103,7 +103,7 @@ struct collisionsInfo {
 
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, /* MFs& mfttracks,*/ FWs& fwdtracks, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-               aod::McCollisions& McCols, aod::McParticles& McParts)
+               aod::McCollisions& McCols, aod::McParticles_000& McParts)
   {
 
     // obtain slice of compatible BCs
@@ -342,7 +342,7 @@ struct MCTracks {
   using CCs = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using CC = CCs::iterator;
 
-  void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles& McParts)
+  void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles_000& McParts)
   {
 
     for (auto collision : collisions) {
@@ -400,11 +400,11 @@ struct TPCnSigma {
   using TCs = soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels>;
   using TCwPIDs = soa::Join<TCs, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-  void process(TCwPIDs& tracks, aod::McParticles const& mcParticles)
+  void process(TCwPIDs& tracks, aod::McParticles_000 const& mcParticles)
   {
     for (auto track : tracks) {
       if (track.isGlobalTrack()) {
-        nSigmas(track.mcParticle().pdgCode(), track.mcParticle().pt(),
+        nSigmas(track.mcParticle_as<aod::McParticles_000>().pdgCode(), track.mcParticle_as<aod::McParticles_000>().pt(),
                 track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(), track.tpcNSigmaPr());
       }

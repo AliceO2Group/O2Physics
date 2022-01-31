@@ -235,7 +235,7 @@ struct AnalysisTrackSelection {
         VarManager::FillTrack<gkParticleMCFillMap>(track.reducedMCTrack());
       }
       if constexpr (TTrackMCFillMap & VarManager::ObjTypes::Track) {
-        VarManager::FillTrack<gkParticleMCFillMap>(track.mcParticle());
+        VarManager::FillTrack<gkParticleMCFillMap>(track.template mcParticle_as<aod::McParticles_000>());
       }
 
       if (fConfigQA) {
@@ -271,7 +271,7 @@ struct AnalysisTrackSelection {
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.mcParticle())) {
+          if ((*sig).CheckSignal(false, tracksMC, track.template mcParticle_as<aod::McParticles_000>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -390,7 +390,7 @@ struct AnalysisMuonSelection {
         VarManager::FillTrack<gkParticleMCFillMap>(muon.reducedMCTrack());
       }
       if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
-        VarManager::FillTrack<gkParticleMCFillMap>(muon.mcParticle());
+        VarManager::FillTrack<gkParticleMCFillMap>(muon.template mcParticle_as<aod::McParticles_000>());
       }
 
       if (fConfigQA) {
@@ -429,7 +429,7 @@ struct AnalysisMuonSelection {
           }
         }
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
-          if ((*sig).CheckSignal(false, muonsMC, muon.mcParticle())) {
+          if ((*sig).CheckSignal(false, muonsMC, muon.template mcParticle_as<aod::McParticles_000>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -682,7 +682,7 @@ struct AnalysisSameEventPairing {
           }
         }
         if constexpr (TTrackFillMap & VarManager::ObjTypes::Track || TTrackFillMap & VarManager::ObjTypes::Muon) { // for Framework data model
-          if ((*sig).CheckSignal(false, tracksMC, t1.mcParticle(), t2.mcParticle())) {
+          if ((*sig).CheckSignal(false, tracksMC, t1.template mcParticle_as<aod::McParticles_000>(), t2.template mcParticle_as<aod::McParticles_000>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }

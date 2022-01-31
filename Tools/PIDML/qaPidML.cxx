@@ -374,7 +374,7 @@ struct pidml {
   void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto& track : tracks) {
-      auto particle = track.mcParticle();
+      auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCodeMC = particle.pdgCode();
 
       fillMcHistos(track, pdgCodeMC);

@@ -96,7 +96,7 @@ struct ftofPidQaMC {
   void process(const Trks& tracks,
                const aod::McTrackLabels& labels,
                const aod::FTOFs&,
-               const aod::McParticles& mcParticles,
+               const aod::McParticles_000& mcParticles,
                const aod::Collisions& colls)
   {
     for (const auto& col : colls) {
@@ -117,7 +117,7 @@ struct ftofPidQaMC {
       if (track.eta() > maxEta || track.eta() < minEta) {
         continue;
       }
-      const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
+      const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle_as<aod::McParticles_000>();
       if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
         continue;
       }
