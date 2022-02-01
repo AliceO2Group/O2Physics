@@ -209,7 +209,6 @@ struct HfTreeCreatorBplusToD0Pi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        
         auto d0Cand = candidate.index0();
         auto piCand = candidate.index1_as<aod::BigTracksPID>();
 
