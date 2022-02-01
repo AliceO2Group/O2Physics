@@ -35,7 +35,9 @@ struct PseudorapidityDensity {
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  Configurable<bool> useDCA{"useDCA", false, "use DCA cuts"};
+  Configurable<bool> useDCAZ{"useDCAZ", true, "use DCAZ cut"};
+  Configurable<bool> useDCAXY{"useDCAXY", false, "use DCAXY cut"};
+  Configurable<bool> usePtDCAXY{"usePtDCAXY", false, "use pt-dependent DCAXY"};
   Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
   Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
 
@@ -115,7 +117,8 @@ struct PseudorapidityDensity {
   PROCESS_SWITCH(PseudorapidityDensity, processTagging, "Collect event sample stats", false);
 
   expressions::Filter ITStracks = (aod::track::detectorMap & (uint8_t)o2::aod::track::ITS) != (uint8_t)0;
-  expressions::Filter DCAFilter = ifnode(useDCA.node(), nabs(aod::track::dcaXY) <= maxDCAXY && nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
+  expressions::Filter DCAFilterZ = ifnode(useDCAZ.node(), nabs(aod::track::dcaZ) <= maxDCAZ, framework::expressions::LiteralNode{true});
+  expressions::Filter DCAFilterXY = ifnode(useDCAXY.node(), ifnode(usePtDCAXY.node(), nabs(aod::track::dcaXY) <= 0.0105f + 0.0350f / npow(aod::track::pt, 1.1f), nabs(aod::track::dcaXY) <= maxDCAXY), framework::expressions::LiteralNode{true});
 
   using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended>>;
   Partition<Trks> sample = nabs(aod::track::eta) < estimatorEta;
