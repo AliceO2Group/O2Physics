@@ -24,7 +24,7 @@
 #include <TMap.h>
 #include <TLeaf.h>
 
-const char* removeVersionSuffix(const char* treeName) 
+const char* removeVersionSuffix(const char* treeName)
 {
   // remove version suffix, e.g. O2v0_001 becomes O2v0
   static TString tmp;
@@ -35,7 +35,7 @@ const char* removeVersionSuffix(const char* treeName)
   return tmp;
 }
 
-const char* getTableName(const char* branchName, const char* treeName) 
+const char* getTableName(const char* branchName, const char* treeName)
 {
   // Syntax for branchName:
   //   fIndex<Table>[_<Suffix>]
@@ -54,7 +54,7 @@ const char* getTableName(const char* branchName, const char* treeName)
   }
   if (tableName.Length() == 0) {
     return removeVersionSuffix(treeName);
-  } 
+  }
   tableName.Remove(tableName.Length() - 1); // remove s
   tableName.ToLower();
   tableName = "O2" + tableName;
@@ -252,8 +252,8 @@ int main(int argc, char* argv[])
               outputTree->SetBranchAddress(br->GetName(), buffer);
 
               if (branchName.BeginsWith("fIndexArray")) {
-                for (int i=0; i<maximum; i++) {
-                  indexList.push_back({reinterpret_cast<int*>(buffer+i*typeSize), offsets[getTableName(branchName, treeName)]});
+                for (int i = 0; i < maximum; i++) {
+                  indexList.push_back({reinterpret_cast<int*>(buffer + i * typeSize), offsets[getTableName(branchName, treeName)]});
                 }
               }
             } else if (branchName.BeginsWith("fIndexSlice")) {
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
               outputTree->SetBranchAddress(br->GetName(), buffer);
 
               indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
-              indexList.push_back({buffer+1, offsets[getTableName(branchName, treeName)]});
+              indexList.push_back({buffer + 1, offsets[getTableName(branchName, treeName)]});
             } else if (branchName.BeginsWith("fIndex") && !branchName.EndsWith("_size")) {
               int* buffer = new int;
               indexPointers.push_back(buffer);
