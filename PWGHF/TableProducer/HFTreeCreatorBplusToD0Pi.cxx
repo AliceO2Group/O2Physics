@@ -215,9 +215,8 @@ struct HfTreeCreatorBplusToD0Pi {
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {
-          invMassD0 = o2::aod::hf_cand_prong2::InvMassD0bar(d0Cand); 
-        }
-        else if (piCand.sign() < 0) {
+          invMassD0 = o2::aod::hf_cand_prong2::InvMassD0bar(d0Cand);
+        } else if (piCand.sign() < 0) {
           invMassD0 = o2::aod::hf_cand_prong2::InvMassD0(d0Cand);
         }
 
