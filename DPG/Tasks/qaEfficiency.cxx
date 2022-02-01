@@ -13,7 +13,7 @@
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-// O2 inlcudes
+// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -216,7 +216,7 @@ struct QaTrackingEfficiency {
     }
   }
 
-  void process(const o2::aod::McParticles_000& mcParticles,
+  void process(const o2::aod::McParticles& mcParticles,
                const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>& tracks,
                const o2::aod::McCollisions&)
@@ -311,7 +311,7 @@ struct QaTrackingEfficiency {
         histos.fill(HIST("fakeTrackNoiseHits"), 0.5);
         continue;
       }
-      const auto mcParticle = track.mcParticle_as<o2::aod::McParticles_000>();
+      const auto mcParticle = track.mcParticle();
       if (rejectParticle(mcParticle, HIST("trackSelection"))) {
         continue;
       }
@@ -358,7 +358,7 @@ struct QaTrackingEfficiency {
 
     float dNdEta = 0;
     for (const auto& mcParticle : mcParticles) {
-      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughter0() && !mcParticle.has_daughter1()) {
+      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
         dNdEta += 1.f;
       }
       if (rejectParticle(mcParticle, HIST("partSelection"))) {

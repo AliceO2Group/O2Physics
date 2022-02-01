@@ -228,7 +228,7 @@ bool qaEventTrack::isSelectedTrack(const T& track)
         return true;
       }
     }
-    auto particle = track.template mcParticle_as<aod::McParticles_000>();
+    auto particle = track.mcParticle();
     const bool isPrimary = particle.isPhysicalPrimary();
     if (selectPrim && !isPrimary) {
       return false;
@@ -348,7 +348,7 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
 
     if constexpr (IS_MC) {
       // resolution plots
-      auto particle = track.template mcParticle_as<aod::McParticles_000>();
+      auto particle = track.mcParticle();
       histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
       histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
       histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
