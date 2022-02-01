@@ -59,7 +59,7 @@ struct GeneratedTask {
   int particles = 0;
   int primaryparticles = 0;
 
-  void process(aod::McCollision const& mcCollision, aod::McParticles_000& mcParticles)
+  void process(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
   {
     LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
     for (auto& mcParticle : mcParticles) {
@@ -107,11 +107,11 @@ struct ReconstructedTask {
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
-               aod::McParticles_000& mcParticles, aod::McCollisions const& mcCollisions)
+               aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
     LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
     for (auto& track : tracks) {
-      const auto particle = track.mcParticle_as<aod::McParticles_000>();
+      const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
       if (!particle.isPhysicalPrimary()) {
         pdgsecH->Fill(pdg, 1);
