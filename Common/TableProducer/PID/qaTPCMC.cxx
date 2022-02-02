@@ -151,7 +151,7 @@ struct pidTPCTaskQA {
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.mcParticle();
+    const auto particle = track.template mcParticle_as<o2::aod::McParticles_000>();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
@@ -170,7 +170,7 @@ struct pidTPCTaskQA {
                          aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                          aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                          aod::McTrackLabels> const& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles_000& mcParticles)
   {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
@@ -218,7 +218,7 @@ struct pidTPCTaskQA {
       // Fill for all
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
       histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
-      const auto particle = t.mcParticle();
+      const auto particle = t.mcParticle_as<aod::McParticles_000>();
       if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());

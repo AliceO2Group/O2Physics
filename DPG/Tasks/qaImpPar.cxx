@@ -469,7 +469,7 @@ struct QaImpactPar {
                  o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra> const& unfiltered_tracks,
                  const o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended, o2::aod::McTrackLabels>>& tracks,
                  const o2::aod::McCollisions&,
-                 const o2::aod::McParticles& mcParticles,
+                 const o2::aod::McParticles_000& mcParticles,
                  o2::aod::BCsWithTimestamps const&)
   {
     // o2::dataformats::DCA dca;
@@ -646,7 +646,7 @@ struct QaImpactPar {
         }
       }
       if (track.has_mcParticle()) {
-        const auto mcparticle = track.mcParticle();
+        const auto mcparticle = track.mcParticle_as<aod::McParticles_000>();
         if (mcparticle.isPhysicalPrimary()) {
           impParRPhi = toMicrometers * track.dcaXY(); // from TracksExtended
           impParZ = toMicrometers * track.dcaZ();     // from TracksExtended

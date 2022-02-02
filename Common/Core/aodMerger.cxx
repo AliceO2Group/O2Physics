@@ -24,6 +24,44 @@
 #include <TMap.h>
 #include <TLeaf.h>
 
+const char* removeVersionSuffix(const char* treeName)
+{
+  // remove version suffix, e.g. O2v0_001 becomes O2v0
+  static TString tmp;
+  tmp = treeName;
+  if (tmp.First("_") >= 0) {
+    tmp.Remove(tmp.First("_"));
+  }
+  return tmp;
+}
+
+const char* getTableName(const char* branchName, const char* treeName)
+{
+  // Syntax for branchName:
+  //   fIndex<Table>[_<Suffix>]
+  //   fIndexArray<Table>[_<Suffix>]
+  //   fIndexSlice<Table>[_<Suffix>]
+  // if <Table> is empty it is a self index and treeName is used as table name
+  static TString tableName;
+  tableName = branchName;
+  if (tableName.BeginsWith("fIndexArray") || tableName.BeginsWith("fIndexSlice")) {
+    tableName.Remove(0, 11);
+  } else {
+    tableName.Remove(0, 6);
+  }
+  if (tableName.First("_") >= 0) {
+    tableName.Remove(tableName.First("_"));
+  }
+  if (tableName.Length() == 0) {
+    return removeVersionSuffix(treeName);
+  }
+  tableName.Remove(tableName.Length() - 1); // remove s
+  tableName.ToLower();
+  tableName = "O2" + tableName;
+  // printf("%s --> %s\n", branchName, tableName.Data());
+  return tableName;
+}
+
 // AOD merger with correct index rewriting
 // No need to know the datamodel because the branch names follow a canonical standard (identified by fIndex)
 int main(int argc, char* argv[])
@@ -191,6 +229,7 @@ int main(int argc, char* argv[])
           // register index and connect VLA columns
           std::vector<std::pair<int*, int>> indexList;
           std::vector<char*> vlaPointers;
+          std::vector<int*> indexPointers;
           TObjArray* branches = inputTree->GetListOfBranches();
           for (int i = 0; i < branches->GetEntriesFast(); ++i) {
             TBranch* br = (TBranch*)branches->UncheckedAt(i);
@@ -199,27 +238,41 @@ int main(int argc, char* argv[])
             // detect VLA
             if (((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount() != nullptr) {
               int maximum = ((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount()->GetMaximum();
-              char* buffer = new char[maximum * 8]; // assume 64 bit as largest case
-              printf("      Allocated VLA buffer of size %d for branch name %s\n", maximum, br->GetName());
+
+              // get type
+              static TClass* cls;
+              EDataType type;
+              br->GetExpectedType(cls, type);
+              auto typeSize = TDataType::GetDataType(type)->Size();
+
+              char* buffer = new char[maximum * typeSize];
+              vlaPointers.push_back(buffer);
+              printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
               inputTree->SetBranchAddress(br->GetName(), buffer);
               outputTree->SetBranchAddress(br->GetName(), buffer);
-              vlaPointers.push_back(buffer);
-            }
 
-            if (branchName.BeginsWith("fIndex")) {
-              // Syntax: fIndex<Table>[_<Suffix>]
-              branchName.Remove(0, 6);
-              if (branchName.First("_") > 0) {
-                branchName.Remove(branchName.First("_"));
+              if (branchName.BeginsWith("fIndexArray")) {
+                for (int i = 0; i < maximum; i++) {
+                  indexList.push_back({reinterpret_cast<int*>(buffer + i * typeSize), offsets[getTableName(branchName, treeName)]});
+                }
               }
-              branchName.Remove(branchName.Length() - 1); // remove s
-              branchName.ToLower();
-              branchName = "O2" + branchName;
+            } else if (branchName.BeginsWith("fIndexSlice")) {
+              int* buffer = new int[2];
+              vlaPointers.push_back(reinterpret_cast<char*>(buffer));
 
-              indexList.push_back({new int, offsets[branchName.Data()]});
+              inputTree->SetBranchAddress(br->GetName(), buffer);
+              outputTree->SetBranchAddress(br->GetName(), buffer);
 
-              inputTree->SetBranchAddress(br->GetName(), indexList.back().first);
-              outputTree->SetBranchAddress(br->GetName(), indexList.back().first);
+              indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
+              indexList.push_back({buffer + 1, offsets[getTableName(branchName, treeName)]});
+            } else if (branchName.BeginsWith("fIndex") && !branchName.EndsWith("_size")) {
+              int* buffer = new int;
+              indexPointers.push_back(buffer);
+
+              inputTree->SetBranchAddress(br->GetName(), buffer);
+              outputTree->SetBranchAddress(br->GetName(), buffer);
+
+              indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
             }
           }
 
@@ -266,8 +319,8 @@ int main(int argc, char* argv[])
 
           delete inputTree;
 
-          for (const auto& idx : indexList) {
-            delete idx.first;
+          for (auto& buffer : indexPointers) {
+            delete[] buffer;
           }
           for (auto& buffer : vlaPointers) {
             delete[] buffer;
@@ -296,12 +349,7 @@ int main(int argc, char* argv[])
 
       // update offsets
       for (auto const& tree : trees) {
-        // remove version suffix, e.g. O2v0_001 becomes O2v0
-        TString treeName(tree.first);
-        if (treeName.First("_") > 0) {
-          treeName.Remove(treeName.First("_"));
-        }
-        offsets[treeName.Data()] = tree.second->GetEntries();
+        offsets[removeVersionSuffix(tree.first.c_str())] = tree.second->GetEntries();
       }
 
       // check for not found tables

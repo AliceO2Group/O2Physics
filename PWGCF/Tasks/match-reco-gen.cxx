@@ -352,7 +352,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
 
-      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles_000>().mcCollisionId());
       if (track.collisionId() < 0) {
         if (label >= 0) {
           mclabelpos[kNEGATIVE][label].push_back(recix);
@@ -415,7 +415,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
             if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
               /* the track has been accepted */
               nreco++;
-              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles_000>().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
             }
           }

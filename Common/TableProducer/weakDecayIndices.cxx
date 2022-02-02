@@ -32,7 +32,7 @@ struct WeakDecayIndicesV0 {
   }
 };
 
-// NOTE These tasks have to be split because for the cascades, V0s and not StoredV0s are needed
+// NOTE These tasks have to be split because for the cascades, V0s and not V0s_000 are needed
 struct WeakDecayIndicesCascades {
   Produces<aod::Cascades_001> cascades_001;
 
@@ -40,7 +40,8 @@ struct WeakDecayIndicesCascades {
   {
     for (auto& cascade : cascades) {
       if (cascade.bachelor().collisionId() != cascade.v0().posTrack().collisionId() || cascade.v0().posTrack().collisionId() != cascade.v0().negTrack().collisionId()) {
-        LOGF(warning, "Cascade %d has inconsistent collision information (%d, %d, %d)", cascade.globalIndex(), cascade.bachelor().collisionId(), cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId());
+        LOGF(fatal, "Cascade %d has inconsistent collision information (%d, %d, %d) track ids %d %d %d", cascade.globalIndex(), cascade.bachelor().collisionId(),
+             cascade.v0().posTrack().collisionId(), cascade.v0().negTrack().collisionId(), cascade.bachelorId(), cascade.v0().posTrackId(), cascade.v0().negTrackId());
       }
       cascades_001(cascade.bachelor().collisionId(), cascade.v0Id(), cascade.bachelorId());
     }

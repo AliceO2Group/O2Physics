@@ -189,9 +189,9 @@ struct GammaConversionsmc {
     auto lTrackNeg = theV0.template negTrack_as<tracksAndTPCInfoMC>(); //negative daughter
 
     // todo: verify it is enough to check only mother0 being equal
-    if (lTrackPos.mcParticle().has_mother0() &&
-        lTrackPos.mcParticle().mother0Id() == lTrackNeg.mcParticle().mother0Id()) {
-      auto lMother = lTrackPos.mcParticle().template mother0_as<TMC>();
+    if (lTrackPos.template mcParticle_as<aod::McParticles_000>().has_mother0() &&
+        lTrackPos.template mcParticle_as<aod::McParticles_000>().mother0Id() == lTrackNeg.template mcParticle_as<aod::McParticles_000>().mother0Id()) {
+      auto lMother = lTrackPos.template mcParticle_as<aod::McParticles_000>().template mother0_as<TMC>();
 
       if (lMother.pdgCode() == 22) {
 
@@ -200,7 +200,7 @@ struct GammaConversionsmc {
         registry.fill(HIST("resolutions/hPhiRes"), theV0.phi() - lMother.phi());
 
         TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-        TVector3 lPosTrackVtxMC(lTrackPos.mcParticle().vx(), lTrackPos.mcParticle().vy(), lTrackPos.mcParticle().vz());
+        TVector3 lPosTrackVtxMC(lTrackPos.template mcParticle_as<aod::McParticles_000>().vx(), lTrackPos.template mcParticle_as<aod::McParticles_000>().vy(), lTrackPos.template mcParticle_as<aod::McParticles_000>().vz());
         // take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
         TVector3 lConvPointMC(lPosTrackVtxMC);
 

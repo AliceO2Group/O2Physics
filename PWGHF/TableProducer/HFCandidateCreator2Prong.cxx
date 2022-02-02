@@ -140,7 +140,7 @@ struct HFCandidateCreator2ProngExpressions {
 
   /// Performs MC matching.
   void processMC(aod::BigTracksMC const& tracks,
-                 aod::McParticles const& particlesMC)
+                 aod::McParticles_000 const& particlesMC)
   {
     int indexRec = -1;
     int8_t sign = 0;
