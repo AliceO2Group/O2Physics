@@ -87,6 +87,8 @@ TH1F* fhPtPosB = nullptr;
 TH1F* fhPtPosA[kDptDptNoOfSpecies] = {nullptr};
 TH1F* fhPtNegB = nullptr;
 TH1F* fhPtNegA[kDptDptNoOfSpecies] = {nullptr};
+TH2F* fhNPosNegA[kDptDptNoOfSpecies] = {nullptr};
+TH1F* fhDeltaNA[kDptDptNoOfSpecies] = {nullptr};
 
 TH1F* fhEtaB = nullptr;
 TH1F* fhEtaA = nullptr;
@@ -113,6 +115,8 @@ TH1F* fhTruePtPosB = nullptr;
 TH1F* fhTruePtPosA[kDptDptNoOfSpecies] = {nullptr};
 TH1F* fhTruePtNegB = nullptr;
 TH1F* fhTruePtNegA[kDptDptNoOfSpecies] = {nullptr};
+TH2F* fhTrueNPosNegA[kDptDptNoOfSpecies] = {nullptr};
+TH1F* fhTrueDeltaNA[kDptDptNoOfSpecies] = {nullptr};
 
 TH1F* fhTrueEtaB = nullptr;
 TH1F* fhTrueEtaA = nullptr;
@@ -125,6 +129,14 @@ TH1F* fhTrueDCAxyA = nullptr;
 TH1F* fhTrueDCAzB = nullptr;
 TH1F* fhTrueDCAxyBid = nullptr;
 TH1F* fhTrueDCAzA = nullptr;
+
+//============================================================================================
+// The DptDptFilter multiplicity counters
+//============================================================================================
+int trkMultPos[kDptDptNoOfSpecies];  // multiplicity of positive tracks
+int trkMultNeg[kDptDptNoOfSpecies];  // multiplicity of negative tracks
+int partMultPos[kDptDptNoOfSpecies]; // multiplicity of positive particles
+int partMultNeg[kDptDptNoOfSpecies]; // multiplicity of negative particles
 } // namespace o2::analysis::dptdptfilter
 
 using namespace dptdptfilter;
@@ -473,10 +485,12 @@ struct DptDptFilter {
         fhPtNegA[sp] = new TH1F(TString::Format("fHistPtNegA_%s", speciesName[sp]),
                                 TString::Format("P_{T} distribution for reconstructed  %s^{#minus};P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
                                 ptbins, ptlow, ptup);
-        if (recoIdMethod == 0) {
-          /* no track identification, only charged */
-          break;
-        }
+        fhNPosNegA[sp] = new TH2F(TString::Format("fhNPosNegA_%s", speciesName[sp]).Data(),
+                                  TString::Format("N(%s^{#plus}) N(%s^{#minus}) distribution for reconstructed;N(%s^{#plus});N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
+                                  40, -0.5, 39.5, 40, -0.5, 39.5);
+        fhDeltaNA[sp] = new TH1F(TString::Format("fhDeltaNA_%s", speciesName[sp]).Data(),
+                                 TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution for reconstructed;N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
+                                 79, -39.5, 39.5);
       }
 
       /* add the hstograms to the output list */
@@ -506,10 +520,8 @@ struct DptDptFilter {
         fOutputList->Add(fhPtA[sp]);
         fOutputList->Add(fhPtPosA[sp]);
         fOutputList->Add(fhPtNegA[sp]);
-        if (recoIdMethod == 0) {
-          /* no track identification, only charged */
-          break;
-        }
+        fOutputList->Add(fhNPosNegA[sp]);
+        fOutputList->Add(fhDeltaNA[sp]);
       }
     }
 
@@ -558,10 +570,12 @@ struct DptDptFilter {
         fhTruePtNegA[sp] = new TH1F(TString::Format("fTrueHistPtNegA_%s", speciesName[sp]),
                                     TString::Format("P_{T} distribution %s^{#minus} (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
                                     ptbins, ptlow, ptup);
-        if (recoIdMethod == 0) {
-          /* no track identification, only charged */
-          break;
-        }
+        fhTrueNPosNegA[sp] = new TH2F(TString::Format("fhTrueNPosNegA_%s", speciesName[sp]).Data(),
+                                      TString::Format("N(%s^{#plus}) N(%s^{#minus}) distribution (truth);N(%s^{#plus});N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
+                                      40, -0.5, 39.5, 40, -0.5, 39.5);
+        fhTrueDeltaNA[sp] = new TH1F(TString::Format("fhTrueDeltaNA_%s", speciesName[sp]).Data(),
+                                     TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution (truth);N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
+                                     79, -39.5, 39.5);
       }
 
       /* add the hstograms to the output list */
@@ -590,10 +604,8 @@ struct DptDptFilter {
         fOutputList->Add(fhTruePtA[sp]);
         fOutputList->Add(fhTruePtPosA[sp]);
         fOutputList->Add(fhTruePtNegA[sp]);
-        if (recoIdMethod == 0) {
-          /* no track identification, only charged */
-          break;
-        }
+        fOutputList->Add(fhTrueNPosNegA[sp]);
+        fOutputList->Add(fhTrueDeltaNA[sp]);
       }
     }
   }
@@ -676,15 +688,30 @@ bool DptDptFilter::selectTrack(TrackObject const& track, int64_t colix)
   AcceptTrack(track, asone, astwo);
   if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
     /* the track has been accepted */
-    fillTrackHistosAfterSelection(track, kDptDptCharged);
     /* let's identify it */
     /* TODO: probably this needs to go inside AcceptTrack */
     MatchRecoGenSpecies sp = trackIdentification(track);
-    if (sp != kWrongSpecies and sp != kDptDptCharged) {
+    if (sp != kWrongSpecies) {
+      if (sp != kDptDptCharged) {
+        /* fill the charged histograms */
+        fillTrackHistosAfterSelection(track, kDptDptCharged);
+        /* update charged multiplicities */
+        if (asone == uint8_t(true)) {
+          trkMultPos[kDptDptCharged]++;
+        }
+        if (astwo == uint8_t(true)) {
+          trkMultNeg[kDptDptCharged]++;
+        }
+      }
       /* fill the species histograms */
       fillTrackHistosAfterSelection(track, sp);
-    }
-    if (sp != kWrongSpecies) {
+      /* update species multiplicities */
+      if (asone == uint8_t(true)) {
+        trkMultPos[sp]++;
+      }
+      if (astwo == uint8_t(true)) {
+        trkMultNeg[sp]++;
+      }
       scannedtracks(colix, asone, astwo, track.pt(), track.eta(), track.phi());
       return true;
     }
@@ -717,16 +744,31 @@ void DptDptFilter::filterParticles(ParticleListObject const& particles, MCCollis
       AcceptParticle(particle, mccollision, asone, astwo);
       if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
         /* the particle has been accepted */
-        /* fill the charged particle histograms */
-        fillParticleHistosAfterSelection(particle, mccollision, charge, kDptDptCharged);
         /* let's identify the particle */
         MatchRecoGenSpecies sp = IdentifyParticle(particle);
-        if (sp != kWrongSpecies and sp != kDptDptCharged) {
-          fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
-        }
         if (sp != kWrongSpecies) {
-          acceptedparticles++;
+          if (sp != kDptDptCharged) {
+            /* fill the charged particle histograms */
+            fillParticleHistosAfterSelection(particle, mccollision, charge, kDptDptCharged);
+            /* update charged multiplicities */
+            if (asone == uint8_t(true)) {
+              partMultPos[kDptDptCharged]++;
+            }
+            if (astwo == uint8_t(true)) {
+              partMultNeg[kDptDptCharged]++;
+            }
+          }
+          /* fill the species  histograms */
+          fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
+          /* update species multiplicities */
+          if (asone == uint8_t(true)) {
+            partMultPos[sp]++;
+          }
+          if (astwo == uint8_t(true)) {
+            partMultNeg[sp]++;
+          }
           scannedtruetracks(colix, asone, astwo, particle.pt(), particle.eta(), particle.phi());
+          acceptedparticles++;
         }
       }
     } else {
@@ -833,7 +875,18 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
     fhVertexZA->Fill(collision.posZ());
     acceptedcollisions(collision.bcId(), collision.posZ(), acceptedevent, centormult);
 
+    /* initialize multiplicities */
+    for (int i = 0; i < kDptDptNoOfSpecies; ++i) {
+      trkMultPos[i] = 0;
+      trkMultNeg[i] = 0;
+    }
     filterTracks(ftracks, acceptedcollisions.lastIndex());
+
+    /* fill multiplicities histos */
+    for (int i = 0; i < kDptDptNoOfSpecies; ++i) {
+      fhNPosNegA[i]->Fill(trkMultPos[i], trkMultNeg[i]);
+      fhDeltaNA[i]->Fill(trkMultPos[i] - trkMultNeg[i]);
+    }
   } else {
     acceptedcollisions(collision.bcId(), collision.posZ(), acceptedevent, centormult);
     for (auto& track : ftracks) {
@@ -896,7 +949,19 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McP
     fhTrueVertexZA->Fill(mccollision.posZ());
     acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
 
+    /* initialize multiplicities */
+    for (int i = 0; i < kDptDptNoOfSpecies; ++i) {
+      partMultPos[i] = 0;
+      partMultNeg[i] = 0;
+    }
+
     filterParticles(mcparticles, mccollision, acceptedtrueevents.lastIndex());
+
+    /* fill multiplicities histos */
+    for (int i = 0; i < kDptDptNoOfSpecies; ++i) {
+      fhTrueNPosNegA[i]->Fill(partMultPos[i], partMultNeg[i]);
+      fhTrueDeltaNA[i]->Fill(partMultPos[i] - partMultNeg[i]);
+    }
   } else {
     acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
     for (auto& particle : mcparticles) {
