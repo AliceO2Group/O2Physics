@@ -290,7 +290,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 
 /// \brief Centrality selection when there is not centrality/multiplicity information
 template <typename CollisionObject>
-inline bool centralitySelectionNoMult(CollisionObject collision, float& centmult)
+inline bool centralitySelectionNoMult(CollisionObject const&, float& centmult)
 {
   bool centmultsel = false;
   switch (fCentMultEstimator) {
