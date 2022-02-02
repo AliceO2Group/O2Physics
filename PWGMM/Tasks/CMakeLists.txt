@@ -33,4 +33,3 @@ o2physics_add_dpl_workflow(lumi
                     SOURCES lumi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
->>>>>>> 4a840534b9df61152166813c36fcbbb17b395895
