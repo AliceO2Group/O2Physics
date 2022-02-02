@@ -174,6 +174,16 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Datas, StoredV0Datas, "V0DATAEXT", //!
                                 v0data::Px, v0data::Py, v0data::Pz); // the table name has here to be the one with EXT which is not nice and under study
 
 using V0Data = V0Datas::iterator;
+namespace v0data {
+DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                                       //!
+}
+
+DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //!
+                  v0data::V0DataId);
+
+using V0sLinked = soa::Join<V0s, V0DataLink>;
+using V0Linked = V0sLinked::iterator;
+
 namespace cascdata
 {
 //Necessary for full filtering functionality

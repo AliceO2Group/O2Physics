@@ -176,6 +176,7 @@ struct lambdakzeroPrefilterPairs {
 struct lambdakzeroBuilder {
 
   Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0DataLink> v0dataLink;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry registry{
@@ -262,8 +263,10 @@ struct lambdakzeroBuilder {
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
 
       //Require collision-ID
-      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks)
+      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks) {
+        v0dataLink(-1);
         continue;
+      }
 
       //Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
@@ -272,8 +275,10 @@ struct lambdakzeroBuilder {
       //---/---/---/
       // Move close to minima
       int nCand = fitter.process(pTrackCopy, nTrackCopy);
-      if (nCand == 0)
+      if (nCand == 0){
+        v0dataLink(-1);
         continue;
+      }
 
       double finalXpos = fitter.getTrack(0).getX();
       double finalXneg = fitter.getTrack(1).getX();
@@ -293,8 +298,10 @@ struct lambdakzeroBuilder {
       o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
 
       nCand = fitter.process(pTrack, nTrack);
-      if (nCand == 0)
+      if (nCand == 0){
+        v0dataLink(-1);
         continue;
+      }
 
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
@@ -309,18 +316,21 @@ struct lambdakzeroBuilder {
       // Apply selections so a skimmed table is created only
       if (fitter.getChi2AtPCACandidate() > dcav0dau) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to dca cut");
+        v0dataLink(-1);
         continue;
       }
 
       auto V0CosinePA = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       if (V0CosinePA < v0cospa) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to CPA cut");
+        v0dataLink(-1);
         continue;
       }
 
       auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to radius cut");
+        v0dataLink(-1);
         continue;
       }
 
@@ -339,6 +349,7 @@ struct lambdakzeroBuilder {
         fitter.getChi2AtPCACandidate(),
         V0.posTrack_as<MyTracks>().dcaXY(),
         V0.negTrack_as<MyTracks>().dcaXY());
+      v0dataLink(v0data.lastIndex());
     }
   }
 };
