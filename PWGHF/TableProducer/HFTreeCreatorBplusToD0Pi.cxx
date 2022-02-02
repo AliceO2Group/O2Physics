@@ -62,6 +62,8 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
 DECLARE_SOA_COLUMN(NSigmaTOFBachPi, nSigmaTOFBachPi, float);
 DECLARE_SOA_COLUMN(NSigmaTOFBachKa, nSigmaTOFBachKa, float);
+DECLARE_SOA_COLUMN(NSigmaTPCBachPi, nSigmaTPCBachPi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCBachKa, nSigmaTPCBachKa, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
 // D0 (Prong0) selection variable
 DECLARE_SOA_COLUMN(D0M, d0M, float);
@@ -84,8 +86,12 @@ DECLARE_SOA_COLUMN(D0ImpactParameterNormalised0, d0impactParameterNormalised0, f
 DECLARE_SOA_COLUMN(D0ImpactParameterNormalised1, d0impactParameterNormalised1, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk0Ka, nSigmaTOFTrk0Ka, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk0Pi, nSigmaTOFTrk0Pi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCTrk0Ka, nSigmaTPCTrk0Ka, float);
+DECLARE_SOA_COLUMN(NSigmaTPCTrk0Pi, nSigmaTPCTrk0Pi, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk1Ka, nSigmaTOFTrk1Ka, float);
 DECLARE_SOA_COLUMN(NSigmaTOFTrk1Pi, nSigmaTOFTrk1Pi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCTrk1Ka, nSigmaTPCTrk1Ka, float);
+DECLARE_SOA_COLUMN(NSigmaTPCTrk1Pi, nSigmaTPCTrk1Pi, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -126,6 +132,8 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   hf_cand::Chi2PCA,
                   full::NSigmaTOFBachPi,
                   full::NSigmaTOFBachKa,
+                  full::NSigmaTPCBachPi,
+                  full::NSigmaTPCBachKa,
                   full::MCflag,
                   full::D0M,
                   full::D0PtProng0,
@@ -146,8 +154,12 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::D0ImpactParameterNormalised1,
                   full::NSigmaTOFTrk0Pi,
                   full::NSigmaTOFTrk0Ka,
+                  full::NSigmaTPCTrk0Pi,
+                  full::NSigmaTPCTrk0Ka,
                   full::NSigmaTOFTrk1Pi,
-                  full::NSigmaTOFTrk1Ka);
+                  full::NSigmaTOFTrk1Ka,
+                  full::NSigmaTPCTrk1Pi,
+                  full::NSigmaTPCTrk1Ka);
 
 DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
                   collision::BCId,
@@ -183,7 +195,7 @@ struct HfTreeCreatorBplusToD0Pi {
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandBPlus, aod::HfCandBPMCRec, aod::HFSelBPlusToD0PiCandidate> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandBPMCGen> const& particles,
+               soa::Join<aod::McParticles_000, aod::HfCandBPMCGen> const& particles,
                aod::BigTracksPID const& tracks,
                aod::HfCandProng2 const&)
   {
@@ -256,6 +268,8 @@ struct HfTreeCreatorBplusToD0Pi {
             candidate.chi2PCA(),
             candidate.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
             candidate.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
+            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaPi(),
+            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaKa(),
             candidate.flagMCMatchRec(),
             invMassD0,
             d0Cand.ptProng0(),
@@ -276,8 +290,12 @@ struct HfTreeCreatorBplusToD0Pi {
             d0Cand.impactParameterNormalised1(),
             d0Cand.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
             d0Cand.index0_as<aod::BigTracksPID>().tofNSigmaKa(),
+            d0Cand.index0_as<aod::BigTracksPID>().tpcNSigmaPi(),
+            d0Cand.index0_as<aod::BigTracksPID>().tpcNSigmaKa(),
             d0Cand.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
-            d0Cand.index1_as<aod::BigTracksPID>().tofNSigmaKa());
+            d0Cand.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
+            d0Cand.index1_as<aod::BigTracksPID>().tpcNSigmaPi(),
+            d0Cand.index1_as<aod::BigTracksPID>().tpcNSigmaKa());
         }
       };
 
