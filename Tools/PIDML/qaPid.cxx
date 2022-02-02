@@ -88,10 +88,10 @@ struct EvaluatePid {
       }
 
       if (pdgCode == 2212) {
-        histReg.fill(HIST("contamination/2212in221"), pt);
+        histReg.fill(HIST("contamination/2212in2212"), pt);
       }
       if (pdgCode == -2212) {
-        histReg.fill(HIST("contamination/02212in221"), pt);
+        histReg.fill(HIST("contamination/02212in2212"), pt);
       }
 
       if (pdgCode == 321) {
@@ -508,7 +508,7 @@ struct EvaluatePid {
   void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {
     for (auto& track : tracks) {
-      auto particle = track.mcParticle();
+      auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCode = particle.pdgCode();
 
       fillMcHistos(track, pdgCode);

@@ -256,22 +256,22 @@ struct v0cascadesQA {
       if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA) {
         if (v0.v0radius() > V0_radius && v0.dcaV0daughters() < V0_dcav0dau && TMath::Abs(v0.dcapostopv()) > V0_dcapostopv && TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
 
-          auto mcnegtrack = v0.negTrack_as<MyTracksMC>().mcParticle();
-          auto mcpostrack = v0.posTrack_as<MyTracksMC>().mcParticle();
-          auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
+          auto mcnegtrack = v0.negTrack_as<MyTracksMC>().mcParticle_as<aod::McParticles_000>();
+          auto mcpostrack = v0.posTrack_as<MyTracksMC>().mcParticle_as<aod::McParticles_000>();
+          auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles_000>();
           bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
           bool isK0sV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) &&
-                         ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211) ||
-                          (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 211));
+                         ((particleMotherOfNeg.daughter0_as<aod::McParticles_000>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles_000>().pdgCode() == -211) ||
+                          (particleMotherOfNeg.daughter0_as<aod::McParticles_000>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles_000>().pdgCode() == 211));
 
           bool isLambdaV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 3122) &&
-                            ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 2212) ||
-                             (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 2212 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -211));
+                            ((particleMotherOfNeg.daughter0_as<aod::McParticles_000>().pdgCode() == -211 && particleMotherOfNeg.daughter1_as<aod::McParticles_000>().pdgCode() == 2212) ||
+                             (particleMotherOfNeg.daughter0_as<aod::McParticles_000>().pdgCode() == 2212 && particleMotherOfNeg.daughter1_as<aod::McParticles_000>().pdgCode() == -211));
 
           bool isAntiLambdaV0 = (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == -3122) &&
-                                ((particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == -2212) ||
-                                 (particleMotherOfNeg.daughter0_as<aod::McParticles>().pdgCode() == -2212 && particleMotherOfNeg.daughter1_as<aod::McParticles>().pdgCode() == 211));
+                                ((particleMotherOfNeg.daughter0_as<aod::McParticles_000>().pdgCode() == 211 && particleMotherOfNeg.daughter1_as<aod::McParticles_000>().pdgCode() == -2212) ||
+                                 (particleMotherOfNeg.daughter0_as<aod::McParticles_000>().pdgCode() == -2212 && particleMotherOfNeg.daughter1_as<aod::McParticles_000>().pdgCode() == 211));
 
           if (isK0sV0) {
             if (TMath::Abs(v0.yK0Short()) < V0_rapidity && CtauK0s < lifetimecut->get("lifetimecutK0S")) { // that s what we have in lambdakzeroanalysis ; discuss with nicolo chiara if we want to have more like in th aliphysics macro or none like in David's O2 QA
@@ -408,13 +408,13 @@ struct v0cascadesQA {
           TMath::Abs(casc.dcapostopv()) > Casc_dcapostopv && TMath::Abs(casc.dcanegtopv()) > Casc_dcanegtopv && TMath::Abs(casc.dcabachtopv()) > Casc_dcabachtopv &&
           casc.dcaV0daughters() < Casc_dcav0dau && casc.dcacascdaughters() < Casc_dcacascdau) {
 
-        auto mcnegtrack = casc.v0_as<aod::V0Datas>().negTrack_as<MyTracksMC>().mcParticle();
-        auto mcpostrack = casc.v0_as<aod::V0Datas>().posTrack_as<MyTracksMC>().mcParticle();
-        auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
+        auto mcnegtrack = casc.v0_as<aod::V0Datas>().negTrack_as<MyTracksMC>().mcParticle_as<aod::McParticles_000>();
+        auto mcpostrack = casc.v0_as<aod::V0Datas>().posTrack_as<MyTracksMC>().mcParticle_as<aod::McParticles_000>();
+        auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles_000>();
         bool MomOfV0IsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
-        auto bachelor = casc.bachelor_as<MyTracksMC>().mcParticle();
-        auto particleMotherOfBach = bachelor.mother0_as<aod::McParticles>();
+        auto bachelor = casc.bachelor_as<MyTracksMC>().mcParticle_as<aod::McParticles_000>();
+        auto particleMotherOfBach = bachelor.mother0_as<aod::McParticles_000>();
         bool MomOfBachIsPrimary = particleMotherOfBach.isPhysicalPrimary();
 
         bool isXiMinusCascade = (MomOfBachIsPrimary && !(MomOfV0IsPrimary) &&

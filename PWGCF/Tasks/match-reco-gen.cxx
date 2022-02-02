@@ -43,15 +43,6 @@ using namespace o2::framework::expressions;
 #define MATCHRECGENLOGCOLLISIONS debug
 #define MATCHRECGENLOGTRACKS debug
 
-namespace o2
-{
-namespace aod
-{
-using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::ScannedTracks>>;
-using FilteredTrackData = Partition<aod::FilteredTracks>::filtered_iterator;
-} // namespace aod
-} // namespace o2
-
 namespace o2::analysis::recogenmap
 {
 std::vector<std::vector<int64_t>> mclabelpos[2];
@@ -83,7 +74,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   enum { kMATCH = 0,
          kDONTMATCH };
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     using namespace o2::analysis::recogenmap;
     using namespace o2::analysis::dptdptfilter;
@@ -361,7 +352,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
 
-      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+      LOGF(MATCHRECGENLOGTRACKS, "Track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles_000>().mcCollisionId());
       if (track.collisionId() < 0) {
         if (label >= 0) {
           mclabelpos[kNEGATIVE][label].push_back(recix);
@@ -416,14 +407,15 @@ struct CheckGeneratorLevelVsDetectorLevel {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
           float centormult = -100.0f;
           if (IsEvtSelected(coll, centormult)) {
-            bool asone = false;
-            bool astwo = false;
+            uint8_t asone = uint8_t(false);
+            uint8_t astwo = uint8_t(false);
 
+            /* TODO: AcceptTrack does not consider PID */
             AcceptTrack(track, asone, astwo);
-            if (asone or astwo) {
+            if ((asone == uint8_t(true)) or (astwo == uint8_t(true))) {
               /* the track has been accepted */
               nreco++;
-              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.mcParticle().mcCollisionId());
+              LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles_000>().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
             }
           }

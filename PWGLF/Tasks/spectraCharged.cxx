@@ -364,7 +364,7 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
       */
       foundParticles.push_back(track.mcParticleId());
 
-      const auto& particle = track.mcParticle();
+      const auto& particle = track.template mcParticle_as<aod::McParticles_000>();
 
       if (!vars.isAcceptedEventMC) {
         histos.fill(HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
