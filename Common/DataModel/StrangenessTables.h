@@ -19,13 +19,13 @@ namespace o2::aod
 {
 namespace v0data
 {
-//Needed to have shorter table that does not rely on existing one (filtering!)
+// Needed to have shorter table that does not rely on existing one (filtering!)
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 
-//General V0 properties: position, momentum
+// General V0 properties: position, momentum
 DECLARE_SOA_COLUMN(PosX, posX, float);   //! positive track X at min
 DECLARE_SOA_COLUMN(NegX, negX, float);   //! negative track X at min
 DECLARE_SOA_COLUMN(PxPos, pxpos, float); //! positive track px at min
@@ -38,47 +38,47 @@ DECLARE_SOA_COLUMN(X, x, float);         //! decay position X
 DECLARE_SOA_COLUMN(Y, y, float);         //! decay position Y
 DECLARE_SOA_COLUMN(Z, z, float);         //! decay position Z
 
-//Saved from finding: DCAs
+// Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative prong to PV
 
-//Derived expressions
-//Momenta
+// Derived expressions
+// Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg); });
 
-//Length quantities
+// Length quantities
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //! V0 decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 
-//Distance Over To Mom
+// Distance Over To Mom
 DECLARE_SOA_DYNAMIC_COLUMN(DistOverTotMom, distovertotmom, //! PV to V0decay distance over total momentum
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) {
                              float P = RecoDecay::sqrtSumOfSquares(Px, Py, Pz);
                              return std::sqrt(std::pow(X - pvX, 2) + std::pow(Y - pvY, 2) + std::pow(Z - pvZ, 2)) / (P + 1E-10);
                            });
 
-//CosPA
+// CosPA
 DECLARE_SOA_DYNAMIC_COLUMN(V0CosPA, v0cosPA, //! V0 CosPA
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::CPA(array{pvX, pvY, pvZ}, array{X, Y, Z}, array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAV0ToPV, dcav0topv, //! DCA of V0 to PV
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
 
-//Armenteros-Podolanski variables
+// Armenteros-Podolanski variables
 DECLARE_SOA_DYNAMIC_COLUMN(Alpha, alpha, //! Armenteros Alpha
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
                              float momTot = RecoDecay::P(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
                              float lQlNeg = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
                              float lQlPos = RecoDecay::dotProd(array{pxpos, pypos, pzpos}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
-                             return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); //alphav0
+                             return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // alphav0
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(QtArm, qtarm, //! Armenteros Qt
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
                              float momTot = RecoDecay::P2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
                              float dp = RecoDecay::dotProd(array{pxneg, pyneg, pzneg}, array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
-                             return std::sqrt(RecoDecay::P2(pxneg, pyneg, pzneg) - dp * dp / momTot); //qtarm
+                             return std::sqrt(RecoDecay::P2(pxneg, pyneg, pzneg) - dp * dp / momTot); // qtarm
                            });
 
 // Psi pair angle: angle between the plane defined by the electron and positron momenta and the xy plane
@@ -93,7 +93,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PsiPair, psipair, //! psi pair angle
                              return std::asin(clipToPM1(argsin));
                            });
 
-//Calculated on the fly with mass assumption + dynamic tables
+// Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //! mass under lambda hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::M(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)}); });
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiLambda, mAntiLambda, //! mass under antilambda hypothesis
@@ -141,7 +141,7 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
                        v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
 
-                       //Dynamic columns
+                       // Dynamic columns
                        v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::V0Radius<v0data::X, v0data::Y>,
                        v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
@@ -151,13 +151,13 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
-                       //Invariant masses
+                       // Invariant masses
                        v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
-                       //Longitudinal
+                       // Longitudinal
                        v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
                        v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
                        v0data::Eta<v0data::Px, v0data::Py, v0data::Pz>,
@@ -174,13 +174,24 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Datas, StoredV0Datas, "V0DATAEXT", //!
                                 v0data::Px, v0data::Py, v0data::Pz); // the table name has here to be the one with EXT which is not nice and under study
 
 using V0Data = V0Datas::iterator;
+namespace v0data
+{
+DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data); //! Index to V0Data entry
+}
+
+DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
+                  v0data::V0DataId);
+
+using V0sLinked = soa::Join<V0s, V0DataLink>;
+using V0Linked = V0sLinked::iterator;
+
 namespace cascdata
 {
-//Necessary for full filtering functionality
+// Necessary for full filtering functionality
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                   //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
-//General cascade properties: position, momentum
+// General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
 DECLARE_SOA_COLUMN(PxPos, pxpos, float);     //!
 DECLARE_SOA_COLUMN(PyPos, pypos, float);     //!
@@ -198,25 +209,25 @@ DECLARE_SOA_COLUMN(Xlambda, xlambda, float); //!
 DECLARE_SOA_COLUMN(Ylambda, ylambda, float); //!
 DECLARE_SOA_COLUMN(Zlambda, zlambda, float); //!
 
-//Saved from finding: DCAs
+// Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float);     //!
 DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float); //!
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);             //!
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);             //!
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);           //!
 
-//Derived expressions
-//Momenta
+// Derived expressions
+// Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float Px, float Py) -> float { return RecoDecay::sqrtSumOfSquares(Px, Py); });
 
-//Length quantities
+// Length quantities
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //!
                            [](float xlambda, float ylambda) -> float { return RecoDecay::sqrtSumOfSquares(xlambda, ylambda); });
 DECLARE_SOA_DYNAMIC_COLUMN(CascRadius, cascradius, //!
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 
-//CosPAs
+// CosPAs
 DECLARE_SOA_DYNAMIC_COLUMN(V0CosPA, v0cosPA, //!
                            [](float Xlambda, float Ylambda, float Zlambda, float PxLambda, float PyLambda, float PzLambda, float pvX, float pvY, float pvZ) -> float { return RecoDecay::CPA(array{pvX, pvY, pvZ}, array{Xlambda, Ylambda, Zlambda}, array{PxLambda, PyLambda, PzLambda}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CascCosPA, casccosPA, //!
@@ -226,10 +237,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAV0ToPV, dcav0topv, //!
 DECLARE_SOA_DYNAMIC_COLUMN(DCACascToPV, dcacasctopv, //!
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
 
-//Calculated on the fly with mass assumption + dynamic tables
+// Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //!
                            [](int charge, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::M(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, charge < 0 ? array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)} : array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)}); });
-//Calculated on the fly with mass assumption + dynamic tables
+// Calculated on the fly with mass assumption + dynamic tables
 
 DECLARE_SOA_DYNAMIC_COLUMN(MXi, mXi, //!
                            [](float pxbach, float pybach, float pzbach, float PxLambda, float PyLambda, float PzLambda) -> float { return RecoDecay::M(array{array{pxbach, pybach, pzbach}, array{PxLambda, PyLambda, PzLambda}}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kLambda0)}); });
@@ -272,7 +283,7 @@ DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV,
 
-                  //Dynamic columns
+                  // Dynamic columns
                   cascdata::Pt<cascdataext::Px, cascdataext::Py>,
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
@@ -281,11 +292,11 @@ DECLARE_SOA_TABLE(CascData, "AOD", "CASCDATA", //!
                   cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
                   cascdata::DCACascToPV<cascdata::X, cascdata::Y, cascdata::Z, cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
 
-                  //Invariant masses
+                  // Invariant masses
                   cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
                   cascdata::MXi<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
                   cascdata::MOmega<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
-                  //Longitudinal
+                  // Longitudinal
                   cascdata::YXi<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
                   cascdata::YOmega<cascdataext::Px, cascdataext::Py, cascdataext::Pz>,
                   cascdata::Eta<cascdataext::Px, cascdataext::Py, cascdataext::Pz>);
@@ -301,9 +312,9 @@ using CascDataFull = CascDataExt;
 
 namespace v0ind
 {
-DECLARE_SOA_INDEX_COLUMN(V0, v0);           //the biggest object
-DECLARE_SOA_INDEX_COLUMN(V0Data, v0data);   //the skimmed object
-DECLARE_SOA_INDEX_COLUMN(Cascade, cascade); //the part that will use the previous ones
+DECLARE_SOA_INDEX_COLUMN(V0, v0);           // the biggest object
+DECLARE_SOA_INDEX_COLUMN(V0Data, v0data);   // the skimmed object
+DECLARE_SOA_INDEX_COLUMN(Cascade, cascade); // the part that will use the previous ones
 } // namespace v0ind
 DECLARE_SOA_INDEX_TABLE_EXCLUSIVE_USER(MatchedV0Cascades, V0s, "MATCHEDV0CASC", v0ind::V0DataId, v0ind::V0Id, v0ind::CascadeId);
 
