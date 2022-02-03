@@ -52,7 +52,7 @@ DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
                   hf_seltrack::PyProng,
                   hf_seltrack::PzProng);
 
-using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra, HFSelTrack>;
+using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
 using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;
 using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
 using BigTracksPID = soa::Join<BigTracks,
