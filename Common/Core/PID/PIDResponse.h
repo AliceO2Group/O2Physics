@@ -45,7 +45,7 @@ void packInTable(const float& separation, tableType& table, const float& lowest,
   }
 }
 
-static constexpr float defaultNSigma = -999.f; /// Default return value in case N sigma measurement is not available
+static constexpr float defaultReturnValue = -999.f; /// Default return value in case N sigma measurement is not available
 
 template <class T>
 using hasTOFEl = decltype(std::declval<T&>().tofNSigmaEl());
@@ -66,66 +66,359 @@ using hasTOFHe = decltype(std::declval<T&>().tofNSigmaHe());
 template <class T>
 using hasTOFAl = decltype(std::declval<T&>().tofNSigmaAl());
 
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tofNSigma(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tofNSigmaEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tofNSigmaMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tofNSigmaPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tofNSigmaKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tofNSigmaPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tofNSigmaDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tofNSigmaTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tofNSigmaHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tofNSigmaAl();
+  }
+}
+
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tofExpSigma(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tofExpSigmaEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tofExpSigmaMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tofExpSigmaPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tofExpSigmaKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tofExpSigmaPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tofExpSigmaDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tofExpSigmaTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tofExpSigmaHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tofExpSigmaAl();
+  }
+}
+
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tofExpSignal(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tofExpSignalEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tofExpSignalMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tofExpSignalPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tofExpSignalKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tofExpSignalPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tofExpSignalDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tofExpSignalTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tofExpSignalHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tofExpSignalAl();
+  }
+}
+
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tofExpSignalDiff(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tofExpSignalDiffEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tofExpSignalDiffMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tofExpSignalDiffPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tofExpSignalDiffKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tofExpSignalDiffPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tofExpSignalDiffDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tofExpSignalDiffTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tofExpSignalDiffHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tofExpSignalDiffAl();
+  }
+}
+
+// PID index as function argument
 template <typename TrackType>
-const auto tofNSigma(const o2::track::PID::ID& index, const TrackType& track)
+const auto tofNSigma(const o2::track::PID::ID index, const TrackType& track)
 {
   switch (index) {
     case o2::track::PID::Electron:
       if constexpr (std::experimental::is_detected<hasTOFEl, TrackType>::value) {
         return track.tofNSigmaEl();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Muon:
       if constexpr (std::experimental::is_detected<hasTOFMu, TrackType>::value) {
         return track.tofNSigmaMu();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Pion:
       if constexpr (std::experimental::is_detected<hasTOFPi, TrackType>::value) {
         return track.tofNSigmaPi();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Kaon:
       if constexpr (std::experimental::is_detected<hasTOFKa, TrackType>::value) {
         return track.tofNSigmaKa();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Proton:
       if constexpr (std::experimental::is_detected<hasTOFPr, TrackType>::value) {
         return track.tofNSigmaPr();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Deuteron:
       if constexpr (std::experimental::is_detected<hasTOFDe, TrackType>::value) {
         return track.tofNSigmaDe();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Triton:
       if constexpr (std::experimental::is_detected<hasTOFTr, TrackType>::value) {
         return track.tofNSigmaTr();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Helium3:
       if constexpr (std::experimental::is_detected<hasTOFHe, TrackType>::value) {
         return track.tofNSigmaHe();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Alpha:
       if constexpr (std::experimental::is_detected<hasTOFAl, TrackType>::value) {
         return track.tofNSigmaAl();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     default:
-      return defaultNSigma;
+      return defaultReturnValue;
+  }
+}
+
+// PID index as function argument
+template <typename TrackType>
+const auto tofExpSigma(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTOFEl, TrackType>::value) {
+        return track.tofExpSigmaEl();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTOFMu, TrackType>::value) {
+        return track.tofExpSigmaMu();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTOFPi, TrackType>::value) {
+        return track.tofExpSigmaPi();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTOFKa, TrackType>::value) {
+        return track.tofExpSigmaKa();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTOFPr, TrackType>::value) {
+        return track.tofExpSigmaPr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTOFDe, TrackType>::value) {
+        return track.tofExpSigmaDe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTOFTr, TrackType>::value) {
+        return track.tofExpSigmaTr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTOFHe, TrackType>::value) {
+        return track.tofExpSigmaHe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTOFAl, TrackType>::value) {
+        return track.tofExpSigmaAl();
+      } else {
+        return defaultReturnValue;
+      }
+    default:
+      return defaultReturnValue;
+  }
+}
+
+// PID index as function argument
+template <typename TrackType>
+const auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTOFEl, TrackType>::value) {
+        return track.tofExpSignalEl();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTOFMu, TrackType>::value) {
+        return track.tofExpSignalMu();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTOFPi, TrackType>::value) {
+        return track.tofExpSignalPi();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTOFKa, TrackType>::value) {
+        return track.tofExpSignalKa();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTOFPr, TrackType>::value) {
+        return track.tofExpSignalPr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTOFDe, TrackType>::value) {
+        return track.tofExpSignalDe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTOFTr, TrackType>::value) {
+        return track.tofExpSignalTr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTOFHe, TrackType>::value) {
+        return track.tofExpSignalHe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTOFAl, TrackType>::value) {
+        return track.tofExpSignalAl();
+      } else {
+        return defaultReturnValue;
+      }
+    default:
+      return defaultReturnValue;
+  }
+}
+
+// PID index as function argument
+template <typename TrackType>
+const auto tofExpSignalDiff(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTOFEl, TrackType>::value) {
+        return track.tofExpSignalDiffEl();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTOFMu, TrackType>::value) {
+        return track.tofExpSignalDiffMu();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTOFPi, TrackType>::value) {
+        return track.tofExpSignalDiffPi();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTOFKa, TrackType>::value) {
+        return track.tofExpSignalDiffKa();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTOFPr, TrackType>::value) {
+        return track.tofExpSignalDiffPr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTOFDe, TrackType>::value) {
+        return track.tofExpSignalDiffDe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTOFTr, TrackType>::value) {
+        return track.tofExpSignalDiffTr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTOFHe, TrackType>::value) {
+        return track.tofExpSignalDiffHe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTOFAl, TrackType>::value) {
+        return track.tofExpSignalDiffAl();
+      } else {
+        return defaultReturnValue;
+      }
+    default:
+      return defaultReturnValue;
   }
 }
 
@@ -148,66 +441,359 @@ using hasTPCHe = decltype(std::declval<T&>().tpcNSigmaHe());
 template <class T>
 using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tpcNSigma(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tpcNSigmaEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tpcNSigmaMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tpcNSigmaPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tpcNSigmaKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tpcNSigmaPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tpcNSigmaDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tpcNSigmaTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tpcNSigmaHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tpcNSigmaAl();
+  }
+}
+
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tpcExpSigma(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tpcExpSigmaEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tpcExpSigmaMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tpcExpSigmaPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tpcExpSigmaKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tpcExpSigmaPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tpcExpSigmaDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tpcExpSigmaTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tpcExpSigmaHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tpcExpSigmaAl();
+  }
+}
+
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tpcExpSignal(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tpcExpSignalEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tpcExpSignalMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tpcExpSignalPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tpcExpSignalKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tpcExpSignalPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tpcExpSignalDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tpcExpSignalTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tpcExpSignalHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tpcExpSignalAl();
+  }
+}
+
+// PID index as template argument
+template <o2::track::PID::ID index, typename TrackType>
+const auto tpcExpSignalDiff(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tpcExpSignalDiffEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tpcExpSignalDiffMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tpcExpSignalDiffPi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tpcExpSignalDiffKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tpcExpSignalDiffPr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tpcExpSignalDiffDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tpcExpSignalDiffTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tpcExpSignalDiffHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tpcExpSignalDiffAl();
+  }
+}
+
+// PID index as function argument
 template <typename TrackType>
-const auto tpcNSigma(const o2::track::PID::ID& index, const TrackType& track)
+const auto tpcNSigma(const o2::track::PID::ID index, const TrackType& track)
 {
   switch (index) {
     case o2::track::PID::Electron:
       if constexpr (std::experimental::is_detected<hasTPCEl, TrackType>::value) {
         return track.tpcNSigmaEl();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Muon:
       if constexpr (std::experimental::is_detected<hasTPCMu, TrackType>::value) {
         return track.tpcNSigmaMu();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Pion:
       if constexpr (std::experimental::is_detected<hasTPCPi, TrackType>::value) {
         return track.tpcNSigmaPi();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Kaon:
       if constexpr (std::experimental::is_detected<hasTPCKa, TrackType>::value) {
         return track.tpcNSigmaKa();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Proton:
       if constexpr (std::experimental::is_detected<hasTPCPr, TrackType>::value) {
         return track.tpcNSigmaPr();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Deuteron:
       if constexpr (std::experimental::is_detected<hasTPCDe, TrackType>::value) {
         return track.tpcNSigmaDe();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Triton:
       if constexpr (std::experimental::is_detected<hasTPCTr, TrackType>::value) {
         return track.tpcNSigmaTr();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Helium3:
       if constexpr (std::experimental::is_detected<hasTPCHe, TrackType>::value) {
         return track.tpcNSigmaHe();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     case o2::track::PID::Alpha:
       if constexpr (std::experimental::is_detected<hasTPCAl, TrackType>::value) {
         return track.tpcNSigmaAl();
       } else {
-        return defaultNSigma;
+        return defaultReturnValue;
       }
     default:
-      return defaultNSigma;
+      return defaultReturnValue;
+  }
+}
+
+// PID index as function argument
+template <typename TrackType>
+const auto tpcExpSigma(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTPCEl, TrackType>::value) {
+        return track.tpcExpSigmaEl();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTPCMu, TrackType>::value) {
+        return track.tpcExpSigmaMu();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTPCPi, TrackType>::value) {
+        return track.tpcExpSigmaPi();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTPCKa, TrackType>::value) {
+        return track.tpcExpSigmaKa();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTPCPr, TrackType>::value) {
+        return track.tpcExpSigmaPr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTPCDe, TrackType>::value) {
+        return track.tpcExpSigmaDe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTPCTr, TrackType>::value) {
+        return track.tpcExpSigmaTr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTPCHe, TrackType>::value) {
+        return track.tpcExpSigmaHe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTPCAl, TrackType>::value) {
+        return track.tpcExpSigmaAl();
+      } else {
+        return defaultReturnValue;
+      }
+    default:
+      return defaultReturnValue;
+  }
+}
+
+// PID index as function argument
+template <typename TrackType>
+const auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTPCEl, TrackType>::value) {
+        return track.tpcExpSignalEl();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTPCMu, TrackType>::value) {
+        return track.tpcExpSignalMu();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTPCPi, TrackType>::value) {
+        return track.tpcExpSignalPi();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTPCKa, TrackType>::value) {
+        return track.tpcExpSignalKa();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTPCPr, TrackType>::value) {
+        return track.tpcExpSignalPr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTPCDe, TrackType>::value) {
+        return track.tpcExpSignalDe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTPCTr, TrackType>::value) {
+        return track.tpcExpSignalTr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTPCHe, TrackType>::value) {
+        return track.tpcExpSignalHe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTPCAl, TrackType>::value) {
+        return track.tpcExpSignalAl();
+      } else {
+        return defaultReturnValue;
+      }
+    default:
+      return defaultReturnValue;
+  }
+}
+
+// PID index as function argument
+template <typename TrackType>
+const auto tpcExpSignalDiff(const o2::track::PID::ID index, const TrackType& track)
+{
+  switch (index) {
+    case o2::track::PID::Electron:
+      if constexpr (std::experimental::is_detected<hasTPCEl, TrackType>::value) {
+        return track.tpcExpSignalDiffEl();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Muon:
+      if constexpr (std::experimental::is_detected<hasTPCMu, TrackType>::value) {
+        return track.tpcExpSignalDiffMu();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Pion:
+      if constexpr (std::experimental::is_detected<hasTPCPi, TrackType>::value) {
+        return track.tpcExpSignalDiffPi();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Kaon:
+      if constexpr (std::experimental::is_detected<hasTPCKa, TrackType>::value) {
+        return track.tpcExpSignalDiffKa();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Proton:
+      if constexpr (std::experimental::is_detected<hasTPCPr, TrackType>::value) {
+        return track.tpcExpSignalDiffPr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Deuteron:
+      if constexpr (std::experimental::is_detected<hasTPCDe, TrackType>::value) {
+        return track.tpcExpSignalDiffDe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Triton:
+      if constexpr (std::experimental::is_detected<hasTPCTr, TrackType>::value) {
+        return track.tpcExpSignalDiffTr();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Helium3:
+      if constexpr (std::experimental::is_detected<hasTPCHe, TrackType>::value) {
+        return track.tpcExpSignalDiffHe();
+      } else {
+        return defaultReturnValue;
+      }
+    case o2::track::PID::Alpha:
+      if constexpr (std::experimental::is_detected<hasTPCAl, TrackType>::value) {
+        return track.tpcExpSignalDiffAl();
+      } else {
+        return defaultReturnValue;
+      }
+    default:
+      return defaultReturnValue;
   }
 }
 
