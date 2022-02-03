@@ -75,10 +75,11 @@ struct HFCandidateCreatorCascade {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.};
 
-  void process(aod::Collisions const& collisions,
-               aod::HfTrackIndexCasc const& rowsTrackIndexCasc,
-               MyBigTracks const& tracks,
-               aod::V0Datas const& V0s
+  void process(aod::Collisions const&,
+               aod::HfCascade const& rowsTrackIndexCasc,
+               MyBigTracks const&,
+               aod::V0sLinked const&,
+               aod::V0Datas const&
 #ifdef MY_DEBUG
                ,
                aod::McParticles_000& mcParticles
@@ -99,7 +100,11 @@ struct HFCandidateCreatorCascade {
     for (const auto& casc : rowsTrackIndexCasc) {
 
       const auto& bach = casc.index0_as<MyBigTracks>();
-      const auto& v0 = casc.indexV0_as<o2::aod::V0Datas>();
+      if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) {
+        LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        continue;
+      }
+      const auto& v0 = casc.v0_as<aod::V0sLinked>().v0Data();
       const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
       const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();
 
@@ -176,7 +181,7 @@ struct HFCandidateCreatorCascade {
                        pVecV0[0], pVecV0[1], pVecV0[2],
                        impactParameterBach.getY(), impactParameterV0.getY(),
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
-                       casc.index0Id(), casc.indexV0Id(),
+                       casc.index0Id(), casc.v0Id(),
                        casc.hfflag(),
                        v0.x(), v0.y(), v0.z(),
                        //v0.posTrack(), v0.negTrack(), // why this was not fine?
