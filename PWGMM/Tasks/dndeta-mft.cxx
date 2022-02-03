@@ -127,7 +127,7 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventSelection"), 2.);
       auto z = collision.posZ();
       //auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      auto groupedTracks = tracks.SliceBy(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+      auto groupedTracks = tracks.sliceBy(o2::aod::fwdtrack::collisionId, collision.globalIndex());
       // if (perCollisionSample.size() > 0) {
       //   registry.fill(HIST("EventSelection"), 3.);
       // }
@@ -150,7 +150,7 @@ struct PseudorapidityDensityMFT {
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, soa::Filtered<Particles> const& particles, aod::MFTTracks const& tracks)
   {
-    auto groupedTracks = tracks.SliceBy(o2::aod::fwdtrack::collisionId, collision.globalIndex());
+    //auto groupedTracks = tracks.sliceBy(o2::aod::fwdtrack::collisionId, collisions.globalIndex());
     //auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     //auto nCharged = 0;
     // for (auto& particle : perCollisionMCSample) {
@@ -177,6 +177,7 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventEfficiency"), 3.);
       if (!useEvSel || (useEvSel && collision.sel8())) {
         atLeastOne = true;
+        auto groupedTracks = tracks.sliceBy(o2::aod::fwdtrack::collisionId, collision.globalIndex());
         //auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
         registry.fill(HIST("EventEfficiency"), 4.);
         // if (perCollisionSample.size() > 0) {
