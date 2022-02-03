@@ -35,7 +35,6 @@ struct PseudorapidityDensityMFT {
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
 
-
   HistogramRegistry registry{
     "registry",
     {
@@ -105,7 +104,6 @@ struct PseudorapidityDensityMFT {
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processTagging, "Collect event sample stats", true);
 
-
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::MFTTracks const& tracks)
   {
     registry.fill(HIST("EventSelection"), 1.);
@@ -135,7 +133,6 @@ struct PseudorapidityDensityMFT {
 
     registry.fill(HIST("EventEfficiency"), 1.);
 
-
     bool atLeastOne = false;
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -163,7 +160,6 @@ struct PseudorapidityDensityMFT {
 
         if (atLeastOne) {
           registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
-
         }
         registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
       }
