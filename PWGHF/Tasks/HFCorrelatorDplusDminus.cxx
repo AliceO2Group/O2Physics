@@ -50,8 +50,8 @@ const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_topikpi::npTBin
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
-using MCParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
-using MCParticlesPlus3Prong = soa::Join<aod::McParticles, aod::HfCandProng3MCGen>;
+using MCParticlesPlus2Prong = soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen>;
+using MCParticlesPlus3Prong = soa::Join<aod::McParticles_000, aod::HfCandProng3MCGen>;
 
 struct HfCorrelatorDplusDminus {
   Produces<aod::DDbarPair> entryDplusDminusPair;
