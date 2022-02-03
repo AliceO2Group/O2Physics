@@ -82,10 +82,13 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
 
+  // Choose if running on converted data or pilot beam
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"};
+
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
+  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
@@ -106,12 +109,7 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<int>> ConfTrkTPIDspecies{"ConfTrkTPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
   FemtoDreamV0Selection v0Cuts;
-  /// \todo fix how to pass array to setSelection, getRow() passing a different type!
-  // Configurable<LabeledArray<float>> ConfV0Selection{"ConfV0Selection", {arrayV0Sel[0], 3, 3,
-  // {"V0 sel: Max. distance from Vtx (cm)",
-  // "V0 sel: Min. transverse radius (cm)",
-  // "V0 sel: Max. transverse radius (cm)"},
-  // {"lower", "default", "upper"}}, "Labeled array for V0 selection"};
+  /// \todo Labeled array (see Track-Track task)
 
   Configurable<std::vector<float>> ConfV0Sign{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0Sign, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kpTV0Min, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kpTV0Min, "V0 selection: ")};
@@ -136,7 +134,7 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck);
+    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
@@ -174,26 +172,32 @@ struct femtoDreamProducerTask {
     v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
   }
 
-  void process(aod::FilteredFullCollision const& col,
-               aod::FilteredFullTracks const& tracks,
+  void process(aod::FilteredFullCollision const& col, aod::BCsWithTimestamps const&, aod::FilteredFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
+    auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks));
+        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
       }
       return;
     }
+
     const auto vtxZ = col.posZ();
     const auto mult = col.multV0M();
     const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
+
     // now the table is filled
-    outputCollision(vtxZ, mult, spher);
+    if (ConfIsRun3) {
+      outputCollision(vtxZ, col.multT0A(), spher, bc.timestamp());
+    } else {
+      outputCollision(vtxZ, mult, spher, bc.timestamp());
+    }
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
@@ -208,15 +212,35 @@ struct femtoDreamProducerTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
-      outputTracks(outputCollision.lastIndex(), track.pt(), track.eta(), track.phi(), aod::femtodreamparticle::ParticleType::kTrack, cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts), cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID), track.dcaXY(), childIDs);
+      outputTracks(outputCollision.lastIndex(),
+                   track.pt(),
+                   track.eta(),
+                   track.phi(),
+                   aod::femtodreamparticle::ParticleType::kTrack,
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                   track.dcaXY(),
+                   childIDs);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfDebugOutput) {
-        outputDebugTracks(outputCollision.lastIndex(),
-                          track.sign(), track.tpcNClsFound(),
+        outputDebugTracks(track.sign(),
+                          (uint8_t)track.tpcNClsFound(),
                           track.tpcNClsFindable(),
-                          track.tpcNClsCrossedRows(), track.tpcNClsShared(), track.dcaXY(), track.dcaZ(),
-                          track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(),
-                          track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe());
+                          (uint8_t)track.tpcNClsCrossedRows(),
+                          track.tpcNClsShared(),
+                          track.tpcInnerParam(),
+                          track.dcaXY(),
+                          track.dcaZ(),
+                          track.tpcNSigmaStoreEl(),
+                          track.tpcNSigmaStorePi(),
+                          track.tpcNSigmaStoreKa(),
+                          track.tpcNSigmaStorePr(),
+                          track.tpcNSigmaStoreDe(),
+                          track.tofNSigmaStoreEl(),
+                          track.tofNSigmaStorePi(),
+                          track.tofNSigmaStoreKa(),
+                          track.tofNSigmaStorePr(),
+                          track.tofNSigmaStoreDe());
       }
     }
 

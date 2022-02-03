@@ -34,9 +34,13 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
+
 #include <cmath>
 #include <string>
 
+#include <bitset>
 #include <iostream>
 
 namespace
@@ -51,8 +55,13 @@ enum CFTriggers {
   kLLL
 };
 
-static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
+enum kDetector {
+  kTPC = 0,
+  kTPCTOF = 1,
+  kNdetectors = 2
+};
 
+static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
 // uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
 // uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
 static constexpr uint8_t Track = 0;      // Track
@@ -60,6 +69,7 @@ static constexpr uint8_t V0 = 1;         // V0
 static constexpr uint8_t V0Daughter = 2; // V0  daughters
 static constexpr uint32_t kSignMinusMask = 1;
 static constexpr uint32_t kSignPlusMask = 2;
+static constexpr uint32_t knSigmaProton = 48;
 static constexpr uint32_t kValue0 = 0;
 
 } // namespace
@@ -84,28 +94,56 @@ struct CFFilter {
   Configurable<int> Q3Trigger{"Q3Trigger", 0, "Choice which trigger to run"};
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.017, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.017, "Max limit of delta eta"};
-  Configurable<float> lmagfield{"lmagfield", 0.5, "Magnetic field value"};
 
   // Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
-  Partition<o2::aod::FemtoDreamParticles> partsProton1 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsLambda1 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsProton0 = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsLambda0 = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsProton0Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0) && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsLambda0Part = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsProton1Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0) && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsLambda1Part = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb; ///Accessing the CCDB
 
   // FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTV;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
+  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
+  {
+    bool pidSelection = true;
+    for (auto iSpecies : vSpecies) {
+      int bit_to_check = iSpecies * kDetector::kNdetectors + iDet;
+      if (!(pidcut & (1UL << bit_to_check))) {
+        pidSelection = false;
+      }
+    }
+    return pidSelection;
+  };
+
+  bool isFullPIDSelectedProton(aod::femtodreamparticle::cutContainerType const& pidCut, float const& momentum)
+  {
+    float pidThresh = 0.75;
+    bool pidSelection = false;
+    auto vSpecies = std::vector<int>{2};
+    if (momentum < pidThresh) {
+      /// TPC PID only
+      pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPC);
+    } else {
+      /// TPC + TOF PID
+      pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPCTOF);
+    }
+    return pidSelection;
+  };
+
   void init(o2::framework::InitContext&)
   {
     bool plotPerRadii = true;
 
-    closePairRejectionTT.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, lmagfield, plotPerRadii);
-    closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, lmagfield, plotPerRadii);
+    closePairRejectionTT.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
+    closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
     registry.add("fProcessedEvents", "CF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 5.5}});
     std::array<std::string, 6> eventTitles = {"all", "rejected", "p-p-p", "p-p-L", "p-L-L", "L-L-L"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
@@ -114,11 +152,42 @@ struct CFFilter {
     if (Q3Trigger == 0 || Q3Trigger == 11) {
       registry.add("fSameEventPartPPP", "CF - same event ppp distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPP", "CF - same event ppp distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
+      registry.add("fMultiplicityBefore", "Multiplicity of all processed events", HistType::kTH1F, {{1000, 0, 1000}});
+      registry.add("fMultiplicityAfter", "Multiplicity of events which passed ppp trigger", HistType::kTH1F, {{1000, 0, 1000}});
+      registry.add("fZvtxBefore", "Zvtx of all processed events", HistType::kTH1F, {{1000, -15, 15}});
+      registry.add("fZvtxAfter", "Zvtx of events which passed ppp trigger", HistType::kTH1F, {{1000, -15, 15}});
+      registry.add("fPtBefore", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtAfter", "Transverse momentum  of processed tracks which passed ppp trigger", HistType::kTH1F, {{1000, 0, 10}});
     }
     if (Q3Trigger == 1 || Q3Trigger == 11) {
       registry.add("fSameEventPartPPL", "CF - same event ppL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPL", "CF - same event ppL distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
     }
+
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = 0.1 * (grpo->getNominalL3Field());
+    return output;
   }
 
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
@@ -126,7 +195,20 @@ struct CFFilter {
 
   void process(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& partsFemto)
   {
+    auto partsProton0 = partsProton0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto partsLambda0 = partsLambda0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto partsProton1 = partsProton1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto partsLambda1 = partsLambda1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto tmstamp = col.timestamp();
+    auto mafneticField = getMagneticFieldTesla(tmstamp);
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
+    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
+    registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
+
+    for (auto p1pt : partsProton0) {
+      registry.get<TH1>(HIST("fPtBefore"))->Fill(p1pt.pt());
+    }
+
     bool keepEvent[nTriplets]{false};
     int lowQ3Triplets[2] = {0, 0};
     if (partsFemto.size() != 0) {
@@ -135,14 +217,18 @@ struct CFFilter {
       if (Q3Trigger == 0 || Q3Trigger == 11) {
         if (partsProton0.size() >= 3) {
           for (auto& [p1, p2, p3] : combinations(partsProton0, partsProton0, partsProton0)) {
+            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+              continue;
+            }
             // Think if pair cleaning is needed in current framework
-            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+            // Run close pair rejection
+            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
               continue;
             }
-            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto)) {
+            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
               continue;
             }
-            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto)) {
+            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
               continue;
             }
             auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
@@ -153,17 +239,22 @@ struct CFFilter {
           }
         } // end if
 
-        if (lowQ3Triplets[0] == 0) { // if at least one triplet found in particles, no need to check antiparticles
+        /*if (lowQ3Triplets[0] == 0) { // if at least one triplet found in particles, no need to check antiparticles
           if (partsProton1.size() >= 3) {
             for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
+
+              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+                continue;
+              }
               // Think if pair cleaning is needed in current framework
-              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+              // Run close pair rejection
+              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
                 continue;
               }
-              if (closePairRejectionTT.isClosePair(p1, p3, partsFemto)) {
+              if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
                 continue;
               }
-              if (closePairRejectionTT.isClosePair(p2, p3, partsFemto)) {
+              if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
                 continue;
               }
               auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
@@ -173,24 +264,24 @@ struct CFFilter {
               }
             }
           } // end if
-        }
+        }*/
       }
 
       // TRIGGER FOR PPL TRIPLETS
-      if (Q3Trigger == 1 || Q3Trigger == 11) {
+      /*if (Q3Trigger == 1 || Q3Trigger == 11) {
         if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
           for (auto& partLambda : partsLambda0) {
             if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
               continue;
             }
             for (auto& [p1, p2] : combinations(partsProton0, partsProton0)) {
-              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
                 continue;
               }
-              if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto)) {
+              if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
                 continue;
               }
-              if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto)) {
+              if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
                 continue;
               }
               auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
@@ -209,13 +300,13 @@ struct CFFilter {
                 continue;
               }
               for (auto& [p1, p2] : combinations(partsProton1, partsProton1)) {
-                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto)) {
+                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
                   continue;
                 }
-                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto)) {
+                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
                   continue;
                 }
-                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto)) {
+                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
                   continue;
                 }
                 auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
@@ -227,11 +318,17 @@ struct CFFilter {
             }
           } // end if
         }
-      }
+      }*/
     }
 
     if (lowQ3Triplets[0] > 0) {
       keepEvent[kPPP] = true;
+      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M());
+      registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
+      for (auto p1pt : partsProton0) {
+        // All protons from selected events
+        registry.get<TH1>(HIST("fPtAfter"))->Fill(p1pt.pt());
+      }
     }
 
     if (lowQ3Triplets[1] > 0) {

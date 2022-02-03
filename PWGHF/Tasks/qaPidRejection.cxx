@@ -19,7 +19,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/MC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "Common/Core/TrackSelectorPID.h"
@@ -141,7 +140,7 @@ struct QaTrackingRejection {
   void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
                const o2::soa::Join<TracksPID, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+               const o2::aod::McParticles_000& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -168,7 +167,7 @@ struct QaTrackingRejection {
     std::vector<int64_t> recoTracks(tracks.size());
     LOGF(info, "%d", particlePDG);
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       if (particlePDG != 0 && mcParticle.pdgCode() != particlePDG) { // Checking PDG code
         continue;
       }
@@ -182,7 +181,7 @@ struct QaTrackingRejection {
       bool isRICHhpProton = !(selectorProton.getStatusTrackPIDRICH(track) == TrackSelectorPID::Status::PIDRejected);
       bool isMIDhpMuon = (selectorMuon.getStatusTrackPIDMID(track) == TrackSelectorPID::Status::PIDAccepted);
 
-      if (MC::isPhysicalPrimary(mcParticle)) {
+      if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("tracking/pteta"), track.pt(), track.eta());
         if (isTOFhpElectron) {
           histos.fill(HIST("trackingTOFselElectron/pteta"), track.pt(), track.eta());
@@ -333,7 +332,7 @@ struct QaRejectionGeneral {
   void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
                const o2::soa::Join<TracksPID, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
+               const o2::aod::McParticles_000& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -361,7 +360,7 @@ struct QaRejectionGeneral {
       if (std::abs(track.eta()) > etaMaxSel || track.pt() < ptMinSel) {
         continue;
       }
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       histos.fill(HIST("hAllNoSel/pteta"), track.pt(), track.eta());
       if (mcParticle.pdgCode() == kElectron) {
         histos.fill(HIST("hElectronNoSel/pteta"), track.pt(), track.eta());

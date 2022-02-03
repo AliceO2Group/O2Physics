@@ -24,7 +24,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTPC.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -152,12 +151,12 @@ struct pidTPCTaskQA {
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.mcParticle();
+    const auto particle = track.template mcParticle_as<o2::aod::McParticles_000>();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
       // Selecting primaries
-      if (MC::isPhysicalPrimary(particle)) {
+      if (particle.isPhysicalPrimary()) {
         histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
       } else {
         histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
@@ -171,7 +170,7 @@ struct pidTPCTaskQA {
                          aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                          aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                          aod::McTrackLabels> const& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles_000& mcParticles)
   {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
@@ -219,8 +218,8 @@ struct pidTPCTaskQA {
       // Fill for all
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
       histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
-      const auto particle = t.mcParticle();
-      if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+      const auto particle = t.mcParticle_as<aod::McParticles_000>();
+      if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
       } else {
@@ -229,7 +228,7 @@ struct pidTPCTaskQA {
       }
       if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
         histos.fill(HIST("event/tpcsignalMC"), t.pt(), t.tpcSignal());
-        if (MC::isPhysicalPrimary(particle)) {
+        if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("event/tpcsignalMCPrm"), t.pt(), t.tpcSignal());
         } else {
           histos.fill(HIST("event/tpcsignalMCSec"), t.pt(), t.tpcSignal());

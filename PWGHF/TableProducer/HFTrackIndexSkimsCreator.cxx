@@ -74,15 +74,15 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 //#define MY_DEBUG
 
 #ifdef MY_DEBUG
-using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels>;
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
+using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended>;
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended>;
+using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksExtended, aod::TrackSelection>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksExtended>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -100,6 +100,7 @@ struct HfTagSelCollisions {
   Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
   Configurable<double> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
   int triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
   HistogramRegistry registry{"registry", {{"hNContributors", "Number of vertex contributors;entries", {HistType::kTH1F, {{20001, -0.5, 20000.5}}}}}};
@@ -181,7 +182,7 @@ struct HfTagSelCollisions {
     }
 
     // trigger selection
-    if (!collision.alias()[triggerClass]) {
+    if ((!useSel8Trigger && !collision.alias()[triggerClass]) || (useSel8Trigger && !collision.sel8())) {
       SETBIT(statusCollision, EventRejection::Trigger);
       if (fillHistograms) {
         registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
@@ -238,6 +239,7 @@ struct HfTagSelTracks {
   Configurable<double> bz{"bz", 5., "bz field"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
+  Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
   Configurable<int> tpcNClsFound{"tpcNClsFound", 70, ">= min. number of TPC clusters needed"};
   // pT bins for single-track cuts
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for 2-prong DCAXY pT-depentend cut"};
@@ -320,7 +322,7 @@ struct HfTagSelTracks {
                MY_TYPE1 const& tracks
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles_000& mcParticles
 #endif
   )
   {
@@ -421,10 +423,20 @@ struct HfTagSelTracks {
 
       iDebugCut = 4;
       if (doCutQuality.value && (debug || statusProng > 0)) { // FIXME to make a more complete selection e.g track.flags() & o2::aod::track::TPCrefit && track.flags() & o2::aod::track::GoldenChi2 &&
-        UChar_t clustermap = track.itsClusterMap();
-        if (!(track.tpcNClsFound() >= tpcNClsFound.value && // is this the number of TPC clusters? It should not be used
-              track.flags() & o2::aod::track::ITSrefit &&
-              (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+        bool hasGoodQuality = true;
+        if (useIsGlobalTrack) {
+          if (track.isGlobalTrack() != (uint8_t) true) {
+            hasGoodQuality = false;
+          }
+        } else {
+          UChar_t clustermap = track.itsClusterMap();
+          if (!(track.tpcNClsFound() >= tpcNClsFound.value && // is this the number of TPC clusters? It should not be used
+                track.flags() & o2::aod::track::ITSrefit &&
+                (TESTBIT(clustermap, 0) || TESTBIT(clustermap, 1)))) {
+            hasGoodQuality = false;
+          }
+        }
+        if (!hasGoodQuality) {
           statusProng = 0;
           MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "proton " << indexBach << " did not pass clusters cut");
           if (debug) {
@@ -503,7 +515,7 @@ struct HfTagSelTracks {
       }
 
       // fill table row
-      rowSelectedTrack(statusProng, dca[0], dca[1], track.px(), track.py(), track.pz());
+      rowSelectedTrack(statusProng, track.px(), track.py(), track.pz());
     }
   }
 };
@@ -691,7 +703,7 @@ struct HfTrackIndexSkimsCreator {
 
       // imp. par. product cut
       if (debug || TESTBIT(isSelected, iDecay2P)) {
-        auto impParProduct = hfTrack0.dcaPrim0() * hfTrack1.dcaPrim0();
+        auto impParProduct = hfTrack0.dcaXY() * hfTrack1.dcaXY();
         if (impParProduct > cut2Prong[iDecay2P].get(pTBin, d0d0Index[iDecay2P])) {
           CLRBIT(isSelected, iDecay2P);
           if (debug) {
@@ -885,7 +897,7 @@ struct HfTrackIndexSkimsCreator {
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::HFSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksExtended, aod::HFSelTrack>>;
 
   // FIXME
   //Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
@@ -1381,7 +1393,6 @@ struct HfTrackIndexSkimsCreatorCascades {
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hmass2", "2-prong candidates;inv. mass (K0s p) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
-  // NB: using FullTracks = soa::Join<Tracks, TracksCov, TracksExtra>; defined in Framework/Core/include/Framework/AnalysisDataModel.h
   //using MyTracks = aod::BigTracksMC;
   //Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
   // using SelectedV0s = soa::Filtered<aod::V0Datas>;
@@ -1404,7 +1415,7 @@ struct HfTrackIndexSkimsCreatorCascades {
                MyTracks const& tracks
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles_000& mcParticles
 #endif
                ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {

@@ -42,6 +42,10 @@
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -61,7 +65,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-//This table stores a filtered list of valid V0 indices
+// This table stores a filtered list of valid V0 indices
 namespace o2::aod
 {
 namespace v0goodindices
@@ -89,10 +93,10 @@ using MyTracks = FullTracksExt;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
-//This prefilter creates a skimmed list of good V0s to re-reconstruct so that
-//CPU is saved in case there are specific selections that are to be done
-//Note: more configurables, more options to be added as needed
-struct lambdakzeroprefilterpairs {
+// This prefilter creates a skimmed list of good V0s to re-reconstruct so that
+// CPU is saved in case there are specific selections that are to be done
+// Note: more configurables, more options to be added as needed
+struct lambdakzeroPrefilterPairs {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
@@ -134,11 +138,11 @@ struct lambdakzeroprefilterpairs {
       if (isRun2) {
         if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
-          continue; //TPC refit
+          continue; // TPC refit
         }
         if (!(V0.negTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
-          continue; //TPC refit
+          continue; // TPC refit
         }
       }
       registry.fill(HIST("hGoodIndices"), 1.5);
@@ -169,26 +173,27 @@ struct lambdakzeroprefilterpairs {
 };
 
 /// Cascade builder task: rebuilds cascades
-struct lambdakzerobuilder {
+struct lambdakzeroBuilder {
 
   Produces<aod::StoredV0Datas> v0data;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-    },
+    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+     {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
   };
 
-  //Configurables
+  // Configurables
   Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
   // Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", 1, "Use Abs DCAs"}; uncomment this once we want to use the weighted DCA
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -196,9 +201,27 @@ struct lambdakzerobuilder {
   Configurable<std::vector<int>> v_labelK0Sneg{"v_labelK0Sneg", {730, 2867, 4755}, "labels of K0S positive daughters, for debug"};
 #endif
 
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
+  void init(InitContext& context)
+  {
+    //using namespace analysis::lambdakzerobuilder;
+
+    ccdb->setURL("https://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>("GLO/Config/Geometry");
+      /* it seems this is needed at this level for the material LUT to work properly */
+      /* but what happens if the run changes while doing the processing?             */
+      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
+
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+  }
 
   void process(aod::Collision const& collision, aod::V0GoodIndices const& V0s, MyTracks const& tracks
 #ifdef MY_DEBUG
@@ -207,7 +230,7 @@ struct lambdakzerobuilder {
 #endif
   )
   {
-    //Define o2 fitter, 2-prong
+    // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
     fitter.setPropagateToPCA(true);
@@ -219,7 +242,6 @@ struct lambdakzerobuilder {
     fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
     registry.fill(HIST("hEventCounter"), 0.5);
-    std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
     for (auto& V0 : V0s) {
       std::array<float, 3> pos = {0.};
@@ -238,23 +260,53 @@ struct lambdakzerobuilder {
 
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
-      int nCand = fitter.process(pTrack, nTrack);
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "fitter: nCand = " << nCand << " for posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-      if (nCand != 0) {
-        fitter.propagateTracksToVertex();
-        const auto& vtx = fitter.getPCACandidate();
-        for (int i = 0; i < 3; i++) {
-          pos[i] = vtx[i];
-        }
-        fitter.getTrack(0).getPxPyPzGlo(pvec0);
-        fitter.getTrack(1).getPxPyPzGlo(pvec1);
-      } else {
+
+      //Require collision-ID
+      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks)
         continue;
+
+      //Act on copies for minimization
+      auto pTrackCopy = o2::track::TrackParCov(pTrack);
+      auto nTrackCopy = o2::track::TrackParCov(nTrack);
+
+      //---/---/---/
+      // Move close to minima
+      int nCand = fitter.process(pTrackCopy, nTrackCopy);
+      if (nCand == 0)
+        continue;
+
+      double finalXpos = fitter.getTrack(0).getX();
+      double finalXneg = fitter.getTrack(1).getX();
+
+      //Rotate to desired alpha
+      pTrack.rotateParam(fitter.getTrack(0).getAlpha());
+      nTrack.rotateParam(fitter.getTrack(1).getAlpha());
+
+      //Retry closer to minimum with material corrections
+      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+      if (useMatCorrType == 1)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+      if (useMatCorrType == 2)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, 0.85f, 2.0f, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
+
+      nCand = fitter.process(pTrack, nTrack);
+      if (nCand == 0)
+        continue;
+
+      pTrack.getPxPyPzGlo(pvec0);
+      nTrack.getPxPyPzGlo(pvec1);
+
+      const auto& vtx = fitter.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        pos[i] = vtx[i];
       }
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 0: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      //Apply selections so a skimmed table is created only
+      // Apply selections so a skimmed table is created only
       if (fitter.getChi2AtPCACandidate() > dcav0dau) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to dca cut");
         continue;
@@ -266,7 +318,7 @@ struct lambdakzerobuilder {
         continue;
       }
 
-      auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); //probably find better name to differentiate the cut from the variable
+      auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to radius cut");
         continue;
@@ -292,7 +344,7 @@ struct lambdakzerobuilder {
 };
 
 /// Extends the v0data table with expression columns
-struct lambdakzeroinitializer {
+struct lambdakzeroInitializer {
   Spawns<aod::V0Datas> v0datas;
   void init(InitContext const&) {}
 };
@@ -300,7 +352,7 @@ struct lambdakzeroinitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroprefilterpairs>(cfgc, TaskName{"lf-lambdakzeroprefilterpairs"}),
-    adaptAnalysisTask<lambdakzerobuilder>(cfgc, TaskName{"lf-lambdakzerobuilder"}),
-    adaptAnalysisTask<lambdakzeroinitializer>(cfgc, TaskName{"lf-lambdakzeroinitializer"})};
+    adaptAnalysisTask<lambdakzeroPrefilterPairs>(cfgc),
+    adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
+    adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }

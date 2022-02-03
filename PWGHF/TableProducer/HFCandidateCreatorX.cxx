@@ -252,7 +252,7 @@ struct HFCandidateCreatorXMC {
   void process(aod::HfCandX const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles_000 const& particlesMC)
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;

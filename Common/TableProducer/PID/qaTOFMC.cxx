@@ -24,7 +24,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -153,12 +152,12 @@ struct pidTOFTaskQA {
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.mcParticle();
+    const auto particle = track.template mcParticle_as<aod::McParticles_000>();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
       // Selecting primaries
-      if (MC::isPhysicalPrimary(particle)) {
+      if (particle.isPhysicalPrimary()) {
         histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
       } else {
         histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
@@ -172,7 +171,7 @@ struct pidTOFTaskQA {
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                          aod::McTrackLabels, aod::pidTOFbeta> const& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles_000& mcParticles)
   {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
@@ -226,8 +225,8 @@ struct pidTOFTaskQA {
       // Fill for all
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
       histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
-      const auto particle = t.mcParticle();
-      if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+      const auto particle = t.mcParticle_as<aod::McParticles_000>();
+      if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
       } else {
@@ -236,7 +235,7 @@ struct pidTOFTaskQA {
       }
       if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
         histos.fill(HIST("event/tofbetaMC"), t.pt(), t.beta());
-        if (MC::isPhysicalPrimary(particle)) {
+        if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("event/tofbetaMCPrm"), t.pt(), t.beta());
         } else {
           histos.fill(HIST("event/tofbetaMCSec"), t.pt(), t.beta());

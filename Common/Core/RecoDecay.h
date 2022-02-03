@@ -29,6 +29,7 @@
 #include "Framework/Logger.h"
 
 using std::array;
+using namespace o2;
 using namespace o2::constants::math;
 
 /// Base class for calculating properties of reconstructed decays
@@ -724,7 +725,10 @@ class RecoDecay
     }
     // Loop over decay candidate prongs
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
-      auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
+      if (!arrDaughters[iProng].has_mcParticle()) {
+        return -1;
+      }
+      auto particleI = arrDaughters[iProng].template mcParticle_as<aod::McParticles_000>(); // ith daughter particle
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {

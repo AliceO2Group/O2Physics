@@ -14,7 +14,16 @@
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf 
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera 
 /DPG @alibuild @mario-krueger
-/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
-/PWGHF @alibuild @ginnocen @vkucera @fcolamar
 /EventFiltering @alibuild @mpuccio 
-/PWGMM @alibuild @aalkin 
+/EventFiltering/PWGHF @alibuild @fgrosa @vkucera
+/EventFiltering/PWGUD @alibuild @pbuehler
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
+/EventFiltering/PWGCF @alibuild @lauraser
+/EventFiltering/PWGMM @alibuild @aortizve
+/EventFiltering/PWGJE @alibuild @fkrizek
+/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
+/PWGDQ @alibuild @iarsene
+/PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/PWGLF @alibuild @njacazio
+/PWGMM @alibuild @aalkin
+/Tools/PIDML @alibuild @saganatt

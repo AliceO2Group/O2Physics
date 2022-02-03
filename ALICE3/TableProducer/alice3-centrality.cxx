@@ -27,7 +27,7 @@ struct ALICE3Centrality {
   Produces<aod::CentV0Ms> cent;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<float> MinEta{"MinEta", -4.0f, "Minimum eta in range"};
   Configurable<float> MaxEta{"MaxEta", 4.0f, "Maximum eta in range"};
   Configurable<float> MaxMult{"MaxMult", 10000.f, "Maximum multiplicity in range"};

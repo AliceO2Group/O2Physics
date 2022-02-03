@@ -213,7 +213,7 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
     /// \todo this should be an automatic check in the parent class, and the return type should be templated
     size_t nSelections = getNSelections();
     if (nSelections > 8 * sizeof(cutContainerType)) {
-      LOG(FATAL) << "FemtoDreamV0Cuts: Number of selections to large for your container - quitting!";
+      LOG(fatal) << "FemtoDreamV0Cuts: Number of selections to large for your container - quitting!";
     }
     std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]);
     /// \todo initialize histograms for children tracks of v0s

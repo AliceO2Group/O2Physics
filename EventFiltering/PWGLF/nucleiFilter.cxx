@@ -19,7 +19,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "filterTables.h"
+#include "../filterTables.h"
 
 #include "Framework/HistogramRegistry.h"
 
@@ -90,8 +90,9 @@ struct nucleiFilter {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == static_cast<uint8_t>(1u));
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::pidTOFDe, aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl, aod::TrackSelection>>;
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::BCsWithTimestamps const&, TrackCandidates const& tracks)
+  using SelectedCollisions = soa::Filtered<aod::Collisions>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksExtended, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
+  void process(SelectedCollisions::iterator const& collision, TrackCandidates const& tracks)
   {
     // collision process loop
     bool keepEvent[nNuclei]{false};

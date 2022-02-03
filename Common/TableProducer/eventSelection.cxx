@@ -170,20 +170,18 @@ struct BcSelectionTask {
       float multV0A = 0;
       float multV0C = 0;
       if (bc.has_fv0a()) {
-        for (int ring = 0; ring < 4; ring++) { // TODO adjust for Run3 V0A
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
-          }
-          multV0A += multRingV0A[ring];
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
+          multV0A += bc.fv0a().amplitude()[i];
         }
       }
 
       if (bc.has_fv0c()) {
-        for (int ring = 0; ring < 4; ring++) {
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0C[ring] += bc.fv0c().amplitude()[ring * 8 + sector];
-          }
-          multV0C += multRingV0C[ring];
+        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+          int ring = bc.fv0c().channel()[i] / 8;
+          multRingV0C[ring] += bc.fv0c().amplitude()[i];
+          multV0C += bc.fv0c().amplitude()[i];
         }
       }
       uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
@@ -207,13 +205,14 @@ struct BcSelectionTask {
       selection[kNoPileupFromSPD] = (eventCuts & 1 << aod::kIsPileupFromSPD) == 0;
       selection[kNoV0PFPileup] = (eventCuts & 1 << aod::kIsV0PFPileup) == 0;
 
-      int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
 
       // Fill bc selection columns
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
@@ -266,22 +265,25 @@ struct BcSelectionTask {
       float multRingV0A[5] = {0.};
       float multRingV0C[4] = {0.};
       if (bc.has_fv0a()) {
-        for (int ring = 0; ring < 5; ring++) {
-          for (int sector = 0; sector < 8; sector++) {
-            multRingV0A[ring] += bc.fv0a().amplitude()[ring * 8 + sector];
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          if (ring == 5) {
+            ring = 4; // Outermost ring has 16 channels
           }
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
         }
       }
 
       uint32_t spdClusters = 0;
 
-      int64_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       LOGP(debug, "foundFT0={}\n", foundFT0);
       // Fill bc selection columns
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
@@ -291,6 +293,7 @@ struct EventSelectionTask {
   Produces<aod::EvSels> evsel;
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
+  Configurable<int> customDeltaBC{"customDeltaBC", 300, "custom BC delta for FIT-collision matching"};
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
   EvSelParameters par;
@@ -365,7 +368,9 @@ struct EventSelectionTask {
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
-    int64_t foundFT0 = bc.foundFT0();
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -421,24 +426,27 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundFT0);
+          foundBC, foundFT0, foundFV0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
   void processRun3(aod::Collision const& col, BCsWithBcSels const& bcs)
   {
     auto bc = col.bc_as<BCsWithBcSels>();
-    int64_t foundFT0 = bc.foundFT0();
+    uint64_t apprBC = bc.globalBC();
+    int64_t meanBC = apprBC - std::lround(col.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+    int64_t deltaBC = std::ceil(col.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
+    // use custom delta
+    if (customDeltaBC > 0) {
+      deltaBC = customDeltaBC;
+    }
 
-    if (foundFT0 < 0) { // search in +/-4 sigma around meanBC
-      uint64_t apprBC = bc.globalBC();
-      uint64_t meanBC = apprBC - std::lround(col.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-      int64_t deltaBC = std::ceil(col.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * 4);
+    if (!bc.has_foundFT0()) { // search in +/-4 sigma around meanBC
       // search forward
       int forwardMoveCount = 0;
       int64_t forwardBcDist = deltaBC + 1;
-      for (; bc != bcs.end() && bc.globalBC() - meanBC <= deltaBC; ++bc, ++forwardMoveCount) {
-        if (bc.foundFT0() >= 0) {
+      for (; bc != bcs.end() && int64_t(bc.globalBC()) <= meanBC + deltaBC; ++bc, ++forwardMoveCount) {
+        if (bc.has_foundFT0()) {
           forwardBcDist = bc.globalBC() - meanBC;
           break;
         }
@@ -447,19 +455,27 @@ struct EventSelectionTask {
       // search backward
       int backwardMoveCount = 0;
       int64_t backwardBcDist = deltaBC + 1;
-      for (; bc != bcs.begin() && bc.globalBC() - meanBC >= -deltaBC; --bc, --backwardMoveCount) {
-        if (bc.foundFT0() >= 0) {
+      for (; int64_t(bc.globalBC()) >= meanBC - deltaBC; --bc, ++backwardMoveCount) {
+        if (bc.has_foundFT0()) {
           backwardBcDist = meanBC - bc.globalBC();
+          break;
+        }
+        if (bc == bcs.begin()) {
           break;
         }
       }
       if (forwardBcDist > deltaBC && backwardBcDist > deltaBC) {
-        bc.moveByIndex(-backwardMoveCount); // return to nominal bc if neighbouring ft0 is not found
+        bc.moveByIndex(backwardMoveCount); // return to nominal bc if neighbouring ft0 is not found
       } else if (forwardBcDist < backwardBcDist) {
-        bc.moveByIndex(-backwardMoveCount + forwardMoveCount); // move forward
-      }
+        bc.moveByIndex(backwardMoveCount + forwardMoveCount); // move forward
+      }                                                       // else keep backward bc
     }
-    LOGP(debug, "{}", bc.foundFT0());
+
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
+
+    LOGP(debug, "foundFT0 = {}", foundFT0);
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -508,7 +524,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundFT0);
+          foundBC, foundFT0, foundFV0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };

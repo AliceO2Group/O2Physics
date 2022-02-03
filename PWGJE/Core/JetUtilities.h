@@ -213,7 +213,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
     if (matchIndexTag[iBase] > -1) {
       LOG(debug) << "tag jet " << matchIndexTag[iBase] << ": matched base jet " << matchIndexBase[matchIndexTag[iBase]] << "\n";
     }
-    if (matchIndexTag[iBase] > -1 && matchIndexBase[matchIndexTag[iBase]] == iBase) {
+    if (matchIndexTag[iBase] > -1 && matchIndexBase[matchIndexTag[iBase]] == (int)iBase) {
       LOG(debug) << "True match! base index: " << iBase << ", tag index: " << matchIndexTag[iBase] << "\n";
       baseToTagMap[iBase] = matchIndexTag[iBase];
       tagToBaseMap[matchIndexTag[iBase]] = iBase;

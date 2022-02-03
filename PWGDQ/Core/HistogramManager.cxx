@@ -697,7 +697,6 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   list varList = fVariablesMap[className];
 
   TIter next(hList);
-  auto varIter = varList.begin();
 
   TObject* h = nullptr;
   bool isProfile;

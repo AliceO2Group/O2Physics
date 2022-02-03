@@ -180,7 +180,7 @@ namespace cascdata
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                   //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, ""); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
-//General V0 properties: position, momentum
+//General cascade properties: position, momentum
 DECLARE_SOA_COLUMN(Sign, sign, int);         //!
 DECLARE_SOA_COLUMN(PxPos, pxpos, float);     //!
 DECLARE_SOA_COLUMN(PyPos, pypos, float);     //!
@@ -305,7 +305,7 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);           //the biggest object
 DECLARE_SOA_INDEX_COLUMN(V0Data, v0data);   //the skimmed object
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade); //the part that will use the previous ones
 } // namespace v0ind
-DECLARE_SOA_INDEX_TABLE_EXCLUSIVE_USER(MatchedV0Cascades, V0s, "AOD", v0ind::V0DataId, v0ind::V0Id, v0ind::CascadeId);
+DECLARE_SOA_INDEX_TABLE_EXCLUSIVE_USER(MatchedV0Cascades, V0s, "MATCHEDV0CASC", v0ind::V0DataId, v0ind::V0Id, v0ind::CascadeId);
 
 } // namespace o2::aod
 
