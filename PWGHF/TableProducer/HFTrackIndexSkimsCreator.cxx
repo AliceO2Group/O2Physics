@@ -524,9 +524,9 @@ struct HfTagSelTracks {
 
 /// Pre-selection of 2-prong and 3-prong secondary vertices
 struct HfTrackIndexSkimsCreator {
-  Produces<aod::HfTrackIndexProng2> rowTrackIndexProng2;
+  Produces<aod::Hf2Prong> rowTrackIndexProng2;
   Produces<aod::HfCutStatusProng2> rowProng2CutStatus;
-  Produces<aod::HfTrackIndexProng3> rowTrackIndexProng3;
+  Produces<aod::Hf3Prong> rowTrackIndexProng3;
   Produces<aod::HfCutStatusProng3> rowProng3CutStatus;
 
   //Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
@@ -1323,15 +1323,15 @@ struct HfTrackIndexSkimsCreator {
 //________________________________________________________________________________________________________________________
 
 /// Pre-selection of cascade secondary vertices
-/// It will produce in any case a HfTrackIndexProng2 object, but mixing a V0
+/// It will produce in any case a Hf2Prong object, but mixing a V0
 /// with a track, instead of 2 tracks
 
 /// to run: o2-analysis-weak-decay-indices --aod-file AO2D.root -b | o2-analysis-lambdakzerobuilder -b |
 ///         o2-analysis-trackextension -b | o2-analysis-hf-track-index-skims-creator -b
 
 struct HfTrackIndexSkimsCreatorCascades {
-  Produces<aod::HfTrackIndexCasc> rowTrackIndexCasc;
-  //  Produces<aod::HfTrackIndexProng2> rowTrackIndexCasc;
+  Produces<aod::HfCascade> rowTrackIndexCasc;
+  //  Produces<aod::Hf2Prong> rowTrackIndexCasc;
 
   // whether to do or not validation plots
   Configurable<bool> doValPlots{"doValPlots", true, "fill histograms"};
