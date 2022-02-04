@@ -123,23 +123,22 @@ struct PseudorapidityDensity {
         auto v = fRatio->Eval(z);
 
         double r = rand->Rndm(); //random number between 0 and 1
-        if ((1 - v) <= r)        //then we accept the event
-        {
-          registry.fill(HIST("EventSelection"), 2.);
-          if (perCollisionSample.size() > 0) {
-            registry.fill(HIST("EventSelection"), 3.);
-          }
-          registry.fill(HIST("EventsNtrkZvtx"), perCollisionSample.size(), z);
-          for (auto& track : tracks) {
-            registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
-            registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
-            if (perCollisionSample.size() > 0) {
-              registry.fill(HIST("TracksEtaZvtx_gt0"), track.eta(), z);
-            }
-          }
-        } else //(1-v)>r we discard the event
+        if ((1 - v) > r)         //we discard the event
         {
           registry.fill(HIST("EventSelection"), 4.);
+          return;
+        }
+        registry.fill(HIST("EventSelection"), 2.);
+        if (perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 3.);
+        }
+        registry.fill(HIST("EventsNtrkZvtx"), perCollisionSample.size(), z);
+        for (auto& track : tracks) {
+          registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
+          registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
+          if (perCollisionSample.size() > 0) {
+            registry.fill(HIST("TracksEtaZvtx_gt0"), track.eta(), z);
+          }
         }
       } else {
         registry.fill(HIST("EventSelection"), 4.);
@@ -251,7 +250,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity, processGen, "Process generator-level info", true);
+  PROCESS_SWITCH(PseudorapidityDensity, processGen, "Process generator-level info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
