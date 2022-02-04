@@ -41,14 +41,30 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
     {"eff-pr", VariantType::Int, 0, {"Efficiency for the Proton PDG code"}},
     {"eff-de", VariantType::Int, 0, {"Efficiency for the Deuteron PDG code"}},
     {"eff-tr", VariantType::Int, 0, {"Efficiency for the Triton PDG code"}},
-    {"eff-he", VariantType::Int, 0, {"Efficiency for the Helium3 PDG code"}}};
+    {"eff-he", VariantType::Int, 0, {"Efficiency for the Helium3 PDG code"}},
+    {"eff-el-pos", VariantType::Int, 0, {"Efficiency for the Electron Positive PDG code"}},
+    {"eff-mu-pos", VariantType::Int, 0, {"Efficiency for the Muon Positive PDG code"}},
+    {"eff-pi-pos", VariantType::Int, 0, {"Efficiency for the Pion Positive PDG code"}},
+    {"eff-ka-pos", VariantType::Int, 0, {"Efficiency for the Kaon Positive PDG code"}},
+    {"eff-pr-pos", VariantType::Int, 0, {"Efficiency for the Proton Positive PDG code"}},
+    {"eff-de-pos", VariantType::Int, 0, {"Efficiency for the Deuteron Positive PDG code"}},
+    {"eff-tr-pos", VariantType::Int, 0, {"Efficiency for the Triton Positive PDG code"}},
+    {"eff-he-pos", VariantType::Int, 0, {"Efficiency for the Helium3 Positive PDG code"}},
+    {"eff-el-neg", VariantType::Int, 0, {"Efficiency for the Electron Negative PDG code"}},
+    {"eff-mu-neg", VariantType::Int, 0, {"Efficiency for the Muon Negative PDG code"}},
+    {"eff-pi-neg", VariantType::Int, 0, {"Efficiency for the Pion Negative PDG code"}},
+    {"eff-ka-neg", VariantType::Int, 0, {"Efficiency for the Kaon Negative PDG code"}},
+    {"eff-pr-neg", VariantType::Int, 0, {"Efficiency for the Proton Negative PDG code"}},
+    {"eff-de-neg", VariantType::Int, 0, {"Efficiency for the Deuteron Negative PDG code"}},
+    {"eff-tr-neg", VariantType::Int, 0, {"Efficiency for the Triton Negative PDG code"}},
+    {"eff-he-neg", VariantType::Int, 0, {"Efficiency for the Helium3 Negative PDG code"}}};
   std::swap(workflowOptions, options);
 }
 
 #include "Framework/runDataProcessing.h"
 
 /// Task to QA the efficiency of a particular particle defined by its pdg code
-template <o2::track::pid_constants::ID particle>
+template <o2::track::pid_constants::ID particle, int pdgSign>
 struct QaTrackingEfficiency {
   static constexpr int nSpecies = 8;
   static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030};
@@ -64,7 +80,6 @@ struct QaTrackingEfficiency {
   Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<int> selPrim{"sel-prim", 1, "1 select primaries, 0 select all particles"};
-  Configurable<int> pdgSign{"pdgSign", 0, "Sign to give to the PDG. If 0 both signs are accepted."};
   Configurable<bool> noFakes{"noFakes", false, "Flag to reject tracks that have fake hits"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
@@ -84,8 +99,8 @@ struct QaTrackingEfficiency {
 
   void init(InitContext&)
   {
-    if (pdgSign != 0 && pdgSign != 1 && pdgSign != -1) {
-      LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
+    if constexpr (pdgSign != 0 && pdgSign != 1 && pdgSign != -1) {
+      LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign;
     }
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
     if (logPt) {
@@ -273,7 +288,7 @@ struct QaTrackingEfficiency {
       histos.fill(h, 7);
 
       // Selecting PDG code
-      switch ((int)pdgSign) {
+      switch (pdgSign) {
         case 0:
           if (abs(p.pdgCode()) != pdg) {
             return true;
@@ -290,7 +305,7 @@ struct QaTrackingEfficiency {
           }
           break;
         default:
-          LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign.value;
+          LOG(fatal) << "Provide pdgSign as 0, 1, -1. Provided: " << pdgSign;
           break;
       }
       histos.fill(h, 8);
@@ -462,6 +477,26 @@ struct QaTrackingEfficiencyData {
     histos.add("phi/num", "Numerator " + tagPhi, kTH1D, {axisPhi});
     histos.add("phi/den", "Denominator " + tagPhi, kTH1D, {axisPhi});
 
+    // Pos
+    histos.add("ptpos/num", "Numerator Positve " + tagPt, kTH1D, {axisPt});
+    histos.add("ptpos/den", "Denominator Positve " + tagPt, kTH1D, {axisPt});
+
+    histos.add("etapos/num", "Numerator Positve " + tagEta, kTH1D, {axisEta});
+    histos.add("etapos/den", "Denominator Positve " + tagEta, kTH1D, {axisEta});
+
+    histos.add("phipos/num", "Numerator Positve " + tagPhi, kTH1D, {axisPhi});
+    histos.add("phipos/den", "Denominator Positve " + tagPhi, kTH1D, {axisPhi});
+
+    // Neg
+    histos.add("ptneg/num", "Numerator Negative " + tagPt, kTH1D, {axisPt});
+    histos.add("ptneg/den", "Denominator Negative " + tagPt, kTH1D, {axisPt});
+
+    histos.add("etaneg/num", "Numerator Negative " + tagEta, kTH1D, {axisEta});
+    histos.add("etaneg/den", "Denominator Negative " + tagEta, kTH1D, {axisEta});
+
+    histos.add("phineg/num", "Numerator Negative " + tagPhi, kTH1D, {axisPhi});
+    histos.add("phineg/den", "Denominator Negative " + tagPhi, kTH1D, {axisPhi});
+
     list.setObject(new TList);
     if (makeEff) {
       auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
@@ -532,6 +567,15 @@ struct QaTrackingEfficiencyData {
         histos.fill(HIST("pt/num"), track.pt());
         histos.fill(HIST("eta/num"), track.eta());
         histos.fill(HIST("phi/num"), track.phi());
+        if (track.sign() > 0) {
+          histos.fill(HIST("ptpos/num"), track.pt());
+          histos.fill(HIST("etapos/num"), track.eta());
+          histos.fill(HIST("phipos/num"), track.phi());
+        } else {
+          histos.fill(HIST("ptneg/num"), track.pt());
+          histos.fill(HIST("etaneg/num"), track.eta());
+          histos.fill(HIST("phineg/num"), track.phi());
+        }
       }
 
       if (makeEff) {
@@ -549,32 +593,84 @@ struct QaTrackingEfficiencyData {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w;
-  if (cfgc.options().get<int>("eff-el")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Electron>>(cfgc, TaskName{"qa-tracking-efficiency-electron"}));
-  }
-  if (cfgc.options().get<int>("eff-mu")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Muon>>(cfgc, TaskName{"qa-tracking-efficiency-muon"}));
-  }
-  if (cfgc.options().get<int>("eff-pi")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Pion>>(cfgc, TaskName{"qa-tracking-efficiency-pion"}));
-  }
-  if (cfgc.options().get<int>("eff-ka")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Kaon>>(cfgc, TaskName{"qa-tracking-efficiency-kaon"}));
-  }
-  if (cfgc.options().get<int>("eff-pr")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Proton>>(cfgc, TaskName{"qa-tracking-efficiency-proton"}));
-  }
-  if (cfgc.options().get<int>("eff-de")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Deuteron>>(cfgc, TaskName{"qa-tracking-efficiency-deuteron"}));
-  }
-  if (cfgc.options().get<int>("eff-tr")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Triton>>(cfgc, TaskName{"qa-tracking-efficiency-triton"}));
-  }
-  if (cfgc.options().get<int>("eff-he")) {
-    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Helium3>>(cfgc, TaskName{"qa-tracking-efficiency-helium3"}));
-  }
+  // Data
   if (cfgc.options().get<int>("eff-data")) {
     w.push_back(adaptAnalysisTask<QaTrackingEfficiencyData>(cfgc));
+  }
+  // Sign blind
+  if (cfgc.options().get<int>("eff-el")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Electron, 0>>(cfgc, TaskName{"qa-tracking-efficiency-electron"}));
+  }
+  if (cfgc.options().get<int>("eff-mu")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Muon, 0>>(cfgc, TaskName{"qa-tracking-efficiency-muon"}));
+  }
+  if (cfgc.options().get<int>("eff-pi")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Pion, 0>>(cfgc, TaskName{"qa-tracking-efficiency-pion"}));
+  }
+  if (cfgc.options().get<int>("eff-ka")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Kaon, 0>>(cfgc, TaskName{"qa-tracking-efficiency-kaon"}));
+  }
+  if (cfgc.options().get<int>("eff-pr")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Proton, 0>>(cfgc, TaskName{"qa-tracking-efficiency-proton"}));
+  }
+  if (cfgc.options().get<int>("eff-de")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Deuteron, 0>>(cfgc, TaskName{"qa-tracking-efficiency-deuteron"}));
+  }
+  if (cfgc.options().get<int>("eff-tr")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Triton, 0>>(cfgc, TaskName{"qa-tracking-efficiency-triton"}));
+  }
+  if (cfgc.options().get<int>("eff-he")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Helium3, 0>>(cfgc, TaskName{"qa-tracking-efficiency-helium3"}));
+  }
+  // Pos
+  if (cfgc.options().get<int>("eff-el-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Electron, 1>>(cfgc, TaskName{"qa-tracking-efficiency-electron-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-mu-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Muon, 1>>(cfgc, TaskName{"qa-tracking-efficiency-muon-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-pi-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Pion, 1>>(cfgc, TaskName{"qa-tracking-efficiency-pion-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-ka-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Kaon, 1>>(cfgc, TaskName{"qa-tracking-efficiency-kaon-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-pr-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Proton, 1>>(cfgc, TaskName{"qa-tracking-efficiency-proton-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-de-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Deuteron, 1>>(cfgc, TaskName{"qa-tracking-efficiency-deuteron-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-tr-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Triton, 1>>(cfgc, TaskName{"qa-tracking-efficiency-triton-pos"}));
+  }
+  if (cfgc.options().get<int>("eff-he-pos")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Helium3, 1>>(cfgc, TaskName{"qa-tracking-efficiency-helium3-pos"}));
+  }
+  // Neg
+  if (cfgc.options().get<int>("eff-el-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Electron, -1>>(cfgc, TaskName{"qa-tracking-efficiency-electron-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-mu-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Muon, -1>>(cfgc, TaskName{"qa-tracking-efficiency-muon-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-pi-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Pion, -1>>(cfgc, TaskName{"qa-tracking-efficiency-pion-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-ka-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Kaon, -1>>(cfgc, TaskName{"qa-tracking-efficiency-kaon-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-pr-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Proton, -1>>(cfgc, TaskName{"qa-tracking-efficiency-proton-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-de-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Deuteron, -1>>(cfgc, TaskName{"qa-tracking-efficiency-deuteron-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-tr-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Triton, -1>>(cfgc, TaskName{"qa-tracking-efficiency-triton-neg"}));
+  }
+  if (cfgc.options().get<int>("eff-he-neg")) {
+    w.push_back(adaptAnalysisTask<QaTrackingEfficiency<o2::track::PID::Helium3, -1>>(cfgc, TaskName{"qa-tracking-efficiency-helium3-neg"}));
   }
   return w;
 }
