@@ -422,6 +422,20 @@ inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
+void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
+{
+  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+    LOGF(info, "   mother index: %d", m.globalIndex());
+    LOGF(info, "   Tracking back mother");
+    LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
+    LOGF(info, "   index: %d, pdg code: %d", m.globalIndex(), m.pdgCode());
+    LOGF(info, "   Passed  isPhysicalPrimary(): %s", m.isPhysicalPrimary() ? "YES" : "NO");
+
+    exploreMothers(m, collision);
+  }
+}
+
+template <typename ParticleObject, typename MCCollisionObject>
 inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, uint8_t& asone, uint8_t& astwo)
 {
   asone = uint8_t(false);
@@ -439,21 +453,13 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
       float dcaz = TMath::Abs(particle.vz() - collision.posZ());
       if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
         if ((particle.mcCollisionId() == 0) and traceCollId0) {
-          auto currparticle = particle;
           LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
-          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", currparticle.mcCollisionId(), collision.globalIndex());
+          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
           LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
           LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
-          LOGF(info, "   index: %d, pdg code: %d", currparticle.globalIndex(), currparticle.pdgCode());
-          while (currparticle.has_mother0()) {
-            LOGF(info, "   mother0 index: %d, mother1 index: %d", currparticle.mother0Id(), currparticle.mother1Id());
-            LOGF(info, "  Tracking back mother0 index");
-            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles_000>();
-            LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
-            LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
-            LOGF(info, "   Passed  isPhysicalPrimary(): %s", newcurrparticle.isPhysicalPrimary() ? "YES" : "NO");
-            currparticle = newcurrparticle;
-          }
+          LOGF(info, "   index: %d, pdg code: %d", particle.globalIndex(), particle.pdgCode());
+
+          exploreMothers(particle, collision);
         }
         return;
       }
