@@ -122,6 +122,8 @@ struct lambdakzeroprefilter {
 
 struct lambdakzerofinder {
   Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0s> v0;
+  Produces<aod::V0DataLink> v0datalink;
 
   HistogramRegistry registry{
     "registry",
@@ -155,7 +157,7 @@ struct lambdakzerofinder {
 
     Long_t lNCand = 0;
 
-    for (auto& t0id : ptracks) { //FIXME: turn into combination(...)
+    for (auto& t0id : ptracks) { // FIXME: turn into combination(...)
       auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
       auto Track1 = getTrackParCov(t0);
       for (auto& t1id : ntracks) {
@@ -197,6 +199,7 @@ struct lambdakzerofinder {
         }
 
         lNCand++;
+        v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
         v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),
                fitter.getTrack(0).getX(), fitter.getTrack(1).getX(), 0,
                pos[0], pos[1], pos[2],
@@ -204,6 +207,7 @@ struct lambdakzerofinder {
                pvec1[0], pvec1[1], pvec1[2],
                fitter.getChi2AtPCACandidate(),
                t0id.dcaXY(), t1id.dcaXY());
+        v0datalink(v0data.lastIndex());
       }
     }
     registry.fill(HIST("hCandPerEvent"), lNCand);

@@ -50,7 +50,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
+               aod::Hf2Prong const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -152,13 +152,13 @@ struct HFCandidateCreator2ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (auto& candidate : *rowCandidateProng2) {
-      //Printf("New rec. candidate");
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(), candidate.index1_as<aod::BigTracksMC>()};
 
       // D0(bar) → π± K∓
-      //Printf("Checking D0(bar) → π± K∓");
+      // Printf("Checking D0(bar) → π± K∓");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
@@ -166,7 +166,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        //Printf("Checking J/ψ → e+ e−");
+        // Printf("Checking J/ψ → e+ e−");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
@@ -175,7 +175,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        //Printf("Checking J/ψ → μ+ μ−");
+        // Printf("Checking J/ψ → μ+ μ−");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
@@ -193,19 +193,19 @@ struct HFCandidateCreator2ProngExpressions {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
 
       // D0(bar) → π± K∓
-      //Printf("Checking D0(bar) → π± K∓");
+      // Printf("Checking D0(bar) → π± K∓");
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        //Printf("Checking J/ψ → e+ e−");
+        // Printf("Checking J/ψ → e+ e−");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -213,7 +213,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        //Printf("Checking J/ψ → μ+ μ−");
+        // Printf("Checking J/ψ → μ+ μ−");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }

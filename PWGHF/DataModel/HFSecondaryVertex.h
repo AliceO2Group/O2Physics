@@ -64,12 +64,11 @@ using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksExtended>;
 
 namespace hf_track_index
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, Tracks, "_0");          //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, Tracks, "_1");          //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Index2, index2, int, Tracks, "_2");          //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Index3, index3, int, Tracks, "_3");          //!
-DECLARE_SOA_INDEX_COLUMN_FULL(IndexV0, indexV0, int, aod::V0Datas, "_V0"); //!
-DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                               //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, Tracks, "_0"); //! Index to first prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, Tracks, "_1"); //! Index to second prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Index2, index2, int, Tracks, "_2"); //! Index to third prong
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                                 //! Index to V0 prong
+DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                      //!
 
 DECLARE_SOA_COLUMN(D0ToKPiFlag, d0ToKPiFlag, uint8_t);       //!
 DECLARE_SOA_COLUMN(JpsiToEEFlag, jpsiToEEFlag, uint8_t);     //!
@@ -81,26 +80,39 @@ DECLARE_SOA_COLUMN(DsKKPiFlag, dsKKPiFlag, uint8_t);         //!
 DECLARE_SOA_COLUMN(XicToPKPiFlag, xicToPKPiFlag, uint8_t);   //!
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //!
+DECLARE_SOA_TABLE(Hf2Prong, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates
+                  o2::soa::Index<>,
                   hf_track_index::Index0Id,
                   hf_track_index::Index1Id,
                   hf_track_index::HFflag);
 
-DECLARE_SOA_TABLE(HfTrackIndexCasc, "AOD", "HFTRACKIDXCASC", //!
+DECLARE_SOA_TABLE(HfCascade, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
+                  o2::soa::Index<>,
                   hf_track_index::Index0Id,
-                  hf_track_index::IndexV0Id,
+                  hf_track_index::V0Id,
                   hf_track_index::HFflag);
+
+DECLARE_SOA_TABLE(Hf3Prong, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
+                  o2::soa::Index<>,
+                  hf_track_index::Index0Id,
+                  hf_track_index::Index1Id,
+                  hf_track_index::Index2Id,
+                  hf_track_index::HFflag);
+
+namespace hf_track_index
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(IndexD0, indexD0, int, Hf2Prong, ""); //! Index to a D0 prong
+} // namespace hf_track_index
+
+DECLARE_SOA_TABLE(HfDStar, "AOD", "HFDSTAR", //! D* -> D0pi candidates
+                  o2::soa::Index<>,
+                  hf_track_index::Index0Id,
+                  hf_track_index::IndexD0Id);
 
 DECLARE_SOA_TABLE(HfCutStatusProng2, "AOD", "HFCUTSTATUSP2", //!
                   hf_track_index::D0ToKPiFlag,
                   hf_track_index::JpsiToEEFlag,
                   hf_track_index::JpsiToMuMuFlag);
-
-DECLARE_SOA_TABLE(HfTrackIndexProng3, "AOD", "HFTRACKIDXP3", //!
-                  hf_track_index::Index0Id,
-                  hf_track_index::Index1Id,
-                  hf_track_index::Index2Id,
-                  hf_track_index::HFflag);
 
 DECLARE_SOA_TABLE(HfCutStatusProng3, "AOD", "HFCUTSTATUSP3", //!
                   hf_track_index::DPlusPiKPiFlag,
@@ -236,7 +248,7 @@ DECLARE_SOA_COLUMN(OriginMCGen, originMCGen, int8_t);       //! particle origin,
 enum DecayType { D0ToPiK = 0,
                  JpsiToEE,
                  JpsiToMuMu,
-                 N2ProngDecays }; //always keep N2ProngDecays at the end
+                 N2ProngDecays }; // always keep N2ProngDecays at the end
 
 // functions for specific particles
 
@@ -402,7 +414,7 @@ DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
                               float, 1.f * aod::hf_cand::pyProng0 + 1.f * aod::hf_cand::pyProng1);
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * aod::hf_cand::pzProng0 + 1.f * aod::hf_cand::pzProng1);
-//DECLARE_SOA_DYNAMIC_COLUMN(M, m, [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
+// DECLARE_SOA_DYNAMIC_COLUMN(M, m, [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Pos, ptV0Pos, //!
                            [](float px, float py) { return RecoDecay::Pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
@@ -425,7 +437,7 @@ auto InvMassGamma(const T& candidate)
 } // namespace hf_cand_casc
 
 DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
-                  // general columns
+                                                           // general columns
                   HFCAND_COLUMNS,
                   // cascade specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
@@ -433,7 +445,7 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
                   hf_track_index::Index0Id,
-                  hf_track_index::IndexV0Id, // V0 index
+                  hf_track_index::V0Id, // V0 index
                   hf_track_index::HFflag,
                   // V0
                   v0data::X, v0data::Y, v0data::Z,
@@ -613,7 +625,7 @@ enum DecayType { DPlusToPiKPi = 0,
                  LcToPKPi,
                  DsToPiKK,
                  XicToPKPi,
-                 N3ProngDecays }; //always keep N3ProngDecays at the end
+                 N3ProngDecays }; // always keep N3ProngDecays at the end
 
 // functions for specific particles
 
@@ -1132,7 +1144,7 @@ DECLARE_SOA_COLUMN(DebugMCRec, debugMCRec, int8_t);         // debug flag for mi
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
 
 // Λb → Λc+ π- → p K- π+ π-
-//float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
+// float massLb = RecoDecay::getMassPDG(pdg::Code::kLambdaB0);
 template <typename T>
 auto CtLb(const T& candidate)
 {
