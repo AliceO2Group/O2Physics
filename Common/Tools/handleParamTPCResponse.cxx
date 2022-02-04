@@ -54,6 +54,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
     "paramMaxClusters", bpo::value<float>()->default_value(63.), "Maximum Number of Clusters")(
+    "useDefaultParam", bpo::value<bool>()->default_value(true), "Use default parametrizatio")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(
     "help,h", "Print this help.");
   try {
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
   const float chargefacval = vm["paramChargeFactor"].as<float>();
   const float multNormval = vm["paramMultNormalization"].as<float>();
   const float maxnumclusterval = vm["paramMaxClusters"].as<float>();
+  const bool useDefaultParam = vm["useDefaultParam"].as<bool>();
   const std::string optMode = vm["mode"].as<std::string>();
   if (optMode.empty()) {
     LOG(error) << "--mode must be specified (read, write, pull, push)";
@@ -217,7 +219,7 @@ int main(int argc, char* argv[])
       tpc->SetChargeFactor(chargefacval);
       tpc->SetMultiplicityNormalization(multNormval);
       tpc->SetMaxNumberClusters(maxnumclusterval);
-      tpc->SetUseDefaultResolutionParam(false);
+      tpc->SetUseDefaultResolutionParam(useDefaultParam);
       tpc->PrintAll();
     }
     if (optMode.compare("write") == 0) {

@@ -47,7 +47,7 @@ struct QaTpcTof {
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Upper limit for TPC nSigma"};
 
-  HistogramRegistry hists{"HistogramsTPCPIDQA"};
+  HistogramRegistry hists{"HistogramsTPCPIDQA", {}, OutputObjHandlingPolicy::QAObject};
 
   static constexpr int Np = 9;
   static constexpr std::string_view hnsigmaTPC[Np] = {"nsigmaTPC/El", "nsigmaTPC/Mu", "nsigmaTPC/Pi",
@@ -146,8 +146,9 @@ struct QaTpcV0 {
                                                          "dEdxDiffTPCV0/Ka", "dEdxDiffTPCV0/Pr"};
   static constexpr std::string_view hnsigmaV0[NpV0] = {"nsigmaTPCV0/El", "nsigmaTPCV0/Pi",
                                                        "nsigmaTPCV0/Ka", "nsigmaTPCV0/Pr"};
-  HistogramRegistry histos{"TPCPIDQA_V0"};
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use log momentum axis in V0 QA"};
+  static constexpr std::string_view hnsigmaV0VsEta[NpV0] = {"nsigmaTPCV0VsEta/El", "nsigmaTPCV0VsEta/Pi",
+                                                       "nsigmaTPCV0VsEta/Ka", "nsigmaTPCV0VsEta/Pr"};
+  HistogramRegistry histos{"TPCPIDQA_V0", {}, OutputObjHandlingPolicy::QAObject};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
@@ -181,6 +182,9 @@ struct QaTpcV0 {
 
     AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("n_{#sigma}^{TPC}(%s from V^{0})", partName[i])};
     histos.add(hnsigmaV0[i].data(), "", kTH2F, {pAxis, nSigmaAxis});
+
+    AxisSpec etaAxis{1000, -1, 1, "#eta"};
+    histos.add(hnsigmaV0VsEta[i].data(), "", kTH2F, {etaAxis, nSigmaAxis});
 
   } //addV0Histos
 

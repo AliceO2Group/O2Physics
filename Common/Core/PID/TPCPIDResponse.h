@@ -21,8 +21,9 @@
 #include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "TMath.h"
-#include "TPCSimulation/Detector.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "TFormula.h"
+#include <iostream>
 
 namespace o2::pid::tpc
 {
@@ -101,7 +102,7 @@ class Response
 template <typename TrackType>
 inline float Response::GetExpectedSignal(const TrackType& track, const o2::track::PID::ID id) const
 {
-  const float bethe = mMIP * o2::tpc::Detector::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+  const float bethe = mMIP * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
   return bethe >= 0.f ? bethe : 0.f;
 }
 
@@ -109,33 +110,34 @@ inline float Response::GetExpectedSignal(const TrackType& track, const o2::track
 template <typename CollisionType, typename TrackType>
 inline float Response::GetExpectedSigma(const CollisionType& collision, const TrackType& track, const o2::track::PID::ID id) const
 {
-  if(!useDefaultResolutionParam){
+  //if (useDefaultResolutionParam == true){
+    //std::cout << "Use Default " << std::endl;
+  const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
+  return reso >= 0.f ? reso : 0.f;
+  //}
+  // else{
 
-    std::vector<double> values;
-    const double ncl = track.tpcNClsFound();
-    const double p = track.tpcInnerParam();
-    const double mass = o2::track::pid_constants::sMasses[id];
-    const double bg =  p/mass;
-    const double dEdx = mMIP * o2::tpc::Detector::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
-    const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[mReadOutChamber][3]);
+  //   std::vector<double> values;
+  //   const double ncl = track.tpcNClsFound();
+  //   const double p = track.tpcInnerParam();
+  //   const double mass = o2::track::pid_constants::sMasses[id];
+  //   const double bg =  p/mass;
+  //   const double dEdx = mMIP * o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+  //   const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[mReadOutChamber][3]);
 
-    values.push_back((1./dEdx));
-    values.push_back((track.tgl()));
-    values.push_back((std::sqrt(mMaxClusters/ncl)));
-    values.push_back(relReso);
-    values.push_back((track.signed1Pt()));
-    values.push_back((collision.multTPC()) / mMultNormalization);
+  //   values.push_back((1./dEdx));
+  //   values.push_back((track.tgl()));
+  //   values.push_back((std::sqrt(mMaxClusters/ncl)));
+  //   values.push_back(relReso);
+  //   values.push_back((track.signed1Pt()));
+  //   values.push_back((collision.multTPC()) / mMultNormalization);
 
     
     
-    fSigmaParametrization->SetParameters(mResolutionParams[mReadOutChamber].data());
+  //   fSigmaParametrization->SetParameters(mResolutionParams[mReadOutChamber].data());
     
-    return fSigmaParametrization->EvalPar(values.data())*(dEdx);
-  }
-  else{
-    const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
-    return reso >= 0.f ? reso : 0.f;
-  }
+  //   return fSigmaParametrization->EvalPar(values.data())*(dEdx);
+  // }
 }
 
 /// Gets the number of sigma between the actual signal and the expected signal
@@ -156,10 +158,10 @@ inline float Response::GetSignalDelta(const TrackType& trk, const o2::track::PID
 inline float Response::GetRelativeResolutiondEdx(const float p, const float mass, const float charge , const float resol) const
 {
   const float bg =  p/mass;
-  const float dEdx = o2::tpc::Detector::BetheBlochAleph(bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
+  const float dEdx = o2::tpc::BetheBlochAleph(bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
   const float deltaP = resol*std::sqrt(dEdx);
   const float bgDelta=p*(1+deltaP)/mass;
-  const float dEdx2=o2::tpc::Detector::BetheBlochAleph(bgDelta, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
+  const float dEdx2=o2::tpc::BetheBlochAleph(bgDelta, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
   const float deltaRel = TMath::Abs(dEdx2-dEdx)/dEdx;
   return deltaRel;
 }
