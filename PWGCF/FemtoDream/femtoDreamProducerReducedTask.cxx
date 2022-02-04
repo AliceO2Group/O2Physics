@@ -113,28 +113,29 @@ struct femtoDreamProducerReducedTask {
   void process(aod::FilteredFullCollision const& col, aod::BCsWithTimestamps const&, aod::FilteredFullTracks const& tracks) /// \todo with FilteredFullV0s
   {
     auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    const auto vtxZ = col.posZ();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    ///For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+    int mult = 0;
+    if (ConfIsRun3) {
+      mult = col.multT0A(); ///Mult based on T0, temporary storing to be fixed and checked
+    } else {
+      mult = 0.5 * (col.multV0M());
+    }
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
+        outputCollision(col.posZ(), mult, colCuts.computeSphericity(col, tracks), bc.timestamp());
       }
       return;
     }
 
-    const auto vtxZ = col.posZ();
-    const auto mult = col.multV0M();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
-
     // now the table is filled
-    if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multT0A(), spher, bc.timestamp());
-    } else {
-      outputCollision(vtxZ, mult, spher, bc.timestamp());
-    }
+    outputCollision(vtxZ, mult, spher, bc.timestamp());
 
     int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     for (auto& track : tracks) {
