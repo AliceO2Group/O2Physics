@@ -99,7 +99,7 @@ struct Alice3SingleParticle {
 
   void process(const o2::aod::McCollisions& colls,
                const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra>& tracks,
-               const aod::McParticles& mcParticles)
+               const aod::McParticles_000& mcParticles)
   {
     for (const auto& col : colls) {
       histos.fill(HIST("event/VtxX"), col.posX());
@@ -130,10 +130,10 @@ struct Alice3SingleParticle {
       histos.fill(HIST("particle/prodVy"), mcParticle.vy());
       histos.fill(HIST("particle/prodVz"), mcParticle.vz());
       if (!IsStable && mcParticle.has_daughter0()) {
-        histos.get<TH1>(HIST("particle/daughters/PDGs"))->Fill(Form("%i", mcParticle.daughter0_as<aod::McParticles>().pdgCode()), 1.f);
-        histos.fill(HIST("particle/daughters/prodVx"), mcParticle.daughter0_as<aod::McParticles>().vx());
-        histos.fill(HIST("particle/daughters/prodVy"), mcParticle.daughter0_as<aod::McParticles>().vy());
-        histos.fill(HIST("particle/daughters/prodVz"), mcParticle.daughter0_as<aod::McParticles>().vz());
+        histos.get<TH1>(HIST("particle/daughters/PDGs"))->Fill(Form("%i", mcParticle.daughter0_as<aod::McParticles_000>().pdgCode()), 1.f);
+        histos.fill(HIST("particle/daughters/prodVx"), mcParticle.daughter0_as<aod::McParticles_000>().vx());
+        histos.fill(HIST("particle/daughters/prodVy"), mcParticle.daughter0_as<aod::McParticles_000>().vy());
+        histos.fill(HIST("particle/daughters/prodVz"), mcParticle.daughter0_as<aod::McParticles_000>().vz());
       }
 
       histos.fill(HIST("particle/prodRadius"), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
@@ -146,7 +146,7 @@ struct Alice3SingleParticle {
     }
 
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       histos.get<TH1>(HIST("track/PDGs"))->Fill(Form("%i", mcParticle.pdgCode()), 1.f);
       if (track.hasTOF()) {
         histos.get<TH1>(HIST("track/tofPDGs"))->Fill(Form("%i", mcParticle.pdgCode()), 1.f);
@@ -155,7 +155,7 @@ struct Alice3SingleParticle {
         if (!mcParticle.has_mother0()) {
           continue;
         }
-        auto mother = mcParticle.mother0_as<aod::McParticles>();
+        auto mother = mcParticle.mother0_as<aod::McParticles_000>();
         const auto ParticleIsInteresting = std::find(ParticlesOfInterest.begin(), ParticlesOfInterest.end(), mother.globalIndex()) != ParticlesOfInterest.end();
         if (!ParticleIsInteresting) {
           continue;
@@ -175,7 +175,7 @@ struct Alice3SingleParticle {
           }
           continue;
         }
-        auto mother = mcParticle.mother0_as<aod::McParticles>();
+        auto mother = mcParticle.mother0_as<aod::McParticles_000>();
         if (mcParticle.isPhysicalPrimary()) {
           histos.get<TH1>(HIST("track/primaries"))->Fill(Form("%i", mother.pdgCode()), 1.f);
         } else {

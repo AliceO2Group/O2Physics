@@ -106,7 +106,7 @@ struct TrackCheckTaskEvSel {
       bool isPrimary = false;
 
       if (isMC) { //determine particle species base on MC truth and if it is primary or not
-        const auto particle = track.mcParticle();
+        const auto particle = track.mcParticle_as<aod::McParticles_000>();
         int pdgcode = particle.pdgCode();
 
         if (particle.isPhysicalPrimary()) { //is primary?
@@ -187,7 +187,7 @@ struct TrackCheckTaskEvSelTrackSel {
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
                soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
                                        aod::TrackSelection, aod::McTrackLabels>>& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles_000& mcParticles)
   {
 
     //event selection
@@ -204,7 +204,7 @@ struct TrackCheckTaskEvSelTrackSel {
       bool isPrimary = false;
 
       if (isMC) { //determine particle species base on MC truth and if it is primary or not
-        const auto particle = track.mcParticle();
+        const auto particle = track.mcParticle_as<aod::McParticles_000>();
         int pdgcode = particle.pdgCode();
 
         if (particle.isPhysicalPrimary()) { //is primary?

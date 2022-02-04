@@ -34,7 +34,7 @@ struct CreateTableMc {
   void process(BigTracksMC const& tracks, aod::McParticles const& mctracks)
   {
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
       pidTracksTable(track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
                      track.tofSignal(), track.beta(),

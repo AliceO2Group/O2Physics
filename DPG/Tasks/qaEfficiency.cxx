@@ -13,7 +13,7 @@
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-// O2 inlcudes
+// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -358,7 +358,7 @@ struct QaTrackingEfficiency {
 
     float dNdEta = 0;
     for (const auto& mcParticle : mcParticles) {
-      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughter0() && !mcParticle.has_daughter1()) {
+      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
         dNdEta += 1.f;
       }
       if (rejectParticle(mcParticle, HIST("partSelection"))) {

@@ -114,7 +114,7 @@ struct identifiedraaTask {
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)
   {
     for (auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.template mcParticle_as<aod::McParticles_000>();
       for (int j = 0; j < 16; j++) {
         if (globalTrackswoPrim.IsSelected(track, static_cast<TrackSelection::TrackCuts>(j))) {
           histos.fill(HIST("TrackCut"), j);
@@ -204,7 +204,7 @@ struct identifiedraaTask {
                            aod::TracksExtended, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa,
                            aod::pidTOFFullPr> const& tracks,
-                 const aod::McParticles& mcParticles)
+                 const aod::McParticles_000& mcParticles)
   {
     // LOGF(info, "Enter processMC!");
     fillHistograms_MC<0>(tracks, mcParticles);
