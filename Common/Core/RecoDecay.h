@@ -584,12 +584,11 @@ class RecoDecay
     if (sign) {
       *sign = sgn;
     }
-    while (particleMother.has_mother0()) {
+    while (particleMother.has_mothers()) {
       if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
         return -1;
       }
-      auto indexMotherTmp = particleMother.mother0Id();
-      particleMother = particlesMC.iteratorAt(indexMotherTmp);
+      particleMother = particleMother.mothers().front(); // get mother 0 
       // Check mother's PDG code.
       auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
       //printf("getMother: ");
@@ -598,11 +597,11 @@ class RecoDecay
       //printf("Stage %d: Mother PDG: %d\n", stage, PDGParticleIMother);
       if (PDGParticleIMother == PDGMother) { // exact PDG match
         sgn = 1;
-        indexMother = indexMotherTmp;
+        indexMother = particleMother.globalIndex();
         break;
       } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
         sgn = -1;
-        indexMother = indexMotherTmp;
+        indexMother = particleMother.globalIndex();
         break;
       }
       stage--;
