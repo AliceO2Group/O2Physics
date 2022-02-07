@@ -182,7 +182,6 @@ struct HFCandidateCreatorCascade {
                        impactParameterBach.getY(), impactParameterV0.getY(),
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.index0Id(), casc.v0Id(),
-                       casc.hfflag(),
                        v0.x(), v0.y(), v0.z(),
                        //v0.posTrack(), v0.negTrack(), // why this was not fine?
                        trackV0DaughPos.globalIndex(), trackV0DaughNeg.globalIndex(),

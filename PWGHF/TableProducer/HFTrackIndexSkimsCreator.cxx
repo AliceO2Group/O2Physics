@@ -1331,7 +1331,6 @@ struct HfTrackIndexSkimsCreator {
 
 struct HfTrackIndexSkimsCreatorCascades {
   Produces<aod::HfCascade> rowTrackIndexCasc;
-  //  Produces<aod::Hf2Prong> rowTrackIndexCasc;
 
   // whether to do or not validation plots
   Configurable<bool> doValPlots{"doValPlots", true, "fill histograms"};
@@ -1577,8 +1576,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
         // fill table row
         rowTrackIndexCasc(bach.globalIndex(),
-                          v0.globalIndex(),
-                          1); // 1 should be the value for the Lc
+                          v0.globalIndex());
         // fill histograms
         if (doValPlots) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);
