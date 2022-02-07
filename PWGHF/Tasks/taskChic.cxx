@@ -151,7 +151,7 @@ struct TaskChicMC {
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate, aod::HfCandChicMCRec>> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -213,8 +213,8 @@ struct TaskChicMC {
         // properties of gen matched chic, to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (int iD = particle.daughter0Id(); iD <= particle.daughter1Id(); ++iD) {
-          ptProngs[counter] = particlesMC.iteratorAt(iD).pt();
+        for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+          ptProngs[counter] = dau.pt();
           counter++;
         }
 
