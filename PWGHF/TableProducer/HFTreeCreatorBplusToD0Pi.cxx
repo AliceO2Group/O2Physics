@@ -40,7 +40,7 @@ DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
+//DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
@@ -104,7 +104,7 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::PProng0,
                   full::PtProng1,
                   full::PProng1,
-                  full::CandidateSelFlag,
+                  //full::CandidateSelFlag,
                   full::M,
                   full::Pt,
                   full::P,
@@ -223,6 +223,9 @@ struct HfTreeCreatorBplusToD0Pi {
                            float FunctionY) {
         auto d0Cand = candidate.index0();
         auto piCand = candidate.index1_as<aod::BigTracksPID>();
+        //adding D0 daughters to the table
+        auto d0Daughter0 = d0Cand.index0_as<aod::BigTracksPID>();
+        auto d0Daughter1 = d0Cand.index1_as<aod::BigTracksPID>();
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {
@@ -240,7 +243,7 @@ struct HfTreeCreatorBplusToD0Pi {
             RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.ptProng1(),
             RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-            1 << CandFlag,
+            //1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
             candidate.p(),
@@ -266,10 +269,10 @@ struct HfTreeCreatorBplusToD0Pi {
             candidate.pyProng1(),
             candidate.pzProng1(),
             candidate.chi2PCA(),
-            candidate.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaPi(),
-            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaKa(),
+            piCand.tofNSigmaPi(),
+            piCand.tofNSigmaKa(),
+            piCand.tpcNSigmaPi(),
+            piCand.tpcNSigmaKa(),
             candidate.flagMCMatchRec(),
             invMassD0,
             d0Cand.ptProng0(),
@@ -288,14 +291,14 @@ struct HfTreeCreatorBplusToD0Pi {
             d0Cand.impactParameter1(),
             d0Cand.impactParameterNormalised0(),
             d0Cand.impactParameterNormalised1(),
-            d0Cand.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
-            d0Cand.index0_as<aod::BigTracksPID>().tofNSigmaKa(),
-            d0Cand.index0_as<aod::BigTracksPID>().tpcNSigmaPi(),
-            d0Cand.index0_as<aod::BigTracksPID>().tpcNSigmaKa(),
-            d0Cand.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
-            d0Cand.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            d0Cand.index1_as<aod::BigTracksPID>().tpcNSigmaPi(),
-            d0Cand.index1_as<aod::BigTracksPID>().tpcNSigmaKa());
+            d0Daughter0.tofNSigmaPi(),
+            d0Daughter0.tofNSigmaKa(),
+            d0Daughter0.tpcNSigmaPi(),
+            d0Daughter0.tpcNSigmaKa(),
+            d0Daughter1.tofNSigmaPi(),
+            d0Daughter1.tofNSigmaKa(),
+            d0Daughter1.tpcNSigmaPi(),
+            d0Daughter1.tpcNSigmaKa());
         }
       };
 
