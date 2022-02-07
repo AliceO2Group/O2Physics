@@ -190,7 +190,7 @@ struct HfTreeCreatorBplusToD0Pi {
   {
   }
 
-  Configurable<int> isSignal{"isSignal", 1., "save only MC matched candidates"};
+  Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
 
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
