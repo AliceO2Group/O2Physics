@@ -265,9 +265,9 @@ struct bayesPid {
     // }
     const float bethe = responseTPC->GetExpectedSignal(track, pid);
     const float sigma = responseTPC->GetExpectedSigma(collision, track, pid);
-    //LOG(info) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
-    // bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
-    // sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
+    // LOG(info) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
+    //  bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
+    //  sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
 
     if (abs(dedx - bethe) > fRange * sigma) {
       // Probability[kTPC][pid] = exp(-0.5 * fRange * fRange) / sigma; // BUG fix

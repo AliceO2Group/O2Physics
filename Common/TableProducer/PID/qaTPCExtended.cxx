@@ -18,6 +18,7 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/StrangenessTables.h"
+#include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -28,8 +29,8 @@ using TPCV0Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, 
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  std::vector<ConfigParamSpec> options{//runtime customisation goes here
-    {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}};
+  std::vector<ConfigParamSpec> options{// runtime customisation goes here
+                                       {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}};
   std::swap(workflowOptions, options);
 }
 
@@ -37,8 +38,36 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 using namespace o2::dataformats;
 
+namespace o2::aod
+{
+
+namespace tpc
+{
+DECLARE_SOA_COLUMN(InvDeDx, invdEdx, float);
+DECLARE_SOA_COLUMN(Mass, mass, float);
+DECLARE_SOA_COLUMN(BetaGamma, bg, float);
+DECLARE_SOA_COLUMN(RelResoTPC, relResoTPC, float);
+DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
+DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
+DECLARE_SOA_COLUMN(PidIndex, pidIndexTPC, uint8_t);
+} // namespace tpc
+DECLARE_SOA_TABLE(SkimmedV0TPCTree, "AOD", "TPCV0SKIMTREE",
+                  o2::aod::track::TPCSignal,
+                  tpc::InvDeDx,
+                  o2::aod::track::TPCInnerParam,
+                  o2::aod::track::Tgl,
+                  o2::aod::track::Signed1Pt,
+                  o2::aod::track::Eta,
+                  tpc::Mass,
+                  tpc::BetaGamma,
+                  tpc::RelResoTPC,
+                  tpc::NormMultTPC,
+                  tpc::NormNClustersTPC,
+                  tpc::PidIndex);
+} // namespace o2::aod
+
 struct QaTpcTof {
-  //Configurables
+  // Configurables
   Configurable<float> cutTOF{"cutTOF", 3.f, "TOF nsigma cut for TPC-TOF PID"};
   Configurable<int> pBins{"pBins", 400, "Number of momentum bins"};
   Configurable<float> pMin{"pMin", 0.01, "Lower limit in momentum"};
@@ -78,7 +107,7 @@ struct QaTpcTof {
     hists.add(hnsigmaTOF[i].data(), "TOF signal", kTH2F, {pAxis, tofnSigmaAxis});
     hists.add(hnsigmaTOFAfter[i].data(), "TOF signal after TOF cut", kTH2F, {pAxis, tofnSigmaAxis});
 
-  } //addParticleHistos
+  } // addParticleHistos
 
   void init(InitContext&)
   {
@@ -93,7 +122,7 @@ struct QaTpcTof {
     addTPCQAParticleHistos<7>();
     addTPCQAParticleHistos<8>();
 
-  } //init
+  } // init
 
   template <uint8_t i, typename T>
   void fillTPCQAParticleHistos(const T& t, const float mom, const float tofNSigma, const float tpcNSigma)
@@ -106,7 +135,7 @@ struct QaTpcTof {
     hists.fill(HIST(hnsigmaTOF[i]), mom, tofNSigma);
     if (abs(tofNSigma) < cutTOF)
       hists.fill(HIST(hnsigmaTOFAfter[i]), mom, tofNSigma);
-  } //fillParticleHistos
+  } // fillParticleHistos
 
   void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
                                                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -129,11 +158,12 @@ struct QaTpcTof {
       fillTPCQAParticleHistos<7>(t, mom, t.tofNSigmaHe(), t.tpcNSigmaHe());
       fillTPCQAParticleHistos<8>(t, mom, t.tofNSigmaAl(), t.tpcNSigmaAl());
 
-    } //for
-  }   //process
-};    //struct QaTPCPID
+    } // for
+  }   // process
+};    // struct QaTPCPID
 
 struct QaTpcV0 {
+  Produces<o2::aod::SkimmedV0TPCTree> rowTPCV0Tree;
   static constexpr int NpV0 = 4;
   enum EV0DaughID { kEle = 0,
                     kPi = 1,
@@ -147,7 +177,7 @@ struct QaTpcV0 {
   static constexpr std::string_view hnsigmaV0[NpV0] = {"nsigmaTPCV0/El", "nsigmaTPCV0/Pi",
                                                        "nsigmaTPCV0/Ka", "nsigmaTPCV0/Pr"};
   static constexpr std::string_view hnsigmaV0VsEta[NpV0] = {"nsigmaTPCV0VsEta/El", "nsigmaTPCV0VsEta/Pi",
-                                                       "nsigmaTPCV0VsEta/Ka", "nsigmaTPCV0VsEta/Pr"};
+                                                            "nsigmaTPCV0VsEta/Ka", "nsigmaTPCV0VsEta/Pr"};
   HistogramRegistry histos{"TPCPIDQA_V0", {}, OutputObjHandlingPolicy::QAObject};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
@@ -155,12 +185,12 @@ struct QaTpcV0 {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for TPC nSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Lower limit for TPC nSigma"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Upper limit for TPC nSigma"};
-
-  //Definition of V0 preselection cuts for K0S, Lambda, Anti-lambda
-  //K0S
+  Configurable<int> produceSkimmedTree{"produceSkimmedTree", 0, "Option to produce skimmed tree for fitting (run also with '--aod-writer-keep dangling' to save to file)"};
+  // Definition of V0 preselection cuts for K0S, Lambda, Anti-lambda
+  // K0S
   static constexpr const float cutQTK0[2] = {0.1075f, 0.215f};
   static constexpr const float cutAPK0[2] = {0.199f, 0.8f};
-  //Lambda/Antilambda
+  // Lambda/Antilambda
   static constexpr const float cutQTL = 0.03f;
   static constexpr const float cutAlphaL[2] = {0.35f, 0.7f};
   static constexpr const float cutAlphaAL[2] = {-0.7f, -0.35f};
@@ -171,7 +201,6 @@ struct QaTpcV0 {
   {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     pAxis.makeLogaritmic();
-    
 
     // corrected dE/dx for clean V0
     AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s from V^{0}) A.U.", partName[i])};
@@ -186,7 +215,7 @@ struct QaTpcV0 {
     AxisSpec etaAxis{1000, -1, 1, "#eta"};
     histos.add(hnsigmaV0VsEta[i].data(), "", kTH2F, {etaAxis, nSigmaAxis});
 
-  } //addV0Histos
+  } // addV0Histos
 
   template <uint8_t i, typename T>
   void fillV0Histos(const T& t, const float mom, const float exp_diff, const float nsigma)
@@ -194,7 +223,45 @@ struct QaTpcV0 {
     histos.fill(HIST(hdEdxV0[i]), mom, t.tpcSignal() - exp_diff);
     histos.fill(HIST(hdEdxDiffV0[i]), mom, exp_diff);
     histos.fill(HIST(hnsigmaV0[i]), t.p(), nsigma);
-    histos.fill(HIST(hnsigmaV0VsEta[i]),t.eta(),nsigma);
+    histos.fill(HIST(hnsigmaV0VsEta[i]), t.eta(), nsigma);
+  }
+
+  template <uint8_t id, typename T, typename C>
+  void fillSkimmedTable(const T& track, const C& collision)
+  {
+
+    const double ncl = track.tpcNClsFound();
+    const double p = track.tpcInnerParam();
+    const double mass = o2::track::pid_constants::sMasses[id];
+    const double bg = p / mass;
+    double dEdxExp;
+    switch (id) {
+      case o2::track::PID::Pion:
+        dEdxExp = track.tpcSignal() - track.tpcExpSignalDiffPi();
+        break;
+      case o2::track::PID::Proton:
+        dEdxExp = track.tpcSignal() - track.tpcExpSignalDiffPr();
+        break;
+      default:
+        dEdxExp = -999.;
+        break;
+    }
+
+    // const double tgl = track.tgl();
+    const int multTPC = collision.multTPC();
+
+    rowTPCV0Tree(track.tpcSignal(),
+                 1. / dEdxExp,
+                 track.tpcInnerParam(),
+                 track.tgl(),
+                 track.signed1Pt(),
+                 track.eta(),
+                 mass,
+                 bg,
+                 0.,
+                 multTPC / 11000.,
+                 std::sqrt(63. / ncl),
+                 id);
   }
 
   void init(o2::framework::InitContext&)
@@ -204,11 +271,12 @@ struct QaTpcV0 {
     addV0Histos<2>();
     addV0Histos<3>();
 
-  } //init
+  } // init
 
-  void process(aod::Collision const& collision, aod::V0Datas const& v0s, TPCV0Tracks const& tracks)
+  void process(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, aod::V0Datas const& v0s, TPCV0Tracks const& tracks)
   {
-    for (auto v0 : v0s) { //for loop on built v0 candidates
+    rowTPCV0Tree.reserve(tracks.size());
+    for (auto v0 : v0s) { // for loop on built v0 candidates
       // initialise dynamic variables
       float alpha = v0.alpha();
       float qt = v0.qtarm();
@@ -220,28 +288,40 @@ struct QaTpcV0 {
         // Treat as K0 (both tracks pions)
         fillV0Histos<kPi>(posTrack, posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
         fillV0Histos<kPi>(negTrack, negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
+        if (produceSkimmedTree) {
+          fillSkimmedTable<o2::track::PID::Pion>(posTrack, collision);
+          fillSkimmedTable<o2::track::PID::Pion>(negTrack, collision);
+        }
       }
 
       // Check for Lambda
       q = cutAPL[0] * sqrt(abs(1 - ((alpha + cutAPL[1]) * (alpha + cutAPL[1])) / (cutAPL[2] * cutAPL[2])));
       if ((alpha > cutAlphaL[0]) && (alpha < cutAlphaL[1]) && (qt > cutQTL) && (qt < q)) {
-        //Treat as Lambda (pos proton, neg pion)
+        // Treat as Lambda (pos proton, neg pion)
         fillV0Histos<kPr>(posTrack, posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPr(), posTrack.tpcNSigmaPr());
         fillV0Histos<kPi>(negTrack, negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPi(), negTrack.tpcNSigmaPi());
+        if (produceSkimmedTree) {
+          fillSkimmedTable<o2::track::PID::Proton>(posTrack, collision);
+          fillSkimmedTable<o2::track::PID::Pion>(negTrack, collision);
+        }
       }
 
       // Check for antilambda
       q = cutAPL[0] * sqrt(abs(1 - ((alpha - cutAPL[1]) * (alpha - cutAPL[1])) / (cutAPL[2] * cutAPL[2])));
       if ((alpha > cutAlphaAL[0]) && (alpha < cutAlphaAL[1]) && (qt < q)) {
-        //Treat as antilambda (pos pion, neg proton)
+        // Treat as antilambda (pos pion, neg proton)
         fillV0Histos<kPi>(posTrack, posTrack.tpcInnerParam(), posTrack.tpcExpSignalDiffPi(), posTrack.tpcNSigmaPi());
         fillV0Histos<kPr>(negTrack, negTrack.tpcInnerParam(), negTrack.tpcExpSignalDiffPr(), negTrack.tpcNSigmaPr());
+        if (produceSkimmedTree) {
+          fillSkimmedTable<o2::track::PID::Pion>(posTrack, collision);
+          fillSkimmedTable<o2::track::PID::Proton>(negTrack, collision);
+        }
       }
 
-    } //for
-  }   //process
+    } // for
+  }   // process
 
-}; //struct QaTpcV0
+}; // struct QaTpcV0
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

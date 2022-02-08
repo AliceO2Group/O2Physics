@@ -51,7 +51,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct tpcPidFull {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
   using Coll = soa::Join<aod::Collisions, aod::Mults>;
-  
+
   // Tables to produce
   Produces<o2::aod::pidTPCFullEl> tablePIDEl;
   Produces<o2::aod::pidTPCFullMu> tablePIDMu;
@@ -147,7 +147,7 @@ struct tpcPidFull {
         }
       }
     };
-    //const o2::pid::tpc::Response& response;
+    // const o2::pid::tpc::Response& response;
     makeTable(pidEl, tablePIDEl, *response, o2::track::PID::Electron);
     makeTable(pidMu, tablePIDMu, *response, o2::track::PID::Muon);
     makeTable(pidPi, tablePIDPi, *response, o2::track::PID::Pion);

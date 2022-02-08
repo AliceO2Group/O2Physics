@@ -126,16 +126,16 @@ int main(int argc, char* argv[])
   std::vector<double> sigparamsOROC1;
   std::vector<double> sigparamsOROC2;
   std::vector<double> sigparamsOROC3;
-  if(pathResoParam!=""){ // Read resolution parameters from file
+  if (pathResoParam != "") { // Read resolution parameters from file
     std::ifstream infile(pathResoParam);
     std::string paramstring;
     std::vector<std::vector<double>> sigmaParams;
-    for (int i = 0; i < 5; i++){
+    for (int i = 0; i < 5; i++) {
       std::getline(infile, paramstring);
       std::istringstream ss(paramstring);
       sigmaParams.push_back({});
       double param = 0.;
-      while (ss >> param){
+      while (ss >> param) {
         sigmaParams.back().push_back(param);
       }
     }
@@ -144,17 +144,13 @@ int main(int argc, char* argv[])
     sigparamsOROC1 = sigmaParams[2];
     sigparamsOROC2 = sigmaParams[3];
     sigparamsOROC3 = sigmaParams[4];
+  } else {
+    sigparamsGlobal = o2::RangeTokenizer::tokenize<double>(sigmaGlobal);
+    sigparamsIROC = o2::RangeTokenizer::tokenize<double>(sigmaIROC);
+    sigparamsOROC1 = o2::RangeTokenizer::tokenize<double>(sigmaOROC1);
+    sigparamsOROC2 = o2::RangeTokenizer::tokenize<double>(sigmaOROC2);
+    sigparamsOROC3 = o2::RangeTokenizer::tokenize<double>(sigmaOROC3);
   }
-  else{
-  sigparamsGlobal = o2::RangeTokenizer::tokenize<double>(sigmaGlobal);
-  sigparamsIROC = o2::RangeTokenizer::tokenize<double>(sigmaIROC);
-  sigparamsOROC1 = o2::RangeTokenizer::tokenize<double>(sigmaOROC1);
-  sigparamsOROC2 = o2::RangeTokenizer::tokenize<double>(sigmaOROC2);
-  sigparamsOROC3 = o2::RangeTokenizer::tokenize<double>(sigmaOROC3);
-
-  }
-
-
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
@@ -201,11 +197,11 @@ int main(int argc, char* argv[])
       }
       tpc.reset(fin.Get<Response>(inobjname.c_str()));
       if (!tpc) {
-      LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
-      return 1;
+        LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
+        return 1;
       }
       tpc->PrintAll();
-    } else {    //Create new object if file not specified
+    } else { // Create new object if file not specified
       LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
 
       tpc.reset(new Response());
@@ -256,7 +252,7 @@ int main(int argc, char* argv[])
     LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname;
 
     tpc.reset(api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers));
-    if (!tpc) { //Quit gracefully if pulling object fails
+    if (!tpc) { // Quit gracefully if pulling object fails
       return 1;
     }
 
