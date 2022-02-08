@@ -79,7 +79,7 @@ struct PseudorapidityDensityMFT {
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (useEvSel && ((bc.selection()[aod::EventSelectionFlags::kIsBBT0A] & bc.selection()[aod::EventSelectionFlags::kIsBBT0C]) != 0))) {
+      if (!useEvSel || (useEvSel && ((bc.selection()[evsel::kIsBBT0A] & bc.selection()[evsel::kIsBBT0C]) != 0))) {
         registry.fill(HIST("EventSelection"), 5.);
         cols.clear();
         for (auto& collision : collisions) {

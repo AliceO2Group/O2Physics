@@ -38,8 +38,10 @@ struct MultiplicityTableTaskIndexed {
     float multT0C = -1.f;
     float multZNA = -1.f;
     float multZNC = -1.f;
-    int multTracklets = run2tracklets.size();
-    int multTPC = tracksWithTPC.size();
+    auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    int multTracklets = trackletsGrouped.size();
+    int multTPC = tracksGrouped.size();
 
     if (collision.has_fv0a()) {
       for (auto amplitude : collision.fv0a().amplitude()) {
@@ -80,7 +82,8 @@ struct MultiplicityTableTaskIndexed {
     float multZNA = -1.f;
     float multZNC = -1.f;
     int multTracklets = -1;
-    int multTPC = tracksWithTPC.size();
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    int multTPC = tracksGrouped.size();
 
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {

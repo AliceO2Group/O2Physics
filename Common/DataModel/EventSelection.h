@@ -13,6 +13,7 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
 namespace o2::aod
 {
@@ -40,36 +41,6 @@ enum Run2EventCuts {
   kTRDHSE, // Offline TRD single electron trigger decision
   kTRDHQU, // Offline TRD quarkonium trigger decision
   kTRDHEE  // Offline TRD single-electron-in-EMCAL-acceptance trigger decision
-};
-
-// Event selection criteria
-enum EventSelectionFlags {
-  kIsBBV0A = 0,
-  kIsBBV0C,
-  kIsBBFDA,
-  kIsBBFDC,
-  kNoBGV0A,
-  kNoBGV0C,
-  kNoBGFDA,
-  kNoBGFDC,
-  kIsBBT0A,
-  kIsBBT0C,
-  kIsBBZNA,
-  kIsBBZNC,
-  kNoBGZNA,
-  kNoBGZNC,
-  kNoV0MOnVsOfPileup,
-  kNoSPDOnVsOfPileup,
-  kNoV0Casymmetry,
-  kIsGoodTimeRange,
-  kNoIncompleteDAQ,
-  kNoTPCLaserWarmUp,
-  kNoTPCHVdip,
-  kNoPileupFromSPD,
-  kNoV0PFPileup,
-  kNoSPDClsVsTklBG,
-  kNoV0C012vsTklBG,
-  kNsel
 };
 
 // collision-joinable event selection decisions

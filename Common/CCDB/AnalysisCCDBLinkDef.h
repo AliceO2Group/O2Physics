@@ -13,4 +13,5 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
+#pragma link C++ class EventSelectionParams + ;
 #pragma link C++ class TriggerAliases + ;
