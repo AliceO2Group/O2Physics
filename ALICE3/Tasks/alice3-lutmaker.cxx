@@ -185,7 +185,7 @@ struct Alice3LutMaker {
     histos.add("QA/CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTH3F, {axisPt, axisEta, axisc1Pt21Pt2});
   }
 
-  void process(const o2::aod::McParticles& mcParticles,
+  void process(const o2::aod::McParticles_000& mcParticles,
                const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>&,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McCollisions&)
@@ -194,7 +194,7 @@ struct Alice3LutMaker {
     int ntrks = 0;
 
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       if (mcParticle.pdgCode() != pdg) {
         continue;
       }

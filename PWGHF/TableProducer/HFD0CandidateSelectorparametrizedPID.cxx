@@ -189,7 +189,7 @@ struct HFD0CandidateSelectorparametrizedPID {
   }
 
   using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
-  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {
@@ -234,10 +234,10 @@ struct HFD0CandidateSelectorparametrizedPID {
       int pdgPositive = 0;
       int pdgNegative = 0;
       if (trackPos.has_mcParticle()) {
-        pdgPositive = trackPos.mcParticle().pdgCode();
+        pdgPositive = trackPos.mcParticle_as<aod::McParticles_000>().pdgCode();
       }
       if (trackNeg.has_mcParticle()) {
-        pdgNegative = trackNeg.mcParticle().pdgCode();
+        pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
       }
 
       bool selectPosPion = false;

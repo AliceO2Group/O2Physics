@@ -53,7 +53,7 @@ struct ValidationGenLevel {
      {"hCounterPerCollisionDstar", "Event counter - Dstar; Events Per Collision; entries", {HistType::kTH1F, {{10, -0.5, +9.5}}}},
      {"hCounterPerCollisionLambdaC", "Event counter - LambdaC; Events Per Collision; entries", {HistType::kTH1F, {{10, -0.5, +9.5}}}}}};
 
-  void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
+  void process(aod::McCollision const& mccollision, aod::McParticles_000 const& particlesMC)
   {
     int cPerCollision = 0;
     int cBarPerCollision = 0;
@@ -74,7 +74,7 @@ struct ValidationGenLevel {
       if (!particle.has_mother0()) {
         continue;
       }
-      auto mother = particle.mother0_as<aod::McParticles>();
+      auto mother = particle.mother0_as<aod::McParticles_000>();
       if (particlePdgCode != mother.pdgCode()) {
         switch (particlePdgCode) {
           case kCharm:
@@ -163,7 +163,7 @@ struct ValidationRecLevel {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
 
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
+  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> const& candidates, aod::BigTracksMC const& tracks, aod::McParticles_000 const& particlesMC)
   {
     int indexParticle = 0;
     double decayLength;
@@ -173,7 +173,7 @@ struct ValidationRecLevel {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_prong2::DecayType::D0ToPiK) {
         if (candidate.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kD0, true);
+          indexParticle = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<aod::McParticles_000>(), pdg::Code::kD0, true);
         }
         auto mother = particlesMC.iteratorAt(indexParticle);
         registry.fill(HIST("histPt"), candidate.pt() - mother.pt());
@@ -181,7 +181,7 @@ struct ValidationRecLevel {
         registry.fill(HIST("histPy"), candidate.py() - mother.py());
         registry.fill(HIST("histPz"), candidate.pz() - mother.pz());
         //Compare Secondary vertex and decay length with MC
-        auto daughter0 = mother.daughter0_as<aod::McParticles>();
+        auto daughter0 = mother.daughter0_as<aod::McParticles_000>();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
         decayLength = RecoDecay::distance(vertexMoth, vertexDau);

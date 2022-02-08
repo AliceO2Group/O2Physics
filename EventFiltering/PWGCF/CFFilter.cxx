@@ -92,19 +92,19 @@ struct CFFilter {
 
   Configurable<std::vector<float>> confQ3TriggerLimit{"Q3TriggerLimitC", std::vector<float>{0.6f, 0.6f, 0.6f, 0.6f}, "Q3 limit for selection"};
   Configurable<int> Q3Trigger{"Q3Trigger", 0, "Choice which trigger to run"};
-  Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.017, "Max limit of delta phi"};
-  Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.017, "Max limit of delta eta"};
+  Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
+  Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
 
   // Obtain particle and antiparticle candidates of protons and lambda hyperons for current femto collision
-  Partition<o2::aod::FemtoDreamParticles> partsProton0Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0) && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsProton0Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0); // Consider later: && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsLambda0Part = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
-  Partition<o2::aod::FemtoDreamParticles> partsProton1Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0) && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
+  Partition<o2::aod::FemtoDreamParticles> partsProton1Part = (o2::aod::femtodreamparticle::partType == Track) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0); // Consider later: && ((o2::aod::femtodreamparticle::pidcut & knSigmaProton) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partsLambda1Part = (o2::aod::femtodreamparticle::partType == V0) && ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; ///Accessing the CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   // FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTV;
@@ -127,7 +127,7 @@ struct CFFilter {
   {
     float pidThresh = 0.75;
     bool pidSelection = false;
-    auto vSpecies = std::vector<int>{2};
+    auto vSpecies = std::vector<int>{0};
     if (momentum < pidThresh) {
       /// TPC PID only
       pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPC);
@@ -157,7 +157,9 @@ struct CFFilter {
       registry.add("fZvtxBefore", "Zvtx of all processed events", HistType::kTH1F, {{1000, -15, 15}});
       registry.add("fZvtxAfter", "Zvtx of events which passed ppp trigger", HistType::kTH1F, {{1000, -15, 15}});
       registry.add("fPtBefore", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtAfter", "Transverse momentum  of processed tracks which passed ppp trigger", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtAfter", "Transverse momentum  of processed tracks which passed  selections", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtBeforeAnti", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtAfterAnti", "Transverse momentum  of processed antitracks passed selection", HistType::kTH1F, {{1000, 0, 10}});
     }
     if (Q3Trigger == 1 || Q3Trigger == 11) {
       registry.add("fSameEventPartPPL", "CF - same event ppL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
@@ -202,16 +204,32 @@ struct CFFilter {
     auto tmstamp = col.timestamp();
     auto mafneticField = getMagneticFieldTesla(tmstamp);
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
-    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
+    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M() / 2.);
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
 
     for (auto p1pt : partsProton0) {
       registry.get<TH1>(HIST("fPtBefore"))->Fill(p1pt.pt());
     }
 
+    for (auto p1pt : partsProton0) {
+      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p()))
+        registry.get<TH1>(HIST("fPtAfter"))->Fill(p1pt.pt());
+    }
+
+    for (auto p1pt : partsProton1) {
+      registry.get<TH1>(HIST("fPtBeforeAnti"))->Fill(p1pt.pt());
+    }
+
+    for (auto p1pt : partsProton1) {
+      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p()))
+        registry.get<TH1>(HIST("fPtAfterAnti"))->Fill(p1pt.pt());
+    }
+
     bool keepEvent[nTriplets]{false};
     int lowQ3Triplets[2] = {0, 0};
     if (partsFemto.size() != 0) {
+      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M() / 2.);
+      registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
       auto Q3TriggerLimit = (std::vector<float>)confQ3TriggerLimit;
       // TRIGGER FOR PPP TRIPLETS
       if (Q3Trigger == 0 || Q3Trigger == 11) {
@@ -239,32 +257,32 @@ struct CFFilter {
           }
         } // end if
 
-        /*if (lowQ3Triplets[0] == 0) { // if at least one triplet found in particles, no need to check antiparticles
-          if (partsProton1.size() >= 3) {
-            for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
+        // if (lowQ3Triplets[0] == 0) // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
+        if (partsProton1.size() >= 3) {
+          for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
 
-              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
-                continue;
-              }
-              // Think if pair cleaning is needed in current framework
-              // Run close pair rejection
-              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
-                continue;
-              }
-              if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
-                continue;
-              }
-              if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
-                continue;
-              }
-              auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
-              registry.get<TH1>(HIST("fSameEventAntiPartPPP"))->Fill(Q3);
-              if (Q3 < Q3TriggerLimit.at(0)) {
-                lowQ3Triplets[0]++;
-              }
+            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+              continue;
             }
-          } // end if
-        }*/
+            // Think if pair cleaning is needed in current framework
+            // Run close pair rejection
+            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
+              continue;
+            }
+            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
+              continue;
+            }
+            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
+              continue;
+            }
+            auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
+            registry.get<TH1>(HIST("fSameEventAntiPartPPP"))->Fill(Q3);
+            if (Q3 < Q3TriggerLimit.at(0)) {
+              lowQ3Triplets[0]++;
+            }
+          }
+        } // end if
+        //}
       }
 
       // TRIGGER FOR PPL TRIPLETS
@@ -323,12 +341,6 @@ struct CFFilter {
 
     if (lowQ3Triplets[0] > 0) {
       keepEvent[kPPP] = true;
-      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M());
-      registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
-      for (auto p1pt : partsProton0) {
-        // All protons from selected events
-        registry.get<TH1>(HIST("fPtAfter"))->Fill(p1pt.pt());
-      }
     }
 
     if (lowQ3Triplets[1] > 0) {

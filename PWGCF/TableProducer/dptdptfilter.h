@@ -290,7 +290,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 
 /// \brief Centrality selection when there is not centrality/multiplicity information
 template <typename CollisionObject>
-inline bool centralitySelectionNoMult(CollisionObject collision, float& centmult)
+inline bool centralitySelectionNoMult(CollisionObject const&, float& centmult)
 {
   bool centmultsel = false;
   switch (fCentMultEstimator) {
@@ -403,29 +403,43 @@ inline bool matchTrackType(TrackObject const& track)
 }
 
 template <typename TrackObject>
-inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
+inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo)
 {
-  asone = false;
-  astwo = false;
+  asone = uint8_t(false);
+  astwo = uint8_t(false);
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if (matchTrackType(track)) {
     if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
       if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
-        asone = true;
+        asone = uint8_t(true);
       }
       if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
-        astwo = true;
+        astwo = uint8_t(true);
       }
     }
   }
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
-inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, bool& asone, bool& astwo)
+void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {
-  asone = false;
-  astwo = false;
+  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+    LOGF(info, "   mother index: %d", m.globalIndex());
+    LOGF(info, "   Tracking back mother");
+    LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
+    LOGF(info, "   index: %d, pdg code: %d", m.globalIndex(), m.pdgCode());
+    LOGF(info, "   Passed  isPhysicalPrimary(): %s", m.isPhysicalPrimary() ? "YES" : "NO");
+
+    exploreMothers(m, collision);
+  }
+}
+
+template <typename ParticleObject, typename MCCollisionObject>
+inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, uint8_t& asone, uint8_t& astwo)
+{
+  asone = uint8_t(false);
+  astwo = uint8_t(false);
 
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
@@ -439,31 +453,23 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
       float dcaz = TMath::Abs(particle.vz() - collision.posZ());
       if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
         if ((particle.mcCollisionId() == 0) and traceCollId0) {
-          auto currparticle = particle;
           LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
-          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", currparticle.mcCollisionId(), collision.globalIndex());
+          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
           LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
           LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
-          LOGF(info, "   index: %d, pdg code: %d", currparticle.globalIndex(), currparticle.pdgCode());
-          while (currparticle.has_mother0()) {
-            LOGF(info, "   mother0 index: %d, mother1 index: %d", currparticle.mother0Id(), currparticle.mother1Id());
-            LOGF(info, "  Tracking back mother0 index");
-            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
-            LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
-            LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
-            LOGF(info, "   Passed  isPhysicalPrimary(): %s", newcurrparticle.isPhysicalPrimary() ? "YES" : "NO");
-            currparticle = newcurrparticle;
-          }
+          LOGF(info, "   index: %d, pdg code: %d", particle.globalIndex(), particle.pdgCode());
+
+          exploreMothers(particle, collision);
         }
         return;
       }
     }
     if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
       if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
-        asone = true;
+        asone = uint8_t(true);
       }
       if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
-        astwo = true;
+        astwo = uint8_t(true);
       }
     }
   } else {

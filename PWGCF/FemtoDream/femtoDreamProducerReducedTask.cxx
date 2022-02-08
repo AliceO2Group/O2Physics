@@ -98,7 +98,9 @@ struct femtoDreamProducerReducedTask {
     trackCuts.setSelection(ConfTrkPtmin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkEta, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkTPCnclsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-    trackCuts.setSelection(ConfTrkTPCfCls, femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit);
+    if (!ConfIsRun3) {
+      trackCuts.setSelection(ConfTrkTPCfCls, femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit);
+    }
     trackCuts.setSelection(ConfTrkTPCcRowsMin, femtoDreamTrackSelection::kTPCcRowsMin, femtoDreamSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCsCls, femtoDreamTrackSelection::kTPCsClsMax, femtoDreamSelection::kUpperLimit);
     trackCuts.setSelection(ConfTrkDCAxyMax, femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
@@ -111,32 +113,31 @@ struct femtoDreamProducerReducedTask {
   void process(aod::FilteredFullCollision const& col, aod::BCsWithTimestamps const&, aod::FilteredFullTracks const& tracks) /// \todo with FilteredFullV0s
   {
     auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    const auto vtxZ = col.posZ();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    ///For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+    int mult = 0;
+    if (ConfIsRun3) {
+      mult = col.multT0A(); ///Mult based on T0, temporary storing to be fixed and checked
+    } else {
+      mult = 0.5 * (col.multV0M());
+    }
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
+        outputCollision(col.posZ(), mult, colCuts.computeSphericity(col, tracks), bc.timestamp());
       }
       return;
     }
 
-    const auto vtxZ = col.posZ();
-    const auto mult = col.multV0M();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
-
     // now the table is filled
-    if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multT0A(), spher, bc.timestamp());
-    } else {
-      outputCollision(vtxZ, mult, spher, bc.timestamp());
-    }
+    outputCollision(vtxZ, mult, spher, bc.timestamp());
 
-    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
-    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-
+    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     for (auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -147,15 +148,34 @@ struct femtoDreamProducerReducedTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
-      outputTracks(outputCollision.lastIndex(), track.pt(), track.eta(), track.phi(), aod::femtodreamparticle::ParticleType::kTrack, cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts), cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID), track.dcaXY(), childIDs);
-      tmpIDtrack.push_back(track.globalIndex());
+      outputTracks(outputCollision.lastIndex(),
+                   track.pt(),
+                   track.eta(),
+                   track.phi(),
+                   aod::femtodreamparticle::ParticleType::kTrack,
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                   track.dcaXY(),
+                   childIDs);
       if (ConfDebugOutput) {
-        outputDebugTracks(outputCollision.lastIndex(),
-                          track.sign(), track.tpcNClsFound(),
+        outputDebugTracks(track.sign(),
+                          (uint8_t)track.tpcNClsFound(),
                           track.tpcNClsFindable(),
-                          track.tpcNClsCrossedRows(), track.tpcNClsShared(), track.dcaXY(), track.dcaZ(),
-                          track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(),
-                          track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe());
+                          (uint8_t)track.tpcNClsCrossedRows(),
+                          track.tpcNClsShared(),
+                          track.tpcInnerParam(),
+                          track.dcaXY(),
+                          track.dcaZ(),
+                          track.tpcNSigmaStoreEl(),
+                          track.tpcNSigmaStorePi(),
+                          track.tpcNSigmaStoreKa(),
+                          track.tpcNSigmaStorePr(),
+                          track.tpcNSigmaStoreDe(),
+                          track.tofNSigmaStoreEl(),
+                          track.tofNSigmaStorePi(),
+                          track.tofNSigmaStoreKa(),
+                          track.tofNSigmaStorePr(),
+                          track.tofNSigmaStoreDe());
       }
     }
   }

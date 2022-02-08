@@ -212,15 +212,35 @@ struct femtoDreamProducerTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
-      outputTracks(outputCollision.lastIndex(), track.pt(), track.eta(), track.phi(), aod::femtodreamparticle::ParticleType::kTrack, cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts), cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID), track.dcaXY(), childIDs);
+      outputTracks(outputCollision.lastIndex(),
+                   track.pt(),
+                   track.eta(),
+                   track.phi(),
+                   aod::femtodreamparticle::ParticleType::kTrack,
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                   track.dcaXY(),
+                   childIDs);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfDebugOutput) {
-        outputDebugTracks(outputCollision.lastIndex(),
-                          track.sign(), track.tpcNClsFound(),
+        outputDebugTracks(track.sign(),
+                          (uint8_t)track.tpcNClsFound(),
                           track.tpcNClsFindable(),
-                          track.tpcNClsCrossedRows(), track.tpcNClsShared(), track.dcaXY(), track.dcaZ(),
-                          track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(),
-                          track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe());
+                          (uint8_t)track.tpcNClsCrossedRows(),
+                          track.tpcNClsShared(),
+                          track.tpcInnerParam(),
+                          track.dcaXY(),
+                          track.dcaZ(),
+                          track.tpcNSigmaStoreEl(),
+                          track.tpcNSigmaStorePi(),
+                          track.tpcNSigmaStoreKa(),
+                          track.tpcNSigmaStorePr(),
+                          track.tpcNSigmaStoreDe(),
+                          track.tofNSigmaStoreEl(),
+                          track.tofNSigmaStorePi(),
+                          track.tofNSigmaStoreKa(),
+                          track.tofNSigmaStorePr(),
+                          track.tofNSigmaStoreDe());
       }
     }
 

@@ -65,19 +65,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// This table stores a filtered list of valid V0 indices
-namespace o2::aod
-{
-namespace v0goodindices
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");
-DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-} // namespace v0goodindices
-DECLARE_SOA_TABLE(V0GoodIndices, "AOD", "V0GOODINDICES", o2::soa::Index<>,
-                  v0goodindices::PosTrackId, v0goodindices::NegTrackId, v0goodindices::CollisionId);
-} // namespace o2::aod
-
 using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended>;
 using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels>;
 
@@ -93,10 +80,11 @@ using MyTracks = FullTracksExt;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
-// This prefilter creates a skimmed list of good V0s to re-reconstruct so that
+// Builder task: rebuilds V0s
+// The prefilter part skims the list of good V0s to re-reconstruct so that
 // CPU is saved in case there are specific selections that are to be done
 // Note: more configurables, more options to be added as needed
-struct lambdakzeroPrefilterPairs {
+struct lambdakzeroBuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
@@ -108,80 +96,17 @@ struct lambdakzeroPrefilterPairs {
   Configurable<std::vector<int>> v_labelK0Sneg{"v_labelK0Sneg", {730, 2867, 4755}, "labels of K0S negative daughters, for debug"};
 #endif
 
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"hGoodIndices", "hGoodIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-    },
-  };
-
-  Produces<aod::V0GoodIndices> v0goodindices;
-
-  void process(aod::Collision const& collision, aod::V0s const& V0s,
-               MyTracks const& tracks
-#ifdef MY_DEBUG
-               ,
-               aod::McParticles const& particlesMC
-#endif
-  )
-  {
-    for (auto& V0 : V0s) {
-
-#ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracks>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
-      bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
-#endif
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-
-      registry.fill(HIST("hGoodIndices"), 0.5);
-      if (isRun2) {
-        if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
-          continue; // TPC refit
-        }
-        if (!(V0.negTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
-          continue; // TPC refit
-        }
-      }
-      registry.fill(HIST("hGoodIndices"), 1.5);
-      if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
-        continue;
-      }
-      if (V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
-        continue;
-      }
-      registry.fill(HIST("hGoodIndices"), 2.5);
-      if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
-        continue;
-      }
-      if (fabs(V0.negTrack_as<MyTracks>().dcaXY()) < dcanegtopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
-        continue;
-      }
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-      registry.fill(HIST("hGoodIndices"), 3.5);
-      v0goodindices(V0.posTrack_as<MyTracks>().globalIndex(),
-                    V0.negTrack_as<MyTracks>().globalIndex(),
-                    V0.posTrack_as<MyTracks>().collisionId());
-    }
-  }
-};
-
-/// Cascade builder task: rebuilds cascades
-struct lambdakzeroBuilder {
-
   Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0DataLink> v0dataLink;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry registry{
     "registry",
-    {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-     {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
+    {
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hGoodIndices", "hGoodIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+    },
   };
 
   // Configurables
@@ -203,7 +128,7 @@ struct lambdakzeroBuilder {
 
   void init(InitContext& context)
   {
-    //using namespace analysis::lambdakzerobuilder;
+    // using namespace analysis::lambdakzerobuilder;
 
     ccdb->setURL("https://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -223,7 +148,7 @@ struct lambdakzeroBuilder {
     }
   }
 
-  void process(aod::Collision const& collision, aod::V0GoodIndices const& V0s, MyTracks const& tracks
+  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks
 #ifdef MY_DEBUG
                ,
                aod::McParticles const& particlesMC
@@ -244,6 +169,54 @@ struct lambdakzeroBuilder {
     registry.fill(HIST("hEventCounter"), 0.5);
 
     for (auto& V0 : V0s) {
+
+      // Track preselection part
+#ifdef MY_DEBUG
+      auto labelPos = V0.posTrack_as<MyTracks>().mcParticleId();
+      auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
+      bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
+#endif
+      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
+
+      registry.fill(HIST("hGoodIndices"), 0.5);
+      if (isRun2) {
+        if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
+          v0dataLink(-1);
+          continue; // TPC refit
+        }
+        if (!(V0.negTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
+          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
+          v0dataLink(-1);
+          continue; // TPC refit
+        }
+      }
+      registry.fill(HIST("hGoodIndices"), 1.5);
+      if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
+        v0dataLink(-1);
+        continue;
+      }
+      if (V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
+        v0dataLink(-1);
+        continue;
+      }
+      registry.fill(HIST("hGoodIndices"), 2.5);
+      if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+        v0dataLink(-1);
+        continue;
+      }
+      if (fabs(V0.negTrack_as<MyTracks>().dcaXY()) < dcanegtopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+        v0dataLink(-1);
+        continue;
+      }
+      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
+      registry.fill(HIST("hGoodIndices"), 3.5);
+
+      // Candidate building part
       std::array<float, 3> pos = {0.};
       std::array<float, 3> pvec0 = {0.};
       std::array<float, 3> pvec1 = {0.};
@@ -261,28 +234,32 @@ struct lambdakzeroBuilder {
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
 
-      //Require collision-ID
-      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks)
+      // Require collision-ID
+      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks) {
+        v0dataLink(-1);
         continue;
+      }
 
-      //Act on copies for minimization
+      // Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
       auto nTrackCopy = o2::track::TrackParCov(nTrack);
 
       //---/---/---/
       // Move close to minima
       int nCand = fitter.process(pTrackCopy, nTrackCopy);
-      if (nCand == 0)
+      if (nCand == 0) {
+        v0dataLink(-1);
         continue;
+      }
 
       double finalXpos = fitter.getTrack(0).getX();
       double finalXneg = fitter.getTrack(1).getX();
 
-      //Rotate to desired alpha
+      // Rotate to desired alpha
       pTrack.rotateParam(fitter.getTrack(0).getAlpha());
       nTrack.rotateParam(fitter.getTrack(1).getAlpha());
 
-      //Retry closer to minimum with material corrections
+      // Retry closer to minimum with material corrections
       o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
       if (useMatCorrType == 1)
         matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
@@ -293,8 +270,10 @@ struct lambdakzeroBuilder {
       o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
 
       nCand = fitter.process(pTrack, nTrack);
-      if (nCand == 0)
+      if (nCand == 0) {
+        v0dataLink(-1);
         continue;
+      }
 
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
@@ -309,18 +288,21 @@ struct lambdakzeroBuilder {
       // Apply selections so a skimmed table is created only
       if (fitter.getChi2AtPCACandidate() > dcav0dau) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to dca cut");
+        v0dataLink(-1);
         continue;
       }
 
       auto V0CosinePA = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       if (V0CosinePA < v0cospa) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to CPA cut");
+        v0dataLink(-1);
         continue;
       }
 
       auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to radius cut");
+        v0dataLink(-1);
         continue;
       }
 
@@ -328,9 +310,9 @@ struct lambdakzeroBuilder {
 
       registry.fill(HIST("hV0Candidate"), 1.5);
       v0data(
-        V0.posTrack_as<MyTracks>().globalIndex(),
-        V0.negTrack_as<MyTracks>().globalIndex(),
-        V0.negTrack_as<MyTracks>().collisionId(),
+        V0.posTrackId(),
+        V0.negTrackId(),
+        V0.collisionId(),
         V0.globalIndex(),
         fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
         pos[0], pos[1], pos[2],
@@ -339,6 +321,7 @@ struct lambdakzeroBuilder {
         fitter.getChi2AtPCACandidate(),
         V0.posTrack_as<MyTracks>().dcaXY(),
         V0.negTrack_as<MyTracks>().dcaXY());
+      v0dataLink(v0data.lastIndex());
     }
   }
 };
@@ -352,7 +335,6 @@ struct lambdakzeroInitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzeroPrefilterPairs>(cfgc),
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }

@@ -245,7 +245,7 @@ struct richPidQaMc {
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>;
   using TrksfRICH = soa::Join<aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra, aod::McTrackLabels>;
   void process(const Trks& tracks,
-               const aod::McParticles& mcParticles,
+               const aod::McParticles_000& mcParticles,
                const TrksfRICH& tracksfrich,
                const aod::RICHs&,
                const aod::FRICHs&,
@@ -287,7 +287,7 @@ struct richPidQaMc {
         return true;
       }
       histos.fill(h, 7);
-      const auto mcParticle = t.mcParticle();
+      const auto mcParticle = t.template mcParticle_as<aod::McParticles_000>();
       if (pdgCode != 0 && abs(mcParticle.pdgCode()) != pdgCode) {
         return true;
       }
@@ -335,8 +335,8 @@ struct richPidQaMc {
 
       histos.fill(HIST(hbRICHNSigma[pid_type]), track.pt(), nsigma);
       histos.fill(HIST(hbRICHDelta[pid_type]), track.p(), delta);
-      // const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle();
-      const auto mcParticle = track.mcParticle();
+      // const auto mcParticle = labels.iteratorAt(track.globalIndex()).mcParticle_as<aod::McParticles_000>();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       if (mcParticle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hbRICHNSigmaPrm[pid_type]), track.pt(), nsigma);
         histos.fill(HIST("bRICH/signalvsPPrm"), track.p(), track.rich().richSignal());
@@ -377,7 +377,7 @@ struct richPidQaMc {
 
       histos.fill(HIST(hfRICHNSigma[pid_type]), track.pt(), nsigma);
       histos.fill(HIST(hfRICHDelta[pid_type]), track.p(), delta);
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       if (mcParticle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hfRICHNSigmaPrm[pid_type]), track.pt(), nsigma);
         histos.fill(HIST("fRICH/signalvsPPrm"), track.p(), track.frich().frichSignal());

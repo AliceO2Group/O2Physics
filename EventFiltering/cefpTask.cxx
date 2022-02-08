@@ -130,16 +130,33 @@ struct centralEventFilterTask {
     mScalers->GetXaxis()->SetBinLabel(1, "Total number of events");
     mFiltered->GetXaxis()->SetBinLabel(1, "Total number of events");
     int bin{2};
+
+    // for (auto& spec : reinterpret_cast<std::unique_ptr<ConfigParamStore>*>(&(initc.mOptions))->get()->specs()) {
+    //   std::cout << "Configuration available: " << spec.name << "\t" << int(spec.type) << std::endl;
+    //   auto filterOpt = initc.mOptions.get<LabeledArray<float>>(spec.name.data());
+    //   std::cout << " -- row labs: ";
+    //   for (auto& lab : filterOpt.labels_rows) {
+    //     std::cout << lab << "\t";
+    //   }
+    //   std::cout << "\n -- col labs: ";
+    //   for (auto& lab : filterOpt.labels_cols) {
+    //     std::cout << lab << "\t";
+    //   }
+    //   std::cout << std::endl;
+    // }
+
     for (auto& table : mDownscaling) {
+      LOG(info) << "Setting downscalings for table " << table.first;
       for (auto& column : table.second) {
         mScalers->GetXaxis()->SetBinLabel(bin, column.first.data());
         mFiltered->GetXaxis()->SetBinLabel(bin++, column.first.data());
       }
-      if (initc.options().isDefault(table.first.data()) || !initc.options().isSet(table.first.data())) {
+      if (!initc.options().isSet(table.first.data())) {
         continue;
       }
       auto filterOpt = initc.mOptions.get<LabeledArray<float>>(table.first.data());
       for (auto& col : table.second) {
+        LOG(info) << "- Channel " << col.first << ": " << filterOpt.get(col.first.data(), 0u);
         col.second = filterOpt.get(col.first.data(), 0u);
       }
     }
@@ -204,7 +221,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 
   std::array<bool, NumberOfFilters> enabledFilters = {false};
   if (readJsonFile(config, d)) {
+    LOG(info) << "Reading workflow json... ";
     for (auto& workflow : d["workflows"].GetArray()) {
+      LOG(info) << "- Reading workflow list... " << workflow["workflow_name"].GetString();
       for (uint32_t iFilter{0}; iFilter < NumberOfFilters; ++iFilter) {
         if (std::string_view(workflow["workflow_name"].GetString()) == std::string_view(FilteringTaskNames[iFilter])) {
           inputs.emplace_back(std::string(AvailableFilters[iFilter]), "AOD", FilterDescriptions[iFilter], 0, Lifetime::Timeframe);

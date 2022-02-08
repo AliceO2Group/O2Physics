@@ -80,7 +80,7 @@ struct lambdakzeroQa {
     registry.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {massAxisLambda}});
   }
 
-  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles_000 const& mcParticles, MyTracks const& tracks)
   {
     for (auto& v0 : fullV0s) {
       registry.fill(HIST("hMassK0Short"), v0.mK0Short());
@@ -93,9 +93,9 @@ struct lambdakzeroQa {
       registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
       registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
 
-      auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
-      auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
-      auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
+      auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle_as<aod::McParticles_000>();
+      auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle_as<aod::McParticles_000>();
+      auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles_000>();
       bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
       if (MomIsPrimary && mcnegtrack.mother0Id() == mcpostrack.mother0Id() && particleMotherOfNeg.pdgCode() == 310) {
@@ -168,7 +168,7 @@ struct lambdakzeroAnalysisMc {
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles_000 const& mcParticles, MyTracks const& tracks)
   // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     if (eventSelection && !collision.sel8()) {
@@ -182,9 +182,9 @@ struct lambdakzeroAnalysisMc {
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
-        auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
-        auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
-        auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
+        auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle_as<aod::McParticles_000>();
+        auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle_as<aod::McParticles_000>();
+        auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles_000>();
         bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
@@ -239,7 +239,7 @@ struct lambdakzeroAnalysisMc {
   }
   PROCESS_SWITCH(lambdakzeroAnalysisMc, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles_000 const& mcParticles, MyTracks const& tracks)
   {
     if (!collision.alias()[kINT7]) {
       return;
@@ -255,9 +255,9 @@ struct lambdakzeroAnalysisMc {
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("V0loopFiltersCounts"), 1.5);
 
-        auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle();
-        auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle();
-        auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles>();
+        auto mcnegtrack = v0.negTrack_as<MyTracks>().mcParticle_as<aod::McParticles_000>();
+        auto mcpostrack = v0.posTrack_as<MyTracks>().mcParticle_as<aod::McParticles_000>();
+        auto particleMotherOfNeg = mcnegtrack.mother0_as<aod::McParticles_000>();
         bool MomIsPrimary = particleMotherOfNeg.isPhysicalPrimary();
 
         if (TMath::Abs(v0.yLambda()) < rapidity) {
@@ -338,28 +338,28 @@ struct lambdakzeroParticleCountMc {
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 0.5, "rapidityMCcut"};
 
-  void process(aod::McParticles const& mcParticles)
+  void process(aod::McParticles_000 const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
       if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
         if (mcparticle.isPhysicalPrimary()) {
           if (mcparticle.pdgCode() == 310) {
             registry.fill(HIST("hK0ShortCount"), 0.5);
-            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
+            if ((mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == 211)) {
               registry.fill(HIST("hK0ShortCount"), 1.5);
               registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
             }
           }
           if (mcparticle.pdgCode() == 3122) {
             registry.fill(HIST("hLambdaCount"), 0.5);
-            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211)) {
+            if ((mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == -211)) {
               registry.fill(HIST("hLambdaCount"), 1.5);
               registry.fill(HIST("hLambdaCount_PtDiff"), mcparticle.pt());
             }
           }
           if (mcparticle.pdgCode() == -3122) {
             registry.fill(HIST("hAntiLambdaCount"), 0.5);
-            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
+            if ((mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == 211)) {
               registry.fill(HIST("hAntiLambdaCount"), 1.5);
               registry.fill(HIST("hAntiLambdaCount_PtDiff"), mcparticle.pt());
             }
@@ -380,25 +380,25 @@ struct V0daughtersTrackingEfficiency {
     },
   };
 
-  void process(aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void process(aod::McParticles_000 const& mcParticles, MyTracks const& tracks)
   {
     for (auto& mcparticle : mcParticles) {
       if (mcparticle.isPhysicalPrimary()) {
         if (TMath::Abs(mcparticle.y()) < 0.5) {
           if (mcparticle.pdgCode() == 310) {
-            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
+            if ((mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == -211) || (mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == 211)) {
               registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter0Id());
               registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter1Id());
             }
           }
           if (mcparticle.pdgCode() == 3122) {
-            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -211)) {
+            if ((mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == -211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == 2212) || (mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == 2212 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == -211)) {
               registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter0Id());
               registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter1Id());
             }
           }
           if (mcparticle.pdgCode() == -3122) {
-            if ((mcparticle.daughter0_as<aod::McParticles>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles>().pdgCode() == 211)) {
+            if ((mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == 211 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == -2212) || (mcparticle.daughter0_as<aod::McParticles_000>().pdgCode() == -2212 && mcparticle.daughter1_as<aod::McParticles_000>().pdgCode() == 211)) {
               registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter0Id());
               registry.fill(HIST("hV0DaughterMcParticleIDs"), mcparticle.daughter1Id());
             }
@@ -407,7 +407,7 @@ struct V0daughtersTrackingEfficiency {
       }
     }
     for (auto& track : tracks) {
-      auto AssociatedMcParticle = track.mcParticle();
+      auto AssociatedMcParticle = track.mcParticle_as<aod::McParticles_000>();
       if (TMath::Abs(AssociatedMcParticle.y()) < 0.5) {
         registry.fill(HIST("hAssociatedMcParticleIDs"), AssociatedMcParticle.globalIndex());
       }
