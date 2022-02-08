@@ -82,7 +82,8 @@ struct MultiplicityTableTaskIndexed {
     float multZNA = -1.f;
     float multZNC = -1.f;
     int multTracklets = -1;
-    int multTPC = tracksWithTPC.size();
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    int multTPC = tracksGrouped.size();
 
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {
