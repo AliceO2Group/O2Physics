@@ -13,6 +13,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace evsel;
 
 // custom configurable for switching between run2 and run3 selection types
 void customize(std::vector<ConfigParamSpec>& workflowOptions)

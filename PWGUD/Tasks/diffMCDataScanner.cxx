@@ -199,7 +199,7 @@ struct BCInfo {
     {{"numberCollisions", "#numberCollisions", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"numberCollisionsGT", "#numberCollisionsGT", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"Aliases", "#Aliases", {HistType::kTH1F, {{kNaliases, 0., kNaliases}}}},
-     {"Selection", "#Selection", {HistType::kTH1F, {{kNsel, 0., kNsel}}}},
+     {"Selection", "#Selection", {HistType::kTH1F, {{evsel::kNsel, 0., evsel::kNsel}}}},
      {"DetectorSignals", "#DetectorSignals", {HistType::kTH1F, {{6, 0., 6}}}}}};
 
   void init(o2::framework::InitContext&)
@@ -233,7 +233,7 @@ struct BCInfo {
 
     // update Selection
     auto selections = bc.selection();
-    for (auto ii = 0; ii < kNsel; ii++) {
+    for (auto ii = 0; ii < evsel::kNsel; ii++) {
       registry.get<TH1>(HIST("Selection"))->Fill(ii, selections[ii]);
     }
 
