@@ -174,7 +174,6 @@ struct HfTaskBplusMc {
       if (cutYCandMax >= 0. && std::abs(YBPlus(candidate)) > cutYCandMax) {
         continue;
       }
-      auto candD0 = candidate.index0_as<aod::HfCandProng2>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_bplus::DecayType::BPlusToD0Pi) {
 
         auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles_000, aod::HfCandBPMCGen>>(), pdg::Code::kBPlus, true);
