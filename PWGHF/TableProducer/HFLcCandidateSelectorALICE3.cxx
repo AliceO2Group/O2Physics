@@ -201,9 +201,9 @@ struct HFLcCandidateSelectorALICE3 {
         continue;
       }
 
-      const auto mcParticlePositive1 = trackPos1.mcParticle_as<aod::McParticles>();
-      const auto mcParticleNegative = trackNeg.mcParticle_as<aod::McParticles>();
-      const auto mcParticlePositive2 = trackPos2.mcParticle_as<aod::McParticles>();
+      const auto mcParticlePositive1 = trackPos1.mcParticle();
+      const auto mcParticleNegative = trackNeg.mcParticle();
+      const auto mcParticlePositive2 = trackPos2.mcParticle();
 
       int pdgPositive1 = mcParticlePositive1.pdgCode();
       int pdgNegative = mcParticleNegative.pdgCode();

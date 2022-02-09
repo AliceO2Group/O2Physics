@@ -205,13 +205,13 @@ struct HFLcCandidateSelectorparametrizedPID {
       int pdgPositive2 = 0;
       int pdgNegative = 0;
       if (trackPos1.has_mcParticle()) {
-        pdgPositive1 = trackPos1.mcParticle_as<aod::McParticles>().pdgCode();
+        pdgPositive1 = trackPos1.mcParticle().pdgCode();
       }
       if (trackPos2.has_mcParticle()) {
-        pdgPositive2 = trackPos2.mcParticle_as<aod::McParticles>().pdgCode();
+        pdgPositive2 = trackPos2.mcParticle().pdgCode();
       }
       if (trackNeg.has_mcParticle()) {
-        pdgNegative = trackNeg.mcParticle_as<aod::McParticles>().pdgCode();
+        pdgNegative = trackNeg.mcParticle().pdgCode();
       }
 
       bool selectPos1Proton = false;

@@ -598,11 +598,11 @@ class RecoDecay
       //printf("Stage %d: Mother PDG: %d\n", stage, PDGParticleIMother);
       if (PDGParticleIMother == PDGMother) { // exact PDG match
         sgn = 1;
-        indexMother = particleMother.globalIndex();
+        indexMother = particleMotherIdx;
         break;
       } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
         sgn = -1;
-        indexMother = particleMother.globalIndex();
+        indexMother = particleMotherIdx;
         break;
       }
       stage--;
@@ -714,7 +714,7 @@ class RecoDecay
       if (!arrDaughters[iProng].has_mcParticle()) {
         return -1;
       }
-      auto particleI = arrDaughters[iProng].template mcParticle_as<aod::McParticles>(); // ith daughter particle
+      auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {
@@ -856,7 +856,7 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
+      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && candidate.daughtersIds().size() > int(N)) {
         //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
         return false;
       }

@@ -167,7 +167,7 @@ struct QaTrackingRejection {
     std::vector<int64_t> recoTracks(tracks.size());
     LOGF(info, "%d", particlePDG);
     for (const auto& track : tracks) {
-      const auto mcParticle = track.mcParticle_as<aod::McParticles>();
+      const auto mcParticle = track.mcParticle();
       if (particlePDG != 0 && mcParticle.pdgCode() != particlePDG) { // Checking PDG code
         continue;
       }
@@ -360,7 +360,7 @@ struct QaRejectionGeneral {
       if (std::abs(track.eta()) > etaMaxSel || track.pt() < ptMinSel) {
         continue;
       }
-      const auto mcParticle = track.mcParticle_as<aod::McParticles>();
+      const auto mcParticle = track.mcParticle();
       histos.fill(HIST("hAllNoSel/pteta"), track.pt(), track.eta());
       if (mcParticle.pdgCode() == kElectron) {
         histos.fill(HIST("hElectronNoSel/pteta"), track.pt(), track.eta());

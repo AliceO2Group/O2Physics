@@ -234,10 +234,10 @@ struct HFD0CandidateSelectorparametrizedPID {
       int pdgPositive = 0;
       int pdgNegative = 0;
       if (trackPos.has_mcParticle()) {
-        pdgPositive = trackPos.mcParticle_as<aod::McParticles>().pdgCode();
+        pdgPositive = trackPos.mcParticle().pdgCode();
       }
       if (trackNeg.has_mcParticle()) {
-        pdgNegative = trackNeg.mcParticle_as<aod::McParticles>().pdgCode();
+        pdgNegative = trackNeg.mcParticle().pdgCode();
       }
 
       bool selectPosPion = false;
