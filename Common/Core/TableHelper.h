@@ -15,6 +15,9 @@
 /// \brief  Base of utilities to build advanced tasks
 ///
 
+#ifndef O2PHYSICS_COMMON_CORE_TABLEHELPER_H_
+#define O2PHYSICS_COMMON_CORE_TABLEHELPER_H_
+
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include <string>
@@ -32,3 +35,5 @@ bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const st
   }
   return false;
 }
+
+#endif
