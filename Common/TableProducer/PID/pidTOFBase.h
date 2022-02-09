@@ -51,3 +51,22 @@ struct tofSignal {
     }
   }
 };
+
+/// Selection criteria for tracks used for TOF event time
+template <typename trackType>
+bool filterForTOFEventTime(const trackType& tr)
+{
+  return (tr.hasTOF() && tr.p() > 0.5f && tr.p() < 2.f && tr.trackType() == o2::aod::track::TrackTypeEnum::Track);
+} // accept all
+
+/// Specialization of TOF event time maker
+template <typename trackType,
+          bool (*trackFilter)(const trackType&),
+          template <typename T, o2::track::PID::ID> typename response,
+          typename trackTypeContainer,
+          typename responseParametersType>
+o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& tracks,
+                                                 const responseParametersType& responseParameters)
+{
+  return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters);
+}

@@ -9,8 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "Framework/ConfigParamSpec.h"
+#include "Common/CCDB/EventSelectionParams.h"
+
 using namespace o2;
 using namespace o2::framework;
+using namespace evsel;
 
 // custom configurable for switching between run2 and run3 selection types
 void customize(std::vector<ConfigParamSpec>& workflowOptions)
@@ -172,19 +175,19 @@ struct EventSelectionQaPerCollision {
       histos.fill(HIST("kINT7/hV0C3vs012All"), multRingV0C012, multRingV0C3);
       histos.fill(HIST("kINT7/hV0C012vsTklAll"), col.nTracklets(), multRingV0C012);
 
-      LOGF(info, "selection[kIsBBV0A]=%i", col.selection()[aod::kIsBBV0A]);
-      LOGF(info, "selection[kIsBBV0C]=%i", col.selection()[aod::kIsBBV0C]);
-      LOGF(info, "selection[kIsBBZNA]=%i", col.selection()[aod::kIsBBZNA]);
-      LOGF(info, "selection[kIsBBZNC]=%i", col.selection()[aod::kIsBBZNC]);
-      LOGF(info, "selection[kNoTPCHVdip]=%i", col.selection()[aod::kNoTPCHVdip]);
-      LOGF(info, "selection[kIsGoodTimeRange]=%i", col.selection()[aod::kIsGoodTimeRange]);
-      LOGF(info, "selection[kNoIncompleteDAQ]=%i", col.selection()[aod::kNoIncompleteDAQ]);
-      LOGF(info, "selection[kNoV0C012vsTklBG]=%i", col.selection()[aod::kNoV0C012vsTklBG]);
-      LOGF(info, "selection[kNoV0Casymmetry]=%i", col.selection()[aod::kNoV0Casymmetry]);
-      LOGF(info, "selection[kNoSPDClsVsTklBG]=%i", col.selection()[aod::kNoSPDClsVsTklBG]);
-      LOGF(info, "selection[kNoV0MOnVsOfPileup]=%i", col.selection()[aod::kNoV0MOnVsOfPileup]);
-      LOGF(info, "selection[kNoSPDOnVsOfPileup]=%i", col.selection()[aod::kNoSPDOnVsOfPileup]);
-      LOGF(info, "selection[kNoPileupFromSPD]=%i", col.selection()[aod::kNoPileupFromSPD]);
+      LOGF(info, "selection[kIsBBV0A]=%i", col.selection()[kIsBBV0A]);
+      LOGF(info, "selection[kIsBBV0C]=%i", col.selection()[kIsBBV0C]);
+      LOGF(info, "selection[kIsBBZNA]=%i", col.selection()[kIsBBZNA]);
+      LOGF(info, "selection[kIsBBZNC]=%i", col.selection()[kIsBBZNC]);
+      LOGF(info, "selection[kNoTPCHVdip]=%i", col.selection()[kNoTPCHVdip]);
+      LOGF(info, "selection[kIsGoodTimeRange]=%i", col.selection()[kIsGoodTimeRange]);
+      LOGF(info, "selection[kNoIncompleteDAQ]=%i", col.selection()[kNoIncompleteDAQ]);
+      LOGF(info, "selection[kNoV0C012vsTklBG]=%i", col.selection()[kNoV0C012vsTklBG]);
+      LOGF(info, "selection[kNoV0Casymmetry]=%i", col.selection()[kNoV0Casymmetry]);
+      LOGF(info, "selection[kNoSPDClsVsTklBG]=%i", col.selection()[kNoSPDClsVsTklBG]);
+      LOGF(info, "selection[kNoV0MOnVsOfPileup]=%i", col.selection()[kNoV0MOnVsOfPileup]);
+      LOGF(info, "selection[kNoSPDOnVsOfPileup]=%i", col.selection()[kNoSPDOnVsOfPileup]);
+      LOGF(info, "selection[kNoPileupFromSPD]=%i", col.selection()[kNoPileupFromSPD]);
     }
 
     if (selection == 7 && !col.sel7()) {
