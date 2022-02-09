@@ -19,16 +19,17 @@
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "pidTOFBase.h"
-#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "TableHelper.h"
 #include "Framework/StaticFor.h"
+#include "TOFBase/EventTimeMaker.h"
+#include "pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,6 +46,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Table with the TOF event time
 namespace o2::aod
 {
 namespace tofeventtime
@@ -60,23 +62,7 @@ DECLARE_SOA_TABLE(TOFEvTime, "AOD", "TOFEvTime", //! Table of the TOF event time
                   tofeventtime::TOFEvTimeMult);
 } // namespace o2::aod
 
-template <typename trackType>
-bool filterForTOFEventTime(const trackType& tr)
-{
-  return (tr.hasTOF() && tr.p() > 0.5f && tr.p() < 2.f && tr.trackType() == o2::aod::track::TrackTypeEnum::Track);
-} // accept all
-
-template <typename trackType,
-          bool (*trackFilter)(const trackType&),
-          template <typename T, o2::track::PID::ID> typename response,
-          typename trackTypeContainer,
-          typename responseParametersType>
-o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& tracks,
-                                                 const responseParametersType& responseParameters)
-{
-  return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters);
-}
-
+/// Task to produce the response table
 struct tofPidFull {
   // Tables to produce
   Produces<o2::aod::TOFEvTime> tableEvTime;
@@ -125,6 +111,7 @@ struct tofPidFull {
         }
       }
     };
+
     enableFlag("El", pidEl);
     enableFlag("Mu", pidMu);
     enableFlag("Pi", pidPi);
@@ -134,6 +121,7 @@ struct tofPidFull {
     enableFlag("Tr", pidTr);
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
+
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
     ccdb->setTimestamp(timestamp.value);
