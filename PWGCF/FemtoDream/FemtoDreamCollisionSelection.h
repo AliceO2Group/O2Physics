@@ -61,7 +61,7 @@ class FemtoDreamCollisionSelection
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
     mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/MultT0A", "; vMultT0A; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{600, 0, 600}});
   }
 
   /// Print some debug information

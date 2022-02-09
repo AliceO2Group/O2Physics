@@ -194,7 +194,7 @@ struct femtoDreamProducerTask {
 
     // now the table is filled
     if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multT0A(), spher, bc.timestamp());
+      outputCollision(vtxZ, col.multT0M(), spher, bc.timestamp());
     } else {
       outputCollision(vtxZ, mult, spher, bc.timestamp());
     }
