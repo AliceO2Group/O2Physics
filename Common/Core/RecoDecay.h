@@ -729,7 +729,7 @@ class RecoDecay
         //Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.iteratorAt(indexMother);
         int indexDaughterFirst = particleMother.daughtersIds().front(); // index of the first direct daughter
-        int indexDaughterLast = particleMother.daughtersIds().back();  // index of the last direct daughter
+        int indexDaughterLast = particleMother.daughtersIds().back();   // index of the last direct daughter
         // Check the daughter indices.
         if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
           //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
