@@ -638,11 +638,8 @@ class RecoDecay
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
     }
-    // Get the range of daughter indices.
-    int indexDaughterFirst = particle.daughtersIds().front();
-    int indexDaughterLast = particle.daughtersIds().back();
     // Check whether there are any daughters.
-    if (!isFinal && indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
+    if (!isFinal && particle.has_daughters()) {
       // If the original particle has no daughters, we do nothing and exit.
       if (stage == 0) {
         //Printf("getDaughters: No daughters of %d", index);
@@ -672,10 +669,6 @@ class RecoDecay
       return;
     }
     // If we are here, we have to follow the daughter tree.
-    //printf("getDaughters: ");
-    //for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
-    //  printf(" ");
-    //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dauIdx : particle.daughtersIds()) {
@@ -728,25 +721,16 @@ class RecoDecay
         }
         //Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.iteratorAt(indexMother);
-        int indexDaughterFirst = particleMother.daughtersIds().front(); // index of the first direct daughter
-        int indexDaughterLast = particleMother.daughtersIds().back();   // index of the last direct daughter
         // Check the daughter indices.
-        if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
+        if (!particleMother.has_daughters()) {
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
-          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
+        if (particleMother.daughtersIds().size() > int(N)) {
           return -1;
         }
         // Get the list of actual final daughters.
         getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
-        //printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
-        //for (auto i : arrAllDaughtersIndex) {
-        //  printf(" %d", i);
-        //}
-        //printf("\n");
         // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
         if (arrAllDaughtersIndex.size() != N) {
           //Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
@@ -848,16 +832,12 @@ class RecoDecay
     if (N > 0) {
       //Printf("MC Gen: Checking %d daughters", N);
       std::vector<int> arrAllDaughtersIndex;            // vector of indices of all daughters
-      int indexDaughterFirst = candidate.daughtersIds().front(); // index of the first direct daughter
-      int indexDaughterLast = candidate.daughtersIds().back();   // index of the last direct daughter
       // Check the daughter indices.
-      if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
+      if (!candidate.has_daughters()) {
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && candidate.daughtersIds().size() > int(N)) {
-        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
+      if (candidate.daughtersIds().size() > int(N)) {
         return false;
       }
       // Get the list of actual final daughters.

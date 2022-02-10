@@ -63,7 +63,7 @@ struct TaskD0parametrizedPIDMC {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0_parametrizedPID::isSelD0NoPID >= 1 || aod::hf_selcandidate_d0_parametrizedPID::isSelD0barNoPID >= 1);
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, McParticlesHf const& particlesMC, aod::BigTracksMC const& tracks)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateparametrizedPID, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     //float ncontributor = collision.numContrib();
