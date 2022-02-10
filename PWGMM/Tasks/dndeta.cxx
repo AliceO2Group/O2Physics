@@ -31,11 +31,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
-AxisSpec DCAAxis = {2001, -10.01, 10.01};
+AxisSpec DCAAxis = {201, -1.01, 1.01};
 AxisSpec EtaAxis = {21, -2.1, 2.1};
 AxisSpec MultAxis = {301, -0.5, 300.5};
-AxisSpec PhiAxis = {600, 0, 2 * M_PI};
-AxisSpec PtAxis = {1201, -0.005, 12.005};
+AxisSpec PhiAxis = {629, 0, 2 * M_PI};
+AxisSpec PtAxis = {2401, -0.005, 24.005};
 
 struct PseudorapidityDensity {
   Service<TDatabasePDG> pdg;
