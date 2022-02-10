@@ -107,7 +107,7 @@ class FemtoDreamCollisionSelection
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multV0M());
-      mHistogramRegistry->fill(HIST("Event/MultT0A"), col.multT0A());
+      mHistogramRegistry->fill(HIST("Event/MultT0M"), col.multT0M());
     }
   }
 
