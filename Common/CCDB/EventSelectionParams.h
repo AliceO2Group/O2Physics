@@ -47,6 +47,9 @@ enum EventSelectionFlags {
   kNoV0C012vsTklBG,
   kNsel
 };
+
+extern const char* selectionLabels[kNsel];
+
 } // namespace evsel
 
 using namespace evsel;

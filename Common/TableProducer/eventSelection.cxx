@@ -61,6 +61,7 @@ struct BcSelectionTask {
       for (auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
         alias[al.first] |= (triggerMaskNext50 & al.second) > 0;
       }
+      alias[kALL] = 1;
 
       // get timing info from ZDC, FV0, FT0 and FDD
       float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
@@ -86,6 +87,8 @@ struct BcSelectionTask {
       bool bgV0C = timeV0C > par->fV0CBGlower && timeV0C < par->fV0CBGupper;
       bool bgFDA = timeFDA > par->fFDABGlower && timeFDA < par->fFDABGupper;
       bool bgFDC = timeFDC > par->fFDCBGlower && timeFDC < par->fFDCBGupper;
+      float znSum = timeZNA + timeZNC;
+      float znDif = timeZNA - timeZNC;
 
       // fill time-based selection criteria
       int32_t selection[kNsel] = {0}; // TODO switch to bool array
@@ -93,8 +96,8 @@ struct BcSelectionTask {
       selection[kIsBBV0C] = bbV0C;
       selection[kIsBBFDA] = bbFDA;
       selection[kIsBBFDC] = bbFDC;
-      selection[kNoBGFDA] = !bgFDA;
-      selection[kNoBGFDC] = !bgFDC;
+      selection[kNoBGV0A] = !bgV0A;
+      selection[kNoBGV0C] = !bgV0C;
       selection[kNoBGFDA] = !bgFDA;
       selection[kNoBGFDC] = !bgFDC;
       selection[kIsBBT0A] = timeT0A > par->fT0ABBlower && timeT0A < par->fT0ABBupper;
@@ -103,6 +106,7 @@ struct BcSelectionTask {
       selection[kIsBBZNC] = timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper;
       selection[kNoBGZNA] = !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper);
       selection[kNoBGZNC] = !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper);
+      selection[kIsBBZAC] = pow((znSum - par->fZNSumMean) / par->fZNSumSigma, 2) + pow((znDif - par->fZNDifMean) / par->fZNDifSigma, 2) < 1;
 
       // Calculate V0 multiplicity per ring
       float multRingV0A[5] = {0.};
@@ -172,6 +176,7 @@ struct BcSelectionTask {
 
       // TODO: fill fired aliases for run3
       int32_t alias[kNaliases] = {0};
+      alias[kALL] = 1;
 
       // get timing info from ZDC, FV0, FT0 and FDD
       float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
@@ -257,6 +262,13 @@ struct EventSelectionTask {
     auto bc = col.bc_as<BCsWithBcSels>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
     bool* applySelection = par->GetSelection(muonSelection);
+    if (isMC) {
+      applySelection[kIsBBZAC] = 0;
+      applySelection[kNoV0MOnVsOfPileup] = 0;
+      applySelection[kNoSPDOnVsOfPileup] = 0;
+      applySelection[kNoV0Casymmetry] = 0;
+      applySelection[kNoV0PFPileup] = 0;
+    }
 
     int32_t foundBC = bc.globalIndex();
     int32_t foundFT0 = bc.foundFT0Id();
