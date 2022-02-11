@@ -173,7 +173,7 @@ struct ValidationRecLevel {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_prong2::DecayType::D0ToPiK) {
         if (candidate.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kD0, true);
+          indexParticle = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kD0, true);
         }
         auto mother = particlesMC.iteratorAt(indexParticle);
         registry.fill(HIST("histPt"), candidate.pt() - mother.pt());
@@ -181,7 +181,7 @@ struct ValidationRecLevel {
         registry.fill(HIST("histPy"), candidate.py() - mother.py());
         registry.fill(HIST("histPz"), candidate.pz() - mother.pz());
         //Compare Secondary vertex and decay length with MC
-        auto daughter0 = particlesMC.iteratorAt(mother.daughtersIds().front());
+        auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
         decayLength = RecoDecay::distance(vertexMoth, vertexDau);

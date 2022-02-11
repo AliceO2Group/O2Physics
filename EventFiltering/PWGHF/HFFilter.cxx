@@ -881,7 +881,7 @@ struct HfFilter { // Main struct for HF triggers
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = particlesMC.iteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
         if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
         } else {
@@ -940,7 +940,7 @@ struct HfFilter { // Main struct for HF triggers
 
       if (indexRec > -1) {
         auto particle = particlesMC.iteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
         if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
         } else {

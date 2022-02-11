@@ -131,8 +131,8 @@ struct TaskD0parametrizedPIDMC {
           maxFiducialY = -0.2 / 15 * ptGen * ptGen + 1.9 / 15 * ptGen + 0.5;
           minFiducialY = 0.2 / 15 * ptGen * ptGen - 1.9 / 15 * ptGen - 0.5;
         }
-        auto etaProng0 = std::abs(particlesMC.iteratorAt(particle.daughtersIds().front()).eta());
-        auto etaProng1 = std::abs(particlesMC.iteratorAt(particle.daughtersIds().back()).eta());
+        auto etaProng0 = std::abs(particle.daughters_as<McParticlesHf>().begin().eta());
+        auto etaProng1 = std::abs((particle.daughters_as<McParticlesHf>().begin()+1).eta());
         if (std::abs(yGen) < 2.5) {
           registry.fill(HIST("hGenPtCMSYCutNoDaughterEtaCut"), ptGen);
         }
