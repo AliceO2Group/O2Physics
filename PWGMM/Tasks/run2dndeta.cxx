@@ -25,7 +25,6 @@
 #include "TDatabasePDG.h"
 
 #include <TF1.h>
-#include <TRandom2.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -43,7 +42,6 @@ struct PseudorapidityDensity {
   Configurable<std::vector<float>> parRatio{"parRatio", {0.965475, -0.0010506, 0.00242833, 1.42873e-05, -1.49124e-05, 6.45095e-09, -1.0309e-08}, "parameters of pol6 of mes /reco tracks versus zvtx"};
 
   TF1* fRatio = 0;
-  TRandom2* rand = 0;
 
   HistogramRegistry registry{
     "registry",
