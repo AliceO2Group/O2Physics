@@ -670,7 +670,7 @@ class RecoDecay
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dauIdx : particle.daughtersIds()) {
-      getDaughters(particlesMC, particlesMC.iteratorAt(dauIdx), list, arrPDGFinal, depthMax, stage);
+      getDaughters(particlesMC, particlesMC.rawIteratorAt(dauIdx), list, arrPDGFinal, depthMax, stage);
     }
   }
 

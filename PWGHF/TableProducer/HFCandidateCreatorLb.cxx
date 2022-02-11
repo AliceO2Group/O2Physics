@@ -271,7 +271,7 @@ struct HFCandidateCreatorLbMC {
       // Λb → Λc+ π-
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaB0, array{int(pdg::Code::kLambdaCPlus), -kPiPlus}, true)) {
         // Match Λc+ -> pKπ
-        auto LcCandMC = particlesMC.iteratorAt(particle.daughtersIds().front());
+        auto LcCandMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
         //Printf("Checking Λc+ → p K- π+");
         if (RecoDecay::isMatchedMCGen(particlesMC, LcCandMC, int(pdg::Code::kLambdaCPlus), array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);

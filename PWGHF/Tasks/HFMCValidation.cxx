@@ -107,7 +107,7 @@ struct ValidationGenLevel {
             counter[iD]++;
           }
           for (std::size_t i = 0; i < listDaughters.size(); i++) {
-            auto daughter = particlesMC.iteratorAt(listDaughters.at(i));
+            auto daughter = particlesMC.rawIteratorAt(listDaughters.at(i));
             sumPxDau += daughter.px();
             sumPyDau += daughter.py();
             sumPzDau += daughter.pz();
@@ -175,7 +175,7 @@ struct ValidationRecLevel {
         if (candidate.index0_as<aod::BigTracksMC>().has_mcParticle()) {
           indexParticle = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle(), pdg::Code::kD0, true);
         }
-        auto mother = particlesMC.iteratorAt(indexParticle);
+        auto mother = particlesMC.rawIteratorAt(indexParticle);
         registry.fill(HIST("histPt"), candidate.pt() - mother.pt());
         registry.fill(HIST("histPx"), candidate.px() - mother.px());
         registry.fill(HIST("histPy"), candidate.py() - mother.py());

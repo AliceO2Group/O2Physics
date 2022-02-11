@@ -186,13 +186,13 @@ struct HfTaskXiccMc {
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XiccToXicPi) {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMCGen>>(), 4422, true);
-        auto particleXicc = particlesMC.iteratorAt(indexMother);
-        auto particleXic = particlesMC.iteratorAt(particleXicc.daughtersIds().front());
+        auto particleXicc = particlesMC.rawIteratorAt(indexMother);
+        auto particleXic = particlesMC.rawIteratorAt(particleXicc.daughtersIds().front());
         /*
-        auto daughter1 = particlesMC.iteratorAt(particleXicc.daughter1());
-        auto p0xic = particlesMC.iteratorAt(particleXic.daughter0());
-        auto p1xic = particlesMC.iteratorAt(particleXic.daughter0()+1);
-        auto p2xic = particlesMC.iteratorAt(particleXic.daughter1());
+        auto daughter1 = particlesMC.rawIteratorAt(particleXicc.daughter1());
+        auto p0xic = particlesMC.rawIteratorAt(particleXic.daughter0());
+        auto p1xic = particlesMC.rawIteratorAt(particleXic.daughter0()+1);
+        auto p2xic = particlesMC.rawIteratorAt(particleXic.daughter1());
         LOGF(info, "mother pdg %d", particleXicc.pdgCode());
         LOGF(info, "Xic pdg %d", particleXic.pdgCode());
         LOGF(info, "Xic prong 0 pdg %d", p0xic.pdgCode());

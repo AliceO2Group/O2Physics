@@ -266,7 +266,7 @@ struct HfCandidateCreatorBplusMc {
         // D0(bar) → π± K∓
         // Printf("Checking D0(bar) → π± K∓");
         for (auto iD : arrayDaughterB) {
-          auto candDaughterMC = particlesMC.iteratorAt(iD);
+          auto candDaughterMC = particlesMC.rawIteratorAt(iD);
           if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
             indexGenD0 = RecoDecay::isMatchedMCGen(particlesMC, candDaughterMC, pdg::Code::kD0, array{-kKPlus, +kPiPlus}, true, &signD0, 1);
           }

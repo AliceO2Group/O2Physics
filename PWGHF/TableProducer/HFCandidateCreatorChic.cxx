@@ -231,10 +231,10 @@ struct HFCandidateCreatorChicMC {
       if (indexRec > -1) {
         hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.index0()));
 
-        int indexMother = RecoDecay::getMother(particlesMC.iteratorAt(indexRec), pdg::Code::kChic1);
-        int indexMotherGamma = RecoDecay::getMother(particlesMC.iteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChic1);
+        int indexMother = RecoDecay::getMother(particlesMC.rawIteratorAt(indexRec), pdg::Code::kChic1);
+        int indexMotherGamma = RecoDecay::getMother(particlesMC.rawIteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChic1);
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
-          auto particleMother = particlesMC.iteratorAt(indexMother);
+          auto particleMother = particlesMC.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.index1().e());
           hMassEMatched->Fill(sqrt(candidate.index1().px() * candidate.index1().px() + candidate.index1().py() * candidate.index1().py() + candidate.index1().pz() * candidate.index1().pz()));
           if (particleMother.has_daughters()) {
@@ -248,7 +248,7 @@ struct HFCandidateCreatorChicMC {
         }
       }
       if (flag != 0) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? NonPrompt : Prompt);
       }
       rowMCMatchRec(flag, origin, channel);
@@ -266,7 +266,7 @@ struct HFCandidateCreatorChicMC {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{(int)(pdg::Code::kJpsi)}, 1);
-        auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
+        auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
         }
