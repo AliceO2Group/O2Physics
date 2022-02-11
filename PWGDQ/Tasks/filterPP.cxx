@@ -105,7 +105,7 @@ struct DQEventSelectionTask {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Comma separated list of event cuts; multiple cuts are applied with a logical AND"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   // TODO: configure the histogram classes to be filled by QA
-  
+
   void init(o2::framework::InitContext&)
   {
     // Construct the composite cut out of the user provided event selection cut(s)
@@ -118,13 +118,13 @@ struct DQEventSelectionTask {
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-    
+
     if (fConfigQA) {
       VarManager::SetDefaultVarNames();
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-    
+
       DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -141,7 +141,7 @@ struct DQEventSelectionTask {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
     }
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      if (fConfigQA) { 
+      if (fConfigQA) {
         fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       }
       eventSel(1);
@@ -149,7 +149,7 @@ struct DQEventSelectionTask {
       eventSel(0);
     }
   }
-  
+
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -163,14 +163,14 @@ struct DQBarrelTrackSelection {
   Produces<aod::DQBarrelTrackCuts> trackSel;
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
-  
+
   Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of ADDITIONAL barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   // TODO: configure the histogram classes to be filled by QA
-  
+
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
-  
+
   void init(o2::framework::InitContext&)
   {
     TString cutNamesStr = fConfigCuts.value;
@@ -180,14 +180,13 @@ struct DQBarrelTrackSelection {
         AnalysisCompositeCut* cut = dqcuts::GetCompositeCut(objArray->At(icut)->GetName());
         if (cut) {
           fTrackCuts.push_back(*cut);
-        }
-        else {
+        } else {
           LOGF(fatal, "Invalid barrel track cut provided: %s", objArray->At(icut)->GetName());
         }
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-    
+
     if (fConfigQA) {
       VarManager::SetDefaultVarNames();
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -256,10 +255,10 @@ struct DQMuonsSelection {
   Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   // TODO: configure the histogram classes to be filled by QA
-  
+
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
-  
+
   void init(o2::framework::InitContext&)
   {
     TString cutNamesStr = fConfigCuts.value;
@@ -337,24 +336,24 @@ struct DQFilterPPTask {
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TH1I> fStats{"Statistics"};
   HistogramManager* fHistMan;
-  
+
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
   Configurable<std::string> fConfigMuonSelections{"cfgMuonSels", "muonQualityCuts:pairNoCut:1", "<muon-cut>:[<pair-cut>]:<n>"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  
+
   Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
   Filter filterMuonTrackSelected = aod::dqppfilter::isDQMuonSelected > uint32_t(0);
-  
-  int fNBarrelCuts;                   // number of barrel selections
-  int fNMuonCuts;                     // number of muon selections
-  std::vector<bool> fBarrelRunPairing;          // bit map on whether the selections require pairing (barrel)
-  std::vector<bool> fMuonRunPairing;            // bit map on whether the selections require pairing (muon)
-  std::vector<int> fBarrelNreqObjs;   // minimal number of tracks/pairs required (barrel)
-  std::vector<int> fMuonNreqObjs;     // minimal number of tracks/pairs required (muon)
-  std::map<int,AnalysisCompositeCut> fBarrelPairCuts;  // map of barrel pair cuts
-  std::map<int,AnalysisCompositeCut> fMuonPairCuts;    // map of muon pair cuts
-  std::map<int,TString> fBarrelPairHistNames;  // map with names of the barrel pairing histogram directories
-  std::map<int,TString> fMuonPairHistNames;    // map with names of the muon pairing histogram directories
+
+  int fNBarrelCuts;                                    // number of barrel selections
+  int fNMuonCuts;                                      // number of muon selections
+  std::vector<bool> fBarrelRunPairing;                 // bit map on whether the selections require pairing (barrel)
+  std::vector<bool> fMuonRunPairing;                   // bit map on whether the selections require pairing (muon)
+  std::vector<int> fBarrelNreqObjs;                    // minimal number of tracks/pairs required (barrel)
+  std::vector<int> fMuonNreqObjs;                      // minimal number of tracks/pairs required (muon)
+  std::map<int, AnalysisCompositeCut> fBarrelPairCuts; // map of barrel pair cuts
+  std::map<int, AnalysisCompositeCut> fMuonPairCuts;   // map of muon pair cuts
+  std::map<int, TString> fBarrelPairHistNames;         // map with names of the barrel pairing histogram directories
+  std::map<int, TString> fMuonPairHistNames;           // map with names of the muon pairing histogram directories
 
   void DefineCuts()
   {
@@ -365,7 +364,7 @@ struct DQFilterPPTask {
       for (int icut = 0; icut < fNBarrelCuts; ++icut) {
         TString selStr = objArray->At(icut)->GetName();
         std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
-        if (sel->GetEntries()<2 || sel->GetEntries()>3) {
+        if (sel->GetEntries() < 2 || sel->GetEntries() > 3) {
           continue;
         }
         // if "sel" contains 3 entries, it means the user provided both the track and pair cuts
@@ -374,7 +373,7 @@ struct DQFilterPPTask {
           fBarrelRunPairing.push_back(true);
           fBarrelNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
           fBarrelPairHistNames[icut] = Form("PairsBarrelSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
-        } 
+        }
         fBarrelNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
         fBarrelRunPairing.push_back(false);
       }
@@ -386,7 +385,7 @@ struct DQFilterPPTask {
       for (int icut = 0; icut < fNMuonCuts; ++icut) {
         TString selStr = objArray2->At(icut)->GetName();
         std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
-        if (sel->GetEntries()<2 || sel->GetEntries()>3) {
+        if (sel->GetEntries() < 2 || sel->GetEntries() > 3) {
           continue;
         }
         // if "sel" contains 3 entries, it means the user provided both the track and pair cuts
@@ -395,25 +394,25 @@ struct DQFilterPPTask {
           fMuonRunPairing.push_back(true);
           fMuonNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
           fMuonPairHistNames[icut] = Form("PairsMuonSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
-        } 
-        fMuonNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));      
+        }
+        fMuonNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
         fMuonRunPairing.push_back(false);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
-    
+
     // setup the Stats histogram
-    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", fNBarrelCuts+fNMuonCuts+2, -2.5, -0.5 + fNBarrelCuts+fNMuonCuts));
+    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     if (fNBarrelCuts) {
-      for (int ib = 3; ib < 3+fNBarrelCuts; ib++) {
-        fStats->GetXaxis()->SetBinLabel(ib, objArray->At(ib-3)->GetName());        
+      for (int ib = 3; ib < 3 + fNBarrelCuts; ib++) {
+        fStats->GetXaxis()->SetBinLabel(ib, objArray->At(ib - 3)->GetName());
       }
     }
     if (fNMuonCuts) {
-      for (int ib = 3+fNBarrelCuts; ib < 3+fNBarrelCuts+fNMuonCuts; ib++) {
-        fStats->GetXaxis()->SetBinLabel(ib, objArray2->At(ib-3-fNBarrelCuts)->GetName());        
+      for (int ib = 3 + fNBarrelCuts; ib < 3 + fNBarrelCuts + fNMuonCuts; ib++) {
+        fStats->GetXaxis()->SetBinLabel(ib, objArray2->At(ib - 3 - fNBarrelCuts)->GetName());
       }
     }
   }
@@ -447,25 +446,25 @@ struct DQFilterPPTask {
   void runFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
   {
     fStats->Fill(-2.0);
-    // if the event is not selected produce tables and return      
+    // if the event is not selected produce tables and return
     if (!collision.isDQEventSelected()) {
       eventFilter(0);
-      dqtable(false,false,false,false,false);
+      dqtable(false, false, false, false, false);
       return;
     }
     fStats->Fill(-1.0);
-   
-    if (tracksBarrel.size()==0 && muons.size()==0) {
+
+    if (tracksBarrel.size() == 0 && muons.size() == 0) {
       eventFilter(0);
-      dqtable(false,false,false,false,false);
+      dqtable(false, false, false, false, false);
       return;
     }
-    
+
     // Reset the values array and compute event quantities
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<TEventFillMap>(collision);
-    
-    std::vector<int> objCountersBarrel (fNBarrelCuts, 0);  // init all counters to zero
+
+    std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
     // count the number of barrel tracks fulfilling each cut
     for (auto track : tracksBarrel) {
       for (int i = 0; i < fNBarrelCuts; ++i) {
@@ -474,21 +473,21 @@ struct DQFilterPPTask {
         }
       }
     }
-    
+
     // check which selections require pairing
-    uint32_t pairingMask = 0;    // in order to know which of the selections actually require pairing
-    for (int i=0; i<fNBarrelCuts; i++) {
+    uint32_t pairingMask = 0; // in order to know which of the selections actually require pairing
+    for (int i = 0; i < fNBarrelCuts; i++) {
       if (fBarrelRunPairing[i]) {
-        if (objCountersBarrel[i]>1) {  // pairing has to be enabled and at least two tracks are needed
+        if (objCountersBarrel[i] > 1) { // pairing has to be enabled and at least two tracks are needed
           pairingMask |= (uint32_t(1) << i);
         }
-        objCountersBarrel[i] = 0;              // reset counters for selections where pairing is needed (count pairs instead)
+        objCountersBarrel[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
       }
     }
-    
+
     // run pairing if there is at least one selection that requires it
     uint32_t pairFilter = 0;
-    if (pairingMask>0) {
+    if (pairingMask > 0) {
       for (auto& [t1, t2] : combinations(tracksBarrel, tracksBarrel)) {
         // keep just opposite-sign pairs
         if (t1.sign() * t2.sign() > 0) {
@@ -501,22 +500,22 @@ struct DQFilterPPTask {
         }
         // construct the pair and apply pair cuts
         VarManager::FillPair<VarManager::kJpsiToEE, TTrackFillMap>(t1, t2); // compute pair quantities
-        for (int icut=0; icut<fNBarrelCuts; icut++) {
-          if ( !(pairFilter & (uint32_t(1) << icut)) ) {
+        for (int icut = 0; icut < fNBarrelCuts; icut++) {
+          if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
-          if ( !fBarrelPairCuts[icut].IsSelected(VarManager::fgValues) ) {
-            continue;        
+          if (!fBarrelPairCuts[icut].IsSelected(VarManager::fgValues)) {
+            continue;
           }
-          objCountersBarrel[icut] += 1;  // count the pair
-          if (fConfigQA) {         // fill histograms if QA is enabled
+          objCountersBarrel[icut] += 1; // count the pair
+          if (fConfigQA) {              // fill histograms if QA is enabled
             fHistMan->FillHistClass(fBarrelPairHistNames[icut].Data(), VarManager::fgValues);
           }
         }
       }
     }
-    
-    std::vector<int> objCountersMuon (fNMuonCuts, 0);  // init all counters to zero
+
+    std::vector<int> objCountersMuon(fNMuonCuts, 0); // init all counters to zero
     // count the number of muon tracks fulfilling each selection
     for (auto muon : muons) {
       for (int i = 0; i < fNMuonCuts; ++i) {
@@ -525,21 +524,21 @@ struct DQFilterPPTask {
         }
       }
     }
-    
+
     // check which muon selections require pairing
-    pairingMask = 0;    // reset the mask for the muons
-    for (int i=0; i<fNMuonCuts; i++) {
-      if (fMuonRunPairing[i]) {  // pairing has to be enabled and at least two tracks are needed
-        if (objCountersMuon[i]>1) {
+    pairingMask = 0; // reset the mask for the muons
+    for (int i = 0; i < fNMuonCuts; i++) {
+      if (fMuonRunPairing[i]) { // pairing has to be enabled and at least two tracks are needed
+        if (objCountersMuon[i] > 1) {
           pairingMask |= (uint32_t(1) << i);
         }
-        objCountersMuon[i] = 0;              // reset counters for selections where pairing is needed (count pairs instead)
+        objCountersMuon[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
       }
     }
-    
+
     // run pairing if there is at least one selection that requires it
     pairFilter = 0;
-    if (pairingMask>0) {
+    if (pairingMask > 0) {
       for (auto& [t1, t2] : combinations(muons, muons)) {
         // keep just opposite-sign pairs
         if (t1.sign() * t2.sign() > 0) {
@@ -552,11 +551,11 @@ struct DQFilterPPTask {
         }
         // construct the pair and apply cuts
         VarManager::FillPair<VarManager::kJpsiToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
-        for (int icut=0; icut<fNMuonCuts; icut++) {
-          if ( !(pairFilter & (uint32_t(1) << icut)) ) {
+        for (int icut = 0; icut < fNMuonCuts; icut++) {
+          if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
-          if ( !fMuonPairCuts[icut].IsSelected(VarManager::fgValues) ) {
+          if (!fMuonPairCuts[icut].IsSelected(VarManager::fgValues)) {
             continue;
           }
           objCountersMuon[icut] += 1;
@@ -566,37 +565,37 @@ struct DQFilterPPTask {
         }
       }
     }
-    
+
     // compute the decisions and publish
     // NOTE: For the CEFP decisions, decisions are placed in a vector of bool in an ordered way:
     //       start with all configured barrel selections and then continue with those from muons
     //       The configured order has to be in sync with that implemented in the cefp task and can be done
     //       by preparing a dedicated json configuration file
-    std::vector<bool> decisions (kNTriggersDQ, false);  // event decisions to be transmited to CEFP
+    std::vector<bool> decisions(kNTriggersDQ, false); // event decisions to be transmited to CEFP
     uint64_t filter = 0;
-    for (int i=0; i<fNBarrelCuts; i++) {
+    for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNreqObjs[i]) {
         filter |= (uint64_t(1) << i);
         fStats->Fill(float(i));
-        if (i<kNTriggersDQ) {
+        if (i < kNTriggersDQ) {
           decisions[i] = true;
         }
       }
     }
-    for (int i=0; i<fNMuonCuts; i++) {
+    for (int i = 0; i < fNMuonCuts; i++) {
       if (objCountersMuon[i] >= fMuonNreqObjs[i]) {
-        filter |= (uint64_t(1) << (i+fNBarrelCuts));
-        fStats->Fill(float(i+fNBarrelCuts));
-        if (i+fNBarrelCuts < kNTriggersDQ) {
-          decisions[i+fNBarrelCuts] = true;   
+        filter |= (uint64_t(1) << (i + fNBarrelCuts));
+        fStats->Fill(float(i + fNBarrelCuts));
+        if (i + fNBarrelCuts < kNTriggersDQ) {
+          decisions[i + fNBarrelCuts] = true;
         }
       }
     }
     eventFilter(filter);
-    dqtable(decisions[0],decisions[1],decisions[2],decisions[3],decisions[4]);
+    dqtable(decisions[0], decisions[1], decisions[2], decisions[3], decisions[4]);
   }
-  
-  void processFilterPP(MyEventsSelected::iterator const& collision, aod::BCs const& bcs, 
+
+  void processFilterPP(MyEventsSelected::iterator const& collision, aod::BCs const& bcs,
                        soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonsSelected> const& muons)
   {
     runFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
@@ -641,7 +640,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("Muon")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
     }
-    
+
     if (classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
