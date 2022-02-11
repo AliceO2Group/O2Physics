@@ -234,6 +234,9 @@ struct femtoDreamPairTaskTrackTrack {
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
+      if (part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        continue;
+      }
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
@@ -241,6 +244,9 @@ struct femtoDreamPairTaskTrackTrack {
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
+        if (part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+          continue;
+        }
         if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
@@ -249,6 +255,9 @@ struct femtoDreamPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+      if (p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+        continue;
+      }
       if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
         continue;
       }
@@ -298,6 +307,9 @@ struct femtoDreamPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+          continue;
+        }
         if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
