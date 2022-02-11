@@ -180,7 +180,6 @@ struct DQBarrelTrackSelection {
         AnalysisCompositeCut* cut = dqcuts::GetCompositeCut(objArray->At(icut)->GetName());
         if (cut) {
           fTrackCuts.push_back(*cut);
-          cout << "Added cut " << objArray->At(icut)->GetName() << " " << cut << " " << cut->GetName() << endl;
         }
         else {
           LOGF(fatal, "Invalid barrel track cut provided: %s", objArray->At(icut)->GetName());
@@ -341,7 +340,6 @@ struct DQFilterPPTask {
   
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
   Configurable<std::string> fConfigMuonSelections{"cfgMuonSels", "muonQualityCuts:pairNoCut:1", "<muon-cut>:[<pair-cut>]:<n>"};
-  //Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "pairMassLow,pairJpsi", "Comma separated list of ADDITIONAL pair cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   
   Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
@@ -353,13 +351,8 @@ struct DQFilterPPTask {
   std::vector<bool> fMuonRunPairing;            // bit map on whether the selections require pairing (muon)
   std::vector<int> fBarrelNreqObjs;   // minimal number of tracks/pairs required (barrel)
   std::vector<int> fMuonNreqObjs;     // minimal number of tracks/pairs required (muon)
-  //std::vector<AnalysisCompositeCut> fBarrelTrackCuts;  // array of barrel single-track cuts
-  //std::vector<AnalysisCompositeCut> fMuonTrackCuts;    // array of muon single-track cuts
   std::map<int,AnalysisCompositeCut> fBarrelPairCuts;  // map of barrel pair cuts
   std::map<int,AnalysisCompositeCut> fMuonPairCuts;    // map of muon pair cuts
-  
-  //std::vector<TString> fBarrelTrackHistNames;  // map with names of the barrel track histogram directories
-  //std::vector<TString> fMuonTrackHistNames;    // map with names of the muon track histogram directories
   std::map<int,TString> fBarrelPairHistNames;  // map with names of the barrel pairing histogram directories
   std::map<int,TString> fMuonPairHistNames;    // map with names of the muon pairing histogram directories
 
@@ -372,8 +365,6 @@ struct DQFilterPPTask {
       for (int icut = 0; icut < fNBarrelCuts; ++icut) {
         TString selStr = objArray->At(icut)->GetName();
         std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
-        //fBarrelTrackCuts.push_back(*dqcuts::GetCompositeCut(sel->At(0)->GetName()));
-        //fBarrelTrackHistNames.push_back("TrackBarrel_" + sel->At(0)->GetName());
         if (sel->GetEntries()<2 || sel->GetEntries()>3) {
           continue;
         }
@@ -395,8 +386,6 @@ struct DQFilterPPTask {
       for (int icut = 0; icut < fNMuonCuts; ++icut) {
         TString selStr = objArray2->At(icut)->GetName();
         std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
-        //fMuonTrackCuts.push_back(*dqcuts::GetCompositeCut(sel->At(0)->GetName()));
-        //fMuonTrackHistNames.push_back("TrackMuon_" + sel->At(0)->GetName());
         if (sel->GetEntries()<2 || sel->GetEntries()>3) {
           continue;
         }
@@ -440,14 +429,6 @@ struct DQFilterPPTask {
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       TString histNames = "";
-      /*for (const auto& cutname : fBarrelTrackHistNames) {
-        histNames += cutname;
-        histNames += ";";        
-      }
-      for (const auto& cutname : fMuonTrackHistNames) {
-        histNames += cutname;
-        histNames += ";";        
-      }*/
       for (const auto& [key, value] : fBarrelPairHistNames) {
         histNames += value;
         histNames += ";";
