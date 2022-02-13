@@ -86,8 +86,6 @@ struct PseudorapidityDensity {
       fRatio = new TF1("fRatio", "pol6", -15, 15);
       auto param = (std::vector<float>)parRatio;
       fRatio->SetParameters(param[0], param[1], param[2], param[3], param[4], param[5], param[6]);
-
-      rand = new TRandom2();
     }
 
     if (doprocessBinned) {
