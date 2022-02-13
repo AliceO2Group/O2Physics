@@ -104,7 +104,7 @@ struct QaImpactPar {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   const char* ccdbpath_lut = "GLO/Param/MatLUT";
-  const char* ccdbpath_geo = "GLO/Config/Geometry";
+  const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
   const char* ccdbpath_grp = "GLO/GRP/GRP";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
