@@ -119,9 +119,8 @@ struct PseudorapidityDensity {
         auto z = collision.posZ();
         auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
         double w = 1;
-        if ((z>-12)&&(z<12))
-        {
-          w=fRatio->Eval(z);
+        if ((z > -12) && (z < 12)) {
+          w = fRatio->Eval(z);
         }
 
         registry.fill(HIST("EventSelection"), 2., w);
