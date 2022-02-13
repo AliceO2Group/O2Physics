@@ -323,7 +323,7 @@ struct HFCandidateCreatorXMC {
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeX, array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{pdgCodeJpsi}, 1);
+        RecoDecay::getDaughters(particle, &arrDaughter, array{pdgCodeJpsi}, 1);
         auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;

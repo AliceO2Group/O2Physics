@@ -195,7 +195,7 @@ struct HFCandidateCreator3ProngExpressions {
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
-          RecoDecay::getDaughters(particlesMC, particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
+          RecoDecay::getDaughters(particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
@@ -251,7 +251,7 @@ struct HFCandidateCreator3ProngExpressions {
           flag = sign * (1 << DecayType::LcToPKPi);
 
           //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
-          RecoDecay::getDaughters(particlesMC, particle, &arrDaughIndex, array{0}, 1);
+          RecoDecay::getDaughters(particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
               auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);

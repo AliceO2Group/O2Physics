@@ -101,7 +101,7 @@ struct ValidationGenLevel {
       // Checking the decay of the particles and the momentum conservation
       for (std::size_t iD = 0; iD < PDGArrayParticle.size(); iD++) {
         if (std::abs(particlePdgCode) == PDGArrayParticle[iD]) {
-          RecoDecay::getDaughters(particlesMC, particle, &listDaughters, arrPDGFinal[iD], -1);
+          RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           if (listDaughters.size() == arrayPDGsize) {
             counter[iD]++;
