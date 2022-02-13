@@ -8,303 +8,605 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/ConfigParamSpec.h"
-#include "Common/CCDB/EventSelectionParams.h"
-
-using namespace o2;
-using namespace o2::framework;
-using namespace evsel;
-
-// custom configurable for switching between run2 and run3 selection types
-void customize(std::vector<ConfigParamSpec>& workflowOptions)
-{
-  workflowOptions.push_back(ConfigParamSpec{"selection-run", VariantType::Int, 2, {"selection type: 2 - run 2, 3 - run 3, 0 - run2mc"}});
-}
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include <CCDB/BasicCCDBManager.h>
 #include "Framework/HistogramRegistry.h"
 #include "TH1F.h"
 #include "TH2F.h"
+using namespace o2::framework;
+using namespace o2;
+using namespace evsel;
 
-struct EventSelectionQaPerMcCollision {
-  HistogramRegistry histos{"HistosPerCollisionMc", {}, OutputObjHandlingPolicy::QAObject};
-  void init(InitContext&)
-  {
-    histos.add("hMcEventCounter", ";;", kTH1F, {{1, 0., 1.}});
-  }
-  void process(aod::McCollision const& mcCol)
-  {
-    histos.fill(HIST("hMcEventCounter"), 0.);
-  }
-};
+using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-struct EventSelectionQaPerBc {
-  // TODO fill class names in axis labels
-  OutputObj<TH1F> hFiredClasses{TH1F("hFiredClasses", "", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hFiredAliases{TH1F("hFiredAliases", "", kNaliases, -0.5, kNaliases - 0.5)};
-  void init(InitContext&)
-  {
-    for (int i = 0; i < kNaliases; i++) {
-      hFiredAliases->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
-    }
-  }
-
-  void process(soa::Join<aod::BCs, aod::Run2BCInfos, aod::BcSels>::iterator const& bc)
-  {
-    // Fill fired trigger classes
-    uint64_t triggerMask = bc.triggerMask();
-    uint64_t triggerMaskNext50 = bc.triggerMaskNext50();
-    for (int i = 0; i < 50; i++) {
-      if (triggerMask & 1ull << i) {
-        hFiredClasses->Fill(i);
-      }
-      if (triggerMaskNext50 & 1ull << i) {
-        hFiredClasses->Fill(i + 50);
-      }
-    }
-
-    // Fill fired aliases
-    for (int i = 0; i < kNaliases; i++) {
-      if (bc.alias()[i]) {
-        hFiredAliases->Fill(i);
-      }
-    }
-  }
-};
-
-struct EventSelectionQaPerCollision {
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
-
-  void init(InitContext&)
-  {
-    // TODO read low/high flux info from configurable or OADB metadata
-    bool isLowFlux = 1;
-    for (int i = 0; i < kNaliases; i++) {
-      histos.add(Form("%s/hTimeV0Aall", aliasLabels[i]), "All events;V0A;Entries", kTH1F, {{200, -50., 50.}});
-      histos.add(Form("%s/hTimeV0Call", aliasLabels[i]), "All events;V0C;Entries", kTH1F, {{200, -50., 50.}});
-      histos.add(Form("%s/hTimeZNAall", aliasLabels[i]), "All events;ZNA;Entries", kTH1F, {{250, -25., 25.}});
-      histos.add(Form("%s/hTimeZNCall", aliasLabels[i]), "All events;ZNC;Entries", kTH1F, {{250, -25., 25.}});
-      histos.add(Form("%s/hTimeT0Aall", aliasLabels[i]), "All events;T0A;Entries", kTH1F, {{200, -10., 10.}});
-      histos.add(Form("%s/hTimeT0Call", aliasLabels[i]), "All events;T0C;Entries", kTH1F, {{200, -10., 10.}});
-      histos.add(Form("%s/hTimeFDAall", aliasLabels[i]), "All events;FDA;Entries", kTH1F, {{1000, -100., 100.}});
-      histos.add(Form("%s/hTimeFDCall", aliasLabels[i]), "All events;FDC;Entries", kTH1F, {{1000, -100., 100.}});
-      histos.add(Form("%s/hTimeV0Aacc", aliasLabels[i]), "Accepted events;V0A;Entries", kTH1F, {{200, -50., 50.}});
-      histos.add(Form("%s/hTimeV0Cacc", aliasLabels[i]), "Accepted events;V0C;Entries", kTH1F, {{200, -50., 50.}});
-      histos.add(Form("%s/hTimeZNAacc", aliasLabels[i]), "Accepted events;ZNA;Entries", kTH1F, {{250, -25., 25.}});
-      histos.add(Form("%s/hTimeZNCacc", aliasLabels[i]), "Accepted events;ZNC;Entries", kTH1F, {{250, -25., 25.}});
-      histos.add(Form("%s/hTimeT0Aacc", aliasLabels[i]), "Accepted events;T0A;Entries", kTH1F, {{200, -10., 10.}});
-      histos.add(Form("%s/hTimeT0Cacc", aliasLabels[i]), "Accepted events;T0C;Entries", kTH1F, {{200, -10., 10.}});
-      histos.add(Form("%s/hTimeFDAacc", aliasLabels[i]), "Accepted events;FDA;Entries", kTH1F, {{1000, -100., 100.}});
-      histos.add(Form("%s/hTimeFDCacc", aliasLabels[i]), "Accepted events;FDC;Entries", kTH1F, {{1000, -100., 100.}});
-      histos.add(Form("%s/hSPDClsVsTklAll", aliasLabels[i]), "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
-      histos.add(Form("%s/hV0C012vsTklAll", aliasLabels[i]), "All events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
-      histos.add(Form("%s/hV0MOnVsOfAll", aliasLabels[i]), "All events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
-      histos.add(Form("%s/hSPDOnVsOfAll", aliasLabels[i]), "All events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
-      histos.add(Form("%s/hV0C3vs012All", aliasLabels[i]), "All events;V0C012 multiplicity;V0C3 multiplicity", kTH2F, {{200, 0., 800.}, {300, 0., 300.}});
-      histos.add(Form("%s/hSPDClsVsTklAcc", aliasLabels[i]), "Accepted events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
-      histos.add(Form("%s/hV0C012vsTklAcc", aliasLabels[i]), "Accepted events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
-      histos.add(Form("%s/hV0MOnVsOfAcc", aliasLabels[i]), "Accepted events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
-      histos.add(Form("%s/hSPDOnVsOfAcc", aliasLabels[i]), "Accepted events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
-      histos.add(Form("%s/hV0C3vs012Acc", aliasLabels[i]), "Accepted events;V0C012 multiplicity;V0C3 multiplicity", kTH2F, {{200, 0., 800.}, {300, 0., 300.}});
-    }
-    histos.print();
-  }
+struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
-  Configurable<int> selection{"sel", 7, "trigger: 7 - sel7, 8 - sel8"};
+  Configurable<double> minGlobalBC{"minGlobalBC", 0, "minimum global bc"};
+  Configurable<int> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs"};
+  Configurable<double> minOrbit{"minOrbit", 0, "minimum orbit"};
+  Configurable<int> nOrbits{"nOrbits", 10000, "number of orbits"};
+  Configurable<int> refBC{"refBC", 1238, "reference bc"};
+  Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
 
-  using BCsWithRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos>;
-  void process(soa::Join<aod::EvSels, aod::Run2MatchedSparse>::iterator const& col,
-               BCsWithRun2Infos const& bcs,
-               aod::Zdcs const& zdcs,
-               aod::FV0As const& fv0as,
-               aod::FV0Cs const& fv0cs,
-               aod::FT0s ft0s,
-               aod::FDDs fdds)
-  {
-    float timeZNA = col.has_zdc() ? col.zdc().timeZNA() : -999.f;
-    float timeZNC = col.has_zdc() ? col.zdc().timeZNC() : -999.f;
-    float timeV0A = col.has_fv0a() ? col.fv0a().time() : -999.f;
-    float timeV0C = col.has_fv0c() ? col.fv0c().time() : -999.f;
-    float timeT0A = col.has_ft0() ? col.ft0().timeA() : -999.f;
-    float timeT0C = col.has_ft0() ? col.ft0().timeC() : -999.f;
-    float timeFDA = col.has_fdd() ? col.fdd().timeA() : -999.f;
-    float timeFDC = col.has_fdd() ? col.fdd().timeC() : -999.f;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  bool* applySelection = NULL;
+  int nBCsPerOrbit = 3564;
 
-    auto bc = col.bc_as<BCsWithRun2Infos>();
-    float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
-    float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
-    float chargeV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
-    float multV0A = col.multRingV0A()[0] + col.multRingV0A()[1] + col.multRingV0A()[2] + col.multRingV0A()[3] + col.multRingV0A()[4];
-    float multV0C = col.multRingV0C()[0] + col.multRingV0C()[1] + col.multRingV0C()[2] + col.multRingV0C()[3];
-    float multV0M = multV0A + multV0C;
-    float multRingV0C3 = col.multRingV0C()[3];
-    float multRingV0C012 = multV0C - multRingV0C3;
-
-    histos.fill(HIST("kALL/hTimeV0Aall"), timeV0A);
-    histos.fill(HIST("kALL/hTimeV0Call"), timeV0C);
-    histos.fill(HIST("kALL/hTimeZNAall"), timeZNA);
-    histos.fill(HIST("kALL/hTimeZNCall"), timeZNC);
-    histos.fill(HIST("kALL/hTimeT0Aall"), timeT0A);
-    histos.fill(HIST("kALL/hTimeT0Call"), timeT0C);
-    histos.fill(HIST("kALL/hTimeFDAall"), timeFDA);
-    histos.fill(HIST("kALL/hTimeFDCall"), timeFDC);
-    histos.fill(HIST("kALL/hSPDClsVsTklAll"), col.spdClusters(), col.nTracklets());
-    histos.fill(HIST("kALL/hSPDOnVsOfAll"), ofSPD, onSPD);
-    histos.fill(HIST("kALL/hV0MOnVsOfAll"), multV0M, chargeV0M);
-    histos.fill(HIST("kALL/hV0C3vs012All"), multRingV0C012, multRingV0C3);
-    histos.fill(HIST("kALL/hV0C012vsTklAll"), col.nTracklets(), multRingV0C012);
-
-    // Filling only kINT7 histos for the moment
-    // need dynamic histo names in the fill function
-    if (col.alias()[kINT7]) {
-      histos.fill(HIST("kINT7/hTimeV0Aall"), timeV0A);
-      histos.fill(HIST("kINT7/hTimeV0Call"), timeV0C);
-      histos.fill(HIST("kINT7/hTimeZNAall"), timeZNA);
-      histos.fill(HIST("kINT7/hTimeZNCall"), timeZNC);
-      histos.fill(HIST("kINT7/hTimeT0Aall"), timeT0A);
-      histos.fill(HIST("kINT7/hTimeT0Call"), timeT0C);
-      histos.fill(HIST("kINT7/hTimeFDAall"), timeFDA);
-      histos.fill(HIST("kINT7/hTimeFDCall"), timeFDC);
-      histos.fill(HIST("kINT7/hSPDClsVsTklAll"), col.spdClusters(), col.nTracklets());
-      histos.fill(HIST("kINT7/hSPDOnVsOfAll"), ofSPD, onSPD);
-      histos.fill(HIST("kINT7/hV0MOnVsOfAll"), multV0M, chargeV0M);
-      histos.fill(HIST("kINT7/hV0C3vs012All"), multRingV0C012, multRingV0C3);
-      histos.fill(HIST("kINT7/hV0C012vsTklAll"), col.nTracklets(), multRingV0C012);
-
-      LOGF(info, "selection[kIsBBV0A]=%i", col.selection()[kIsBBV0A]);
-      LOGF(info, "selection[kIsBBV0C]=%i", col.selection()[kIsBBV0C]);
-      LOGF(info, "selection[kIsBBZNA]=%i", col.selection()[kIsBBZNA]);
-      LOGF(info, "selection[kIsBBZNC]=%i", col.selection()[kIsBBZNC]);
-      LOGF(info, "selection[kNoTPCHVdip]=%i", col.selection()[kNoTPCHVdip]);
-      LOGF(info, "selection[kIsGoodTimeRange]=%i", col.selection()[kIsGoodTimeRange]);
-      LOGF(info, "selection[kNoIncompleteDAQ]=%i", col.selection()[kNoIncompleteDAQ]);
-      LOGF(info, "selection[kNoV0C012vsTklBG]=%i", col.selection()[kNoV0C012vsTklBG]);
-      LOGF(info, "selection[kNoV0Casymmetry]=%i", col.selection()[kNoV0Casymmetry]);
-      LOGF(info, "selection[kNoSPDClsVsTklBG]=%i", col.selection()[kNoSPDClsVsTklBG]);
-      LOGF(info, "selection[kNoV0MOnVsOfPileup]=%i", col.selection()[kNoV0MOnVsOfPileup]);
-      LOGF(info, "selection[kNoSPDOnVsOfPileup]=%i", col.selection()[kNoSPDOnVsOfPileup]);
-      LOGF(info, "selection[kNoPileupFromSPD]=%i", col.selection()[kNoPileupFromSPD]);
-    }
-
-    if (selection == 7 && !col.sel7()) {
-      return;
-    }
-
-    if (selection == 8 && !col.sel8()) {
-      return;
-    }
-
-    if (selection != 7 && selection != 8) {
-      LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8`");
-    }
-
-    histos.fill(HIST("kALL/hTimeV0Aacc"), timeV0A);
-    histos.fill(HIST("kALL/hTimeV0Cacc"), timeV0C);
-    histos.fill(HIST("kALL/hTimeZNAacc"), timeZNA);
-    histos.fill(HIST("kALL/hTimeZNCacc"), timeZNC);
-    histos.fill(HIST("kALL/hTimeT0Aacc"), timeT0A);
-    histos.fill(HIST("kALL/hTimeT0Cacc"), timeT0C);
-    histos.fill(HIST("kALL/hTimeFDAacc"), timeFDA);
-    histos.fill(HIST("kALL/hTimeFDCacc"), timeFDC);
-    histos.fill(HIST("kALL/hSPDClsVsTklAcc"), col.spdClusters(), col.nTracklets());
-    histos.fill(HIST("kALL/hSPDOnVsOfAcc"), ofSPD, onSPD);
-    histos.fill(HIST("kALL/hV0MOnVsOfAcc"), multV0M, chargeV0M);
-    histos.fill(HIST("kALL/hV0C3vs012Acc"), multRingV0C012, multRingV0C3);
-    histos.fill(HIST("kALL/hV0C012vsTklAcc"), col.nTracklets(), multRingV0C012);
-
-    if (col.alias()[kINT7]) {
-      histos.fill(HIST("kINT7/hTimeV0Aacc"), timeV0A);
-      histos.fill(HIST("kINT7/hTimeV0Cacc"), timeV0C);
-      histos.fill(HIST("kINT7/hTimeZNAacc"), timeZNA);
-      histos.fill(HIST("kINT7/hTimeZNCacc"), timeZNC);
-      histos.fill(HIST("kINT7/hTimeT0Aacc"), timeT0A);
-      histos.fill(HIST("kINT7/hTimeT0Cacc"), timeT0C);
-      histos.fill(HIST("kINT7/hTimeFDAacc"), timeFDA);
-      histos.fill(HIST("kINT7/hTimeFDCacc"), timeFDC);
-      histos.fill(HIST("kINT7/hSPDClsVsTklAcc"), col.spdClusters(), col.nTracklets());
-      histos.fill(HIST("kINT7/hSPDOnVsOfAcc"), ofSPD, onSPD);
-      histos.fill(HIST("kINT7/hV0MOnVsOfAcc"), multV0M, chargeV0M);
-      histos.fill(HIST("kINT7/hV0C3vs012Acc"), multRingV0C012, multRingV0C3);
-      histos.fill(HIST("kINT7/hV0C012vsTklAcc"), col.nTracklets(), multRingV0C012);
-    }
-  }
-};
-
-struct EventSelectionQaPerBcRun3 {
-  HistogramRegistry histos{"HistosPerBC", {}, OutputObjHandlingPolicy::QAObject};
   void init(InitContext&)
   {
-    histos.add("hTimeT0Aall", "All events;T0A time;Entries", kTH1F, {{200, -2., 2.}});
-    histos.add("hTimeT0Call", "All events;T0C time;Entries", kTH1F, {{200, -2., 2.}});
-    histos.add("hGlobalBcFT0", ";;", kTH1F, {{10000, 0., 10000.}});
-  }
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
 
-  void process(aod::FT0 ft0, aod::BCs const& bcs)
-  {
-    float timeA = ft0.timeA();
-    float timeC = ft0.timeC();
-    histos.fill(HIST("hTimeT0Aall"), timeA);
-    histos.fill(HIST("hTimeT0Call"), timeC);
-    histos.fill(HIST("hGlobalBcFT0"), ft0.bc().globalBC());
-  }
-};
+    float maxMultV0M = isLowFlux ? 40000 : 40000;
+    float maxMultV0A = isLowFlux ? 30000 : 30000;
+    float maxMultV0C = isLowFlux ? 30000 : 30000;
+    float maxMultT0A = isLowFlux ? 2000 : 100000;
+    float maxMultT0C = isLowFlux ? 2000 : 100000;
+    float maxMultFDA = isLowFlux ? 5000 : 10000;
+    float maxMultFDC = isLowFlux ? 5000 : 10000;
+    float maxMultZNA = isLowFlux ? 1000 : 200000;
+    float maxMultZNC = isLowFlux ? 1000 : 200000;
 
-struct EventSelectionQaPerCollisionRun3 {
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
-  void init(InitContext&)
-  {
-    histos.add("hNcontrib", ";n contributors;", kTH1F, {{100, 0, 100.}});
-    histos.add("hNcontribFT0", ";n contributors;", kTH1F, {{100, 0, 100.}});
-    histos.add("hGlobalBcCol", ";;", kTH1F, {{10000, 0., 10000.}});
-    histos.add("hGlobalBcColFT0", ";;", kTH1F, {{10000, 0., 10000.}});
-  }
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& col, aod::BCs const& bcs)
-  {
-    int nContributors = col.numContrib();
-    histos.fill(HIST("hNcontrib"), nContributors);
-    uint64_t globalBc = col.bc().globalBC();
-    histos.fill(HIST("hGlobalBcCol"), globalBc);
-    if (col.has_foundFT0()) {
-      histos.fill(HIST("hNcontribFT0"), nContributors);
-      histos.fill(HIST("hGlobalBcColFT0"), globalBc);
+    histos.add("hTimeV0Aall", "All bcs;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeV0Call", "All bcs;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeZNAall", "All bcs;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeZNCall", "All bcs;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeT0Aall", "All bcs;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeT0Call", "All bcs;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeFDAall", "All bcs;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeFDCall", "All bcs;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeZACall", "All bcs; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
+    histos.add("hTimeV0Aref", "Reference bcs;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeV0Cref", "Reference bcs;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeZNAref", "Reference bcs;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeZNCref", "Reference bcs;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeT0Aref", "Reference bcs;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeT0Cref", "Reference bcs;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeFDAref", "Reference bcs;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeFDCref", "Reference bcs;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeZACref", "Reference bcs; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
+    histos.add("hTimeV0Acol", "All events;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeV0Ccol", "All events;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeZNAcol", "All events;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeZNCcol", "All events;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeT0Acol", "All events;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeT0Ccol", "All events;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeFDAcol", "All events;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeFDCcol", "All events;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeZACcol", "All events; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
+    histos.add("hTimeV0Aacc", "Accepted events;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeV0Cacc", "Accepted events;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
+    histos.add("hTimeZNAacc", "Accepted events;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeZNCacc", "Accepted events;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
+    histos.add("hTimeT0Aacc", "Accepted events;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeT0Cacc", "Accepted events;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
+    histos.add("hTimeFDAacc", "Accepted events;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeFDCacc", "Accepted events;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeZACacc", "Accepted events; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
+    histos.add("hSPDClsVsTklCol", "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
+    histos.add("hV0C012vsTklCol", "All events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
+    histos.add("hV0MOnVsOfCol", "All events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
+    histos.add("hSPDOnVsOfCol", "All events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
+    histos.add("hV0C3vs012Col", "All events;V0C012 multiplicity;V0C3 multiplicity", kTH2F, {{200, 0., 800.}, {300, 0., 300.}});
+    histos.add("hSPDClsVsTklAcc", "Accepted events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
+    histos.add("hV0C012vsTklAcc", "Accepted events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
+    histos.add("hV0MOnVsOfAcc", "Accepted events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
+    histos.add("hSPDOnVsOfAcc", "Accepted events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
+    histos.add("hV0C3vs012Acc", "Accepted events;V0C012 multiplicity;V0C3 multiplicity", kTH2F, {{200, 0., 800.}, {300, 0., 300.}});
+
+    histos.add("hColCounterAll", "", kTH1F, {{kNaliases, 0, kNaliases}});
+    histos.add("hColCounterAcc", "", kTH1F, {{kNaliases, 0, kNaliases}});
+    histos.add("hBcCounterAll", "", kTH1F, {{kNaliases, 0, kNaliases}});
+    histos.add("hSelCounter", "", kTH1F, {{kNsel, 0, kNsel}});
+    histos.add("hSelMask", "", kTH1F, {{kNsel, 0, kNsel}});
+
+    histos.add("hGlobalBcAll", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
+    histos.add("hGlobalBcCol", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
+    histos.add("hGlobalBcFT0", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
+    histos.add("hGlobalBcFV0", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
+    histos.add("hGlobalBcFDD", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
+    histos.add("hOrbitAll", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hOrbitCol", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hOrbitFT0", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hOrbitFV0", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hOrbitFDD", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hBcAll", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+    histos.add("hBcCol", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+    histos.add("hBcFT0", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+    histos.add("hBcFV0", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+    histos.add("hBcFDD", ";;", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+
+    histos.add("hMultV0Aall", "All bcs;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
+    histos.add("hMultV0Call", "All bcs;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultZNAall", "All bcs;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
+    histos.add("hMultZNCall", "All bcs;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
+    histos.add("hMultT0Aall", "All bcs;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
+    histos.add("hMultT0Call", "All bcs;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
+    histos.add("hMultFDAall", "All bcs;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
+    histos.add("hMultFDCall", "All bcs;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
+    histos.add("hMultV0Aref", "Reference bcs;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
+    histos.add("hMultV0Cref", "Reference bcs;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultZNAref", "Reference bcs;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
+    histos.add("hMultZNCref", "Reference bcs;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
+    histos.add("hMultT0Aref", "Reference bcs;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
+    histos.add("hMultT0Cref", "Reference bcs;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
+    histos.add("hMultFDAref", "Reference bcs;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
+    histos.add("hMultFDCref", "Reference bcs;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
+    histos.add("hMultV0Mcol", "All events;V0M multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
+    histos.add("hMultV0Acol", "All events;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0A}});
+    histos.add("hMultV0Ccol", "All events;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultZNAcol", "All events;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
+    histos.add("hMultZNCcol", "All events;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
+    histos.add("hMultT0Acol", "All events;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
+    histos.add("hMultT0Ccol", "All events;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
+    histos.add("hMultFDAcol", "All events;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
+    histos.add("hMultFDCcol", "All events;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
+    histos.add("hMultV0Macc", "Accepted events;V0M multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0M}});
+    histos.add("hMultV0Aacc", "Accepted events;V0A multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0A}});
+    histos.add("hMultV0Cacc", "Accepted events;V0C multiplicity;Entries", kTH1F, {{10000, 0., maxMultV0C}});
+    histos.add("hMultZNAacc", "Accepted events;ZNA multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNA}});
+    histos.add("hMultZNCacc", "Accepted events;ZNC multiplicity;Entries", kTH1F, {{1000, 0., maxMultZNC}});
+    histos.add("hMultT0Aacc", "Accepted events;T0A multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0A}});
+    histos.add("hMultT0Cacc", "Accepted events;T0C multiplicity;Entries", kTH1F, {{1000, 0., maxMultT0C}});
+    histos.add("hMultFDAacc", "Accepted events;FDA multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDA}});
+    histos.add("hMultFDCacc", "Accepted events;FDC multiplicity;Entries", kTH1F, {{1000, 0., maxMultFDC}});
+
+    histos.add("hColTimeRes", ";collision time resolution (ns)", kTH1F, {{7000, 0, 7000}});
+    histos.add("hColTimeResVsNcontrib", ";n contributors; collision time resolution (ns)", kTH2F, {{100, 0, 100}, {7000, 0, 7000}});
+    histos.add("hColTimeResVsNcontribITSonly", ";n contributors; collision time resolution (ns)", kTH2F, {{100, 0, 100}, {7000, 0, 7000}});
+    histos.add("hColTimeResVsNcontribWithTOF", ";n contributors; collision time resolution (ns)", kTH2F, {{100, 0, 100}, {7000, 0, 7000}});
+    histos.add("hColBcDiffVsNcontrib", ";n contributors; collision bc difference", kTH2F, {{100, 0, 100}, {600, -300, 300}});
+    histos.add("hColBcDiffVsNcontribITSonly", ";n contributors; collision bc difference", kTH2F, {{100, 0, 100}, {600, -300, 300}});
+    histos.add("hColBcDiffVsNcontribWithTOF", ";n contributors; collision bc difference", kTH2F, {{100, 0, 100}, {600, -300, 300}});
+    histos.add("hDFstartOrbit", "", kTH1F, {{100000, 0., 1e+9}});
+    histos.add("hFT0sPerDF", "", kTH1F, {{100000, 0., 1e+9}});
+
+    histos.add("hNcontribCol", ";n contributors;", kTH1F, {{100, 0, 100.}});
+    histos.add("hNcontribAcc", ";n contributors;", kTH1F, {{100, 0, 100.}});
+
+    for (int i = 0; i < kNsel; i++) {
+      histos.get<TH1>(HIST("hSelCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
+      histos.get<TH1>(HIST("hSelMask"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
+    }
+    for (int i = 0; i < kNaliases; i++) {
+      histos.get<TH1>(HIST("hColCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
+      histos.get<TH1>(HIST("hColCounterAcc"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
+      histos.get<TH1>(HIST("hBcCounterAll"))->GetXaxis()->SetBinLabel(i + 1, aliasLabels[i]);
     }
   }
-};
 
-struct EventSelectionQaPerMcCollisionRun3 {
-  HistogramRegistry histos{"HistosPerCollisionMc", {}, OutputObjHandlingPolicy::QAObject};
-  void init(InitContext&)
+  void processRun2(
+    soa::Join<aod::Collisions, aod::EvSels> cols,
+    BCsRun2 const& bcs,
+    aod::Zdcs const& zdcs,
+    aod::FV0As const& fv0as,
+    aod::FV0Cs const& fv0cs,
+    aod::FT0s const& ft0s,
+    aod::FDDs const& fdds)
   {
-    histos.add("hMcEventCounter", ";;", kTH1F, {{1, 0., 1.}});
-    histos.add("hGlobalBcMcCol", ";;", kTH1F, {{10000, 0., 10000.}});
+    if (!applySelection) {
+      auto first_bc = bcs.iteratorAt(0);
+      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", first_bc.timestamp());
+      applySelection = par->GetSelection(0);
+      for (int i = 0; i < kNsel; i++) {
+        histos.get<TH1>(HIST("hSelMask"))->SetBinContent(i + 1, applySelection[i]);
+      }
+    }
+
+    // bc-based event selection qa
+    for (auto& bc : bcs) {
+      for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
+        histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias()[iAlias]);
+      }
+    }
+
+    // collision-based event selection qa
+    for (auto& col : cols) {
+      for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
+        if (!col.alias()[iAlias]) {
+          continue;
+        }
+        histos.fill(HIST("hColCounterAll"), iAlias, 1);
+        if (!col.sel7()) {
+          continue;
+        }
+        histos.fill(HIST("hColCounterAcc"), iAlias, 1);
+      }
+
+      // further checks just on minimum bias triggers
+      if (!isMC && !col.alias()[kINT7]) {
+        continue;
+      }
+      for (int i = 0; i < kNsel; i++) {
+        histos.fill(HIST("hSelCounter"), i, col.selection()[i]);
+      }
+
+      auto bc = col.bc_as<BCsRun2>();
+      uint64_t globalBC = bc.globalBC();
+      uint64_t orbit = globalBC / nBCsPerOrbit;
+      int localBC = globalBC % nBCsPerOrbit;
+      histos.fill(HIST("hGlobalBcAll"), globalBC);
+      histos.fill(HIST("hOrbitAll"), orbit);
+      histos.fill(HIST("hBcAll"), localBC);
+      if (col.selection()[kIsBBV0A] || col.selection()[kIsBBV0C]) {
+        histos.fill(HIST("hGlobalBcFV0"), globalBC);
+        histos.fill(HIST("hOrbitFV0"), orbit);
+        histos.fill(HIST("hBcFV0"), localBC);
+      }
+      if (col.selection()[kIsBBT0A] || col.selection()[kIsBBT0C]) {
+        histos.fill(HIST("hGlobalBcFT0"), globalBC);
+        histos.fill(HIST("hOrbitFT0"), orbit);
+        histos.fill(HIST("hBcFT0"), localBC);
+      }
+      if (col.selection()[kIsBBFDA] || col.selection()[kIsBBFDC]) {
+        histos.fill(HIST("hGlobalBcFDD"), globalBC);
+        histos.fill(HIST("hOrbitFDD"), orbit);
+        histos.fill(HIST("hBcFDD"), localBC);
+      }
+
+      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
+      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
+      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+      float timeV0C = bc.has_fv0c() ? bc.fv0c().time() : -999.f;
+      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+      float znSum = timeZNA + timeZNC;
+      float znDif = timeZNA - timeZNC;
+      float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
+      float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
+      float multV0A = col.multRingV0A()[0] + col.multRingV0A()[1] + col.multRingV0A()[2] + col.multRingV0A()[3];
+      float multV0C = col.multRingV0C()[0] + col.multRingV0C()[1] + col.multRingV0C()[2] + col.multRingV0C()[3];
+      float multV0M = multV0A + multV0C;
+      float multRingV0C3 = col.multRingV0C()[3];
+      float multRingV0C012 = multV0C - multRingV0C3;
+      float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
+      float ofV0M = multV0A + multV0C - col.multRingV0A()[0];
+      int nTracklets = col.nTracklets();
+      int spdClusters = col.spdClusters();
+
+      float multT0A = 0;
+      for (auto amplitude : bc.ft0().amplitudeA()) {
+        multT0A += amplitude;
+      }
+      float multT0C = 0;
+      for (auto amplitude : bc.ft0().amplitudeC()) {
+        multT0C += amplitude;
+      }
+      float multFDA = 0;
+      for (auto amplitude : bc.fdd().amplitudeA()) {
+        multFDA += amplitude;
+      }
+      float multFDC = 0;
+      for (auto amplitude : bc.fdd().amplitudeC()) {
+        multFDC += amplitude;
+      }
+      float multZNA = bc.zdc().energyCommonZNA();
+      float multZNC = bc.zdc().energyCommonZNC();
+
+      histos.fill(HIST("hMultV0Mcol"), multV0M);
+      histos.fill(HIST("hMultV0Acol"), multV0A);
+      histos.fill(HIST("hMultV0Ccol"), multV0C);
+      histos.fill(HIST("hMultZNAcol"), multZNA);
+      histos.fill(HIST("hMultZNCcol"), multZNC);
+      histos.fill(HIST("hMultT0Acol"), multT0A);
+      histos.fill(HIST("hMultT0Ccol"), multT0C);
+      histos.fill(HIST("hMultFDAcol"), multFDA);
+      histos.fill(HIST("hMultFDCcol"), multFDC);
+
+      histos.fill(HIST("hTimeV0Acol"), timeV0A);
+      histos.fill(HIST("hTimeV0Ccol"), timeV0C);
+      histos.fill(HIST("hTimeZNAcol"), timeZNA);
+      histos.fill(HIST("hTimeZNCcol"), timeZNC);
+      histos.fill(HIST("hTimeT0Acol"), timeT0A);
+      histos.fill(HIST("hTimeT0Ccol"), timeT0C);
+      histos.fill(HIST("hTimeFDAcol"), timeFDA);
+      histos.fill(HIST("hTimeFDCcol"), timeFDC);
+      histos.fill(HIST("hTimeZACcol"), znDif, znSum);
+      histos.fill(HIST("hSPDClsVsTklCol"), nTracklets, spdClusters);
+      histos.fill(HIST("hSPDOnVsOfCol"), ofSPD, onSPD);
+      histos.fill(HIST("hV0MOnVsOfCol"), ofV0M, onV0M);
+      histos.fill(HIST("hV0C3vs012Col"), multRingV0C012, multRingV0C3);
+      histos.fill(HIST("hV0C012vsTklCol"), nTracklets, multRingV0C012);
+
+      // filling plots for accepted events
+      if (!col.sel7()) {
+        continue;
+      }
+
+      histos.fill(HIST("hMultV0Macc"), multV0M);
+      histos.fill(HIST("hMultV0Aacc"), multV0A);
+      histos.fill(HIST("hMultV0Cacc"), multV0C);
+      histos.fill(HIST("hMultZNAacc"), multZNA);
+      histos.fill(HIST("hMultZNCacc"), multZNC);
+      histos.fill(HIST("hMultT0Aacc"), multT0A);
+      histos.fill(HIST("hMultT0Cacc"), multT0C);
+      histos.fill(HIST("hMultFDAacc"), multFDA);
+      histos.fill(HIST("hMultFDCacc"), multFDC);
+
+      histos.fill(HIST("hTimeV0Aacc"), timeV0A);
+      histos.fill(HIST("hTimeV0Cacc"), timeV0C);
+      histos.fill(HIST("hTimeZNAacc"), timeZNA);
+      histos.fill(HIST("hTimeZNCacc"), timeZNC);
+      histos.fill(HIST("hTimeT0Aacc"), timeT0A);
+      histos.fill(HIST("hTimeT0Cacc"), timeT0C);
+      histos.fill(HIST("hTimeFDAacc"), timeFDA);
+      histos.fill(HIST("hTimeFDCacc"), timeFDC);
+      histos.fill(HIST("hTimeZACacc"), znDif, znSum);
+      histos.fill(HIST("hSPDClsVsTklAcc"), nTracklets, spdClusters);
+      histos.fill(HIST("hSPDOnVsOfAcc"), ofSPD, onSPD);
+      histos.fill(HIST("hV0MOnVsOfAcc"), ofV0M, onV0M);
+      histos.fill(HIST("hV0C3vs012Acc"), multRingV0C012, multRingV0C3);
+      histos.fill(HIST("hV0C012vsTklAcc"), nTracklets, multRingV0C012);
+    }
   }
-  void process(aod::McCollision const& mcCol, aod::BCs const& bcs)
+  PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
+
+  void processRun3(
+    soa::Join<aod::Collisions, aod::EvSels> cols,
+    aod::FullTracks const& tracks,
+    BCsRun3 const& bcs,
+    aod::Zdcs const& zdcs,
+    aod::FV0As const& fv0as,
+    aod::FT0s const& ft0s,
+    aod::FDDs const& fdds)
   {
-    histos.fill(HIST("hMcEventCounter"), 0.);
-    uint64_t globalBc = mcCol.bc().globalBC();
-    histos.fill(HIST("hGlobalBcMcCol"), globalBc);
+    // per-DF info to deduce FT0 rate
+    if (bcs.size() > 0) {
+      uint64_t orbit = bcs.iteratorAt(0).globalBC() / nBCsPerOrbit;
+      histos.fill(HIST("hDFstartOrbit"), orbit);
+      histos.fill(HIST("hFT0sPerDF"), orbit, ft0s.size());
+    }
+
+    // bc-based event selection qa
+    for (auto& bc : bcs) {
+      for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
+        histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias()[iAlias]);
+      }
+      uint64_t globalBC = bc.globalBC();
+      uint64_t orbit = globalBC / nBCsPerOrbit;
+      int localBC = globalBC % nBCsPerOrbit;
+      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
+      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
+      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+      histos.fill(HIST("hTimeV0Aall"), timeV0A);
+      histos.fill(HIST("hTimeZNAall"), timeZNA);
+      histos.fill(HIST("hTimeZNCall"), timeZNC);
+      histos.fill(HIST("hTimeT0Aall"), timeT0A);
+      histos.fill(HIST("hTimeT0Call"), timeT0C);
+      histos.fill(HIST("hTimeFDAall"), timeFDA);
+      histos.fill(HIST("hTimeFDCall"), timeFDC);
+      if (localBC == refBC) {
+        histos.fill(HIST("hTimeV0Aref"), timeV0A);
+        histos.fill(HIST("hTimeZNAref"), timeZNA);
+        histos.fill(HIST("hTimeZNCref"), timeZNC);
+        histos.fill(HIST("hTimeT0Aref"), timeT0A);
+        histos.fill(HIST("hTimeT0Cref"), timeT0C);
+        histos.fill(HIST("hTimeFDAref"), timeFDA);
+        histos.fill(HIST("hTimeFDCref"), timeFDC);
+      }
+
+      histos.fill(HIST("hGlobalBcAll"), globalBC);
+      histos.fill(HIST("hOrbitAll"), orbit);
+      histos.fill(HIST("hBcAll"), localBC);
+
+      // FV0
+      if (bc.has_fv0a()) {
+        histos.fill(HIST("hGlobalBcFV0"), globalBC);
+        histos.fill(HIST("hOrbitFV0"), orbit);
+        histos.fill(HIST("hBcFV0"), localBC);
+        float multV0A = 0;
+        for (auto amplitude : bc.fv0a().amplitude()) {
+          multV0A += amplitude;
+        }
+        histos.fill(HIST("hMultV0Aall"), multV0A);
+        if (localBC == refBC) {
+          histos.fill(HIST("hMultV0Aref"), multV0A);
+        }
+      }
+
+      // FT0
+      if (bc.has_ft0()) {
+        histos.fill(HIST("hGlobalBcFT0"), globalBC);
+        histos.fill(HIST("hOrbitFT0"), orbit);
+        histos.fill(HIST("hBcFT0"), localBC);
+        float multT0A = 0;
+        for (auto amplitude : bc.ft0().amplitudeA()) {
+          multT0A += amplitude;
+        }
+        float multT0C = 0;
+        for (auto amplitude : bc.ft0().amplitudeC()) {
+          multT0C += amplitude;
+        }
+        histos.fill(HIST("hMultT0Aall"), multT0A);
+        histos.fill(HIST("hMultT0Call"), multT0C);
+        if (localBC == refBC) {
+          histos.fill(HIST("hMultT0Aref"), multT0A);
+          histos.fill(HIST("hMultT0Cref"), multT0C);
+        }
+      }
+
+      // FDD
+      if (bc.has_fdd()) {
+        histos.fill(HIST("hGlobalBcFDD"), globalBC);
+        histos.fill(HIST("hOrbitFDD"), orbit);
+        histos.fill(HIST("hBcFDD"), localBC);
+        float multFDA = 0;
+        for (auto amplitude : bc.fdd().amplitudeA()) {
+          multFDA += amplitude;
+        }
+        float multFDC = 0;
+        for (auto amplitude : bc.fdd().amplitudeC()) {
+          multFDC += amplitude;
+        }
+        histos.fill(HIST("hMultFDAall"), multFDA);
+        histos.fill(HIST("hMultFDCall"), multFDC);
+        if (localBC == refBC) {
+          histos.fill(HIST("hMultFDAref"), multFDA);
+          histos.fill(HIST("hMultFDCref"), multFDC);
+        }
+      }
+
+      // ZDC
+      if (bc.has_zdc()) {
+        float multZNA = bc.zdc().energyCommonZNA();
+        float multZNC = bc.zdc().energyCommonZNC();
+        histos.fill(HIST("hMultZNAall"), multZNA);
+        histos.fill(HIST("hMultZNCall"), multZNC);
+        if (localBC == refBC) {
+          histos.fill(HIST("hMultZNAref"), multZNA);
+          histos.fill(HIST("hMultZNCref"), multZNC);
+        }
+      }
+    }
+
+    // collision-based event selection qa
+    for (auto& col : cols) {
+      for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
+        if (!col.alias()[iAlias]) {
+          continue;
+        }
+        histos.fill(HIST("hColCounterAll"), iAlias, 1);
+        if (!col.sel8()) {
+          continue;
+        }
+        histos.fill(HIST("hColCounterAcc"), iAlias, 1);
+      }
+
+      for (int i = 0; i < kNsel; i++) {
+        histos.fill(HIST("hSelCounter"), i, col.selection()[i]);
+      }
+
+      auto bc = col.bc_as<BCsRun3>();
+      uint64_t globalBC = bc.globalBC();
+      uint64_t orbit = globalBC / nBCsPerOrbit;
+      int localBC = globalBC % nBCsPerOrbit;
+      histos.fill(HIST("hGlobalBcCol"), globalBC);
+      histos.fill(HIST("hOrbitCol"), orbit);
+      histos.fill(HIST("hBcCol"), localBC);
+
+      auto tracksGrouped = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
+      int nTPCtracks = 0;
+      int nTOFtracks = 0;
+      for (auto& track : tracksGrouped) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+        nTPCtracks += track.hasTPC();
+        nTOFtracks += track.hasTOF();
+      }
+
+      auto foundBC = col.foundBC_as<BCsRun3>();
+      uint64_t foundGlobalBC = bc.globalBC();
+      int nContributors = col.numContrib();
+      float timeRes = col.collisionTimeRes();
+      int bcDiff = int(globalBC - foundGlobalBC);
+      histos.fill(HIST("hColTimeRes"), timeRes);
+      histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
+      histos.fill(HIST("hColTimeResVsNcontrib"), nContributors, timeRes);
+      if (nTPCtracks == 0) {
+        histos.fill(HIST("hColBcDiffVsNcontribITSonly"), nContributors, bcDiff);
+        histos.fill(HIST("hColTimeResVsNcontribITSonly"), nContributors, timeRes);
+      }
+      if (nTOFtracks > 0) {
+        histos.fill(HIST("hColBcDiffVsNcontribWithTOF"), nContributors, bcDiff);
+        histos.fill(HIST("hColTimeResVsNcontribWithTOF"), nContributors, timeRes);
+      }
+      histos.fill(HIST("hNcontribCol"), nContributors);
+
+      float timeZNA = foundBC.has_zdc() ? foundBC.zdc().timeZNA() : -999.f;
+      float timeZNC = foundBC.has_zdc() ? foundBC.zdc().timeZNC() : -999.f;
+      float timeV0A = foundBC.has_fv0a() ? foundBC.fv0a().time() : -999.f;
+      float timeT0A = foundBC.has_ft0() ? foundBC.ft0().timeA() : -999.f;
+      float timeT0C = foundBC.has_ft0() ? foundBC.ft0().timeC() : -999.f;
+      float timeFDA = foundBC.has_fdd() ? foundBC.fdd().timeA() : -999.f;
+      float timeFDC = foundBC.has_fdd() ? foundBC.fdd().timeC() : -999.f;
+      float znSum = timeZNA + timeZNC;
+      float znDif = timeZNA - timeZNC;
+
+      histos.fill(HIST("hTimeV0Acol"), timeV0A);
+      histos.fill(HIST("hTimeZNAcol"), timeZNA);
+      histos.fill(HIST("hTimeZNCcol"), timeZNC);
+      histos.fill(HIST("hTimeT0Acol"), timeT0A);
+      histos.fill(HIST("hTimeT0Ccol"), timeT0C);
+      histos.fill(HIST("hTimeFDAcol"), timeFDA);
+      histos.fill(HIST("hTimeFDCcol"), timeFDC);
+      histos.fill(HIST("hTimeZACcol"), znDif, znSum);
+
+      // FT0
+      float multT0A = 0;
+      float multT0C = 0;
+      if (foundBC.has_ft0()) {
+        for (auto amplitude : foundBC.ft0().amplitudeA()) {
+          multT0A += amplitude;
+        }
+        for (auto amplitude : foundBC.ft0().amplitudeC()) {
+          multT0C += amplitude;
+        }
+      }
+      // FV0
+      float multV0A = 0;
+      if (foundBC.has_fv0a()) {
+        for (auto amplitude : foundBC.fv0a().amplitude()) {
+          multV0A += amplitude;
+        }
+      }
+      // FDD
+      float multFDA = 0;
+      float multFDC = 0;
+      if (foundBC.has_fdd()) {
+        for (auto amplitude : foundBC.fdd().amplitudeA()) {
+          multFDA += amplitude;
+        }
+        for (auto amplitude : foundBC.fdd().amplitudeC()) {
+          multFDC += amplitude;
+        }
+      }
+      histos.fill(HIST("hMultT0Acol"), multT0A);
+      histos.fill(HIST("hMultT0Ccol"), multT0C);
+      histos.fill(HIST("hMultV0Acol"), multV0A);
+      histos.fill(HIST("hMultFDAcol"), multFDA);
+      histos.fill(HIST("hMultFDCcol"), multFDC);
+
+      // filling plots for accepted events
+      if (!col.sel8()) {
+        continue;
+      }
+
+      histos.fill(HIST("hTimeV0Aacc"), timeV0A);
+      histos.fill(HIST("hTimeZNAacc"), timeZNA);
+      histos.fill(HIST("hTimeZNCacc"), timeZNC);
+      histos.fill(HIST("hTimeT0Aacc"), timeT0A);
+      histos.fill(HIST("hTimeT0Cacc"), timeT0C);
+      histos.fill(HIST("hTimeFDAacc"), timeFDA);
+      histos.fill(HIST("hTimeFDCacc"), timeFDC);
+      histos.fill(HIST("hTimeZACacc"), znDif, znSum);
+      histos.fill(HIST("hMultT0Aacc"), multT0A);
+      histos.fill(HIST("hMultT0Cacc"), multT0C);
+      histos.fill(HIST("hMultV0Aacc"), multV0A);
+      histos.fill(HIST("hMultFDAacc"), multFDA);
+      histos.fill(HIST("hMultFDCacc"), multFDC);
+      histos.fill(HIST("hNcontribAcc"), nContributors);
+    }
   }
+  PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  if (cfgc.options().get<int>("selection-run") == 2) {
-    return WorkflowSpec{
-      adaptAnalysisTask<EventSelectionQaPerBc>(cfgc),
-      adaptAnalysisTask<EventSelectionQaPerCollision>(cfgc)};
-  } else if (cfgc.options().get<int>("selection-run") == 0) {
-    return WorkflowSpec{
-      adaptAnalysisTask<EventSelectionQaPerBc>(cfgc),
-      adaptAnalysisTask<EventSelectionQaPerCollision>(cfgc),
-      adaptAnalysisTask<EventSelectionQaPerMcCollision>(cfgc)};
-  } else {
-    return WorkflowSpec{
-      adaptAnalysisTask<EventSelectionQaPerBcRun3>(cfgc),
-      adaptAnalysisTask<EventSelectionQaPerCollisionRun3>(cfgc),
-      adaptAnalysisTask<EventSelectionQaPerMcCollisionRun3>(cfgc)};
-  }
+  return WorkflowSpec{
+    adaptAnalysisTask<EventSelectionQaTask>(cfgc)};
 }

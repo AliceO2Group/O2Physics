@@ -37,6 +37,19 @@ AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 
+using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+
+namespace o2::aod
+{
+namespace idx
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcparticle);
+DECLARE_SOA_INDEX_COLUMN(LabeledTrack, track);
+} // namespace idx
+
+DECLARE_SOA_INDEX_TABLE_USER(Particles2Tracks, McParticles, "P2T", idx::McParticleId, idx::LabeledTrackId);
+} // namespace o2::aod
+
 struct PseudorapidityDensity {
   Service<TDatabasePDG> pdg;
 
@@ -134,10 +147,11 @@ struct PseudorapidityDensity {
   expressions::Filter DCAFilterZ = (useDCAZ.node() == false) || (nabs(aod::track::dcaZ) <= maxDCAZ);
   expressions::Filter DCAFilterXY = (useDCAXY.node() == false) || (ifnode(usePtDCAXY.node(), nabs(aod::track::dcaXY) <= 0.0105f + 0.0350f / npow(aod::track::pt, 1.1f), nabs(aod::track::dcaXY) <= maxDCAXY), framework::expressions::LiteralNode{true});
 
-  using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended>>;
-  Partition<Trks> sample = nabs(aod::track::eta) < estimatorEta;
+  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended>;
+  using FiTracks = soa::Filtered<ExTracks>;
+  Partition<FiTracks> sample = nabs(aod::track::eta) < estimatorEta;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, Trks const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, FiTracks const& tracks)
   {
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
@@ -163,24 +177,43 @@ struct PseudorapidityDensity {
     }
   }
 
-  using Particles = aod::McParticles;
+  using Particles = soa::Filtered<aod::McParticles>;
+  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
-  Partition<soa::Filtered<Particles>> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
+  Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
 
-  void processTrackEfficiency(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<Trks, aod::McTrackLabels> const& tracks, Particles const& /*particles*/)
+  void processTrackEfficiency(aod::McParticles const& particles, LabeledTracksEx const& tracks)
   {
-    if (!useEvSel || collision.sel8()) {
-      for (auto& track : tracks) {
-        if (track.has_mcParticle()) {
-          registry.fill(HIST("Tracks/Control/PtEfficiency"), track.mcParticle_as<Particles>().pt());
+    auto p2t = o2::framework::IndexSparse::makeIndex<aod::Particles2Tracks>(particles, std::tie(particles, tracks));
+    for (auto& row : p2t) {
+      auto particle = row.mcparticle();
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (std::abs(particle.eta()) >= 0.8f) {
+        continue;
+      }
+      auto charge = 0.;
+      auto p = pdg->GetParticle(particle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 1.) {
+        continue;
+      }
+      registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+      if (row.has_track()) {
+        auto track = row.track_as<LabeledTracksEx>();
+        if (track.hasITS() && std::abs(track.eta()) < 0.8f) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
         }
       }
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity, processTrackEfficiency, "Calculate pt tracking efficiency", false);
+  PROCESS_SWITCH(PseudorapidityDensity, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
 
-  void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, soa::Filtered<Particles> const& particles, Trks const& /*tracks*/)
+  void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, FiTracks const& /*tracks*/)
   {
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto nCharged = 0;
@@ -227,7 +260,6 @@ struct PseudorapidityDensity {
       }
       if (charge != 0) {
         registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
         registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
         if (perCollisionMCSample.size() > 0) {
           registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());

@@ -11,6 +11,37 @@
 
 #include "EventSelectionParams.h"
 
+namespace evsel
+{
+const char* selectionLabels[kNsel] = {
+  "kIsBBV0A",
+  "kIsBBV0C",
+  "kIsBBFDA",
+  "kIsBBFDC",
+  "kNoBGV0A",
+  "kNoBGV0C",
+  "kNoBGFDA",
+  "kNoBGFDC",
+  "kIsBBT0A",
+  "kIsBBT0C",
+  "kIsBBZNA",
+  "kIsBBZNC",
+  "kIsBBZAC",
+  "kNoBGZNA",
+  "kNoBGZNC",
+  "kNoV0MOnVsOfPileup",
+  "kNoSPDOnVsOfPileup",
+  "kNoV0Casymmetry",
+  "kIsGoodTimeRange",
+  "kNoIncompleteDAQ",
+  "kNoTPCLaserWarmUp",
+  "kNoTPCHVdip",
+  "kNoPileupFromSPD",
+  "kNoV0PFPileup",
+  "kNoSPDClsVsTklBG",
+  "kNoV0C012vsTklBG"};
+}
+
 EventSelectionParams::EventSelectionParams(int system)
 {
   memset(selectionBarrel, 0, sizeof(selectionBarrel));
