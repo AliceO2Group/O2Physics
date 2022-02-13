@@ -423,13 +423,13 @@ struct HfCorrelatorDplusDminus {
             if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
-              for (auto& dau : particle1.daughters_as<aod::MCParticlesPlus3Prong>()) {
+              for (auto& dau : particle1.daughters_as<MCParticlesPlus3Prong>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate1DauInAcc = false;
                   break;
                 }
               }
-              for (auto& dau : particle2.daughters_as<aod::MCParticlesPlus3Prong>()) {
+              for (auto& dau : particle2.daughters_as<MCParticlesPlus3Prong>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate2DauInAcc = false;
                   break;

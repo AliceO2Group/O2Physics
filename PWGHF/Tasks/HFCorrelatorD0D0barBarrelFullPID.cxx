@@ -439,13 +439,13 @@ struct HfCorrelatorD0D0barBarrelFullPid {
             if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
-              for (auto& dau : particle1.daughters_as<aod::MCParticlesPlus>()) {
+              for (auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate1DauInAcc = false;
                   break;
                 }
               }
-              for (auto& dau : particle2.daughters_as<aod::MCParticlesPlus>()) {
+              for (auto& dau : particle2.daughters_as<MCParticlesPlus>()) {
                 if (std::abs(dau.eta()) > etaCut) {
                   candidate2DauInAcc = false;
                   break;
