@@ -313,17 +313,6 @@ struct TableMakerMC {
         if (mcflags == 0) {
           continue;
         }
-        // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
-        // fill histograms for each of the signals, if found
-        if (!fConfigNoQA) {
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
-          int j = 0;
-          for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
-            if (mcflags & (uint16_t(1) << j)) {
-              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal).GetName()), VarManager::fgValues);
-            }
-          }
-        }
 
         if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
           fNewLabels[mctrack.globalIndex()] = fCounters[0];
@@ -331,6 +320,18 @@ struct TableMakerMC {
           fMCFlags[mctrack.globalIndex()] = mcflags;
           fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
           fCounters[0]++;
+
+          // if any of the MC signals was matched, then fill histograms and write that MC particle into the new stack
+          // fill histograms for each of the signals, if found
+          if (!fConfigNoQA) {
+            VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+            int j = 0;
+            for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
+              if (mcflags & (uint16_t(1) << j)) {
+                fHistMan->FillHistClass(Form("MCTruth_%s", (*signal).GetName()), VarManager::fgValues);
+              }
+            }
+          }
         }
       } // end loop over mc stack
 
@@ -350,6 +351,10 @@ struct TableMakerMC {
           trackFilteringTag = uint64_t(0);
           trackTempFilterMap = uint8_t(0);
           VarManager::FillTrack<TTrackFillMap>(track);
+          // If no MC particle is found, skip the track
+          if (!track.has_mcParticle()) {
+            continue;
+          }
           auto mctrack = track.template mcParticle_as<aod::McParticles_000>();
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
@@ -439,6 +444,7 @@ struct TableMakerMC {
                            track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
                            track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
           }
+          //cout << "TableMakerMC 2.1.6" << endl;
         } // end loop over reconstructed tracks
       }   // end if constexpr (static_cast<bool>(TTrackFillMap))
 
@@ -457,7 +463,13 @@ struct TableMakerMC {
           trackFilteringTag = uint64_t(0);
           trackTempFilterMap = uint8_t(0);
 
+          if (!muon.has_mcParticle()) {
+            continue;
+          }
+          auto mctrack = muon.template mcParticle_as<aod::McParticles_000>();
           VarManager::FillTrack<TMuonFillMap>(muon);
+          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+
           if (fConfigDetailedQA) {
             fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
           }
@@ -478,9 +490,6 @@ struct TableMakerMC {
           }
           // store the cut decisions
           trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
-
-          auto mctrack = muon.template mcParticle_as<aod::McParticles_000>();
-          VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
           mcflags = 0;
           i = 0;     // runs over the MC signals

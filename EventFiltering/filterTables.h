@@ -75,7 +75,7 @@ using DiffractionFilter = DiffractionFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DQ Filters", //!
-                  filtering::SingleE, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiElectron, filtering::DiMuon);
+                  filtering::SingleE, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
 using DqFilter = DqFilters::iterator;
 
 // heavy flavours
