@@ -847,7 +847,7 @@ class RecoDecay
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
       if (candidate.daughtersIds().size() > int(N)) {
-        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().size(), N); 
+        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().size(), N);
         return false;
       }
       // Get the list of actual final daughters.
