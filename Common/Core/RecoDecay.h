@@ -668,7 +668,8 @@ class RecoDecay
     //printf("getDaughters: ");
     //for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
     //  printf(" ");
-    //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);    // Call itself to get daughters of daughters recursively.
+    //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
+    // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
       getDaughters(dau, list, arrPDGFinal, depthMax, stage);
@@ -722,10 +723,12 @@ class RecoDecay
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         // Check the daughter indices.
         if (!particleMother.has_daughters()) {
+          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
         if (particleMother.daughtersIds().size() > int(N)) {
+          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().size(), N);
           return -1;
         }
         // Get the list of actual final daughters.
@@ -737,6 +740,8 @@ class RecoDecay
         //printf("\n");        // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
         if (arrAllDaughtersIndex.size() != N) {
           //Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+          //printf("\n");
+          // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
           return -1;
         }
       }
@@ -837,10 +842,12 @@ class RecoDecay
       std::vector<int> arrAllDaughtersIndex;            // vector of indices of all daughters
       // Check the daughter indices.
       if (!candidate.has_daughters()) {
+        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
       if (candidate.daughtersIds().size() > int(N)) {
+        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().size(), N); 
         return false;
       }
       // Get the list of actual final daughters.
