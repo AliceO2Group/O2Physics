@@ -737,11 +737,10 @@ class RecoDecay
         //for (auto i : arrAllDaughtersIndex) {
         //  printf(" %d", i);
         //}
-        //printf("\n");        // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
+        //printf("\n");
+        // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
         if (arrAllDaughtersIndex.size() != N) {
           //Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
-          //printf("\n");
-          // Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
           return -1;
         }
       }
