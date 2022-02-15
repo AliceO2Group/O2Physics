@@ -19,33 +19,33 @@ namespace evsel
 {
 // Event selection criteria
 enum EventSelectionFlags {
-  kIsBBV0A = 0,
-  kIsBBV0C,
-  kIsBBFDA,
-  kIsBBFDC,
-  kNoBGV0A,
-  kNoBGV0C,
-  kNoBGFDA,
-  kNoBGFDC,
-  kIsBBT0A,
-  kIsBBT0C,
-  kIsBBZNA,
-  kIsBBZNC,
-  kIsBBZAC,
-  kNoBGZNA,
-  kNoBGZNC,
-  kNoV0MOnVsOfPileup,
-  kNoSPDOnVsOfPileup,
-  kNoV0Casymmetry,
-  kIsGoodTimeRange,
-  kNoIncompleteDAQ,
-  kNoTPCLaserWarmUp,
-  kNoTPCHVdip,
-  kNoPileupFromSPD,
-  kNoV0PFPileup,
-  kNoSPDClsVsTklBG,
-  kNoV0C012vsTklBG,
-  kNsel
+  kIsBBV0A = 0,       // cell-averaged time in V0A in beam-beam window
+  kIsBBV0C,           // cell-averaged time in V0C in beam-beam window (for Run 2 only)
+  kIsBBFDA,           // cell-averaged time in FDA (or AD in Run2) in beam-beam window
+  kIsBBFDC,           // cell-averaged time in FDC (or AD in Run2) in beam-beam window
+  kNoBGV0A,           // cell-averaged time in V0A in beam-gas window
+  kNoBGV0C,           // cell-averaged time in V0C in beam-gas window (for Run 2 only)
+  kNoBGFDA,           // cell-averaged time in FDA (AD in Run2) in beam-gas window
+  kNoBGFDC,           // cell-averaged time in FDC (AD in Run2) in beam-gas window
+  kIsBBT0A,           // cell-averaged time in T0A in beam-beam window
+  kIsBBT0C,           // cell-averaged time in T0C in beam-beam window
+  kIsBBZNA,           // time in common ZNA channel in beam-beam window
+  kIsBBZNC,           // time in common ZNC channel in beam-beam window
+  kIsBBZAC,           // time in ZNA and ZNC in beam-beam window - circular cut in ZNA-ZNC plane
+  kNoBGZNA,           // time in common ZNA channel is outside of beam-gas window
+  kNoBGZNC,           // time in common ZNC channel is outside of beam-gas window
+  kNoV0MOnVsOfPileup, // no out-of-bunch pileup according to online-vs-offline VOM correlation
+  kNoSPDOnVsOfPileup, // no out-of-bunch pileup according to online-vs-offline SPD correlation
+  kNoV0Casymmetry,    // no beam-gas according to correlation of V0C multiplicities in V0C3 and V0C012
+  kIsGoodTimeRange,   // good time range
+  kNoIncompleteDAQ,   // complete event according to DAQ flags
+  kNoTPCLaserWarmUp,  // no TPC laser warm-up event (used in Run 1)
+  kNoTPCHVdip,        // no TPC HV dip
+  kNoPileupFromSPD,   // no pileup according to SPD vertexer
+  kNoV0PFPileup,      // no out-of-bunch pileup according to V0 past-future info
+  kNoSPDClsVsTklBG,   // no beam-gas according to cluster-vs-tracklet correlation
+  kNoV0C012vsTklBG,   // no beam-gas according to V0C012-vs-tracklet correlation
+  kNsel               // counter
 };
 
 extern const char* selectionLabels[kNsel];
