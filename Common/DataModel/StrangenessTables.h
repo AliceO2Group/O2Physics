@@ -310,14 +310,6 @@ DECLARE_SOA_EXTENDED_TABLE_USER(CascDataExt, CascDataOrigin, "CascDATAEXT", //!
 
 using CascDataFull = CascDataExt;
 
-namespace v0ind
-{
-DECLARE_SOA_INDEX_COLUMN(V0, v0);           // the biggest object
-DECLARE_SOA_INDEX_COLUMN(V0Data, v0data);   // the skimmed object
-DECLARE_SOA_INDEX_COLUMN(Cascade, cascade); // the part that will use the previous ones
-} // namespace v0ind
-DECLARE_SOA_INDEX_TABLE_EXCLUSIVE_USER(MatchedV0Cascades, V0s, "MATCHEDV0CASC", v0ind::V0DataId, v0ind::V0Id, v0ind::CascadeId);
-
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_STRANGENESSTABLES_H_
