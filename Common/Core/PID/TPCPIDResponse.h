@@ -119,30 +119,29 @@ template <typename CollisionType, typename TrackType>
 inline float Response::GetExpectedSigma(const CollisionType& collision, const TrackType& track, const o2::track::PID::ID id) const
 {
   float resolution = 0.;
-  if (useDefaultResolutionParam){
+  if (useDefaultResolutionParam) {
     const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
     reso >= 0.f ? resolution = reso : resolution = 0.f;
-  }
-  else{
+  } else {
 
     std::vector<double> values;
     const double ncl = track.tpcNClsFound();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
-    const double bg =  p/mass;
+    const double bg = p / mass;
     const double dEdx = mMIP * o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
-    const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p,mass,o2::track::pid_constants::sCharges[id],mResolutionParams[mReadOutChamber][3]);
+    const double relReso = o2::pid::tpc::Response::GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[mReadOutChamber][3]);
 
-    values.push_back((1./dEdx));
+    values.push_back((1. / dEdx));
     values.push_back((track.tgl()));
-    values.push_back((std::sqrt(mMaxClusters/ncl)));
+    values.push_back((std::sqrt(mMaxClusters / ncl)));
     values.push_back(relReso);
     values.push_back((track.signed1Pt()));
     values.push_back((collision.multTPC()) / mMultNormalization);
 
     fSigmaParametrization->SetParameters(mResolutionParams[mReadOutChamber].data());
 
-    resolution = fSigmaParametrization->EvalPar(values.data())*(dEdx);
+    resolution = fSigmaParametrization->EvalPar(values.data()) * (dEdx);
   }
   return resolution;
 }
