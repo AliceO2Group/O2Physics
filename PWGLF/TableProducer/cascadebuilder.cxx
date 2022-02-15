@@ -111,12 +111,12 @@ struct cascadeBuilder {
     for (auto& casc : cascades) {
       auto v0index = casc.v0_as<o2::aod::V0sLinked>();
       hCascCandidate->Fill(0.5); //considered
-      if( !(v0index.has_v0Data()) ){
+      if (!(v0index.has_v0Data())) {
         //cascdataLink(-1);
         continue; //skip those cascades for which V0 doesn't exist
       }
       auto v0 = v0index.v0Data(); //de-reference index to correct v0data in case it exists
-      
+
       std::array<float, 3> pVtx = {v0.collision().posX(), v0.collision().posY(), v0.collision().posZ()};
       hCascCandidate->Fill(1.5); //has matched V0
       if (tpcrefit) {
@@ -199,8 +199,6 @@ struct cascadeBuilder {
       std::array<float, 3> pvecneg = {0.};
       std::array<float, 3> pvecbach = {0.};
 
-
-
       // Acquire basic tracks
       auto pTrack = getTrackParCov(v0.posTrack_as<FullTracksExt>());
       auto nTrack = getTrackParCov(v0.negTrack_as<FullTracksExt>());
@@ -254,7 +252,7 @@ struct cascadeBuilder {
           }
           fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
         } // end if cascade recoed
-      }else{
+      } else {
         //cascdataLink(-1);
         continue;
       }
