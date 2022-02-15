@@ -53,25 +53,46 @@ class TrackSelection
   bool IsSelected(T const& track)
   {
     const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
-    if (track.trackType() == mTrackType &&
-        track.pt() >= mMinPt && track.pt() <= mMaxPt &&
-        track.eta() >= mMinEta && track.eta() <= mMaxEta &&
-        track.tpcNClsFound() >= mMinNClustersTPC &&
-        track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC &&
-        track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC &&
-        (track.itsNCls() >= mMinNClustersITS) &&
-        (track.itsChi2NCl() <= mMaxChi2PerClusterITS) &&
-        (track.tpcChi2NCl() <= mMaxChi2PerClusterTPC) &&
-        ((isRun2 && mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true) &&
-        ((isRun2 && mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true) &&
-        ((isRun2 && mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true) &&
-        FulfillsITSHitRequirements(track.itsClusterMap()) &&
-        abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY) &&
-        abs(track.dcaZ()) <= mMaxDcaZ) {
-      return true;
-    } else {
+    if (track.trackType() != mTrackType)
       return false;
+    if (track.pt() < mMinPt)
+      return false;
+    if (track.pt() > mMaxPt)
+      return false;
+    if (track.eta() < mMinEta)
+      return false;
+    if (track.eta() > mMaxEta)
+      return false;
+    if (track.tpcNClsFound() < mMinNClustersTPC)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < mMinNCrossedRowsOverFindableClustersTPC)
+      return false;
+    if (track.itsNCls() < mMinNClustersITS)
+      return false;
+    if (track.itsChi2NCl() > mMaxChi2PerClusterITS)
+      return false;
+    if (track.tpcChi2NCl() > mMaxChi2PerClusterTPC)
+      return false;
+    if (isRun2) {
+      if (mRequireITSRefit && !(track.flags() & o2::aod::track::ITSrefit))
+        return false;
+      if (mRequireTPCRefit && !(track.flags() & o2::aod::track::TPCrefit))
+        return false;
+      if (mRequireGoldenChi2 && !(track.flags() & o2::aod::track::GoldenChi2))
+        return false;
     }
+    if (!FulfillsITSHitRequirements(track.itsClusterMap()))
+      return false;
+    if (mMaxDcaXYPtDep) {
+      if ((abs(track.dcaXY())) > mMaxDcaXYPtDep(track.pt()))
+        return false;
+    } else {
+      if ((abs(track.dcaXY())) > mMaxDcaXY)
+        return false;
+    }
+    if ((track.dcaZ()) > mMaxDcaZ)
+      return false;
+    return true;
   }
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
