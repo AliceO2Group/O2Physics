@@ -635,7 +635,7 @@ class RecoDecay
       isFinal = true;
     }
     // Check whether there are any daughters.
-    if (!isFinal && particle.has_daughters()) {
+    if (!isFinal && !particle.has_daughters()) {
       // If the original particle has no daughters, we do nothing and exit.
       if (stage == 0) {
         //Printf("getDaughters: No daughters of %d", index);
