@@ -107,15 +107,15 @@ struct HFCandidateCreatorX {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-	      if (TMath::Abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+        if (TMath::Abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
           continue;
-	      }
+	}
         hMassJpsiToEE->Fill(InvMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
         if (TMath::Abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
           continue;
-	      }
+	}
         hMassJpsiToMuMu->Fill(InvMassJpsiToMuMu(jpsiCand));
       }
 
@@ -146,7 +146,7 @@ struct HFCandidateCreatorX {
 
       // loop over pi+ candidates
       for (auto& trackPos : tracks) {
-	      if (trackPos.pt() < ptPionMin) {
+	if (trackPos.pt() < ptPionMin) {
           continue;
         }
         hPtPion->Fill(trackPos.pt());
