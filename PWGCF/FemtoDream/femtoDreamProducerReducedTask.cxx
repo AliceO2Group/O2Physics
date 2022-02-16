@@ -115,10 +115,10 @@ struct femtoDreamProducerReducedTask {
     auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
-    ///For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
+    /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
-      mult = col.multT0A(); ///Mult based on T0, temporary storing to be fixed and checked
+      mult = col.multT0M(); /// Mult based on T0, temporary storing to be fixed and checked
     } else {
       mult = 0.5 * (col.multV0M());
     }

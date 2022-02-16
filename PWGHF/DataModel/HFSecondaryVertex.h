@@ -89,8 +89,7 @@ DECLARE_SOA_TABLE(Hf2Prong, "AOD", "HF2PRONG", //! Table for HF 2 prong candidat
 DECLARE_SOA_TABLE(HfCascade, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
-                  hf_track_index::V0Id,
-                  hf_track_index::HFflag);
+                  hf_track_index::V0Id);
 
 DECLARE_SOA_TABLE(Hf3Prong, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
                   o2::soa::Index<>,
@@ -446,7 +445,6 @@ DECLARE_SOA_TABLE(HfCandCascBase, "AOD", "HFCANDCASCBASE", //!
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
                   hf_track_index::Index0Id,
                   hf_track_index::V0Id, // V0 index
-                  hf_track_index::HFflag,
                   // V0
                   v0data::X, v0data::Y, v0data::Z,
                   v0data::PosTrackId, v0data::NegTrackId, // indices of V0 tracks in FullTracks table

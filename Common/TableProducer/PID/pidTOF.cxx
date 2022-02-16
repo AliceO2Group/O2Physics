@@ -13,6 +13,7 @@
 /// \file   pidTOF.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TOF split for each particle with only the Nsigma information.
+///         The event time maker can be used to produce event TOF times.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
@@ -24,6 +25,10 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "TableHelper.h"
+#include "Framework/StaticFor.h"
+#include "TOFBase/EventTimeMaker.h"
 #include "pidTOFBase.h"
 
 using namespace o2;
@@ -40,9 +45,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Task to produce the response table
 struct tofPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
-  using Colls = aod::Collisions;
   // Tables to produce
   Produces<o2::aod::pidTOFEl> tablePIDEl;
   Produces<o2::aod::pidTOFMu> tablePIDMu;
@@ -89,6 +93,7 @@ struct tofPid {
         }
       }
     };
+
     enableFlag("El", pidEl);
     enableFlag("Mu", pidMu);
     enableFlag("Pi", pidPi);
@@ -120,9 +125,135 @@ struct tofPid {
     }
   }
 
+  using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection>;
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = tof::ExpTimes<Trks::iterator, pid>;
-  void process(Trks const& tracks, Colls const&)
+  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
+  void processEvTime(TrksEvTime const& tracks, aod::Collisions const&)
+  {
+    constexpr auto responseEl = ResponseImplementationEvTime<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementationEvTime<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementationEvTime<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementationEvTime<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementationEvTime<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementationEvTime<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementationEvTime<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementationEvTime<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementationEvTime<PID::Alpha>();
+
+    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
+      }
+      table.reserve(tracks.size());
+    };
+
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
+
+    int lastCollisionId = -1;      // Last collision ID analysed
+    for (auto const& t : tracks) { // Loop on collisions
+      if (!t.has_collision()) {    // Track was not assigned, cannot compute event time
+
+        auto fillEmptyTable = [](const Configurable<int>& flag, auto& table) {
+          if (flag.value != 1) {
+            return;
+          }
+          aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
+                                     aod::pidtof_tiny::upper_bin,
+                                     aod::pidtof_tiny::lower_bin>(-999.f, table,
+                                                                  aod::pidtof_tiny::binned_min,
+                                                                  aod::pidtof_tiny::binned_max,
+                                                                  aod::pidtof_tiny::bin_width);
+        };
+
+        fillEmptyTable(pidEl, tablePIDEl);
+        fillEmptyTable(pidMu, tablePIDMu);
+        fillEmptyTable(pidPi, tablePIDPi);
+        fillEmptyTable(pidKa, tablePIDKa);
+        fillEmptyTable(pidPr, tablePIDPr);
+        fillEmptyTable(pidDe, tablePIDDe);
+        fillEmptyTable(pidTr, tablePIDTr);
+        fillEmptyTable(pidHe, tablePIDHe);
+        fillEmptyTable(pidAl, tablePIDAl);
+
+        continue;
+      } else if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
+        continue;
+      }
+      /// Create new table for the tracks in a collision
+      lastCollisionId = t.collisionId(); /// Cache last collision ID
+
+      const auto tracksInCollision = tracks.sliceBy(aod::track::collisionId, lastCollisionId);
+      // First make table for event time
+      const auto evTime = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, response);
+      static constexpr bool removebias = true;
+      int ngoodtracks = 0;
+
+      // Check and fill enabled tables
+      auto makeTable = [&tracksInCollision, &evTime, &ngoodtracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
+        if (flag.value == 1) {
+          ngoodtracks = 0;
+          // Prepare memory for enabled tables
+          table.reserve(tracksInCollision.size());
+          for (auto const& trk : tracksInCollision) { // Loop on Tracks
+            float et = evTime.eventTime;
+            float erret = evTime.eventTimeError;
+            if (erret > 199.f) {
+              aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
+                                         aod::pidtof_tiny::upper_bin,
+                                         aod::pidtof_tiny::lower_bin>(-999.f, table,
+                                                                      aod::pidtof_tiny::binned_min,
+                                                                      aod::pidtof_tiny::binned_max,
+                                                                      aod::pidtof_tiny::bin_width);
+              continue;
+            }
+            if (filterForTOFEventTime(trk)) { // Check if it was used for the event time
+              if constexpr (removebias) {
+                float sumw = 1. / erret / erret;
+                et *= sumw;
+                et -= evTime.weights[ngoodtracks] * evTime.tracktime[ngoodtracks];
+                sumw -= evTime.weights[ngoodtracks++];
+                et /= sumw;
+                erret = sqrt(1. / sumw);
+              }
+            }
+
+            const float separation = responsePID.GetSeparation(response, trk, et, erret);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
+                                       aod::pidtof_tiny::upper_bin,
+                                       aod::pidtof_tiny::lower_bin>(separation, table,
+                                                                    aod::pidtof_tiny::binned_min,
+                                                                    aod::pidtof_tiny::binned_max,
+                                                                    aod::pidtof_tiny::bin_width);
+          }
+        }
+      };
+
+      makeTable(pidEl, tablePIDEl, response, responseEl);
+      makeTable(pidMu, tablePIDMu, response, responseMu);
+      makeTable(pidPi, tablePIDPi, response, responsePi);
+      makeTable(pidKa, tablePIDKa, response, responseKa);
+      makeTable(pidPr, tablePIDPr, response, responsePr);
+      makeTable(pidDe, tablePIDDe, response, responseDe);
+      makeTable(pidTr, tablePIDTr, response, responseTr);
+      makeTable(pidHe, tablePIDHe, response, responseHe);
+      makeTable(pidAl, tablePIDAl, response, responseAl);
+    }
+  }
+
+  PROCESS_SWITCH(tofPid, processEvTime, "Produce TOF response with TOF event time", false);
+
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
+  template <o2::track::PID::ID pid>
+  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
+  void processNoEvTime(Trks const& tracks, aod::Collisions const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -160,8 +291,11 @@ struct tofPid {
     makeTable(pidHe, tablePIDHe, response, responseHe);
     makeTable(pidAl, tablePIDAl, response, responseAl);
   }
+
+  PROCESS_SWITCH(tofPid, processNoEvTime, "Produce TOF response without TOF event time, standard for Run 2", true);
 };
 
+/// Task to produce the TOF QA plots
 struct tofPidQa {
   static constexpr int Np = 9;
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};

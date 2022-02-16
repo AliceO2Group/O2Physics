@@ -30,6 +30,7 @@
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/ClusterFactory.h"
 #include "EMCALReconstruction/Clusterizer.h"
+#include "TVector2.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -133,7 +134,7 @@ struct EmcalCorrectionTask {
       hCellE->Fill(cell.getEnergy());
       hCellTowerID->Fill(cell.getTower());
       auto res = mClusterizer->getGeometry()->EtaPhiFromIndex(cell.getTower());
-      hCellEtaPhi->Fill(std::get<0>(res), std::get<1>(res));
+      hCellEtaPhi->Fill(std::get<0>(res), TVector2::Phi_0_2pi(std::get<1>(res)));
       res = mClusterizer->getGeometry()->GlobalRowColFromIndex(cell.getTower());
       // NOTE: Reversed column and row because it's more natural for presentatin.
       hCellRowCol->Fill(std::get<1>(res), std::get<0>(res));
@@ -181,12 +182,12 @@ struct EmcalCorrectionTask {
 
       // We have our necessary properties. Now we store outputs
       //LOG(debug) << "Cluster E: " << cluster.E();
-      clusters(collision, cluster.E(), pos.Eta(), pos.Phi(), cluster.getM02());
+      clusters(collision, cluster.E(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02());
       //if (cluster.E() < 0.300) {
       //    continue;
       //}
       hClusterE->Fill(cluster.E());
-      hClusterEtaPhi->Fill(pos.Eta(), pos.Phi());
+      hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
     }
     LOG(debug) << "Done with process.";
   }

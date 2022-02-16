@@ -14,6 +14,7 @@
 /// \since  01.10.2021
 
 #include "Framework/ConfigParamSpec.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -198,7 +199,7 @@ struct BCInfo {
     {{"numberCollisions", "#numberCollisions", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"numberCollisionsGT", "#numberCollisionsGT", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"Aliases", "#Aliases", {HistType::kTH1F, {{kNaliases, 0., kNaliases}}}},
-     {"Selection", "#Selection", {HistType::kTH1F, {{aod::kNsel, 0., aod::kNsel}}}},
+     {"Selection", "#Selection", {HistType::kTH1F, {{evsel::kNsel, 0., evsel::kNsel}}}},
      {"DetectorSignals", "#DetectorSignals", {HistType::kTH1F, {{6, 0., 6}}}}}};
 
   void init(o2::framework::InitContext&)
@@ -232,7 +233,7 @@ struct BCInfo {
 
     // update Selection
     auto selections = bc.selection();
-    for (auto ii = 0; ii < aod::kNsel; ii++) {
+    for (auto ii = 0; ii < evsel::kNsel; ii++) {
       registry.get<TH1>(HIST("Selection"))->Fill(ii, selections[ii]);
     }
 
