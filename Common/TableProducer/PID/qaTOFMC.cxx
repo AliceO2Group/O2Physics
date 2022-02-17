@@ -24,7 +24,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/MC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -150,15 +149,15 @@ struct pidTOFTaskQA {
     }
   }
 
-  template <uint8_t pidIndex, typename T, typename TT>
-  void fillNsigma(const T& track, const TT& mcParticles, const float& nsigma)
+  template <uint8_t pidIndex, typename T>
+  void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.mcParticle();
+    const auto particle = track.template mcParticle_as<aod::McParticles_000>();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
       // Selecting primaries
-      if (MC::isPhysicalPrimary(particle)) {
+      if (particle.isPhysicalPrimary()) {
         histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
       } else {
         histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
@@ -166,18 +165,20 @@ struct pidTOFTaskQA {
     }
   }
 
-  void process(aod::Collision const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
                soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                          aod::McTrackLabels, aod::pidTOFbeta> const& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles_000& mcParticles)
   {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
     }
-    for (const auto& p : mcParticles) {
+    const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+
+    for (const auto& p : particlesInCollision) {
       histos.fill(HIST("particle/p"), p.p());
       histos.fill(HIST("particle/pt"), p.pt());
       histos.fill(HIST("particle/eta"), p.eta());
@@ -224,8 +225,8 @@ struct pidTOFTaskQA {
       // Fill for all
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
       histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
-      const auto particle = t.mcParticle();
-      if (MC::isPhysicalPrimary(particle)) { // Selecting primaries
+      const auto particle = t.mcParticle_as<aod::McParticles_000>();
+      if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
       } else {
@@ -234,22 +235,22 @@ struct pidTOFTaskQA {
       }
       if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
         histos.fill(HIST("event/tofbetaMC"), t.pt(), t.beta());
-        if (MC::isPhysicalPrimary(particle)) {
+        if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("event/tofbetaMCPrm"), t.pt(), t.beta());
         } else {
           histos.fill(HIST("event/tofbetaMCSec"), t.pt(), t.beta());
         }
       }
       // Fill with PDG codes
-      fillNsigma<0>(t, mcParticles, nsigma);
-      fillNsigma<1>(t, mcParticles, nsigma);
-      fillNsigma<2>(t, mcParticles, nsigma);
-      fillNsigma<3>(t, mcParticles, nsigma);
-      fillNsigma<4>(t, mcParticles, nsigma);
-      fillNsigma<5>(t, mcParticles, nsigma);
-      fillNsigma<6>(t, mcParticles, nsigma);
-      fillNsigma<7>(t, mcParticles, nsigma);
-      fillNsigma<8>(t, mcParticles, nsigma);
+      fillNsigma<0>(t, nsigma);
+      fillNsigma<1>(t, nsigma);
+      fillNsigma<2>(t, nsigma);
+      fillNsigma<3>(t, nsigma);
+      fillNsigma<4>(t, nsigma);
+      fillNsigma<5>(t, nsigma);
+      fillNsigma<6>(t, nsigma);
+      fillNsigma<7>(t, nsigma);
+      fillNsigma<8>(t, nsigma);
     }
     histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
     histos.fill(HIST("event/vertexz"), collision.posZ());

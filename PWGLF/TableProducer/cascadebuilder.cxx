@@ -60,39 +60,33 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtended>;
-
-struct cascadedoindexing {
-  Builds<aod::MatchedV0Cascades> var;
-  void init(InitContext const&) {}
-};
+using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended>;
 
 /// Cascade builder task: rebuilds cascades
-struct cascadebuilder {
+struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
 
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
-  OutputObj<TH1F> hCascFiltered{TH1F("hCascFiltered", "", 15, 0, 15)};
-  OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 10, 0, 10)};
+  OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 20, 0, 20)};
 
-  //Configurables
+  // Configurables
   Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
   Configurable<int> mincrossedrows{"mincrossedrows", -1, "min crossed rows"};
   Configurable<float> dcav0topv{"dcav0topv", .1, "DCA V0 To PV"};
-  Configurable<double> cospaV0{"cospaV0", .98, "CosPA V0"};
-  Configurable<float> lambdamasswindow{"lambdamasswindow", .006, "Distance from Lambda mass"};
-  Configurable<float> dcav0dau{"dcav0dau", .6, "DCA V0 Daughters"};
+  Configurable<double> cospaV0{"cospaV0", .95, "CosPA V0"};
+  Configurable<float> lambdamasswindow{"lambdamasswindow", .012, "Distance from Lambda mass"};
+  Configurable<float> dcav0dau{"dcav0dau", 1.5, "DCA V0 Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
-  Configurable<bool> tpcrefit{"tpcrefit", true, "demand TPC refit"};
+  Configurable<bool> tpcrefit{"tpcrefit", false, "demand TPC refit"};
   Configurable<double> v0radius{"v0radius", 0.9, "v0radius"};
 
-  void process(aod::MatchedV0Cascades const& MatchedV0Cascades, aod::V0Datas const&, aod::Cascades const&, aod::Collisions const&, soa::Join<aod::FullTracks, aod::TracksExtended> const&)
+  void process(aod::Collision const& collision, aod::V0sLinked const&, aod::V0Datas const& v0data, aod::Cascades const& cascades, FullTracksExt const&)
   {
-    //Define o2 fitter, 2-prong
+    // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
     fitterV0.setPropagateToPCA(true);
@@ -114,74 +108,89 @@ struct cascadebuilder {
 
     hEventCounter->Fill(0.5);
 
-    for (auto& cascIndexLUT : MatchedV0Cascades) {
-      auto v0 = cascIndexLUT.v0data();
-      auto casc = cascIndexLUT.cascade();
+    for (auto& casc : cascades) {
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      hCascCandidate->Fill(0.5); //considered
+      if (!(v0index.has_v0Data())) {
+        //cascdataLink(-1);
+        continue; //skip those cascades for which V0 doesn't exist
+      }
+      auto v0 = v0index.v0Data(); //de-reference index to correct v0data in case it exists
 
       std::array<float, 3> pVtx = {v0.collision().posX(), v0.collision().posY(), v0.collision().posZ()};
-
-      auto b = casc.bachelor_as<FullTracksExt>();
-
+      hCascCandidate->Fill(1.5); //has matched V0
       if (tpcrefit) {
         if (!(v0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          continue; // TPC refit
         }
-        hCascFiltered->Fill(1.5);
+        hCascCandidate->Fill(2.5);
         if (!(v0.negTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          continue; // TPC refit
         }
-        hCascFiltered->Fill(2.5);
+        hCascCandidate->Fill(3.5);
         if (!(casc.bachelor_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
-          continue; //TPC refit
+          //cascdataLink(-1);
+          continue; // TPC refit
         }
-        hCascFiltered->Fill(3.5);
+        hCascCandidate->Fill(4.5);
       }
       if (v0.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(4.5);
+      hCascCandidate->Fill(5.5);
       if (v0.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(5.5);
+      hCascCandidate->Fill(6.5);
       if (casc.bachelor_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(6.5);
-      if (v0.posTrack_as<FullTracksExt>().dcaXY() < dcapostopv) {
+      hCascCandidate->Fill(7.5);
+      if (fabs(v0.posTrack_as<FullTracksExt>().dcaXY()) < dcapostopv) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(7.5);
-      if (v0.negTrack_as<FullTracksExt>().dcaXY() < dcanegtopv) {
+      hCascCandidate->Fill(8.5);
+      if (fabs(v0.negTrack_as<FullTracksExt>().dcaXY()) < dcanegtopv) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(8.5);
-      if (casc.bachelor_as<FullTracksExt>().dcaXY() < dcabachtopv) {
+      hCascCandidate->Fill(9.5);
+      if (fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) < dcabachtopv) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(9.5);
+      hCascCandidate->Fill(10.5);
 
-      //V0 selections
+      // V0 selections
       if (fabs(v0.mLambda() - 1.116) > lambdamasswindow && fabs(v0.mAntiLambda() - 1.116) > lambdamasswindow) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(10.5);
+      hCascCandidate->Fill(11.5);
       if (v0.dcaV0daughters() > dcav0dau) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(11.5);
+      hCascCandidate->Fill(12.5);
       if (v0.v0radius() < v0radius) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(12.5);
+      hCascCandidate->Fill(13.5);
       if (v0.v0cosPA(pVtx[0], pVtx[1], pVtx[2]) < cospaV0) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(13.5);
+      hCascCandidate->Fill(14.5);
       if (v0.dcav0topv(pVtx[0], pVtx[1], pVtx[2]) < dcav0topv) {
+        //cascdataLink(-1);
         continue;
       }
-      hCascFiltered->Fill(14.5);
+      hCascCandidate->Fill(15.5);
 
       auto charge = -1;
       std::array<float, 3> pos = {0.};
@@ -190,9 +199,7 @@ struct cascadebuilder {
       std::array<float, 3> pvecneg = {0.};
       std::array<float, 3> pvecbach = {0.};
 
-      hCascCandidate->Fill(0.5);
-
-      //Acquire basic tracks
+      // Acquire basic tracks
       auto pTrack = getTrackParCov(v0.posTrack_as<FullTracksExt>());
       auto nTrack = getTrackParCov(v0.negTrack_as<FullTracksExt>());
       auto bTrack = getTrackParCov(casc.bachelor_as<FullTracksExt>());
@@ -203,7 +210,6 @@ struct cascadebuilder {
       int nCand = fitterV0.process(pTrack, nTrack);
       if (nCand != 0) {
         fitterV0.propagateTracksToVertex();
-        hCascCandidate->Fill(1.5);
         const auto& v0vtx = fitterV0.getPCACandidate();
         for (int i = 0; i < 3; i++) {
           pos[i] = v0vtx[i];
@@ -213,7 +219,7 @@ struct cascadebuilder {
         std::array<float, 21> cov1 = {0};
         std::array<float, 21> covV0 = {0};
 
-        //Covariance matrix calculation
+        // Covariance matrix calculation
         const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         fitterV0.getTrack(0).getPxPyPzGlo(pvecpos);
         fitterV0.getTrack(1).getPxPyPzGlo(pvecneg);
@@ -235,7 +241,7 @@ struct cascadebuilder {
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
-        tV0.setQ2Pt(0); //No bending, please
+        tV0.setQ2Pt(0); // No bending, please
         int nCand2 = fitterCasc.process(tV0, bTrack);
         if (nCand2 != 0) {
           fitterCasc.propagateTracksToVertex();
@@ -245,9 +251,13 @@ struct cascadebuilder {
             posXi[i] = cascvtx[i];
           }
           fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
-        } //end if cascade recoed
-      }   //end if v0 recoed
-      //Fill table, please
+        } // end if cascade recoed
+      } else {
+        //cascdataLink(-1);
+        continue;
+      }
+      // Fill table, please
+      hCascCandidate->Fill(16.5); //this is the master fill: if this is filled, viable candidate
       cascdata(
         v0.globalIndex(),
         casc.bachelor_as<FullTracksExt>().globalIndex(),
@@ -265,7 +275,7 @@ struct cascadebuilder {
 };
 
 /// Extends the cascdata table with expression columns
-struct cascadeinitializer {
+struct cascadeInitializer {
   Spawns<aod::CascDataExt> cascdataext;
   void init(InitContext const&) {}
 };
@@ -273,7 +283,6 @@ struct cascadeinitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadedoindexing>(cfgc, TaskName{"lf-cascadedoindexing"}),
-    adaptAnalysisTask<cascadebuilder>(cfgc, TaskName{"lf-cascadebuilder"}),
-    adaptAnalysisTask<cascadeinitializer>(cfgc, TaskName{"lf-cascadeinitializer"})};
+    adaptAnalysisTask<cascadeBuilder>(cfgc),
+    adaptAnalysisTask<cascadeInitializer>(cfgc)};
 }

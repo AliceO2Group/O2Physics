@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
@@ -171,7 +170,7 @@ struct HFD0CandidateSelectorALICE3Forward {
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K")) {
+    if (std::abs(trackPion.dcaXY()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaXY()) > cuts->get(pTBin, "d0K")) {
       return false;
     }
 
@@ -189,8 +188,8 @@ struct HFD0CandidateSelectorALICE3Forward {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
-  void process(aod::HfCandProng2 const& candidates, Trks const& forwardtracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::FRICHTracksIndex, aod::TracksExtra>;
+  void process(aod::HfCandProng2 const& candidates, Trks const& forwardtracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {
@@ -215,8 +214,8 @@ struct HFD0CandidateSelectorALICE3Forward {
       auto trackPos = candidate.index0_as<Trks>();
       auto trackNeg = candidate.index1_as<Trks>();
 
-      auto momentumPosTrack = trackPos.p();
-      auto momentumNegTrack = trackNeg.p();
+      //auto momentumPosTrack = trackPos.p();
+      //auto momentumNegTrack = trackNeg.p();
 
       bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
       bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
@@ -226,9 +225,9 @@ struct HFD0CandidateSelectorALICE3Forward {
         continue;
       }
 
-      float nsigmaTOFNegKaon = -5000.0;
+      //float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;
-      float nsigmaTOFPosPion = -5000.0;
+      //float nsigmaTOFPosPion = -5000.0;
       float nsigmaRICHPosPion = -5000.0;
 
       if (trackPos.has_frich()) {
@@ -239,8 +238,8 @@ struct HFD0CandidateSelectorALICE3Forward {
         nsigmaRICHNegKaon = trackNeg.frich().frichNsigmaKa();
       }
 
-      bool selectPionTOFplusRICH = false;
-      bool selectKaonTOFplusRICH = false;
+      //bool selectPionTOFplusRICH = false;
+      //bool selectKaonTOFplusRICH = false;
 
       if (topolD0) {
         statusD0NoPID = 1;

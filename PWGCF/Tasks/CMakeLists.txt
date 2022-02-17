@@ -14,8 +14,13 @@ o2physics_add_dpl_workflow(dptdptcorrelations
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dptdptcorrelations-simchl
-                    SOURCES dptdptcorrelations-simchl.cxx
+o2physics_add_dpl_workflow(dptdpt-filter-qa
+                    SOURCES dptdptfilterqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(match-reco-gen
+                    SOURCES match-reco-gen.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
@@ -24,3 +29,7 @@ o2physics_add_dpl_workflow(correlations
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flow-generic-framework
+                    SOURCES flowGenericFramework.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis) 

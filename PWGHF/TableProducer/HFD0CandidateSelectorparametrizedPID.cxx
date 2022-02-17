@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
@@ -171,7 +170,7 @@ struct HFD0CandidateSelectorparametrizedPID {
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K")) {
+    if (std::abs(trackPion.dcaXY()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaXY()) > cuts->get(pTBin, "d0K")) {
       return false;
     }
 
@@ -189,8 +188,8 @@ struct HFD0CandidateSelectorparametrizedPID {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
-  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
+  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {
@@ -217,8 +216,8 @@ struct HFD0CandidateSelectorparametrizedPID {
       auto trackPos = candidate.index0_as<Trks>();
       auto trackNeg = candidate.index1_as<Trks>();
 
-      auto momentumPosTrack = trackPos.p();
-      auto momentumNegTrack = trackNeg.p();
+      //auto momentumPosTrack = trackPos.p();
+      //auto momentumNegTrack = trackNeg.p();
       auto ptPosTrack = trackPos.pt();
       auto ptNegTrack = trackNeg.pt();
       auto etaPosTrack = std::abs(trackPos.eta());
@@ -232,10 +231,14 @@ struct HFD0CandidateSelectorparametrizedPID {
         continue;
       }
 
-      const auto mcParticlePositive = trackPos.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      int pdgPositive = mcParticlePositive.pdgCode();
-      int pdgNegative = mcParticleNegative.pdgCode();
+      int pdgPositive = 0;
+      int pdgNegative = 0;
+      if (trackPos.has_mcParticle()) {
+        pdgPositive = trackPos.mcParticle_as<aod::McParticles_000>().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
+      }
 
       bool selectPosPion = false;
       bool selectNegKaon = false;
@@ -256,7 +259,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackPos.hasTOF()) {
           if (std::abs(trackPos.tofNSigmaPi()) < 3.0) {
             selectPosPion = true;
-          } else if (std::abs(trackPos.tofNSigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackPos.tofNSigmaKa()) < 3.0) {
             selectPosKaon = true;
           }
         }
@@ -264,7 +268,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackPos.has_rich() && !trackPos.hasTOF()) {
           if (std::abs(trackPos.rich().richNsigmaPi()) < 3.0) {
             selectPosPion = true;
-          } else if (std::abs(trackPos.rich().richNsigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackPos.rich().richNsigmaKa()) < 3.0) {
             selectPosKaon = true;
           }
         }
@@ -272,7 +277,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackPos.has_rich() && trackPos.hasTOF()) {
           if ((trackPos.rich().richNsigmaPi() * trackPos.rich().richNsigmaPi() + trackPos.tofNSigmaPi() * trackPos.tofNSigmaPi()) < 9.0) {
             selectPosPion = true;
-          } else if ((trackPos.rich().richNsigmaKa() * trackPos.rich().richNsigmaKa() + trackPos.tofNSigmaKa() * trackPos.tofNSigmaKa()) < 9.0) {
+          }
+          if ((trackPos.rich().richNsigmaKa() * trackPos.rich().richNsigmaKa() + trackPos.tofNSigmaKa() * trackPos.tofNSigmaKa()) < 9.0) {
             selectPosKaon = true;
           }
         }
@@ -292,7 +298,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackNeg.hasTOF()) {
           if (std::abs(trackNeg.tofNSigmaPi()) < 3.0) {
             selectNegPion = true;
-          } else if (std::abs(trackNeg.tofNSigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackNeg.tofNSigmaKa()) < 3.0) {
             selectNegKaon = true;
           }
         }
@@ -300,7 +307,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackNeg.has_rich() && !trackNeg.hasTOF()) {
           if (std::abs(trackNeg.rich().richNsigmaPi()) < 3.0) {
             selectNegPion = true;
-          } else if (std::abs(trackNeg.rich().richNsigmaKa()) < 3.0) {
+          }
+          if (std::abs(trackNeg.rich().richNsigmaKa()) < 3.0) {
             selectNegKaon = true;
           }
         }
@@ -308,7 +316,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (trackNeg.has_rich() && trackNeg.hasTOF()) {
           if ((trackNeg.rich().richNsigmaPi() * trackNeg.rich().richNsigmaPi() + trackNeg.tofNSigmaPi() * trackNeg.tofNSigmaPi()) < 9.0) {
             selectNegPion = true;
-          } else if ((trackNeg.rich().richNsigmaKa() * trackNeg.rich().richNsigmaKa() + trackNeg.tofNSigmaKa() * trackNeg.tofNSigmaKa()) < 9.0) {
+          }
+          if ((trackNeg.rich().richNsigmaKa() * trackNeg.rich().richNsigmaKa() + trackNeg.tofNSigmaKa() * trackNeg.tofNSigmaKa()) < 9.0) {
             selectNegKaon = true;
           }
         }
@@ -322,7 +331,8 @@ struct HFD0CandidateSelectorparametrizedPID {
         if (selectPosPion && selectNegKaon) {
           statusD0 = 1;
         }
-      } else if (topolD0bar) {
+      }
+      if (topolD0bar) {
         statusD0barNoPID = 1;
         if (pdgPositive == 321 && pdgNegative == -211) {
           statusD0barPerfectPID = 1;

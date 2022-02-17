@@ -13,30 +13,52 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "FemtoDreamParticleHisto.h"
-#include "FemtoDreamPairCleaner.h"
-#include "FemtoDreamContainer.h"
-#include "FemtoDreamDetaDphiStar.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
+
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "FemtoDreamParticleHisto.h"
+#include "FemtoDreamEventHisto.h"
+#include "FemtoDreamPairCleaner.h"
+#include "FemtoDreamContainer.h"
+#include "FemtoDreamDetaDphiStar.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::soa;
 
 namespace
 {
 static constexpr int nPart = 2;
-static constexpr int nCuts = 5;
+static constexpr int nCuts = 4;
 static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
-static const std::vector<std::string> cutNames{"MinPt", "MaxPt", "MaxEta", "MaxDCAxy", "PIDthr"};
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF"};
 static const float cutsTable[nPart][nCuts]{
-  {0.5f, 4.05f, 0.8f, 0.1f, 0.75f},
-  {0.5f, 4.05f, 0.8f, 0.1f, 0.75f}};
+  {4.05f, 0.75f, 3.f, 3.f},
+  {4.05f, 0.75f, 3.f, 3.f}};
+
+static constexpr int nNsigma = 3;
+static constexpr float kNsigma[nNsigma] = {3.5f, 3.f, 2.5f};
+
+enum kPIDselection {
+  k3d5sigma = 0,
+  k3sigma = 1,
+  k2d5sigma = 2
+};
+
+enum kDetector {
+  kTPC = 0,
+  kTPCTOF = 1,
+  kNdetectors = 2
+};
 } // namespace
 
 struct femtoDreamPairTaskTrackTrack {
@@ -44,24 +66,20 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle selection part
   // uint trackTypeSel = aod::femtodreamparticle::ParticleType::kTrack; // \todo at some point filters will be able to cope with enums
   // \todo checky why is the enum not working in the partition
-  uint8_t Track = 0; // Track
 
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
+  Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
   /// Particle 1
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartOne{"ConfCutPartOne", 693318, "Particle 1 - Selection bit"};
-  Configurable<std::vector<int>> ConfTPCPIDPartOne{"ConfTPCPIDPartOne", std::vector<int>{13}, "Particle 1 - TPC PID bits"};        // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-  Configurable<std::vector<int>> ConfCombPIDPartOne{"ConfCombPIDPartOne", std::vector<int>{12}, "Particle 1 - Combined PID bits"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
 
   /// Partition for particle 1
-  Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == Track) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) &&
-                                                 (aod::femtodreamparticle::pt > cfgCutTable->get("PartOne", "MinPt")) &&
+  Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (aod::femtodreamparticle::pt < cfgCutTable->get("PartOne", "MaxPt")) &&
-                                                 (nabs(aod::femtodreamparticle::tempFitVar) < cfgCutTable->get("PartOne", "MaxDCAxy")) &&
-                                                 (nabs(aod::femtodreamparticle::eta) < cfgCutTable->get("PartOne", "MaxEta"));
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -69,32 +87,31 @@ struct femtoDreamPairTaskTrackTrack {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
-  Configurable<aod::femtodreamparticle::cutContainerType> ConfCutPartTwo{"ConfCutPartTwo", 693318, "Particle 2 - Selection bit"};
-  Configurable<std::vector<int>> ConfTPCPIDPartTwo{"ConfTPCPIDPartTwo", std::vector<int>{13}, "Particle 2 - TPC PID bits"};        // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-  Configurable<std::vector<int>> ConfCombPIDPartTwo{"ConfCombPIDPartTwo", std::vector<int>{12}, "Particle 2 - Combined PID bits"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
+  Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 5542474, "Particle 2 - Selection bit"};
+  Configurable<std::vector<int>> ConfPIDPartTwo{"ConfPIDPartTwo", std::vector<int>{2}, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
   /// Partition for particle 2
-  Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == Track) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) &&
-                                                 (aod::femtodreamparticle::pt > cfgCutTable->get("PartTwo", "MinPt")) &&
+  Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
-                                                 (nabs(aod::femtodreamparticle::tempFitVar) < cfgCutTable->get("PartTwo", "MaxDCAxy")) &&
-                                                 (nabs(aod::femtodreamparticle::eta) < cfgCutTable->get("PartTwo", "MaxEta"));
+                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
 
+  /// Histogramming for Event
+  FemtoDreamEventHisto eventHisto;
+
   /// The configurables need to be passed to an std::vector
-  std::vector<int> vecTPCPIDPartOne, vecTPCPIDPartTwo, vecCombPIDPartOne, vecCombPIDPartTwo;
+  std::vector<int> vPIDPartOne, vPIDPartTwo;
 
   /// Correlation part
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
-  ConfigurableAxis CfgkstarBins{"CfgkstarBins", {5000, 0., 5.}, "binning kstar"};
-  ConfigurableAxis CfgkTBins{"CfgkTBins", {70, 0., 7.}, "binning kT"};
-  ConfigurableAxis CfgmTBins{"CfgmTBins", {70, 0., 7.}, "binning mT"};
+  // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
+  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis CfgmTBins{"CfgmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
-  Configurable<float> ConfBField{"ConfBField", +0.5, "Magnetic Field"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -104,8 +121,11 @@ struct femtoDreamPairTaskTrackTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+
   void init(InitContext&)
   {
+    eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
     if (!ConfIsSame) {
       trackHistoPartTwo.init(&qaRegistry);
@@ -117,26 +137,65 @@ struct femtoDreamPairTaskTrackTrack {
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfBField, false); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, false); /// \todo add config for Δη and ΔΦ cut values
     }
 
-    vecTPCPIDPartOne = ConfTPCPIDPartOne;
-    vecTPCPIDPartTwo = ConfTPCPIDPartTwo;
-    vecCombPIDPartOne = ConfCombPIDPartOne;
-    vecCombPIDPartTwo = ConfCombPIDPartTwo;
+    vPIDPartOne = ConfPIDPartOne;
+    vPIDPartTwo = ConfPIDPartTwo;
+
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = 0.1 * (grpo->getNominalL3Field());
+    return output;
+  }
+
+  /// internal function that returns the kPIDselection element corresponding to a specifica n-sigma value
+  /// \param number of sigmas for PIF
+  /// \return kPIDselection corresponing to n-sigma
+  kPIDselection getPIDselection(float nSigma)
+  {
+    for (int i = 0; i < nNsigma; i++) {
+      if (abs(nSigma - kNsigma[i]) < 1e-3) {
+        return static_cast<kPIDselection>(i);
+      }
+    }
+    LOG(info) << "Invalid value of nSigma: " << nSigma << ". Standard 3 sigma returned." << std::endl;
+    return kPIDselection::k3sigma;
   }
 
   /// function that checks whether the PID selection specified in the vectors is fulfilled
   /// \param pidcut Bit-wise container for the PID
-  /// \param vec Vector with the different selections
+  /// \param vSpecies Vector with the different selections
   /// \return Whether the PID selection specified in the vectors is fulfilled
-  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vec)
+  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
   {
     bool pidSelection = true;
-    for (auto it : vec) {
+    kPIDselection kNsigma = getPIDselection(nSigma);
+    for (auto iSpecies : vSpecies) {
       //\todo we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
       // if (!((pidcut >> it.first) & it.second)) {
-      if (!((pidcut >> it) & 1)) {
+      int bit_to_check = cfgNspecies * kDetector::kNdetectors * kNsigma + iSpecies * kDetector::kNdetectors + iDet;
+      if (!(pidcut & (1UL << bit_to_check))) {
         pidSelection = false;
       }
     }
@@ -150,15 +209,15 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param vecTPC Vector with the different selections for the TPC PID
   /// \param vecComb Vector with the different selections for the TPC+TOF PID
   /// \return Whether the PID selection is fulfilled
-  bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const& mom, float const& pidThresh, std::vector<int> const& vecTPC, std::vector<int> const& vecComb)
+  bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const& momentum, float const& pidThresh, std::vector<int> const& vSpecies, float nSigmaTPC = 3.5, float nSigmaTPCTOF = 3.5)
   {
     bool pidSelection = true;
-    if (mom < pidThresh) {
+    if (momentum < pidThresh) {
       /// TPC PID only
-      pidSelection = isPIDSelected(pidCut, vecTPC);
+      pidSelection = isPIDSelected(pidCut, vSpecies, nSigmaTPC, kDetector::kTPC);
     } else {
       /// TPC + TOF PID
-      pidSelection = isPIDSelected(pidCut, vecComb);
+      pidSelection = isPIDSelected(pidCut, vSpecies, nSigmaTPCTOF, kDetector::kTPCTOF);
     }
     return pidSelection;
   };
@@ -168,31 +227,44 @@ struct femtoDreamPairTaskTrackTrack {
   void processSameEvent(o2::aod::FemtoDreamCollision& col,
                         o2::aod::FemtoDreamParticles& parts)
   {
+    auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+
     const int multCol = col.multV0M();
+    eventHisto.fillQA(col);
     /// Histogramming same event
-    for (auto& part : partsOne) {
-      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne)) {
+    for (auto& part : groupPartsOne) {
+      if (part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        continue;
+      }
+      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
     }
     if (!ConfIsSame) {
-      for (auto& part : partsTwo) {
-        if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+      for (auto& part : groupPartsTwo) {
+        if (part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+          continue;
+        }
+        if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
         trackHistoPartTwo.fillQA(part);
       }
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
-      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+    for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+      if (p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+        continue;
+      }
+      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
         continue;
       }
 
-      /// close pair rejection
+      auto tmstamp = col.timestamp();
       if (ConfIsCPR) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, getMagneticFieldTesla(tmstamp))) {
           continue;
         }
       }
@@ -213,33 +285,10 @@ struct femtoDreamPairTaskTrackTrack {
                          o2::aod::Hashes& hashes,
                          o2::aod::FemtoDreamParticles& parts)
   {
-    cols.bindExternalIndices(&parts);
-    auto particlesTuple = std::make_tuple(parts);
-    AnalysisDataProcessorBuilder::GroupSlicer slicer(cols, particlesTuple);
-
     for (auto& [collision1, collision2] : soa::selfCombinations("fBin", ConfNEventsMix, -1, soa::join(hashes, cols), soa::join(hashes, cols))) {
-      auto it1 = slicer.begin();
-      auto it2 = slicer.begin();
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
 
-      auto particles1 = std::get<aod::FemtoDreamParticles>(it1.associatedTables());
-      particles1.bindExternalIndices(&cols);
-      auto particles2 = std::get<aod::FemtoDreamParticles>(it2.associatedTables());
-      particles2.bindExternalIndices(&cols);
-
-      partsOne.bindTable(particles1);
-      partsTwo.bindTable(particles2);
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
 
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       /// could work like that, but only if PID is contained within the partitioning!
@@ -257,12 +306,16 @@ struct femtoDreamPairTaskTrackTrack {
       // partsTwo.bindTable(particlesEvent2);
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
-      for (auto& [p1, p2] : combinations(partsOne, partsTwo)) {
-        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vecTPCPIDPartOne, vecCombPIDPartOne) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vecTPCPIDPartTwo, vecCombPIDPartTwo)) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
           continue;
         }
+        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+          continue;
+        }
+
         if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, getMagneticFieldTesla(collision1.timestamp()))) {
             continue;
           }
         }

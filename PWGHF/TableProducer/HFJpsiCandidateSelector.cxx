@@ -120,12 +120,12 @@ struct HfJpsiCandidateSelector {
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackNeg.dcaPrim0()) > cuts->get(pTBin, "DCA_xy") || std::abs(trackPos.dcaPrim0()) > cuts->get(pTBin, "DCA_xy")) {
+    if (std::abs(trackNeg.dcaXY()) > cuts->get(pTBin, "DCA_xy") || std::abs(trackPos.dcaXY()) > cuts->get(pTBin, "DCA_xy")) {
       return false;
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackNeg.dcaPrim1()) > cuts->get(pTBin, "DCA_z") || std::abs(trackPos.dcaPrim1()) > cuts->get(pTBin, "DCA_z")) {
+    if (std::abs(trackNeg.dcaZ()) > cuts->get(pTBin, "DCA_z") || std::abs(trackPos.dcaZ()) > cuts->get(pTBin, "DCA_z")) {
       return false;
     }
 
@@ -138,7 +138,9 @@ struct HfJpsiCandidateSelector {
 
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
-  void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPID const&)
+  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksExtended>;
+
+  void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -159,8 +161,8 @@ struct HfJpsiCandidateSelector {
         continue;
       }
 
-      auto trackPos = candidate.index0_as<aod::BigTracksPID>(); // positive daughter
-      auto trackNeg = candidate.index1_as<aod::BigTracksPID>(); // negative daughter
+      auto trackPos = candidate.index0_as<aod::BigTracksPIDExtended>(); // positive daughter
+      auto trackNeg = candidate.index1_as<aod::BigTracksPIDExtended>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;
@@ -217,7 +219,7 @@ struct HfJpsiCandidateSelector {
 
   PROCESS_SWITCH(HfJpsiCandidateSelector, processAlice2, "Use ALICE 2 detector setup", true);
 
-  void processAlice3(aod::HfCandProng2 const& candidates, TracksPID const&, aod::RICHs const&, aod::MIDs const&)
+  void processAlice3(aod::HfCandProng2 const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
   {
     TrackSelectorPID selectorElectron(kElectron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -240,8 +242,8 @@ struct HfJpsiCandidateSelector {
         continue;
       }
 
-      auto trackPos = candidate.index0_as<TracksPID>(); // positive daughter
-      auto trackNeg = candidate.index1_as<TracksPID>(); // negative daughter
+      auto trackPos = candidate.index0_as<ExtendedTracksPID>(); // positive daughter
+      auto trackNeg = candidate.index1_as<ExtendedTracksPID>(); // negative daughter
 
       int selectedEETopol = 1;
       int selectedEETpc = 1;

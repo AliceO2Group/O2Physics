@@ -55,7 +55,7 @@ struct HFCandidateCreator3Prong {
   double massPiKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::HfTrackIndexProng3 const& rowsTrackIndexProng3,
+               aod::Hf3Prong const& rowsTrackIndexProng3,
                aod::BigTracks const& tracks)
   {
     // 3-prong vertex fitter
@@ -84,7 +84,7 @@ struct HFCandidateCreator3Prong {
       }
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
-      auto covMatrixPCA = df.calcPCACovMatrix().Array();
+      auto covMatrixPCA = df.calcPCACovMatrixFlat();
       hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       trackParVar0 = df.getTrack(0);
       trackParVar1 = df.getTrack(1);
@@ -143,19 +143,17 @@ struct HFCandidateCreator3Prong {
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreator3ProngExpressions {
-  Spawns<aod::HfCandProng3Ext> rowCandidateProng3;
-  void init(InitContext const&) {}
-};
-
-/// Performs MC matching.
-struct HFCandidateCreator3ProngMC {
   Produces<aod::HfCandProng3MCRec> rowMCMatchRec;
   Produces<aod::HfCandProng3MCGen> rowMCMatchGen;
 
-  void process(aod::HfCandProng3 const& candidates,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+  Spawns<aod::HfCandProng3Ext> rowCandidateProng3;
+  void init(InitContext const&) {}
+
+  /// Performs MC matching.
+  void processMC(aod::BigTracksMC const& tracks,
+                 aod::McParticles_000 const& particlesMC)
   {
+    rowCandidateProng3->bindExternalIndices(&tracks);
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
@@ -169,7 +167,8 @@ struct HFCandidateCreator3ProngMC {
     std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus}; // Λc± → Λ(1520) π±
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    // Spawned table can be used directly
+    for (auto& candidate : *rowCandidateProng3) {
       //Printf("New rec. candidate");
       flag = 0;
       origin = 0;
@@ -193,10 +192,12 @@ struct HFCandidateCreator3ProngMC {
           flag = sign * (1 << DecayType::LcToPKPi);
 
           //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
-          swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+          if (arrayDaughters[0].has_mcParticle()) {
+            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle_as<aod::McParticles_000>().pdgCode()) == kPiPlus);
+          }
           RecoDecay::getDaughters(particlesMC, particlesMC.iteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
-            for (auto iProng = 0; iProng < arrDaughIndex.size(); ++iProng) {
+            for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = particlesMC.iteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
@@ -252,7 +253,7 @@ struct HFCandidateCreator3ProngMC {
           //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
           RecoDecay::getDaughters(particlesMC, particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
-            for (auto jProng = 0; jProng < arrDaughIndex.size(); ++jProng) {
+            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
               auto daughJ = particlesMC.iteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
@@ -283,16 +284,13 @@ struct HFCandidateCreator3ProngMC {
       rowMCMatchGen(flag, origin, channel);
     }
   }
+
+  PROCESS_SWITCH(HFCandidateCreator3ProngExpressions, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
     adaptAnalysisTask<HFCandidateCreator3Prong>(cfgc, TaskName{"hf-cand-creator-3prong"}),
     adaptAnalysisTask<HFCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-cand-creator-3prong-expressions"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreator3ProngMC>(cfgc, TaskName{"hf-cand-creator-3prong-mc"}));
-  }
-  return workflow;
 }

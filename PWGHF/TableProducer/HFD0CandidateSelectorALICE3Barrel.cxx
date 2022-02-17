@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
@@ -171,7 +170,7 @@ struct HFD0CandidateSelectorALICE3Barrel {
     }
 
     // cut on daughter DCA - need to add secondary vertex constraint here
-    if (std::abs(trackPion.dcaPrim0()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaPrim0()) > cuts->get(pTBin, "d0K")) {
+    if (std::abs(trackPion.dcaXY()) > cuts->get(pTBin, "d0pi") || std::abs(trackKaon.dcaXY()) > cuts->get(pTBin, "d0K")) {
       return false;
     }
 
@@ -189,8 +188,8 @@ struct HFD0CandidateSelectorALICE3Barrel {
     return true;
   }
 
-  using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
-  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  using Trks = soa::Join<aod::BigTracksPIDExtended, aod::RICHTracksIndex, aod::McTrackLabels>;
+  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {
@@ -229,10 +228,15 @@ struct HFD0CandidateSelectorALICE3Barrel {
         continue;
       }
 
-      const auto mcParticlePositive = trackPos.mcParticle();
-      const auto mcParticleNegative = trackNeg.mcParticle();
-      int pdgPositive = mcParticlePositive.pdgCode();
-      int pdgNegative = mcParticleNegative.pdgCode();
+      int pdgPositive = 0;
+      int pdgNegative = 0;
+      if (trackPos.has_mcParticle()) {
+        pdgPositive = trackPos.mcParticle_as<aod::McParticles_000>().pdgCode();
+      }
+      if (trackNeg.has_mcParticle()) {
+        pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
+      }
+
       //std::cout << "barrel= " << pdgPositive <<"\t"<< pdgNegative << "\n";
       float nsigmaTOFNegKaon = -5000.0;
       float nsigmaRICHNegKaon = -5000.0;

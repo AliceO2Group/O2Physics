@@ -1,2 +1,6 @@
 CMakeCache.txt
 CMakeFiles/
+.vscode
+build
+compile_commands.json
+.DS_Store

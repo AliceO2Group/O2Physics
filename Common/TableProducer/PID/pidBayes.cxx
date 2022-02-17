@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 struct bayesPid {
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Coll = aod::Collisions;
 
   // Tables to produce
@@ -150,8 +150,7 @@ struct bayesPid {
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec device : workflows.devices) {
       for (auto input : device.inputs) {
-        auto enableFlag = [&input, this](const PID::ID& id,
-                                         Configurable<int>& flag) {
+        auto enableFlag = [&input](const PID::ID& id, Configurable<int>& flag) {
           const std::string particles[PID::NIDs] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
           const std::string particle = particles[id];
           const std::string table = "pidBayes" + particle;
@@ -313,7 +312,7 @@ struct bayesPid {
     }
     constexpr respTOF<pid> responseTOFPID;
 
-    const float pt = track.pt();
+    // const float pt = track.pt();
     float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
     // In the O2 this cannot be done because the cluster information is missing in the AOD
     // if (!fNoTOFmism) {                                                                  // this flag allows to disable mismatch for iterative procedure to get prior probabilities
@@ -416,7 +415,7 @@ struct bayesPid {
     }
     if (sum <= 0) {
       LOG(warning) << "Invalid probability densities or prior probabilities";
-      for (int i = 0; i < Probability[kBayesian].size(); i++) {
+      for (long unsigned int i = 0; i < Probability[kBayesian].size(); i++) {
         Probability[kBayesian][i] = 1.f / Probability[kBayesian].size();
       }
       return;
@@ -554,23 +553,34 @@ struct bayesPidQa {
   void addParticleHistos()
   {
     // Probability
-    histos.add(hprob[i].data(), Form(";#it{p} (GeV/#it{c});N_{#sigma}^{TOF}(%s)", pT[i]), HistType::kTH2F, {{nBinsP, MinP, MaxP}, {nBinsProb, MinProb, MaxProb}});
-    makelogaxis(histos.get<TH2>(HIST(hprob[i])));
+    AxisSpec axisP{nBinsP, MinP, MaxP, "#it{p} (GeV/#it{c})"};
+    if (logAxis) {
+      axisP.makeLogaritmic();
+    }
+    const AxisSpec axisProb{nBinsProb, MinProb, MaxProb, "Probability"};
+    histos.add(hprob[i].data(), Form(";;N_{#sigma}^{TOF}(%s)", pT[i]), HistType::kTH2F, {axisP, axisProb});
   }
 
   void init(o2::framework::InitContext&)
   {
+    AxisSpec axisP{nBinsP, MinP, MaxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec axisPt{nBinsP, MinP, MaxP, "#it{p}_{T} (GeV/#it{c})"};
+    if (logAxis) {
+      axisP.makeLogaritmic();
+      axisPt.makeLogaritmic();
+    }
+    const AxisSpec axisTOFSignal{10000, 0, 2e6, "TOF Signal"};
+
     // Event properties
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", HistType::kTH1F, {{100, -20, 20}});
     histos.add("event/colltime", ";Collision time (ps);Entries", HistType::kTH1F, {{100, -2000, 2000}});
-    histos.add("event/tofsignal", ";#it{p} (GeV/#it{c});TOF Signal", HistType::kTH2F, {{nBinsP, MinP, MaxP}, {10000, 0, 2e6}});
-    makelogaxis(histos.get<TH2>(HIST("event/tofsignal")));
+    histos.add("event/tofsignal", "tofsignal", HistType::kTH2F, {axisP, axisTOFSignal});
     histos.add("event/eta", ";#it{#eta};Entries", HistType::kTH1F, {{100, -2, 2}});
     histos.add("event/length", ";Track length (cm);Entries", HistType::kTH1F, {{100, 0, 500}});
-    histos.add("event/pt", ";#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH1F, {{nBinsP, MinP, MaxP}});
-    histos.add("event/p", ";#it{p} (GeV/#it{c});Entries", HistType::kTH1F, {{nBinsP, MinP, MaxP}});
-    histos.add("event/ptreso", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {{nBinsP, MinP, MaxP}, {100, 0, 0.1}});
-    histos.add("mostProbable", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {{nBinsP, MinP, MaxP}, {nBinsProb, MinProb, MaxProb}});
+    histos.add("event/pt", "", HistType::kTH1F, {axisPt});
+    histos.add("event/p", "", HistType::kTH1F, {axisP});
+    // histos.add("event/ptreso", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {100, 0, 0.1}});
+    histos.add("mostProbable", ";#it{p} (GeV/#it{c});Entries", HistType::kTH2F, {axisP, {nBinsProb, MinProb, MaxProb}});
 
     addParticleHistos<0>();
     addParticleHistos<1>();
@@ -589,7 +599,7 @@ struct bayesPidQa {
     histos.fill(HIST(hprob[i]), t.p(), prob);
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
                                                           aod::pidBayesEl, aod::pidBayesMu, aod::pidBayesPi,
                                                           aod::pidBayesKa, aod::pidBayesPr, aod::pidBayesDe,
                                                           aod::pidBayesTr, aod::pidBayesHe, aod::pidBayesAl,
@@ -613,7 +623,7 @@ struct bayesPidQa {
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());
       histos.fill(HIST("event/pt"), t.pt());
-      histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
+      // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
       histos.fill(HIST("mostProbable"), t.p(), t.bayesProb());
       //
       fillParticleHistos<0>(t, t.bayesEl());

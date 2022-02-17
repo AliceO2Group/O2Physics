@@ -28,7 +28,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct MultiplicityQaTask {
+struct MultiplicityQa {
   OutputObj<TH1F> hMultV0M{TH1F("hMultV0M", "", 50000, 0., 50000.)};
   OutputObj<TH1F> hMultT0M{TH1F("hMultT0M", "", 10000, 0., 200000.)};
   OutputObj<TH1F> hMultZNA{TH1F("hMultZNA", "", 600, 0., 240000.)};
@@ -84,5 +84,5 @@ struct MultiplicityQaTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MultiplicityQaTask>(cfgc, TaskName{"multiplicity-qa"})};
+    adaptAnalysisTask<MultiplicityQa>(cfgc)};
 }

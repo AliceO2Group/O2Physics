@@ -254,7 +254,7 @@ struct DQEventMixing {
 
     events.bindExternalIndices(&muons);
     auto muonsTuple = std::make_tuple(muons);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerMuons(events, muonsTuple);
+    GroupSlicer slicerMuons(events, muonsTuple);
 
     // Strictly upper categorised collisions, for 100 combinations per bin, skipping those in entry -1
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
@@ -290,7 +290,7 @@ struct DQEventMixing {
           if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
             continue;
           }
-          VarManager::FillPair<pairType>(muon1, muon2, fValues);
+          VarManager::FillPairME<pairType>(muon1, muon2, fValues);
           if (muon1.sign() * muon2.sign() < 0) {
             fHistMan->FillHistClass("PairsMuonMEPM_PbPb", fValues);
           } else {
@@ -353,7 +353,7 @@ struct DQDileptonMuMu {
       if (!twoTrackFilter) { // the muons must have at least one filter bit in common to continue
         continue;
       }
-      VarManager::FillPair<pairType>(muon1, muon2, fValues);
+      VarManager::FillPair<pairType, gkMuonFillMap>(muon1, muon2, fValues);
       if (muon1.sign() * muon2.sign() < 0) {
         fHistMan->FillHistClass("PairsMuonSEPM_PbPb", fValues);
       } else {

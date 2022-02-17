@@ -26,12 +26,6 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
 #include "Framework/runDataProcessing.h"
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
@@ -56,7 +50,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
+               aod::Hf2Prong const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -83,7 +77,7 @@ struct HFCandidateCreator2Prong {
       }
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
-      auto covMatrixPCA = df.calcPCACovMatrix().Array();
+      auto covMatrixPCA = df.calcPCACovMatrixFlat();
       hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       auto trackParVar0 = df.getTrack(0);
       auto trackParVar1 = df.getTrack(1);
@@ -138,33 +132,33 @@ struct HFCandidateCreator2Prong {
 
 /// Extends the base table with expression columns.
 struct HFCandidateCreator2ProngExpressions {
-  Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
-  void init(InitContext const&) {}
-};
-
-/// Performs MC matching.
-struct HFCandidateCreator2ProngMC {
   Produces<aod::HfCandProng2MCRec> rowMCMatchRec;
   Produces<aod::HfCandProng2MCGen> rowMCMatchGen;
 
-  void process(aod::HfCandProng2 const& candidates,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+  Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
+  void init(InitContext const&) {}
+
+  /// Performs MC matching.
+  void processMC(aod::BigTracksMC const& tracks,
+                 aod::McParticles_000 const& particlesMC)
   {
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
 
+    rowCandidateProng2->bindExternalIndices(&tracks);
+
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
-      //Printf("New rec. candidate");
+    // Spawned table can be used directly
+    for (auto& candidate : *rowCandidateProng2) {
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(), candidate.index1_as<aod::BigTracksMC>()};
 
       // D0(bar) → π± K∓
-      //Printf("Checking D0(bar) → π± K∓");
+      // Printf("Checking D0(bar) → π± K∓");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
@@ -172,7 +166,7 @@ struct HFCandidateCreator2ProngMC {
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        //Printf("Checking J/ψ → e+ e−");
+        // Printf("Checking J/ψ → e+ e−");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
@@ -181,7 +175,7 @@ struct HFCandidateCreator2ProngMC {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        //Printf("Checking J/ψ → μ+ μ−");
+        // Printf("Checking J/ψ → μ+ μ−");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
@@ -199,19 +193,19 @@ struct HFCandidateCreator2ProngMC {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
 
       // D0(bar) → π± K∓
-      //Printf("Checking D0(bar) → π± K∓");
+      // Printf("Checking D0(bar) → π± K∓");
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        //Printf("Checking J/ψ → e+ e−");
+        // Printf("Checking J/ψ → e+ e−");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -219,7 +213,7 @@ struct HFCandidateCreator2ProngMC {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        //Printf("Checking J/ψ → μ+ μ−");
+        // Printf("Checking J/ψ → μ+ μ−");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kJpsi, array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -233,16 +227,13 @@ struct HFCandidateCreator2ProngMC {
       rowMCMatchGen(flag, origin);
     }
   }
+
+  PROCESS_SWITCH(HFCandidateCreator2ProngExpressions, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
     adaptAnalysisTask<HFCandidateCreator2Prong>(cfgc, TaskName{"hf-cand-creator-2prong"}),
     adaptAnalysisTask<HFCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-cand-creator-2prong-expressions"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreator2ProngMC>(cfgc, TaskName{"hf-cand-creator-2prong-mc"}));
-  }
-  return workflow;
 }

@@ -33,9 +33,9 @@ static int getMixingBin(const T1& vtxBins, const T1& multBins, const T2& vtx, co
     return -1;
   }
 
-  for (int i = 1; i < vtxBins.size(); i++) {
+  for (unsigned int i = 1; i < vtxBins.size(); i++) {
     if (vtx < vtxBins.at(i)) {
-      for (int j = 1; j < multBins.size(); j++) {
+      for (unsigned int j = 1; j < multBins.size(); j++) {
         if (mult < multBins.at(j)) {
           return i + j * (vtxBins.size() + 1);
         }

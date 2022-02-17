@@ -33,11 +33,6 @@ o2physics_add_dpl_workflow(filter-pp
                     SOURCES filterPP.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
-                    
-o2physics_add_dpl_workflow(filter-pp-tiny
-                    SOURCES filterPPTiny.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
-                    COMPONENT_NAME Analysis)                    
 
 o2physics_add_dpl_workflow(v0-selector
                     SOURCES v0selector.cxx

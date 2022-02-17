@@ -38,7 +38,7 @@ endif()
 
 # Dependencies
 find_package(O2 CONFIG REQUIRED)
-find_package(ONNXRuntime::ONNXRuntime CONFIG REQUIRED)
+find_package(ONNXRuntime::ONNXRuntime CONFIG)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
@@ -67,6 +67,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 # Main targets of the project in various subdirectories. Order matters.
 add_subdirectory(Common)
 add_subdirectory(ALICE3)
+add_subdirectory(DPG)
 
 add_subdirectory(PWGCF)
 add_subdirectory(PWGDQ)
@@ -75,8 +76,8 @@ add_subdirectory(PWGHF)
 add_subdirectory(PWGJE)
 add_subdirectory(PWGLF)
 add_subdirectory(PWGMM)
-add_subdirectory(PWGPP)
 add_subdirectory(PWGUD)
 
+add_subdirectory(Tools)
 add_subdirectory(Tutorials)
 add_subdirectory(EventFiltering)

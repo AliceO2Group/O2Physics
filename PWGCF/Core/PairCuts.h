@@ -16,6 +16,7 @@
 
 #include "Framework/Logger.h"
 #include "Framework/HistogramRegistry.h"
+#include "CommonConstants/MathConstants.h"
 
 // Functions which cut on particle pairs (decays, conversions, two-track cuts)
 //
@@ -23,6 +24,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace constants::math;
 
 class PairCuts
 {
@@ -61,7 +63,7 @@ class PairCuts
   bool conversionCuts(T const& track1, T const& track2);
 
   template <typename T>
-  bool twoTrackCut(T const& track1, T const& track2, int bSign);
+  bool twoTrackCut(T const& track1, T const& track2, int magField);
 
  protected:
   float mCuts[ParticlesLastEntry] = {-1};
@@ -80,7 +82,7 @@ class PairCuts
   double getInvMassSquaredFast(T const& track1, double m0_1, T const& track2, double m0_2);
 
   template <typename T>
-  float getDPhiStar(T const& track1, T const& track2, float radius, float bSign);
+  float getDPhiStar(T const& track1, T const& track2, float radius, int magField);
 };
 
 template <typename T>
@@ -109,20 +111,20 @@ bool PairCuts::conversionCuts(T const& track1, T const& track2)
 }
 
 template <typename T>
-bool PairCuts::twoTrackCut(T const& track1, T const& track2, int bSign)
+bool PairCuts::twoTrackCut(T const& track1, T const& track2, int magField)
 {
   // the variables & cut have been developed in Run 1 by the CF - HBT group
   //
   // Parameters:
-  //   bSign: sign of B field
+  //   magField: B field in kG
 
   auto deta = track1.eta() - track2.eta();
 
   // optimization
   if (std::fabs(deta) < mTwoTrackDistance * 2.5 * 3) {
     // check first boundaries to see if is worth to loop and find the minimum
-    float dphistar1 = getDPhiStar(track1, track2, mTwoTrackRadius, bSign);
-    float dphistar2 = getDPhiStar(track1, track2, 2.5, bSign);
+    float dphistar1 = getDPhiStar(track1, track2, mTwoTrackRadius, magField);
+    float dphistar2 = getDPhiStar(track1, track2, 2.5, magField);
 
     const float kLimit = mTwoTrackDistance * 3;
 
@@ -130,7 +132,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, int bSign)
       float dphistarminabs = 1e5;
       float dphistarmin = 1e5;
       for (Double_t rad = mTwoTrackRadius; rad < 2.51; rad += 0.01) {
-        float dphistar = getDPhiStar(track1, track2, rad, bSign);
+        float dphistar = getDPhiStar(track1, track2, rad, magField);
 
         float dphistarabs = std::fabs(dphistar);
 
@@ -145,7 +147,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, int bSign)
       }
 
       if (dphistarminabs < mTwoTrackDistance && std::fabs(deta) < mTwoTrackDistance) {
-        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), bSign);
+        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
         return true;
       }
 
@@ -266,41 +268,41 @@ double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& tr
   const float pt1 = track1.pt();
   const float pt2 = track2.pt();
 
-  float tantheta1 = 1e10;
+  float tantheta1 = 1e10f;
 
-  if (eta1 < -1e-10 || eta1 > 1e-10) {
-    float expTmp = 1.0 - eta1 + eta1 * eta1 / 2 - eta1 * eta1 * eta1 / 6 + eta1 * eta1 * eta1 * eta1 / 24;
-    tantheta1 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
+  if (eta1 < -1e-10f || eta1 > 1e-10f) {
+    float expTmp = 1.0f - eta1 + eta1 * eta1 / 2.0f - eta1 * eta1 * eta1 / 6.0f + eta1 * eta1 * eta1 * eta1 / 24.0f;
+    tantheta1 = 2.0f * expTmp / (1.0f - expTmp * expTmp);
   }
 
-  float tantheta2 = 1e10;
-  if (eta2 < -1e-10 || eta2 > 1e-10) {
-    float expTmp = 1.0 - eta2 + eta2 * eta2 / 2 - eta2 * eta2 * eta2 / 6 + eta2 * eta2 * eta2 * eta2 / 24;
-    tantheta2 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
+  float tantheta2 = 1e10f;
+  if (eta2 < -1e-10f || eta2 > 1e-10f) {
+    float expTmp = 1.0f - eta2 + eta2 * eta2 / 2.0f - eta2 * eta2 * eta2 / 6.0f + eta2 * eta2 * eta2 * eta2 / 24.0f;
+    tantheta2 = 2.0f * expTmp / (1.0f - expTmp * expTmp);
   }
 
-  float e1squ = m0_1 * m0_1 + pt1 * pt1 * (1.0 + 1.0 / tantheta1 / tantheta1);
-  float e2squ = m0_2 * m0_2 + pt2 * pt2 * (1.0 + 1.0 / tantheta2 / tantheta2);
+  float e1squ = m0_1 * m0_1 + pt1 * pt1 * (1.0f + 1.0f / tantheta1 / tantheta1);
+  float e2squ = m0_2 * m0_2 + pt2 * pt2 * (1.0f + 1.0f / tantheta2 / tantheta2);
 
   // fold onto 0...pi
   float deltaPhi = std::fabs(phi1 - phi2);
-  while (deltaPhi > M_PI * 2) {
-    deltaPhi -= M_PI * 2;
+  while (deltaPhi > TwoPI) {
+    deltaPhi -= TwoPI;
   }
-  if (deltaPhi > M_PI) {
-    deltaPhi = M_PI * 2 - deltaPhi;
+  if (deltaPhi > PI) {
+    deltaPhi = TwoPI - deltaPhi;
   }
 
   float cosDeltaPhi = 0;
-  if (deltaPhi < M_PI / 3) {
+  if (deltaPhi < PI / 3.0f) {
     cosDeltaPhi = 1.0 - deltaPhi * deltaPhi / 2 + deltaPhi * deltaPhi * deltaPhi * deltaPhi / 24;
-  } else if (deltaPhi < 2 * M_PI / 3) {
-    cosDeltaPhi = -(deltaPhi - M_PI / 2) + 1.0 / 6 * std::pow((deltaPhi - M_PI / 2), 3);
+  } else if (deltaPhi < 2.0f * PI / 3.0f) {
+    cosDeltaPhi = -(deltaPhi - PI / 2) + 1.0 / 6 * std::pow((deltaPhi - PI / 2), 3);
   } else {
-    cosDeltaPhi = -1.0 + 1.0 / 2.0 * (deltaPhi - M_PI) * (deltaPhi - M_PI) - 1.0 / 24.0 * std::pow(deltaPhi - M_PI, 4);
+    cosDeltaPhi = -1.0f + 1.0f / 2.0f * (deltaPhi - PI) * (deltaPhi - PI) - 1.0f / 24.0f * std::pow(deltaPhi - PI, 4.0f);
   }
 
-  double mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2 * (std::sqrt(e1squ * e2squ) - (pt1 * pt2 * (cosDeltaPhi + 1.0 / tantheta1 / tantheta2)));
+  double mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2.0f * (std::sqrt(e1squ * e2squ) - (pt1 * pt2 * (cosDeltaPhi + 1.0f / tantheta1 / tantheta2)));
 
   //LOGF(debug, "%f %f %f %f %f %f %f %f %f", pt1, eta1, phi1, pt2, eta2, phi2, m0_1, m0_2, mass2);
 
@@ -308,7 +310,7 @@ double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& tr
 }
 
 template <typename T>
-float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, float bSign)
+float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, int magField)
 {
   //
   // calculates dphistar
@@ -322,16 +324,16 @@ float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, floa
   auto pt2 = track2.pt();
   auto charge2 = track2.sign();
 
-  float dphistar = phi1 - phi2 - charge1 * bSign * std::asin(0.075 * radius / pt1) + charge2 * bSign * std::asin(0.075 * radius / pt2);
+  float dphistar = phi1 - phi2 - charge1 * std::asin(0.015 * magField * radius / pt1) + charge2 * std::asin(0.015 * magField * radius / pt2);
 
-  if (dphistar > M_PI) {
-    dphistar = M_PI * 2 - dphistar;
+  if (dphistar > PI) {
+    dphistar = TwoPI - dphistar;
   }
-  if (dphistar < -M_PI) {
-    dphistar = -M_PI * 2 - dphistar;
+  if (dphistar < -PI) {
+    dphistar = -TwoPI - dphistar;
   }
-  if (dphistar > M_PI) { // might look funny but is needed
-    dphistar = M_PI * 2 - dphistar;
+  if (dphistar > PI) { // might look funny but is needed
+    dphistar = TwoPI - dphistar;
   }
 
   return dphistar;

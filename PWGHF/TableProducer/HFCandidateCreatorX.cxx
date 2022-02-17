@@ -175,7 +175,7 @@ struct HFCandidateCreatorX {
           // calculate relevant properties
           const auto& XsecondaryVertex = df3.getPCACandidate();
           auto chi2PCA = df3.getChi2AtPCACandidate();
-          auto covMatrixPCA = df3.calcPCACovMatrix().Array();
+          auto covMatrixPCA = df3.calcPCACovMatrixFlat();
           hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
 
           df3.propagateTracksToVertex();          // propagate the pions and Jpsi to the X vertex
@@ -252,7 +252,7 @@ struct HFCandidateCreatorXMC {
   void process(aod::HfCandX const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles_000 const& particlesMC)
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;

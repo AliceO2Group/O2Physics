@@ -167,8 +167,8 @@ struct DQBarrelTrackSelection {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     TString cutNames = "TrackBarrel_BeforeCuts;";
-    for (int i = 0; i < fTrackCuts.size(); i++) {
-      cutNames += Form("TrackBarrel_%s;", fTrackCuts[i].GetName());
+    for (auto& cut : fTrackCuts) {
+      cutNames += Form("TrackBarrel_%s;", cut.GetName());
     }
 
     DefineHistograms(fHistMan, cutNames.Data());     // define all histograms
@@ -222,7 +222,6 @@ struct DQBarrelTrackSelection {
 };
 
 struct DileptonEE {
-  Produces<aod::Dileptons> dileptonList;
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fPairCuts;
@@ -306,8 +305,7 @@ struct DileptonEE {
         if (!filter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPair<pairType>(tpos, tneg, fValues);
-        dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], 0, filter);
+        VarManager::FillPair<pairType, gkTrackFillMap>(tpos, tneg, fValues);
         for (int i = 0; i < fNTrackCuts; ++i) {
           if (filter & (uint8_t(1) << i)) {
             fHistMan->FillHistClass(Form("PairsBarrelULS_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
@@ -319,8 +317,7 @@ struct DileptonEE {
         if (!filter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPair<pairType>(tpos, tpos2, fValues);
-        dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], 2, filter);
+        VarManager::FillPair<pairType, gkTrackFillMap>(tpos, tpos2, fValues);
         for (int i = 0; i < fNTrackCuts; ++i) {
           if (filter & (uint8_t(1) << i)) {
             fHistMan->FillHistClass(Form("PairsBarrelLSpp_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
@@ -334,8 +331,7 @@ struct DileptonEE {
         if (!filter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPair<pairType>(tneg, tneg2, fValues);
-        dileptonList(event, fValues[VarManager::kMass], fValues[VarManager::kPt], fValues[VarManager::kEta], fValues[VarManager::kPhi], -2, filter);
+        VarManager::FillPair<pairType, gkTrackFillMap>(tneg, tneg2, fValues);
         for (int i = 0; i < fNTrackCuts; ++i) {
           if (filter & (uint8_t(1) << i)) {
             fHistMan->FillHistClass(Form("PairsBarrelLSnn_%s", fTrkCutsNameArray->At(i)->GetName()), fValues);
@@ -388,7 +384,7 @@ struct DQEventMixing {
 
     events.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
-    AnalysisDataProcessorBuilder::GroupSlicer slicerTracks(events, tracksTuple);
+    GroupSlicer slicerTracks(events, tracksTuple);
 
     // Strictly upper categorised collisions, for 100 combinations per bin, skipping those in entry -1
     for (auto& [event1, event2] : selfCombinations("fMixingHash", 10, -1, events, events)) {
@@ -424,17 +420,18 @@ struct DQEventMixing {
           if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
             continue;
           }
-          VarManager::FillPair<pairType>(track1, track2, fValues);
+          VarManager::FillPairME<pairType>(track1, track2, fValues);
 
-          for (int i = 0; i < fCutNames.size(); ++i) {
+          int i = 0;
+          for (auto cutName = fCutNames.begin(); cutName != fCutNames.end(); cutName++, i++) {
             if (twoTrackFilter & (uint8_t(1) << i)) {
               if (track1.sign() * track2.sign() < 0) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEULS_%s", fCutNames[i].Data()), fValues);
+                fHistMan->FillHistClass(Form("PairsBarrelMEULS_%s", (*cutName).Data()), fValues);
               } else {
                 if (track1.sign() > 0) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMELSpp_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelMELSpp_%s", (*cutName).Data()), fValues);
                 } else {
-                  fHistMan->FillHistClass(Form("PairsBarrelMELSnn_%s", fCutNames[i].Data()), fValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelMELSnn_%s", (*cutName).Data()), fValues);
                 }
               }
             } // end if (filter bits)

@@ -13,7 +13,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -107,10 +106,10 @@ struct TrackCheckTaskEvSel {
       bool isPrimary = false;
 
       if (isMC) { //determine particle species base on MC truth and if it is primary or not
-        const auto particle = track.mcParticle();
+        const auto particle = track.mcParticle_as<aod::McParticles_000>();
         int pdgcode = particle.pdgCode();
 
-        if (MC::isPhysicalPrimary(particle)) { //is primary?
+        if (particle.isPhysicalPrimary()) { //is primary?
           isPrimary = true;
         }
 
@@ -188,7 +187,7 @@ struct TrackCheckTaskEvSelTrackSel {
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
                soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
                                        aod::TrackSelection, aod::McTrackLabels>>& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles_000& mcParticles)
   {
 
     //event selection
@@ -205,10 +204,10 @@ struct TrackCheckTaskEvSelTrackSel {
       bool isPrimary = false;
 
       if (isMC) { //determine particle species base on MC truth and if it is primary or not
-        const auto particle = track.mcParticle();
+        const auto particle = track.mcParticle_as<aod::McParticles_000>();
         int pdgcode = particle.pdgCode();
 
-        if (MC::isPhysicalPrimary(particle)) { //is primary?
+        if (particle.isPhysicalPrimary()) { //is primary?
           isPrimary = true;
         }
         //Calculate y

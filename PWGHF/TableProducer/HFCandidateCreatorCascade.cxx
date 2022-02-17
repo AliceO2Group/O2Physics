@@ -48,7 +48,6 @@ using MyBigTracks = aod::BigTracks;
 
 /// Reconstruction of heavy-flavour cascade decay candidates
 struct HFCandidateCreatorCascade {
-
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
   Configurable<double> bZ{"bZ", 5., "magnetic field"};
@@ -76,13 +75,14 @@ struct HFCandidateCreatorCascade {
   double massLc = RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus);
   double mass2K0sP{0.};
 
-  void process(aod::Collisions const& collisions,
-               aod::HfTrackIndexCasc const& rowsTrackIndexCasc,
-               MyBigTracks const& tracks,
-               aod::V0Datas const& V0s
+  void process(aod::Collisions const&,
+               aod::HfCascade const& rowsTrackIndexCasc,
+               MyBigTracks const&,
+               aod::V0sLinked const&,
+               aod::V0Datas const&
 #ifdef MY_DEBUG
                ,
-               aod::McParticles& mcParticles
+               aod::McParticles_000& mcParticles
 #endif
   )
   {
@@ -100,7 +100,11 @@ struct HFCandidateCreatorCascade {
     for (const auto& casc : rowsTrackIndexCasc) {
 
       const auto& bach = casc.index0_as<MyBigTracks>();
-      const auto& v0 = casc.indexV0_as<o2::aod::V0Datas>();
+      if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) {
+        LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        continue;
+      }
+      const auto& v0 = casc.v0_as<aod::V0sLinked>().v0Data();
       const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
       const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();
 
@@ -138,7 +142,7 @@ struct HFCandidateCreatorCascade {
 
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
-      auto covMatrixPCA = df.calcPCACovMatrix().Array();
+      auto covMatrixPCA = df.calcPCACovMatrixFlat();
       hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       // do I have to call "df.propagateTracksToVertex();"?
       auto trackParVarV0 = df.getTrack(0);
@@ -177,8 +181,7 @@ struct HFCandidateCreatorCascade {
                        pVecV0[0], pVecV0[1], pVecV0[2],
                        impactParameterBach.getY(), impactParameterV0.getY(),
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
-                       casc.index0Id(), casc.indexV0Id(),
-                       casc.hfflag(),
+                       casc.index0Id(), casc.v0Id(),
                        v0.x(), v0.y(), v0.z(),
                        //v0.posTrack(), v0.negTrack(), // why this was not fine?
                        trackV0DaughPos.globalIndex(), trackV0DaughNeg.globalIndex(),
@@ -219,7 +222,7 @@ struct HFCandidateCreatorCascadeMC {
 
   void process(aod::HfCandCascade const& candidates,
                aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+               aod::McParticles_000 const& particlesMC)
   {
     int8_t sign = 0;
     std::vector<int> arrDaughLcIndex;
@@ -240,11 +243,10 @@ struct HFCandidateCreatorCascadeMC {
       LOG(debug) << "\n";
       LOG(debug) << "Checking MC for candidate!";
       LOG(debug) << "Looking for K0s";
+#ifdef MY_DEBUG
       auto indexV0DaughPos = trackV0DaughPos.mcParticleId();
       auto indexV0DaughNeg = trackV0DaughNeg.mcParticleId();
       auto indexBach = bach.mcParticleId();
-
-#ifdef MY_DEBUG
       bool isLc = isLcK0SpFunc(indexBach, indexV0DaughPos, indexV0DaughNeg, indexProton, indexK0Spos, indexK0Sneg);
       bool isK0SfromLc = isK0SfromLcFunc(indexV0DaughPos, indexV0DaughNeg, indexK0Spos, indexK0Sneg);
 #endif
@@ -275,7 +277,7 @@ struct HFCandidateCreatorCascadeMC {
         // checking that the final daughters (decay depth = 3) are p, pi+, pi-
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
         if (arrDaughLcIndex.size() == 3) {
-          for (auto iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
+          for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
             auto daughI = particlesMC.iteratorAt(arrDaughLcIndex[iProng]);
             arrDaughLcPDG[iProng] = daughI.pdgCode();
           }

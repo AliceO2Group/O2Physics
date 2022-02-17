@@ -16,7 +16,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/Core/MC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -39,7 +38,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
  * QA histograms for track quantities.
  */
 //****************************************************************************************
-struct TrackQATask {
+struct TrackQa {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
 
@@ -131,7 +130,7 @@ struct TrackQATask {
   }
 };
 
-struct TrackCutQATask {
+struct TrackCutQa {
   HistogramRegistry cuts{"Cuts", {}, OutputObjHandlingPolicy::QAObject};
   TrackSelection selectedTracks = getGlobalTrackSelection();
   static constexpr int ncuts = static_cast<int>(TrackSelection::TrackCuts::kNCuts);
@@ -158,7 +157,7 @@ struct TrackCutQATask {
  * QA task including MC truth info.
  */
 //****************************************************************************************
-struct TrackQATaskMC {
+struct TrackQaMc {
 
   HistogramRegistry resolution{"Resolution", {}, OutputObjHandlingPolicy::QAObject};
 
@@ -182,12 +181,12 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   const int add_cut_qa = cfgc.options().get<int>("add-cut-qa");
 
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<TrackQATask>(cfgc, TaskName{"track-qa-histograms"}));
+  workflow.push_back(adaptAnalysisTask<TrackQa>(cfgc));
   if (add_cut_qa) {
-    workflow.push_back(adaptAnalysisTask<TrackCutQATask>(cfgc, TaskName{"track-cut-qa-histograms"}));
+    workflow.push_back(adaptAnalysisTask<TrackCutQa>(cfgc));
   }
   if (isMC) {
-    workflow.push_back(adaptAnalysisTask<TrackQATaskMC>(cfgc, TaskName{"track-qa-histograms-mc"}));
+    workflow.push_back(adaptAnalysisTask<TrackQaMc>(cfgc));
   }
   return workflow;
 }

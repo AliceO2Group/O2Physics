@@ -281,8 +281,8 @@ int main(int, char**)
 
   displayEntities<MFTTracks, FwdTracks, FwdTracksCov>();
 
-  displayEntities<HfTrackIndexProng2, HfCandProng2>();
-  displayEntities<HfTrackIndexProng3, HfCandProng3>();
+  displayEntities<Hf2Prong, HfCandProng2>();
+  displayEntities<Hf3Prong, HfCandProng3>();
 
   graphFooter();
   return 0;

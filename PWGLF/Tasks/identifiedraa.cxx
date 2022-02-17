@@ -24,7 +24,6 @@
 /// o2-analysis-pid-tpc-full,  o2-analysis-trackextension,
 /// o2-analysis-pid-tof-full, o2-analysis-id-raa
 
-#include "Common/Core/MC.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -115,7 +114,7 @@ struct identifiedraaTask {
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)
   {
     for (auto& track : tracks) {
-      const auto mcParticle = track.mcParticle();
+      const auto mcParticle = track.template mcParticle_as<aod::McParticles_000>();
       for (int j = 0; j < 16; j++) {
         if (globalTrackswoPrim.IsSelected(track, static_cast<TrackSelection::TrackCuts>(j))) {
           histos.fill(HIST("TrackCut"), j);
@@ -144,7 +143,7 @@ struct identifiedraaTask {
       if (!globalTrackswoPrim.IsSelected(track)) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(mcParticle)) {
+      if (!mcParticle.isPhysicalPrimary()) {
         if (mcParticle.pdgCode() == pdg_num[i]) {
           histos.fill(HIST(dca_xy_sec[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(dca_z_sec[i]), track.pt(), track.dcaZ());
@@ -190,7 +189,7 @@ struct identifiedraaTask {
       if (std::abs(0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()))) > 0.5) {
         continue;
       }
-      if (!MC::isPhysicalPrimary(particle)) {
+      if (!particle.isPhysicalPrimary()) {
         continue;
       }
       if (particle.pdgCode() != pdg_num[i]) {
@@ -205,7 +204,7 @@ struct identifiedraaTask {
                            aod::TracksExtended, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa,
                            aod::pidTOFFullPr> const& tracks,
-                 const aod::McParticles& mcParticles)
+                 const aod::McParticles_000& mcParticles)
   {
     // LOGF(info, "Enter processMC!");
     fillHistograms_MC<0>(tracks, mcParticles);

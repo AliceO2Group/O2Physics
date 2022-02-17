@@ -47,7 +47,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksExtended,
+using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
                                 aod::pidTOFFullEl, aod::pidTOFFullPi,
@@ -496,8 +496,8 @@ struct v0selector {
         auto bTrack = getTrackParCov(casc.bachelor_as<FullTracksExt>());
 
         if (cpos < 0) { //swap charge
-          auto pTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
-          auto nTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
+          pTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
+          nTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
         }
 
         int nCand = fitter.process(pTrack, nTrack);
@@ -567,7 +567,6 @@ struct v0selector {
         }
 
         const auto& cascvtx = fitterCasc.getPCACandidate();
-        const std::array<float, 3> pvecCasc = {pvecpos[0] + pvecneg[0] + pvecbach[0], pvecpos[1] + pvecneg[1] + pvecbach[1], pvecpos[2] + pvecneg[2] + pvecbach[2]};
         auto CascCosinePA = RecoDecay::CPA(pVtx, array{cascvtx[0], cascvtx[1], cascvtx[2]}, pvecbach);
         registry.fill(HIST("hCascCosPA"), CascCosinePA);
 

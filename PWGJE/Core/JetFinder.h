@@ -101,7 +101,8 @@ class JetFinder
   fastjet::Selector selRho;
 
   /// Default constructor
-  JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : phiMin(phi_Min),
+  JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2 * M_PI) : bkgSubMode(BkgSubMode::none),
+                                                                                                        phiMin(phi_Min),
                                                                                                         phiMax(phi_Max),
                                                                                                         etaMin(eta_Min),
                                                                                                         etaMax(eta_Max),
@@ -116,7 +117,7 @@ class JetFinder
                                                                                                         ghostEtaMax(eta_Max),
                                                                                                         ghostArea(0.005),
                                                                                                         ghostRepeatN(1),
-                                                                                                        ghostktMean(1e-100), //is float precise enough?
+                                                                                                        ghostktMean(1e-100), // is float precise enough?
                                                                                                         gridScatter(1.0),
                                                                                                         ktScatter(0.1),
                                                                                                         jetBkgR(0.2),
@@ -124,6 +125,9 @@ class JetFinder
                                                                                                         bkgPhiMax(phi_Max),
                                                                                                         bkgEtaMin(eta_Min),
                                                                                                         bkgEtaMax(eta_Max),
+                                                                                                        constSubAlpha(1.0),
+                                                                                                        constSubRMax(0.6),
+                                                                                                        isReclustering(false),
                                                                                                         algorithm(fastjet::antikt_algorithm),
                                                                                                         recombScheme(fastjet::E_scheme),
                                                                                                         strategy(fastjet::Best),
@@ -131,15 +135,11 @@ class JetFinder
                                                                                                         algorithmBkg(fastjet::JetAlgorithm(fastjet::kt_algorithm)),
                                                                                                         recombSchemeBkg(fastjet::RecombinationScheme(fastjet::E_scheme)),
                                                                                                         strategyBkg(fastjet::Best),
-                                                                                                        areaTypeBkg(fastjet::active_area),
-                                                                                                        bkgSubMode(BkgSubMode::none),
-                                                                                                        constSubAlpha(1.0),
-                                                                                                        constSubRMax(0.6),
-                                                                                                        isReclustering(false)
+                                                                                                        areaTypeBkg(fastjet::active_area)
 
   {
 
-    //default constructor
+    // default constructor
   }
 
   /// Default destructor
@@ -159,11 +159,11 @@ class JetFinder
   /// \param inputParticles vector of input particles/tracks
   /// \param jets veector of jets to be filled
   /// \return ClusterSequenceArea object needed to access constituents
-  fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets); //ideally find a way of passing the cluster sequence as a reeference
+  fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets); // ideally find a way of passing the cluster sequence as a reeference
 
  private:
-  //void setParams();
-  //void setBkgSub();
+  // void setParams();
+  // void setBkgSub();
   std::unique_ptr<fastjet::BackgroundEstimatorBase> bkgE;
   std::unique_ptr<fastjet::Subtractor> sub;
   std::unique_ptr<fastjet::contrib::ConstituentSubtractor> constituentSub;
@@ -171,7 +171,7 @@ class JetFinder
   ClassDefNV(JetFinder, 1);
 };
 
-//does this belong here?
+// does this belong here?
 template <typename T>
 void fillConstituents(const T& constituent, std::vector<fastjet::PseudoJet>& constituents)
 {

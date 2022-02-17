@@ -24,6 +24,9 @@ using namespace o2::framework::expressions;
 template <typename TC>
 bool hasGoodPID(cutHolder diffCuts, TC track);
 
+template <typename T>
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs);
+
 // add here Selectors for different types of diffractive events
 // Selector for Double Gap events
 struct DGSelector {
@@ -31,101 +34,127 @@ struct DGSelector {
   DGSelector() = default;
 
   // Function to check if collisions passes filter
-  template <typename CC, typename BC, typename BCs, typename TCs, typename MUs>
-  bool IsSelected(cutHolder diffCuts, CC const& collision, BC& bc, BCs& bcs, TCs& tracks, MUs& muons)
+  template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
+  int IsSelected(cutHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
-    LOGF(info, "Collision %f BC %i", collision.collisionTime(), bc.globalBC());
-    LOGF(info, "Number of close BCs: %i", bcs.size());
-    LOGF(info, "Number of tracks: %i", tracks.size());
+    LOGF(debug, "Collision %f BC %i", collision.collisionTime(), bc.globalBC());
+    LOGF(debug, "Number of close BCs: %i", bcRange.size());
 
-    // characteristics of collision and nominal bc
-    // Decisions which do NOT need pre- post-pileup protection
+    // check that there are no FIT signals in any of the compatible BCs
+    // Double Gap (DG) condition
+    for (auto& bc : bcRange) {
+      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
+        return 1;
+      }
+    }
 
     // Number of tracks
-    //if (tracks.size() < diffCuts.minNTracks() || tracks.size() > diffCuts.maxNTracks()) {
-    //  return false;
-    //}
+    // All tracks in vertex
+    LOGF(debug, "Number of tracks: %i in vertex: %i", tracks.size(), collision.numContrib());
+    if (collision.numContrib() != tracks.size()) {
+      return 2;
+    }
+    if (tracks.size() < diffCuts.minNTracks() || tracks.size() > diffCuts.maxNTracks()) {
+      return 3;
+    }
 
     // all tracks must be global tracks
-    // ATTENTION: isGlobalTrack is created by o2-analysis-trackselection
-    //            The trackselection currently has fixed settings and can not be configured with
-    //            command line options! This is not what we want!
-    LOGF(info, "Track types");
-    for (auto& track : tracks) {
-      LOGF(info, "  : %i / %i / %i / %i", track.trackType(), track.isGlobalTrack(), track.isGlobalTrackSDD(), track.itsClusterMap());
-    }
-
-    // tracks with TOF hits
-    // ATTENTION: in Run 2 converted data hasTOF is often true although the tofSignal
-    //            has a dummy value (99998.) This will be corrected in new versions
-    //            of the data - check this!
-    LOGF(info, "TOF");
+    // and some need to have a TOF hit
+    // chaeck also net charge
+    auto goodTracks = true;
     int nTracksWithTOFHit = 0;
+    auto netCharge = 0;
+    LOGF(debug, "Tracks");
     for (auto& track : tracks) {
-      LOGF(info, "  [%i] signal %f / chi2: %f", track.hasTOF(), track.tofSignal(), track.tofChi2());
+      goodTracks &= (track.isGlobalTrack() > 0);
+
+      // update netCharge
+      netCharge += track.sign();
+
+      // TOF hit with good match quality
+      if (track.hasTOF() && track.tofChi2() < diffCuts.maxTOFChi2()) {
+        nTracksWithTOFHit++;
+      }
+      LOGF(debug, "   global %i, TOF [%i] signal %f / chi2: %f", track.isGlobalTrack(), (track.hasTOF() ? 1 : 0), track.tofSignal(), track.tofChi2());
     }
-    LOGF(info, "Tracks with TOF hit %i", nTracksWithTOFHit);
+    LOGF(debug, "  Tracks net charge %i, with TOF hit %i / %i", netCharge, nTracksWithTOFHit, diffCuts.minNTracksWithTOFHit());
+    goodTracks &= (nTracksWithTOFHit >= diffCuts.minNTracksWithTOFHit());
+    goodTracks &= (netCharge >= diffCuts.minNetCharge() && netCharge <= diffCuts.maxNetCharge());
+    if (!goodTracks) {
+      return 4;
+    }
 
     // only tracks with good PID
+    auto goodPID = true;
     for (auto& track : tracks) {
-      auto goodPID = hasGoodPID(diffCuts, track);
+      goodPID &= hasGoodPID(diffCuts, track);
+    }
+    if (!goodPID) {
+      return 5;
     }
 
-    // Decisions which need past-future protection
-    // This applies to 'slow' detectors
-    // loop over all selected BCs
-    LOGF(info, "Number of close BCs: %i", bcs.size());
-    for (auto& bc : bcs) {
-      LOGF(info, "BC %i / %i", bc.globalBC(), bc.triggerMask());
-
-      // check no activity in FT0
-      LOGF(info, "FT0 %i", collision.foundFT0());
-      if (bc.has_ft0()) {
-        LOGF(info, "  %f / %f / %f / %f",
-             bc.ft0().timeA(), bc.ft0().amplitudeA()[0],
-             bc.ft0().timeC(), bc.ft0().amplitudeC()[0]);
-      }
-
-      // check no activity in FV0-A
-      LOGF(info, "FV0-A");
-      if (bc.has_fv0a()) {
-        LOGF(info, "  %f / %f", bc.fv0a().time(), bc.fv0a().amplitude()[0]);
-      }
-
-      // check no activity in FV0-C
-      // ATTENTION: not available in Run 3 data
-      //LOGF(info, "FV0-C");
-      //if (bc.has_fv0c()) {
-      //  LOGF(info, "  %f / %f", bc.fv0c().time(), bc.fv0c().amplitude()[0]);
-      //}
-
-      // check no activity in FDD (AD Run 2)
-      LOGF(info, "FDD");
-      if (bc.has_fdd()) {
-        LOGF(info, "  %f / %f / %f / %f",
-             bc.fdd().timeA(), bc.fdd().amplitudeA()[0],
-             bc.fdd().timeC(), bc.fdd().amplitudeC()[0]);
-      }
-
-      // check no activity in ZDC
-      LOGF(info, "ZDC");
-      if (bc.has_zdc()) {
-        LOGF(info, "  %f / %f / %f / %f",
-             bc.zdc().timeZEM1(), bc.zdc().energyZEM1(),
-             bc.zdc().timeZEM2(), bc.zdc().energyZEM2());
-      }
-
-      // check no activity in muon arm
-      LOGF(info, "Muons %i", muons.size());
-      for (auto& muon : muons) {
-        LOGF(info, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
-      }
+    // check no activity in muon arm
+    LOGF(debug, "Muons %i", fwdtracks.size());
+    for (auto& muon : fwdtracks) {
+      LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
+    }
+    if (fwdtracks.size() > 0) {
+      return 6;
     }
 
-    // ATTENTION: currently all events are selected
-    return true;
+    // if we arrive here then the event is good!
+    return 0;
   };
 };
+
+// The associations between collsisions and BCs can be ambiguous.
+// By default a collision is associated with the BC closest in time.
+// The collision time t_coll is determined by the tracks which are used to
+// reconstruct the vertex. t_coll has an uncertainty dt_coll.
+// Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
+// around t_coll could potentially be the true BC. ndt is typically 4.
+
+template <typename T>
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs)
+{
+  LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
+
+  auto bcIter = collision.bc_as<T>();
+
+  // due to the filling scheme the most probably BC may not be the one estimated from the collision time
+  uint64_t mostProbableBC = bcIter.globalBC();
+  uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+  int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  int64_t minBC = meanBC - deltaBC;
+  uint64_t maxBC = meanBC + deltaBC;
+  if (minBC < 0) {
+    minBC = 0;
+  }
+
+  // find slice of BCs table with BC in [minBC, maxBC]
+  int64_t maxBCId = bcIter.globalIndex();
+  int moveCount = 0; // optimize to avoid to re-create the iterator
+  while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
+    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    maxBCId = bcIter.globalIndex();
+    ++bcIter;
+    ++moveCount;
+  }
+
+  bcIter.moveByIndex(-moveCount); // Move back to original position
+  int64_t minBCId = collision.bcId();
+  while (bcIter != bcs.begin() && bcIter.globalBC() <= maxBC && (int64_t)bcIter.globalBC() >= minBC) {
+    LOGF(debug, "Table id %d BC %llu", bcIter.globalIndex(), bcIter.globalBC());
+    minBCId = bcIter.globalIndex();
+    --bcIter;
+  }
+
+  LOGF(debug, "  BC range: %i (%d) - %i (%d)", minBC, minBCId, maxBC, maxBCId);
+
+  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  bcs.copyIndexBindings(slice);
+  return slice;
+}
 
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
@@ -134,7 +163,7 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
 {
   // El, Mu, Pi, Ka, and Pr are considered
   // at least one nSigma must be within set limits
-  LOGF(info, "TPC PID %f / %f / %f / %f / %f",
+  LOGF(debug, "TPC PID %f / %f / %f / %f / %f",
        track.tpcNSigmaEl(),
        track.tpcNSigmaMu(),
        track.tpcNSigmaPi(),
@@ -157,7 +186,7 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
   }
 
   if (track.hasTOF()) {
-    LOGF(info, "TOF PID %f / %f / %f / %f / %f",
+    LOGF(debug, "TOF PID %f / %f / %f / %f / %f",
          track.tofNSigmaEl(),
          track.tofNSigmaMu(),
          track.tofNSigmaPi(),
