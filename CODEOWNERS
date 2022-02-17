@@ -12,6 +12,7 @@
 # @alibuild has to be in each line to allow self approval of PRs
 
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf 
+/Common/CCDB/macros @alibuild @jgrosseo @iarsene @ekryshen
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera 
 /DPG @alibuild @mario-krueger
 /EventFiltering @alibuild @mpuccio 
