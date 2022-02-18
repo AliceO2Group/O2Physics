@@ -94,9 +94,12 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/hTPCcrossedRows", "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hTPCfindableVsCrossed", ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hTPCshared", "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
+    FullQaRegistry.add("FullTrackQA/hITSclusters", "; ITS clusters; Entries", kTH1F, {{10, 0, 10}});
+    FullQaRegistry.add("FullTrackQA//hITSclustersIB", "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
     FullQaRegistry.add("FullTrackQA/hDCAxy", "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCAz", "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCA", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
+    FullQaRegistry.add("FullTrackQA/hTPCdEdX", "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
     FullQaRegistry.add("FullTrackQA/nSigmaTPC_el", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTPC_pi", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     FullQaRegistry.add("FullTrackQA/nSigmaTPC_K", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
@@ -217,8 +220,11 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCcrossedRows"), part.tpcNClsCrossedRows());
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCfindableVsCrossed"), part.tpcNClsFindable(), part.tpcNClsCrossedRows());
       FullQaRegistry.fill(HIST("FullTrackQA/hTPCshared"), part.tpcNClsShared());
+      FullQaRegistry.fill(HIST("FullTrackQA/hITSclusters"), part.itsNCls());
+      FullQaRegistry.fill(HIST("FullTrackQA/hITSclustersIB"), part.itsNClsInnerBarrel());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCAz"), part.pt(), part.dcaZ());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCA"), part.pt(), std::sqrt(pow(part.dcaXY(), 2.) + pow(part.dcaZ(), 2.)));
+      FullQaRegistry.fill(HIST("FullTrackQA/hTPCdEdX"), part.tpcInnerParam(), part.tpcSignal());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_el"), part.tpcInnerParam(), part.tpcNSigmaEl());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_pi"), part.tpcInnerParam(), part.tpcNSigmaPi());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_K"), part.tpcInnerParam(), part.tpcNSigmaKa());
