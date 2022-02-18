@@ -23,6 +23,7 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -47,7 +48,8 @@ struct HfTaskBplus {
     "registry",
     {{"hPtProng0", "B+ candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
      {"hPtProng1", "B+ candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
-     {"hPtCand", "B+ candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
+     {"hPtCand", "B+ candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
+     {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
 
   Configurable<int> selectionFlagBPlus{"selectionFlagBPlus", 1, "Selection Flag for B+"};
   Configurable<double> cutYCandMax{"cutYCandMax", 0.8, "max. cand. rapidity"};
@@ -55,7 +57,8 @@ struct HfTaskBplus {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("hMass", "B+ candidates;inv. mass #bar{D^{0}}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    // registry.add("hMass", "B+ candidates;inv. mass #bar{D^{0}}#pi^{+} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass", "B+ candidates;inv. mass #bar{D^{0}}#pi^{+} (GeV/#it{c}^{2});centrality", {HistType::kTH3F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
     registry.add("hDecLength", "B+ candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXY", "B+ candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "B+ candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -72,8 +75,11 @@ struct HfTaskBplus {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_bplus::isSelBPlusToD0Pi >= selectionFlagBPlus);
 
-  void process(soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> const& candidates, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>, aod::BigTracks)
+  void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate>> const& candidates, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>, aod::BigTracks)
   {
+    auto centrality = collision.centV0M();
+    registry.fill(HIST("hCentrality"), centrality);
+
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
         continue;
@@ -85,7 +91,7 @@ struct HfTaskBplus {
       auto candD0 = candidate.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>();
       auto candPi = candidate.index1_as<aod::BigTracks>();
 
-      registry.fill(HIST("hMass"), InvMassBPlus(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), InvMassBPlus(candidate), candidate.pt(), centrality);
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -166,7 +172,7 @@ struct HfTaskBplusMc {
   void process(soa::Filtered<soa::Join<aod::HfCandBPlus, aod::HFSelBPlusToD0PiCandidate, aod::HfCandBPMCRec>> const& candidates,
                soa::Join<aod::McParticles_000, aod::HfCandBPMCGen> const& particlesMC, aod::BigTracksMC const& tracks, aod::HfCandProng2 const&)
   {
-    //MC rec
+    // MC rec
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_bplus::DecayType::BPlusToD0Pi)) {
         continue;
@@ -212,7 +218,7 @@ struct HfTaskBplusMc {
     } // rec
 
     // MC gen. level
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_bplus::DecayType::BPlusToD0Pi) {
 
@@ -243,7 +249,7 @@ struct HfTaskBplusMc {
         registry.fill(HIST("hYGen"), yParticle, particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta(), particle.pt());
       }
-    } //gen
+    } // gen
   }   // process
 };    // struct
 
