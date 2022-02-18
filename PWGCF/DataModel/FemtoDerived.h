@@ -89,6 +89,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
+DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
@@ -120,8 +122,11 @@ DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
                   femtodreamparticle::TPCNClsCrossedRows,
                   track::TPCNClsShared,
                   track::TPCInnerParam,
+                  femtodreamparticle::ITSNCls,
+                  femtodreamparticle::ITSNClsInnerBarrel,
                   track::DcaXY,
                   track::DcaZ,
+                  track::TPCSignal,
                   pidtpc_tiny::TPCNSigmaStoreEl,
                   pidtpc_tiny::TPCNSigmaStorePi,
                   pidtpc_tiny::TPCNSigmaStoreKa,
