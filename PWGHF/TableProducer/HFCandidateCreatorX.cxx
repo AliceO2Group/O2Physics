@@ -56,7 +56,6 @@ struct HFCandidateCreatorX {
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtJpsi{TH1F("hPtJpsi", "J/#psi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPAJpsi{TH1F("hCPAJpsi", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassXToJpsiToEEPiPi{TH1F("hMassXToJpsiToEEPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow e+ e-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassXToJpsiToMuMuPiPi{TH1F("hMassXToJpsiToMuMuPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -107,13 +106,13 @@ struct HFCandidateCreatorX {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
-        if (TMath::Abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+        if (std::abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
           continue;
         }
         hMassJpsiToEE->Fill(InvMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
-        if (TMath::Abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+        if (std::abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
           continue;
         }
         hMassJpsiToMuMu->Fill(InvMassJpsiToMuMu(jpsiCand));
@@ -149,7 +148,6 @@ struct HFCandidateCreatorX {
         if (trackPos.pt() < ptPionMin) {
           continue;
         }
-        hPtPion->Fill(trackPos.pt());
         if (trackPos.sign() < 0) { // select only positive tracks - use partitions?
           continue;
         }
@@ -162,7 +160,6 @@ struct HFCandidateCreatorX {
           if (trackNeg.pt() < ptPionMin) {
             continue;
           }
-          hPtPion->Fill(trackNeg.pt());
           if (trackNeg.sign() > 0) { // select only negative tracks - use partitions?
             continue;
           }
