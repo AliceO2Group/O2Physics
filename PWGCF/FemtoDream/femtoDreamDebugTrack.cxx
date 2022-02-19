@@ -34,9 +34,9 @@ using namespace o2::soa;
 
 namespace
 {
-static constexpr int nCuts = 4;
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF"};
-static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.5f, 3.5f}};
+static constexpr int nCuts = 5;
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
+static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.5f, 3.5f, 100.f}};
 
 static constexpr int nNsigma = 3;
 static constexpr float kNsigma[nNsigma] = {3.5f, 3.f, 2.5f};
@@ -66,7 +66,7 @@ struct femtoDreamDebugTrack {
   using FemtoFullTracks = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
 
   Partition<FemtoFullTracks> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                        (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
+                                        // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
                                         ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for Event
@@ -205,7 +205,9 @@ struct femtoDreamDebugTrack {
     eventHisto.fillQA(col);
 
     for (auto& part : groupPartsOne) {
-
+      if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        continue;
+      }
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
         continue;
       }
