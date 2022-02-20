@@ -31,18 +31,20 @@ namespace o2::analysis::femtoDream
 namespace femtoDreamTrackSelection
 {
 /// The different selections this task is capable of doing
-enum TrackSel { kSign,        ///< Sign of the track
-                kpTMin,       ///< Min. p_T (GeV/c)
-                kpTMax,       ///< Max. p_T (GeV/c)
-                kEtaMax,      ///< Max. |eta|
-                kTPCnClsMin,  ///< Min. number of TPC clusters
-                kTPCfClsMin,  ///< Min. fraction of crossed rows/findable TPC clusters
-                kTPCcRowsMin, ///< Min. number of crossed TPC rows
-                kTPCsClsMax,  ///< Max. number of shared TPC clusters
-                kDCAxyMax,    ///< Max. DCA_xy (cm)
-                kDCAzMax,     ///< Max. DCA_z (cm)
-                kDCAMin,      ///< Min. DCA_xyz (cm)
-                kPIDnSigmaMax ///< Max. |n_sigma| for PID
+enum TrackSel { kSign,         ///< Sign of the track
+                kpTMin,        ///< Min. p_T (GeV/c)
+                kpTMax,        ///< Max. p_T (GeV/c)
+                kEtaMax,       ///< Max. |eta|
+                kTPCnClsMin,   ///< Min. number of TPC clusters
+                kTPCfClsMin,   ///< Min. fraction of crossed rows/findable TPC clusters
+                kTPCcRowsMin,  ///< Min. number of crossed TPC rows
+                kTPCsClsMax,   ///< Max. number of shared TPC clusters
+                kITSnClsMin,   ///< Min. number of ITS clusters
+                kITSnClsIbMin, ///< Min. number of ITS clusters in the inner barrel
+                kDCAxyMax,     ///< Max. DCA_xy (cm)
+                kDCAzMax,      ///< Max. DCA_z (cm)
+                kDCAMin,       ///< Min. DCA_xyz (cm)
+                kPIDnSigmaMax  ///< Max. |n_sigma| for PID
 };
 
 enum TrackContainerPosition {
@@ -64,6 +66,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                nTPCfMinSel(0),
                                nTPCcMinSel(0),
                                nTPCsMaxSel(0),
+                               nITScMinSel(0),
+                               nITScIbMinSel(0),
                                nDCAxyMaxSel(0),
                                nDCAzMaxSel(0),
                                nDCAMinSel(0),
@@ -189,6 +193,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   int nTPCfMinSel;
   int nTPCcMinSel;
   int nTPCsMaxSel;
+  int nITScMinSel;
+  int nITScIbMinSel;
   int nDCAxyMaxSel;
   int nDCAzMaxSel;
   int nDCAMinSel;
@@ -200,12 +206,14 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   float fClsMin;
   float cTPCMin;
   float sTPCMax;
+  float nITSclsMin;
+  float nITSclsIbMin;
   float dcaXYMax;
   float dcaZMax;
   float dcaMin;
   float nSigmaPIDMax;
   std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
-  static constexpr int kNtrackSelection = 12;
+  static constexpr int kNtrackSelection = 14;
   static constexpr std::string_view mSelectionNames[kNtrackSelection] = {"Sign",
                                                                          "PtMin",
                                                                          "PtMax",
@@ -214,6 +222,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                          "TPCfClsMin",
                                                                          "TPCcRowsMin",
                                                                          "TPCsClsMax",
+                                                                         "ITSnClsMin",
+                                                                         "ITSnClsIbMin",
                                                                          "DCAxyMax",
                                                                          "DCAzMax",
                                                                          "DCAMin",
@@ -227,6 +237,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                                         femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kUpperLimit,
+                                                                                        femtoDreamSelection::kLowerLimit,
+                                                                                        femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
@@ -240,6 +252,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                           "Minimum fraction of crossed rows/findable clusters",
                                                                           "Minimum number of crossed TPC rows",
                                                                           "Maximal number of shared TPC cluster",
+                                                                          "Minimum number of ITS clusters",
+                                                                          "Minimum number of ITS clusters in the inner barrel",
                                                                           "Maximal DCA_xy (cm)",
                                                                           "Maximal DCA_z (cm)",
                                                                           "Minimal DCA (cm)",
@@ -275,6 +289,8 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
     mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
     mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     mHistogramRegistry->add((folderName + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
@@ -303,6 +319,8 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
   nTPCfMinSel = getNSelections(femtoDreamTrackSelection::kTPCfClsMin);
   nTPCcMinSel = getNSelections(femtoDreamTrackSelection::kTPCcRowsMin);
   nTPCsMaxSel = getNSelections(femtoDreamTrackSelection::kTPCsClsMax);
+  nITScMinSel = getNSelections(femtoDreamTrackSelection::kITSnClsMin);
+  nITScIbMinSel = getNSelections(femtoDreamTrackSelection::kITSnClsIbMin);
   nDCAxyMaxSel = getNSelections(femtoDreamTrackSelection::kDCAxyMax);
   nDCAzMaxSel = getNSelections(femtoDreamTrackSelection::kDCAzMax);
   nDCAMinSel = getNSelections(femtoDreamTrackSelection::kDCAMin);
@@ -315,6 +333,8 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
   fClsMin = getMinimalSelection(femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit);
   cTPCMin = getMinimalSelection(femtoDreamTrackSelection::kTPCcRowsMin, femtoDreamSelection::kLowerLimit);
   sTPCMax = getMinimalSelection(femtoDreamTrackSelection::kTPCsClsMax, femtoDreamSelection::kUpperLimit);
+  nITSclsMin = getMinimalSelection(femtoDreamTrackSelection::kITSnClsMin, femtoDreamSelection::kLowerLimit);
+  nITSclsIbMin = getMinimalSelection(femtoDreamTrackSelection::kITSnClsIbMin, femtoDreamSelection::kLowerLimit);
   dcaXYMax = getMinimalSelection(femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
   dcaZMax = getMinimalSelection(femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
   dcaMin = getMinimalSelection(femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
@@ -392,6 +412,8 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
   const auto tpcNClsS = track.tpcNClsShared();
+  const auto itsNCls = track.itsNCls();
+  const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
   const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
@@ -420,6 +442,12 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
     return false;
   }
   if (nTPCsMaxSel > 0 && tpcNClsS > sTPCMax) {
+    return false;
+  }
+  if (nITScMinSel > 0 && itsNCls < nITSclsMin) {
+    return false;
+  }
+  if (nITScIbMinSel > 0 && itsNClsIB < nITSclsIbMin) {
     return false;
   }
   if (nDCAxyMaxSel > 0 && std::abs(dcaXY) > dcaXYMax) {
@@ -462,6 +490,8 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
   const auto tpcNClsS = track.tpcNClsShared();
+  const auto itsNCls = track.itsNCls();
+  const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
   const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
@@ -510,6 +540,12 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
         case (femtoDreamTrackSelection::kTPCsClsMax):
           observable = tpcNClsS;
           break;
+        case (femtoDreamTrackSelection::kITSnClsMin):
+          observable = itsNCls;
+          break;
+        case (femtoDreamTrackSelection::kITSnClsIbMin):
+          observable = itsNClsIB;
+          break;
         case (femtoDreamTrackSelection::kDCAxyMax):
           observable = dcaXY;
           break;
@@ -541,6 +577,8 @@ void FemtoDreamTrackSelection::fillQA(T const& track, std::string_view WhichDaug
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCcrossedRows"), track.tpcNClsCrossedRows());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCfindableVsCrossed"), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCshared"), track.tpcNClsShared());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hITSclusters"), track.itsNCls());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hITSclustersIB"), track.itsNClsInnerBarrel());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));

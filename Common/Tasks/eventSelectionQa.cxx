@@ -602,7 +602,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcontribAcc"), nContributors);
     }
   }
-  PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", true);
+  PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

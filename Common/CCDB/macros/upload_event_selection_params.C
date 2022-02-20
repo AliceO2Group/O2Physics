@@ -86,7 +86,7 @@ void upload_event_selection_params()
   period[n] = "lhc15i";
   par[n] = new EventSelectionParams(0);
   par[n]->SetOnVsOfParams(-223.155660, 7.117266, -6.218793, 0.543201);
-  runFirst[n] = 235193;
+  runFirst[n] = 235196;
   runLast[n] = 236866;
 
   n++;
@@ -114,12 +114,12 @@ void upload_event_selection_params()
   period[n] = "lhc15o1";
   par[n] = new EventSelectionParams(3);
   runFirst[n] = 244824;
-  runLast[n] = 245725;
+  runLast[n] = 245705;
 
   n++;
   period[n] = "lhc15o2";
   par[n] = new EventSelectionParams(3);
-  runFirst[n] = 245794;
+  runFirst[n] = 245829;
   runLast[n] = 246994;
 
   n++;
@@ -127,7 +127,7 @@ void upload_event_selection_params()
   par[n] = new EventSelectionParams(3);
   par[n]->fZNSumMean = -123.1;
   par[n]->fZNDifMean = 123.1;
-  runFirst[n] = 245726;
+  runFirst[n] = 245729;
   runLast[n] = 245793;
 
   n++;
@@ -152,7 +152,7 @@ void upload_event_selection_params()
   n++;
   period[n] = "lhc16t_pPb";
   par[n] = new EventSelectionParams(1);
-  runFirst[n] = 267132;
+  runFirst[n] = 267161;
   runLast[n] = 267166;
 
   n++;
@@ -202,12 +202,11 @@ void upload_event_selection_params()
       printf(" .... is not new, skipping\n");
       continue;
     }
-    printf("\n");
-
     headersFirst = ccdb.retrieveHeaders(Form("RCT/RunInformation/%i", runFirst[i]), metadataRCT, -1);
     headersLast = ccdb.retrieveHeaders(Form("RCT/RunInformation/%i", runLast[i]), metadataRCT, -1);
     ULong64_t sor = atol(headersFirst["SOR"].c_str());
     ULong64_t eor = atol(headersLast["EOR"].c_str());
+    printf("sor=%llu eor=%llu\n", sor, eor);
     metadata["period"] = period[i];
     metadata["run_first"] = Form("%d", runFirst[i]);
     metadata["run_last"] = Form("%d", runLast[i]);
