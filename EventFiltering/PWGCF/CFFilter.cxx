@@ -204,7 +204,7 @@ struct CFFilter {
     auto tmstamp = col.timestamp();
     auto mafneticField = getMagneticFieldTesla(tmstamp);
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
-    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M() / 2.);
+    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
 
     for (auto p1pt : partsProton0) {
@@ -228,7 +228,7 @@ struct CFFilter {
     bool keepEvent[nTriplets]{false};
     int lowQ3Triplets[2] = {0, 0};
     if (partsFemto.size() != 0) {
-      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M() / 2.);
+      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M());
       registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
       auto Q3TriggerLimit = (std::vector<float>)confQ3TriggerLimit;
       // TRIGGER FOR PPP TRIPLETS
