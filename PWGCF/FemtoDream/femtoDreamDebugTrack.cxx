@@ -95,7 +95,7 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/hTPCfindableVsCrossed", ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hTPCshared", "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
     FullQaRegistry.add("FullTrackQA/hITSclusters", "; ITS clusters; Entries", kTH1F, {{10, 0, 10}});
-    FullQaRegistry.add("FullTrackQA//hITSclustersIB", "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
+    FullQaRegistry.add("FullTrackQA/hITSclustersIB", "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
     FullQaRegistry.add("FullTrackQA/hDCAxy", "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCAz", "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCA", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});

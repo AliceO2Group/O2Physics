@@ -94,6 +94,8 @@ struct femtoDreamProducerTask {
 
   Filter colFilter = (ConfIsTrigger == (uint8_t) true) || (nabs(aod::collision::posZ) < ConfEvtZvtx);
 
+  Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
+
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkPtmin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "ConfTrk"), std::vector<float>{0.4f, 0.6f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Track selection: ")};
@@ -158,24 +160,26 @@ struct femtoDreamProducerTask {
 
     /// \todo fix how to pass array to setSelection, getRow() passing a different type!
     // v0Cuts.setSelection(ConfV0Selection->getRow(0), femtoDreamV0Selection::kDecVtxMax, femtoDreamSelection::kAbsUpperLimit);
-    v0Cuts.setSelection(ConfV0Sign, femtoDreamV0Selection::kV0Sign, femtoDreamSelection::kEqual);
-    v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kpTV0Min, femtoDreamSelection::kLowerLimit);
-    v0Cuts.setSelection(ConfDCAV0DaughMax, femtoDreamV0Selection::kDCAV0DaughMax, femtoDreamSelection::kUpperLimit);
-    v0Cuts.setSelection(ConfCPAV0Min, femtoDreamV0Selection::kCPAV0Min, femtoDreamSelection::kLowerLimit);
+    if (ConfStoreV0) {
+      v0Cuts.setSelection(ConfV0Sign, femtoDreamV0Selection::kV0Sign, femtoDreamSelection::kEqual);
+      v0Cuts.setSelection(ConfV0PtMin, femtoDreamV0Selection::kpTV0Min, femtoDreamSelection::kLowerLimit);
+      v0Cuts.setSelection(ConfDCAV0DaughMax, femtoDreamV0Selection::kDCAV0DaughMax, femtoDreamSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfCPAV0Min, femtoDreamV0Selection::kCPAV0Min, femtoDreamSelection::kLowerLimit);
 
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfTrkEta, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfV0DaughTPCnclsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-    // v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfV0DaughDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfV0DaughPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfTrkEta, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfV0DaughTPCnclsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-    // v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfV0DaughDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
-    v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfV0DaughPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-    v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kPosTrack, ConfTrkTPIDspecies);
-    v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kNegTrack, ConfTrkTPIDspecies);
-    v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfTrkEta, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfV0DaughTPCnclsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      // v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfV0DaughDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfV0DaughPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfTrkEta, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfV0DaughTPCnclsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      // v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfV0DaughDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfV0DaughPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kPosTrack, ConfTrkTPIDspecies);
+      v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kNegTrack, ConfTrkTPIDspecies);
+      v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+    }
   }
 
   void process(aod::FilteredFullCollision const& col, aod::BCsWithTimestamps const&, aod::FilteredFullTracks const& tracks,
@@ -253,35 +257,37 @@ struct femtoDreamProducerTask {
       }
     }
 
-    for (auto& v0 : fullV0s) {
-      auto postrack = v0.posTrack_as<aod::FilteredFullTracks>();
-      auto negtrack = v0.negTrack_as<aod::FilteredFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
-      // const auto dcaXYpos = postrack.dcaXY();
-      // const auto dcaZpos = postrack.dcaZ();
-      // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
-      if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
-        continue;
-      }
-      v0Cuts.fillQA<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
-      auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, v0, postrack, negtrack);
+    if (ConfStoreV0) {
+      for (auto& v0 : fullV0s) {
+        auto postrack = v0.posTrack_as<aod::FilteredFullTracks>();
+        auto negtrack = v0.negTrack_as<aod::FilteredFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
+        // const auto dcaXYpos = postrack.dcaXY();
+        // const auto dcaZpos = postrack.dcaZ();
+        // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
+        if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
+          continue;
+        }
+        v0Cuts.fillQA<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
+        auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, v0, postrack, negtrack);
 
-      if ((cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
-        int postrackID = v0.posTrackId();
-        int rowInPrimaryTrackTablePos = -1;
-        rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
-        childIDs[0] = rowInPrimaryTrackTablePos;
-        childIDs[1] = 0;
-        outputTracks(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs);
-        const int rowOfPosTrack = outputTracks.lastIndex();
-        int negtrackID = v0.negTrackId();
-        int rowInPrimaryTrackTableNeg = -1;
-        rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
-        childIDs[0] = 0;
-        childIDs[1] = rowInPrimaryTrackTableNeg;
-        outputTracks(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs);
-        const int rowOfNegTrack = outputTracks.lastIndex();
-        int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
-        outputTracks(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID);
+        if ((cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
+          int postrackID = v0.posTrackId();
+          int rowInPrimaryTrackTablePos = -1;
+          rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
+          childIDs[0] = rowInPrimaryTrackTablePos;
+          childIDs[1] = 0;
+          outputTracks(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs);
+          const int rowOfPosTrack = outputTracks.lastIndex();
+          int negtrackID = v0.negTrackId();
+          int rowInPrimaryTrackTableNeg = -1;
+          rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+          childIDs[0] = 0;
+          childIDs[1] = rowInPrimaryTrackTableNeg;
+          outputTracks(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs);
+          const int rowOfNegTrack = outputTracks.lastIndex();
+          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          outputTracks(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID);
+        }
       }
     }
   }
