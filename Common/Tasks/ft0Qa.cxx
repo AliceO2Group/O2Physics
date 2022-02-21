@@ -40,15 +40,15 @@ struct FT0Qa {
   OutputObj<TH2F> hResMult{TH2F("hResMult", "T0 resolution vs event multiplicity", 100, 0., 100, 100, -0.5, 0.5)};
   OutputObj<TH2F> hResColMult{TH2F("hResCol", "Col. time resolution vs event multiplicity", 100, 0., 100, 100, -0.5, 0.5)};
   OutputObj<TH1F> hColTime{TH1F("hColTime", "ColTime, ns; Coiilisions, ns", 500, -5, 5.)};
-  OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult, MIPs;T0Mmult, MIPs", 200, 0., 500., 300, 0., 1500.)};
+  OutputObj<TH2F> hT0V0mult{TH2F("hT0V0mult", "T0A vs V0 multiplicity;V0Mult, #ADC channels;T0Mmult, #ADC channels", 200, 0., 500., 300, 0., 1500.)};
   OutputObj<TH2F> hT0V0time{TH2F("hT0V0time", "T0A vs V0 time ;V0time;T0A", 200, -2, 2., 200, -2, 2)};
   OutputObj<TH1F> hNcontrib{TH1F("hContrib", "Ncontributers;#contributers", 100, -0.5, 99.5)};
   OutputObj<TH1F> hNcontribAC{TH1F("hContribAC", "Ncontributers with T0AC;#contributers", 100, -0.5, 99.5)};
   OutputObj<TH1F> hNcontribA{TH1F("hContribA", "Ncontributers with T0A;#contributers", 100, -0.5, 99.5)};
   OutputObj<TH1F> hNcontribC{TH1F("hContribC", "Ncontributers with T0C;#contributers", 100, -0.5, 99.5)};
   OutputObj<TH1F> hNcontribV0{TH1F("hContribV0", "Ncontributers with V0A;#contributers", 100, -0.5, 99.5)};
-  OutputObj<TH1F> hAmpV0{TH1F("hAmpV0", "amplitude V0A;#MIPs", 100, -0.5, 19.5)};
-  OutputObj<TH1F> hAmpT0{TH1F("hAmpT0", "amplitude T0A;#MIPs", 50, -0.5, 9.5)};
+  OutputObj<TH1F> hAmpV0{TH1F("hAmpV0", "amplitude V0A;#ADC channels", 500, 0, 3000)};
+  OutputObj<TH1F> hAmpT0{TH1F("hAmpT0", "amplitude T0A;#ADC channels", 500, 0, 500)};
 
   // Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
 
@@ -56,8 +56,6 @@ struct FT0Qa {
   {
     float sumAmpFT0 = 0;
     float sumAmpFV0 = 0;
-    float mipV0 = 24;
-    float mipT0 = 15;
     int innerFV0 = 24;
     uint16_t nContrib = col.numContrib();
     hNcontrib->Fill(nContrib);
@@ -68,7 +66,7 @@ struct FT0Qa {
       float fv0Time = fv0.time();
       hNcontribV0->Fill(nContrib);
       for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
-        hAmpV0->Fill(fv0.amplitude()[ich] / mipV0);
+        hAmpV0->Fill(fv0.amplitude()[ich]);
         if (int(fv0.channel()[ich]) > innerFV0)
           continue;
         sumAmpFV0 += fv0.amplitude()[ich];
@@ -81,11 +79,11 @@ struct FT0Qa {
           hT0V0time->Fill(fv0Time, ft0.timeA());
           for (auto amplitude : ft0.amplitudeA()) {
             sumAmpFT0 += amplitude;
-            hAmpT0->Fill(amplitude / mipT0);
+            hAmpT0->Fill(amplitude);
           }
         }
         if (sumAmpFV0 > 0 && sumAmpFT0 > 0) {
-          hT0V0mult->Fill(sumAmpFV0 / mipV0, sumAmpFT0 / mipT0);
+          hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
           LOG(debug) << "V0 amp  " << sumAmpFV0 << " T0 amp " << sumAmpFT0;
         }
         if (col.t0CCorrectedValid()) {
