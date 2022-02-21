@@ -223,6 +223,9 @@ struct lambdakzeroAnalysisMc {
               for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
                 for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                   if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 3122) {
+                    if (particleMotherOfNeg.isPhysicalPrimary()) {
+                      registry.fill(HIST("h3dMassLambda_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mLambda());
+                    }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
                       auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
