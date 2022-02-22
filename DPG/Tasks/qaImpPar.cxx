@@ -318,7 +318,9 @@ struct QaImpactPar {
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
     if (!PVrefit_doable) {
       LOG(info) << "Not enough tracks accepted for the refit";
-      histograms.fill(HIST("Data/nContrib_PVrefitNotDoable"), collision.numContrib());
+      if (doPVrefit) {
+        histograms.fill(HIST("Data/nContrib_PVrefitNotDoable"), collision.numContrib());
+      }
     } else {
       histograms.fill(HIST("Data/vertices"), 2);
     }
