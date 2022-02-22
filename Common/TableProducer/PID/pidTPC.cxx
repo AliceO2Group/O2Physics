@@ -65,7 +65,7 @@ struct tpcPid {
   Configurable<std::string> sigmaname{"param-sigma", "TPCReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -76,6 +76,11 @@ struct tpcPid {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+
+  // Paramatrization configuration
+  bool useCCDBParam = false;
+  std::string ccdbPathSignal = "";
+  std::string ccdbPathSigma = "";
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -107,7 +112,7 @@ struct tpcPid {
 
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
-    ccdb->setTimestamp(timestamp.value);
+    ccdb->setTimestamp(ccdbTimestamp.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     // Not later than now objects
@@ -121,19 +126,22 @@ struct tpcPid {
       LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
       response.LoadParamFromFile(fname.data(), sigmaname.value, DetectorResponse::kSigma);
     } else { // Loading it from CCDB
-      std::string path = ccdbPath.value + "/" + signalname.value;
-      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
+      useCCDBParam = true;
+      ccdbPathSignal = ccdbPath.value + "/" + signalname.value;
+      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << ccdbPathSignal << " for timestamp " << ccdbTimestamp.value;
+      response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(ccdbPathSignal, ccdbTimestamp.value));
 
-      path = ccdbPath.value + "/" + sigmaname.value;
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
+      ccdbPathSigma = ccdbPath.value + "/" + sigmaname.value;
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << ccdbPathSigma << " for timestamp " << ccdbTimestamp.value;
+      response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(ccdbPathSigma, ccdbTimestamp.value));
     }
   }
 
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tpc::ELoss<Trks::iterator, pid>;
-  void process(Coll const& collisions, Trks const& tracks)
+  void process(Trks const& tracks,
+               aod::BCsWithTimestamps const&,
+               Coll const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -145,31 +153,59 @@ struct tpcPid {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    // Check and fill enabled tables
-    auto makeTable = [&tracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
-      if (flag.value == 1) {
-        // Prepare memory for enabled tables
-        table.reserve(tracks.size());
-        for (auto const& trk : tracks) { // Loop on Tracks
-          const float separation = responsePID.GetSeparation(response, trk);
-          aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
-                                     aod::pidtpc_tiny::upper_bin,
-                                     aod::pidtpc_tiny::lower_bin>(separation, table,
-                                                                  aod::pidtpc_tiny::binned_min,
-                                                                  aod::pidtpc_tiny::binned_max,
-                                                                  aod::pidtpc_tiny::bin_width);
-        }
+    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
       }
+      table.reserve(tracks.size());
     };
-    makeTable(pidEl, tablePIDEl, response, responseEl);
-    makeTable(pidMu, tablePIDMu, response, responseMu);
-    makeTable(pidPi, tablePIDPi, response, responsePi);
-    makeTable(pidKa, tablePIDKa, response, responseKa);
-    makeTable(pidPr, tablePIDPr, response, responsePr);
-    makeTable(pidDe, tablePIDDe, response, responseDe);
-    makeTable(pidTr, tablePIDTr, response, responseTr);
-    makeTable(pidHe, tablePIDHe, response, responseHe);
-    makeTable(pidAl, tablePIDAl, response, responseAl);
+
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
+
+    int lastCollisionId = -1; // Last collision ID analysed
+
+    for (auto const& t : tracks) { // Loop on tracks
+
+      if (useCCDBParam && ccdbTimestamp.value == 0 && t.has_collision() && t.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+
+        lastCollisionId = t.collisionId(); /// Cache last collision ID
+
+        const auto& bc = t.collision().bc_as<aod::BCsWithTimestamps>();
+        response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(ccdbPathSignal, bc.timestamp()));
+        response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(ccdbPathSigma, bc.timestamp()));
+      }
+      // Check and fill enabled tables
+      auto makeTable = [&t](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
+        if (flag.value != 1) {
+          return;
+        }
+        const float& separation = responsePID.GetSeparation(response, t);
+        aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
+                                   aod::pidtpc_tiny::upper_bin,
+                                   aod::pidtpc_tiny::lower_bin>(separation, table,
+                                                                aod::pidtpc_tiny::binned_min,
+                                                                aod::pidtpc_tiny::binned_max,
+                                                                aod::pidtpc_tiny::bin_width);
+      };
+
+      makeTable(pidEl, tablePIDEl, response, responseEl);
+      makeTable(pidMu, tablePIDMu, response, responseMu);
+      makeTable(pidPi, tablePIDPi, response, responsePi);
+      makeTable(pidKa, tablePIDKa, response, responseKa);
+      makeTable(pidPr, tablePIDPr, response, responsePr);
+      makeTable(pidDe, tablePIDDe, response, responseDe);
+      makeTable(pidTr, tablePIDTr, response, responseTr);
+      makeTable(pidHe, tablePIDHe, response, responseHe);
+      makeTable(pidAl, tablePIDAl, response, responseAl);
+    }
   }
 };
 
