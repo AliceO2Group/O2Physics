@@ -23,25 +23,25 @@ class cutHolder
   // constructor
   cutHolder(int ndtcoll = 4,
             int MinNTracks = 0, int MaxNTracks = 10000,
-            int MinNTracksWithTOFHit = 0,
             int MinNetCharge = 0, int MaxNetCharge = 0,
+            int pidHypo = 211,
             float MinPosz = -1000., float MaxPosz = 1000.,
             float minPt = 0., float maxPt = 1000.,
             float minEta = -1.0, float maxEta = 1.0,
-            float maxTOFChi2 = 10.,
-            float maxnSigmaTPC = 3., float maxnSigmaTOF = 3.) : mNDtcoll{ndtcoll}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNTracksWithTOFHit{MinNTracksWithTOFHit}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMaxTOFChi2{maxTOFChi2}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
+            float minIVM = 0.0, float maxIVM = 1000.,
+            float maxnSigmaTPC = 1000., float maxnSigmaTOF = 1000.) : mNDtcoll{ndtcoll}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
   {
   }
 
   // setter
   void SetNDtcoll(int);
   void SetNTracks(int MinNTracks, int MaxNTracks);
-  void SetMinNTracksWithTOFHit(int MinNTracksWithTOFHit);
   void SetNetCharge(int minNetCharge, int maxNetCharge);
+  void SetPidHypothesis(int pidHypo);
   void SetPoszRange(float MinPosz, float MaxPosz);
   void SetPtRange(float minPt, float maxPt);
   void SetEtaRange(float minEta, float maxEta);
-  void SetMaxTOFChi2(float maxTOFChi2);
+  void SetIVMRange(float minIVM, float maxIVM);
   void SetMaxnSigmaTPC(float maxnSigma);
   void SetMaxnSigmaTOF(float maxnSigma);
 
@@ -49,16 +49,17 @@ class cutHolder
   int NDtcoll() const;
   int minNTracks() const;
   int maxNTracks() const;
-  int minNTracksWithTOFHit() const;
   int minNetCharge() const;
   int maxNetCharge() const;
+  int pidHypothesis() const;
   float minPosz() const;
   float maxPosz() const;
   float minPt() const;
   float maxPt() const;
   float minEta() const;
   float maxEta() const;
-  float maxTOFChi2() const;
+  float minIVM() const;
+  float maxIVM() const;
   float maxnSigmaTPC() const;
   float maxnSigmaTOF() const;
 
@@ -69,22 +70,20 @@ class cutHolder
   // number of tracks
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
 
-  // number of tracks with TOF hit
-  int mMinNTracksWithTOFHit;
-
   // net charge of all tracks
   int mMinNetCharge;
   int mMaxNetCharge;
+
+  // PID hypothesis
+  int mPidHypo;
 
   // vertex z-position
   float mMinVertexPosz, mMaxVertexPosz; // Vertex z-position
 
   // kinematic cuts
-  float mMinPt, mMaxPt;   // range in track pT
-  float mMinEta, mMaxEta; // range in track eta
-
-  // maximum TOF chi2
-  float mMaxTOFChi2; // maximum TOF Chi2
+  float mMinPt, mMaxPt;   // range of track pT
+  float mMinEta, mMaxEta; // range of track eta
+  float mMinIVM, mMaxIVM; // range of invariant mass
 
   // maximum nSigma for PID
   float mMaxnSigmaTPC; // maximum nSigma TPC
