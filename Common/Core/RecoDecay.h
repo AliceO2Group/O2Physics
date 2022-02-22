@@ -694,6 +694,7 @@ class RecoDecay
                              int8_t* sign = nullptr,
                              int depthMax = 1)
   {
+    LOG(warning) << "Matched MC rec";
     //Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
     int indexMother = -1;                  // index of the mother particle
@@ -727,7 +728,8 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (particleMother.daughtersIds().size() > int(N)) {
+        auto dauTable = particleMother.template daughters_as<T>();
+        if (dauTable.size() > int(N)) {
           //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().size(), N);
           return -1;
         }
@@ -819,6 +821,7 @@ class RecoDecay
                              int depthMax = 1,
                              std::vector<int>* listIndexDaughters = nullptr)
   {
+    LOG(warning) << "Matched MC gen";
     //Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
     if (sign) {
@@ -845,7 +848,8 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (candidate.daughtersIds().size() > int(N)) {
+      auto dauTable = candidate.template daughters_as<T>();
+      if (dauTable.size() > int(N)) {
         //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().size(), N);
         return false;
       }
