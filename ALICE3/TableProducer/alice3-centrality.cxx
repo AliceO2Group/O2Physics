@@ -32,6 +32,7 @@ struct ALICE3Centrality {
   Configurable<float> MaxEta{"MaxEta", 4.0f, "Maximum eta in range"};
   Configurable<float> MaxMult{"MaxMult", 10000.f, "Maximum multiplicity in range"};
   Configurable<float> MaxDCA{"MaxDCA", 0.0025f, "Max DCAxy and DCAz for counted tracks"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   void init(InitContext&)
   {
@@ -39,7 +40,7 @@ struct ALICE3Centrality {
     TString tit = Form("%.3f < #it{#eta} < %.3f", MinEta.value, MaxEta.value);
     histos.add("centrality/numberOfTracks", tit, kTH1D, {axisMult});
 
-    ccdb->setURL("http://ccdb-test.cern.ch:8080/");
+    ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
