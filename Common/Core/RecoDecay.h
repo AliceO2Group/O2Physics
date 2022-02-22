@@ -694,7 +694,6 @@ class RecoDecay
                              int8_t* sign = nullptr,
                              int depthMax = 1)
   {
-    LOG(warning) << "Matched MC rec";
     //Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
     int indexMother = -1;                  // index of the mother particle
@@ -821,7 +820,6 @@ class RecoDecay
                              int depthMax = 1,
                              std::vector<int>* listIndexDaughters = nullptr)
   {
-    LOG(warning) << "Matched MC gen";
     //Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
     if (sign) {
