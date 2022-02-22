@@ -45,7 +45,7 @@ namespace analysis
 namespace trackextension
 {
 const char* ccdbpath_lut = "GLO/Param/MatLUT";
-const char* ccdbpath_geo = "GLO/Config/Geometry";
+const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
 const char* ccdbpath_grp = "GLO/GRP/GRP";
 const char* ccdburl = "http://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.cern.ch:8080"; */
 } // namespace trackextension
