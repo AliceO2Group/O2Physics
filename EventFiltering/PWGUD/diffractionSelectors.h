@@ -68,32 +68,32 @@ struct DGSelector {
     }
 
     // number of vertex tracks
-    if (collision.numContrib()<diffCuts.minNTracks() || collision.numContrib()>diffCuts.maxNTracks()) {
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
       return 4;
     }
 
     // PID, pt, and eta of tracks, invariant mass, and net charge
     // consider only vertex tracks
-    
+
     // which particle hypothesis?
     auto mass2Use = constants::physics::MassPionCharged;
     if (diffCuts.pidHypothesis() == 321) {
       mass2Use = constants::physics::MassKaonCharged;
     }
-      
-     auto netCharge = 0;
+
+    auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
     for (auto& track : tracks) {
       if (track.isPVContributor()) {
-        
+
         // PID
         if (!hasGoodPID(diffCuts, track)) {
           return 5;
         }
-        
+
         // pt
-        lvtmp.SetXYZM(track.px(),track.py(),track.pz(),mass2Use);
+        lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
         if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
           return 6;
         }
@@ -106,16 +106,16 @@ struct DGSelector {
         ivm += lvtmp;
       }
     }
-    
+
     // net charge
-    if (netCharge<diffCuts.minNetCharge() || netCharge>diffCuts.maxNetCharge()) {
+    if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
       return 8;
     }
     // invariant mass
-    if (ivm.M()<diffCuts.minIVM() || ivm.M()>diffCuts.maxIVM()) {
+    if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
       return 9;
     }
-    
+
     // if we arrive here then the event is good!
     return 0;
   };
