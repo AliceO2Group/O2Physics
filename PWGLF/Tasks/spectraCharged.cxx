@@ -221,11 +221,11 @@ bool chargedSpectra::initParticle(const P& particle)
 {
   vars.isChargedPrimary = false;
   auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-  // if (!pdgParticle || pdgParticle->Charge() == 0.) {
-  if (!pdgParticle || TMath::Abs(pdgParticle->Charge()) != 3.) { // This is only a temporary workaround for isPhysicalPrimary and should be replaced by commented line in future
+  if (!pdgParticle || pdgParticle->Charge() == 0.) {
     return false;
   }
-  vars.isChargedPrimary = particle.isPhysicalPrimary();
+  std::list<int> primparticles{11, 13, 211, 321, 2212, 3112, 3222, 3312, 3334};                                                                                           //(Non-exhaustive) list of charged particles that can constitute primaries
+  vars.isChargedPrimary = particle.isPhysicalPrimary() && (std::find(primparticles.begin(), primparticles.end(), TMath::Abs(particle.pdgCode())) != primparticles.end()); // use PID as temporary workaround
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
