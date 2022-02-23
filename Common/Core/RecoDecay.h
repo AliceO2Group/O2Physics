@@ -732,7 +732,7 @@ class RecoDecay
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
         if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > int(N)) {
-          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().size(), N);
+          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
           return -1;
         }
         // Get the list of actual final daughters.
