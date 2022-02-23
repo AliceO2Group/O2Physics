@@ -47,7 +47,7 @@ struct DiffQA {
       {"numberGlobalTracks", "#numberGlobalTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"numberFWDTracks", "#numberFWDTracks", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
       {"VtxvsGlobalTracks", "#VtxvsGlobalTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}}},
-      {"TCH", "#CDETCH", {HistType::kTH1F, {{21,-10.5,10.5}}}},
+      {"TCH", "#CDETCH", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
       {"IVM", "#IVM", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
       {"pt", "#pt", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
       {"eta", "#eta", {HistType::kTH2F, {{150, -1.5, 1.5}, {7, -0.5, 6.5}}}},
@@ -60,11 +60,11 @@ struct DiffQA {
       {"CDEnumberGlobalTracks", "#CDEnumberGlobalTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"CDEnumberFWDTracks", "#CDEnumberFWDTracks", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
       {"CDEVtxvsGlobalTracks", "#CDEVtxvsGlobalTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}}},
-      {"CDETCH", "#CDETCH", {HistType::kTH1F, {{21,-10.5,10.5}}}},
+      {"CDETCH", "#CDETCH", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
       {"CDEIVM", "#CDEIVM", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
       {"CDEpt", "#CDEpt", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
       {"CDEeta", "#CDEeta", {HistType::kTH2F, {{150, -1.5, 1.5}, {7, -0.5, 6.5}}}},
-      
+
       {"Stat", "#Stat", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
       {"Efficiency", "#Efficiency", {HistType::kTH2F, {{3, -0.5, 2.5}, {2, -0.5, 1.5}}}},
     }};
@@ -80,7 +80,7 @@ struct DiffQA {
                aod::McCollisions& McCols, aod::McParticles const& McParts)
   {
     LOGF(debug, "<DiffQA> Start");
-    
+
     // is this a central diffractive event?
     auto MCCol = collision.mcCollision();
     auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
@@ -97,9 +97,9 @@ struct DiffQA {
     LOGF(debug, "<DiffQA> Number of good tracks: %i", goodTracks.size());
 
     // PV tracks
-    //Partition<TCs> vtxTracks = aod::track::isPVContributor == true;
-    //vtxTracks.bindTable(tracks);
-    //LOGF(debug, "<DiffQA> Number of vtx tracks: %i", vtxTracks.size());
+    // Partition<TCs> vtxTracks = aod::track::isPVContributor == true;
+    // vtxTracks.bindTable(tracks);
+    // LOGF(debug, "<DiffQA> Number of vtx tracks: %i", vtxTracks.size());
 
     // number of gobal tracks with TOF hit
     float rgtrwTOF = 0.;
@@ -148,11 +148,11 @@ struct DiffQA {
         continue;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(0.,isDGcandidate*1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(0., isDGcandidate * 1.);
 
     // number of forward tracks = 0
     isDGcandidate &= (fwdtracks.size() == 0);
-    registry.get<TH1>(HIST("Stat"))->Fill(1.,isDGcandidate*1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
 
     // no global tracks which are no vtx tracks
     for (auto& track : tracks) {
@@ -161,31 +161,31 @@ struct DiffQA {
         continue;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(2.,isDGcandidate*1.);
-    LOGF(debug, "<DiffQA> isDGcandidate: %i / %i",isPythiaDiff || isGraniittiDiff, isDGcandidate);
+    registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
+    LOGF(debug, "<DiffQA> isDGcandidate: %i / %i", isPythiaDiff || isGraniittiDiff, isDGcandidate);
 
     // number of vertex tracks <= n
-    for (int ii=2; ii<=10; ii++) {
-      registry.get<TH1>(HIST("Stat"))->Fill(ii+1,isDGcandidate*(collision.numContrib()<=(12-ii))*1.);
+    for (int ii = 2; ii <= 10; ii++) {
+      registry.get<TH1>(HIST("Stat"))->Fill(ii + 1, isDGcandidate * (collision.numContrib() <= (12 - ii)) * 1.);
     }
     isDGcandidate &= (collision.numContrib() >= ntrMin);
     isDGcandidate &= (collision.numContrib() <= ntrMax);
 
     // invariant mass
     if (isDGcandidate) {
-    
+
       // which particle hypothesis?
       auto mass2Use = constants::physics::MassPionCharged;
       if (pidHypo == 321) {
         mass2Use = constants::physics::MassKaonCharged;
       }
-      
+
       auto netCharge = 0;
       auto lvtmp = TLorentzVector();
       auto ivm = TLorentzVector();
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
-          lvtmp.SetXYZM(track.px(),track.py(),track.pz(),mass2Use);
+          lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
           if (lvtmp.Perp() < ptMin || lvtmp.Perp() > ptMax) {
             isDGcandidate = false;
             break;
@@ -197,21 +197,21 @@ struct DiffQA {
           netCharge += track.sign();
           ivm += lvtmp;
 
-          //if (track.isPVContributor() && track.mcParticleId()>0) {
-          //auto mcpart = track.mcParticle();
-          //auto plv = TLorentzVector(mcpart.px(),mcpart.py(),mcpart.pz(),mcpart.e());
-          //registry.get<TH1>(HIST("CDEpt"))->Fill(plv.Perp());
-          //ivm += plv;
+          // if (track.isPVContributor() && track.mcParticleId()>0) {
+          // auto mcpart = track.mcParticle();
+          // auto plv = TLorentzVector(mcpart.px(),mcpart.py(),mcpart.pz(),mcpart.e());
+          // registry.get<TH1>(HIST("CDEpt"))->Fill(plv.Perp());
+          // ivm += plv;
         }
       }
       isDGcandidate &= (netCharge >= nchMin);
       isDGcandidate &= (netCharge <= nchMax);
       isDGcandidate &= (ivm.M() >= massMin);
       isDGcandidate &= (ivm.M() <= massMax);
-      
+
       if (isDGcandidate) {
-        LOGF(debug, "<DiffQA> Invariant mass: %f",ivm.M());
-        
+        LOGF(debug, "<DiffQA> Invariant mass: %f", ivm.M());
+
         // invariant mass
         if (!isGraniittiDiff) {
           registry.get<TH1>(HIST("TCH"))->Fill(netCharge);
@@ -220,11 +220,11 @@ struct DiffQA {
           registry.get<TH1>(HIST("CDETCH"))->Fill(netCharge);
           registry.get<TH2>(HIST("CDEIVM"))->Fill(ivm.M(), collision.numContrib());
         }
-        
+
         // track pt
         for (auto& track : tracks) {
           if (track.isPVContributor()) {
-            lvtmp.SetXYZM(track.px(),track.py(),track.pz(),mass2Use);
+            lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
             if (!isGraniittiDiff) {
               registry.get<TH2>(HIST("pt"))->Fill(lvtmp.Perp(), collision.numContrib());
               registry.get<TH2>(HIST("eta"))->Fill(lvtmp.Eta(), collision.numContrib());
@@ -238,7 +238,7 @@ struct DiffQA {
     }
 
     // update Efficiency
-    registry.get<TH2>(HIST("Efficiency"))->Fill(0.+isPythiaDiff*1.+isGraniittiDiff*2., 0.+isDGcandidate*1.);
+    registry.get<TH2>(HIST("Efficiency"))->Fill(0. + isPythiaDiff * 1. + isGraniittiDiff * 2., 0. + isDGcandidate * 1.);
 
     LOGF(debug, "<DiffQA> End");
   };

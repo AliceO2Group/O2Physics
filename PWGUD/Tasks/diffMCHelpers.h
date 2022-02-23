@@ -98,13 +98,20 @@ bool isPythiaCDE(T MCparts)
 template <typename T>
 bool isGraniittiCDE(T MCparts)
 {
-  if (MCparts.iteratorAt(0).pdgCode() != 2212) return false;
-  if (MCparts.iteratorAt(1).pdgCode() != 2212) return false;
-  if (MCparts.iteratorAt(2).pdgCode() !=   99) return false;
-  if (MCparts.iteratorAt(3).pdgCode() != 2212) return false;
-  if (MCparts.iteratorAt(4).pdgCode() != 2212) return false;
-  if (MCparts.iteratorAt(5).pdgCode() !=   99) return false;
-  if (MCparts.iteratorAt(6).pdgCode() !=   90) return false;
+  if (MCparts.iteratorAt(0).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(1).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(2).pdgCode() != 99)
+    return false;
+  if (MCparts.iteratorAt(3).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(4).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(5).pdgCode() != 99)
+    return false;
+  if (MCparts.iteratorAt(6).pdgCode() != 90)
+    return false;
   return true;
 }
 

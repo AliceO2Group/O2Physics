@@ -389,7 +389,7 @@ struct MCTracks {
         auto mass = TMath::Sqrt(etot * etot - (px * px + py * py + pz * pz));
         LOGF(info, "  mass of X: %f, prongs: %i", mass, prongs);
       }
-      
+
       LOGF(info, "End of loop");
     }
   }
