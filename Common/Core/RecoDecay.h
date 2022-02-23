@@ -569,7 +569,8 @@ class RecoDecay
   /// \param depthMax  maximum decay tree level to check; Mothers up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if found, -1 otherwise
   template <typename T>
-  static int getMother(const T& particle,
+  static int getMother(const T& particlesMC,
+                       const typename T::iterator& particle,
                        int PDGMother,
                        bool acceptAntiParticles = false,
                        int8_t* sign = nullptr,
@@ -586,8 +587,11 @@ class RecoDecay
       if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
         return -1;
       }
-      particleMother = particleMother.template mothers_first_as<typename std::decay_t<T>::parent_t>(); // get mother 0
-      auto indexMotherTmp = particleMother.globalIndex();
+      auto indexMotherTmp = particleMother.mothersIds().front();
+      if (indexMotherTmp <= -1) {
+        return -1;
+      }
+      particleMother = particlesMC.rawIteratorAt(indexMotherTmp);
       // Check mother's PDG code.
       auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
       //printf("getMother: ");
@@ -620,7 +624,8 @@ class RecoDecay
   /// \note Final state is defined as particles from arrPDGFinal plus final daughters of any other decay branch.
   /// \note Antiparticles of particles in arrPDGFinal are accepted as well.
   template <std::size_t N, typename T>
-  static void getDaughters(const T& particle,
+  static void getDaughters(const T& particlesMC,
+                           const typename T::iterator& particle,
                            std::vector<int>* list,
                            const array<int, N>& arrPDGFinal,
                            int8_t depthMax = -1,
@@ -671,8 +676,8 @@ class RecoDecay
     //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
-      getDaughters(dau, list, arrPDGFinal, depthMax, stage);
+    for (auto& idxDau : particle.daughtersIds()) {
+      getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
     }
   }
 
@@ -713,7 +718,7 @@ class RecoDecay
       if (iProng == 0) {
         // Get the mother index and its sign.
         // PDG code of the first daughter's mother determines whether the expected mother is a particle or antiparticle.
-        indexMother = getMother(particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
+        indexMother = getMother(particlesMC, particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
         // Check whether mother was found.
         if (indexMother <= -1) {
           //Printf("MC Rec: Rejected: bad mother index or PDG");
@@ -727,13 +732,12 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        auto dauTable = particleMother.template daughters_as<T>();
-        if (dauTable.size() > int(N)) {
+        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > int(N)) {
           //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().size(), N);
           return -1;
         }
         // Get the list of actual final daughters.
-        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+        getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
         //printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         //for (auto i : arrAllDaughtersIndex) {
         //  printf(" %d", i);
@@ -846,13 +850,13 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      auto dauTable = candidate.template daughters_as<T>();
-      if (dauTable.size() > int(N)) {
-        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().size(), N);
+
+      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > int(N)) {
+        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back()-candidate.daughtersIds().front()+1, N);
         return false;
       }
       // Get the list of actual final daughters.
-      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+      getDaughters(particlesMC, candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
       //printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       //for (auto i : arrAllDaughtersIndex) {
       //  printf(" %d", i);
