@@ -58,15 +58,6 @@ float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 bool processpairs = false;
 std::string fTaskConfigurationString = "PendingToConfigure";
 
-/// \enum TrackPairs
-/// \brief The track combinations hadled by the class
-enum TrackPairs {
-  kOO = 0,    ///< one-one pairs
-  kOT,        ///< one-two pairs
-  kTO,        ///< two-one pairs
-  kTT,        ///< two-two pairs
-  nTrackPairs ///< the number of track pairs
-};
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
@@ -98,6 +89,16 @@ struct DptDptCorrelationsTask {
     TProfile* fhN2nw_vsC[4];         //!<! un-weighted accumulated two particle distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
     TProfile* fhSum2PtPtnw_vsC[4];   //!<! un-weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
     TProfile* fhSum2DptDptnw_vsC[4]; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
+
+    /// \enum TrackPairs
+    /// \brief The track combinations hadled by the class
+    typedef enum {
+      kOO = 0,    ///< one-one pairs
+      kOT,        ///< one-two pairs
+      kTO,        ///< two-one pairs
+      kTT,        ///< two-two pairs
+      nTrackPairs ///< the number of track pairs
+    } trackpairs;
 
     const char* tname[2] = {"1", "2"}; ///< the external track names, one and two, for histogram creation
     const char* trackPairsNames[4] = {"OO", "OT", "TO", "TT"};
@@ -225,8 +226,8 @@ struct DptDptCorrelationsTask {
     /// \param pix index, in the track combination histogram bank, for the passed filetered track tables
     /// \param cmul centrality - multiplicity for the collision being analyzed
     /// Be aware that at least in half of the cases traks1 and trks2 will have the same content
-    template <typename TrackOneListObject, typename TrackTwoListObject>
-    void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, int pix, float cmul)
+    template <trackpairs pix, typename TrackOneListObject, typename TrackTwoListObject>
+    void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, float cmul)
     {
       /* process pair magnitudes */
       double n2 = 0;           ///< weighted number of track 1 track 2 pairs for current collision
@@ -239,29 +240,30 @@ struct DptDptCorrelationsTask {
         double ptavg_1 = 0.0; /* TODO: load ptavg_1 for eta1, phi1 bin */
         double corr1 = 1.0;   /* TODO: track correction  weights */
         for (auto& track2 : trks2) {
-          /* checkiing the same track id condition */
-          if (track1 == track2) {
-            /* exclude autocorrelations */
-            continue;
-          } else {
-            /* process pair magnitudes */
-            double ptavg_2 = 0.0; /* TODO: load ptavg_2 for eta2, phi2 bin */
-            double corr2 = 1.0;   /* TODO: track correction  weights */
-            double corr = corr1 * corr2;
-            double dptdpt = (track1.pt() - ptavg_1) * (track2.pt() - ptavg_2);
-            n2 += corr;
-            sum2PtPt += track1.pt() * track2.pt() * corr;
-            sum2DptDpt += corr * dptdpt;
-            n2nw += 1;
-            sum2PtPtnw += track1.pt() * track2.pt();
-            sum2DptDptnw += dptdpt;
-            /* get the global bin for filling the differential histograms */
-            int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
-            fhN2_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr);
-            fhSum2DptDpt_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr * dptdpt);
-            fhSum2PtPt_vsDEtaDPhi[pix]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
-            fhN2_vsPtPt[pix]->Fill(track1.pt(), track2.pt(), corr);
+          /* checking the same track id condition */
+          if constexpr (pix == kOO or pix == kTT) {
+            if (track1 == track2) {
+              /* exclude autocorrelations */
+              continue;
+            }
           }
+          /* process pair magnitudes */
+          double ptavg_2 = 0.0; /* TODO: load ptavg_2 for eta2, phi2 bin */
+          double corr2 = 1.0;   /* TODO: track correction  weights */
+          double corr = corr1 * corr2;
+          double dptdpt = (track1.pt() - ptavg_1) * (track2.pt() - ptavg_2);
+          n2 += corr;
+          sum2PtPt += track1.pt() * track2.pt() * corr;
+          sum2DptDpt += corr * dptdpt;
+          n2nw += 1;
+          sum2PtPtnw += track1.pt() * track2.pt();
+          sum2DptDptnw += dptdpt;
+          /* get the global bin for filling the differential histograms */
+          int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
+          fhN2_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr);
+          fhSum2DptDpt_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr * dptdpt);
+          fhSum2PtPt_vsDEtaDPhi[pix]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+          fhN2_vsPtPt[pix]->Fill(track1.pt(), track2.pt(), corr);
         }
       }
       fhN2_vsC[pix]->Fill(cmul, n2);
@@ -291,10 +293,10 @@ struct DptDptCorrelationsTask {
         processTracks(Tracks1, 0, centmult); /* track one */
         processTracks(Tracks2, 1, centmult); /* track one */
         /* process pair magnitudes */
-        processTrackPairs(Tracks1, Tracks1, kOO, centmult);
-        processTrackPairs(Tracks1, Tracks2, kOT, centmult);
-        processTrackPairs(Tracks2, Tracks1, kTO, centmult);
-        processTrackPairs(Tracks2, Tracks2, kTT, centmult);
+        processTrackPairs<kOO>(Tracks1, Tracks1, centmult);
+        processTrackPairs<kOT>(Tracks1, Tracks2, centmult);
+        processTrackPairs<kTO>(Tracks2, Tracks1, centmult);
+        processTrackPairs<kTT>(Tracks2, Tracks2, centmult);
       }
     }
 
