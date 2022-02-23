@@ -189,10 +189,10 @@ struct HfTaskXiccMc {
         auto particleXicc = particlesMC.rawIteratorAt(indexMother);
         auto particleXic = particlesMC.rawIteratorAt(particleXicc.daughtersIds().front());
         /*
-        auto daughter1 = particlesMC.rawIteratorAt(particleXicc.daughter1());
-        auto p0xic = particlesMC.rawIteratorAt(particleXic.daughter0());
-        auto p1xic = particlesMC.rawIteratorAt(particleXic.daughter0()+1);
-        auto p2xic = particlesMC.rawIteratorAt(particleXic.daughter1());
+        auto daughter1 = particlesMC.rawIteratorAt(particleXicc.daughtersIds().back());
+        auto p0xic = particlesMC.rawIteratorAt(particleXic.daughtersIds().front());
+        auto p1xic = particlesMC.rawIteratorAt(particleXic.daughtersIds().front()+1);
+        auto p2xic = particlesMC.rawIteratorAt(particleXic.daughterIds().back());
         LOGF(info, "mother pdg %d", particleXicc.pdgCode());
         LOGF(info, "Xic pdg %d", particleXic.pdgCode());
         LOGF(info, "Xic prong 0 pdg %d", p0xic.pdgCode());

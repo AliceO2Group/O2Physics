@@ -562,6 +562,7 @@ class RecoDecay
   }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
+  /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param PDGMother  expected mother PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle of the expected mother
@@ -588,9 +589,6 @@ class RecoDecay
         return -1;
       }
       auto indexMotherTmp = particleMother.mothersIds().front();
-      if (indexMotherTmp <= -1) {
-        return -1;
-      }
       particleMother = particlesMC.rawIteratorAt(indexMotherTmp);
       // Check mother's PDG code.
       auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
@@ -616,6 +614,7 @@ class RecoDecay
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
+  /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
