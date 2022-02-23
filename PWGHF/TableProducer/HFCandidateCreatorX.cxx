@@ -257,7 +257,7 @@ struct HFCandidateCreatorXMC {
   void process(aod::HfCandX const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
-               aod::McParticles_000 const& particlesMC)
+               aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;
@@ -304,7 +304,7 @@ struct HFCandidateCreatorXMC {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
 
@@ -324,7 +324,7 @@ struct HFCandidateCreatorXMC {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{pdgCodeJpsi}, 1);
-        auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
+        auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }

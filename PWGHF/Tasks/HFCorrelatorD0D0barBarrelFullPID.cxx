@@ -64,7 +64,7 @@ const int ptDAxisBins = 180;
 const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
-using MCParticlesPlus = soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen>;
+using MCParticlesPlus = soa::Join<aod::McParticles, aod::HfCandProng2MCGen>;
 
 struct HfCorrelatorD0D0barBarrelFullPid {
   Produces<aod::DDbarPair> entryD0D0barPair;
@@ -436,14 +436,22 @@ struct HfCorrelatorD0D0barBarrelFullPid {
             if (std::abs(particle1.eta()) < etaCut && std::abs(particle2.eta()) < etaCut && particle1.pt() > ptCut && particle2.pt() > ptCut) { // fill with D and Dbar acceptance checks
               registry.fill(HIST("hDDbarVsEtaCut"), etaCut - epsilon, ptCut + epsilon);
             }
-            if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
-              double etaCandidate1Daughter1 = particle1.daughter0_as<MCParticlesPlus>().eta();
-              double etaCandidate1Daughter2 = particle1.daughter1_as<MCParticlesPlus>().eta();
-              double etaCandidate2Daughter1 = particle2.daughter0_as<MCParticlesPlus>().eta();
-              double etaCandidate2Daughter2 = particle2.daughter1_as<MCParticlesPlus>().eta();
-              if (std::abs(etaCandidate1Daughter1) < etaCut && std::abs(etaCandidate1Daughter2) < etaCut &&
-                  std::abs(etaCandidate2Daughter1) < etaCut && std::abs(etaCandidate2Daughter2) < etaCut &&
-                  particle1.pt() > ptCut && particle2.pt() > ptCut) {
+            if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
+              bool candidate1DauInAcc = true;
+              bool candidate2DauInAcc = true;
+              for (auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
+                if (std::abs(dau.eta()) > etaCut) {
+                  candidate1DauInAcc = false;
+                  break;
+                }
+              }
+              for (auto& dau : particle2.daughters_as<MCParticlesPlus>()) {
+                if (std::abs(dau.eta()) > etaCut) {
+                  candidate2DauInAcc = false;
+                  break;
+                }
+              }
+              if (candidate1DauInAcc && candidate2DauInAcc && particle1.pt() > ptCut && particle2.pt() > ptCut) {
                 registry.fill(HIST("hDDbarVsDaughterEtaCut"), etaCut - epsilon, ptCut + epsilon);
               }
             }
@@ -468,8 +476,8 @@ struct HfCorrelatorD0D0barBarrelFullPid {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
-      int partMothPDG = particle1.mother0_as<MCParticlesPlus>().pdgCode();
-      // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
+      int partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
+      //check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }
@@ -505,7 +513,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
           continue;
         }
         // check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it
-        if (particle2.mother0_as<MCParticlesPlus>().pdgCode() == PDG_t::kCharmBar) {
+        if (particle2.mothers_as<MCParticlesPlus>().front().pdgCode() == PDG_t::kCharmBar) {
           continue;
         }
         entryD0D0barPair(getDeltaPhi(particle2.phi(), particle1.phi()),

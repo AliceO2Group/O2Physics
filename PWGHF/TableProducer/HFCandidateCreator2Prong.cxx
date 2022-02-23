@@ -140,7 +140,7 @@ struct HFCandidateCreator2ProngExpressions {
 
   /// Performs MC matching.
   void processMC(aod::BigTracksMC const& tracks,
-                 aod::McParticles_000 const& particlesMC)
+                 aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -184,7 +184,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 

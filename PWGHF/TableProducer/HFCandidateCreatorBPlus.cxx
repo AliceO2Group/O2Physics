@@ -224,7 +224,7 @@ struct HfCandidateCreatorBplusMc {
   void process(aod::HfCandBPlus const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
-               aod::McParticles_000 const& particlesMC)
+               aod::McParticles const& particlesMC)
   {
     int indexRec = -1, indexRecD0 = -1;
     int8_t signB = 0, signD0 = 0;
@@ -266,7 +266,7 @@ struct HfCandidateCreatorBplusMc {
         // D0(bar) → π± K∓
         // Printf("Checking D0(bar) → π± K∓");
         for (auto iD : arrayDaughterB) {
-          auto candDaughterMC = particlesMC.iteratorAt(iD);
+          auto candDaughterMC = particlesMC.rawIteratorAt(iD);
           if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
             indexGenD0 = RecoDecay::isMatchedMCGen(particlesMC, candDaughterMC, pdg::Code::kD0, array{-kKPlus, +kPiPlus}, true, &signD0, 1);
           }

@@ -66,8 +66,8 @@ struct TaskD0ALICE3BarrelMC {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Barrel::isSelHFFlag >= 1);
 
-  //void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
-  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Barrel, aod::HfCandProng2MCRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     //float centrality = collision.centV0M();
     for (auto& candidate : candidates) {

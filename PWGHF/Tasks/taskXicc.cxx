@@ -172,7 +172,7 @@ struct HfTaskXiccMc {
   Filter filterSelectCandidates = (aod::hf_selcandidate_xicc::isSelXiccToPKPiPi >= d_selectionFlagXicc);
   //void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HFSelXiccToPKPiPiCandidate>> const& candidates)
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HFSelXiccToPKPiPiCandidate, aod::HfCandXiccMCRec>> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandXiccMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandXiccMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -185,14 +185,14 @@ struct HfTaskXiccMc {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XiccToXicPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles_000, aod::HfCandXiccMCGen>>(), 4422, true);
-        auto particleXicc = particlesMC.iteratorAt(indexMother);
-        auto particleXic = particlesMC.iteratorAt(particleXicc.daughter0Id());
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMCGen>>(), 4422, true);
+        auto particleXicc = particlesMC.rawIteratorAt(indexMother);
+        auto particleXic = particlesMC.rawIteratorAt(particleXicc.daughtersIds().front());
         /*
-        auto daughter1 = particlesMC.iteratorAt(particleXicc.daughter1());
-        auto p0xic = particlesMC.iteratorAt(particleXic.daughter0());
-        auto p1xic = particlesMC.iteratorAt(particleXic.daughter0()+1);
-        auto p2xic = particlesMC.iteratorAt(particleXic.daughter1());
+        auto daughter1 = particlesMC.rawIteratorAt(particleXicc.daughtersIds().back());
+        auto p0xic = particlesMC.rawIteratorAt(particleXic.daughtersIds().front());
+        auto p1xic = particlesMC.rawIteratorAt(particleXic.daughtersIds().front()+1);
+        auto p2xic = particlesMC.rawIteratorAt(particleXic.daughterIds().back());
         LOGF(info, "mother pdg %d", particleXicc.pdgCode());
         LOGF(info, "Xic pdg %d", particleXic.pdgCode());
         LOGF(info, "Xic prong 0 pdg %d", p0xic.pdgCode());
