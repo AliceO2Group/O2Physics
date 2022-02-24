@@ -112,7 +112,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double dEdx = mMIP * o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
-    const std::vector<double> values{1. / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
+    const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
 
     const float reso = mSigmaParametrization->EvalPar(values.data(), mResolutionParams.data()) * dEdx;
     reso >= 0.f ? resolution = reso : resolution = 0.f;
