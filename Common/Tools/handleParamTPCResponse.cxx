@@ -46,14 +46,9 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "bb4", bpo::value<float>()->default_value(6.08092f), "Bethe-Bloch parameter 4")(
     "reso-param-path", bpo::value<std::string>()->default_value(""), "Path to resolution parameter file")(
     "sigmaGlobal", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters global")(
-    "sigmaIROC", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters IROC")(
-    "sigmaOROC1", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC1")(
-    "sigmaOROC2", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC2")(
-    "sigmaOROC3", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters OROC3")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
-    "paramMaxClusters", bpo::value<float>()->default_value(63.), "Maximum Number of Clusters")(
     "useDefaultParam", bpo::value<bool>()->default_value(true), "Use default parametrizatio")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(
     "help,h", "Print this help.");
@@ -104,14 +99,9 @@ int main(int argc, char* argv[])
   const float bb4 = vm["bb4"].as<float>();
   const std::string pathResoParam = vm["reso-param-path"].as<std::string>();
   const std::string sigmaGlobal = vm["sigmaGlobal"].as<std::string>();
-  const std::string sigmaIROC = vm["sigmaIROC"].as<std::string>();
-  const std::string sigmaOROC1 = vm["sigmaOROC1"].as<std::string>();
-  const std::string sigmaOROC2 = vm["sigmaOROC2"].as<std::string>();
-  const std::string sigmaOROC3 = vm["sigmaOROC3"].as<std::string>();
   const float mipval = vm["paramMIP"].as<float>();
   const float chargefacval = vm["paramChargeFactor"].as<float>();
   const float multNormval = vm["paramMultNormalization"].as<float>();
-  const float maxnumclusterval = vm["paramMaxClusters"].as<float>();
   const bool useDefaultParam = vm["useDefaultParam"].as<bool>();
   const std::string optMode = vm["mode"].as<std::string>();
   if (optMode.empty()) {
@@ -122,34 +112,21 @@ int main(int argc, char* argv[])
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
 
   std::vector<double> sigparamsGlobal;
-  std::vector<double> sigparamsIROC;
-  std::vector<double> sigparamsOROC1;
-  std::vector<double> sigparamsOROC2;
-  std::vector<double> sigparamsOROC3;
+
   if (pathResoParam != "") { // Read resolution parameters from file
     std::ifstream infile(pathResoParam);
     std::string paramstring;
-    std::vector<std::vector<double>> sigmaParams;
-    for (int i = 0; i < 5; i++) {
-      std::getline(infile, paramstring);
-      std::istringstream ss(paramstring);
-      sigmaParams.push_back({});
-      double param = 0.;
-      while (ss >> param) {
-        sigmaParams.back().push_back(param);
-      }
+    std::vector<double> sigmaParams;
+    std::getline(infile, paramstring);
+    std::istringstream ss(paramstring);
+    sigmaParams.push_back({});
+    double param = 0.;
+    while (ss >> param) {
+      sigmaParams.push_back(param);
     }
-    sigparamsGlobal = sigmaParams[0];
-    sigparamsIROC = sigmaParams[1];
-    sigparamsOROC1 = sigmaParams[2];
-    sigparamsOROC2 = sigmaParams[3];
-    sigparamsOROC3 = sigmaParams[4];
+    sigparamsGlobal = sigmaParams;
   } else {
     sigparamsGlobal = o2::RangeTokenizer::tokenize<double>(sigmaGlobal);
-    sigparamsIROC = o2::RangeTokenizer::tokenize<double>(sigmaIROC);
-    sigparamsOROC1 = o2::RangeTokenizer::tokenize<double>(sigmaOROC1);
-    sigparamsOROC2 = o2::RangeTokenizer::tokenize<double>(sigmaOROC2);
-    sigparamsOROC3 = o2::RangeTokenizer::tokenize<double>(sigmaOROC3);
   }
 
   // initialise CCDB API
@@ -206,15 +183,10 @@ int main(int argc, char* argv[])
 
       tpc.reset(new Response());
       tpc->SetBetheBlochParams(BBparams);
-      tpc->SetResolutionParams(sigparamsGlobal, 0);
-      tpc->SetResolutionParams(sigparamsIROC, 1);
-      tpc->SetResolutionParams(sigparamsOROC1, 2);
-      tpc->SetResolutionParams(sigparamsOROC2, 3);
-      tpc->SetResolutionParams(sigparamsOROC3, 4);
+      tpc->SetResolutionParams(sigparamsGlobal);
       tpc->SetMIP(mipval);
       tpc->SetChargeFactor(chargefacval);
       tpc->SetMultiplicityNormalization(multNormval);
-      tpc->SetMaxNumberClusters(maxnumclusterval);
       tpc->SetUseDefaultResolutionParam(useDefaultParam);
       tpc->PrintAll();
     }
