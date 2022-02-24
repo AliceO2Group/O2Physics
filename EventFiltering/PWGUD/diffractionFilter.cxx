@@ -11,19 +11,38 @@
 // O2 includes
 ///
 /// \brief A filter task for diffractive events
-///        requires: EvSels, o2-analysis-event-selection
-///                  TrackSelection, o2-analysis-trackselection
+///        requires: Timestamps, o2-analysis-timestamp
+///                  EvSels, o2-analysis-event-selection
 ///                  TracksExtended, o2-analysis-trackextension
-///                  pidTOF*, o2-analysis-pid-tof
+///                  TrackSelection, o2-analysis-trackselection
 ///                  pidTPC*, o2-analysis-pid-tpc
-///                  Timestamps, o2-analysis-timestamp
+///                  pidTOF*, o2-analysis-pid-tof
+///
+///        options:  DiffCuts.mNDtcoll(4)
+///                  DiffCuts.mMinNTracks(0)
+///                  DiffCuts.mMaxNTracks(10000)
+///                  DiffCuts.mMinNetCharge(0)
+///                  DiffCuts.mMaxNetCharge(0)
+///                  DiffCuts.mPidHypo(211)
+///                  DiffCuts.mMinPosz(-1000.)
+///                  DiffCuts.mMaxPosz(1000.)
+///                  DiffCuts.mMinPt(0.)
+///                  DiffCuts.mMaxPt(1000.)
+///                  DiffCuts.mMinEta(-1.)
+///                  DiffCuts.mMaxEta(1.)
+///                  DiffCuts.mMinIVM(0.)
+///                  DiffCuts.mMaxIVM(1000.)
+///                  DiffCuts.mMaxnSigmaTPC(1000.)
+///                  DiffCuts.mMaxnSigmaTOF(1000.)
+///
 ///        usage: o2-analysis-timestamp --aod-file AO2D.root |
 ///               o2-analysis-event-selection --processRun3 1 --isMC 1 |
-///               o2-analysis-trackextension |
+///               o2-analysis-trackextension --processRun3 1 |
 ///               o2-analysis-trackselection --isRun3 |
 ///               o2-analysis-pid-tof |
 ///               o2-analysis-pid-tpc |
 ///               o2-analysis-diffraction-filter
+///
 /// \author P. Buehler , paul.buehler@oeaw.ac.at
 /// \since June 1, 2021
 
@@ -54,7 +73,7 @@ struct DGFilterRun3 {
   HistogramRegistry registry{
     "registry",
     {
-      {"aftercut", "#aftercut", {HistType::kTH1F, {{7, -0.5, 6.5}}}},
+      {"aftercut", "#aftercut", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
     }};
 
   // some general Collisions and Tracks filter
@@ -76,7 +95,6 @@ struct DGFilterRun3 {
                aod::Zdcs& zdcs,
                aod::FT0s& ft0s,
                aod::FV0As& fv0as,
-               aod::FV0Cs& fv0cs,
                aod::FDDs& fdds)
   {
     // nominal BC
@@ -84,14 +102,14 @@ struct DGFilterRun3 {
 
     // obtain slice of compatible BCs
     auto bcRange = compatibleBCs(collision, diffCuts->NDtcoll(), bcs);
-    LOGF(info, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts->NDtcoll(), bcRange.size());
+    LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts->NDtcoll(), bcRange.size());
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
 
     // fill filterTable
     if (isDGEvent == 0) {
-      LOGF(info, "This collision is a DG candidate!");
+      LOGF(debug, "This collision is a DG candidate!");
     }
     filterTable(isDGEvent == 0);
 
