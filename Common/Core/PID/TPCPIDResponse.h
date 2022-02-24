@@ -10,7 +10,8 @@
 // or submit itself to any jurisdiction.
 ///
 /// \file   TPCPIDResponse.h
-/// \author Annalena Kalteyer, Christian Sonnabend
+/// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>
+/// \author Christian Sonnabend
 /// \brief
 
 #ifndef O2_PID_TPC_RESPONSE_H_
@@ -26,7 +27,6 @@
 // O2 includes
 #include "ReconstructionDataFormats/PID.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
-
 
 namespace o2::pid::tpc
 {
@@ -54,7 +54,7 @@ class Response
   const float GetMIP() const { return mMIP; }
   const float GetChargeFactor() const { return mChargeFactor; }
   const float GetMultiplicityNormalization() const { return mMultNormalization; }
-  //std::unique_ptr<TFormula> GetResolutionParametrization() { return mSigmaParametrization; }
+  // std::unique_ptr<TFormula> GetResolutionParametrization() { return mSigmaParametrization; }
 
   /// Gets the expected signal of the track
   template <typename TrackType>
@@ -112,7 +112,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double dEdx = mMIP * o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
-    const std::vector<double> values{1. / dEdx, track.tgl(), std::sqrt(ncl) , relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
+    const std::vector<double> values{1. / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
 
     const float reso = mSigmaParametrization->EvalPar(values.data(), mResolutionParams.data()) * dEdx;
     reso >= 0.f ? resolution = reso : resolution = 0.f;

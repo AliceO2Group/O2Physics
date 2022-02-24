@@ -11,7 +11,9 @@
 
 ///
 /// \file   pidTPCFull.cxx
-/// \author Nicolo' Jacazio, Annalena Kalteyer, Christian Sonnabend
+/// \author Nicolo' Jacazio
+/// \author Annalena Kalteyer
+/// \author Christian Sonnabend
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
