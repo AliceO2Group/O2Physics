@@ -68,6 +68,7 @@ struct lambdakzeroQa {
       {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
+      {"hArmenterosPreAnalyserCuts", "hArmenterosPreAnalyserCuts", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
     },
   };
 
@@ -93,6 +94,8 @@ struct lambdakzeroQa {
       registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
       registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
       registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
+
+      registry.fill(HIST("hArmenterosPreAnalyserCuts"), v0.alpha(), v0.qtarm());
 
       auto reconegtrack = v0.negTrack_as<MyTracks>();
       auto recopostrack = v0.posTrack_as<MyTracks>();
@@ -137,6 +140,9 @@ struct lambdakzeroAnalysisMc {
       {"hAntiLambdaFeedDownMatrix", "hAntiLambdaFeedDownMatrix", {HistType::kTH2F, {{200, 0.0f, 10.0f, "#it{p}_{T}^{#bar{#Lambda}} (GeV/c)"}, {200, 0.0f, 10.0f, "#it{p}_{T}^{#Omega+} (GeV/c)"}}}},
 
       {"hSelectedEventCounter", "hSelectedEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+
+      {"hArmenterosPostAnalyserCuts", "hArmenterosPostAnalyserCuts", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
+      {"hArmenterosPostAnalyserCuts_MC", "hArmenterosPostAnalyserCuts_MC", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
     },
   };
   //_MC_truePt histograms: additional .pdgcode cut, and fill true Pt instead of reconstructed Pt
@@ -183,6 +189,8 @@ struct lambdakzeroAnalysisMc {
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
+  Configurable<bool> hasItsTest{"hasItsTest", false, "hasItsTest"};
+
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
@@ -214,17 +222,20 @@ struct lambdakzeroAnalysisMc {
           registry.fill(HIST("V0loopFiltersCounts"), 3.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+
+            //Lambda
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
               registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               // registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());
-              registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
+              registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
               for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
                 for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                   if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 3122) {
                     if (particleMotherOfNeg.isPhysicalPrimary()) {
                       registry.fill(HIST("h3dMassLambda_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mLambda());
+                      registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                     }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
@@ -234,9 +245,30 @@ struct lambdakzeroAnalysisMc {
                       }
                     }
                   }
+                  if (saveDcaHist == 1) {
+                    registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
+
+                    if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 3122) {
+                      registry.fill(HIST("h3dMassLambdaDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mLambda());
+                    }
+                  }
+                }
+              }
+            }
+
+            // AntiLambda
+            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
+              registry.fill(HIST("V0loopFiltersCounts"), 5.5);
+              // registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
+              registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
+              registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+
+              for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+                for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                   if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122) {
                     if (particleMotherOfNeg.isPhysicalPrimary()) {
                       registry.fill(HIST("h3dMassAntiLambda_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mAntiLambda());
+                      registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                     }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
@@ -247,12 +279,8 @@ struct lambdakzeroAnalysisMc {
                     }
                   }
                   if (saveDcaHist == 1) {
-                    registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
                     registry.fill(HIST("h3dMassAntiLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiLambda());
 
-                    if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 3122) {
-                      registry.fill(HIST("h3dMassLambdaDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mLambda());
-                    }
                     if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122) {
                       registry.fill(HIST("h3dMassAntiLambdaDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mAntiLambda());
                     }
@@ -262,18 +290,22 @@ struct lambdakzeroAnalysisMc {
             }
           }
         }
+
+        // K0Short
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
           registry.fill(HIST("V0loopFiltersCounts"), 7.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
             registry.fill(HIST("V0loopFiltersCounts"), 8.5);
-            if ((v0.qtarm() > paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {
+            if ((v0.qtarm() > paramArmenterosCut * TMath::Abs(v0.alpha())) || !boolArmenterosCut) {
               registry.fill(HIST("V0loopFiltersCounts"), 9.5);
               registry.fill(HIST("h3dMassK0Short"), 0., v0.pt(), v0.mK0Short());
+              registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
               for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
                 for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                   if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310) {
                     registry.fill(HIST("h3dMassK0Short_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mK0Short());
+                    registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                   }
                   if (saveDcaHist == 1) {
                     registry.fill(HIST("h3dMassK0ShortDca"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
@@ -319,14 +351,17 @@ struct lambdakzeroAnalysisMc {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
             registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
             registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
+            registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
             for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
               for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                 if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 3122) {
                   registry.fill(HIST("h3dMassLambda_MC_truePt"), collision.centV0M(), particleMotherOfNeg.pt(), v0.mLambda());
+                  registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                 }
                 if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122) {
                   registry.fill(HIST("h3dMassAntiLambda_MC_truePt"), collision.centV0M(), particleMotherOfNeg.pt(), v0.mAntiLambda());
+                  registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                 }
                 if (saveDcaHist == 1) {
                   registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
@@ -348,11 +383,13 @@ struct lambdakzeroAnalysisMc {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
             registry.fill(HIST("V0loopFiltersCounts"), 7.5);
             registry.fill(HIST("h3dMassK0Short"), collision.centV0M(), v0.pt(), v0.mK0Short());
+            registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
             for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
               for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                 if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310) {
                   registry.fill(HIST("h3dMassK0Short_MC_truePt"), collision.centV0M(), particleMotherOfNeg.pt(), v0.mK0Short());
+                  registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                 }
                 if (saveDcaHist == 1) {
                   registry.fill(HIST("h3dMassK0ShortDca"), v0.dcaV0daughters(), v0.pt(), v0.mK0Short());
@@ -424,6 +461,9 @@ struct lambdakzeroParticleCountMc {
     for (auto& mcparticle : mcParticles) {
       if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
         if (mcparticle.isPhysicalPrimary()) {
+          if (!mcparticle.has_daughters()) {
+            continue;
+          }
           if (mcparticle.pdgCode() == 310) {
             registry.fill(HIST("hK0ShortCount"), 0.5);
             for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
@@ -462,7 +502,6 @@ struct lambdakzeroParticleCountMc {
     }
   }
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
