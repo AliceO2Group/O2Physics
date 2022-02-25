@@ -210,9 +210,6 @@ struct ValidationRecLevel {
     }
   }
 
-  Configurable<int> d_selectionFlagD0{"d_selectionFlagD0", 0, "Selection Flag for D0"};
-  Configurable<int> d_selectionFlagD0bar{"d_selectionFlagD0bar", 0, "Selection Flag for D0bar"};
-
   using HfCandProng2WithMCRec = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>>;
   using HfCandProng3WithMCRec = soa::Filtered<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>>;
 
