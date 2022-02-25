@@ -210,8 +210,8 @@ struct ValidationRecLevel {
     }
   }
 
-  using HfCandProng2WithMCRec = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>>;
-  using HfCandProng3WithMCRec = soa::Filtered<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>>;
+  using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
+  using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
 
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
   {
