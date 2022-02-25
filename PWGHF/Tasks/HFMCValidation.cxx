@@ -27,11 +27,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-namespace 
+namespace
 {
-  static const int nCharmHad = 7;
-  static const std::array<int, nCharmHad> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
-}
+static const int nCharmHad = 7;
+static const std::array<int, nCharmHad> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
+static const std::array<std::string, nCharmHad> labels = {"D^{#plus}", "D*^{#plus}", "D^{0}", "D_{s}^{#plus}", "#Lambda_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "#Xi_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "J/#psi #rightarrow e^{#plus}e^{#minus}"};
+static const std::array<std::string, nCharmHad> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
+} // namespace
 
 /// Gen Level Validation
 ///
@@ -72,12 +74,11 @@ struct ValidationGenLevel {
 
   void init(o2::framework::InitContext&)
   {
-    std::array<std::string, nCharmHad> labels = {"D^{#plus}", "D*^{#plus}",  "D^{0}", "D_{s}^{#plus}", "#Lambda_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "#Xi_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "J/#psi #rightarrow e^{#plus}e^{#minus}"};
     hCharmHaronsPtDistr = registry.add<TH2>("hCharmHaronsPtDistr", "Pt distribution vs charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
     hCharmHaronsYDistr = registry.add<TH2>("hCharmHaronsYDistr", "Y distribution vs charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
     for (auto iBin = 1; iBin <= nCharmHad; ++iBin) {
-      hCharmHaronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin-1].data());
-      hCharmHaronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin-1].data());
+      hCharmHaronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      hCharmHaronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
   }
 
@@ -195,9 +196,6 @@ struct ValidationRecLevel {
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    std::array<std::string, nCharmHad> labels = {"D^{#plus}", "D*^{#plus}",  "D^{0}", "D_{s}^{#plus}", "#Lambda_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "#Xi_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "J/#psi #rightarrow e^{#plus}e^{#minus}"};
-    std::array<std::string, nCharmHad> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
-
     for (auto iHad = 0; iHad < nCharmHad; ++iHad) {
       histPt[iHad] = registry.add<TH1>(Form("histPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen.} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
       histPx[iHad] = registry.add<TH1>(Form("histPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen.} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
