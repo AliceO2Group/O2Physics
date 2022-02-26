@@ -107,6 +107,7 @@ TH1F* fhTrueCentMultB = nullptr;
 TH1F* fhTrueCentMultA = nullptr;
 TH1F* fhTrueVertexZB = nullptr;
 TH1F* fhTrueVertexZA = nullptr;
+TH1F* fhTrueVertexZAA = nullptr;
 TH1F* fhTruePB = nullptr;
 TH1F* fhTruePA[kDptDptNoOfSpecies] = {nullptr};
 TH1F* fhTruePtB = nullptr;
@@ -146,6 +147,7 @@ struct DptDptFilter {
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M, NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -388,8 +390,11 @@ struct DptDptFilter {
     zvtxup = cfgBinning->mZVtxmax;
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
+    initializeTrackSelection();
     /* the centrality/multiplicity estimation */
     fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
+    /* the trigger selection */
+    fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
@@ -538,6 +543,7 @@ struct DptDptFilter {
 
       fhTrueVertexZB = new TH1F("TrueVertexZB", "Vertex Z before (truth); z_{vtx}", 60, -15, 15);
       fhTrueVertexZA = new TH1F("TrueVertexZA", "Vertex Z (truth); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
+      fhTrueVertexZAA = new TH1F("TrueVertexZAA", "Vertex Z (truth rec associated); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
       fhTruePB = new TH1F("fTrueHistPB", "p distribution before (truth);p (GeV/c);dN/dp (c/GeV)", 100, 0.0, 15.0);
       fhTruePtB = new TH1F("fTrueHistPtB", "p_{T} distribution before (truth);p_{T} (GeV/c);dN/dP_{T} (c/GeV)", 100, 0.0, 15.0);
@@ -583,6 +589,7 @@ struct DptDptFilter {
       fOutputList->Add(fhTrueCentMultA);
       fOutputList->Add(fhTrueVertexZB);
       fOutputList->Add(fhTrueVertexZA);
+      fOutputList->Add(fhTrueVertexZAA);
       fOutputList->Add(fhTruePB);
       fOutputList->Add(fhTruePtB);
       fOutputList->Add(fhTruePtPosB);
@@ -637,17 +644,23 @@ struct DptDptFilter {
   void processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentPIDDetectorLevel, "Process PID MC detector level without centrality", false);
 
-  template <typename CollisionObject>
-  void processGenerated(CollisionObject const& mccollision, aod::McParticles const& mcparticles, float centormult);
+  template <typename CollisionObject, typename ParticlesList>
+  void processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
 
   void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
-                                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentV0Ms> const& collisions,
-                                     aod::McParticles const& mcparticles);
+                                     soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
+                                     aod::McParticles const& mcparticles,
+                                     aod::CollisionsEvSelCent const& allcollisions);
   PROCESS_SWITCH(DptDptFilter, processWithCentGeneratorLevel, "Process generated with centrality", false);
 
   void processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
-                                        aod::McParticles const& mcparticles);
+                                        soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
+                                        aod::McParticles const& mcparticles,
+                                        aod::CollisionsEvSel const& allcollisions);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
+
+  void processVertexGenerated(aod::McCollisions const&);
+  PROCESS_SWITCH(DptDptFilter, processVertexGenerated, "Process vertex generator level", false);
 };
 
 template <typename TrackObject>
@@ -935,18 +948,14 @@ void DptDptFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const&
   processReconstructed(collision, ftracks, 50.0);
 }
 
-template <typename CollisionObject>
-void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McParticles const& mcparticles, float centormult)
+template <typename CollisionObject, typename ParticlesList>
+void DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult)
 {
   using namespace dptdptfilter;
 
-  fhTrueCentMultB->Fill(centormult);
-  fhTrueVertexZB->Fill(mccollision.posZ());
   uint8_t acceptedevent = uint8_t(false);
   if (IsEvtSelected(mccollision, centormult)) {
     acceptedevent = true;
-    fhTrueCentMultA->Fill(centormult);
-    fhTrueVertexZA->Fill(mccollision.posZ());
     acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
 
     /* initialize multiplicities */
@@ -962,50 +971,76 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, aod::McP
       fhTrueNPosNegA[i]->Fill(partMultPos[i], partMultNeg[i]);
       fhTrueDeltaNA[i]->Fill(partMultPos[i] - partMultNeg[i]);
     }
-  } else {
-    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
-    for (auto& particle : mcparticles) {
-      scannedtruetracks(acceptedtrueevents.lastIndex(), uint8_t(false), uint8_t(false), particle.pt(), particle.eta(), particle.phi());
-    }
   }
 }
 
 void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccollision,
-                                                 soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentV0Ms> const& collisions,
-                                                 aod::McParticles const& mcparticles)
+                                                 soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
+                                                 aod::McParticles const& mcparticles,
+                                                 aod::CollisionsEvSelCent const& allcollisions)
 {
   using namespace dptdptfilter;
 
-  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithCentGeneratorLevel(). New generated collision %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
+  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithCentGeneratorLevel(). New generated collision with %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
 
-  /* TODO: in here we have to decide what to do in the following cases
-       - On the fly production -> clearly we will need a different process
-       - reconstructed collisions without generated associated -> we need a different process or a different signature
-       - multiplicity/centrality classes extracted from the reconstructed collision but then
-       - generated collision without associated reconstructed collision: how to extract mutliplicity/centrality classes?
-       - generated collision with several associated reconstructed collisions: from which to extract multiplicity/centrality classes?
-    */
   if (collisions.size() > 1) {
-    LOGF(error, "DptDptFilterTask::processWithCentGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first for centrality/multiplicity classes extraction");
+    LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithCentGeneratorLevel(). Generated collision with more than one reconstructed collisions. Processing only the first accepted for centrality/multiplicity classes extraction");
   }
 
-  for (auto& collision : collisions) {
-    processGenerated(mccollision, mcparticles, collision.centV0M());
-    break; /* TODO: only processing the first reconstructed collision for centrality/multiplicity class estimation */
+  for (auto& tmpcollision : collisions) {
+    if (tmpcollision.has_mcCollision()) {
+      if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
+        aod::CollisionsEvSelCent::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
+        float centmult = collision.centV0M();
+        if (IsEvtSelected(collision, centmult)) {
+          fhTrueVertexZAA->Fill((mccollision.posZ()));
+          processGenerated(mccollision, mcparticles, centmult);
+          break; /* TODO: only processing the first reconstructed accepted collision */
+        }
+      }
+    }
   }
 }
 
 void DptDptFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
-                                                    aod::McParticles const& mcparticles)
+                                                    soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
+                                                    aod::McParticles const& mcparticles,
+                                                    aod::CollisionsEvSel const& allcollisions)
 {
   using namespace dptdptfilter;
 
-  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithoutCentGeneratorLevel(). New generated collision with %d particles", mcparticles.size());
+  LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithoutCentGeneratorLevel(). New generated collision with %d reconstructed collisions and %d particles", collisions.size(), mcparticles.size());
 
-  /* the task does not have access to either centrality nor multiplicity
-       classes information, so it has to live without it.
-       For the time being we assign a value of 50% */
-  processGenerated(mccollision, mcparticles, 50.0);
+  if (collisions.size() > 1) {
+    LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processWithoutCentGeneratorLevel(). Generated collision with %d reconstructed collisions. Processing only the first accepted for centrality/multiplicity classes extraction", collisions.size());
+  }
+
+  for (auto& tmpcollision : collisions) {
+    if (tmpcollision.has_mcCollision()) {
+      if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
+        aod::CollisionsEvSel::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
+        /* we assign a default value */
+        float centmult = 50.0f;
+        if (IsEvtSelected(collision, centmult)) {
+          fhTrueVertexZAA->Fill((mccollision.posZ()));
+          processGenerated(mccollision, mcparticles, centmult);
+          break; /* TODO: only processing the first reconstructed accepted collision */
+        }
+      }
+    }
+  }
+}
+
+void DptDptFilter::processVertexGenerated(aod::McCollisions const& mccollisions)
+{
+  for (aod::McCollision const& mccollision : mccollisions) {
+    fhTrueVertexZB->Fill(mccollision.posZ());
+    /* we assign a default value */
+    float centmult = 50.0f;
+    if (IsEvtSelected(mccollision, centmult)) {
+      fhTrueVertexZA->Fill((mccollision.posZ()));
+    }
+  }
 }
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
