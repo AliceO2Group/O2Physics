@@ -72,6 +72,14 @@ enum CentMultEstimatorType {
   knCentMultEstimators ///< number of centrality/mutiplicity estimator
 };
 
+/// \enum TriggerSelectionType
+/// \brief The type of trigger to apply for event selection
+enum TriggerSelectionType {
+  kNONE = 0,       ///< do not use trigger selection
+  kMB,             ///< Minimum bias trigger
+  knEventSelection ///< number of triggers for event selection
+};
+
 //============================================================================================
 // The DptDptFilter configuration objects
 //============================================================================================
@@ -89,9 +97,30 @@ int tracktype = 1;
 int trackonecharge = 1;
 int tracktwocharge = -1;
 
+TrackSelection* globalRun3 = nullptr;
+TrackSelection* globalSDDRun3 = nullptr;
+
+inline void initializeTrackSelection()
+{
+  switch (tracktype) {
+    case 3: /* Run3 track */
+      globalRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalRun3->ResetITSRequirements();
+      globalRun3->SetRequireHitsInITSLayers(1, {0, 1, 2});
+      globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalSDDRun3->ResetITSRequirements();
+      globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
+      globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
+      break;
+    default:
+      break;
+  }
+}
+
 SystemType fSystem = kNoSystem;
 DataType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
+TriggerSelectionType fTriggerSelection = kMB;
 
 /* adaptations for the pp nightly checks */
 analysis::CheckRangeCfg traceDCAOutliers;
@@ -105,6 +134,18 @@ float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
 TDatabasePDG* fPDG = nullptr;
+
+inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
+{
+  if (triggstr.empty() or triggstr == "MB") {
+    return kMB;
+  } else if (triggstr == "None") {
+    return kNONE;
+  } else {
+    LOGF(fatal, "Wrong trigger selection: %s", triggstr.c_str());
+    return kNONE;
+  }
+}
 
 inline SystemType getSystemType(std::string const& sysstr)
 {
@@ -124,7 +165,7 @@ inline SystemType getSystemType(std::string const& sysstr)
   } else if (sysstr == "ppRun3") {
     return kppRun3;
   } else {
-    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %d", sysstr.c_str());
+    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
   }
   return kPbPb;
 }
@@ -178,15 +219,33 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbp:
     case kPbPb:
     case kXeXe:
-      if (collision.alias()[kINT7]) {
-        if (collision.sel7()) {
+      switch (fTriggerSelection) {
+        case kMB:
+          if (collision.alias()[kINT7]) {
+            if (collision.sel7()) {
+              trigsel = true;
+            }
+          }
+          break;
+        case kNONE:
           trigsel = true;
-        }
+          break;
+        default:
+          break;
       }
       break;
     case kppRun3:
-      if (collision.sel8()) {
-        trigsel = true;
+      switch (fTriggerSelection) {
+        case kMB:
+          if (collision.sel8()) {
+            trigsel = true;
+          }
+          break;
+        case kNONE:
+          trigsel = true;
+          break;
+        default:
+          break;
       }
       break;
     default:
@@ -342,7 +401,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McColli
 
 /// \brief Centrality selection for generator level collision table
 template <>
-inline bool centralitySelection<aod::McCollision>(aod::McCollision const& collision, float& centmult)
+inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
   if (centmult < 100 and 0 < centmult) {
     return true;
@@ -390,7 +449,7 @@ inline bool matchTrackType(TrackObject const& track)
         }
         break;
       case 3: /* Run3 track */
-        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+        if (globalRun3->IsSelected(track) || globalSDDRun3->IsSelected(track)) {
           return true;
         } else {
           return false;
