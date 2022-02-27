@@ -105,9 +105,11 @@ inline void initializeTrackSelection()
   switch (tracktype) {
     case 3: /* Run3 track */
       globalRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
       globalRun3->ResetITSRequirements();
       globalRun3->SetRequireHitsInITSLayers(1, {0, 1, 2});
       globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalSDDRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
       globalSDDRun3->ResetITSRequirements();
       globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
       globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
