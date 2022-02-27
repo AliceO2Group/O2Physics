@@ -205,7 +205,7 @@ struct femtoDreamDebugTrack {
     eventHisto.fillQA(col);
 
     for (auto& part : groupPartsOne) {
-      if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+      if (part.p() > cfgCutTable->get("MaxP") || part.pt() > cfgCutTable->get("MaxPt")) {
         continue;
       }
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
