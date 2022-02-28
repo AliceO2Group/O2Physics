@@ -66,9 +66,10 @@ struct multFilter {
     multiplicity.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
     multiplicity.add("fLeadingTrackPt", "pT of high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     multiplicity.add("fTrackMult", "charged particle multiplicity", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
-    multiplicity.add("fTrackMultVsV0A", "charged particle multiplicity", HistType::kTH2F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}, {200, -0.5, +16999.5, "sum AmpFV0"}});
-    multiplicity.add("fTrackMultVsT0A", "charged particle multiplicity", HistType::kTH2F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}, {100, -0.5, +299.5, "sum AmpFT0"}});
+    multiplicity.add("fTrackMultVsV0A", "charged particle multiplicity", HistType::kTH2F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}, {800, -0.5, +39999.5, "sum AmpFV0"}});
+    multiplicity.add("fTrackMultVsT0A", "charged particle multiplicity", HistType::kTH2F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}, {200, -0.5, +999.5, "sum AmpFT0"}});
     multiplicity.add("fTrackMultTrans", "charged particle multiplicity in transverse region", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8, transverse region)"}});
+    multiplicity.add("fTrackMultVsTrans", "charged particle multiplicity vs mult in transverse region", HistType::kTH2F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}, {200, -0.5, +199.5, "number of tracks (|#eta|<0.8, transverse region)"}});
     multiplicity.add("fLeadingTrackPtSelected", "pT of selected high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     multiplicity.add("fTrackMultSelected", "charged particle multiplicity of the selected events", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
     multiplicity.add("fTrackMultTransSelected", "charged particle multiplicity  (in the transverse region) of the selected events", HistType::kTH1F, {{200, -0.5, +199.5, "number of tracks (|#eta|<0.8)"}});
@@ -122,7 +123,6 @@ struct multFilter {
     // V0A signal
     float sumAmpFT0 = 0;
     float sumAmpFV0 = 0;
-    int innerFV0 = 24;
     if (collision.has_foundFV0()) {
       auto fv0 = collision.foundFV0();
       if (collision.has_foundFT0()) {
@@ -131,8 +131,6 @@ struct multFilter {
           sumAmpFT0 += amplitude;
         }
         for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
-          if (int(fv0.channel()[ich]) > innerFV0)
-            continue;
           sumAmpFV0 += fv0.amplitude()[ich];
         }
       }
@@ -169,7 +167,7 @@ struct multFilter {
           multiplicity.fill(HIST("fDeltaPhiTrans"), DPhi);
         }
       }
-
+      multiplicity.fill(HIST("fTrackMultVsTrans"), multTrack, multTrackTrans);
       multiplicity.fill(HIST("fTrackMultTrans"), multTrackTrans);
       if (multTrackTrans >= selectionHighTrackMultTrans) {
         keepEvent[kHighTrackMultTrans] = true; // accepted HM events
