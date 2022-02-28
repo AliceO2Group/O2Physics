@@ -675,8 +675,15 @@ class RecoDecay
     //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    for (auto& idxDau : particle.daughtersIds()) {
-      getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
+    if (particle.daughtersIds().front() != particle.daughtersIds().back()) {
+      for (auto& idxDau : particle.daughtersIds()) {
+        if (idxDau < particlesMC.size()) {
+          getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
+        }
+      }
+    }
+    else if (particle.daughtersIds().front() == particle.daughtersIds().back() && particle.daughtersIds().front() <= particlesMC.size()) {
+      getDaughters(particlesMC, particlesMC.rawIteratorAt(particle.daughtersIds().front()), list, arrPDGFinal, depthMax, stage);
     }
   }
 
