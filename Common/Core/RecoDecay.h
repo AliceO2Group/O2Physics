@@ -681,8 +681,7 @@ class RecoDecay
           getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
         }
       }
-    }
-    else if (particle.daughtersIds().front() == particle.daughtersIds().back() && particle.daughtersIds().front() <= particlesMC.size()) {
+    } else if (particle.daughtersIds().front() == particle.daughtersIds().back() && particle.daughtersIds().front() <= particlesMC.size()) {
       getDaughters(particlesMC, particlesMC.rawIteratorAt(particle.daughtersIds().front()), list, arrPDGFinal, depthMax, stage);
     }
   }
