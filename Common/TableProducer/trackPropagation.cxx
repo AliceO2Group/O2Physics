@@ -65,6 +65,10 @@ struct TrackPropagation {
   o2::base::Propagator::MatCorrType matCorr;
 
   const o2::dataformats::MeanVertexObject* mVtx;
+  o2::parameters::GRPObject* grpo = nullptr;
+  ;
+  o2::base::MatLayerCylSet* lut = nullptr;
+  ;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -110,39 +114,38 @@ struct TrackPropagation {
     }
 
     if (fillQAHists) {
-      registry.add("hpt", "track #it{p}_{T} (GeV/#it{c});not propagated; propagated to PV", {HistType::kTH2F, {{200, 0., 20.}, {200, 0., 20.}}});
-      registry.add("hphi", "track #phi; not propagated; propagated to PV", {HistType::kTH2F, {{140, -1., 8.}, {140, -1., 8.}}});
-      registry.add("heta", "track #eta; not propagated; propagated to PV", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}});
+      registry.add("hpt", "track #it{p}_{T} (GeV/#it{c});not propagated", {HistType::kTH1F, {{200, 0., 20.}}});
+      registry.add("hphi", "track #phi; not propagated", {HistType::kTH1F, {{140, -1., 8.}}});
+      registry.add("heta", "track #eta; not propagated", {HistType::kTH1F, {{200, -2., 2.}}});
     }
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    //auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, analysis::trackpropagation::run3lut_timestamp));
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
 
     matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(geoPath);
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, analysis::trackpropagation::run3grp_timestamp);
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, analysis::trackpropagation::run3grp_timestamp);
       o2::base::Propagator::initFieldFromGRP(grpo);
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
-
     mVtx = ccdb->get<o2::dataformats::MeanVertexObject>(mVtxPath);
   }
 
-  void process(aod::Tracks const& tracks, aod::Collisions const&)
+  void processStandard(aod::Tracks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
 
     gpu::gpustd::array<float, 2> dcaInfo;
-    for (auto& track : tracks) {
+    o2::dataformats::VertexBase vtx;
 
+    for (auto& track : tracks) {
       auto trackPar = getTrackPar(track);
       if (track.has_collision()) {
         auto const& collision = track.collision();
-
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
         if (fillTracksPropagated) {
           tracksPropagated(track.collisionId(), track.trackType(), trackPar.getSign(), trackPar.getPt(), trackPar.getPhi(), trackPar.getEta());
@@ -153,15 +156,13 @@ struct TrackPropagation {
         if (fillTracksExtended) {
           tracksExtended(dcaInfo[0], dcaInfo[1]);
         }
-
         if (fillQAHists) {
-          registry.fill(HIST("hpt"), track.pt(), trackPar.getPt());
-          registry.fill(HIST("hphi"), track.phi(), trackPar.getPhi());
-          registry.fill(HIST("heta"), track.eta(), trackPar.getEta());
+          registry.fill(HIST("hpt"), track.pt());
+          registry.fill(HIST("hphi"), track.phi());
+          registry.fill(HIST("heta"), track.eta());
         }
       } else {
-
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo); //put mean collision information here
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
 
         if (fillTracksPropagated) {
           tracksPropagated(-1, track.trackType(), trackPar.getSign(), trackPar.getPt(), trackPar.getPhi(), trackPar.getEta());
@@ -172,9 +173,67 @@ struct TrackPropagation {
         if (fillTracksExtended) {
           tracksExtended(dcaInfo[0], dcaInfo[1]);
         }
+        if (fillQAHists) {
+          registry.fill(HIST("hpt"), track.pt());
+          registry.fill(HIST("hphi"), track.phi());
+          registry.fill(HIST("heta"), track.eta());
+        }
       }
     }
   }
+  PROCESS_SWITCH(TrackPropagation, processStandard, "Process without covariance", true);
+  void processCovariance(soa::Join<aod::Tracks, aod::TracksCov> const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  {
+
+    o2::dataformats::DCA dcaInfoCov;
+    o2::dataformats::VertexBase vtx;
+    for (auto& track : tracks) {
+
+      auto trackParCov = getTrackParCov(track);
+      if (track.has_collision()) {
+        auto const& collision = track.collision();
+        vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
+
+        if (fillTracksPropagated) {
+          tracksPropagated(track.collisionId(), track.trackType(), trackParCov.getSign(), trackParCov.getPt(), trackParCov.getPhi(), trackParCov.getEta());
+        }
+        if (fillTracksParPropagated) {
+          tracksParPropagated(trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+        }
+        if (fillTracksExtended) {
+          tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
+        }
+        if (fillQAHists) {
+          registry.fill(HIST("hpt"), trackParCov.getPt());
+          registry.fill(HIST("hphi"), trackParCov.getPhi());
+          registry.fill(HIST("heta"), trackParCov.getEta());
+        }
+      } else {
+
+        vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
+        vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); //this doesnt exist for the meanvertexobject
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
+
+        if (fillTracksPropagated) {
+          tracksPropagated(-1, track.trackType(), trackParCov.getSign(), trackParCov.getPt(), trackParCov.getPhi(), trackParCov.getEta());
+        }
+        if (fillTracksParPropagated) {
+          tracksParPropagated(trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+        }
+        if (fillTracksExtended) {
+          tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
+        }
+        if (fillQAHists) {
+          registry.fill(HIST("hpt"), trackParCov.getPt());
+          registry.fill(HIST("hphi"), trackParCov.getPhi());
+          registry.fill(HIST("heta"), trackParCov.getEta());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
 };
 
 //****************************************************************************************
