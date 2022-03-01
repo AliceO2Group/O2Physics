@@ -172,6 +172,14 @@ struct EventSelectionQaTask {
     histos.add("hNcontribCol", ";n contributors;", kTH1F, {{100, 0, 100.}});
     histos.add("hNcontribAcc", ";n contributors;", kTH1F, {{100, 0, 100.}});
 
+    // MC histograms
+    histos.add("hGlobalBcColMC", ";;", kTH1F, {{nGlobalBCs, minGlobalBC, minGlobalBC + nGlobalBCs}});
+    histos.add("hOrbitColMC", ";;", kTH1F, {{nOrbits, minOrbit, minOrbit + nOrbits}});
+    histos.add("hBcColMC", "", kTH1F, {{nBCsPerOrbit, 0., double(nBCsPerOrbit)}});
+    histos.add("hVertexXMC", "", kTH1F, {{1000, -1, 1}});
+    histos.add("hVertexYMC", "", kTH1F, {{1000, -1, 1}});
+    histos.add("hVertexZMC", "", kTH1F, {{1000, -10, 10}});
+
     for (int i = 0; i < kNsel; i++) {
       histos.get<TH1>(HIST("hSelCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
       histos.get<TH1>(HIST("hSelMask"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
@@ -603,6 +611,23 @@ struct EventSelectionQaTask {
     }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
+
+  void processMCRun3(aod::McCollisions const& mcCols, BCsRun3 const& bcs)
+  {
+    for (auto& mcCol : mcCols) {
+      auto bc = mcCol.bc_as<BCsRun3>();
+      uint64_t globalBC = bc.globalBC();
+      uint64_t orbit = globalBC / nBCsPerOrbit;
+      int localBC = globalBC % nBCsPerOrbit;
+      histos.fill(HIST("hGlobalBcColMC"), globalBC);
+      histos.fill(HIST("hOrbitColMC"), orbit);
+      histos.fill(HIST("hBcColMC"), localBC);
+      histos.fill(HIST("hVertexXMC"), mcCol.posX());
+      histos.fill(HIST("hVertexYMC"), mcCol.posY());
+      histos.fill(HIST("hVertexZMC"), mcCol.posZ());
+    }
+  }
+  PROCESS_SWITCH(EventSelectionQaTask, processMCRun3, "Process Run3 MC event selection QA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
