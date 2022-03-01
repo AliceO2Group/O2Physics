@@ -58,6 +58,10 @@ struct ALICE3Centrality {
       cent(101);
       return;
     }
+    if (fabs(collision.posZ()) > 10) {
+      cent(102);
+      return;
+    }
     for (const auto& track : tracks) {
       if (track.eta() < MinEta || track.eta() > MaxEta) {
         continue;
@@ -70,7 +74,7 @@ struct ALICE3Centrality {
     LOG(info) << nevs++ << ") Event " << collision.globalIndex() << " has " << nTracks << " tracks";
     histos.fill(HIST("centrality/numberOfTracks"), nTracks);
 
-    float centALICE3 = hCumMultALICE3->GetBinContent(nTracks);
+    float centALICE3 = hCumMultALICE3->GetBinContent(hCumMultALICE3->FindBin(nTracks));
     cent(centALICE3);
   }
 };
