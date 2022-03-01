@@ -75,35 +75,35 @@ DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filt
 using DiffractionFilter = DiffractionFilters::iterator;
 
 // Dileptons & Quarkonia
-DECLARE_SOA_TABLE(DqFilters, "AOD", "DQ Filters", //!
+DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
                   filtering::SingleE, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
 using DqFilter = DqFilters::iterator;
 
 // heavy flavours
-DECLARE_SOA_TABLE(HfFilters, "AOD", "HF Filters", //!
+DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfHighPt, filtering::HfBeauty, filtering::HfFemto, filtering::HfDoubleCharm);
 
 using HfFilter = HfFilters::iterator;
 
 // correlations
-DECLARE_SOA_TABLE(CFFilters, "AOD", "CF Filters", //!
+DECLARE_SOA_TABLE(CFFilters, "AOD", "CFFilters", //!
                   filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
 using CfFilter = CFFilters::iterator;
 
 // jets
-DECLARE_SOA_TABLE(JetFilters, "AOD", "Jet Filters", //!
+DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
                   filtering::HighPtTrack, filtering::JetChHighPt);
 
 using JetFilter = JetFilters::iterator;
 
 // strangeness (lf)
-DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LF Filters", //!
+DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
                   filtering::Omega, filtering::hadronXi, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
-DECLARE_SOA_TABLE(MultFilters, "AOD", "MM Filters", //!
+DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
                   filtering::LeadingPtTrack, filtering::HighTrackMult, filtering::HighTrackMultTrans, filtering::HighTrackMultOverlap);
 using MultFilter = MultFilters::iterator;
 
