@@ -567,11 +567,11 @@ struct AnalysisSameEventPairing {
           }
           fMuonHistNamesMCmatched.push_back(mcSigClasses);
         }  // end loop over cuts
-      }  // end if(cutNames.IsNull())  
-    }  // end if processMuon
+      }  // end if(cutNames.IsNull())
+    }    // end if processMuon
 
     // NOTE: For the electron-muon pairing, the policy is that the user specifies n track and n muon cuts via configurables
-    //     So for each barrel cut there is a corresponding muon cut  
+    //     So for each barrel cut there is a corresponding muon cut
     /*if (enableBarrelMuonHistos) {
       TString cutNamesBarrel = fConfigTrackCuts.value;
       TString cutNamesMuon = fConfigMuonCuts.value;
@@ -579,7 +579,7 @@ struct AnalysisSameEventPairing {
         std::unique_ptr<TObjArray> objArrayBarrel(cutNamesBarrel.Tokenize(","));
         std::unique_ptr<TObjArray> objArrayMuon(cutNamesMuon.Tokenize(","));
         for (int icut = 0; icut < objArrayBarrel->GetEntries(); ++icut) {
-          if (icut >= objArrayMuon->GetEntries()) {  
+          if (icut >= objArrayMuon->GetEntries()) {
             // there are fewer muon cuts specified wrt barrel cuts
             break;
           }
@@ -607,7 +607,7 @@ struct AnalysisSameEventPairing {
           }
           fBarrelMuonHistNamesMCmatched.push_back(mcSigClasses);
         }  // end loop over cuts
-      }  // end if(cutNames.IsNull())  
+      }  // end if(cutNames.IsNull())
     }  // end if processBarrelMuon
     */
 
@@ -683,9 +683,8 @@ struct AnalysisSameEventPairing {
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == VarManager::kJpsiToMuMu) && muonHasCov) {
-        dileptonExtraList(t1.globalIndex(),t2.globalIndex(),VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kVertexingTauz],VarManager::fgValues[VarManager::kVertexingLz],VarManager::fgValues[VarManager::kVertexingLxy]);
+        dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
       }
-
 
       // run MC matching for this pair
       uint32_t mcDecision = 0;
@@ -774,9 +773,10 @@ struct AnalysisSameEventPairing {
     runMCGen(groupedMCTracks);
   }
 
-  void processJpsiToMuMuSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, 
-                                soa::Filtered<MyMuonTracksSelected> const& muons, 
-                                ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
+  void processJpsiToMuMuSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
+                                soa::Filtered<MyMuonTracksSelected> const& muons,
+                                ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
@@ -786,28 +786,29 @@ struct AnalysisSameEventPairing {
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     runMCGen(groupedMCTracks);
   }
-  
-  void processJpsiToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, 
-                                soa::Filtered<MyMuonTracksSelectedWithCov> const& muons, 
-                                ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
+
+  void processJpsiToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
+                                         soa::Filtered<MyMuonTracksSelectedWithCov> const& muons,
+                                         ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
-    
+
     runPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, muons, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     runMCGen(groupedMCTracks);
   }
 
-  /*void processElectronMuonSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, 
-                                  soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons, 
+  /*void processElectronMuonSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
+                                  soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons,
                                   ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
-    
+
     runPairing<VarManager::kElectronMuon, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     runMCGen(groupedMCTracks);
@@ -862,7 +863,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("Pairs")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
-//      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
+      //      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
     }
 
     if (classStr.Contains("MCTruthGenPair")) {
