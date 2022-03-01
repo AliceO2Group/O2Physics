@@ -27,11 +27,9 @@ template <typename T>
 void checkDaughters(const T& particlesMC,
                     const typename T::iterator& particle)
 {
-  if (particle.has_daughters()) {
-    for (auto& idxDau : particle.daughtersIds()) {
-      if (idxDau > particlesMC.size()) {
-        LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with index " << idxDau << " > MC particle table size (" << particlesMC.size() << ")";
-      }
+  for (auto& idxDau : particle.daughtersIds()) {
+    if (idxDau > particlesMC.size()) {
+      LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with index " << idxDau << " > MC particle table size (" << particlesMC.size() << ")";
     }
   }
 }
