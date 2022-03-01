@@ -57,6 +57,10 @@ struct ALICE3Centrality {
       cent(101);
       return;
     }
+    if (fabs(collision.posZ()) > 10) {
+      cent(102);
+      return;
+    }
     for (const auto& track : tracks) {
       if (track.eta() < MinEta || track.eta() > MaxEta) {
         continue;
