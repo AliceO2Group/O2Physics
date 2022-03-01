@@ -69,7 +69,7 @@ struct ALICE3Centrality {
     LOG(info) << nevs++ << ") Event " << collision.globalIndex() << " has " << nTracks << " tracks";
     histos.fill(HIST("centrality/numberOfTracks"), nTracks);
 
-    float centALICE3 = hCumMultALICE3->GetBinContent(nTracks);
+    float centALICE3 = hCumMultALICE3->GetBinContent(hCumMultALICE3->FindBin(nTracks));
     cent(centALICE3);
   }
 };
