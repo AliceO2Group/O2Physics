@@ -223,6 +223,7 @@ class VarManager : public TObject
     kMuonCTglTgl,
     kMuonC1Pt21Pt2,
     kNMuonTrackVariables,
+    kMuonTrackType,
 
     // MC particle variables
     kMCPdgCode,
@@ -725,6 +726,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonChi2MatchMCHMID] = track.chi2MatchMCHMID();
     values[kMuonChi2MatchMCHMFT] = track.chi2MatchMCHMFT();
     values[kMuonMatchScoreMCHMFT] = track.matchScoreMCHMFT();
+    values[kMuonTrackType] = track.trackType();
   }
   // Quantities based on the muon covariance table
   if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {
