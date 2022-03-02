@@ -189,7 +189,7 @@ struct HFD0CandidateSelectorALICE3Barrel {
   }
 
   using Trks = soa::Join<aod::BigTracksPIDExtended, aod::RICHTracksIndex, aod::McTrackLabels>;
-  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCandProng2 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
 
     for (auto& candidate : candidates) {

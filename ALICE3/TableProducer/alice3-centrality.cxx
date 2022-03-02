@@ -32,6 +32,7 @@ struct ALICE3Centrality {
   Configurable<float> MaxEta{"MaxEta", 4.0f, "Maximum eta in range"};
   Configurable<float> MaxMult{"MaxMult", 10000.f, "Maximum multiplicity in range"};
   Configurable<float> MaxDCA{"MaxDCA", 0.0025f, "Max DCAxy and DCAz for counted tracks"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   void init(InitContext&)
   {
@@ -39,7 +40,7 @@ struct ALICE3Centrality {
     TString tit = Form("%.3f < #it{#eta} < %.3f", MinEta.value, MaxEta.value);
     histos.add("centrality/numberOfTracks", tit, kTH1D, {axisMult});
 
-    ccdb->setURL("http://ccdb-test.cern.ch:8080/");
+    ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -57,6 +58,10 @@ struct ALICE3Centrality {
       cent(101);
       return;
     }
+    if (fabs(collision.posZ()) > 10) {
+      cent(102);
+      return;
+    }
     for (const auto& track : tracks) {
       if (track.eta() < MinEta || track.eta() > MaxEta) {
         continue;
@@ -69,7 +74,7 @@ struct ALICE3Centrality {
     LOG(info) << nevs++ << ") Event " << collision.globalIndex() << " has " << nTracks << " tracks";
     histos.fill(HIST("centrality/numberOfTracks"), nTracks);
 
-    float centALICE3 = hCumMultALICE3->GetBinContent(nTracks);
+    float centALICE3 = hCumMultALICE3->GetBinContent(hCumMultALICE3->FindBin(nTracks));
     cent(centALICE3);
   }
 };

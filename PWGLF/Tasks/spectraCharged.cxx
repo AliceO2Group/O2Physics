@@ -163,6 +163,7 @@ void chargedSpectra::init(InitContext const&)
     histos.add("multPtSpec_trk_prim_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});    // tracks from measured primaries (no contamination from secondaries, particles smeared into acceptance or background events)
     histos.add("multPtSpec_trk_sec_meas", "", kTH2D, {multMeasAxis, ptMeasAxis});     // tracks from measured secondaries (no contamination from particles smeared into acceptance or background events)  [for QA to disentangle secondaries from other contamination]
     histos.add("multPtSpec_trk_meas_evtcont", "", kTH2D, {multMeasAxis, ptMeasAxis}); // tracks from events that are measured, but do not belong to the desired class of events
+    histos.add("multPtSpec_trk_inter", "", kTH2D, {multTrueAxis, ptMeasAxis});
   }
 }
 
@@ -223,7 +224,8 @@ bool chargedSpectra::initParticle(const P& particle)
   if (!pdgParticle || pdgParticle->Charge() == 0.) {
     return false;
   }
-  vars.isChargedPrimary = particle.isPhysicalPrimary();
+  std::list<int> primparticles{11, 13, 211, 321, 2212, 3112, 3222, 3312, 3334};                                                                                           //(Non-exhaustive) list of charged particles that can constitute primaries
+  vars.isChargedPrimary = particle.isPhysicalPrimary() && (std::find(primparticles.begin(), primparticles.end(), TMath::Abs(particle.pdgCode())) != primparticles.end()); // use PID as temporary workaround
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
@@ -248,7 +250,7 @@ bool chargedSpectra::initTrack(const T& track)
     return false;
   }
   // TODO: with Filters we could skip this in data, but not in MC (maybe add IS_MC template paramter so we can skip it in data via if constexpr)
-  if (isRun3 ? (track.trackType() != o2::aod::track::Track) : !track.isGlobalTrack()) {
+  if (!track.isGlobalTrack() || (isRun3 && track.trackType() != o2::aod::track::Track)) {
     return false;
     // MEMO: current version of the track selection cuts too harshly (to be studied why) and therefore many events have multMeas==0
     // as temporary workaround to look at unselected tracks use the commented out condition instead
@@ -273,8 +275,12 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   }
 
   vars.isAcceptedEvent = false;
-  if ((collision.posZ() < 10.f) && isRun3 ? collision.sel8() : (collision.alias()[kINT7] && collision.sel7())) {
-    vars.isAcceptedEvent = true;
+  if (collision.posZ() < 10.f) {
+    if (isRun3 ? collision.sel8() : collision.sel7()) {
+      if ((isRun3 || isMC) ? true : collision.alias()[kINT7]) {
+        vars.isAcceptedEvent = true;
+      }
+    }
   }
 }
 
@@ -362,15 +368,17 @@ void chargedSpectra::processMeas(const C& collision, const T& tracks)
         continue;
       }
       */
+
       foundParticles.push_back(track.mcParticleId());
 
-      const auto& particle = track.template mcParticle_as<aod::McParticles_000>();
+      const auto& particle = track.template mcParticle_as<aod::McParticles>();
 
       if (!vars.isAcceptedEventMC) {
         histos.fill(HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
         continue;
       }
 
+      histos.fill(HIST("multPtSpec_trk_inter"), vars.multTrue, track.pt());
       if (initParticle(particle)) {
         if (!vars.isChargedPrimary) {
           histos.fill(HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());

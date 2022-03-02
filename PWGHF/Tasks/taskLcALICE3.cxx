@@ -55,7 +55,7 @@ struct TaskLcALICE3MC {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lc_ALICE3::isSelLcPKPiNoPID == 1 || aod::hf_selcandidate_lc_ALICE3::isSelLcPiKPNoPID == 1);
   void process(soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidateALICE3, aod::HfCandProng3MCRec>> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::LcToPKPi)) {

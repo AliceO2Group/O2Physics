@@ -73,7 +73,7 @@ struct qaEventTrack {
   // TODO: ask if one can have different filters for both process functions
   Filter trackFilter = !selectGlobalTracks || aod::track::isGlobalTrack == (uint8_t) true;
 
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos;
 
   void init(InitContext const&);
 

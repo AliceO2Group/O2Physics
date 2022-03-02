@@ -15,6 +15,7 @@
 
 #include <cmath>
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,6 +31,7 @@
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/ClusterFactory.h"
 #include "EMCALReconstruction/Clusterizer.h"
+#include "TVector2.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,6 +51,9 @@ struct EmcalCorrectionTask {
   Configurable<double> timeMax{"timeMax", 10000, "Max cell time"};
   Configurable<bool> enableEnergyGradientCut{"enableEnergyGradientCut", true, "Enable energy gradient cut."};
   Configurable<double> gradientCut{"gradientCut", 0.03, "Clusterizer energy gradient cut."};
+
+  // CDB service (for geometry)
+  Service<o2::ccdb::BasicCCDBManager> mCcdbManager;
 
   // Clusterizer and related
   // Apparently streaming these objects really doesn't work, and causes problems for setting up the workflow.
@@ -74,8 +79,15 @@ struct EmcalCorrectionTask {
     // NOTE: The geometry manager isn't necessary just to load the EMCAL geometry.
     //       However, it _is_ necessary for loading the misalignment matrices as of September 2020
     //       Eventually, those matrices will be moved to the CCDB, but it's not yet ready.
-    // FIXME: Hardcoded for run 2
-    o2::base::GeometryManager::loadGeometry(); // for generating full clusters
+
+    // The geomatrices from the CCDB are needed in order to calculate the cluster kinematics
+    const char* ccdburl = "http://alice-ccdb.cern.ch"; // Possibly the parameter might become configurable, in order to be able to load new EMCAL calibration objects
+    mCcdbManager->setURL(ccdburl);
+    mCcdbManager->setCaching(true);
+    mCcdbManager->setLocalObjectValidityChecking();
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      mCcdbManager->get<TGeoManager>("GLO/Config/Geometry");
+    }
     LOG(debug) << "After load geometry!";
     o2::emcal::Geometry* geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
     if (!geometry) {
@@ -102,10 +114,10 @@ struct EmcalCorrectionTask {
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
   }
 
-  //void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
-  //void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
-  //void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
-  // Appears to need the BC to be accessed to be available in the collision table...
+  // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
+  // void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
+  // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
+  //  Appears to need the BC to be accessed to be available in the collision table...
   void process(aod::Collision const& collision, aod::Calos const& cells, aod::BCs const& bcs)
   {
     LOG(debug) << "Starting process.";
@@ -114,11 +126,11 @@ struct EmcalCorrectionTask {
     mEmcalCells.clear();
     for (auto& cell : cells) {
       if (cell.caloType() != selectedCellType || cell.bc() != collision.bc()) {
-        //LOG(debug) << "Rejected";
+        // LOG(debug) << "Rejected";
         continue;
       }
-      //LOG(debug) << "Cell E: " << cell.getEnergy();
-      //LOG(debug) << "Cell E: " << cell;
+      // LOG(debug) << "Cell E: " << cell.getEnergy();
+      // LOG(debug) << "Cell E: " << cell;
 
       mEmcalCells.emplace_back(o2::emcal::Cell(
         cell.cellNumber(),
@@ -133,7 +145,7 @@ struct EmcalCorrectionTask {
       hCellE->Fill(cell.getEnergy());
       hCellTowerID->Fill(cell.getTower());
       auto res = mClusterizer->getGeometry()->EtaPhiFromIndex(cell.getTower());
-      hCellEtaPhi->Fill(std::get<0>(res), std::get<1>(res));
+      hCellEtaPhi->Fill(std::get<0>(res), TVector2::Phi_0_2pi(std::get<1>(res)));
       res = mClusterizer->getGeometry()->GlobalRowColFromIndex(cell.getTower());
       // NOTE: Reversed column and row because it's more natural for presentatin.
       hCellRowCol->Fill(std::get<1>(res), std::get<0>(res));
@@ -180,13 +192,13 @@ struct EmcalCorrectionTask {
       pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
       // We have our necessary properties. Now we store outputs
-      //LOG(debug) << "Cluster E: " << cluster.E();
-      clusters(collision, cluster.E(), pos.Eta(), pos.Phi(), cluster.getM02());
-      //if (cluster.E() < 0.300) {
-      //    continue;
-      //}
+      // LOG(debug) << "Cluster E: " << cluster.E();
+      clusters(collision, cluster.E(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02());
+      // if (cluster.E() < 0.300) {
+      //     continue;
+      // }
       hClusterE->Fill(cluster.E());
-      hClusterEtaPhi->Fill(pos.Eta(), pos.Phi());
+      hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
     }
     LOG(debug) << "Done with process.";
   }

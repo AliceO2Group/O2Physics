@@ -50,13 +50,12 @@ struct HFCandidateCreatorX {
   Configurable<double> d_maxdzini{"d_maxdzini", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> d_minparamchange{"d_minparamchange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> ptPionMin{"ptPionMin", 0.15, "minimum pion pT threshold (GeV/c)"};
+  Configurable<double> ptPionMin{"ptPionMin", 1., "minimum pion pT threshold (GeV/c)"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
   OutputObj<TH1F> hMassJpsiToEE{TH1F("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassJpsiToMuMu{TH1F("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtJpsi{TH1F("hPtJpsi", "J/#psi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
-  OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hCPAJpsi{TH1F("hCPAJpsi", "J/#psi candidates;cosine of pointing angle;entries", 110, -1.1, 1.1)};
   OutputObj<TH1F> hMassXToJpsiToEEPiPi{TH1F("hMassXToJpsiToEEPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow e+ e-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassXToJpsiToMuMuPiPi{TH1F("hMassXToJpsiToMuMuPiPi", "3-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #pi+ #pi-) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
@@ -69,6 +68,7 @@ struct HFCandidateCreatorX {
 
   Configurable<int> d_selectionFlagJpsi{"d_selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> cutYCandMax{"cutYCandMax", -1., "max. cand. rapidity"};
+  Configurable<double> diffMassJpsiPDG{"diffMassJpsiPDG", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
   Filter filterSelectCandidates = (aod::hf_selcandidate_jpsi::isSelJpsiToEE >= d_selectionFlagJpsi || aod::hf_selcandidate_jpsi::isSelJpsiToMuMu >= d_selectionFlagJpsi);
 
   void process(aod::Collision const& collision,
@@ -106,11 +106,18 @@ struct HFCandidateCreatorX {
         continue;
       }
       if (jpsiCand.isSelJpsiToEE() > 0) {
+        if (std::abs(InvMassJpsiToEE(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+          continue;
+        }
         hMassJpsiToEE->Fill(InvMassJpsiToEE(jpsiCand));
       }
       if (jpsiCand.isSelJpsiToMuMu() > 0) {
+        if (std::abs(InvMassJpsiToMuMu(jpsiCand) - massJpsi) > diffMassJpsiPDG) {
+          continue;
+        }
         hMassJpsiToMuMu->Fill(InvMassJpsiToMuMu(jpsiCand));
       }
+
       hPtJpsi->Fill(jpsiCand.pt());
       hCPAJpsi->Fill(jpsiCand.cpa());
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
@@ -138,29 +145,27 @@ struct HFCandidateCreatorX {
 
       // loop over pi+ candidates
       for (auto& trackPos : tracks) {
+        if (trackPos.pt() < ptPionMin) {
+          continue;
+        }
         if (trackPos.sign() < 0) { // select only positive tracks - use partitions?
           continue;
         }
         if (trackPos.globalIndex() == index0Jpsi) {
           continue;
         }
-        if (trackPos.pt() < ptPionMin) {
-          continue;
-        }
-        hPtPion->Fill(trackPos.pt());
 
         // loop over pi- candidates
         for (auto& trackNeg : tracks) {
+          if (trackNeg.pt() < ptPionMin) {
+            continue;
+          }
           if (trackNeg.sign() > 0) { // select only negative tracks - use partitions?
             continue;
           }
           if (trackNeg.globalIndex() == index1Jpsi) {
             continue;
           }
-          if (trackNeg.pt() < ptPionMin) {
-            continue;
-          }
-          hPtPion->Fill(trackNeg.pt());
 
           auto trackParVarPos = getTrackParCov(trackPos);
           auto trackParVarNeg = getTrackParCov(trackNeg);
@@ -252,7 +257,7 @@ struct HFCandidateCreatorXMC {
   void process(aod::HfCandX const& candidates,
                aod::HfCandProng2,
                aod::BigTracksMC const& tracks,
-               aod::McParticles_000 const& particlesMC)
+               aod::McParticles const& particlesMC)
   {
     int indexRec = -1;
     int pdgCodeX = pdg::Code::kX3872;
@@ -299,7 +304,7 @@ struct HFCandidateCreatorXMC {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
 
@@ -319,7 +324,7 @@ struct HFCandidateCreatorXMC {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
         RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{pdgCodeJpsi}, 1);
-        auto jpsiCandMC = particlesMC.iteratorAt(arrDaughter[0]);
+        auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
         }

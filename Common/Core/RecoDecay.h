@@ -584,12 +584,12 @@ class RecoDecay
     if (sign) {
       *sign = sgn;
     }
-    while (particleMother.has_mother0()) {
+    while (particleMother.has_mothers()) {
       if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
         return -1;
       }
-      auto indexMotherTmp = particleMother.mother0Id();
-      particleMother = particlesMC.iteratorAt(indexMotherTmp);
+      auto indexMotherTmp = particleMother.mothersIds().front();
+      particleMother = particlesMC.rawIteratorAt(indexMotherTmp);
       // Check mother's PDG code.
       auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
       //printf("getMother: ");
@@ -638,11 +638,8 @@ class RecoDecay
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
     }
-    // Get the range of daughter indices.
-    int indexDaughterFirst = particle.daughter0Id();
-    int indexDaughterLast = particle.daughter1Id();
     // Check whether there are any daughters.
-    if (!isFinal && indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
+    if (!isFinal && !particle.has_daughters()) {
       // If the original particle has no daughters, we do nothing and exit.
       if (stage == 0) {
         //Printf("getDaughters: No daughters of %d", index);
@@ -678,22 +675,8 @@ class RecoDecay
     //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    // Get daughters of the first daughter.
-    if (indexDaughterFirst > -1) {
-      getDaughters(particlesMC, particlesMC.iteratorAt(indexDaughterFirst), list, arrPDGFinal, depthMax, stage);
-    }
-    // Get daughters of the daughters in between if any.
-    // Daughter indices are supposed to be consecutive and in increasing order.
-    // Reverse order means two daughters.
-    if (indexDaughterFirst > -1 && indexDaughterLast > -1) {
-      for (auto iD = indexDaughterFirst + 1; iD < indexDaughterLast; ++iD) {
-        getDaughters(particlesMC, particlesMC.iteratorAt(iD), list, arrPDGFinal, depthMax, stage);
-      }
-    }
-    // Get daughters of the last daughter if different from the first one.
-    // Same indices indicate a single daughter.
-    if (indexDaughterLast > -1 && indexDaughterLast != indexDaughterFirst) {
-      getDaughters(particlesMC, particlesMC.iteratorAt(indexDaughterLast), list, arrPDGFinal, depthMax, stage);
+    for (auto& idxDau : particle.daughtersIds()) {
+      getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
     }
   }
 
@@ -728,7 +711,7 @@ class RecoDecay
       if (!arrDaughters[iProng].has_mcParticle()) {
         return -1;
       }
-      auto particleI = arrDaughters[iProng].template mcParticle_as<aod::McParticles_000>(); // ith daughter particle
+      auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {
@@ -741,17 +724,15 @@ class RecoDecay
           return -1;
         }
         //Printf("MC Rec: Good mother: %d", indexMother);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
-        int indexDaughterFirst = particleMother.daughter0Id(); // index of the first direct daughter
-        int indexDaughterLast = particleMother.daughter1Id();  // index of the last direct daughter
+        auto particleMother = particlesMC.rawIteratorAt(indexMother);
         // Check the daughter indices.
-        if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
+        if (!particleMother.has_daughters()) {
+          //Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
-          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
+        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > int(N)) {
+          //Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
           return -1;
         }
         // Get the list of actual final daughters.
@@ -862,16 +843,14 @@ class RecoDecay
     if (N > 0) {
       //Printf("MC Gen: Checking %d daughters", N);
       std::vector<int> arrAllDaughtersIndex;            // vector of indices of all daughters
-      int indexDaughterFirst = candidate.daughter0Id(); // index of the first direct daughter
-      int indexDaughterLast = candidate.daughter1Id();  // index of the last direct daughter
       // Check the daughter indices.
-      if (indexDaughterFirst <= -1 && indexDaughterLast <= -1) {
-        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", indexDaughterFirst, indexDaughterLast);
+      if (!candidate.has_daughters()) {
+        //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (indexDaughterFirst > -1 && indexDaughterLast > -1 && indexDaughterLast - indexDaughterFirst + 1 > int(N)) {
-        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", indexDaughterLast - indexDaughterFirst + 1, N);
+      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > int(N)) {
+        //Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
         return false;
       }
       // Get the list of actual final daughters.
@@ -888,7 +867,7 @@ class RecoDecay
       }
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
-        auto candidateDaughterI = particlesMC.iteratorAt(indexDaughterI); // ith daughter particle
+        auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();        // PDG code of the ith daughter
         //Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?

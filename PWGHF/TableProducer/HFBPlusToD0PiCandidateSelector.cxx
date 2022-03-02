@@ -38,16 +38,16 @@ struct HfBplusTod0piCandidateSelector {
   Configurable<double> pTCandMin{"pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 50., "Upper bound of candidate pT"};
 
-  //Enable PID
+  // Enable PID
   Configurable<bool> filterPID{"filterPID", true, "Bool to use or not the PID at filtering level"};
 
-  //TPC PID
+  // TPC PID
   Configurable<double> pidTPCMinpT{"pidTPCMinpT", 999, "Lower bound of track pT for TPC PID"};
   Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 9999, "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTPC{"nSigmaTPC", 5., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTPCCombined{"nSigmaTPCCombined", 5., "Nsigma cut on TPC combined with TOF"};
 
-  //TOF PID
+  // TOF PID
   Configurable<double> pidTOFMinpT{"pidTOFMinpT", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> pidTOFMaxpT{"pidTOFMaxpT", 50., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTOF{"nSigmaTOF", 5., "Nsigma cut on TOF only"};
@@ -69,17 +69,17 @@ struct HfBplusTod0piCandidateSelector {
       return false;
     }
 
-    //pi pt
+    // pi pt
     if (trackPi.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
 
-    //d0(D0)xd0(pi)
+    // d0(D0)xd0(pi)
     if (hfCandBPlus.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
       return false;
     }
 
-    //D0 mass
+    // D0 mass
     if (trackPi.sign() > 0) {
       if (std::abs(InvMassD0bar(hfCandD0) - RecoDecay::getMassPDG(pdg::Code::kD0)) > cuts->get(pTBin, "DeltaMD0")) {
         return false;
@@ -91,43 +91,43 @@ struct HfBplusTod0piCandidateSelector {
       }
     }
 
-    //B Decay length
+    // B Decay length
     if (hfCandBPlus.decayLength() < cuts->get(pTBin, "B decLen")) {
       return false;
     }
 
-    //B Decay length XY
+    // B Decay length XY
     if (hfCandBPlus.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
       return false;
     }
 
-    //B+ CPA cut
+    // B+ CPA cut
     if (hfCandBPlus.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
     }
 
-    //if (candpT < pTCandMin || candpT >= pTCandMax) {
-    // Printf("B+ topol selection failed at cand pT check");
-    // return false;
-    // }
-
-    //B+ mass cut
-    //if (std::abs(InvMassBPlus(hfCandBPlus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
-    // Printf("B+ topol selection failed at mass diff check");
+    // if (candpT < pTCandMin || candpT >= pTCandMax) {
+    //  Printf("B+ topol selection failed at cand pT check");
     //  return false;
-    // }
+    //  }
 
-    //d0 of D0 and pi
+    // B+ mass cut
+    // if (std::abs(InvMassBPlus(hfCandBPlus) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+    //  Printf("B+ topol selection failed at mass diff check");
+    //   return false;
+    //  }
+
+    // d0 of D0 and pi
     if (std::abs(hfCandBPlus.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
       return false;
     }
     if (std::abs(hfCandBPlus.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
       return false;
     }
-    //D0 CPA
-    // if (std::abs(hfCandD0.cpa()) < cuts->get(pTBin, "CPA D0")){
-    //  return false;
-    //}
+    // D0 CPA
+    //  if (std::abs(hfCandD0.cpa()) < cuts->get(pTBin, "CPA D0")){
+    //   return false;
+    // }
     return true;
   }
 
@@ -141,7 +141,7 @@ struct HfBplusTod0piCandidateSelector {
     selectorPion.setRangeNSigmaTOF(-nSigmaTOF, nSigmaTOF);
     selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTOFCombined, nSigmaTOFCombined);
 
-    for (auto& hfCandB : hfCandBs) { //looping over Bplus candidates
+    for (auto& hfCandB : hfCandBs) { // looping over Bplus candidates
 
       int statusBplus = 0;
 
@@ -156,7 +156,7 @@ struct HfBplusTod0piCandidateSelector {
       auto candD0 = hfCandB.index0_as<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>();
       auto trackPi = hfCandB.index1_as<aod::BigTracksPID>();
 
-      //topological cuts
+      // topological cuts
       if (!selectionTopol(hfCandB, candD0, trackPi)) {
         hfSelBPlusToD0PiCandidate(statusBplus);
         // Printf("B+ candidate selection failed at selection topology");
@@ -172,7 +172,7 @@ struct HfBplusTod0piCandidateSelector {
         }
       }
 
-      statusBplus = 1; //Successful topological and PID
+      statusBplus = 1; // Successful topological and PID
 
       hfSelBPlusToD0PiCandidate(statusBplus);
       // Printf("B+ candidate selection successful, candidate should be selected");

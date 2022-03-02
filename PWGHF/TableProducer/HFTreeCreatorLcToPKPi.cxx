@@ -187,7 +187,7 @@ struct CandidateTreeWriter {
   void process(aod::Collisions const& collisions,
                aod::McCollisions const& mccollisions,
                soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandProng3MCGen> const& particles,
+               soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particles,
                aod::BigTracksPID const& tracks)
   {
 
