@@ -37,8 +37,10 @@ struct ALICE3Centrality {
   void init(InitContext&)
   {
     const AxisSpec axisMult{MaxMult.value > 10000.f ? 10000 : (int)MaxMult, 0, MaxMult, "Reconstructed tracks"};
+    const AxisSpec axisCent{150, 0, 150, "Percentile"};
     TString tit = Form("%.3f < #it{#eta} < %.3f", MinEta.value, MaxEta.value);
     histos.add("centrality/numberOfTracks", tit, kTH1D, {axisMult});
+    histos.add("centrality/centralityDistribution", "Centrality test", kTH1D, {axisCent});
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -48,17 +50,19 @@ struct ALICE3Centrality {
   int nevs = 0;
   void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksExtended>& tracks)
   {
-    TH1D* hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("/Analysis/ALICE3/Centrality", -1);
+    TH1D* hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
     if (!hCumMultALICE3) {
       LOGF(fatal, "ALICE 3 centrality calibration is not available in CCDB, failed!");
     }
 
     int nTracks = 0;
     if (collision.numContrib() < 1) {
+      histos.fill(HIST("centrality/centralityDistribution"), 101);
       cent(101);
       return;
     }
     if (fabs(collision.posZ()) > 10) {
+      histos.fill(HIST("centrality/centralityDistribution"), 102);
       cent(102);
       return;
     }
@@ -75,6 +79,7 @@ struct ALICE3Centrality {
     histos.fill(HIST("centrality/numberOfTracks"), nTracks);
 
     float centALICE3 = hCumMultALICE3->GetBinContent(hCumMultALICE3->FindBin(nTracks));
+    histos.fill(HIST("centrality/centralityDistribution"), centALICE3);
     cent(centALICE3);
   }
 };
