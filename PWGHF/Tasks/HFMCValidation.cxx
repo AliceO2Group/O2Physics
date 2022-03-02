@@ -11,7 +11,7 @@
 
 /// \file HFMCValidation.cxx
 /// \brief Monte Carlo validation task
-/// \note Gen. and rec. level validation
+/// \note gen and rec. level validation
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -29,10 +29,10 @@ using namespace o2::aod;
 
 namespace
 {
-static const int nCharmHad = 7;
-static const std::array<int, nCharmHad> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
-static const std::array<std::string, nCharmHad> labels = {"D^{#plus}", "D*^{#plus}", "D^{0}", "D_{s}^{#plus}", "#Lambda_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "#Xi_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "J/#psi #rightarrow e^{#plus}e^{#minus}"};
-static const std::array<std::string, nCharmHad> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
+static const int nCharmHadrons = 7;
+static const std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
+static const std::array<std::string, nCharmHadrons> labels = {"D^{#plus}", "D*^{#plus}", "D^{0}", "D_{s}^{#plus}", "#Lambda_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "#Xi_{c}^{#plus} #rightarrow pK^{#minus}#pi^{#plus}", "J/#psi #rightarrow e^{#plus}e^{#minus}"};
+static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
 } // namespace
 
 /// Gen Level Validation
@@ -40,24 +40,24 @@ static const std::array<std::string, nCharmHad> particleNames = {"Dplus", "Dstar
 /// - Number of HF quarks produced per collision
 /// - Number of D±      → π± K∓ π±        per collision
 ///             D*±     → π± K∓ π±,
-///             Ds±     → K± K∓ π±,
 ///             D0(bar) → π± K∓,
+///             Ds±     → K± K∓ π±,
 ///             Λc±     → p(bar) K∓ π±
 ///             Ξc±     → p(bar) K∓ π±
 ///             J/psi   → e∓ e±
 /// - Momentum Conservation for these particles
 
 struct ValidationGenLevel {
-  std::shared_ptr<TH1> hCharmHaronsPtDistr, hCharmHaronsYDistr;
+  std::shared_ptr<TH1> hCharmHadronsPtDistr, hCharmHadronsYDistr;
 
   HistogramRegistry registry{
     "registry",
     {{"hMomentumCheck", "Mom. Conservation (1 = true, 0 = false) (#it{#epsilon} = 1 MeV/#it{c}); Mom. Conservation result; entries", {HistType::kTH1F, {{2, -0.5, +1.5}}}},
-     {"hPtDiffMotherDaughterGen", "Pt Difference Mother-Daughters; #Delta#it{p}_{T}^{gen.} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
-     {"hPxDiffMotherDaughterGen", "Px Difference Mother-Daughters; #Delta#it{p}_{x}^{gen.} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
-     {"hPyDiffMotherDaughterGen", "Py Difference Mother-Daughters; #Delta#it{p}_{y}^{gen.} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
-     {"hPzDiffMotherDaughterGen", "Pz Difference Mother-Daughters; #Delta#it{p}_{z}^{gen.} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
-     {"hPdiffMotherDaughterGen", "P  Difference Mother-Daughters; #Delta#it{p}^{gen.} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
+     {"hPtDiffMotherDaughterGen", "Pt Difference Mother-Daughters; #Delta#it{p}_{T}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
+     {"hPxDiffMotherDaughterGen", "Px Difference Mother-Daughters; #Delta#it{p}_{x}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
+     {"hPyDiffMotherDaughterGen", "Py Difference Mother-Daughters; #Delta#it{p}_{y}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
+     {"hPzDiffMotherDaughterGen", "Pz Difference Mother-Daughters; #Delta#it{p}_{z}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
+     {"hPdiffMotherDaughterGen", "P  Difference Mother-Daughters; #Delta#it{p}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, -0.01, 0.01}}}},
      {"hCountAverageC", "Event counter - Average Number Charm quark; Events Per Collision; entries", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hCountAverageB", "Event counter - Average Number Beauty quark; Events Per Collision; entries", {HistType::kTH1F, {{20, 0., 20.}}}},
      {"hCountAverageCbar", "Event counter - Average Number Anti-Charm quark; Events Per Collision; entries", {HistType::kTH1F, {{20, 0., 20.}}}},
@@ -74,11 +74,11 @@ struct ValidationGenLevel {
 
   void init(o2::framework::InitContext&)
   {
-    hCharmHaronsPtDistr = registry.add<TH2>("hCharmHaronsPtDistr", "Pt distribution vs charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
-    hCharmHaronsYDistr = registry.add<TH2>("hCharmHaronsYDistr", "Y distribution vs charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
-    for (auto iBin = 1; iBin <= nCharmHad; ++iBin) {
-      hCharmHaronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      hCharmHaronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+    hCharmHadronsPtDistr = registry.add<TH2>("hCharmHadronsPtDistr", "Pt distribution vs charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
+    hCharmHadronsYDistr = registry.add<TH2>("hCharmHadronsYDistr", "Y distribution vs charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
+    for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
+      hCharmHadronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      hCharmHadronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
   }
 
@@ -90,9 +90,9 @@ struct ValidationGenLevel {
     int bBarPerCollision = 0;
 
     //Particles and their decay checked in the second part of the task
-    std::array<int, nCharmHad> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
-    std::array<std::array<int, 3>, nCharmHad> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
-    std::array<int, nCharmHad> counter{0};
+    std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
+    std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
+    std::array<int, nCharmHadrons> counter{0};
     std::vector<int> listDaughters{};
 
     for (auto& particle : particlesMC) {
@@ -125,7 +125,7 @@ struct ValidationGenLevel {
       double sumPxDau = 0.;
       double sumPyDau = 0.;
       double sumPzDau = 0.;
-      bool momentumCheck = 1;
+      bool momentumCheck = true;
       listDaughters.clear();
 
       // Checking the decay of the particles and the momentum conservation
@@ -148,19 +148,19 @@ struct ValidationGenLevel {
           auto pyDiff = particle.py() - sumPyDau;
           auto pzDiff = particle.pz() - sumPzDau;
           if (std::abs(pxDiff) > 0.001 || std::abs(pyDiff) > 0.001 || std::abs(pzDiff) > 0.001) {
-            momentumCheck = 0;
+            momentumCheck = false;
           }
           double pDiff = RecoDecay::P(pxDiff, pyDiff, pzDiff);
           double ptDiff = RecoDecay::Pt(pxDiff, pyDiff);
           //Filling histograms with per-component momentum conservation
-          registry.fill(HIST("hMomentumCheck"), momentumCheck);
+          registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
           registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
           registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
           registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
           registry.fill(HIST("hPdiffMotherDaughterGen"), pDiff);
           registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
-          hCharmHaronsPtDistr->Fill(whichHadron, particle.pt());
-          hCharmHaronsYDistr->Fill(whichHadron, particle.y());
+          hCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
+          hCharmHadronsYDistr->Fill(whichHadron, particle.y());
         }
       }
     } //end particles
@@ -190,21 +190,21 @@ struct ValidationGenLevel {
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
 struct ValidationRecLevel {
 
-  static const int nCharmHad = 7;
-  std::array<std::shared_ptr<TH1>, nCharmHad> histPt, histPx, histPy, histPz, histSecVx, histSecVy, histSecVz, histDecLen;
+  static const int nCharmHadrons = 7;
+  std::array<std::shared_ptr<TH1>, nCharmHadrons> histPt, histPx, histPy, histPz, histSecondaryVertexX, histSecondaryVertexY, histSecondaryVertexZ, histDecayLength;
 
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    for (auto iHad = 0; iHad < nCharmHad; ++iHad) {
-      histPt[iHad] = registry.add<TH1>(Form("histPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen.} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
-      histPx[iHad] = registry.add<TH1>(Form("histPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen.} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
-      histPy[iHad] = registry.add<TH1>(Form("histPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen.} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
-      histPz[iHad] = registry.add<TH1>(Form("histPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen.} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
-      histSecVx[iHad] = registry.add<TH1>(Form("histPt%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
-      histSecVy[iHad] = registry.add<TH1>(Form("histPx%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
-      histSecVz[iHad] = registry.add<TH1>(Form("histPy%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
-      histDecLen[iHad] = registry.add<TH1>(Form("histPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
+    for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
+      histPt[iHad] = registry.add<TH1>(Form("histPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
+      histPx[iHad] = registry.add<TH1>(Form("histPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
+      histPy[iHad] = registry.add<TH1>(Form("histPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
+      histPz[iHad] = registry.add<TH1>(Form("histPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1, 1}});
+      histSecondaryVertexX[iHad] = registry.add<TH1>(Form("histSecondaryVertexX%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
+      histSecondaryVertexY[iHad] = registry.add<TH1>(Form("histSecondaryVertexY%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
+      histSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
+      histDecayLength[iHad] = registry.add<TH1>(Form("histDecayLength%s", particleNames[iHad].data()), Form("Pz difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1, 1}});
     }
   }
 
@@ -245,10 +245,10 @@ struct ValidationRecLevel {
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
         auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
 
-        histSecVx[whichHad]->Fill(cand2Prong.xSecondaryVertex() - vertexDau[0]);
-        histSecVy[whichHad]->Fill(cand2Prong.ySecondaryVertex() - vertexDau[1]);
-        histSecVz[whichHad]->Fill(cand2Prong.zSecondaryVertex() - vertexDau[2]);
-        histDecLen[whichHad]->Fill(cand2Prong.decayLength() - decayLength);
+        histSecondaryVertexX[whichHad]->Fill(cand2Prong.xSecondaryVertex() - vertexDau[0]);
+        histSecondaryVertexY[whichHad]->Fill(cand2Prong.ySecondaryVertex() - vertexDau[1]);
+        histSecondaryVertexZ[whichHad]->Fill(cand2Prong.zSecondaryVertex() - vertexDau[2]);
+        histDecayLength[whichHad]->Fill(cand2Prong.decayLength() - decayLength);
       }
     } //end loop on 2-prong candidates
 
@@ -291,10 +291,10 @@ struct ValidationRecLevel {
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
         auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
 
-        histSecVx[whichHad]->Fill(cand3Prong.xSecondaryVertex() - vertexDau[0]);
-        histSecVy[whichHad]->Fill(cand3Prong.ySecondaryVertex() - vertexDau[1]);
-        histSecVz[whichHad]->Fill(cand3Prong.zSecondaryVertex() - vertexDau[2]);
-        histDecLen[whichHad]->Fill(cand3Prong.decayLength() - decayLength);
+        histSecondaryVertexX[whichHad]->Fill(cand3Prong.xSecondaryVertex() - vertexDau[0]);
+        histSecondaryVertexY[whichHad]->Fill(cand3Prong.ySecondaryVertex() - vertexDau[1]);
+        histSecondaryVertexZ[whichHad]->Fill(cand3Prong.zSecondaryVertex() - vertexDau[2]);
+        histDecayLength[whichHad]->Fill(cand3Prong.decayLength() - decayLength);
       }
     } //end loop on 3-prong candidates
   }   //end process
