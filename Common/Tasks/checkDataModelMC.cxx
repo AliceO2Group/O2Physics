@@ -60,7 +60,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<LoadTable<aod::McParticles>>(cfgc, TaskName("McParticles")),
     adaptAnalysisTask<LoadTable<aod::McCollisions>>(cfgc, TaskName("McCollisions")),
     adaptAnalysisTask<LoadTable<aod::McTrackLabels>>(cfgc, TaskName("McTrackLabels")),
-    adaptAnalysisTask<LoadTable<aod::McFwdTrackLabels>>(cfgc, TaskName("McFwdTrackLabels")),
-    adaptAnalysisTask<LoadTable<aod::McMFTTrackLabels>>(cfgc, TaskName("McMFTTrackLabels")),
+    // adaptAnalysisTask<LoadTable<aod::McFwdTrackLabels>>(cfgc, TaskName("McFwdTrackLabels")),
+    // adaptAnalysisTask<LoadTable<aod::McMFTTrackLabels>>(cfgc, TaskName("McMFTTrackLabels")),
     adaptAnalysisTask<CheckMcParticlesIndices>(cfgc)};
 }
