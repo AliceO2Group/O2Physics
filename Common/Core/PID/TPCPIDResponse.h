@@ -47,7 +47,7 @@ class Response
   void SetChargeFactor(const float chargeFactor) { mChargeFactor = chargeFactor; }
   void SetMultiplicityNormalization(const float multNormalization) { mMultNormalization = multNormalization; }
   void SetResolutionParametrization(TFormula* sigmaParametrization) { mSigmaParametrization.reset(sigmaParametrization); }
-  void SetUseDefaultResolutionParam(const bool useDefault) { museDefaultResolutionParam = useDefault; }
+  void SetUseDefaultResolutionParam(const bool useDefault) { mUseDefaultResolutionParam = useDefault; }
 
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; }
   const std::vector<double> GetResolutionParams() const { return mResolutionParams; }
@@ -80,7 +80,7 @@ class Response
   float mMIP = 50.f;
   float mChargeFactor = 2.3f;
   float mMultNormalization = 11000.;
-  bool museDefaultResolutionParam = true;
+  bool mUseDefaultResolutionParam = true;
   std::unique_ptr<TFormula> mSigmaParametrization{new TFormula("fSigmaParametrization", "sqrt(([0]**2)*x[0]+(([1]**2)*(x[2]*[5])*(x[0]/sqrt(1+x[1]**2))**[2])+x[2]*x[3]**2+([4]*x[4])**2 +((x[5]*[6])**2)+(x[5]*(x[0]/sqrt(1+x[1]**2))*[7])**2)")};
 
   ClassDefNV(Response, 2);
@@ -100,7 +100,7 @@ template <typename CollisionType, typename TrackType>
 inline float Response::GetExpectedSigma(const CollisionType& collision, const TrackType& track, const o2::track::PID::ID id) const
 {
   float resolution = 0.;
-  if (museDefaultResolutionParam) {
+  if (mUseDefaultResolutionParam) {
     const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
     reso >= 0.f ? resolution = reso : resolution = 0.f;
   } else {
@@ -109,12 +109,12 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
-    const double dEdx = mMIP * o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+    const double dEdx = o2::tpc::BetheBlochAleph((float)bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
     const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
 
-    const float reso = mSigmaParametrization->EvalPar(values.data(), mResolutionParams.data()) * dEdx;
+    const float reso = mSigmaParametrization->EvalPar(values.data(), mResolutionParams.data()) * dEdx * mMIP;
     reso >= 0.f ? resolution = reso : resolution = 0.f;
   }
   return resolution;
@@ -152,8 +152,8 @@ inline void Response::PrintAll() const
   for (int i = 0; i < int(mBetheBlochParams.size()); i++) {
     LOGP(info, "BB param [{}] = {}", i, mBetheBlochParams[i]);
   }
-  LOGP(info, "use default resolution parametrization = {}", museDefaultResolutionParam);
-  if (museDefaultResolutionParam) {
+  LOGP(info, "use default resolution parametrization = {}", mUseDefaultResolutionParam);
+  if (mUseDefaultResolutionParam) {
     LOGP(info, "Default Resolution parametrization: ");
     for (int i = 0; i < int(mResolutionParamsDefault.size()); i++) {
       LOGP(info, "Resolution param [{}] = {}", i, mResolutionParamsDefault[i]);
