@@ -257,7 +257,7 @@ DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MatchScoreMCHMFT, fwdtrack::MFTTrackId, fwdtrack::MCHTrackId,
-                  fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards);
+                  fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType);
 
 // Muon covariance, TODO: the rest of the matrix should be added when needed
 DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",
@@ -284,6 +284,12 @@ DECLARE_SOA_TABLE(ReducedMuonsLabels, "AOD", "RTMUONSLABELS", //!
 
 using ReducedMuonsLabel = ReducedMuonsLabels::iterator;
 
+namespace dilepton_track_index
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedMuons, "_0"); //! Index to first prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedMuons, "_1"); //! Index to second prong
+} // namespace dilepton_track_index
+
 // pair information
 namespace reducedpair
 {
@@ -294,6 +300,10 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
 DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);   //!
+DECLARE_SOA_COLUMN(Tauz, tauz, float);                //!
+DECLARE_SOA_COLUMN(Lz, lz, float);                    //!
+DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //!
+// DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                    //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -302,18 +312,29 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Rap, rap, //!
+                           [](float pt, float eta, float m) -> float { return std::log((std::sqrt(m * m + pt * pt * std::cosh(eta) * std::cosh(eta)) + pt * std::sinh(eta)) / std::sqrt(m * m + pt * pt)); });
 } // namespace reducedpair
 
 DECLARE_SOA_TABLE(Dileptons, "AOD", "RTDILEPTON", //!
-                  reducedpair::ReducedEventId, reducedpair::Mass,
+                  reducedpair::ReducedEventId,
+                  reducedpair::Mass,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                   reducedpair::FilterMap,
                   reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
                   reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
                   reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
-                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
+
+DECLARE_SOA_TABLE(DileptonsExtra, "AOD", "RTDILEPTONEXTRA", //!
+                  dilepton_track_index::Index0Id, dilepton_track_index::Index1Id,
+                  reducedpair::Tauz,
+                  reducedpair::Lz,
+                  reducedpair::Lxy);
 
 using Dilepton = Dileptons::iterator;
+using DileptonExtra = DileptonsExtra::iterator;
 
 namespace v0bits
 {
