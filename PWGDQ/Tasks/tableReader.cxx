@@ -721,7 +721,7 @@ struct AnalysisSameEventPairing {
 
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
-      	dileptonExtraList(t1.globalIndex(),t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz],VarManager::fgValues[VarManager::kVertexingLz],VarManager::fgValues[VarManager::kVertexingLxy]);
+        dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
       }
 
       for (unsigned int icut = 0; icut < ncuts; icut++) {
