@@ -567,8 +567,8 @@ struct AnalysisSameEventPairing {
           }
           fMuonHistNamesMCmatched.push_back(mcSigClasses);
         }  // end loop over cuts
-      }  // end if(cutNames.IsNull())
-    }    // end if processMuon
+      }    // end if(cutNames.IsNull())
+    }      // end if processMuon
 
     // NOTE: For the electron-muon pairing, the policy is that the user specifies n track and n muon cuts via configurables
     //     So for each barrel cut there is a corresponding muon cut
