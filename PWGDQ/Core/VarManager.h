@@ -48,7 +48,7 @@ using Vec3D = ROOT::Math::SVector<double, 3>;
 
 // TODO: create an array holding these constants for all needed particles or check for a place where these are already defined
 static const float fgkElectronMass = 0.000511; // GeV
-static const float fgkMuonMass = 0.105;        // GeV
+static const float fgkMuonMass = 0.105658;     // GeV
 
 //_________________________________________________________________________
 class VarManager : public TObject
