@@ -14,8 +14,18 @@ o2physics_add_dpl_workflow(gammaconversions
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(gammaconversionsmc
-                    SOURCES gammaConversionsmc.cxx
+o2physics_add_dpl_workflow(gammaconversionsmctruthonly
+                    SOURCES gammaConversionsMcTruthOnly.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+                    
+o2physics_add_dpl_workflow(gammaconversionsskimmermc
+                    SOURCES gammaConversionsSkimmermc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+                    
+o2physics_add_dpl_workflow(gammaconversionsconsumermc
+                    SOURCES gammaConversionsConsumermc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
