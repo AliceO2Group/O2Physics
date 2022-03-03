@@ -157,7 +157,7 @@ struct ValidationGenLevel {
           registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
           registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
           registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
-          registry.fill(HIST("hPdiffMotherDaughterGen"), pDiff);
+          registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
           registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
           hCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
           hCharmHadronsYDistr->Fill(whichHadron, particle.y());
