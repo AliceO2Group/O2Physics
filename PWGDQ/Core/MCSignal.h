@@ -148,19 +148,18 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       }
     }
     // make sure that a mother exists in the stack before moving one generation further in history
-    if (!currentMCParticle.has_mother0() && j < fProngs[i].fNGenerations - 1) {
+    if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
       return false;
     }
-    if (currentMCParticle.has_mother0() && j < fProngs[i].fNGenerations - 1) {
-      currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
+    if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+      /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+        LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+      }*/
+      currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
       //currentMCParticle = currentMCParticle.template mother0_as<U>();
     }
   }
-  // NOTE:  Checking the sources is optional due to the fact that with the skimmed data model
-  //        the full history of a particle is not guaranteed to be present in the particle stack,
-  //        which means that some sources cannot be properly checked (e.g. ALICE physical primary)
-  //        However, in the skimmed data model, this kind of checks should had been already computed at skimming time
-  //        and present in the decision bit map.
+
   if (checkSources) {
     currentMCParticle = track;
     for (int j = 0; j < fProngs[i].fNGenerations; j++) {
@@ -203,10 +202,21 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         return false;
       }
       // move one generation back in history
-      if (j < fProngs[i].fNGenerations - 1) {
-        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
+      // make sure that a mother exists in the stack before moving one generation further in history
+      if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+        return false;
+      }
+      if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+        /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+          LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+        }*/
+        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
         //currentMCParticle = currentMCParticle.template mother0_as<U>();
       }
+      /*if (j < fProngs[i].fNGenerations - 1) {
+        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
+        //currentMCParticle = currentMCParticle.template mother0_as<U>();
+      }*/
     }
   }
 
