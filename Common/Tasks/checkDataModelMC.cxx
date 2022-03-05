@@ -27,6 +27,11 @@ template <typename T>
 void checkDaughters(const T& particlesMC,
                     const typename T::iterator& particle)
 {
+  auto firstDauIdx = particle.daughtersIds().front();
+  auto lastDauIdx = particle.daughtersIds().back();
+  if ((firstDauIdx < 0 && lastDauIdx >= 0) || (lastDauIdx < 0 && firstDauIdx >= 0)) {
+    LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has first and last daughter indices " << firstDauIdx << ", " << lastDauIdx;
+  }
   for (auto& idxDau : particle.daughtersIds()) {
     if (idxDau > particlesMC.size()) {
       LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with index " << idxDau << " > MC particle table size (" << particlesMC.size() << ")";
