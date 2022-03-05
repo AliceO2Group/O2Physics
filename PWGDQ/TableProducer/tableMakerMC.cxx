@@ -213,7 +213,7 @@ struct TableMakerMC {
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
   void fullSkimming(TEvent const& collisions, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon,
-                    aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                    aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     // Loop over collisions and produce skimmed data tables for:
     // 1) all selected collisions
@@ -355,7 +355,7 @@ struct TableMakerMC {
           if (!track.has_mcParticle()) {
             continue;
           }
-          auto mctrack = track.template mcParticle_as<aod::McParticles_000>();
+          auto mctrack = track.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
           if (fConfigDetailedQA) {
@@ -466,7 +466,7 @@ struct TableMakerMC {
           if (!muon.has_mcParticle()) {
             continue;
           }
-          auto mctrack = muon.template mcParticle_as<aod::McParticles_000>();
+          auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
           VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
 
@@ -535,28 +535,49 @@ struct TableMakerMC {
       } // end if constexpr (static_cast<bool>(TMuonFillMap))
     }   // end loop over collisions
 
+    // Loop over the label map, create the mother/daughter relationships if these exist and write the skimmed MC stack
     for (const auto& [newLabel, oldLabel] : fNewLabelsReversed) {
       auto mctrack = mcTracks.iteratorAt(oldLabel);
       uint16_t mcflags = fMCFlags.find(oldLabel)->second;
 
-      int m0Label = -1;
-      if (mctrack.has_mother0() && (fNewLabels.find(mctrack.mother0Id()) != fNewLabels.end())) {
-        m0Label = fNewLabels.find(mctrack.mother0Id())->second;
+      std::vector<int> mothers;
+      if (mctrack.has_mothers()) {
+        for (auto& m : mctrack.mothersIds()) {
+          if (m < mcTracks.size()) { // protect against bad mother indices
+            if (fNewLabels.find(m) != fNewLabels.end()) {
+              mothers.push_back(fNewLabels.find(m)->second);
+            }
+          } else {
+            cout << "Mother label (" << m << ") exceeds the McParticles size (" << mcTracks.size() << ")" << endl;
+            cout << " Check the MC generator" << endl;
+          }
+        }
       }
-      int m1Label = -1;
-      if (mctrack.has_mother1() && (fNewLabels.find(mctrack.mother1Id()) != fNewLabels.end())) {
-        m1Label = fNewLabels.find(mctrack.mother1Id())->second;
+
+      // TODO: Check that the daughter slice in the skimmed table works as expected
+      //       Note that not all daughters from the original table are preserved in the skimmed MC stack
+      std::vector<int> daughters;
+      if (mctrack.has_daughters()) {
+        for (auto& d : mctrack.daughtersIds()) {
+          // TODO: remove this check as soon as issues with MC production are fixed
+          if (d < mcTracks.size()) { // protect against bad daughter indices
+            if (fNewLabels.find(d) != fNewLabels.end()) {
+              daughters.push_back(fNewLabels.find(d)->second);
+            }
+          } else {
+            cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcTracks.size() << ")" << endl;
+            cout << " Check the MC generator" << endl;
+          }
+        }
       }
-      int d0Label = -1;
-      if (mctrack.has_daughter0() && (fNewLabels.find(mctrack.daughter0Id()) != fNewLabels.end())) {
-        d0Label = fNewLabels.find(mctrack.daughter0Id())->second;
+      int daughterRange[2] = {-1, -1};
+      if (daughters.size() > 0) {
+        daughterRange[0] = daughters[0];
+        daughterRange[1] = daughters[daughters.size() - 1];
       }
-      int d1Label = -1;
-      if (mctrack.has_daughter1() && (fNewLabels.find(mctrack.daughter1Id()) != fNewLabels.end())) {
-        d1Label = fNewLabels.find(mctrack.daughter1Id())->second;
-      }
+
       trackMC(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.statusCode(), mctrack.flags(),
-              m0Label, m1Label, d0Label, d1Label,
+              mothers, daughterRange,
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
@@ -652,49 +673,49 @@ struct TableMakerMC {
   // Produce barrel + muon tables ------------------------------------------------------------------------------------
   void processFull(MyEvents const& collisions, aod::BCs const& bcs,
                    soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon,
-                   aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                   aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collisions, bcs, tracksBarrel, tracksMuon, mcEvents, mcTracks);
   }
   // Produce barrel only tables ------------------------------------------------------------------------------------
   void processBarrelOnly(MyEvents const& collisions, aod::BCs const& bcs,
                          soa::Filtered<MyBarrelTracks> const& tracksBarrel,
-                         aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                         aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
   }
   // Produce barrel only tables, with centrality ------------------------------------------------------------------------------------
   void processBarrelOnlyWithCent(MyEventsWithCents const& collisions, aod::BCs const& bcs,
                                  soa::Filtered<MyBarrelTracks> const& tracksBarrel,
-                                 aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                                 aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMapWithCent, gkTrackFillMap, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
   }
   // Produce barrel only tables, with cov matrix-----------------------------------------------------------------------
   void processBarrelOnlyWithCov(MyEvents const& collisions, aod::BCs const& bcs,
                                 soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel,
-                                aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks);
   }
   // Produce muon only tables ------------------------------------------------------------------------------------
   /*void processMuonOnly(MyEvents const& collisions, aod::BCs const& bcs,
                        soa::Filtered<MyMuons> const& tracksMuon,
-                       aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                       aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMap>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks);
   }*/
   // Produce muon only tables, with centrality-------------------------------------------------------------------------------
   void processMuonOnlyWithCent(MyEventsWithCents const& collisions, aod::BCs const& bcs,
                                soa::Filtered<MyMuons> const& tracksMuon,
-                               aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                               aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMap>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks);
   }
   // Produce muon only tables, with cov matrix ------------------------------------------------------------------------------------
   void processMuonOnlyWithCov(MyEvents const& collisions, aod::BCs const& bcs,
                               soa::Filtered<MyMuonsWithCov> const& tracksMuon,
-                              aod::McCollisions const& mcEvents, aod::McParticles_000 const& mcTracks)
+                              aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks);
   }
