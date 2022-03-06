@@ -20,6 +20,7 @@
 #include "Common/DataModel/Centrality.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <TH1F.h>
+#include <TFormula.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,10 +38,14 @@ struct CentralityTable {
   Configurable<int> estRun2SPDClusters{"estRun2SPDcls", -1, {"Produces Run2 centrality percentiles using SPD clusters multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2CL0{"estRun2CL0", -1, {"Produces Run2 centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2CL1{"estRun2CL1", -1, {"Produces Run2 centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+  Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
+  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
   int mRunNumber;
   struct tagV0MCalibration {
     bool mCalibrationStored = false;
+    TFormula* mMCScale = nullptr;
     TH1* mhVtxAmpCorrV0A = nullptr;
     TH1* mhVtxAmpCorrV0C = nullptr;
     TH1* mhMultSelCalib = nullptr;
@@ -95,7 +100,7 @@ struct CentralityTable {
         enable("Run2CL1", estRun2CL1);
       }
     }
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     mRunNumber = 0;
@@ -109,7 +114,7 @@ struct CentralityTable {
     auto bc = collision.bc_as<BCsWithTimestampsAndRun2Infos>();
     if (bc.runNumber() != mRunNumber) {
       LOGF(debug, "timestamp=%llu", bc.timestamp());
-      TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
+      TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
 
       V0MInfo.mCalibrationStored = false;
       SPDTksInfo.mCalibrationStored = false;
@@ -121,13 +126,22 @@ struct CentralityTable {
           TH1* h = (TH1*)callst->FindObject(ccdbhname);
           return h;
         };
+        auto getformulaccdb = [callst](const char* ccdbhname) {
+          TFormula* f = (TFormula*)callst->FindObject(ccdbhname);
+          return f;
+        };
         if (estV0M == 1) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
           V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
           V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
+          V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
           if ((V0MInfo.mhVtxAmpCorrV0A != nullptr) and (V0MInfo.mhVtxAmpCorrV0C != nullptr) and (V0MInfo.mhMultSelCalib != nullptr)) {
-            V0MInfo.mCalibrationStored = true;
+            if ((genName->length() == 0) or (V0MInfo.mMCScale != nullptr)) {
+              V0MInfo.mCalibrationStored = true;
+            } else {
+              LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
+            }
           } else {
             LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
           }
@@ -183,8 +197,14 @@ struct CentralityTable {
     if (estV0M == 1) {
       float cV0M = 105.0f;
       if (V0MInfo.mCalibrationStored) {
-        float v0m = collision.multV0A() * V0MInfo.mhVtxAmpCorrV0A->GetBinContent(V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
-                    collision.multV0C() * V0MInfo.mhVtxAmpCorrV0C->GetBinContent(V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+        float v0m;
+        if (genName->length() != 0) {
+          v0m = V0MInfo.mMCScale->Eval(collision.multV0M());
+          LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", collision.multV0M(), v0m);
+        } else {
+          v0m = collision.multV0A() * V0MInfo.mhVtxAmpCorrV0A->GetBinContent(V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
+                collision.multV0C() * V0MInfo.mhVtxAmpCorrV0C->GetBinContent(V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+        }
         cV0M = V0MInfo.mhMultSelCalib->GetBinContent(V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
       LOGF(debug, "centV0M=%.0f", cV0M);
