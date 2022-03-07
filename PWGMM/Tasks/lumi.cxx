@@ -55,9 +55,8 @@ struct lumiTask {
   int mRunNumber;
 
   Configurable<uint64_t> ftts{"ftts", 1530319778000, "First time of time stamp"};
-  Configurable<int> nContribMax{"nContribMax",2500,"Maximum number of contributors"};
-  Configurable<int> nContribMin{"nContribMin",10,"Minimum number of contributors"};
-
+  Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
+  Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
 
   HistogramRegistry histos{"histos", {
                                        {"vertexx", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}},                                 //
@@ -173,7 +172,7 @@ struct lumiTask {
       }
     }
 
-//    LOGP(info,"chi2: {}, Ncont: {}, nonctr: {}",chi2,nContrib,nNonContrib);
+    //    LOGP(info,"chi2: {}, Ncont: {}, nonctr: {}",chi2,nContrib,nNonContrib);
 
     histos.fill(HIST("chisquare_Refitted"), chi2);
     if (nContrib > nContribMin && nContrib < nContribMax && (chi2 / nContrib) < 4.0 && chi2 > 0) {
@@ -186,7 +185,7 @@ struct lumiTask {
     histos.fill(HIST("chisquare"), collision.chi2());
     if (collision.chi2() / collision.numContrib() > 4)
       return;
-    if (collision.numContrib() > nContribMax || collision.numContrib() < nContribMin )
+    if (collision.numContrib() > nContribMax || collision.numContrib() < nContribMin)
       return;
 
     histos.fill(HIST("vertexx"), collision.posX());
