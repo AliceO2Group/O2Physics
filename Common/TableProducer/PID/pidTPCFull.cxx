@@ -143,8 +143,8 @@ struct tpcPidFull {
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
           auto collision = collisions.iteratorAt(trk.collisionId());
-          table(response.GetExpectedSigma(collision, trk, pid),
-                response.GetNumberOfSigma(collision, trk, pid));
+          table(response->GetExpectedSigma(collision, trk, pid),
+                response->GetNumberOfSigma(collision, trk, pid));
         }
       }
     };

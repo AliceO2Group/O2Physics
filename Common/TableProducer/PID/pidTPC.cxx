@@ -144,7 +144,7 @@ struct tpcPid {
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
           auto collision = collisions.iteratorAt(trk.collisionId());
-          const float numbersigma = response.GetNumberOfSigma(collision, trk, pid);
+          const float numbersigma = response->GetNumberOfSigma(collision, trk, pid);
           aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
                                      aod::pidtpc_tiny::upper_bin,
                                      aod::pidtpc_tiny::lower_bin>(numbersigma, table,
