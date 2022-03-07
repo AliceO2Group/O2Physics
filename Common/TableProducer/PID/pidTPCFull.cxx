@@ -137,7 +137,7 @@ struct tpcPidFull {
     // LOG(info) << "Custom TPCPID: MIP value from object is " << response->GetMIP();
 
     // Check and fill enabled tables
-    auto makeTable = [&tracks, &collisions](const Configurable<int>& flag, auto& table, const o2::pid::tpc::Response& response, const o2::track::PID::ID pid) {
+    auto makeTable = [&tracks, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
@@ -149,15 +149,15 @@ struct tpcPidFull {
       }
     };
     // const o2::pid::tpc::Response& response;
-    makeTable(pidEl, tablePIDEl, *response, o2::track::PID::Electron);
-    makeTable(pidMu, tablePIDMu, *response, o2::track::PID::Muon);
-    makeTable(pidPi, tablePIDPi, *response, o2::track::PID::Pion);
-    makeTable(pidKa, tablePIDKa, *response, o2::track::PID::Kaon);
-    makeTable(pidPr, tablePIDPr, *response, o2::track::PID::Proton);
-    makeTable(pidDe, tablePIDDe, *response, o2::track::PID::Deuteron);
-    makeTable(pidTr, tablePIDTr, *response, o2::track::PID::Triton);
-    makeTable(pidHe, tablePIDHe, *response, o2::track::PID::Helium3);
-    makeTable(pidAl, tablePIDAl, *response, o2::track::PID::Alpha);
+    makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
+    makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
+    makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
+    makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
+    makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
+    makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
+    makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
+    makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
+    makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
   }
 };
 
