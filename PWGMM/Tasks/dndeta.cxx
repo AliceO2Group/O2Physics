@@ -198,7 +198,7 @@ struct PseudorapidityDensity {
       if (p != nullptr) {
         charge = p->Charge();
       }
-      if (std::abs(charge) < 1.) {
+      if (std::abs(charge) < 3.) {
         continue;
       }
       registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
@@ -223,9 +223,10 @@ struct PseudorapidityDensity {
       if (p != nullptr) {
         charge = (int)p->Charge();
       }
-      if (charge != 0) {
-        nCharged++;
+      if (std::abs(charge) < 3.) {
+        continue;
       }
+      nCharged++;
     }
     registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
     registry.fill(HIST("Events/Efficiency"), 1.);
