@@ -144,10 +144,10 @@ struct tpcPid {
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
           auto collision = collisions.iteratorAt(trk.collisionId());
-          const float separation = response.GetExpectedSigma(collision, trk, pid);
+          const float numbersigma = response.GetNumberOfSigma(collision, trk, pid);
           aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
                                      aod::pidtpc_tiny::upper_bin,
-                                     aod::pidtpc_tiny::lower_bin>(separation, table,
+                                     aod::pidtpc_tiny::lower_bin>(numbersigma, table,
                                                                   aod::pidtpc_tiny::binned_min,
                                                                   aod::pidtpc_tiny::binned_max,
                                                                   aod::pidtpc_tiny::bin_width);
