@@ -59,6 +59,16 @@ struct CheckMcParticlesIndices {
   }
 };
 
+struct CheckMcParticlesIndicesGrouped {
+  void process(aod::McCollision const& collision,
+               aod::McParticles const& particlesMC)
+  {
+    for (auto& particle : particlesMC) {
+      checkDaughters(particlesMC, particle);
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
@@ -67,5 +77,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<LoadTable<aod::McTrackLabels>>(cfgc, TaskName("McTrackLabels")),
     // adaptAnalysisTask<LoadTable<aod::McFwdTrackLabels>>(cfgc, TaskName("McFwdTrackLabels")),
     // adaptAnalysisTask<LoadTable<aod::McMFTTrackLabels>>(cfgc, TaskName("McMFTTrackLabels")),
-    adaptAnalysisTask<CheckMcParticlesIndices>(cfgc)};
+    adaptAnalysisTask<CheckMcParticlesIndices>(cfgc),
+    adaptAnalysisTask<CheckMcParticlesIndicesGrouped>(cfgc)};
 }
