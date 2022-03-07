@@ -33,6 +33,7 @@
 #include <TProfile3D.h>
 
 #include <cmath>
+#include <ctime>
 
 using namespace o2;
 using namespace o2::framework;
@@ -106,6 +107,12 @@ struct DptDptCorrelationsTask {
 
     const char* tname[2] = {"1", "2"}; ///< the external track names, one and two, for histogram creation
     const char* trackPairsNames[4] = {"OO", "OT", "TO", "TT"};
+    bool ccdbstored = false;
+
+    float isCCDBstored()
+    {
+      return ccdbstored;
+    }
 
     /// \brief Returns the potentially phi origin shifted phi
     /// \param phi the track azimuthal angle
@@ -182,14 +189,18 @@ struct DptDptCorrelationsTask {
 
     void storeTrackCorrections(TH3* corrs1, TH3* corrs2)
     {
+      LOGF(info, "Stored NUA&NUE corrections for track one %s and track two %s", corrs1 != nullptr ? "yes" : "no", corrs2 != nullptr ? "yes" : "no");
       fhNuaNue_vsZEtaPhiPt[0] = corrs1;
       fhNuaNue_vsZEtaPhiPt[1] = corrs2;
+      ccdbstored = true;
     }
 
     void storePtAverages(TH2* ptavgs1, TH2* ptavgs2)
     {
+      LOGF(info, "Stored pT average for track one %s and track two %s", ptavgs1 != nullptr ? "yes" : "no", ptavgs2 != nullptr ? "yes" : "no");
       fhPtAvg_vsEtaPhi[0] = ptavgs1;
       fhPtAvg_vsEtaPhi[1] = ptavgs2;
+      ccdbstored = true;
     }
 
     template <typename TrackListObject>
@@ -495,13 +506,21 @@ struct DptDptCorrelationsTask {
   /* the data collecting engine instances */
   DataCollectingEngine** dataCE;
 
+  /* the input file structure from CCDB */
+  TList* ccdblst = nullptr;
+  bool loadfromccdb = false;
+
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
 
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-  Configurable<std::string> cfgCCDBPathName{"ccdbpath", "", "The CCDB path for the input file"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
+    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
+    Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
+  } cfginputfile;
 
   OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject};
 
@@ -525,6 +544,7 @@ struct DptDptCorrelationsTask {
     phiup = constants::math::TwoPI;
     phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
+    loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / float(etabins);
     phibinwidth = (phiup - philow) / float(phibins);
@@ -594,7 +614,7 @@ struct DptDptCorrelationsTask {
       }
     }
     /* initialize access to the CCDB */
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(cfginputfile.cfgCCDBUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -614,9 +634,15 @@ struct DptDptCorrelationsTask {
     return ixDCE;
   }
 
-  TList* getCCDBInput(const char* ccdbpath)
+  TList* getCCDBInput(const char* ccdbpath, const char* ccdbdate)
   {
-    TList* lst = ccdb->get<TList>(ccdbpath);
+    std::tm cfgtm = {};
+    std::stringstream ss(ccdbdate);
+    ss >> std::get_time(&cfgtm, "%Y%m%d");
+    cfgtm.tm_hour = 12;
+    long timestamp = std::mktime(&cfgtm) * 1000;
+
+    TList* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
     if (lst != nullptr) {
       LOGF(info, "Correctly loaded CCDB input object");
     } else {
@@ -632,19 +658,20 @@ struct DptDptCorrelationsTask {
   {
     using namespace correlationstask;
 
-    TList* lst = nullptr;
-    if (cfgCCDBPathName->length() > 0) {
-      lst = getCCDBInput(cfgCCDBPathName->c_str());
+    if (ccdblst == nullptr) {
+      if (loadfromccdb) {
+        ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
+      }
     }
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      if (lst != nullptr) {
-        dataCE[ixDCE]->storeTrackCorrections((TH3*)lst->FindObject(TString::Format("correction_%02d-%02d_p1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                             (TH3*)lst->FindObject(TString::Format("correction_%02d-%02d_m1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()));
-        dataCE[ixDCE]->storePtAverages((TH2*)lst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                       (TH2*)lst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()));
+      if (ccdblst != nullptr and not dataCE[ixDCE]->isCCDBstored()) {
+        dataCE[ixDCE]->storeTrackCorrections((TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_p1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
+                                             (TH3*)ccdblst->FindObject(TString::Format("correction_%02d-%02d_m1", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()));
+        dataCE[ixDCE]->storePtAverages((TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
+                                       (TH2*)ccdblst->FindObject(TString::Format("ptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()));
       }
 
       Partition<o2::aod::ScannedTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == uint8_t(true);
@@ -663,17 +690,18 @@ struct DptDptCorrelationsTask {
   {
     using namespace correlationstask;
 
-    TList* lst = nullptr;
-    if (cfgCCDBPathName->length() > 0) {
-      lst = getCCDBInput(cfgCCDBPathName->c_str());
+    if (ccdblst == nullptr) {
+      if (loadfromccdb) {
+        ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
+      }
     }
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (not(ixDCE < 0)) {
-      if (lst != nullptr) {
-        dataCE[ixDCE]->storePtAverages((TH2*)lst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
-                                       (TH2*)lst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()));
+      if (ccdblst != nullptr and not dataCE[ixDCE]->isCCDBstored()) {
+        dataCE[ixDCE]->storePtAverages((TH2*)ccdblst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_p", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()),
+                                       (TH2*)ccdblst->FindObject(TString::Format("trueptavgetaphi_%02d-%02d_m", int(fCentMultMin[ixDCE]), int(fCentMultMax[ixDCE])).Data()));
       }
 
       Partition<o2::aod::ScannedTrueTracks> TracksOne = aod::dptdptfilter::trackacceptedasone == uint8_t(true);
