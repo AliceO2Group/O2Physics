@@ -508,6 +508,7 @@ struct DptDptCorrelationsTask {
 
   /* the input file structure from CCDB */
   TList* ccdblst = nullptr;
+  bool loadfromccdb = false;
 
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
@@ -517,7 +518,7 @@ struct DptDptCorrelationsTask {
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
-    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "Users/v/victor/Analysis/Corrections", "The CCDB path for the input file"};
+    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
   } cfginputfile;
 
@@ -543,6 +544,7 @@ struct DptDptCorrelationsTask {
     phiup = constants::math::TwoPI;
     phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
+    loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / float(etabins);
     phibinwidth = (phiup - philow) / float(phibins);
@@ -657,7 +659,7 @@ struct DptDptCorrelationsTask {
     using namespace correlationstask;
 
     if (ccdblst == nullptr) {
-      if (cfginputfile.cfgCCDBPathName->length() > 0) {
+      if (loadfromccdb) {
         ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
       }
     }
@@ -689,7 +691,7 @@ struct DptDptCorrelationsTask {
     using namespace correlationstask;
 
     if (ccdblst == nullptr) {
-      if (cfginputfile.cfgCCDBPathName->length() > 0) {
+      if (loadfromccdb) {
         ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
       }
     }
