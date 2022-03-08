@@ -81,7 +81,7 @@ struct qaEventTrack {
   bool isSelectedTrack(const T& track);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended, aod::TrackSelection>>;
   void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
   {
     processReco<false>(collision, tracks);
@@ -89,7 +89,7 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
   using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection>>;
   void processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     processReco<true>(collision, tracks);
@@ -177,6 +177,9 @@ void qaEventTrack::init(InitContext const&)
     histos.add("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, {180, -0.9, 0.9, "#eta_{rec}"}});
     histos.add("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, {180, 0., 2 * M_PI, "#phi_{rec}"}});
   }
+  histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
+  histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
+
   // track histograms
   histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system;#it{x} [cm]", kTH1D, {{200, -0.36, 0.36}});
   histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system;#it{y} [cm]", kTH1D, {{200, -0.5, 0.5}});
@@ -308,6 +311,8 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
     histos.fill(HIST("Tracks/Kine/phi"), track.phi());
+    histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
+    histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
 
     // fill track parameters
     histos.fill(HIST("Tracks/alpha"), track.alpha());
