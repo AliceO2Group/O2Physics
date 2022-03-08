@@ -125,10 +125,12 @@ struct TableMaker {
     }
     histClasses += "Event_AfterCuts;";
 
-    bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCent") ||
+    bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
+                               context.mOptions.get<bool>("processFullWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter"));
-    bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCent") ||
+    bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
+                             context.mOptions.get<bool>("processFullWithCent") ||
                              context.mOptions.get<bool>("processMuonOnly") || context.mOptions.get<bool>("processMuonOnlyWithCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithFilter"));
 
@@ -428,6 +430,12 @@ struct TableMaker {
     fullSkimming<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon);
   }
 
+  void processFullWithCov(MyEvents::iterator const& collision, aod::BCs const& bcs,
+                          soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon);
+  }
+
   // Produce barrel + muon tables, with centrality --------------------------------------------------------------------------------------------
   void processFullWithCent(MyEventsWithCent::iterator const& collision, aod::BCs const& bcs,
                            soa::Filtered<MyBarrelTracks> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
@@ -526,6 +534,7 @@ struct TableMaker {
   }
 
   PROCESS_SWITCH(TableMaker, processFull, "Build full DQ skimmed data model, w/o centrality", false);
+  PROCESS_SWITCH(TableMaker, processFullWithCov, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables", false);
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithEventFilter, "Build full DQ skimmed data model, w/o centrality, w/ event filter", false);
