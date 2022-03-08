@@ -11,22 +11,28 @@
 
 ///
 /// \file   pidTPCFull.cxx
-/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \author Nicolo' Jacazio
+/// \author Annalena Kalteyer
+/// \author Christian Sonnabend
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-// O2 includes
+#include "TFile.h"
+
+//  // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Framework/StaticFor.h"
 
 using namespace o2;
@@ -46,7 +52,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Task to produce the TPC response table
 struct tpcPidFull {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = aod::Collisions;
+  using Coll = soa::Join<aod::Collisions, aod::Mults>;
+
   // Tables to produce
   Produces<o2::aod::pidTPCFullEl> tablePIDEl;
   Produces<o2::aod::pidTPCFullMu> tablePIDMu;
@@ -57,14 +64,13 @@ struct tpcPidFull {
   Produces<o2::aod::pidTPCFullTr> tablePIDTr;
   Produces<o2::aod::pidTPCFullHe> tablePIDHe;
   Produces<o2::aod::pidTPCFullAl> tablePIDAl;
-  // Detector response and input parameters
-  DetectorResponse response;
+  // TPC PID Response
+  o2::pid::tpc::Response* response = nullptr;
+  // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> signalname{"param-signal", "BetheBloch", "Name of the parametrization for the expected signal, used in both file and CCDB mode"};
-  Configurable<std::string> sigmaname{"param-sigma", "TPCReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
   Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -94,7 +100,6 @@ struct tpcPidFull {
         }
       }
     };
-
     enableFlag("El", pidEl);
     enableFlag("Mu", pidMu);
     enableFlag("Pi", pidPi);
@@ -105,66 +110,54 @@ struct tpcPidFull {
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
 
-    // Getting the parametrization parameters
-    ccdb->setURL(url.value);
-    ccdb->setTimestamp(timestamp.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    //
-    const std::string fname = paramfile.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. signal parametrization from file" << fname << ", using param: " << signalname.value;
-      response.LoadParamFromFile(fname.data(), signalname.value, DetectorResponse::kSignal);
-
-      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
-      response.LoadParamFromFile(fname.data(), sigmaname.value, DetectorResponse::kSigma);
-    } else { // Loading it from CCDB
-      std::string path = ccdbPath.value + "/" + signalname.value;
-      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
-
-      path = ccdbPath.value + "/" + sigmaname.value;
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
+    const TString fname = paramfile.value;
+    if (fname != "") { // Loading the parametrization from file
+      LOGP(info, "Loading TPC response from file {}", fname);
+      try {
+        std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
+        f->GetObject("Response", response);
+      } catch (...) {
+        LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
+      };
+    } else {
+      const std::string path = ccdbPath.value;
+      const auto time = timestamp.value;
+      ccdb->setURL(url.value);
+      ccdb->setTimestamp(time);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
+      LOGP(info, "Loading TPC response from CCDB, using path: {} for timestamp {}", path, time);
     }
   }
 
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tpc::ELoss<Trks::iterator, pid>;
   void process(Coll const& collisions, Trks const& tracks)
   {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
+    // LOG(info) << "Custom TPCPID: MIP value from object is " << response->GetMIP();
 
     // Check and fill enabled tables
-    auto makeTable = [&tracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
+    auto makeTable = [&tracks, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          table(responsePID.GetExpectedSigma(response, trk),
-                responsePID.GetSeparation(response, trk));
+          auto collision = collisions.iteratorAt(trk.collisionId());
+          table(response->GetExpectedSigma(collision, trk, pid),
+                response->GetNumberOfSigma(collision, trk, pid));
         }
       }
     };
-    makeTable(pidEl, tablePIDEl, response, responseEl);
-    makeTable(pidMu, tablePIDMu, response, responseMu);
-    makeTable(pidPi, tablePIDPi, response, responsePi);
-    makeTable(pidKa, tablePIDKa, response, responseKa);
-    makeTable(pidPr, tablePIDPr, response, responsePr);
-    makeTable(pidDe, tablePIDDe, response, responseDe);
-    makeTable(pidTr, tablePIDTr, response, responseTr);
-    makeTable(pidHe, tablePIDHe, response, responseHe);
-    makeTable(pidAl, tablePIDAl, response, responseAl);
+    // const o2::pid::tpc::Response& response;
+    makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
+    makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
+    makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
+    makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
+    makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
+    makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
+    makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
+    makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
+    makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
   }
 };
 
