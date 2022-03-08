@@ -28,6 +28,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/StrangenessTables.h"
+#include "Common/DataModel/TrackPropagation.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
 
@@ -42,7 +43,7 @@ namespace o2::aod
 using FilteredFullCollision = soa::Filtered<soa::Join<aod::Collisions,
                                                       aod::EvSels,
                                                       aod::Mults>>::iterator;
-using FilteredFullTracks = soa::Join<aod::FullTracks,
+using FilteredFullTracks = soa::Join<aod::TracksPropagated, aod::TracksExtra,
                                      aod::TracksExtended, aod::TOFSignal,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                      aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
