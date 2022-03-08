@@ -582,12 +582,12 @@ void FemtoDreamTrackSelection::fillQA(T const& track, std::string_view WhichDaug
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCdEdX"), track.tpcInnerParam(), track.tpcSignal());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_el"), track.tpcInnerParam(), track.tpcNSigmaEl());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_pi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_K"), track.tpcInnerParam(), track.tpcNSigmaKa());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_p"), track.tpcInnerParam(), track.tpcNSigmaPr());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_d"), track.tpcInnerParam(), track.tpcNSigmaDe());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_K"), track.p(), track.tpcNSigmaKa());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_p"), track.p(), track.tpcNSigmaPr());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_pi"), track.p(), track.tofNSigmaPi());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_K"), track.p(), track.tofNSigmaKa());

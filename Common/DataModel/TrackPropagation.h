@@ -42,7 +42,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! z-component of the track momentum GeV/c
                              return pt * std::sinh(eta);
                            });
 
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! z-component of the track momentum GeV/c
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Momentum GeV/c
                            [](float pt, float eta) -> float {
                              return pt * std::cosh(eta);
                            });
