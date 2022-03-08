@@ -11,17 +11,18 @@
 
 ///
 /// \file   pidTPC.cxx
-/// \author Nicolo' Jacazio, Annalena Kalteyer, Christian Sonnabend
+/// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
+/// \author Christian Sonnabend christian.sonnabend@cern.ch
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TPC split for each particle with only the Nsigma information.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
 #include "TFile.h"
 
-//  // O2 includes
+// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
@@ -135,7 +136,8 @@ struct tpcPid {
     }
   }
 
-  void process(Coll const& collisions, Trks const& tracks)
+  void process(Coll const& collisions, Trks const& tracks,
+               aod::BCsWithTimestamps const&)
   {
     // Check and fill enabled tables
     auto makeTable = [&tracks, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
@@ -153,7 +155,6 @@ struct tpcPid {
                                                                   aod::pidtpc_tiny::bin_width);
         }
       }
-      table.reserve(tracks.size());
     };
     makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
     makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
@@ -201,20 +202,24 @@ struct tpcPidQa {
   void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
     // NSigma
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TPC}(%s)", pT[i])};
-    histos.add(hnsigma[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigmapt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmapospt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmanegpt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
+    const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[i]);
+    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
+    histos.add(hnsigma[i].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
   {
+
     const AxisSpec multAxis{1000, 0.f, 1000.f, "Track multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
+    const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
+    const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
     const AxisSpec pAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p} (GeV/#it{c})"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogaritmic();
       pAxis.makeLogaritmic();
@@ -229,9 +234,17 @@ struct tpcPidQa {
     h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
 
     histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
-    histos.add("event/multiplicity", "", kTH1F, {multAxis});
+    h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
+    for (int i = 0; i < 9; i++) {
+      h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
+    }
+    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
     histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
     histos.add("event/signedtpcsignal", "", kTH2F, {pAxisPosNeg, dedxAxis});
+    histos.add("event/eta", "", kTH1F, {etaAxis});
+    histos.add("event/length", "", kTH1F, {lAxis});
+    histos.add("event/pt", "", kTH1F, {ptAxis});
+    histos.add("event/p", "", kTH1F, {pAxis});
 
     static_for<0, 8>([&](auto i) {
       addParticleHistos<i>(pAxis, ptAxis);
@@ -247,8 +260,9 @@ struct tpcPidQa {
         return;
       }
     }
+
     // Fill histograms
-    const auto& nsigma = o2::aod::pidutils::tpcNSigma(id, t);
+    const auto& nsigma = o2::aod::pidutils::tpcNSigma<id>(t);
     histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
     histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
     if (t.sign() > 0) {
@@ -265,6 +279,7 @@ struct tpcPidQa {
                          aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl,
                          aod::TrackSelection> const& tracks)
   {
+
     histos.fill(HIST("event/evsel"), 1);
     if (applyEvSel == 1) {
       if (!collision.sel7()) {
@@ -275,8 +290,10 @@ struct tpcPidQa {
         return;
       }
     }
+
     histos.fill(HIST("event/evsel"), 2);
 
+    // Computing Multiplicity first
     float ntracks = 0;
     for (auto t : tracks) {
       if (applyTrackCut && !t.isGlobalTrack()) {
@@ -293,16 +310,19 @@ struct tpcPidQa {
     }
     histos.fill(HIST("event/evsel"), 4);
     histos.fill(HIST("event/vertexz"), collision.posZ());
-    histos.fill(HIST("event/multiplicity"), ntracks);
+    histos.fill(HIST("event/trackmultiplicity"), ntracks);
 
     for (auto t : tracks) {
       if (applyTrackCut && !t.isGlobalTrack()) {
         continue;
       }
-      // const float mom = t.p();
-      const float mom = t.tpcInnerParam();
-      histos.fill(HIST("event/tpcsignal"), mom, t.tpcSignal());
-      histos.fill(HIST("event/signedtpcsignal"), mom * t.sign(), t.tpcSignal());
+      histos.fill(HIST("event/particlehypo"), t.pidForTracking());
+      histos.fill(HIST("event/tpcsignal"), t.tpcInnerParam(), t.tpcSignal());
+      histos.fill(HIST("event/signedtpcsignal"), t.tpcInnerParam() * t.sign(), t.tpcSignal());
+      histos.fill(HIST("event/eta"), t.eta());
+      histos.fill(HIST("event/length"), t.length());
+      histos.fill(HIST("event/pt"), t.pt());
+      histos.fill(HIST("event/p"), t.p());
       //
       fillParticleHistos<PID::Electron>(t);
       fillParticleHistos<PID::Muon>(t);
