@@ -165,7 +165,7 @@ struct TrackPropagation {
         o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
 
         if (fillTracksPropagated) {
-          tracksPropagated(-1, track.trackType(), trackPar.getSign(), trackPar.getPt(), trackPar.getPhi(), trackPar.getEta());
+          tracksPropagated(track.collisionId(), track.trackType(), trackPar.getSign(), trackPar.getPt(), trackPar.getPhi(), trackPar.getEta());
         }
         if (fillTracksParPropagated) {
           tracksParPropagated(trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
@@ -217,7 +217,7 @@ struct TrackPropagation {
         o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
 
         if (fillTracksPropagated) {
-          tracksPropagated(-1, track.trackType(), trackParCov.getSign(), trackParCov.getPt(), trackParCov.getPhi(), trackParCov.getEta());
+          tracksPropagated(track.collisionId(), track.trackType(), trackParCov.getSign(), trackParCov.getPt(), trackParCov.getPhi(), trackParCov.getEta());
         }
         if (fillTracksParPropagated) {
           tracksParPropagated(trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());

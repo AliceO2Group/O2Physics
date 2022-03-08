@@ -675,8 +675,12 @@ class RecoDecay
     //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    for (auto& idxDau : particle.daughtersIds()) {
-      getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
+    if (particle.daughtersIds().front() != particle.daughtersIds().back()) {
+      for (auto& idxDau : particle.daughtersIds()) {
+        getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau), list, arrPDGFinal, depthMax, stage);
+      }
+    } else {
+      getDaughters(particlesMC, particlesMC.rawIteratorAt(particle.daughtersIds().front()), list, arrPDGFinal, depthMax, stage);
     }
   }
 
@@ -842,7 +846,7 @@ class RecoDecay
     // Check the PDG codes of the decay products.
     if (N > 0) {
       //Printf("MC Gen: Checking %d daughters", N);
-      std::vector<int> arrAllDaughtersIndex;            // vector of indices of all daughters
+      std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters
       // Check the daughter indices.
       if (!candidate.has_daughters()) {
         //Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
@@ -868,7 +872,7 @@ class RecoDecay
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI); // ith daughter particle
-        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();        // PDG code of the ith daughter
+        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();           // PDG code of the ith daughter
         //Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
