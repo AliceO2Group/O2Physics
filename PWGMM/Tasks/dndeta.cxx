@@ -31,8 +31,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
-AxisSpec DCAAxis = {201, -1.01, 1.01};
-AxisSpec EtaAxis = {21, -2.1, 2.1};
+AxisSpec DCAAxis = {401, -2.01, 2.01};
+AxisSpec EtaAxis = {22, -2.2, 2.2};
 AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
@@ -65,15 +65,15 @@ struct PseudorapidityDensity {
   HistogramRegistry registry{
     "registry",
     {
-      {"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}}, //
-      {"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},      //
-      {"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},  //
-      {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},          //
-      {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},     //
-      {"Tracks/Control/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAAxis}}},                   //
-      {"Tracks/Control/DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {DCAAxis}}},                     //
-      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                    //
-    }                                                                                               //
+      {"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}},         //
+      {"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},              //
+      {"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},          //
+      {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                  //
+      {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},             //
+      {"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}}, //
+      {"Tracks/Control/DCAZPt", " ; p{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},    //
+      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                            //
+    }                                                                                                       //
   };
 
   void init(InitContext&)
@@ -166,8 +166,8 @@ struct PseudorapidityDensity {
         registry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
         registry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
         registry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
-        registry.fill(HIST("Tracks/Control/DCAXY"), track.dcaXY());
-        registry.fill(HIST("Tracks/Control/DCAZ"), track.dcaZ());
+        registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY());
+        registry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
         if (perCollisionSample.size() > 0) {
           registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
         }
@@ -198,7 +198,7 @@ struct PseudorapidityDensity {
       if (p != nullptr) {
         charge = p->Charge();
       }
-      if (std::abs(charge) < 1.) {
+      if (std::abs(charge) < 3.) {
         continue;
       }
       registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
@@ -218,14 +218,15 @@ struct PseudorapidityDensity {
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto nCharged = 0;
     for (auto& particle : perCollisionMCSample) {
-      auto charge = 0;
+      auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
-        charge = (int)p->Charge();
+        charge = p->Charge();
       }
-      if (charge != 0) {
-        nCharged++;
+      if (std::abs(charge) < 3.) {
+        continue;
       }
+      nCharged++;
     }
     registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
     registry.fill(HIST("Events/Efficiency"), 1.);
@@ -254,24 +255,25 @@ struct PseudorapidityDensity {
     }
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
-      auto charge = 0;
+      auto charge = 0.;
       if (p != nullptr) {
-        charge = (int)p->Charge();
+        charge = p->Charge();
       }
-      if (charge != 0) {
-        registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-        registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
-        if (perCollisionMCSample.size() > 0) {
-          registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
-        }
-        if (atLeastOne) {
-          registry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
-          if (atLeastOne_gt0) {
-            registry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
-          }
-        }
-        registry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
+      if (std::abs(charge) < 3.) {
+        continue;
       }
+      registry.fill(HIST("Tracks/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+      registry.fill(HIST("Tracks/Control/PtEtaGen"), particle.pt(), particle.eta());
+      if (perCollisionMCSample.size() > 0) {
+        registry.fill(HIST("Tracks/EtaZvtxGen_gt0t"), particle.eta(), mcCollision.posZ());
+      }
+      if (atLeastOne) {
+        registry.fill(HIST("Tracks/EtaZvtxGen"), particle.eta(), mcCollision.posZ());
+        if (atLeastOne_gt0) {
+          registry.fill(HIST("Tracks/EtaZvtxGen_gt0"), particle.eta(), mcCollision.posZ());
+        }
+      }
+      registry.fill(HIST("Tracks/PhiEtaGen"), particle.phi(), particle.eta());
     }
   }
 
