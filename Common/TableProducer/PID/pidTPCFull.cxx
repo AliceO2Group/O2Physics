@@ -70,7 +70,7 @@ struct tpcPidFull {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -81,6 +81,9 @@ struct tpcPidFull {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+
+    // Paramatrization configuration
+  bool useCCDBParam = false;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -119,28 +122,34 @@ struct tpcPidFull {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
       };
     } else {
+      useCCDBParam = true;
       const std::string path = ccdbPath.value;
-      const auto time = timestamp.value;
+      const auto time = ccdbTimestamp.value;
       ccdb->setURL(url.value);
       ccdb->setTimestamp(time);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
-      LOGP(info, "Loading TPC response from CCDB, using path: {} for timestamp {}", path, time);
+      LOGP(info, "Loading TPC response from CCDB, using path: {} for ccdbTimestamp {}", path, time);
     }
   }
 
-  void process(Coll const& collisions, Trks const& tracks)
+  void process(Coll const& collisions, Trks const& tracks,
+               aod::BCsWithTimestamps const&)
   {
-    // LOG(info) << "Custom TPCPID: MIP value from object is " << response->GetMIP();
-
     // Check and fill enabled tables
     auto makeTable = [&tracks, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
+        int lastCollisionId = -1; // Last collision ID analysed
         for (auto const& trk : tracks) { // Loop on Tracks
+        if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+            lastCollisionId = trk.collisionId();
+            const auto& bc = trk.collision().bc_as<aod::BCsWithTimestamps>();
+            response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+          }
           auto collision = collisions.iteratorAt(trk.collisionId());
           table(response->GetExpectedSigma(collision, trk, pid),
                 response->GetNumberOfSigma(collision, trk, pid));

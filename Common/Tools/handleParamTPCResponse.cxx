@@ -23,6 +23,7 @@
 #include "TFile.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "handleParamBase.h"
 #include "Algorithm/RangeTokenizer.h"
 using namespace o2::pid::tpc;
 namespace bpo = boost::program_options;
@@ -30,11 +31,14 @@ namespace bpo = boost::program_options;
 bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[], bpo::variables_map& vm)
 {
   options.add_options()(
-    "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database")(
-    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path to TPC directory")(
-    "start,s", bpo::value<long>()->default_value(0), "Start timestamp for calibration validity")(
-    "stop,S", bpo::value<long>()->default_value(4108971600000), "End timestamp for calibration validity")(
-    "delete-previous", bpo::value<int>()->default_value(0), "delete previous entry from CCDB (1 = true)")(
+    "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database e.g. http://ccdb-test.cern.ch:8080 or http://alice-ccdb.cern.ch")(
+    "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path for storage/retrieval")(
+    "rct-path", bpo::value<std::string>()->default_value("RCT/RunInformation"), "path to the ccdb RCT objects for the SOR/EOR timestamps")(
+    "start,s", bpo::value<long>()->default_value(0), "Start timestamp of object validity. If 0 and runnumber != 0 it will be set to the run SOR")(
+    "stop,S", bpo::value<long>()->default_value(0), "Stop timestamp of object validity. If 0 and runnumber != 0 it will be set to the run EOR")(
+    "timestamp,T", bpo::value<long>()->default_value(-1), "Timestamp of the object to retrieve, used in alternative to the run number")(
+    "runnumber,R", bpo::value<unsigned int>()->default_value(0), "Timestamp of the object to retrieve, used in alternative to the timestamp (if 0 using the timestamp)")(
+    "delete-previous,delete_previous,d", bpo::value<int>()->default_value(0), "Flag to delete previous versions of converter objects in the CCDB before uploading the new one so as to avoid proliferation on CCDB")(
     "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
     "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
     "objname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be stored in file")(
@@ -50,8 +54,9 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "paramChargeFactor", bpo::value<float>()->default_value(2.3f), "Charge factor value")(
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
     "useDefaultParam", bpo::value<bool>()->default_value(true), "Use default parametrizatio")(
+    "dryrun,D", bpo::value<int>()->default_value(0), "Perform a dryrun check before uploading")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(
-    "help,h", "Print this help.");
+    "help,h", "Produce help message.");
   try {
     bpo::store(parse_command_line(argc, argv, options), vm);
 
@@ -83,8 +88,12 @@ int main(int argc, char* argv[])
 
   const std::string urlCCDB = vm["url"].as<std::string>();
   const std::string pathCCDB = vm["ccdb-path"].as<std::string>();
-  const long startTime = vm["start"].as<long>();
-  const long endTime = vm["stop"].as<long>();
+  long startTime = vm["start"].as<long>();
+  long endTime = vm["stop"].as<long>();
+  const auto runnumber = vm["runnumber"].as<unsigned int>();
+  auto timestamp = vm["timestamp"].as<long>();
+  // Init timestamps
+  setupTimestamps(timestamp, startTime, endTime);
   const int optDelete = vm["delete-previous"].as<int>();
 
   const std::string outFilename = vm["save-to-file"].as<std::string>();
@@ -131,7 +140,10 @@ int main(int argc, char* argv[])
 
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
-  std::map<std::string, std::string>* headers = nullptr;
+  if (runnumber != 0) {
+        metadata["runnumber"] = Form("%i", runnumber);
+  }
+  std::map<std::string, std::string> headers;
   o2::ccdb::CcdbApi api;
   if (optMode.compare("push") == 0 || optMode.compare("pull") == 0) { // Initialise CCDB if in push/pull mode
     api.init(urlCCDB);
@@ -216,14 +228,14 @@ int main(int argc, char* argv[])
       if (optDelete) {
         api.truncate(pathCCDB);
       }
-      api.storeAsTFileAny(tpc.get(), pathCCDB + "/" + objname, metadata, startTime, endTime);
+      storeOnCCDB(pathCCDB + "/" + objname, metadata, startTime, endTime, tpc.get());
     }
   }
 
   else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
     LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname;
-
-    tpc.reset(api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, headers));
+    headers = api.retrieveHeaders(pathCCDB, metadata, timestamp);
+    tpc.reset(api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, /*std::map<std::string, std::string>* headers =*/nullptr));
     if (!tpc) { // Quit gracefully if pulling object fails
       return 1;
     }

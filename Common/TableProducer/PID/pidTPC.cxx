@@ -69,7 +69,7 @@ struct tpcPid {
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
-  Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -83,8 +83,6 @@ struct tpcPid {
 
   // Paramatrization configuration
   bool useCCDBParam = false;
-  std::string ccdbPathSignal = "";
-  std::string ccdbPathSigma = "";
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -119,20 +117,20 @@ struct tpcPid {
       try {
         std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
         f->GetObject("Response", response);
-        response->SetUseDefaultResolutionParam(false);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
       };
     } else {
+      useCCDBParam = true;
       const std::string path = ccdbPath.value;
-      const auto time = timestamp.value;
+      const auto time = ccdbTimestamp.value;
       ccdb->setURL(url.value);
       ccdb->setTimestamp(time);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
-      LOGP(info, "Loading TPC response from CCDB, using path: {} for timestamp {}", path, time);
+      LOGP(info, "Loading TPC response from CCDB, using path: {} for ccdbTimestamp {}", path, time);
     }
   }
 
@@ -144,7 +142,13 @@ struct tpcPid {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
+        int lastCollisionId = -1; // Last collision ID analysed
         for (auto const& trk : tracks) { // Loop on Tracks
+          if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+            lastCollisionId = trk.collisionId();
+            const auto& bc = trk.collision().bc_as<aod::BCsWithTimestamps>();
+            response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+          }
           auto collision = collisions.iteratorAt(trk.collisionId());
           const float numbersigma = response->GetNumberOfSigma(collision, trk, pid);
           aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
@@ -187,14 +191,14 @@ struct tpcPidQa {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
 
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
-  Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
+  Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
+  Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
+  Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
-  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
