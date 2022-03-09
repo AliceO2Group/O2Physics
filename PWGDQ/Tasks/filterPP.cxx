@@ -82,10 +82,10 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExten
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyBarrelTracksTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
-                                 aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                 aod::pidTPCKa, aod::pidTPCPr,
-                                 aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                 aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
+                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                     aod::pidTPCKa, aod::pidTPCPr,
+                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
 
 using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -94,11 +94,11 @@ using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::Tra
                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                          aod::DQBarrelTrackCuts>;
 using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
-                                         aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                         aod::pidTPCKa, aod::pidTPCPr,
-                                         aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                         aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta,
-                                         aod::DQBarrelTrackCuts>;
+                                             aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                             aod::pidTPCKa, aod::pidTPCPr,
+                                             aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta,
+                                             aod::DQBarrelTrackCuts>;
 using MyMuons = aod::FwdTracks;
 using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::DQMuonsCuts>;
 
