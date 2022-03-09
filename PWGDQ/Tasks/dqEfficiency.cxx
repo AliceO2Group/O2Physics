@@ -679,13 +679,6 @@ struct AnalysisSameEventPairing {
         VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
       }
 
-      dileptonFilterMap = twoTrackFilter;
-      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
-      constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
-      if constexpr ((TPairType == VarManager::kJpsiToMuMu) && muonHasCov) {
-        dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
-      }
-
       // run MC matching for this pair
       uint32_t mcDecision = 0;
       int isig = 0;
@@ -701,6 +694,13 @@ struct AnalysisSameEventPairing {
           }
         }
       } // end loop over MC signals
+
+      dileptonFilterMap = mcDecision;
+      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
+      constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
+      if constexpr ((TPairType == VarManager::kJpsiToMuMu) && muonHasCov) {
+        dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+      }
 
       // Loop over all fulfilled cuts and fill pair histograms
       for (unsigned int icut = 0; icut < ncuts; icut++) {
