@@ -142,8 +142,8 @@ struct tpcPid {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
-        int lastCollisionId = -1; // Last collision ID analysed
-        for (auto const& trk : tracks) { // Loop on Tracks
+        int lastCollisionId = -1;                                                                                        // Last collision ID analysed
+        for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
           if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
             lastCollisionId = trk.collisionId();
             const auto& bc = trk.collision().bc_as<aod::BCsWithTimestamps>();

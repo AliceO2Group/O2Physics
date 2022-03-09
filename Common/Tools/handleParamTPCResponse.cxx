@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
   // initialise CCDB API
   std::map<std::string, std::string> metadata;
   if (runnumber != 0) {
-        metadata["runnumber"] = Form("%i", runnumber);
+    metadata["runnumber"] = Form("%i", runnumber);
   }
   std::map<std::string, std::string> headers;
   o2::ccdb::CcdbApi api;

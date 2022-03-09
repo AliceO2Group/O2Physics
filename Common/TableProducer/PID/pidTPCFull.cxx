@@ -82,7 +82,7 @@ struct tpcPidFull {
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
 
-    // Paramatrization configuration
+  // Paramatrization configuration
   bool useCCDBParam = false;
 
   void init(o2::framework::InitContext& initContext)
@@ -143,9 +143,9 @@ struct tpcPidFull {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
-        int lastCollisionId = -1; // Last collision ID analysed
-        for (auto const& trk : tracks) { // Loop on Tracks
-        if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+        int lastCollisionId = -1;                                                                                        // Last collision ID analysed
+        for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
+          if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
             lastCollisionId = trk.collisionId();
             const auto& bc = trk.collision().bc_as<aod::BCsWithTimestamps>();
             response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
