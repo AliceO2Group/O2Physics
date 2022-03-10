@@ -143,17 +143,17 @@ struct tpcPidFull {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
-        int lastCollisionId = -1;                                                                                        // Last collision ID analysed
-        for (auto const& trk : tracks) {                  
+        int lastCollisionId = -1; // Last collision ID analysed
+        for (auto const& trk : tracks) {
           auto collision = collisions.iteratorAt(trk.collisionId());                                                     // Loop on Tracks
           if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
             lastCollisionId = trk.collisionId();
             const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
             response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
-          }                                                               
+          }
           table(response->GetExpectedSigma(collision, trk, pid),
                 response->GetNumberOfSigma(collision, trk, pid));
-        }// Loop on Tracks
+        } // Loop on Tracks
       }
     };
     // const o2::pid::tpc::Response& response;
