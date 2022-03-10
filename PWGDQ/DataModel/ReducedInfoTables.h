@@ -302,6 +302,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
 DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);   //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                //!
 DECLARE_SOA_COLUMN(Lz, lz, float);                    //!
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //!
@@ -323,6 +324,7 @@ DECLARE_SOA_TABLE(Dileptons, "AOD", "RTDILEPTON", //!
                   reducedpair::Mass,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                   reducedpair::FilterMap,
+                  reducedpair::McDecision,
                   reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
                   reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
                   reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
