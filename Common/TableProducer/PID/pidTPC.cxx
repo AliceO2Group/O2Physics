@@ -33,6 +33,7 @@
 #include "TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/StaticFor.h"
+#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -142,14 +143,14 @@ struct tpcPid {
       if (flag.value == 1) {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
-        int lastCollisionId = -1;                                                                                        // Last collision ID analysed
-        for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
+        int lastCollisionId = -1; // Last collision ID analysed
+        for (auto const& trk : tracks) {
+          auto collision = collisions.iteratorAt(trk.collisionId());                                                     // Loop on Tracks
           if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
             lastCollisionId = trk.collisionId();
-            const auto& bc = trk.collision().bc_as<aod::BCsWithTimestamps>();
+            const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
             response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           }
-          auto collision = collisions.iteratorAt(trk.collisionId());
           const float numbersigma = response->GetNumberOfSigma(collision, trk, pid);
           aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
                                      aod::pidtpc_tiny::upper_bin,
