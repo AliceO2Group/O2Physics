@@ -140,7 +140,7 @@ struct tpcPidFull {
   {
     // Check and fill enabled tables
     auto makeTable = [&tracks, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
-      if (flag.value == 1) {
+      if (flag.value == 1) { // Loop on Tracks
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         int lastCollisionId = -1; // Last collision ID analysed
@@ -153,7 +153,7 @@ struct tpcPidFull {
           }
           table(response->GetExpectedSigma(collision, trk, pid),
                 response->GetNumberOfSigma(collision, trk, pid));
-        } // Loop on Tracks
+        } 
       }
     };
     // const o2::pid::tpc::Response& response;
