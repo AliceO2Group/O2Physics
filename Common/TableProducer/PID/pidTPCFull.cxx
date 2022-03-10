@@ -153,7 +153,7 @@ struct tpcPidFull {
           }
           table(response->GetExpectedSigma(collision, trk, pid),
                 response->GetNumberOfSigma(collision, trk, pid));
-        } 
+        }
       }
     };
     // const o2::pid::tpc::Response& response;
