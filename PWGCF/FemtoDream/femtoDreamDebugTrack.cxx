@@ -226,12 +226,12 @@ struct femtoDreamDebugTrack {
       FullQaRegistry.fill(HIST("FullTrackQA/hITSclustersIB"), part.itsNClsInnerBarrel());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCAz"), part.pt(), part.dcaZ());
       FullQaRegistry.fill(HIST("FullTrackQA/hDCA"), part.pt(), std::sqrt(pow(part.dcaXY(), 2.) + pow(part.dcaZ(), 2.)));
-      FullQaRegistry.fill(HIST("FullTrackQA/hTPCdEdX"), part.tpcInnerParam(), part.tpcSignal());
-      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_el"), part.tpcInnerParam(), part.tpcNSigmaEl());
-      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_pi"), part.tpcInnerParam(), part.tpcNSigmaPi());
-      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_K"), part.tpcInnerParam(), part.tpcNSigmaKa());
-      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_p"), part.tpcInnerParam(), part.tpcNSigmaPr());
-      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_d"), part.tpcInnerParam(), part.tpcNSigmaDe());
+      FullQaRegistry.fill(HIST("FullTrackQA/hTPCdEdX"), part.p(), part.tpcSignal());
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_el"), part.p(), part.tpcNSigmaEl());
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_pi"), part.p(), part.tpcNSigmaPi());
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_K"), part.p(), part.tpcNSigmaKa());
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_p"), part.p(), part.tpcNSigmaPr());
+      FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTPC_d"), part.p(), part.tpcNSigmaDe());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTOF_el"), part.p(), part.tofNSigmaEl());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTOF_pi"), part.p(), part.tofNSigmaPi());
       FullQaRegistry.fill(HIST("FullTrackQA/nSigmaTOF_K"), part.p(), part.tofNSigmaKa());
