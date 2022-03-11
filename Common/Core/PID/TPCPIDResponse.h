@@ -48,12 +48,21 @@ class Response
   void SetMultiplicityNormalization(const float multNormalization) { mMultNormalization = multNormalization; }
   void SetResolutionParametrization(TFormula* sigmaParametrization) { mSigmaParametrization.reset(sigmaParametrization); }
   void SetUseDefaultResolutionParam(const bool useDefault) { mUseDefaultResolutionParam = useDefault; }
+  void SetParameters(Response* response)
+  {
+    mBetheBlochParams = response->GetBetheBlochParams();
+    mResolutionParams = response->GetResolutionParams();
+    mMIP = response->GetMIP();
+    mChargeFactor = response->GetChargeFactor();
+    mMultNormalization = response->GetMultiplicityNormalization();
+  }
 
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; }
   const std::vector<double> GetResolutionParams() const { return mResolutionParams; }
   const float GetMIP() const { return mMIP; }
   const float GetChargeFactor() const { return mChargeFactor; }
   const float GetMultiplicityNormalization() const { return mMultNormalization; }
+
   // std::unique_ptr<TFormula> GetResolutionParametrization() { return mSigmaParametrization; }
 
   /// Gets the expected signal of the track
@@ -74,11 +83,11 @@ class Response
   void PrintAll() const;
 
  private:
-  std::array<float, 5> mBetheBlochParams = {0.0320981, 19.9768, 2.52666e-16, 2.72123, 6.08092};
+  std::array<float, 5> mBetheBlochParams = {0.03209809958934784, 19.9768009185791, 2.5266601063857674e-16, 2.7212300300598145, 6.080920219421387};
   std::array<float, 2> mResolutionParamsDefault = {0.07, 0.0};
   std::vector<double> mResolutionParams = {5.43799e-7, 0.053044, 0.667584, 0.0142667, 0.00235175, 1.22482, 2.3501e-7, 0.031585};
   float mMIP = 50.f;
-  float mChargeFactor = 2.3f;
+  float mChargeFactor = 2.299999952316284f;
   float mMultNormalization = 11000.;
   bool mUseDefaultResolutionParam = true;
   std::unique_ptr<TFormula> mSigmaParametrization{new TFormula("fSigmaParametrization", "sqrt(([0]**2)*x[0]+(([1]**2)*(x[2]*[5])*(x[0]/sqrt(1+x[1]**2))**[2])+x[2]*x[3]**2+([4]*x[4])**2 +((x[5]*[6])**2)+(x[5]*(x[0]/sqrt(1+x[1]**2))*[7])**2)")};

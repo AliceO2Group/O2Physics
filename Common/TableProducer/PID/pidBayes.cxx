@@ -71,7 +71,8 @@ struct bayesPid {
   std::array<DetectorResponse, kNDet> Response;
   static constexpr const char* detectorName[kNDet] = {"TOF", "TPC"};
   // TPC PID Response
-  o2::pid::tpc::Response* responseTPC = nullptr;
+  o2::pid::tpc::Response responseTPC;
+  o2::pid::tpc::Response* responseTPCptr = nullptr;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if emtpy the parametrization is not taken from file"};
@@ -235,16 +236,17 @@ struct bayesPid {
       LOGP(info, "Loading TPC response from file {}", fnameTPC);
       try {
         std::unique_ptr<TFile> f(TFile::Open(fnameTPC, "READ"));
-        f->GetObject("Response", responseTPC);
-        responseTPC->SetUseDefaultResolutionParam(false);
+        f->GetObject("Response", responseTPCptr);
+        responseTPC.SetParameters(responseTPCptr);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC);
       };
     } else {
       const std::string pathTPC = ccdbPathTPC.value;
       const auto time = timestamp.value;
-      responseTPC = ccdb->getForTimeStamp<o2::pid::tpc::Response>(pathTPC, time);
+      responseTPC.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(pathTPC, time));
       LOGP(info, "Loading TPC response from CCDB, using path: {} for timestamp {}", pathTPC, time);
+      responseTPC.PrintAll();
     }
   }
 
@@ -263,8 +265,8 @@ struct bayesPid {
     // if (fTuneMConData && ((fTuneMConDataMask & kDetTPC) == kDetTPC)){
     //   dedx = GetTPCsignalTunedOnData(track);
     // }
-    const float bethe = responseTPC->GetExpectedSignal(track, pid);
-    const float sigma = responseTPC->GetExpectedSigma(collision, track, pid);
+    const float bethe = responseTPC.GetExpectedSignal(track, pid);
+    const float sigma = responseTPC.GetExpectedSigma(collision, track, pid);
     // LOG(info) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
     //  bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
     //  sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);

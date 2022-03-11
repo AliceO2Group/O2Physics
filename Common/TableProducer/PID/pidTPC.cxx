@@ -63,7 +63,8 @@ struct tpcPid {
   Produces<o2::aod::pidTPCHe> tablePIDHe;
   Produces<o2::aod::pidTPCAl> tablePIDAl;
   // TPC PID Response
-  o2::pid::tpc::Response* response = nullptr;
+  o2::pid::tpc::Response response;
+  o2::pid::tpc::Response* responseptr = nullptr;
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
@@ -116,7 +117,8 @@ struct tpcPid {
       LOGP(info, "Loading TPC response from file {}", fname);
       try {
         std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
-        f->GetObject("Response", response);
+        f->GetObject("Response", responseptr);
+        response.SetParameters(responseptr);
       } catch (...) {
         LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
       };
@@ -129,8 +131,9 @@ struct tpcPid {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-      response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
+      response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
       LOGP(info, "Loading TPC response from CCDB, using path: {} for ccdbTimestamp {}", path, time);
+      response.PrintAll();
     }
   }
 
@@ -148,9 +151,9 @@ struct tpcPid {
           if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
             lastCollisionId = trk.collisionId();
             const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
-            response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+            response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
           }
-          const float numbersigma = response->GetNumberOfSigma(collision, trk, pid);
+          const float numbersigma = response.GetNumberOfSigma(collision, trk, pid);
           aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
                                      aod::pidtpc_tiny::upper_bin,
                                      aod::pidtpc_tiny::lower_bin>(numbersigma, table,
