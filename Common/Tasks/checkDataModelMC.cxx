@@ -20,7 +20,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-/// Check the complete list of indices of final-state daughters of an MC particle
+/// Check the complete list of indices of final-state daughters of an MC particle.
 /// \param particlesMC  table with MC particles
 /// \param offset       offset in case of grouped tables
 /// \param particle     MC particle
