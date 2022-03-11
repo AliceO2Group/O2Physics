@@ -59,6 +59,8 @@ include(O2PhysicsNameTarget)
 #   (e.g. by protobuf). Note that if you do specify this parameter it replaces
 #   the default, it does not add to them.
 #
+# * PRECOMPILED_HEADERS (not needed in most cases) : the list of headers which
+#   will be precompiled and installed with the library.
 function(o2physics_add_library baseTargetName)
 
   cmake_parse_arguments(
@@ -67,7 +69,7 @@ function(o2physics_add_library baseTargetName)
     A
     ""
     "TARGETVARNAME"
-    "SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PUBLIC_LINK_LIBRARIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_LINK_LIBRARIES;INSTALL_HEADERS"
+    "SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PUBLIC_LINK_LIBRARIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_LINK_LIBRARIES;INSTALL_HEADERS;PRECOMPILED_HEADERS"
     )
 
   if(A_UNPARSED_ARGUMENTS)
@@ -114,6 +116,9 @@ function(o2physics_add_library baseTargetName)
       endif()
       target_link_libraries(${target} PRIVATE ${L})
     endforeach()
+  endif()
+  if (A_PRECOMPILED_HEADERS)
+    target_precompile_headers(${target} PUBLIC ${A_PRECOMPILED_HEADERS})
   endif()
   # set the public include directories if available
   if(A_PUBLIC_INCLUDE_DIRECTORIES)

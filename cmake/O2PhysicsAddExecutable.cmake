@@ -50,7 +50,7 @@ function(o2physics_add_executable baseTargetName)
                         A
                         "IS_TEST;NO_INSTALL;IS_BENCHMARK"
                         "COMPONENT_NAME;TARGETVARNAME"
-                        "SOURCES;PUBLIC_LINK_LIBRARIES;JOB_POOL")
+                        "SOURCES;PUBLIC_LINK_LIBRARIES;JOB_POOL;REUSE_PRECOMPILED_HEADERS_FROM")
 
   if(A_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Got trailing arguments ${A_UNPARSED_ARGUMENTS}")
@@ -133,6 +133,10 @@ function(o2physics_add_executable baseTargetName)
     endif()
     target_link_libraries(${target} PUBLIC ${lib})
   endforeach()
+
+  if(A_REUSE_PRECOMPILED_HEADERS_FROM)
+    target_precompile_headers(${target} REUSE_FROM ${A_REUSE_PRECOMPILED_HEADERS_FROM})
+  endif()
 
   if(NOT A_NO_INSTALL)
     # install the executable

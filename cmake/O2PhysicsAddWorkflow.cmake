@@ -38,7 +38,8 @@ function(o2physics_add_dpl_workflow baseTargetName)
   o2physics_add_executable(${baseTargetName}
     COMPONENT_NAME ${A_COMPONENT_NAME} TARGETVARNAME targetExeName
     SOURCES ${A_SOURCES}
-    PUBLIC_LINK_LIBRARIES O2::Framework ${A_PUBLIC_LINK_LIBRARIES})
+    PUBLIC_LINK_LIBRARIES O2::Framework ${A_PUBLIC_LINK_LIBRARIES}
+    REUSE_PRECOMPILED_HEADERS_FROM O2Physics::PrecompiledO2Framework)
 
   if(A_TARGETVARNAME)
     set(${A_TARGETVARNAME}

@@ -9,11 +9,20 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_library(PrecompiledO2Framework
+  SOURCES dummy.cxx
+  PUBLIC_LINK_LIBRARIES O2::Framework
+  PRECOMPILED_HEADERS <Framework/AnalysisTask.h>
+  <Framework/runDataProcessing.h>
+  )
+
 o2physics_add_library(AnalysisCore
                SOURCES TrackSelection.cxx
                        OrbitRange.cxx
                        PID/ParamBase.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+               )
+
 
 o2physics_target_root_dictionary(AnalysisCore
               HEADERS   TrackSelection.h
