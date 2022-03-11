@@ -23,9 +23,11 @@
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
+#include "Common/Core/PID/PIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
