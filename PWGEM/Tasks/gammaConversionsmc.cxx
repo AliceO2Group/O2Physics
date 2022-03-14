@@ -19,7 +19,6 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h" // for BigTracks
 
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
 
 #include <TH1.h>
 #include <TH1F.h>
