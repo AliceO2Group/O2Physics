@@ -23,6 +23,7 @@
 #include <TGrid.h>
 #include <TMap.h>
 #include <TLeaf.h>
+#include <TROOT.h>
 
 const char* removeVersionSuffix(const char* treeName)
 {
@@ -66,6 +67,7 @@ const char* getTableName(const char* branchName, const char* treeName)
 // No need to know the datamodel because the branch names follow a canonical standard (identified by fIndex)
 int main(int argc, char* argv[])
 {
+  ROOT::DisableImplicitMT();
   std::string inputCollection("input.txt");
   std::string outputFileName("AO2D.root");
   long maxDirSize = 100000000;
@@ -320,7 +322,7 @@ int main(int argc, char* argv[])
           delete inputTree;
 
           for (auto& buffer : indexPointers) {
-            delete[] buffer;
+            delete buffer;
           }
           for (auto& buffer : vlaPointers) {
             delete[] buffer;
