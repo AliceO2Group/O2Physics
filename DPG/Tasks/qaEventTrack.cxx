@@ -344,7 +344,7 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
     }
     for (unsigned int i = 0; i < 7; i++) {
       if (track.itsClusterMap() & (1 << i)) {
-        histos.fill(HIST("Tracks/ITS/itsHits_NoHitsVsLayer"), i, itsNhits);
+        histos.fill(HIST("Tracks/ITS/itsHits"), i, itsNhits);
       }
     }
 
