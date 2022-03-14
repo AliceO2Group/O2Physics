@@ -34,7 +34,7 @@ struct CreateTableMc {
   using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentV0Ms, aod::Mults>::iterator;
 
-  void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles const& mctracks)
+  void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles_000 const& mctracks)
   {
     LOG(info) << "Collision: " << collision.index() << " tracks: " << tracks.size() << " mctracks: " << mctracks.size();
     for (const auto& track : tracks) {
