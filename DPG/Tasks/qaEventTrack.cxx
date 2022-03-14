@@ -54,7 +54,7 @@ struct qaEventTrack {
   Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
 
   // options to select specific events
-  Configurable<bool> selectGoodEvents{"selectGoodEvents", false, "select good events"};
+  Configurable<bool> selectGoodEvents{"selectGoodEvents", true, "select good events"};
 
   // options to select only specific tracks
   Configurable<bool> selectGlobalTracks{"selectGlobalTracks", true, "select global tracks"};
