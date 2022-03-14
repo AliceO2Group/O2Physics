@@ -77,25 +77,22 @@ class FemtoDreamCollisionSelection
   template <typename T>
   bool isSelected(T const& col)
   {
-    bool pass = false;
-    if (!mCheckIsRun3) {
-      if (std::abs(col.posZ()) > mZvtxMax) {
-        return pass;
-      }
-      if (mCheckTrigger && col.alias()[mTrigger] != 1) {
-        return pass;
-      }
-      if (mCheckOffline && col.sel7() != 1) {
-        return pass;
-      }
-      pass = true;
-    } else if (mCheckIsRun3) {
-      if (!col.sel8()) {
-        return pass;
-      }
-      pass = true;
+    if (std::abs(col.posZ()) > mZvtxMax) {
+      return false;
     }
-    return pass;
+    if (mCheckIsRun3) {
+      if (mCheckOffline && !col.sel8()) {
+        return false;
+      }
+    } else {
+      if (mCheckTrigger && !col.alias()[mTrigger]) {
+        return false;
+      }
+      if (mCheckOffline && !col.sel7()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Some basic QA of the event
