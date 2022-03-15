@@ -156,7 +156,7 @@ struct TrackPropagation {
       }
       if (fillTracksParPropagated) {
         tracksParPropagated(track.collisionId(), track.trackType(), trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
-        // tracksParCovPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
+        // tracksParExtensionPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
       }
       if (fillTracksExtended) {
         tracksExtended(dcaInfo[0], dcaInfo[1]);
@@ -212,7 +212,7 @@ struct TrackPropagation {
   //     }
   //     if (fillTracksParPropagated) {
   //       tracksParPropagated(track.collisionId(), track.trackType(), trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
-  //       // tracksParCovPropagated(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+  //       // tracksParExtensionPropagated(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
   //     }
   //     if (fillTracksExtended) {
   //       tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
