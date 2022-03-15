@@ -52,23 +52,25 @@ struct TrackPropagation {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  Produces<aod::TracksPropagated> tracksPropagated;
-  Produces<aod::TracksParPropagated> tracksParPropagated;
+  Produces<aod::StoredTracks> tracksParPropagated;
+  // TODO needs development in spawner (do not produce if already exists as output)
+  // Produces<aod::TracksExtension> tracksParExtensionPropagated;
+
+  Produces<aod::TracksCovProp> tracksParCovPropagated;
+
   Produces<aod::TracksExtended> tracksExtended;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  bool fillTracksPropagated = false;
   bool fillTracksParPropagated = false;
+  bool fillTracksParCovPropagated = false;
   bool fillTracksExtended = false;
 
   o2::base::Propagator::MatCorrType matCorr;
 
   const o2::dataformats::MeanVertexObject* mVtx;
   o2::parameters::GRPObject* grpo = nullptr;
-  ;
   o2::base::MatLayerCylSet* lut = nullptr;
-  ;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -77,8 +79,8 @@ struct TrackPropagation {
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
   Configurable<bool> fillQAHists{"fillQAHists", false, "option to fill the QA histograms"};
-  Configurable<bool> isForceFillTracksPropagated{"isForceFillTracksPropagated", false, "option to fill the tracksPropagated table without workflow requirement"};
   Configurable<bool> isForceFillTracksParPropagated{"isForceFillTracksParPropagated", false, "option to fill the tracksParPropagated table without workflow requirement"};
+  Configurable<bool> isForceFillTracksParCovPropagated{"isForceFillTracksParCovPropagated", false, "option to fill the tracksPropagated table without workflow requirement"};
   Configurable<bool> isForceFillTracksExtended{"isForceFillTracksExtended", false, "option to fill the tracksExtended tables without workflow requirement"};
 
   void init(o2::framework::InitContext& initContext)
@@ -88,26 +90,23 @@ struct TrackPropagation {
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec device : workflows.devices) {
       for (auto input : device.inputs) {
-        const std::string tableTracksPropagated = "TracksPropagated";
-        if (input.matcher.binding == tableTracksPropagated) {
-          fillTracksPropagated = true;
-        }
-        const std::string tableTracksParPropagated = "TracksParPropagated";
-        if (input.matcher.binding == tableTracksParPropagated) {
+        if (input.matcher.binding == "StoredTracks") {
           fillTracksParPropagated = true;
         }
-        const std::string tableTracksExtended = "TracksExtended";
-        if (input.matcher.binding == tableTracksExtended) {
+        if (input.matcher.binding == "TracksCovProp") {
+          fillTracksParCovPropagated = true;
+        }
+        if (input.matcher.binding == "TracksExtended") {
           fillTracksExtended = true;
         }
       }
     }
 
-    if (isForceFillTracksPropagated) {
-      fillTracksPropagated = true;
-    }
     if (isForceFillTracksParPropagated) {
       fillTracksParPropagated = true;
+    }
+    if (isForceFillTracksParCovPropagated) {
+      fillTracksParCovPropagated = true;
     }
     if (isForceFillTracksExtended) {
       fillTracksExtended = true;
@@ -136,104 +135,94 @@ struct TrackPropagation {
     mVtx = ccdb->get<o2::dataformats::MeanVertexObject>(mVtxPath);
   }
 
-  void processStandard(aod::Tracks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
-
     gpu::gpustd::array<float, 2> dcaInfo;
     o2::dataformats::VertexBase vtx;
 
     for (auto& track : tracks) {
       auto trackPar = getTrackPar(track);
+      if (fillQAHists) {
+        // Fill not propagated parameters
+        registry.fill(HIST("hpt"), trackPar.getPt());
+        registry.fill(HIST("hphi"), trackPar.getPhi());
+        registry.fill(HIST("heta"), trackPar.getEta());
+      }
       if (track.has_collision()) {
         auto const& collision = track.collision();
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-        if (fillTracksPropagated) {
-          tracksPropagated(track.collisionId(), track.trackType(), trackPar.getSign(), trackPar.getPt(), trackPar.getPhi(), trackPar.getEta());
-        }
-        if (fillTracksParPropagated) {
-          tracksParPropagated(trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
-        }
-        if (fillTracksExtended) {
-          tracksExtended(dcaInfo[0], dcaInfo[1]);
-        }
-        if (fillQAHists) {
-          registry.fill(HIST("hpt"), track.pt());
-          registry.fill(HIST("hphi"), track.phi());
-          registry.fill(HIST("heta"), track.eta());
-        }
       } else {
         o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-
-        if (fillTracksPropagated) {
-          tracksPropagated(track.collisionId(), track.trackType(), trackPar.getSign(), trackPar.getPt(), trackPar.getPhi(), trackPar.getEta());
-        }
-        if (fillTracksParPropagated) {
-          tracksParPropagated(trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
-        }
-        if (fillTracksExtended) {
-          tracksExtended(dcaInfo[0], dcaInfo[1]);
-        }
-        if (fillQAHists) {
-          registry.fill(HIST("hpt"), track.pt());
-          registry.fill(HIST("hphi"), track.phi());
-          registry.fill(HIST("heta"), track.eta());
-        }
+      }
+      if (fillTracksParPropagated) {
+        tracksParPropagated(track.collisionId(), track.trackType(), trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
+        // tracksParCovPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
+      }
+      if (fillTracksExtended) {
+        tracksExtended(dcaInfo[0], dcaInfo[1]);
       }
     }
   }
   PROCESS_SWITCH(TrackPropagation, processStandard, "Process without covariance", true);
-  void processCovariance(soa::Join<aod::Tracks, aod::TracksCov> const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
-  {
 
-    o2::dataformats::DCA dcaInfoCov;
-    o2::dataformats::VertexBase vtx;
-    for (auto& track : tracks) {
+  // TODO this creates a circular dependency
+  // [FATAL] error while setting up workflow in o2-analysistutorial-histograms: internal-dpl-aod-spawner has circular dependency with track-propagation:
+  //   internal-dpl-aod-spawner:
+  // inputs:
+  // - Tracks {AOD/TRACK/0}
+  // - TracksCov {AOD/TRACKCOV/0}
+  // outputs:
+  // -  { DYN/TRACK/0}
+  // -  { DYN/TRACKCOV/0}
+  // track-propagation:
+  // inputs:
+  // - BCs {AOD/BC/0}
+  // - Collisions {AOD/COLLISION/0}
+  // - Timestamps {AOD/TIMESTAMPS/0}
+  // - TracksCov {AOD/TRACKCOV/0}
+  // - Tracks_IU {AOD/TRACK_IU/0}
+  // - TracksCovExtension {DYN/TRACKCOV/0}
+  // outputs:
+  // - Tracks { AOD/TRACK/0}
+  // - TracksCovProp { AOD/TRACKCOVPROP/0}
+  // - TracksExtended { AOD/TRACKEXTENDED/0}
+  // - registry { ATSK/cda81d0ab60a____/0}
+  //
+  // void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCov> const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  // {
+  //   o2::dataformats::DCA dcaInfoCov;
+  //   o2::dataformats::VertexBase vtx;
+  //   for (auto& track : tracks) {
 
-      auto trackParCov = getTrackParCov(track);
-      if (track.has_collision()) {
-        auto const& collision = track.collision();
-        vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-        vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
-
-        if (fillTracksPropagated) {
-          tracksPropagated(track.collisionId(), track.trackType(), trackParCov.getSign(), trackParCov.getPt(), trackParCov.getPhi(), trackParCov.getEta());
-        }
-        if (fillTracksParPropagated) {
-          tracksParPropagated(trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
-        }
-        if (fillTracksExtended) {
-          tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
-        }
-        if (fillQAHists) {
-          registry.fill(HIST("hpt"), trackParCov.getPt());
-          registry.fill(HIST("hphi"), trackParCov.getPhi());
-          registry.fill(HIST("heta"), trackParCov.getEta());
-        }
-      } else {
-
-        vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
-        vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); //this doesnt exist for the meanvertexobject
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
-
-        if (fillTracksPropagated) {
-          tracksPropagated(track.collisionId(), track.trackType(), trackParCov.getSign(), trackParCov.getPt(), trackParCov.getPhi(), trackParCov.getEta());
-        }
-        if (fillTracksParPropagated) {
-          tracksParPropagated(trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
-        }
-        if (fillTracksExtended) {
-          tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
-        }
-        if (fillQAHists) {
-          registry.fill(HIST("hpt"), trackParCov.getPt());
-          registry.fill(HIST("hphi"), trackParCov.getPhi());
-          registry.fill(HIST("heta"), trackParCov.getEta());
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
+  //     auto trackParCov = getTrackParCov(track);
+  //     if (fillQAHists) {
+  //       registry.fill(HIST("hpt"), trackParCov.getPt());
+  //       registry.fill(HIST("hphi"), trackParCov.getPhi());
+  //       registry.fill(HIST("heta"), trackParCov.getEta());
+  //     }
+  //     if (track.has_collision()) {
+  //       auto const& collision = track.collision();
+  //       vtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+  //       vtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+  //       o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
+  //     } else {
+  //       vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
+  //       vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); //this doesnt exist for the meanvertexobject
+  //       o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
+  //     }
+  //     if (fillTracksParPropagated) {
+  //       tracksParPropagated(track.collisionId(), track.trackType(), trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+  //       // tracksParCovPropagated(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+  //     }
+  //     if (fillTracksExtended) {
+  //       tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
+  //     }
+  //     if (fillTracksParCovPropagated) {
+  //       //tracksParCovPropagated();
+  //     }
+  //   }
+  // }
+  // PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
 };
 
 //****************************************************************************************
