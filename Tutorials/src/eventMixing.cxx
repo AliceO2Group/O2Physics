@@ -23,8 +23,8 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct MixedEventsPartitionedTracks {
-  std::vector<double> xBins{-0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-  std::vector<double> yBins{-0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   BinningPolicy<aod::collision::PosX, aod::collision::PosY> binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
 
   Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < 0.8f) && (aod::track::y > 1.0f);
@@ -87,8 +87,8 @@ struct MixedEventsPartitionedTracks {
 };
 
 // struct MixedEvents {
-//   std::vector<double> xBins{-0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-//   std::vector<double> yBins{-0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+//   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+//   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
 //   BinningPolicy<aod::collision::PosX, aod::collision::PosY> binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
 //   SameKindPair<aod::Collisions, aod::Tracks> pair{binningOnPositions, 5, -1};
 //
@@ -108,8 +108,8 @@ struct MixedEventsPartitionedTracks {
 // };
 //
 // struct MixedEventsInsideProcess {
-//   std::vector<double> xBins{-0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-//   std::vector<double> yBins{-0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+//   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+//   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
 //   BinningPolicy<aod::collision::PosX, aod::collision::PosY> binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
 //
 //   void process(aod::Collisions& collisions, aod::Tracks& tracks)
