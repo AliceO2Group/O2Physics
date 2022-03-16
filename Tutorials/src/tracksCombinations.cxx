@@ -10,12 +10,14 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief Iterate over pair of tracks with combinations interface, without and with binning.
+//         Iterate over pairs of collisions with configurable binning.
 /// \author
 /// \since
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,23 +26,52 @@ using namespace o2::soa;
 struct TrackCombinations {
   void process(aod::Tracks const& tracks)
   {
+    int count = 0;
     // Strictly upper tracks
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       LOGF(info, "Tracks pair: %d %d", t0.index(), t1.index());
+      count++;
+      if (count > 100)
+        break;
     }
   }
 };
 
 struct BinnedTrackCombinations {
-  std::vector<double> xBins{-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5};
-  std::vector<double> yBins{-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5};
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   BinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}, true};
 
   void process(aod::Tracks const& tracks)
   {
+    int count = 0;
     // Strictly upper tracks binned by x and y position
     for (auto& [t0, t1] : selfCombinations(trackBinning, 5, -1, tracks, tracks)) {
-      LOGF(info, "Tracks bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", t0.bin(), t0.index(), t0.x(), t0.y(), t0.z(), t1.index(), t1.x(), t1.y(), t1.z());
+      int bin = trackBinning.getBin({t0.x(), t0.y()});
+      LOGF(info, "Tracks bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", bin, t0.index(), t0.x(), t0.y(), t0.z(), t1.index(), t1.x(), t1.y(), t1.z());
+      count++;
+      if (count > 100)
+        break;
+    }
+  }
+};
+
+struct ConfigurableBinnedCollisionCombinations {
+  ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
+
+  void process(soa::Join<aod::Collisions, aod::Mults> const& collisions)
+  {
+    // MultV0M cannot be used as it is a dynamic column
+    BinningPolicy<aod::collision::PosZ, aod::mult::MultV0A> colBinning{{axisVertex, axisMultiplicity}, true};
+    int count = 0;
+    // Strictly upper tracks binned by x and y position
+    for (auto& [c0, c1] : selfCombinations(colBinning, 5, -1, collisions, collisions)) {
+      int bin = colBinning.getBin({c0.posZ(), c0.multV0A()});
+      LOGF(info, "Collision bin: %d pair: %d (%f, %f), %d (%f, %f)", bin, c0.index(), c0.posZ(), c0.multV0A(), c1.index(), c1.posZ(), c1.multV0A());
+      count++;
+      if (count > 100)
+        break;
     }
   }
 };
@@ -50,5 +81,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<TrackCombinations>(cfgc),
     adaptAnalysisTask<BinnedTrackCombinations>(cfgc),
+    adaptAnalysisTask<ConfigurableBinnedCollisionCombinations>(cfgc),
   };
 }
