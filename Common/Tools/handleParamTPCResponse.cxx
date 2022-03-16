@@ -14,21 +14,16 @@
 /// \author Jeremy Wilkinson
 /// \brief exec for writing and reading Response object
 
-#include "CCDB/CcdbApi.h"
-#include <boost/program_options.hpp>
-#include <FairLogger.h>
 #include <array>
 #include <fstream>
 #include <sstream>
 #include "TFile.h"
-#include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "handleParamBase.h"
 #include "Algorithm/RangeTokenizer.h"
 using namespace o2::pid::tpc;
-namespace bpo = boost::program_options;
 
-bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[], bpo::variables_map& arguments)
+bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[])
 {
   options.add_options()(
     "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database e.g. http://ccdb-test.cern.ch:8080 or http://alice-ccdb.cern.ch")(
@@ -79,17 +74,16 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
 int main(int argc, char* argv[])
 {
   bpo::options_description options("Allowed options");
-  bpo::variables_map arguments;
-  if (!initOptionsAndParse(options, argc, argv, arguments)) {
+  if (!initOptionsAndParse(options, argc, argv)) { //, arguments
     return 1;
   }
 
-  std::unique_ptr<Response> tpc = nullptr;
+  Response* tpc = nullptr;
 
   const std::string urlCCDB = arguments["url"].as<std::string>();
-  const std::string pathCCDB = arguments["ccdb-path"].as<std::string>();
-  long startTime = arguments["start"].as<long>();
-  long endTime = arguments["stop"].as<long>();
+  const auto pathCCDB = arguments["ccdb-path"].as<std::string>();
+  auto startTime = arguments["start"].as<long>();
+  auto endTime = arguments["stop"].as<long>();
   const auto runnumber = arguments["runnumber"].as<unsigned int>();
   auto timestamp = arguments["timestamp"].as<long>();
   const int optDelete = arguments["delete-previous"].as<int>();
@@ -136,43 +130,13 @@ int main(int argc, char* argv[])
     sigparamsGlobal = o2::RangeTokenizer::tokenize<double>(sigmaGlobal);
   }
 
-  std::map<std::string, std::string> metadata, headers;
-  o2::ccdb::CcdbApi api;
   if (optMode.compare("push") == 0 || optMode.compare("pull") == 0) { // Initialise CCDB if in push/pull mode
     api.init(urlCCDB);
     if (!api.isHostReachable()) {
       LOG(warning) << "CCDB mode (push/pull) enabled but host " << urlCCDB << " is unreachable.";
       return 1;
     }
-    // Init timestamps
-    if (runnumber != 0) {
-      const auto rct_path = arguments["rct-path"].as<std::string>();
-      const std::string run_path = Form("%s/%i", rct_path.data(), runnumber);
-      LOG(info) << "Getting timestamp for run " << runnumber << " from CCDB in path " << run_path;
-      headers = api.retrieveHeaders(run_path, metadata, -1);
-      if (headers.count("SOR") == 0) {
-        LOGF(fatal, "Cannot find run-number to timestamp in path '%s'.", run_path.data());
-      }
-      if (headers.count("SOR") == 0) {
-        LOGF(fatal, "Cannot find run-number SOR in path '%s'.", run_path.data());
-      }
-      if (headers.count("EOR") == 0) {
-        LOGF(fatal, "Cannot find run-number EOR in path '%s'.", run_path.data());
-      }
-      timestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-      if (startTime == 0) {
-
-        startTime = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-        LOG(info) << "Setting startTime of object from run number: " << startTime << " -> " << timeStampToHReadble(startTime);
-      }
-      if (endTime == 0) {
-        endTime = atol(headers["EOR"].c_str()); // timestamp of the EOR in ms
-        LOG(info) << "Setting endTime of object from run number: " << endTime << " -> " << timeStampToHReadble(endTime);
-      }
-    }
-    if (endTime == 0) { // Default value for endTime
-      endTime = 4108971600000;
-    }
+    setupTimestamps(timestamp, startTime, endTime);
   }
 
   if (optMode.compare("read") == 0) { // Read existing object from local file
@@ -187,7 +151,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    tpc.reset(fin.Get<Response>(objname.c_str()));
+    tpc = fin.Get<Response>(objname.c_str());
     if (!tpc) {
       LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
       return 1;
@@ -206,7 +170,7 @@ int main(int argc, char* argv[])
         LOG(error) << "Input file " << inFilename << " could not be read";
         return 1;
       }
-      tpc.reset(fin.Get<Response>(inobjname.c_str()));
+      tpc = fin.Get<Response>(inobjname.c_str());
       if (!tpc) {
         LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
         return 1;
@@ -215,7 +179,7 @@ int main(int argc, char* argv[])
     } else { // Create new object if file not specified
       LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
 
-      tpc.reset(new Response());
+      tpc = new Response();
       tpc->SetBetheBlochParams(BBparams);
       tpc->SetResolutionParams(sigparamsGlobal);
       tpc->SetMIP(mipval);
@@ -237,8 +201,7 @@ int main(int argc, char* argv[])
         return 1;
       }
       fout.cd();
-      //   tpc->Print();
-      fout.WriteObject(tpc.get(), objname.c_str());
+      fout.WriteObject(tpc, objname.c_str());
       fout.Close();
       LOG(info) << "File successfully written";
       return 0;
@@ -250,30 +213,17 @@ int main(int argc, char* argv[])
       if (optDelete) {
         api.truncate(pathCCDB);
       }
-
+      std::map<std::string, std::string> metadata;
       if (runnumber != 0) {
         metadata["runnumber"] = Form("%i", runnumber);
       }
-      // storeOnCCDB(pathCCDB + "/" + objname, metadata, startTime, endTime, tpc.get());
-      const auto dryrun = arguments["dryrun"].as<int>();
-      if (!dryrun) {
-        if (arguments["delete-previous"].as<int>()) {
-          LOG(info) << "Truncating CCDB path " << pathCCDB + "/" + objname;
-          api.truncate(pathCCDB + "/" + objname);
-        }
-        api.storeAsTFileAny(tpc.get(), pathCCDB + "/" + objname, metadata, startTime, endTime);
-      } else {
-        LOG(info) << "Dryrunning 'api.storeAsTFileAny(obj," << pathCCDB + "/" + objname << ", metadata, " << startTime << ", " << endTime << ")'";
-      }
+      storeOnCCDB(pathCCDB + "/" + objname, metadata, startTime, endTime, tpc);
     }
   }
 
   else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
     LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname;
-    tpc.reset(api.retrieveFromTFileAny<Response>(pathCCDB + "/" + objname, metadata, -1, nullptr));
-    if (!tpc) { // Quit gracefully if pulling object fails
-      return 1;
-    }
+    tpc = retrieveFromCCDB<Response>(pathCCDB + "/" + objname, timestamp);
 
     tpc->PrintAll();
 
@@ -285,8 +235,7 @@ int main(int argc, char* argv[])
         return 1;
       }
       fout.cd();
-      //   tpc->Print();
-      fout.WriteObject(tpc.get(), objname.c_str());
+      fout.WriteObject(tpc, objname.c_str());
       fout.Close();
       LOG(info) << "File successfully written";
     }

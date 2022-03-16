@@ -121,7 +121,7 @@ struct tpcPidFull {
         f->GetObject("Response", responseptr);
         response.SetParameters(responseptr);
       } catch (...) {
-        LOGP(info, "Loading the TPC PID Response from file {} failed!", fname);
+        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
       };
     } else {
       useCCDBParam = true;
@@ -141,34 +141,48 @@ struct tpcPidFull {
   void process(Coll const& collisions, Trks const& tracks,
                aod::BCsWithTimestamps const&)
   {
-    // Check and fill enabled tables
-    auto makeTable = [&tracks, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
-      if (flag.value == 1) { // Loop on Tracks
-        // Prepare memory for enabled tables
-        table.reserve(tracks.size());
-        int lastCollisionId = -1; // Last collision ID analysed
-        for (auto const& trk : tracks) {
-          auto collision = collisions.iteratorAt(trk.collisionId());                                                     // Loop on Tracks
-          if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
-            lastCollisionId = trk.collisionId();
-            const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
-            response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
-          }
-          table(response.GetExpectedSigma(collision, trk, pid),
-                response.GetNumberOfSigma(collision, trk, pid));
-        }
+    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
       }
+      table.reserve(tracks.size());
     };
-    // const o2::pid::tpc::Response& response;
-    makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
-    makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
-    makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
-    makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
-    makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
-    makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
-    makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
-    makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
-    makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
+    // Prepare memory for enabled tables
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
+    int lastCollisionId = -1;                                                                                        // Last collision ID analysed
+    for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
+      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+        lastCollisionId = trk.collisionId();
+        const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
+        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
+      }
+      // Check and fill enabled tables
+      auto makeTable = [&trk, &collisions, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
+        if (flag.value != 1) {
+          return;
+        }
+        table(response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+              response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+      };
+      // const o2::pid::tpc::Response& response;
+      makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
+      makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
+      makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
+      makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
+      makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
+      makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
+      makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
+      makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
+      makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
+    }
   }
 };
 
