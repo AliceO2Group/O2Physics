@@ -36,12 +36,14 @@ struct CreateTableMc {
 
   void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles_000 const& mctracks)
   {
-    LOG(info) << "Collision: " << collision.index() << " tracks: " << tracks.size() << " mctracks: " << mctracks.size();
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
-      LOG(info) << "track: " << track.index() << " mc track: " << mcParticle.index() << " track col: " << track.collision().index() << " mc track col: " << mcParticle.mcCollision().index();
-      pidTracksTable(collision.centV0M(), collision.multV0M(), collision.multT0M(),
+      pidTracksTable(collision.centV0M(),
+                     collision.multV0A(), collision.multV0C(), collision.multV0M(),
+                     collision.multT0A(), collision.multT0C(), collision.multT0M(),
+                     collision.multZNA(), collision.multZNC(),
+                     collision.multTracklets(), collision.multTPC(),
                      track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
                      track.tofSignal(), track.beta(),
                      track.p(), track.pt(), track.px(), track.py(), track.pz(),
@@ -76,9 +78,12 @@ struct CreateTableReal {
 
   void process(MyCollision const& collision, BigTracks const& tracks)
   {
-    LOG(info) << "Collision: " << collision.index() << " tracks: " << tracks.size();
     for (const auto& track : tracks) {
-      pidTracksTable(collision.centV0M(), collision.multV0M(), collision.multT0M(),
+      pidTracksTable(collision.centV0M(),
+                     collision.multV0A(), collision.multV0C(), collision.multV0M(),
+                     collision.multT0A(), collision.multT0C(), collision.multT0M(),
+                     collision.multZNA(), collision.multZNC(),
+                     collision.multTracklets(), collision.multTPC(),
                      track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
                      track.tofSignal(), track.beta(),
                      track.p(), track.pt(), track.px(), track.py(), track.pz(),

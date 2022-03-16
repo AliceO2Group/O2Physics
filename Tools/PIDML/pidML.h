@@ -37,7 +37,11 @@ DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float); //! Differenc
 DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Difference between signal and expected for proton
 } // namespace pidtracks
 DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for prediction and domain adaptation
-                  aod::cent::CentEstV0M, pidtracks::MultV0M, pidtracks::MultT0M,
+                  aod::cent::CentEstV0M,
+                  aod::mult::MultV0A, aod::mult::MultV0C, pidtracks::MultV0M,
+                  aod::mult::MultT0A, aod::mult::MultT0C, pidtracks::MultT0M,
+                  aod::mult::MultZNA, aod::mult::MultZNC,
+                  aod::mult::MultTracklets, aod::mult::MultTPC,
                   aod::track::TPCSignal,
                   aod::track::TRDSignal,
                   aod::track::TrackEtaEMCAL,
@@ -89,7 +93,11 @@ DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for pre
                   pidtof::TOFExpSigmaPr,
                   pidtracks::TOFExpSignalDiffPr);
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
-                  aod::cent::CentEstV0M, pidtracks::MultV0M, pidtracks::MultT0M,
+                  aod::cent::CentEstV0M,
+                  aod::mult::MultV0A, aod::mult::MultV0C, pidtracks::MultV0M,
+                  aod::mult::MultT0A, aod::mult::MultT0C, pidtracks::MultT0M,
+                  aod::mult::MultZNA, aod::mult::MultZNC,
+                  aod::mult::MultTracklets, aod::mult::MultTPC,
                   aod::track::TPCSignal,
                   aod::track::TRDSignal,
                   aod::track::TrackEtaEMCAL,
