@@ -122,6 +122,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("mumuFromJpsiFromBc")) {
+    MCProng prong(3, {13, 443, 541}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Muon pair from Bc jpsi decays", {prong, prong}, {1, 1});
+    return signal;
+  }
   if (!nameStr.compare("everythingFromBeauty")) {
     MCProng prong(2, {0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
