@@ -28,11 +28,11 @@ struct FddConverter {
 
       for (int i = 0; i < 4; i++) {
         amplitudeA_001[i] = p.amplitudeA_000()[i];
-        amplitudeA_001[i+4] = p.amplitudeA_000()[i];
-	
-	amplitudeC_001[i] = p.amplitudeC_000()[i];
-        amplitudeC_001[i+4] = p.amplitudeC_000()[i];
-        }
+        amplitudeA_001[i + 4] = p.amplitudeA_000()[i];
+
+        amplitudeC_001[i] = p.amplitudeC_000()[i];
+        amplitudeC_001[i + 4] = p.amplitudeC_000()[i];
+      }
 
       fdd_001(p.bcId(), amplitudeA_001, amplitudeC_001,
               p.timeA(), p.timeC(), p.triggerMask());
