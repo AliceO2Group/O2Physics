@@ -197,7 +197,7 @@ struct tofPid {
       int ngoodtracks = 0;
 
       // Check and fill enabled tables
-      auto makeTable = [&tracksInCollision, &evTime, &ngoodtracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
+      auto makeTable = [&tracksInCollision, &evTime, &ngoodtracks, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
         if (flag.value == 1) {
           ngoodtracks = 0;
           // Prepare memory for enabled tables
@@ -236,15 +236,15 @@ struct tofPid {
         }
       };
 
-      makeTable(pidEl, tablePIDEl, response, responseEl);
-      makeTable(pidMu, tablePIDMu, response, responseMu);
-      makeTable(pidPi, tablePIDPi, response, responsePi);
-      makeTable(pidKa, tablePIDKa, response, responseKa);
-      makeTable(pidPr, tablePIDPr, response, responsePr);
-      makeTable(pidDe, tablePIDDe, response, responseDe);
-      makeTable(pidTr, tablePIDTr, response, responseTr);
-      makeTable(pidHe, tablePIDHe, response, responseHe);
-      makeTable(pidAl, tablePIDAl, response, responseAl);
+      makeTable(pidEl, tablePIDEl, responseEl);
+      makeTable(pidMu, tablePIDMu, responseMu);
+      makeTable(pidPi, tablePIDPi, responsePi);
+      makeTable(pidKa, tablePIDKa, responseKa);
+      makeTable(pidPr, tablePIDPr, responsePr);
+      makeTable(pidDe, tablePIDDe, responseDe);
+      makeTable(pidTr, tablePIDTr, responseTr);
+      makeTable(pidHe, tablePIDHe, responseHe);
+      makeTable(pidAl, tablePIDAl, responseAl);
     }
   }
 
@@ -308,6 +308,16 @@ struct tofPidQa {
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
                                                    "nsigma/Ka", "nsigma/Pr", "nsigma/De",
                                                    "nsigma/Tr", "nsigma/He", "nsigma/Al"};
+  static constexpr std::string_view hnsigmapt[Np] = {"nsigmapt/El", "nsigmapt/Mu", "nsigmapt/Pi",
+                                                     "nsigmapt/Ka", "nsigmapt/Pr", "nsigmapt/De",
+                                                     "nsigmapt/Tr", "nsigmapt/He", "nsigmapt/Al"};
+  static constexpr std::string_view hnsigmapospt[Np] = {"nsigmapospt/El", "nsigmapospt/Mu", "nsigmapospt/Pi",
+                                                        "nsigmapospt/Ka", "nsigmapospt/Pr", "nsigmapospt/De",
+                                                        "nsigmapospt/Tr", "nsigmapospt/He", "nsigmapospt/Al"};
+  static constexpr std::string_view hnsigmanegpt[Np] = {"nsigmanegpt/El", "nsigmanegpt/Mu", "nsigmanegpt/Pi",
+                                                        "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
+                                                        "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
 
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
@@ -317,89 +327,190 @@ struct tofPidQa {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
+  Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
   template <uint8_t i>
-  void addParticleHistos()
+  void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogaritmic();
-    }
 
     // NSigma
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TOF}(%s)", pT[i])};
-    histos.add(hnsigma[i].data(), "", HistType::kTH2F, {pAxis, nSigmaAxis});
+    const char* axisTitle = Form("N_{#sigma}^{TOF}(%s)", pT[i]);
+    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
+    histos.add(hnsigma[i].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
   {
-
+    const AxisSpec multAxis{100, 0, 100, "TOF multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal"};
-    const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
+    const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal (ps)"};
+    const AxisSpec etaAxis{100, -1, 1, "#it{#eta}"};
+    const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
+    const AxisSpec colTimeResoAxis{100, 0, 1000, "#sigma_{Collision time} (ps)"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+    AxisSpec pExpAxis{nBinsP, minP, maxP, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogaritmic();
       pAxis.makeLogaritmic();
+      pExpAxis.makeLogaritmic();
     }
 
     // Event properties
-    histos.add("event/vertexz", "", HistType::kTH1F, {vtxZAxis});
-    histos.add("event/colltime", "", HistType::kTH1F, {colTimeAxis});
-    histos.add("event/tofsignal", "", HistType::kTH2F, {pAxis, tofAxis});
-    histos.add("event/eta", "", HistType::kTH1F, {etaAxis});
-    histos.add("event/length", "", HistType::kTH1F, {lAxis});
-    histos.add("event/pt", "", HistType::kTH1F, {ptAxis});
-    histos.add("event/p", "", HistType::kTH1F, {pAxis});
-    // histos.add("event/ptreso", "", HistType::kTH2F, {pAxis, ptResoAxis});
+    auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
+    h->GetXaxis()->SetBinLabel(1, "Events read");
+    h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
+    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
+    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
 
-    addParticleHistos<0>();
-    addParticleHistos<1>();
-    addParticleHistos<2>();
-    addParticleHistos<3>();
-    addParticleHistos<4>();
-    addParticleHistos<5>();
-    addParticleHistos<6>();
-    addParticleHistos<7>();
-    addParticleHistos<8>();
+    h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "isGlobalTrack");
+    h->GetXaxis()->SetBinLabel(3, "hasITS");
+    h->GetXaxis()->SetBinLabel(4, "hasTPC");
+    h->GetXaxis()->SetBinLabel(5, "hasTRD");
+    h->GetXaxis()->SetBinLabel(6, "hasTOF");
+    h->GetXaxis()->SetBinLabel(7, "hasTRD+hasTOF");
+
+    histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
+    h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
+    for (int i = 0; i < 9; i++) {
+      h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
+    }
+    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
+    histos.add("event/tofmultiplicity", "", kTH1F, {multAxis});
+    histos.add("event/colltime", "", kTH1F, {colTimeAxis});
+    histos.add("event/colltimereso", "", kTH2F, {multAxis, colTimeResoAxis});
+    histos.add("event/tofsignal", "", kTH2F, {pAxis, tofAxis});
+    histos.add("event/pexp", "", kTH2F, {pAxis, pExpAxis});
+    histos.add("event/eta", "", kTH1F, {etaAxis});
+    histos.add("event/phi", "", kTH1F, {phiAxis});
+    histos.add("event/etaphi", "", kTH2F, {etaAxis, phiAxis});
+    histos.add("event/length", "", kTH1F, {lAxis});
+    histos.add("event/pt", "", kTH1F, {ptAxis});
+    histos.add("event/p", "", kTH1F, {pAxis});
+    // histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
+
+    static_for<0, 8>([&](auto i) {
+      addParticleHistos<i>(pAxis, ptAxis);
+    });
   }
 
-  template <o2::track::PID::ID i, typename T>
+  template <o2::track::PID::ID id, typename T>
   void fillParticleHistos(const T& t)
   {
-    histos.fill(HIST(hnsigma[i]), t.p(), o2::aod::pidutils::tofNSigma(i, t));
+    if (applyRapidityCut) {
+      const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
+      if (abs(y) > 0.5) {
+        return;
+      }
+    }
+
+    const auto& nsigma = o2::aod::pidutils::tofNSigma<id>(t);
+    histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
+    histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
+    if (t.sign() > 0) {
+      histos.fill(HIST(hnsigmapospt[id]), t.pt(), nsigma);
+    } else {
+      histos.fill(HIST(hnsigmanegpt[id]), t.pt(), nsigma);
+    }
   }
 
-  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
-                                                          aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                                          aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
-                                                          aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
-                                                          aod::TOFSignal, aod::TrackSelection> const& tracks)
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
+                         aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                         aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
+                         aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
+                         aod::TOFSignal, aod::TrackSelection>;
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+               Trks const& tracks)
   {
-    const float collisionTime_ps = collision.collisionTime() * 1000.f;
-    histos.fill(HIST("event/vertexz"), collision.posZ());
-    histos.fill(HIST("event/colltime"), collisionTime_ps);
+    histos.fill(HIST("event/evsel"), 1);
+    if (applyEvSel == 1) {
+      if (!collision.sel7()) {
+        return;
+      }
+    } else if (applyEvSel == 2) {
+      if (!collision.sel8()) {
+        return;
+      }
+    }
 
+    histos.fill(HIST("event/evsel"), 2);
+
+    // Computing Multiplicity first
+    float ntracks = 0;
+    int tofmult = 0;
     for (auto t : tracks) {
-      //
+      if (applyTrackCut && !t.isGlobalTrack()) {
+        continue;
+      }
+      ntracks += 1;
       if (!t.hasTOF()) { // Skipping tracks without TOF
         continue;
       }
-      if (!t.isGlobalTrack()) {
+      tofmult++;
+    }
+    // if (0 && ntracks < 1) {
+    //   return;
+    // }
+    // if (0 && tofmult < 1) {
+    //   return;
+    // }
+    histos.fill(HIST("event/evsel"), 3);
+    if (abs(collision.posZ()) > 10.f) {
+      return;
+    }
+    histos.fill(HIST("event/evsel"), 4);
+    histos.fill(HIST("event/vertexz"), collision.posZ());
+    histos.fill(HIST("event/trackmultiplicity"), ntracks);
+    histos.fill(HIST("event/tofmultiplicity"), tofmult);
+
+    const float collisionTime_ps = collision.collisionTime() * 1000.f;
+    histos.fill(HIST("event/colltime"), collisionTime_ps);
+    histos.fill(HIST("event/colltimereso"), tofmult, collision.collisionTimeRes() * 1000.f);
+
+    for (auto t : tracks) {
+      histos.fill(HIST("event/trackselection"), 1.f);
+      if (!t.isGlobalTrack()) { // Skipping non global tracks
         continue;
       }
+      histos.fill(HIST("event/trackselection"), 2.f);
+      if (!t.hasITS()) { // Skipping tracks without ITS
+        continue;
+      }
+      histos.fill(HIST("event/trackselection"), 3.f);
+      if (!t.hasTPC()) { // Skipping tracks without TPC
+        continue;
+      }
+      histos.fill(HIST("event/trackselection"), 4.f);
+      if (t.hasTRD()) { // Skipping tracks without TRD
+        histos.fill(HIST("event/trackselection"), 5.f);
+      }
+      if (!t.hasTOF()) { // Skipping tracks without TOF
+        continue;
+      }
+      histos.fill(HIST("event/trackselection"), 6.f);
+      if (t.hasTRD()) { // Skipping tracks without TRD
+        histos.fill(HIST("event/trackselection"), 7.f);
+      }
 
-      // const float tof = t.tofSignal() - collisionTime_ps;
-
-      //
+      histos.fill(HIST("event/particlehypo"), t.pidForTracking());
       histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
+      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom());
       histos.fill(HIST("event/eta"), t.eta());
+      histos.fill(HIST("event/phi"), t.phi());
+      histos.fill(HIST("event/etaphi"), t.eta(), t.phi());
       histos.fill(HIST("event/length"), t.length());
       histos.fill(HIST("event/pt"), t.pt());
+      histos.fill(HIST("event/p"), t.p());
       // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
       //
       fillParticleHistos<o2::track::PID::Electron>(t);

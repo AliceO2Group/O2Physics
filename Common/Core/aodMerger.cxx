@@ -246,6 +246,7 @@ int main(int argc, char* argv[])
               auto typeSize = TDataType::GetDataType(type)->Size();
 
               char* buffer = new char[maximum * typeSize];
+              memset(buffer, 0, maximum * typeSize);
               vlaPointers.push_back(buffer);
               printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
               inputTree->SetBranchAddress(br->GetName(), buffer);
@@ -258,6 +259,7 @@ int main(int argc, char* argv[])
               }
             } else if (branchName.BeginsWith("fIndexSlice")) {
               int* buffer = new int[2];
+              memset(buffer, 0, 2 * sizeof(buffer[0]));
               vlaPointers.push_back(reinterpret_cast<char*>(buffer));
 
               inputTree->SetBranchAddress(br->GetName(), buffer);
@@ -267,6 +269,7 @@ int main(int argc, char* argv[])
               indexList.push_back({buffer + 1, offsets[getTableName(branchName, treeName)]});
             } else if (branchName.BeginsWith("fIndex") && !branchName.EndsWith("_size")) {
               int* buffer = new int;
+              *buffer = 0;
               indexPointers.push_back(buffer);
 
               inputTree->SetBranchAddress(br->GetName(), buffer);
@@ -320,7 +323,7 @@ int main(int argc, char* argv[])
           delete inputTree;
 
           for (auto& buffer : indexPointers) {
-            delete[] buffer;
+            delete buffer;
           }
           for (auto& buffer : vlaPointers) {
             delete[] buffer;
