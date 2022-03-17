@@ -17,6 +17,8 @@ namespace o2::aod
 {
 namespace pidtracks
 {
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);                       //! Non-dynamic column with V0 multiplicity
+DECLARE_SOA_COLUMN(MultT0M, multT0M, float);                       //! Non-dynamic column with T0 multiplicity
 DECLARE_SOA_COLUMN(P, p, float);                                   //! Non-dynamic column with track momentum
 DECLARE_SOA_COLUMN(Px, px, float);                                 //! Non-dynamic column with track x-momentum
 DECLARE_SOA_COLUMN(Py, py, float);                                 //! Non-dynamic column with track y-momentum
@@ -35,6 +37,11 @@ DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float); //! Differenc
 DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Difference between signal and expected for proton
 } // namespace pidtracks
 DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for prediction and domain adaptation
+                  aod::cent::CentEstV0M,
+                  aod::mult::MultV0A, aod::mult::MultV0C, pidtracks::MultV0M,
+                  aod::mult::MultT0A, aod::mult::MultT0C, pidtracks::MultT0M,
+                  aod::mult::MultZNA, aod::mult::MultZNC,
+                  aod::mult::MultTracklets, aod::mult::MultTPC,
                   aod::track::TPCSignal,
                   aod::track::TRDSignal,
                   aod::track::TrackEtaEMCAL,
@@ -86,6 +93,11 @@ DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for pre
                   pidtof::TOFExpSigmaPr,
                   pidtracks::TOFExpSignalDiffPr);
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
+                  aod::cent::CentEstV0M,
+                  aod::mult::MultV0A, aod::mult::MultV0C, pidtracks::MultV0M,
+                  aod::mult::MultT0A, aod::mult::MultT0C, pidtracks::MultT0M,
+                  aod::mult::MultZNA, aod::mult::MultZNC,
+                  aod::mult::MultTracklets, aod::mult::MultTPC,
                   aod::track::TPCSignal,
                   aod::track::TRDSignal,
                   aod::track::TrackEtaEMCAL,
