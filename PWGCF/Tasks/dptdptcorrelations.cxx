@@ -16,10 +16,12 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TableProducer/dptdptfilter.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/runDataProcessing.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <TROOT.h>
 #include <TDatabasePDG.h>
@@ -60,6 +62,9 @@ float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 bool processpairs = false;
 std::string fTaskConfigurationString = "PendingToConfigure";
 
+PairCuts fPairCuts;              // pair suppression engine
+bool fUseConversionCuts = false; // suppress resonances and conversions
+bool fUseTwoTrackCut = false;    // suppress too close tracks
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
@@ -83,6 +88,8 @@ struct DptDptCorrelationsTask {
     TH2F* fhN2_vsDEtaDPhi[4];         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
     TH2F* fhSum2PtPt_vsDEtaDPhi[4];   //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
     TH2F* fhSum2DptDpt_vsDEtaDPhi[4]; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
+    TH2F* fhSupN1N1_vsDEtaDPhi[4];    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
+    TH2F* fhSupPt1Pt1_vsDEtaDPhi[4];  //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ 1-1,1-2,2-1,2-2, combinations
     /* versus centrality/multiplicity  profiles */
     TProfile* fhN1_vsC[2];           //!<! weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
     TProfile* fhSum1Pt_vsC[2];       //!<! accumulated sum of weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2
@@ -286,16 +293,20 @@ struct DptDptCorrelationsTask {
     /// \param cmul centrality - multiplicity for the collision being analyzed
     /// Be aware that at least in half of the cases traks1 and trks2 will have the same content
     template <trackpairs pix, typename TrackOneListObject, typename TrackTwoListObject>
-    void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, std::vector<float>* corrs1, std::vector<float>* corrs2, std::vector<float>* ptavgs1, std::vector<float>* ptavgs2, float cmul)
+    void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, std::vector<float>* corrs1, std::vector<float>* corrs2, std::vector<float>* ptavgs1, std::vector<float>* ptavgs2, float cmul, int bfield)
     {
+      using namespace correlationstask;
+
       /* process pair magnitudes */
       double n2 = 0;           ///< weighted number of track 1 track 2 pairs for current collision
+      double n2sup = 0;        ///< weighted number of track 1 track 2 suppressed pairs for current collision
       double sum2PtPt = 0;     ///< accumulated sum of weighted track 1 track 2 \f${p_T}_1 {p_T}_2\f$ for current collision
       double sum2DptDpt = 0;   ///< accumulated sum of weighted number of track 1 tracks times weighted track 2 \f$p_T\f$ for current collision
       double n2nw = 0;         ///< not weighted number of track1 track 2 pairs for current collision
       double sum2PtPtnw = 0;   ///< accumulated sum of not weighted track 1 track 2 \f${p_T}_1 {p_T}_2\f$ for current collision
       double sum2DptDptnw = 0; ///< accumulated sum of not weighted number of track 1 tracks times not weighted track 2 \f$p_T\f$ for current collision
       int index1 = 0;
+
       for (auto& track1 : trks1) {
         double ptavg_1 = (*ptavgs1)[index1];
         double corr1 = (*corrs1)[index1];
@@ -314,17 +325,27 @@ struct DptDptCorrelationsTask {
           double corr = corr1 * corr2;
           double dptdptnw = (track1.pt() - ptavg_1) * (track2.pt() - ptavg_2);
           double dptdptw = (corr1 * track1.pt() - ptavg_1) * (corr2 * track2.pt() - ptavg_2);
-          n2 += corr;
-          sum2PtPt += track1.pt() * track2.pt() * corr;
-          sum2DptDpt += dptdptw;
-          n2nw += 1;
-          sum2PtPtnw += track1.pt() * track2.pt();
-          sum2DptDptnw += dptdptnw;
+
           /* get the global bin for filling the differential histograms */
           int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
-          fhN2_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr);
-          fhSum2DptDpt_vsDEtaDPhi[pix]->AddBinContent(globalbin, dptdptw);
-          fhSum2PtPt_vsDEtaDPhi[pix]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+          if ((fUseConversionCuts and fPairCuts.conversionCuts(track1, track2)) or (fUseTwoTrackCut and fPairCuts.twoTrackCut(track1, track2, bfield))) {
+            /* suppress the pair */
+            fhSupN1N1_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr);
+            fhSupPt1Pt1_vsDEtaDPhi[pix]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+            n2sup += corr;
+          } else {
+            /* count the pair */
+            n2 += corr;
+            sum2PtPt += track1.pt() * track2.pt() * corr;
+            sum2DptDpt += dptdptw;
+            n2nw += 1;
+            sum2PtPtnw += track1.pt() * track2.pt();
+            sum2DptDptnw += dptdptnw;
+
+            fhN2_vsDEtaDPhi[pix]->AddBinContent(globalbin, corr);
+            fhSum2DptDpt_vsDEtaDPhi[pix]->AddBinContent(globalbin, dptdptw);
+            fhSum2PtPt_vsDEtaDPhi[pix]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+          }
           fhN2_vsPtPt[pix]->Fill(track1.pt(), track2.pt(), corr);
         }
       }
@@ -338,10 +359,12 @@ struct DptDptCorrelationsTask {
       fhN2_vsDEtaDPhi[pix]->SetEntries(fhN2_vsDEtaDPhi[pix]->GetEntries() + n2);
       fhSum2DptDpt_vsDEtaDPhi[pix]->SetEntries(fhSum2DptDpt_vsDEtaDPhi[pix]->GetEntries() + n2);
       fhSum2PtPt_vsDEtaDPhi[pix]->SetEntries(fhSum2PtPt_vsDEtaDPhi[pix]->GetEntries() + n2);
+      fhSupN1N1_vsDEtaDPhi[pix]->SetEntries(fhSupN1N1_vsDEtaDPhi[pix]->GetEntries() + n2sup);
+      fhSupPt1Pt1_vsDEtaDPhi[pix]->SetEntries(fhSupPt1Pt1_vsDEtaDPhi[pix]->GetEntries() + n2sup);
     }
 
     template <typename TrackOneListObject, typename TrackTwoListObject>
-    void processCollision(TrackOneListObject const& Tracks1, TrackTwoListObject const& Tracks2, float zvtx, float centmult)
+    void processCollision(TrackOneListObject const& Tracks1, TrackTwoListObject const& Tracks2, float zvtx, float centmult, int bfield)
     {
       using namespace correlationstask;
       std::vector<float>* corrs1 = getTrackCorrections(Tracks1, 0, zvtx);
@@ -361,10 +384,10 @@ struct DptDptCorrelationsTask {
         processTracks(Tracks1, corrs1, 0, centmult); /* track one */
         processTracks(Tracks2, corrs2, 1, centmult); /* track one */
         /* process pair magnitudes */
-        processTrackPairs<kOO>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult);
-        processTrackPairs<kOT>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult);
-        processTrackPairs<kTO>(Tracks2, Tracks1, corrs2, corrs1, ptavgs2, ptavgs1, centmult);
-        processTrackPairs<kTT>(Tracks2, Tracks2, corrs2, corrs2, ptavgs2, ptavgs2, centmult);
+        processTrackPairs<kOO>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+        processTrackPairs<kOT>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+        processTrackPairs<kTO>(Tracks2, Tracks1, corrs2, corrs1, ptavgs2, ptavgs1, centmult, bfield);
+        processTrackPairs<kTT>(Tracks2, Tracks2, corrs2, corrs2, ptavgs2, ptavgs2, centmult, bfield);
 
         delete ptavgs1;
         delete ptavgs2;
@@ -458,6 +481,10 @@ struct DptDptCorrelationsTask {
                                               deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
           fhSum2DptDpt_vsDEtaDPhi[i] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
                                                 deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+          fhSupN1N1_vsDEtaDPhi[i] = new TH2F(TString::Format("suppn1n1_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT n_{1} #GT#LT n_{1} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{1} #GT#LT n_{1} #GT", pname),
+                                             deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+          fhSupPt1Pt1_vsDEtaDPhi[i] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
+                                               deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
           /* we return it back to previuos state */
           TH1::SetDefaultSumw2(defSumw2);
 
@@ -478,10 +505,16 @@ struct DptDptCorrelationsTask {
           fhSum2PtPt_vsDEtaDPhi[i]->Sumw2(false);
           fhSum2DptDpt_vsDEtaDPhi[i]->SetBit(TH1::kIsNotW);
           fhSum2DptDpt_vsDEtaDPhi[i]->Sumw2(false);
+          fhSupN1N1_vsDEtaDPhi[i]->SetBit(TH1::kIsNotW);
+          fhSupN1N1_vsDEtaDPhi[i]->Sumw2(false);
+          fhSupPt1Pt1_vsDEtaDPhi[i]->SetBit(TH1::kIsNotW);
+          fhSupPt1Pt1_vsDEtaDPhi[i]->Sumw2(false);
 
           fOutputList->Add(fhN2_vsDEtaDPhi[i]);
           fOutputList->Add(fhSum2PtPt_vsDEtaDPhi[i]);
           fOutputList->Add(fhSum2DptDpt_vsDEtaDPhi[i]);
+          fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i]);
+          fOutputList->Add(fhSupPt1Pt1_vsDEtaDPhi[i]);
           fOutputList->Add(fhN2_vsPtPt[i]);
           fOutputList->Add(fhN2_vsC[i]);
           fOutputList->Add(fhSum2PtPt_vsC[i]);
@@ -510,6 +543,13 @@ struct DptDptCorrelationsTask {
   TList* ccdblst = nullptr;
   bool loadfromccdb = false;
 
+  /* pair conversion suppression defaults */
+  static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+  Configurable<LabeledArray<float>> cfgPairCut{"paircut", {cfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Conversion suppressions"};
+  /* two tracks cut */
+  Configurable<float> cfgTwoTrackCut{"twotrackcut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
+  Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
+
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
 
@@ -522,7 +562,7 @@ struct DptDptCorrelationsTask {
     Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
   } cfginputfile;
 
-  OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   void init(InitContext const&)
   {
@@ -560,7 +600,6 @@ struct DptDptCorrelationsTask {
 
     /* create the output directory which will own the task output */
     TList* fGlobalOutputList = new TList();
-    fGlobalOutputList->SetName("CorrelationsDataReco");
     fGlobalOutputList->SetOwner(true);
     fOutput.setObject(fGlobalOutputList);
 
@@ -613,6 +652,21 @@ struct DptDptCorrelationsTask {
         LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
       }
     }
+    /* two-track cut and conversion suppression */
+    fPairCuts.SetHistogramRegistry(nullptr); // not histogram registry for the time being, incompatible with TList when it is empty
+    if (processpairs and (cfgPairCut->get("Photon") > 0 or cfgPairCut->get("K0") > 0 or cfgPairCut->get("Lambda") > 0 or cfgPairCut->get("Phi") > 0 or cfgPairCut->get("Rho") > 0)) {
+      fPairCuts.SetPairCut(PairCuts::Photon, cfgPairCut->get("Photon"));
+      fPairCuts.SetPairCut(PairCuts::K0, cfgPairCut->get("K0"));
+      fPairCuts.SetPairCut(PairCuts::Lambda, cfgPairCut->get("Lambda"));
+      fPairCuts.SetPairCut(PairCuts::Phi, cfgPairCut->get("Phi"));
+      fPairCuts.SetPairCut(PairCuts::Rho, cfgPairCut->get("Rho"));
+      fUseConversionCuts = true;
+    }
+    if (processpairs and (cfgTwoTrackCut > 0)) {
+      fPairCuts.SetTwoTrackCuts(cfgTwoTrackCut, cfgTwoTrackCutMinRadius);
+      fUseTwoTrackCut = true;
+    }
+
     /* initialize access to the CCDB */
     ccdb->setURL(cfginputfile.cfgCCDBUrl);
     ccdb->setCaching(true);
@@ -651,10 +705,25 @@ struct DptDptCorrelationsTask {
     return lst;
   }
 
+  int getMagneticField(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
+  }
+
   Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
   Filter onlyacceptedtracks = ((aod::dptdptfilter::trackacceptedasone == uint8_t(true)) or (aod::dptdptfilter::trackacceptedastwo == uint8_t(true)));
 
-  void processRecLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTracks>& tracks)
+  void processRecLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks>& tracks)
   {
     using namespace correlationstask;
 
@@ -681,7 +750,8 @@ struct DptDptCorrelationsTask {
 
       LOGF(DPTDPTLOGCOLLISIONS, "Accepted BC id %d collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
       LOGF(DPTDPTLOGCOLLISIONS, "Accepted new collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
-      dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult());
+      int bfield = (fUseConversionCuts or fUseTwoTrackCut) ? getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp()) : 0;
+      dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult(), bfield);
     }
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
@@ -711,7 +781,7 @@ struct DptDptCorrelationsTask {
 
       LOGF(DPTDPTLOGCOLLISIONS, "Accepted BC id %d generated collision with cent/mult %f and %d total tracks. Assigned DCE: %d", collision.bcId(), collision.centmult(), tracks.size(), ixDCE);
       LOGF(DPTDPTLOGCOLLISIONS, "Accepted new generated collision with cent/mult %f and %d type one tracks and %d type two tracks. Assigned DCE: %d", collision.centmult(), TracksOne.size(), TracksTwo.size(), ixDCE);
-      dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult());
+      dataCE[ixDCE]->processCollision(TracksOne, TracksTwo, collision.posZ(), collision.centmult(), 0.0); /* TODO: this needs more thinking, suppressing pairs on filtered generator level */
     }
   }
   PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevel, "Process generator level correlations", false);
