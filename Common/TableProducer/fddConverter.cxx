@@ -23,18 +23,18 @@ struct FddConverter {
   void process(aod::FDDs_000 const& fdd_000)
   {
     for (auto& p : fdd_000) {
-      int16_t amplitudeA_001[8] = {0u};
-      int16_t amplitudeC_001[8] = {0u};
+      int16_t chargeA[8] = {0u};
+      int16_t chargeC[8] = {0u};
 
       for (int i = 0; i < 4; i++) {
-        amplitudeA_001[i] = p.amplitudeA_000()[i];
-        amplitudeA_001[i + 4] = p.amplitudeA_000()[i];
+        chargeA[i] = p.amplitudeA()[i];
+        chargeA[i + 4] = p.amplitudeA()[i];
 
-        amplitudeC_001[i] = p.amplitudeC_000()[i];
-        amplitudeC_001[i + 4] = p.amplitudeC_000()[i];
+        chargeC[i] = p.amplitudeC()[i];
+        chargeC[i + 4] = p.amplitudeC()[i];
       }
 
-      fdd_001(p.bcId(), amplitudeA_001, amplitudeC_001,
+      fdd_001(p.bcId(), chargeA, chargeC,
               p.timeA(), p.timeC(), p.triggerMask());
     }
   }

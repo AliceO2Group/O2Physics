@@ -291,11 +291,11 @@ struct EventSelectionQaTask {
         multT0C += amplitude;
       }
       float multFDA = 0;
-      for (auto amplitude : bc.fdd().amplitudeA()) {
+      for (auto amplitude : bc.fdd().chargeA()) {
         multFDA += amplitude;
       }
       float multFDC = 0;
-      for (auto amplitude : bc.fdd().amplitudeC()) {
+      for (auto amplitude : bc.fdd().chargeC()) {
         multFDC += amplitude;
       }
       float multZNA = bc.zdc().energyCommonZNA();
@@ -453,11 +453,11 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitFDD"), orbit);
         histos.fill(HIST("hBcFDD"), localBC);
         float multFDA = 0;
-        for (auto amplitude : bc.fdd().amplitudeA()) {
+        for (auto amplitude : bc.fdd().chargeA()) {
           multFDA += amplitude;
         }
         float multFDC = 0;
-        for (auto amplitude : bc.fdd().amplitudeC()) {
+        for (auto amplitude : bc.fdd().chargeC()) {
           multFDC += amplitude;
         }
         histos.fill(HIST("hMultFDAall"), multFDA);
@@ -576,10 +576,10 @@ struct EventSelectionQaTask {
       float multFDA = 0;
       float multFDC = 0;
       if (foundBC.has_fdd()) {
-        for (auto amplitude : foundBC.fdd().amplitudeA()) {
+        for (auto amplitude : foundBC.fdd().chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : foundBC.fdd().amplitudeC()) {
+        for (auto amplitude : foundBC.fdd().chargeC()) {
           multFDC += amplitude;
         }
       }
