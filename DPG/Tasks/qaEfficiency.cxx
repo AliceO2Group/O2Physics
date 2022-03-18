@@ -59,7 +59,6 @@ struct QaEfficiencyMc {
   Configurable<float> yMax{"y-max", 0.5f, "Upper limit in y"};
   Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
-  Configurable<int> selPrim{"sel-prim", 1, "1 select primaries, 0 select all particles"};
   Configurable<bool> noFakes{"noFakes", false, "Flag to reject tracks that have fake hits"};
   Configurable<bool> doUnId{"do-un-id", true, "Flag to run without PDG code"};
   Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of pions"};
@@ -88,97 +87,148 @@ struct QaEfficiencyMc {
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // Pt
-  static constexpr std::string_view hptnum[nSpecies] = {"el/pt/num", "mu/pt/num", "pi/pt/num",
+  static constexpr std::string_view hPtNum[nSpecies] = {"el/pt/num", "mu/pt/num", "pi/pt/num",
                                                         "ka/pt/num", "pr/pt/num", "de/pt/num",
                                                         "tr/pt/num", "he/pt/num", "al/pt/num",
                                                         "all/pt/num"};
-  static constexpr std::string_view hptnumtrk[nSpecies] = {"el/pt/numtrk", "mu/pt/numtrk", "pi/pt/numtrk",
+  static constexpr std::string_view hPtNumTrk[nSpecies] = {"el/pt/numtrk", "mu/pt/numtrk", "pi/pt/numtrk",
                                                            "ka/pt/numtrk", "pr/pt/numtrk", "de/pt/numtrk",
                                                            "tr/pt/numtrk", "he/pt/numtrk", "al/pt/numtrk",
                                                            "all/pt/numtrk"};
-  static constexpr std::string_view hptnumtof[nSpecies] = {"el/pt/numtof", "mu/pt/numtof", "pi/pt/numtof",
+  static constexpr std::string_view hPtNumTof[nSpecies] = {"el/pt/numtof", "mu/pt/numtof", "pi/pt/numtof",
                                                            "ka/pt/numtof", "pr/pt/numtof", "de/pt/numtof",
                                                            "tr/pt/numtof", "he/pt/numtof", "al/pt/numtof",
                                                            "all/pt/numtof"};
-  static constexpr std::string_view hptden[nSpecies] = {"el/pt/den", "mu/pt/den", "pi/pt/den",
+  static constexpr std::string_view hPtDen[nSpecies] = {"el/pt/den", "mu/pt/den", "pi/pt/den",
                                                         "ka/pt/den", "pr/pt/den", "de/pt/den",
                                                         "tr/pt/den", "he/pt/den", "al/pt/den",
                                                         "all/pt/den"};
+  // Pt for primaries
+  static constexpr std::string_view hPtPrmNum[nSpecies] = {"el/ptprm/num", "mu/ptprm/num", "pi/ptprm/num",
+                                                           "ka/ptprm/num", "pr/ptprm/num", "de/ptprm/num",
+                                                           "tr/ptprm/num", "he/ptprm/num", "al/ptprm/num",
+                                                           "all/ptprm/num"};
+  static constexpr std::string_view hPtPrmNumTrk[nSpecies] = {"el/ptprm/numtrk", "mu/ptprm/numtrk", "pi/ptprm/numtrk",
+                                                              "ka/ptprm/numtrk", "pr/ptprm/numtrk", "de/ptprm/numtrk",
+                                                              "tr/ptprm/numtrk", "he/ptprm/numtrk", "al/ptprm/numtrk",
+                                                              "all/ptprm/numtrk"};
+  static constexpr std::string_view hPtPrmNumTof[nSpecies] = {"el/ptprm/numtof", "mu/ptprm/numtof", "pi/ptprm/numtof",
+                                                              "ka/ptprm/numtof", "pr/ptprm/numtof", "de/ptprm/numtof",
+                                                              "tr/ptprm/numtof", "he/ptprm/numtof", "al/ptprm/numtof",
+                                                              "all/ptprm/numtof"};
+  static constexpr std::string_view hPtPrmDen[nSpecies] = {"el/ptprm/den", "mu/ptprm/den", "pi/ptprm/den",
+                                                           "ka/ptprm/den", "pr/ptprm/den", "de/ptprm/den",
+                                                           "tr/ptprm/den", "he/ptprm/den", "al/ptprm/den",
+                                                           "all/ptprm/den"};
+  // Pt for secondaries from weak decay
+  static constexpr std::string_view hPtDecNum[nSpecies] = {"el/ptdec/num", "mu/ptdec/num", "pi/ptdec/num",
+                                                           "ka/ptdec/num", "pr/ptdec/num", "de/ptdec/num",
+                                                           "tr/ptdec/num", "he/ptdec/num", "al/ptdec/num",
+                                                           "all/ptdec/num"};
+  static constexpr std::string_view hPtDecNumTrk[nSpecies] = {"el/ptdec/numtrk", "mu/ptdec/numtrk", "pi/ptdec/numtrk",
+                                                              "ka/ptdec/numtrk", "pr/ptdec/numtrk", "de/ptdec/numtrk",
+                                                              "tr/ptdec/numtrk", "he/ptdec/numtrk", "al/ptdec/numtrk",
+                                                              "all/ptdec/numtrk"};
+  static constexpr std::string_view hPtDecNumTof[nSpecies] = {"el/ptdec/numtof", "mu/ptdec/numtof", "pi/ptdec/numtof",
+                                                              "ka/ptdec/numtof", "pr/ptdec/numtof", "de/ptdec/numtof",
+                                                              "tr/ptdec/numtof", "he/ptdec/numtof", "al/ptdec/numtof",
+                                                              "all/ptdec/numtof"};
+  static constexpr std::string_view hPtDecDen[nSpecies] = {"el/ptdec/den", "mu/ptdec/den", "pi/ptdec/den",
+                                                           "ka/ptdec/den", "pr/ptdec/den", "de/ptdec/den",
+                                                           "tr/ptdec/den", "he/ptdec/den", "al/ptdec/den",
+                                                           "all/ptdec/den"};
+  // Pt for secondaries from material
+  static constexpr std::string_view hPtMatNum[nSpecies] = {"el/ptmat/num", "mu/ptmat/num", "pi/ptmat/num",
+                                                           "ka/ptmat/num", "pr/ptmat/num", "de/ptmat/num",
+                                                           "tr/ptmat/num", "he/ptmat/num", "al/ptmat/num",
+                                                           "all/ptmat/num"};
+  static constexpr std::string_view hPtMatNumTrk[nSpecies] = {"el/ptmat/numtrk", "mu/ptmat/numtrk", "pi/ptmat/numtrk",
+                                                              "ka/ptmat/numtrk", "pr/ptmat/numtrk", "de/ptmat/numtrk",
+                                                              "tr/ptmat/numtrk", "he/ptmat/numtrk", "al/ptmat/numtrk",
+                                                              "all/ptmat/numtrk"};
+  static constexpr std::string_view hPtMatNumTof[nSpecies] = {"el/ptmat/numtof", "mu/ptmat/numtof", "pi/ptmat/numtof",
+                                                              "ka/ptmat/numtof", "pr/ptmat/numtof", "de/ptmat/numtof",
+                                                              "tr/ptmat/numtof", "he/ptmat/numtof", "al/ptmat/numtof",
+                                                              "all/ptmat/numtof"};
+  static constexpr std::string_view hPtMatDen[nSpecies] = {"el/ptmat/den", "mu/ptmat/den", "pi/ptmat/den",
+                                                           "ka/ptmat/den", "pr/ptmat/den", "de/ptmat/den",
+                                                           "tr/ptmat/den", "he/ptmat/den", "al/ptmat/den",
+                                                           "all/ptmat/den"};
   // P
-  static constexpr std::string_view hpnum[nSpecies] = {"el/p/num", "mu/p/num", "pi/p/num",
+  static constexpr std::string_view hPNum[nSpecies] = {"el/p/num", "mu/p/num", "pi/p/num",
                                                        "ka/p/num", "pr/p/num", "de/p/num",
                                                        "tr/p/num", "he/p/num", "al/p/num",
                                                        "all/p/num"};
-  static constexpr std::string_view hpnumtrk[nSpecies] = {"el/p/numtrk", "mu/p/numtrk", "pi/p/numtrk",
+  static constexpr std::string_view hPNumTrk[nSpecies] = {"el/p/numtrk", "mu/p/numtrk", "pi/p/numtrk",
                                                           "ka/p/numtrk", "pr/p/numtrk", "de/p/numtrk",
                                                           "tr/p/numtrk", "he/p/numtrk", "al/p/numtrk",
                                                           "all/p/numtrk"};
-  static constexpr std::string_view hpnumtof[nSpecies] = {"el/p/numtof", "mu/p/numtof", "pi/p/numtof",
+  static constexpr std::string_view hPNumTof[nSpecies] = {"el/p/numtof", "mu/p/numtof", "pi/p/numtof",
                                                           "ka/p/numtof", "pr/p/numtof", "de/p/numtof",
                                                           "tr/p/numtof", "he/p/numtof", "al/p/numtof",
                                                           "all/p/numtof"};
-  static constexpr std::string_view hpden[nSpecies] = {"el/p/den", "mu/p/den", "pi/p/den",
+  static constexpr std::string_view hPDen[nSpecies] = {"el/p/den", "mu/p/den", "pi/p/den",
                                                        "ka/p/den", "pr/p/den", "de/p/den",
                                                        "tr/p/den", "he/p/den", "al/p/den",
                                                        "all/p/den"};
   // Eta
-  static constexpr std::string_view hetanum[nSpecies] = {"el/eta/num", "mu/eta/num", "pi/eta/num",
+  static constexpr std::string_view hEtaNum[nSpecies] = {"el/eta/num", "mu/eta/num", "pi/eta/num",
                                                          "ka/eta/num", "pr/eta/num", "de/eta/num",
                                                          "tr/eta/num", "he/eta/num", "al/eta/num",
                                                          "all/eta/num"};
-  static constexpr std::string_view hetanumtrk[nSpecies] = {"el/eta/numtrk", "mu/eta/numtrk", "pi/eta/numtrk",
+  static constexpr std::string_view hEtaNumTrk[nSpecies] = {"el/eta/numtrk", "mu/eta/numtrk", "pi/eta/numtrk",
                                                             "ka/eta/numtrk", "pr/eta/numtrk", "de/eta/numtrk",
                                                             "tr/eta/numtrk", "he/eta/numtrk", "al/eta/numtrk",
                                                             "all/eta/numtrk"};
-  static constexpr std::string_view hetanumtof[nSpecies] = {"el/eta/numtof", "mu/eta/numtof", "pi/eta/numtof",
+  static constexpr std::string_view hEtaNumTof[nSpecies] = {"el/eta/numtof", "mu/eta/numtof", "pi/eta/numtof",
                                                             "ka/eta/numtof", "pr/eta/numtof", "de/eta/numtof",
                                                             "tr/eta/numtof", "he/eta/numtof", "al/eta/numtof",
                                                             "all/eta/numtof"};
-  static constexpr std::string_view hetaden[nSpecies] = {"el/eta/den", "mu/eta/den", "pi/eta/den",
+  static constexpr std::string_view hEtaDen[nSpecies] = {"el/eta/den", "mu/eta/den", "pi/eta/den",
                                                          "ka/eta/den", "pr/eta/den", "de/eta/den",
                                                          "tr/eta/den", "he/eta/den", "al/eta/den",
                                                          "all/eta/den"};
   // Y
-  static constexpr std::string_view hynum[nSpecies] = {"el/y/num", "mu/y/num", "pi/y/num",
+  static constexpr std::string_view hYNum[nSpecies] = {"el/y/num", "mu/y/num", "pi/y/num",
                                                        "ka/y/num", "pr/y/num", "de/y/num",
                                                        "tr/y/num", "he/y/num", "al/y/num",
                                                        "all/y/num"};
-  static constexpr std::string_view hynumtof[nSpecies] = {"el/y/numtof", "mu/y/numtof", "pi/y/numtof",
+  static constexpr std::string_view hYNumTof[nSpecies] = {"el/y/numtof", "mu/y/numtof", "pi/y/numtof",
                                                           "ka/y/numtof", "pr/y/numtof", "de/y/numtof",
                                                           "tr/y/numtof", "he/y/numtof", "al/y/numtof",
                                                           "all/y/numtof"};
-  static constexpr std::string_view hyden[nSpecies] = {"el/y/den", "mu/y/den", "pi/y/den",
+  static constexpr std::string_view hYDen[nSpecies] = {"el/y/den", "mu/y/den", "pi/y/den",
                                                        "ka/y/den", "pr/y/den", "de/y/den",
                                                        "tr/y/den", "he/y/den", "al/y/den",
                                                        "all/y/den"};
   // Phi
-  static constexpr std::string_view hphinum[nSpecies] = {"el/phi/num", "mu/phi/num", "pi/phi/num",
+  static constexpr std::string_view hPhiNum[nSpecies] = {"el/phi/num", "mu/phi/num", "pi/phi/num",
                                                          "ka/phi/num", "pr/phi/num", "de/phi/num",
                                                          "tr/phi/num", "he/phi/num", "al/phi/num",
                                                          "all/phi/num"};
-  static constexpr std::string_view hphinumtrk[nSpecies] = {"el/phi/numtrk", "mu/phi/numtrk", "pi/phi/numtrk",
+  static constexpr std::string_view hPhiNumTrk[nSpecies] = {"el/phi/numtrk", "mu/phi/numtrk", "pi/phi/numtrk",
                                                             "ka/phi/numtrk", "pr/phi/numtrk", "de/phi/numtrk",
                                                             "tr/phi/numtrk", "he/phi/numtrk", "al/phi/numtrk",
                                                             "all/phi/numtrk"};
-  static constexpr std::string_view hphinumtof[nSpecies] = {"el/phi/numtof", "mu/phi/numtof", "pi/phi/numtof",
+  static constexpr std::string_view hPhiNumTof[nSpecies] = {"el/phi/numtof", "mu/phi/numtof", "pi/phi/numtof",
                                                             "ka/phi/numtof", "pr/phi/numtof", "de/phi/numtof",
                                                             "tr/phi/numtof", "he/phi/numtof", "al/phi/numtof",
                                                             "all/phi/numtof"};
-  static constexpr std::string_view hphiden[nSpecies] = {"el/phi/den", "mu/phi/den", "pi/phi/den",
+  static constexpr std::string_view hPhiDen[nSpecies] = {"el/phi/den", "mu/phi/den", "pi/phi/den",
                                                          "ka/phi/den", "pr/phi/den", "de/phi/den",
                                                          "tr/phi/den", "he/phi/den", "al/phi/den",
                                                          "all/phi/den"};
   // Eta-Phi
-  static constexpr std::string_view hptetanum[nSpecies] = {"el/pteta/num", "mu/pteta/num", "pi/pteta/num",
+  static constexpr std::string_view hPtEtaNum[nSpecies] = {"el/pteta/num", "mu/pteta/num", "pi/pteta/num",
                                                            "ka/pteta/num", "pr/pteta/num", "de/pteta/num",
                                                            "tr/pteta/num", "he/pteta/num", "al/pteta/num",
                                                            "all/pteta/num"};
-  static constexpr std::string_view hptetaden[nSpecies] = {"el/pteta/den", "mu/pteta/den", "pi/pteta/den",
+  static constexpr std::string_view hPtEtaDen[nSpecies] = {"el/pteta/den", "mu/pteta/den", "pi/pteta/den",
                                                            "ka/pteta/den", "pr/pteta/den", "de/pteta/den",
                                                            "tr/pteta/den", "he/pteta/den", "al/pteta/den",
                                                            "all/pteta/den"};
 
-  template <o2::track::PID::ID particle>
+  template <o2::track::PID::ID id>
   void makeHistograms()
   {
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
@@ -191,95 +241,121 @@ struct QaEfficiencyMc {
     const AxisSpec axisY{yBins, yMin, yMax, "#it{y}"};
     const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
 
-    const char* partName = particle == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(particle);
+    const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
+    LOG(debug) << "Preparing histograms for particle: " << partName;
 
-    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
+    const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                partName,
                                etaMin.value, etaMax.value,
                                yMin.value, yMax.value,
-                               phiMin.value, phiMax.value,
-                               selPrim.value);
-    histos.add(hptnum[particle].data(), "Numerator " + tagPt, kTH1D, {axisPt});
-    histos.add(hptnumtrk[particle].data(), "Numerator Track " + tagPt, kTH1D, {axisPt});
-    histos.add(hptnumtof[particle].data(), "Numerator TOF " + tagPt, kTH1D, {axisPt});
-    histos.add(hptden[particle].data(), "Denominator " + tagPt, kTH1D, {axisPt});
+                               phiMin.value, phiMax.value);
+    histos.add(hPtNum[id].data(), "Numerator " + tagPt, kTH1D, {axisPt});
+    histos.add(hPtNumTrk[id].data(), "Numerator Track " + tagPt, kTH1D, {axisPt});
+    histos.add(hPtNumTof[id].data(), "Numerator TOF " + tagPt, kTH1D, {axisPt});
+    histos.add(hPtDen[id].data(), "Denominator " + tagPt, kTH1D, {axisPt});
 
-    histos.add(hpnum[particle].data(), "Numerator " + tagPt, kTH1D, {axisP});
-    histos.add(hpnumtrk[particle].data(), "Numerator Track " + tagPt, kTH1D, {axisP});
-    histos.add(hpnumtof[particle].data(), "Numerator TOF " + tagPt, kTH1D, {axisP});
-    histos.add(hpden[particle].data(), "Denominator " + tagPt, kTH1D, {axisP});
+    histos.add(hPtPrmNum[id].data(), "Numerator " + tagPt + " Primaries", kTH1D, {axisPt});
+    histos.add(hPtPrmNumTrk[id].data(), "Numerator Track " + tagPt + " Primaries", kTH1D, {axisPt});
+    histos.add(hPtPrmNumTof[id].data(), "Numerator TOF " + tagPt + " Primaries", kTH1D, {axisPt});
+    histos.add(hPtPrmDen[id].data(), "Denominator " + tagPt + " Primaries", kTH1D, {axisPt});
 
-    const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
+    histos.add(hPtDecNum[id].data(), "Numerator " + tagPt + " Sec. from decays", kTH1D, {axisPt});
+    histos.add(hPtDecNumTrk[id].data(), "Numerator Track " + tagPt + " Sec. from decays", kTH1D, {axisPt});
+    histos.add(hPtDecNumTof[id].data(), "Numerator TOF " + tagPt + " Sec. from decays", kTH1D, {axisPt});
+    histos.add(hPtDecDen[id].data(), "Denominator " + tagPt + " Sec. from decays", kTH1D, {axisPt});
+
+    histos.add(hPtMatNum[id].data(), "Numerator " + tagPt + " Sec. from material", kTH1D, {axisPt});
+    histos.add(hPtMatNumTrk[id].data(), "Numerator Track " + tagPt + " Sec. from material", kTH1D, {axisPt});
+    histos.add(hPtMatNumTof[id].data(), "Numerator TOF " + tagPt + " Sec. from material", kTH1D, {axisPt});
+    histos.add(hPtMatDen[id].data(), "Denominator " + tagPt + " Sec. from material", kTH1D, {axisPt});
+
+    histos.add(hPNum[id].data(), "Numerator " + tagPt, kTH1D, {axisP});
+    histos.add(hPNumTrk[id].data(), "Numerator Track " + tagPt, kTH1D, {axisP});
+    histos.add(hPNumTof[id].data(), "Numerator TOF " + tagPt, kTH1D, {axisP});
+    histos.add(hPDen[id].data(), "Denominator " + tagPt, kTH1D, {axisP});
+
+    const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                                 partName,
                                 ptMin.value, ptMax.value,
                                 yMin.value, yMax.value,
-                                phiMin.value, phiMax.value,
-                                selPrim.value);
-    histos.add(hetanum[particle].data(), "Numerator " + tagEta, kTH1D, {axisEta});
-    histos.add(hetanumtrk[particle].data(), "Numerator Track " + tagEta, kTH1D, {axisEta});
-    histos.add(hetanumtof[particle].data(), "Numerator TOF " + tagEta, kTH1D, {axisEta});
-    histos.add(hetaden[particle].data(), "Denominator " + tagEta, kTH1D, {axisEta});
+                                phiMin.value, phiMax.value);
+    histos.add(hEtaNum[id].data(), "Numerator " + tagEta, kTH1D, {axisEta});
+    histos.add(hEtaNumTrk[id].data(), "Numerator Track " + tagEta, kTH1D, {axisEta});
+    histos.add(hEtaNumTof[id].data(), "Numerator TOF " + tagEta, kTH1D, {axisEta});
+    histos.add(hEtaDen[id].data(), "Denominator " + tagEta, kTH1D, {axisEta});
 
-    const TString tagY = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
+    const TString tagY = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
                               partName,
                               ptMin.value, ptMax.value,
                               etaMin.value, etaMax.value,
-                              phiMin.value, phiMax.value,
-                              selPrim.value);
-    histos.add(hynum[particle].data(), "Numerator " + tagY, kTH1D, {axisY});
-    histos.add(hynumtof[particle].data(), "Numerator TOF " + tagY, kTH1D, {axisY});
-    histos.add(hyden[particle].data(), "Denominator " + tagY, kTH1D, {axisY});
+                              phiMin.value, phiMax.value);
+    histos.add(hYNum[id].data(), "Numerator " + tagY, kTH1D, {axisY});
+    histos.add(hYNumTof[id].data(), "Numerator TOF " + tagY, kTH1D, {axisY});
+    histos.add(hYDen[id].data(), "Denominator " + tagY, kTH1D, {axisY});
 
-    const TString tagPhi = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] Prim %i",
+    const TString tagPhi = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f]",
                                 partName,
                                 ptMin.value, ptMax.value,
                                 etaMin.value, etaMax.value,
-                                yMin.value, yMax.value,
-                                selPrim.value);
-    histos.add(hphinum[particle].data(), "Numerator " + tagPhi, kTH1D, {axisPhi});
-    histos.add(hphinumtrk[particle].data(), "Numerator Track " + tagPhi, kTH1D, {axisPhi});
-    histos.add(hphinumtof[particle].data(), "Numerator TOF " + tagPhi, kTH1D, {axisPhi});
-    histos.add(hphiden[particle].data(), "Denominator " + tagPhi, kTH1D, {axisPhi});
+                                yMin.value, yMax.value);
+    histos.add(hPhiNum[id].data(), "Numerator " + tagPhi, kTH1D, {axisPhi});
+    histos.add(hPhiNumTrk[id].data(), "Numerator Track " + tagPhi, kTH1D, {axisPhi});
+    histos.add(hPhiNumTof[id].data(), "Numerator TOF " + tagPhi, kTH1D, {axisPhi});
+    histos.add(hPhiDen[id].data(), "Denominator " + tagPhi, kTH1D, {axisPhi});
 
-    const TString tagPtEta = Form("%s #it{#varphi} [%.2f,%.2f] #it{y} [%.2f,%.2f] Prim %i",
+    const TString tagPtEta = Form("%s #it{#varphi} [%.2f,%.2f] #it{y} [%.2f,%.2f]",
                                   partName,
                                   phiMin.value, phiMax.value,
-                                  yMin.value, yMax.value,
-                                  selPrim.value);
-    histos.add(hptetanum[particle].data(), "Numerator " + tagPtEta, kTH2D, {axisPt, axisEta});
-    histos.add(hptetaden[particle].data(), "Denominator " + tagPtEta, kTH2D, {axisPt, axisEta});
+                                  yMin.value, yMax.value);
+    histos.add(hPtEtaNum[id].data(), "Numerator " + tagPtEta, kTH2D, {axisPt, axisEta});
+    histos.add(hPtEtaDen[id].data(), "Denominator " + tagPtEta, kTH2D, {axisPt, axisEta});
 
     if (makeEff) {
+      LOG(debug) << "Making TEfficiency";
       TList* subList = new TList();
-      const char* partName = particle == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(particle);
+      const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
       subList->SetName(partName);
       listEfficiency->Add(subList);
-      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
+      auto makeEfficiency = [&](TString effname, auto templateHisto) {
         effname = partName + effname;
-        const TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
+        LOG(debug) << " - " << effname;
+        const auto h = histos.get<TH1>(templateHisto);
+        const TAxis* axis = h->GetXaxis();
+        TString efftitle = h->GetTitle();
+        efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
+        efftitle = Form("%s;%s;Efficiency", efftitle.Data(), axis->GetTitle());
         if (axis->IsVariableBinSize()) {
           subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
         } else {
           subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
         }
       };
-      makeEfficiency("efficiencyVsPt", "Efficiency " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST(hptnum[particle]));
-      makeEfficiency("efficiencyVsP", "Efficiency " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST(hpnum[particle]));
-      makeEfficiency("efficiencyVsEta", "Efficiency " + tagEta + ";#it{#eta};Efficiency", HIST(hetanum[particle]));
-      makeEfficiency("efficiencyVsPhi", "Efficiency " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST(hphinum[particle]));
+      makeEfficiency("efficiencyVsPt", HIST(hPtNum[id]));
+      makeEfficiency("efficiencyVsPtPrm", HIST(hPtPrmNum[id]));
+      makeEfficiency("efficiencyVsPtDec", HIST(hPtDecNum[id]));
+      makeEfficiency("efficiencyVsPtMat", HIST(hPtMatNum[id]));
+      makeEfficiency("efficiencyVsP", HIST(hPNum[id]));
+      makeEfficiency("efficiencyVsEta", HIST(hEtaNum[id]));
+      makeEfficiency("efficiencyVsPhi", HIST(hPhiNum[id]));
 
-      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHisto) {
+      auto makeEfficiency2D = [&](TString effname, auto templateHisto) {
         effname = partName + effname;
-        const TAxis* axisX = histos.get<TH2>(templateHisto)->GetXaxis();
-        const TAxis* axisY = histos.get<TH2>(templateHisto)->GetYaxis();
+        LOG(debug) << " - " << effname;
+        const auto h = histos.get<TH2>(templateHisto);
+        const TAxis* axisX = h->GetXaxis();
+        const TAxis* axisY = h->GetYaxis();
+        TString efftitle = h->GetTitle();
+        efftitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
+        efftitle = Form("%s;%s;%s;Efficiency", efftitle.Data(), axisX->GetTitle(), axisY->GetTitle());
         if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
           subList->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
         } else {
           subList->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
         }
       };
-      makeEfficiency2D("efficiencyVsPtVsEta", "Efficiency " + tagPtEta + ";#it{#varphi} (rad);Efficiency", HIST(hptetanum[particle]));
+      makeEfficiency2D("efficiencyVsPtVsEta", HIST(hPtEtaNum[id]));
     }
+    LOG(info) << "Done with particle: " << partName;
   }
 
   void init(InitContext&)
@@ -299,13 +375,11 @@ struct QaEfficiencyMc {
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#eta}");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(6, "Passed #it{#varphi}");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(7, "Passed y");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(8, "Passed Prim.");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(9, "Passed Prim. MC");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(10, "Passed Fake");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(11, "Passed standard quality cuts");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(12, "Passed has collision");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(8, "Passed Fake");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(9, "Passed standard quality cuts");
+    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(10, "Passed has collision");
     for (int i = 0; i < nSpecies; i++) {
-      histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(13 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
+      histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(11 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
     }
     histos.add("fakeTrackNoiseHits", "Fake tracks from noise hits", kTH1D, {{1, 0, 1}});
 
@@ -316,10 +390,8 @@ struct QaEfficiencyMc {
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, "Passed y");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7, "Passed Prim.");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(8, "Passed Prim. MC");
     for (int i = 0; i < nSpecies; i++) {
-      histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(9 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
+      histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
     }
 
     histos.add("eventMultiplicity", "Event Selection", kTH1D, {{1000, 0, 5000}});
@@ -358,11 +430,11 @@ struct QaEfficiencyMc {
     }
   }
 
-  template <o2::track::PID::ID particle, typename particleType>
+  template <o2::track::PID::ID id, typename particleType>
   bool isPdgSelected(particleType mcParticle)
   {
     // Selecting PDG code
-    if constexpr (PDGs[particle] == 0) {
+    if constexpr (PDGs[id] == 0) {
       if constexpr (pdgSign == 0) {
         return true;
       } else if constexpr (pdgSign == 1) {
@@ -373,92 +445,135 @@ struct QaEfficiencyMc {
       }
     }
     if constexpr (pdgSign == 0) {
-      if (abs(mcParticle.pdgCode()) != PDGs[particle]) {
+      if (abs(mcParticle.pdgCode()) != PDGs[id]) {
         return false;
       }
     } else if constexpr (pdgSign == 1) {
-      if (mcParticle.pdgCode() != PDGs[particle]) {
+      if (mcParticle.pdgCode() != PDGs[id]) {
         return false;
       }
     } else if constexpr (pdgSign == -1) {
-      if (mcParticle.pdgCode() != -PDGs[particle]) {
+      if (mcParticle.pdgCode() != -PDGs[id]) {
         return false;
       }
     }
     return true;
   }
 
-  template <o2::track::PID::ID particle, typename trackType>
+  template <o2::track::PID::ID id, typename trackType>
   void fillTrackHistograms(const trackType& track)
   {
+    LOG(debug) << "Filling track histograms for id " << id;
     const auto mcParticle = track.mcParticle();
 
-    if (!isPdgSelected<particle>(mcParticle)) { // Selecting PDG code
+    if (!isPdgSelected<id>(mcParticle)) { // Selecting PDG code
       return;
     }
 
-    histos.fill(HIST("trackSelection"), 13 + particle);
+    histos.fill(HIST("trackSelection"), 11 + id);
 
-    histos.fill(HIST(hpnum[particle]), mcParticle.p());
-    histos.fill(HIST(hptnum[particle]), mcParticle.pt());
-    histos.fill(HIST(hetanum[particle]), mcParticle.eta());
-    histos.fill(HIST(hynum[particle]), mcParticle.y());
-    histos.fill(HIST(hphinum[particle]), mcParticle.phi());
-    histos.fill(HIST(hptetanum[particle]), mcParticle.pt(), mcParticle.eta());
+    histos.fill(HIST(hPNum[id]), mcParticle.p());
+    histos.fill(HIST(hPtNum[id]), mcParticle.pt());
+    histos.fill(HIST(hEtaNum[id]), mcParticle.eta());
+    histos.fill(HIST(hYNum[id]), mcParticle.y());
+    histos.fill(HIST(hPhiNum[id]), mcParticle.phi());
+    histos.fill(HIST(hPtEtaNum[id]), mcParticle.pt(), mcParticle.eta());
 
-    histos.fill(HIST(hpnumtrk[particle]), track.p());
-    histos.fill(HIST(hptnumtrk[particle]), track.pt());
-    histos.fill(HIST(hetanumtrk[particle]), track.eta());
-    histos.fill(HIST(hphinumtrk[particle]), track.phi());
+    histos.fill(HIST(hPNumTrk[id]), track.p());
+    histos.fill(HIST(hPtNumTrk[id]), track.pt());
+    histos.fill(HIST(hEtaNumTrk[id]), track.eta());
+    histos.fill(HIST(hPhiNumTrk[id]), track.phi());
+
+    if (mcParticle.isPhysicalPrimary()) {
+      histos.fill(HIST(hPtPrmNum[id]), mcParticle.pt());
+      histos.fill(HIST(hPtPrmNumTrk[id]), track.pt());
+      if (track.hasTOF()) {
+        histos.fill(HIST(hPtPrmNumTof[id]), mcParticle.pt());
+      }
+    } else {
+      if (mcParticle.getProcess() == 4) { // Particle deday
+        histos.fill(HIST(hPtDecNum[id]), mcParticle.pt());
+        histos.fill(HIST(hPtDecNumTrk[id]), track.pt());
+        if (track.hasTOF()) {
+          histos.fill(HIST(hPtDecNumTof[id]), mcParticle.pt());
+        }
+      } else { // Material
+        histos.fill(HIST(hPtMatNum[id]), mcParticle.pt());
+        histos.fill(HIST(hPtMatNumTrk[id]), track.pt());
+        if (track.hasTOF()) {
+          histos.fill(HIST(hPtMatNumTof[id]), mcParticle.pt());
+        }
+      }
+    }
     if (!track.hasTOF()) {
       return;
     }
-    histos.fill(HIST(hpnumtof[particle]), mcParticle.p());
-    histos.fill(HIST(hptnumtof[particle]), mcParticle.pt());
-    histos.fill(HIST(hetanumtof[particle]), mcParticle.eta());
-    histos.fill(HIST(hynumtof[particle]), mcParticle.y());
-    histos.fill(HIST(hphinumtof[particle]), mcParticle.phi());
+    histos.fill(HIST(hPNumTof[id]), mcParticle.p());
+    histos.fill(HIST(hPtNumTof[id]), mcParticle.pt());
+    histos.fill(HIST(hEtaNumTof[id]), mcParticle.eta());
+    histos.fill(HIST(hYNumTof[id]), mcParticle.y());
+    histos.fill(HIST(hPhiNumTof[id]), mcParticle.phi());
   }
 
-  template <o2::track::PID::ID particle, typename particleType>
+  template <o2::track::PID::ID id, typename particleType>
   void fillParticleHistograms(const particleType& mcParticle)
   {
-    if (!isPdgSelected<particle>(mcParticle)) { // Selecting PDG code
+    LOG(debug) << "Filling particle histograms for id " << id;
+    if (!isPdgSelected<id>(mcParticle)) { // Selecting PDG code
       return;
     }
-    histos.fill(HIST("partSelection"), 9 + particle);
+    histos.fill(HIST("partSelection"), 7 + id);
 
-    histos.fill(HIST(hpden[particle]), mcParticle.p());
-    histos.fill(HIST(hptden[particle]), mcParticle.pt());
-    histos.fill(HIST(hetaden[particle]), mcParticle.eta());
-    histos.fill(HIST(hyden[particle]), mcParticle.y());
-    histos.fill(HIST(hphiden[particle]), mcParticle.phi());
-    histos.fill(HIST(hptetaden[particle]), mcParticle.pt(), mcParticle.eta());
+    histos.fill(HIST(hPDen[id]), mcParticle.p());
+    histos.fill(HIST(hPtDen[id]), mcParticle.pt());
+
+    if (mcParticle.isPhysicalPrimary()) {
+      histos.fill(HIST(hPtPrmDen[id]), mcParticle.pt());
+    } else {
+      if (mcParticle.getProcess() == 4) { // Particle deday
+        histos.fill(HIST(hPtDecDen[id]), mcParticle.pt());
+      } else { // Material
+        histos.fill(HIST(hPtMatDen[id]), mcParticle.pt());
+      }
+    }
+
+    histos.fill(HIST(hEtaDen[id]), mcParticle.eta());
+    histos.fill(HIST(hYDen[id]), mcParticle.y());
+    histos.fill(HIST(hPhiDen[id]), mcParticle.phi());
+    histos.fill(HIST(hPtEtaDen[id]), mcParticle.pt(), mcParticle.eta());
   }
 
-  template <o2::track::PID::ID particle>
+  template <o2::track::PID::ID id>
   void fillEfficiency()
   {
-
-    TList* subList = static_cast<TList*>(listEfficiency->FindObject(o2::track::PID::getName(particle)));
+    if (!makeEff) {
+      return;
+    }
+    TList* subList = static_cast<TList*>(listEfficiency->FindObject(o2::track::PID::getName(id)));
     if (!subList) {
       return;
     }
 
-    auto fillEfficiency = [&](int index, auto num, auto den) {
-      static_cast<TEfficiency*>(subList->At(index))->SetTotalHistogram(*histos.get<TH1>(den).get(), "f");
-      static_cast<TEfficiency*>(subList->At(index))->SetPassedHistogram(*histos.get<TH1>(num).get(), "f");
+    auto doFillEfficiency = [&](auto name, auto num, auto den) {
+      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(name));
+      eff->SetTotalHistogram(*histos.get<TH1>(den).get(), "f");
+      eff->SetPassedHistogram(*histos.get<TH1>(num).get(), "f");
     };
-    fillEfficiency(0, HIST(hptnum[particle]), HIST(hptden[particle]));
-    fillEfficiency(1, HIST(hpnum[particle]), HIST(hpden[particle]));
-    fillEfficiency(2, HIST(hetanum[particle]), HIST(hetaden[particle]));
-    fillEfficiency(3, HIST(hphinum[particle]), HIST(hphiden[particle]));
 
-    auto fillEfficiency2D = [&](int index, auto num, auto den) {
-      static_cast<TEfficiency*>(subList->At(index))->SetTotalHistogram(*histos.get<TH2>(den).get(), "f");
-      static_cast<TEfficiency*>(subList->At(index))->SetPassedHistogram(*histos.get<TH2>(num).get(), "f");
+    doFillEfficiency("efficiencyVsPt", HIST(hPtNum[id]), HIST(hPtDen[id]));
+    doFillEfficiency("efficiencyVsPtPrm", HIST(hPtPrmNum[id]), HIST(hPtPrmDen[id]));
+    doFillEfficiency("efficiencyVsPtDec", HIST(hPtDecNum[id]), HIST(hPtDecDen[id]));
+    doFillEfficiency("efficiencyVsPtMat", HIST(hPtMatNum[id]), HIST(hPtMatDen[id]));
+    doFillEfficiency("efficiencyVsP", HIST(hPNum[id]), HIST(hPDen[id]));
+    doFillEfficiency("efficiencyVsEta", HIST(hEtaNum[id]), HIST(hEtaDen[id]));
+    doFillEfficiency("efficiencyVsPhi", HIST(hPhiNum[id]), HIST(hPhiDen[id]));
+
+    auto fillEfficiency2D = [&](auto name, auto num, auto den) {
+      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(name));
+      eff->SetTotalHistogram(*histos.get<TH2>(den).get(), "f");
+      eff->SetPassedHistogram(*histos.get<TH2>(num).get(), "f");
     };
-    fillEfficiency2D(4, HIST(hptetanum[particle]), HIST(hptetaden[particle]));
+    fillEfficiency2D("efficiencyVsPtVsEta", HIST(hPtEtaNum[id]), HIST(hPtEtaDen[id]));
   }
 
   void process(const o2::aod::McParticles& mcParticles,
@@ -512,19 +627,6 @@ struct QaEfficiencyMc {
         return true;
       }
       histos.fill(h, 6 + offset);
-      if ((selPrim == 1) && !p.isPhysicalPrimary()) { // Requiring is physical primary
-        return true;
-      }
-      histos.fill(h, 7 + offset);
-
-      // Select primaries based on position
-      const float dx = p.vx() - p.mcCollision().posX();
-      const float dy = p.vy() - p.mcCollision().posY();
-      const float dz = p.vz() - p.mcCollision().posZ();
-      if (sqrt(dx * dx + dy * dy + dz * dz) > 0.0001) {
-        return true;
-      }
-      histos.fill(h, 8 + offset);
 
       return false;
     };
@@ -598,7 +700,7 @@ struct QaEfficiencyMc {
     }
 
     float dNdEta = 0;
-    for (const auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) { // Loop on particles to fill the denominator
       if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
         dNdEta += 1.f;
       }
@@ -639,37 +741,36 @@ struct QaEfficiencyMc {
     }
     histos.fill(HIST("eventMultiplicity"), dNdEta * 0.5f / 2.f);
 
-    if (makeEff) {
-      if (doEl) {
-        fillEfficiency<o2::track::PID::Electron>();
-      }
-      if (doMu) {
-        fillEfficiency<o2::track::PID::Muon>();
-      }
-      if (doPi) {
-        fillEfficiency<o2::track::PID::Pion>();
-      }
-      if (doKa) {
-        fillEfficiency<o2::track::PID::Kaon>();
-      }
-      if (doPr) {
-        fillEfficiency<o2::track::PID::Proton>();
-      }
-      if (doDe) {
-        fillEfficiency<o2::track::PID::Deuteron>();
-      }
-      if (doTr) {
-        fillEfficiency<o2::track::PID::Triton>();
-      }
-      if (doHe) {
-        fillEfficiency<o2::track::PID::Helium3>();
-      }
-      if (doAl) {
-        fillEfficiency<o2::track::PID::Alpha>();
-      }
-      if (doUnId) {
-        fillEfficiency<o2::track::PID::NIDs>();
-      }
+    // Fill TEfficiencies
+    if (doEl) {
+      fillEfficiency<o2::track::PID::Electron>();
+    }
+    if (doMu) {
+      fillEfficiency<o2::track::PID::Muon>();
+    }
+    if (doPi) {
+      fillEfficiency<o2::track::PID::Pion>();
+    }
+    if (doKa) {
+      fillEfficiency<o2::track::PID::Kaon>();
+    }
+    if (doPr) {
+      fillEfficiency<o2::track::PID::Proton>();
+    }
+    if (doDe) {
+      fillEfficiency<o2::track::PID::Deuteron>();
+    }
+    if (doTr) {
+      fillEfficiency<o2::track::PID::Triton>();
+    }
+    if (doHe) {
+      fillEfficiency<o2::track::PID::Helium3>();
+    }
+    if (doAl) {
+      fillEfficiency<o2::track::PID::Alpha>();
+    }
+    if (doUnId) {
+      fillEfficiency<o2::track::PID::NIDs>();
     }
   }
 };
@@ -900,13 +1001,13 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     w.push_back(adaptAnalysisTask<QaEfficiencyData>(cfgc));
   }
   if (cfgc.options().get<int>("eff-mc")) { // Sign blind
-    w.push_back(adaptAnalysisTask<QaEfficiencyMc<0>>(cfgc, TaskName{"qa-efficiency"}));
+    w.push_back(adaptAnalysisTask<QaEfficiencyMc<0>>(cfgc, TaskName{"qa-efficiency-mc"}));
   }
   if (cfgc.options().get<int>("eff-mc-pos")) { // Pos
-    w.push_back(adaptAnalysisTask<QaEfficiencyMc<1>>(cfgc, TaskName{"qa-efficiency-pos"}));
+    w.push_back(adaptAnalysisTask<QaEfficiencyMc<1>>(cfgc, TaskName{"qa-efficiency-mc-pos"}));
   }
   if (cfgc.options().get<int>("eff-mc-neg")) { // Neg
-    w.push_back(adaptAnalysisTask<QaEfficiencyMc<-1>>(cfgc, TaskName{"qa-efficiency-neg"}));
+    w.push_back(adaptAnalysisTask<QaEfficiencyMc<-1>>(cfgc, TaskName{"qa-efficiency-mc-neg"}));
   }
   return w;
 }
