@@ -662,6 +662,22 @@ const auto tpcExpSignalDiff(const o2::track::PID::ID index, const TrackType& tra
 
 } // namespace pidutils
 
+namespace pidflags
+{
+
+namespace enums
+{
+enum PIDFlags : uint8_t {
+  T0TOF = 0x1
+};
+}
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);         //! Flag for the complementary PID information
+DECLARE_SOA_COLUMN(FlagsFull, flagsFull, uint8_t); //! Flag for the complementary PID information
+DECLARE_SOA_DYNAMIC_COLUMN(IsT0TOF, isT0TOF,       //! True if the T0 TOF was used to compute the TOF response
+                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::T0TOF) == enums::PIDFlags::T0TOF; });
+
+} // namespace pidflags
+
 namespace pidtofsignal
 {
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! TOF signal from track time
@@ -791,6 +807,14 @@ DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::ExpBetaEl, pidtofbeta::ExpBetaElError,
                   pidtofbeta::SeparationBetaEl,
                   pidtofbeta::DiffBetaEl<pidtofbeta::Beta, pidtofbeta::ExpBetaEl>);
+
+DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the PID flags
+                  pidflags::Flags,
+                  pidflags::IsT0TOF<pidflags::Flags>);
+
+DECLARE_SOA_TABLE(pidTOFFullFlags, "AOD", "pidTOFFullFlags", //! Table of the PID flags for the full tables
+                  pidflags::FlagsFull,
+                  pidflags::IsT0TOF<pidflags::FlagsFull>);
 
 // Per particle tables
 DECLARE_SOA_TABLE(pidTOFFullEl, "AOD", "pidTOFFullEl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for electron
