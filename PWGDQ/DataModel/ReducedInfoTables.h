@@ -290,6 +290,45 @@ namespace dilepton_track_index
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedMuons, "_0"); //! Index to first prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedMuons, "_1"); //! Index to second prong
+DECLARE_SOA_COLUMN(Pt1, pt1, float);   //!
+DECLARE_SOA_COLUMN(Eta1, eta1, float); //!
+DECLARE_SOA_COLUMN(Phi1, phi1, float); //!
+DECLARE_SOA_COLUMN(Sign1, sign1, int); //!
+
+DECLARE_SOA_COLUMN(Pt2, pt2, float);   //!
+DECLARE_SOA_COLUMN(Eta2, eta2, float); //!
+DECLARE_SOA_COLUMN(Phi2, phi2, float); //!
+DECLARE_SOA_COLUMN(Sign2, sign2, int); //!
+
+DECLARE_SOA_COLUMN(McMask1, mcMask1, uint16_t);
+DECLARE_SOA_COLUMN(McMask2, mcMask2, uint16_t);
+
+DECLARE_SOA_COLUMN(Chi2MatchMCHMID1, chi2MatchMCHMID1, float);                                 //! MCH-MID Match Chi2 for MUONStandalone tracks
+DECLARE_SOA_COLUMN(Chi2MatchMCHMFT1, chi2MatchMCHMFT1, float);                                 //! MCH-MFT Match Chi2 for GlobalMuonTracks
+
+DECLARE_SOA_COLUMN(Chi2MatchMCHMID2, chi2MatchMCHMID2, float);                                 //! MCH-MID Match Chi2 for MUONStandalone tracks
+DECLARE_SOA_COLUMN(Chi2MatchMCHMFT2, chi2MatchMCHMFT2, float);                                 //! MCH-MFT Match Chi2 for GlobalMuonTracks
+
+DECLARE_SOA_COLUMN(PtMC1, ptMC1, float);                                                          //!
+DECLARE_SOA_COLUMN(EtaMC1, etaMC1, float);                                                        //!
+DECLARE_SOA_COLUMN(PhiMC1, phiMC1, float);                                                        //!
+DECLARE_SOA_COLUMN(EMC1, eMC1, float);                                                            //!
+
+DECLARE_SOA_COLUMN(PtMC2, ptMC2, float);                                                          //!
+DECLARE_SOA_COLUMN(EtaMC2, etaMC2, float);                                                        //!
+DECLARE_SOA_COLUMN(PhiMC2, phiMC2, float);                                                        //!
+DECLARE_SOA_COLUMN(EMC2, eMC2, float);                                                            //!
+
+DECLARE_SOA_COLUMN(Vx1, vx1, float);                                                      //! X production vertex in cm
+DECLARE_SOA_COLUMN(Vy1, vy1, float);                                                      //! Y production vertex in cm
+DECLARE_SOA_COLUMN(Vz1, vz1, float);                                                      //! Z production vertex in cm
+DECLARE_SOA_COLUMN(Vt1, vt1, float);
+
+DECLARE_SOA_COLUMN(Vx2, vx2, float);                                                      //! X production vertex in cm
+DECLARE_SOA_COLUMN(Vy2, vy2, float);                                                      //! Y production vertex in cm
+DECLARE_SOA_COLUMN(Vz2, vz2, float);                                                      //! Z production vertex in cm
+DECLARE_SOA_COLUMN(Vt2, vt2, float);
+
 } // namespace dilepton_track_index
 
 // pair information
@@ -304,6 +343,9 @@ DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
 DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);   //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                //!
+DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);          //!
+DECLARE_SOA_COLUMN(Tauxy, tauxy, float);              //!
+DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);        //!
 DECLARE_SOA_COLUMN(Lz, lz, float);                    //!
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
@@ -337,8 +379,28 @@ DECLARE_SOA_TABLE(DileptonsExtra, "AOD", "RTDILEPTONEXTRA", //!
                   reducedpair::Lz,
                   reducedpair::Lxy);
 
+DECLARE_SOA_TABLE(DileptonsAll, "AOD", "RTDILEPTONALL", //!
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
+                  reducedpair::Mass,
+		  reducedpair::McDecision,
+                  reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::Tauz, reducedpair::TauzErr,
+                  reducedpair::Tauxy, reducedpair::TauxyErr,
+                  dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Sign1,
+                  dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::Sign2,
+                  dilepton_track_index::McMask1, dilepton_track_index::McMask2,
+                  dilepton_track_index::Chi2MatchMCHMID1, dilepton_track_index::Chi2MatchMCHMID2,
+                  dilepton_track_index::Chi2MatchMCHMFT1, dilepton_track_index::Chi2MatchMCHMFT2,
+                  dilepton_track_index::PtMC1, dilepton_track_index::EtaMC1, dilepton_track_index::PhiMC1, dilepton_track_index::EMC1,
+                  dilepton_track_index::PtMC2, dilepton_track_index::EtaMC2, dilepton_track_index::PhiMC2, dilepton_track_index::EMC2,
+                  dilepton_track_index::Vx1, dilepton_track_index::Vy1, dilepton_track_index::Vz1, dilepton_track_index::Vt1,
+                  dilepton_track_index::Vx2, dilepton_track_index::Vy2, dilepton_track_index::Vz2, dilepton_track_index::Vt2);
+
+
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;
+using DileptonAll = DileptonsAll::iterator;
 
 namespace v0bits
 {
