@@ -466,6 +466,7 @@ struct AnalysisMuonSelection {
 struct AnalysisSameEventPairing {
   Produces<aod::Dileptons> dileptonList;
   Produces<aod::DileptonsExtra> dileptonExtraList;
+  Produces<aod::DileptonsAll> dileptonAllList;
   OutputObj<THashList> fOutputList{"output"};
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -637,7 +638,7 @@ struct AnalysisSameEventPairing {
   }
 
   template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TEventsMC, typename TTracksMC>
-  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC, bool flat=false)
   {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
     unsigned int ncuts = fBarrelHistNames.size();
@@ -660,6 +661,9 @@ struct AnalysisSameEventPairing {
     uint32_t dileptonMcDecision = 0;
     dileptonList.reserve(1);
     dileptonExtraList.reserve(1);
+    if (flat){
+	    dileptonAllList.reserve(1);
+    }
 
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kJpsiToEE) {
@@ -702,6 +706,9 @@ struct AnalysisSameEventPairing {
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == VarManager::kJpsiToMuMu) && muonHasCov) {
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+	if (flat){
+		dileptonAllList(event.posX(),event.posY(),event.posZ(),event.reducedMCevent().mcPosX(),event.reducedMCevent().mcPosY(),event.reducedMCevent().mcPosZ(),VarManager::fgValues[VarManager::kMass],dileptonMcDecision,VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],t1.pt(),t1.eta(),t1.phi(),t1.sign(), t2.pt(),t2.eta(),t2.phi(),t2.sign(), t1.mcMask(), t2.mcMask(),t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(), t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(), t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(), t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt());
+	}
       }
 
       // Loop over all fulfilled cuts and fill pair histograms
@@ -803,6 +810,20 @@ struct AnalysisSameEventPairing {
     runMCGen(groupedMCTracks);
   }
 
+    void processJpsiToMuMuVertexingSkimmedFlat(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
+                                         soa::Filtered<MyMuonTracksSelectedWithCov> const& muons,
+                                         ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMap>(event);
+    VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
+
+    runPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, muons, muons, eventsMC, tracksMC, true);
+    auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    runMCGen(groupedMCTracks);
+  }
+
   /*void processElectronMuonSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                   soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons,
                                   ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC) {
@@ -823,6 +844,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToEESkimmed, "Run barrel barrel pairing on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuSkimmed, "Run muon muon pairing on DQ skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuVertexingSkimmed, "Run muon muon pairing on DQ skimmed muons including vertexing", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuVertexingSkimmedFlat, "Run muon muon pairing on DQ skimmed muons including vertexing producing flat tables", false);
   //PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonSkimmed, "Run barrel muon pairing on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
 };
