@@ -47,7 +47,7 @@ struct TaskD0ALICE3ForwardMC {
   Filter filterSelectCandidates = (aod::hf_selcandidate_d0_ALICE3_Forward::isSelHFFFlag >= 1);
 
   void process(soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0CandidateALICE3Forward, aod::HfCandProng2MCRec>> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandProng2MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << DecayType::D0ToPiK)) {

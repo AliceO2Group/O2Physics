@@ -151,7 +151,7 @@ struct HFCandidateCreator3ProngExpressions {
 
   /// Performs MC matching.
   void processMC(aod::BigTracksMC const& tracks,
-                 aod::McParticles_000 const& particlesMC)
+                 aod::McParticles const& particlesMC)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
     int indexRec = -1;
@@ -193,12 +193,12 @@ struct HFCandidateCreator3ProngExpressions {
 
           //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
           if (arrayDaughters[0].has_mcParticle()) {
-            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle_as<aod::McParticles_000>().pdgCode()) == kPiPlus);
+            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
-          RecoDecay::getDaughters(particlesMC, particlesMC.iteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
+          RecoDecay::getDaughters(particlesMC, particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-              auto daughI = particlesMC.iteratorAt(arrDaughIndex[iProng]);
+              auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) or (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
@@ -223,7 +223,7 @@ struct HFCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
@@ -254,7 +254,7 @@ struct HFCandidateCreator3ProngExpressions {
           RecoDecay::getDaughters(particlesMC, particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = particlesMC.iteratorAt(arrDaughIndex[jProng]);
+              auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) or (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {

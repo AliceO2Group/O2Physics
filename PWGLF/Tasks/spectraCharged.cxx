@@ -221,8 +221,7 @@ bool chargedSpectra::initParticle(const P& particle)
 {
   vars.isChargedPrimary = false;
   auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-  // if (!pdgParticle || pdgParticle->Charge() == 0.) {
-  if (!pdgParticle || TMath::Abs(pdgParticle->Charge()) != 3.) { // This is only a temporary workaround for isPhysicalPrimary and should be replaced by commented line in future
+  if (!pdgParticle || pdgParticle->Charge() == 0.) {
     return false;
   }
   vars.isChargedPrimary = particle.isPhysicalPrimary();
@@ -275,9 +274,12 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   }
 
   vars.isAcceptedEvent = false;
-  // if ((collision.posZ() < 10.f) && isRun3 ? collision.sel8() : (collision.alias()[kINT7] && collision.sel7())) {
-  if ((collision.posZ() < 10.f) && collision.sel8()) { // This is only a temporary workaround and should in the future be replaced by commented line
-    vars.isAcceptedEvent = true;
+  if (collision.posZ() < 10.f) {
+    if (isRun3 ? collision.sel8() : collision.sel7()) {
+      if ((isRun3 || isMC) ? true : collision.alias()[kINT7]) {
+        vars.isAcceptedEvent = true;
+      }
+    }
   }
 }
 

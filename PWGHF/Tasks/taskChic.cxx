@@ -151,7 +151,7 @@ struct TaskChicMC {
   Filter filterSelectCandidates = (aod::hf_selcandidate_chic::isSelChicToJpsiToEEGamma >= selectionFlagChic || aod::hf_selcandidate_chic::isSelChicToJpsiToMuMuGamma >= selectionFlagChic);
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HFSelChicToJpsiGammaCandidate, aod::HfCandChicMCRec>> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+               soa::Join<aod::McParticles, aod::HfCandChicMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
   {
     // MC rec.
     //Printf("MC Candidates: %d", candidates.size());
@@ -165,8 +165,8 @@ struct TaskChicMC {
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
         //FIXME the access to the MC particle gen not yet functional
-        //int indexMother = RecoDecay::getMother(particlesMC, particlesMC.iteratorAt(candidate.index1().mcParticle_as<aod::McParticles_000>().globalIndex()), 20443);
-        //auto particleMother = particlesMC.iteratorAt(indexMother);
+        //int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.index1().mcParticle_as<aod::McParticles_000>().globalIndex()), 20443);
+        //auto particleMother = particlesMC.rawIteratorAt(indexMother);
         //registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
@@ -213,8 +213,8 @@ struct TaskChicMC {
         // properties of gen matched chic, to get a first look at some cuts
         float ptProngs[3];
         int counter = 0;
-        for (int iD = particle.daughter0Id(); iD <= particle.daughter1Id(); ++iD) {
-          ptProngs[counter] = particlesMC.iteratorAt(iD).pt();
+        for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+          ptProngs[counter] = dau.pt();
           counter++;
         }
 

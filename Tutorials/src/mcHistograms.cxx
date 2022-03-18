@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "CommonConstants/MathConstants.h"
+#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -33,13 +34,33 @@ struct VertexDistribution {
   }
 };
 
+// Simple analysis of PhysicalPrimary particles
+struct PhysicalPrimaryCharge {
+  OutputObj<TH1F> charge{TH1F("charge_prim", "charge_prim", 100, -5, 5)};
+  Service<TDatabasePDG> pdgDB;
+
+  void process(aod::McParticles const& mcParticles)
+  {
+    for (auto& particle : mcParticles) {
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      auto pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+      if (!pdgParticle) {
+        continue;
+      }
+      charge->Fill(pdgParticle->Charge() / 3.); // note that charge comes in units of 1/3
+    }
+  }
+};
+
 // Grouping between MC particles and collisions
 struct AccessMcData {
   OutputObj<TH1F> phiH{TH1F("phi", "phi", 100, 0., TwoPI)};
   OutputObj<TH1F> etaH{TH1F("eta", "eta", 102, -2.01, 2.01)};
 
   // group according to McCollisions
-  void process(aod::McCollision const& mcCollision, aod::McParticles_001 const& mcParticles)
+  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
     LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
@@ -52,12 +73,16 @@ struct AccessMcData {
         count++;
         // Loop over mothers and daughters
         if (mcParticle.has_mothers()) {
-          for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+          // Check first mother
+          auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
+          LOGF(info, "First mother: %d has pdg code %d", mother.globalIndex(), mother.pdgCode());
+          // Loop over all mothers (needed for some MCs with junctions etc.)
+          for (auto& m : mcParticle.mothers_as<aod::McParticles>()) {
             LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
           }
         }
         if (mcParticle.has_daughters()) {
-          for (auto& d : mcParticle.daughters_as<aod::McParticles_001>()) {
+          for (auto& d : mcParticle.daughters_as<aod::McParticles>()) {
             LOGF(debug, "D2 %d %d", mcParticle.globalIndex(), d.globalIndex());
           }
         }
@@ -137,6 +162,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<VertexDistribution>(cfgc),
+    adaptAnalysisTask<PhysicalPrimaryCharge>(cfgc),
     adaptAnalysisTask<AccessMcData>(cfgc),
     adaptAnalysisTask<AccessMcTruth>(cfgc),
     adaptAnalysisTask<LoopOverMcMatched>(cfgc)};

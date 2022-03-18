@@ -159,7 +159,7 @@ struct HFLcCandidateSelectorparametrizedPID {
   }
 
   using Trks = soa::Join<aod::BigTracksPID, aod::Tracks, aod::RICHTracksIndex, aod::McTrackLabels, aod::TracksExtra>;
-  void process(aod::HfCandProng3 const& candidates, Trks const& barreltracks, const aod::McParticles_000& mcParticles, const aod::RICHs&, const aod::FRICHs&)
+  void process(aod::HfCandProng3 const& candidates, Trks const& barreltracks, const aod::McParticles& mcParticles, const aod::RICHs&, const aod::FRICHs&)
   {
     for (auto& candidate : candidates) {
 
@@ -205,13 +205,13 @@ struct HFLcCandidateSelectorparametrizedPID {
       int pdgPositive2 = 0;
       int pdgNegative = 0;
       if (trackPos1.has_mcParticle()) {
-        pdgPositive1 = trackPos1.mcParticle_as<aod::McParticles_000>().pdgCode();
+        pdgPositive1 = trackPos1.mcParticle().pdgCode();
       }
       if (trackPos2.has_mcParticle()) {
-        pdgPositive2 = trackPos2.mcParticle_as<aod::McParticles_000>().pdgCode();
+        pdgPositive2 = trackPos2.mcParticle().pdgCode();
       }
       if (trackNeg.has_mcParticle()) {
-        pdgNegative = trackNeg.mcParticle_as<aod::McParticles_000>().pdgCode();
+        pdgNegative = trackNeg.mcParticle().pdgCode();
       }
 
       bool selectPos1Proton = false;

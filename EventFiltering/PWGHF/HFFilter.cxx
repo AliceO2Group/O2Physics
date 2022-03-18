@@ -865,7 +865,7 @@ struct HfFilter { // Main struct for HF triggers
 
   void processTraining(aod::Hf2Prong const& cand2Prongs,
                        aod::Hf3Prong const& cand3Prongs,
-                       aod::McParticles_000 const& particlesMC,
+                       aod::McParticles const& particlesMC,
                        BigTracksMCPID const&)
   {
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
@@ -880,7 +880,7 @@ struct HfFilter { // Main struct for HF triggers
       // D0(bar) → π± K∓
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
         if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
@@ -939,7 +939,7 @@ struct HfFilter { // Main struct for HF triggers
       }
 
       if (indexRec > -1) {
-        auto particle = particlesMC.iteratorAt(indexRec);
+        auto particle = particlesMC.rawIteratorAt(indexRec);
         origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
         if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;

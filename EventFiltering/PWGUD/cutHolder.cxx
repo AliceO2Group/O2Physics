@@ -21,14 +21,14 @@ void cutHolder::SetNTracks(int MinNTracks, int MaxNTracks)
   mMinNTracks = MinNTracks;
   mMaxNTracks = MaxNTracks;
 }
-void cutHolder::SetMinNTracksWithTOFHit(int MinNTracksWithTOFHit)
-{
-  mMinNTracksWithTOFHit = MinNTracksWithTOFHit;
-}
 void cutHolder::SetNetCharge(int MinNetCharge, int MaxNetCharge)
 {
   mMinNetCharge = MinNetCharge;
   mMaxNetCharge = MaxNetCharge;
+}
+void cutHolder::SetPidHypothesis(int pidHypo)
+{
+  mPidHypo = pidHypo;
 }
 void cutHolder::SetPoszRange(float MinPosz, float MaxPosz)
 {
@@ -46,9 +46,10 @@ void cutHolder::SetEtaRange(float minEta, float maxEta)
   mMinEta = minEta;
   mMaxEta = maxEta;
 }
-void cutHolder::SetMaxTOFChi2(float maxTOFChi2)
+void cutHolder::SetIVMRange(float minIVM, float maxIVM)
 {
-  mMaxTOFChi2 = maxTOFChi2;
+  mMinIVM = minIVM;
+  mMaxIVM = maxIVM;
 }
 void cutHolder::SetMaxnSigmaTPC(float maxnSigma)
 {
@@ -63,15 +64,16 @@ void cutHolder::SetMaxnSigmaTOF(float maxnSigma)
 int cutHolder::NDtcoll() const { return mNDtcoll; }
 int cutHolder::minNTracks() const { return mMinNTracks; }
 int cutHolder::maxNTracks() const { return mMaxNTracks; }
-int cutHolder::minNTracksWithTOFHit() const { return mMinNTracksWithTOFHit; }
 int cutHolder::minNetCharge() const { return mMinNetCharge; }
 int cutHolder::maxNetCharge() const { return mMaxNetCharge; }
+int cutHolder::pidHypothesis() const { return mPidHypo; }
 float cutHolder::minPosz() const { return mMinVertexPosz; }
 float cutHolder::maxPosz() const { return mMaxVertexPosz; }
 float cutHolder::minPt() const { return mMinPt; }
 float cutHolder::maxPt() const { return mMaxPt; }
 float cutHolder::minEta() const { return mMinEta; }
 float cutHolder::maxEta() const { return mMaxEta; }
-float cutHolder::maxTOFChi2() const { return mMaxTOFChi2; }
+float cutHolder::minIVM() const { return mMinIVM; }
+float cutHolder::maxIVM() const { return mMaxIVM; }
 float cutHolder::maxnSigmaTPC() const { return mMaxnSigmaTPC; };
 float cutHolder::maxnSigmaTOF() const { return mMaxnSigmaTOF; };

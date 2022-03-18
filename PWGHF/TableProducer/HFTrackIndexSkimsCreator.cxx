@@ -322,7 +322,7 @@ struct HfTagSelTracks {
                MY_TYPE1 const& tracks
 #ifdef MY_DEBUG
                ,
-               aod::McParticles_000& mcParticles
+               aod::McParticles& mcParticles
 #endif
   )
   {
@@ -1409,12 +1409,12 @@ struct HfTrackIndexSkimsCreatorCascades {
 
   void process(SelectedCollisions::iterator const& collision,
                aod::BCs const& bcs,
-               //soa::Filtered<aod::V0Datas> const& V0s,
+               // soa::Filtered<aod::V0Datas> const& V0s,
                aod::V0Datas const& V0s,
                MyTracks const& tracks
 #ifdef MY_DEBUG
                ,
-               aod::McParticles_000& mcParticles
+               aod::McParticles& mcParticles
 #endif
                ) // TODO: I am now assuming that the V0s are already filtered with my cuts (David's work to come)
   {

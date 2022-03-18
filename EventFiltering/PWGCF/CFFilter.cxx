@@ -66,10 +66,10 @@ static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"}
 // uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
 static constexpr uint8_t Track = 0;      // Track
 static constexpr uint8_t V0 = 1;         // V0
-static constexpr uint8_t V0Daughter = 2; // V0  daughters
+// static constexpr uint8_t V0Daughter = 2; // V0  daughters
 static constexpr uint32_t kSignMinusMask = 1;
 static constexpr uint32_t kSignPlusMask = 2;
-static constexpr uint32_t knSigmaProton = 48;
+// static constexpr uint32_t knSigmaProton = 48;
 static constexpr uint32_t kValue0 = 0;
 
 } // namespace
@@ -204,7 +204,7 @@ struct CFFilter {
     auto tmstamp = col.timestamp();
     auto mafneticField = getMagneticFieldTesla(tmstamp);
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
-    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M() / 2.);
+    registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
 
     for (auto p1pt : partsProton0) {
@@ -228,7 +228,7 @@ struct CFFilter {
     bool keepEvent[nTriplets]{false};
     int lowQ3Triplets[2] = {0, 0};
     if (partsFemto.size() != 0) {
-      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M() / 2.);
+      registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M());
       registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
       auto Q3TriggerLimit = (std::vector<float>)confQ3TriggerLimit;
       // TRIGGER FOR PPP TRIPLETS

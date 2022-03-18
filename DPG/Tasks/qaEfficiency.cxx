@@ -8,10 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Peter Hristov <Peter.Hristov@cern.ch>, CERN
-/// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
-/// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
-/// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
+
+///
+/// \file   qaEfficiency.cxx
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief  Task to analyse both data and MC to produce efficiency vs pT, eta and phi.
+///
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
@@ -43,12 +45,11 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Task to QA the efficiency of a particular particle defined by its pdg code
-// template <o2::track::pid_constants::ID particle, int pdgSign>
 template <int pdgSign>
 struct QaEfficiencyMc {
-  static constexpr int nSpecies = 9;
-  static constexpr const char* particleTitle[nSpecies] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
-  static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040};
+  static constexpr int nSpecies = o2::track::PID::NIDs + 1;
+  static constexpr const char* particleTitle[nSpecies] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha", "All"};
+  static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040, 0};
   // Particle selection
   Configurable<float> etaMin{"eta-min", -3.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 3.f, "Upper limit in eta"};
@@ -60,6 +61,7 @@ struct QaEfficiencyMc {
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<int> selPrim{"sel-prim", 1, "1 select primaries, 0 select all particles"};
   Configurable<bool> noFakes{"noFakes", false, "Flag to reject tracks that have fake hits"};
+  Configurable<bool> doUnId{"do-un-id", true, "Flag to run without PDG code"};
   Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of pions"};
   Configurable<bool> doMu{"do-mu", false, "Flag to run with the PDG code of muons"};
   Configurable<bool> doPi{"do-pi", false, "Flag to run with the PDG code of pions"};
@@ -88,72 +90,93 @@ struct QaEfficiencyMc {
   // Pt
   static constexpr std::string_view hptnum[nSpecies] = {"el/pt/num", "mu/pt/num", "pi/pt/num",
                                                         "ka/pt/num", "pr/pt/num", "de/pt/num",
-                                                        "tr/pt/num", "he/pt/num", "al/pt/num"};
+                                                        "tr/pt/num", "he/pt/num", "al/pt/num",
+                                                        "all/pt/num"};
   static constexpr std::string_view hptnumtrk[nSpecies] = {"el/pt/numtrk", "mu/pt/numtrk", "pi/pt/numtrk",
                                                            "ka/pt/numtrk", "pr/pt/numtrk", "de/pt/numtrk",
-                                                           "tr/pt/numtrk", "he/pt/numtrk", "al/pt/numtrk"};
+                                                           "tr/pt/numtrk", "he/pt/numtrk", "al/pt/numtrk",
+                                                           "all/pt/numtrk"};
   static constexpr std::string_view hptnumtof[nSpecies] = {"el/pt/numtof", "mu/pt/numtof", "pi/pt/numtof",
                                                            "ka/pt/numtof", "pr/pt/numtof", "de/pt/numtof",
-                                                           "tr/pt/numtof", "he/pt/numtof", "al/pt/numtof"};
+                                                           "tr/pt/numtof", "he/pt/numtof", "al/pt/numtof",
+                                                           "all/pt/numtof"};
   static constexpr std::string_view hptden[nSpecies] = {"el/pt/den", "mu/pt/den", "pi/pt/den",
                                                         "ka/pt/den", "pr/pt/den", "de/pt/den",
-                                                        "tr/pt/den", "he/pt/den", "al/pt/den"};
+                                                        "tr/pt/den", "he/pt/den", "al/pt/den",
+                                                        "all/pt/den"};
   // P
   static constexpr std::string_view hpnum[nSpecies] = {"el/p/num", "mu/p/num", "pi/p/num",
                                                        "ka/p/num", "pr/p/num", "de/p/num",
-                                                       "tr/p/num", "he/p/num", "al/p/num"};
+                                                       "tr/p/num", "he/p/num", "al/p/num",
+                                                       "all/p/num"};
   static constexpr std::string_view hpnumtrk[nSpecies] = {"el/p/numtrk", "mu/p/numtrk", "pi/p/numtrk",
                                                           "ka/p/numtrk", "pr/p/numtrk", "de/p/numtrk",
-                                                          "tr/p/numtrk", "he/p/numtrk", "al/p/numtrk"};
+                                                          "tr/p/numtrk", "he/p/numtrk", "al/p/numtrk",
+                                                          "all/p/numtrk"};
   static constexpr std::string_view hpnumtof[nSpecies] = {"el/p/numtof", "mu/p/numtof", "pi/p/numtof",
                                                           "ka/p/numtof", "pr/p/numtof", "de/p/numtof",
-                                                          "tr/p/numtof", "he/p/numtof", "al/p/numtof"};
+                                                          "tr/p/numtof", "he/p/numtof", "al/p/numtof",
+                                                          "all/p/numtof"};
   static constexpr std::string_view hpden[nSpecies] = {"el/p/den", "mu/p/den", "pi/p/den",
                                                        "ka/p/den", "pr/p/den", "de/p/den",
-                                                       "tr/p/den", "he/p/den", "al/p/den"};
+                                                       "tr/p/den", "he/p/den", "al/p/den",
+                                                       "all/p/den"};
   // Eta
   static constexpr std::string_view hetanum[nSpecies] = {"el/eta/num", "mu/eta/num", "pi/eta/num",
                                                          "ka/eta/num", "pr/eta/num", "de/eta/num",
-                                                         "tr/eta/num", "he/eta/num", "al/eta/num"};
+                                                         "tr/eta/num", "he/eta/num", "al/eta/num",
+                                                         "all/eta/num"};
   static constexpr std::string_view hetanumtrk[nSpecies] = {"el/eta/numtrk", "mu/eta/numtrk", "pi/eta/numtrk",
                                                             "ka/eta/numtrk", "pr/eta/numtrk", "de/eta/numtrk",
-                                                            "tr/eta/numtrk", "he/eta/numtrk", "al/eta/numtrk"};
+                                                            "tr/eta/numtrk", "he/eta/numtrk", "al/eta/numtrk",
+                                                            "all/eta/numtrk"};
   static constexpr std::string_view hetanumtof[nSpecies] = {"el/eta/numtof", "mu/eta/numtof", "pi/eta/numtof",
                                                             "ka/eta/numtof", "pr/eta/numtof", "de/eta/numtof",
-                                                            "tr/eta/numtof", "he/eta/numtof", "al/eta/numtof"};
+                                                            "tr/eta/numtof", "he/eta/numtof", "al/eta/numtof",
+                                                            "all/eta/numtof"};
   static constexpr std::string_view hetaden[nSpecies] = {"el/eta/den", "mu/eta/den", "pi/eta/den",
                                                          "ka/eta/den", "pr/eta/den", "de/eta/den",
-                                                         "tr/eta/den", "he/eta/den", "al/eta/den"};
+                                                         "tr/eta/den", "he/eta/den", "al/eta/den",
+                                                         "all/eta/den"};
   // Y
   static constexpr std::string_view hynum[nSpecies] = {"el/y/num", "mu/y/num", "pi/y/num",
                                                        "ka/y/num", "pr/y/num", "de/y/num",
-                                                       "tr/y/num", "he/y/num", "al/y/num"};
+                                                       "tr/y/num", "he/y/num", "al/y/num",
+                                                       "all/y/num"};
   static constexpr std::string_view hynumtof[nSpecies] = {"el/y/numtof", "mu/y/numtof", "pi/y/numtof",
                                                           "ka/y/numtof", "pr/y/numtof", "de/y/numtof",
-                                                          "tr/y/numtof", "he/y/numtof", "al/y/numtof"};
+                                                          "tr/y/numtof", "he/y/numtof", "al/y/numtof",
+                                                          "all/y/numtof"};
   static constexpr std::string_view hyden[nSpecies] = {"el/y/den", "mu/y/den", "pi/y/den",
                                                        "ka/y/den", "pr/y/den", "de/y/den",
-                                                       "tr/y/den", "he/y/den", "al/y/den"};
+                                                       "tr/y/den", "he/y/den", "al/y/den",
+                                                       "all/y/den"};
   // Phi
   static constexpr std::string_view hphinum[nSpecies] = {"el/phi/num", "mu/phi/num", "pi/phi/num",
                                                          "ka/phi/num", "pr/phi/num", "de/phi/num",
-                                                         "tr/phi/num", "he/phi/num", "al/phi/num"};
+                                                         "tr/phi/num", "he/phi/num", "al/phi/num",
+                                                         "all/phi/num"};
   static constexpr std::string_view hphinumtrk[nSpecies] = {"el/phi/numtrk", "mu/phi/numtrk", "pi/phi/numtrk",
                                                             "ka/phi/numtrk", "pr/phi/numtrk", "de/phi/numtrk",
-                                                            "tr/phi/numtrk", "he/phi/numtrk", "al/phi/numtrk"};
+                                                            "tr/phi/numtrk", "he/phi/numtrk", "al/phi/numtrk",
+                                                            "all/phi/numtrk"};
   static constexpr std::string_view hphinumtof[nSpecies] = {"el/phi/numtof", "mu/phi/numtof", "pi/phi/numtof",
                                                             "ka/phi/numtof", "pr/phi/numtof", "de/phi/numtof",
-                                                            "tr/phi/numtof", "he/phi/numtof", "al/phi/numtof"};
+                                                            "tr/phi/numtof", "he/phi/numtof", "al/phi/numtof",
+                                                            "all/phi/numtof"};
   static constexpr std::string_view hphiden[nSpecies] = {"el/phi/den", "mu/phi/den", "pi/phi/den",
                                                          "ka/phi/den", "pr/phi/den", "de/phi/den",
-                                                         "tr/phi/den", "he/phi/den", "al/phi/den"};
+                                                         "tr/phi/den", "he/phi/den", "al/phi/den",
+                                                         "all/phi/den"};
   // Eta-Phi
   static constexpr std::string_view hptetanum[nSpecies] = {"el/pteta/num", "mu/pteta/num", "pi/pteta/num",
                                                            "ka/pteta/num", "pr/pteta/num", "de/pteta/num",
-                                                           "tr/pteta/num", "he/pteta/num", "al/pteta/num"};
+                                                           "tr/pteta/num", "he/pteta/num", "al/pteta/num",
+                                                           "all/pteta/num"};
   static constexpr std::string_view hptetaden[nSpecies] = {"el/pteta/den", "mu/pteta/den", "pi/pteta/den",
                                                            "ka/pteta/den", "pr/pteta/den", "de/pteta/den",
-                                                           "tr/pteta/den", "he/pteta/den", "al/pteta/den"};
+                                                           "tr/pteta/den", "he/pteta/den", "al/pteta/den",
+                                                           "all/pteta/den"};
 
   template <o2::track::PID::ID particle>
   void makeHistograms()
@@ -168,8 +191,10 @@ struct QaEfficiencyMc {
     const AxisSpec axisY{yBins, yMin, yMax, "#it{y}"};
     const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
 
+    const char* partName = particle == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(particle);
+
     const TString tagPt = Form("%s #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
-                               o2::track::PID::getName(particle),
+                               partName,
                                etaMin.value, etaMax.value,
                                yMin.value, yMax.value,
                                phiMin.value, phiMax.value,
@@ -185,7 +210,7 @@ struct QaEfficiencyMc {
     histos.add(hpden[particle].data(), "Denominator " + tagPt, kTH1D, {axisP});
 
     const TString tagEta = Form("%s #it{p}_{T} [%.2f,%.2f] #it{y} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
-                                o2::track::PID::getName(particle),
+                                partName,
                                 ptMin.value, ptMax.value,
                                 yMin.value, yMax.value,
                                 phiMin.value, phiMax.value,
@@ -196,7 +221,7 @@ struct QaEfficiencyMc {
     histos.add(hetaden[particle].data(), "Denominator " + tagEta, kTH1D, {axisEta});
 
     const TString tagY = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f] Prim %i",
-                              o2::track::PID::getName(particle),
+                              partName,
                               ptMin.value, ptMax.value,
                               etaMin.value, etaMax.value,
                               phiMin.value, phiMax.value,
@@ -206,7 +231,7 @@ struct QaEfficiencyMc {
     histos.add(hyden[particle].data(), "Denominator " + tagY, kTH1D, {axisY});
 
     const TString tagPhi = Form("%s #it{p}_{T} [%.2f,%.2f] #it{#eta} [%.2f,%.2f] #it{y} [%.2f,%.2f] Prim %i",
-                                o2::track::PID::getName(particle),
+                                partName,
                                 ptMin.value, ptMax.value,
                                 etaMin.value, etaMax.value,
                                 yMin.value, yMax.value,
@@ -217,7 +242,7 @@ struct QaEfficiencyMc {
     histos.add(hphiden[particle].data(), "Denominator " + tagPhi, kTH1D, {axisPhi});
 
     const TString tagPtEta = Form("%s #it{#varphi} [%.2f,%.2f] #it{y} [%.2f,%.2f] Prim %i",
-                                  o2::track::PID::getName(particle),
+                                  partName,
                                   phiMin.value, phiMax.value,
                                   yMin.value, yMax.value,
                                   selPrim.value);
@@ -226,10 +251,11 @@ struct QaEfficiencyMc {
 
     if (makeEff) {
       TList* subList = new TList();
-      subList->SetName(o2::track::PID::getName(particle));
+      const char* partName = particle == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(particle);
+      subList->SetName(partName);
       listEfficiency->Add(subList);
       auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
-        effname = o2::track::PID::getName(particle) + effname;
+        effname = partName + effname;
         const TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
         if (axis->IsVariableBinSize()) {
           subList->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
@@ -243,7 +269,7 @@ struct QaEfficiencyMc {
       makeEfficiency("efficiencyVsPhi", "Efficiency " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST(hphinum[particle]));
 
       auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHisto) {
-        effname = o2::track::PID::getName(particle) + effname;
+        effname = partName + effname;
         const TAxis* axisX = histos.get<TH2>(templateHisto)->GetXaxis();
         const TAxis* axisY = histos.get<TH2>(templateHisto)->GetYaxis();
         if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
@@ -279,7 +305,7 @@ struct QaEfficiencyMc {
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(11, "Passed standard quality cuts");
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(12, "Passed has collision");
     for (int i = 0; i < nSpecies; i++) {
-      histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(13 + i, Form("Passed PDG %i", PDGs[i]));
+      histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(13 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
     }
     histos.add("fakeTrackNoiseHits", "Fake tracks from noise hits", kTH1D, {{1, 0, 1}});
 
@@ -293,7 +319,7 @@ struct QaEfficiencyMc {
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7, "Passed Prim.");
     histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(8, "Passed Prim. MC");
     for (int i = 0; i < nSpecies; i++) {
-      histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(9 + i, Form("Passed PDG %i", PDGs[i]));
+      histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(9 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
     }
 
     histos.add("eventMultiplicity", "Event Selection", kTH1D, {{1000, 0, 5000}});
@@ -327,12 +353,25 @@ struct QaEfficiencyMc {
     if (doAl) {
       makeHistograms<o2::track::PID::Alpha>();
     }
+    if (doUnId) {
+      makeHistograms<o2::track::PID::NIDs>();
+    }
   }
 
   template <o2::track::PID::ID particle, typename particleType>
   bool isPdgSelected(particleType mcParticle)
   {
     // Selecting PDG code
+    if constexpr (PDGs[particle] == 0) {
+      if constexpr (pdgSign == 0) {
+        return true;
+      } else if constexpr (pdgSign == 1) {
+        return mcParticle.pdgCode() > 0;
+      }
+      if constexpr (pdgSign == -1) {
+        return mcParticle.pdgCode() < 0;
+      }
+    }
     if constexpr (pdgSign == 0) {
       if (abs(mcParticle.pdgCode()) != PDGs[particle]) {
         return false;
@@ -387,6 +426,7 @@ struct QaEfficiencyMc {
     if (!isPdgSelected<particle>(mcParticle)) { // Selecting PDG code
       return;
     }
+    histos.fill(HIST("partSelection"), 9 + particle);
 
     histos.fill(HIST(hpden[particle]), mcParticle.p());
     histos.fill(HIST(hptden[particle]), mcParticle.pt());
@@ -552,6 +592,9 @@ struct QaEfficiencyMc {
       if (doAl) {
         fillTrackHistograms<o2::track::PID::Alpha>(track);
       }
+      if (doUnId) {
+        fillTrackHistograms<o2::track::PID::NIDs>(track);
+      }
     }
 
     float dNdEta = 0;
@@ -590,6 +633,9 @@ struct QaEfficiencyMc {
       if (doAl) {
         fillParticleHistograms<o2::track::PID::Alpha>(mcParticle);
       }
+      if (doUnId) {
+        fillParticleHistograms<o2::track::PID::NIDs>(mcParticle);
+      }
     }
     histos.fill(HIST("eventMultiplicity"), dNdEta * 0.5f / 2.f);
 
@@ -621,6 +667,9 @@ struct QaEfficiencyMc {
       if (doAl) {
         fillEfficiency<o2::track::PID::Alpha>();
       }
+      if (doUnId) {
+        fillEfficiency<o2::track::PID::NIDs>();
+      }
     }
   }
 };
@@ -646,6 +695,7 @@ struct QaEfficiencyData {
   Configurable<int> phiBins{"phi-bins", 500, "Number of phi bins"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
+  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
 
   OutputObj<TList> listEfficiency{"Efficiency"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -676,8 +726,9 @@ struct QaEfficiencyData {
     const AxisSpec axisSel{9, 0.5, 9.5, "Selection"};
     histos.add("eventSelection", "Event Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Contrib.");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Position");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
 
     histos.add("trackSelection", "Track Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -761,14 +812,20 @@ struct QaEfficiencyData {
   {
 
     histos.fill(HIST("eventSelection"), 1);
-    if (collision.numContrib() < nMinNumberOfContributors) {
+    if (applyEvSel == 1 && !collision.sel7()) {
+      return;
+    } else if (applyEvSel == 2 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("eventSelection"), 2);
-    if ((collision.posZ() < vertexZMin || collision.posZ() > vertexZMax)) {
+    if (collision.numContrib() < nMinNumberOfContributors) {
       return;
     }
     histos.fill(HIST("eventSelection"), 3);
+    if ((collision.posZ() < vertexZMin || collision.posZ() > vertexZMax)) {
+      return;
+    }
+    histos.fill(HIST("eventSelection"), 4);
 
     for (const auto& track : tracks) {
       histos.fill(HIST("trackSelection"), 1);

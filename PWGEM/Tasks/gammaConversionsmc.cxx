@@ -21,6 +21,7 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTPC.h"
 
+#include <TH1.h>
 #include <TH1F.h>
 #include <TVector3.h>
 
@@ -31,7 +32,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+// using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+using collisionEvSelIt = aod::Collisions::iterator;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 #include "Framework/runDataProcessing.h"
@@ -74,188 +76,452 @@ struct GammaConversionsmc {
 
   Configurable<float> fCosPAngleCut{"fCosPAngleCut", 0.85, "mimimum cosinus of the pointing angle"}; // case 4
 
-  HistogramRegistry registry{
-    "registry",
+  // SFS todo: struct MyHistogramSpec : public HistogramSpec {
+  struct MyHistogramSpec {
+    MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false)
+      : name(name_),
+        hash(compile_time_hash(name_)),
+        title(title_),
+        config(config_),
+        callSumw2(callSumw2_)
     {
-      {"hEvents", "hEvents", {HistType::kTH1F, {{13, -0.5f, 11.5f}}}},
-      {"IsPhotonSelected", "IsPhotonSelected", {HistType::kTH1F, {{13, -0.5f, 11.5f}}}},
+    }
 
-      {"beforeCuts/hPtRec", "hPtRec_before", {HistType::kTH1F, {{100, 0.0f, 25.0f}}}},
-      {"beforeCuts/hEtaRec", "hEtaRec_before", {HistType::kTH1F, {{1000, -2.f, 2.f}}}},
-      {"beforeCuts/hPhiRec", "hEtaRec_before", {HistType::kTH1F, {{1000, 0.f, 2.f * M_PI}}}},
-      {"beforeCuts/hConvPointR", "hConvPointR_before", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
+    MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false)
+      : name(name_),
+        hash(compile_time_hash(name_)),
+        title(name_),
+        config(config_),
+        callSumw2(callSumw2_)
+    {
+    }
 
-      {"hPtRec", "hPtRec", {HistType::kTH1F, {{100, 0.0f, 25.0f}}}},
-      {"hEtaRec", "hEtaRec", {HistType::kTH1F, {{1000, -2.f, 2.f}}}},
-      {"hPhiRec", "hEtaRec", {HistType::kTH1F, {{1000, 0.f, 2.f * M_PI}}}},
-      {"hConvPointR", "hConvPointR", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
+    MyHistogramSpec()
+      : name(""),
+        hash(0),
+        config()
+    {
+    }
+    MyHistogramSpec(MyHistogramSpec const& other) = default;
+    MyHistogramSpec(MyHistogramSpec&& other) = default;
 
-      {"hTPCdEdxSigEl", "hTPCdEdxSigEl", {HistType::kTH2F, {{150, 0.03f, 20.f}, {400, -10.f, 10.f}}}},
-      {"hTPCdEdxSigPi", "hTPCdEdxSigPi", {HistType::kTH2F, {{150, 0.03f, 20.f}, {400, -10.f, 10.f}}}},
-      {"hTPCdEdx", "hTPCdEdx", {HistType::kTH2F, {{150, 0.03f, 20.f}, {800, 0.f, 200.f}}}},
-
-      {"hTPCFoundOverFindableCls", "hTPCFoundOverFindableCls", {HistType::kTH1F, {{100, 0.f, 1.2f}}}},
-      {"hTPCCrossedRowsOverFindableCls", "hTPCCrossedRowsOverFindableCls", {HistType::kTH1F, {{100, 0.f, 1.5f}}}},
-
-      {"hArmenteros", "hArmenteros", {HistType::kTH2F, {{200, -1.f, 1.f}, {250, 0.f, 25.f}}}},
-      {"hPsiPtRec", "hPsiPtRec", {HistType::kTH2F, {{500, -2.f, 2.f}, {100, 0.f, 25.f}}}},
-
-      {"hCosPAngle", "hCosPAngle", {HistType::kTH1F, {{1000, -1.f, 1.2f}}}},
-
-      // resolution histos
-      {"resolutions/hPtRes", "hPtRes_Rec-MC", {HistType::kTH1F, {{1000, -0.5f, 0.5f}}}},
-      {"resolutions/hEtaRes", "hEtaRes_Rec-MC", {HistType::kTH1F, {{1000, -2.f, 2.f}}}},
-      {"resolutions/hPhiRes", "hPhiRes_Rec-MC", {HistType::kTH1F, {{1000, -M_PI, M_PI}}}},
-
-      {"resolutions/hConvPointRRes", "hConvPointRRes_Rec-MC", {HistType::kTH1F, {{1000, -200.f, 200.f}}}},
-      {"resolutions/hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes", {HistType::kTH1F, {{1000, -0.0f, 200.f}}}},
-    },
+    std::string name{};
+    uint32_t hash{};
+    std::string title{};
+    HistogramConfigSpec config{};
+    bool callSumw2{}; // wether or not hist needs heavy error structure produced by Sumw2()
   };
 
-  enum photonCuts {
-    kPhotonIn = 0,
-    kTrackEta,
-    kTrackPt,
-    kElectronPID,
-    kPionRejLowMom,
-    kPionRejHighMom,
-    kTPCFoundOverFindableCls,
-    kTPCCrossedRowsOverFindableCls,
-    kV0Radius,
-    kArmenteros,
-    kPsiPair,
-    kCosinePA,
-    kPhotonOut
+  HistogramRegistry fHistogramRegistry{"fHistogramRegistry"};
+
+  // track histograms
+  std::vector<MyHistogramSpec> fTrackHistoDefinitions{
+    {"hTPCFoundOverFindableCls", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
+    {"hTPCCrossedRowsOverFindableCls", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
+
+    {"hTPCdEdx", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, 0.f, 200.f}}}},
+    {"hTPCdEdxSigEl", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}},
+    {"hTPCdEdxSigPi", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}}};
+
+  // v0 histograms
+  std::vector<MyHistogramSpec> fV0HistoDefinitions{
+    {"hPtRec", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
+    {"hEtaRec", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
+    {"hPhiRec", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
+    {"hConvPointR", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
+    {"hArmenteros", {HistType::kTH2F, {{800, -1.f, 1.f}, {800, 0.f, 0.25f}}}},
+    {"hPsiPtRec", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
+    {"hCosPAngle", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
+
+    {"IsPhotonSelected", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}} // only in afterCuts
   };
 
-  std::vector<TString> fPhotCutsLabels{
-    "kPhotonIn",
-    "kTrackEta",
-    "kTrackPt",
-    "kElectronPID",
-    "kPionRejLowMom",
-    "kPionRejHighMom",
-    "kTPCFoundOverFindableCls",
-    "kTPCCrossedRowsOverFindableCls",
-    "kV0Radius",
-    "kArmenteros",
-    "kPsiPair",
-    "kCosinePA",
-    "kPhotonOut"};
+  // only in mc
+  // resolution histos
+  std::vector<MyHistogramSpec> fV0ResolutionHistoDefinitions{
+    {"hPtRes", "hPtRes_Rec-MC", {HistType::kTH1F, {{800, -0.5f, 0.5f}}}},
+    {"hEtaRes", "hEtaRes_Rec-MC", {HistType::kTH1F, {{800, -0.05f, 0.05f}}}},
+    {"hPhiRes", "hPhiRes_Rec-MC", {HistType::kTH1F, {{800, -0.05f, 0.05f}}}},
+    {"hConvPointRRes", "hConvPointRRes_Rec-MC", {HistType::kTH1F, {{800, -200.f, 200.f}}}},
+    {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
+  };
+
+  // Reconstructed info of MC validated V0s histos fV0ReconstructedInfoMCValidatedHistos
+  std::vector<MyHistogramSpec> fV0ReconstructedInfoMCValidatedHistoDefinitions{
+    {"hValidatedPtRec", {HistType::kTH1F, {{800, -0.0f, 25.f}}}},
+  };
+
+  // MC info only histos
+  std::vector<MyHistogramSpec> fV0MCInfoOnlyHistoDefinitions{
+    {"hValidatedPtTrue", {HistType::kTH1F, {{800, -0.0f, 25.f}}}},
+  };
+
+  std::map<std::string, HistPtr> fTrackHistos;
+  std::map<std::string, HistPtr> fV0Histos;
+  std::map<std::string, HistPtr> fV0ResolutionHistos;
+  std::map<std::string, HistPtr> fV0ReconstructedInfoMCValidatedHistos;
+  std::map<std::string, HistPtr> fV0MCInfoOnlyHistos;
+
+  std::string fPrefixReconstructedInfoHistos{"reconstructedInformationOnly/"};
+  std::string fPrefixMCInfoNeededHistos{"MCinformationNeeded/"};
+
+  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelected"};
+
+  std::map<std::string, size_t> fPhotonCutIndeces{
+    {"kPhotonIn", 0},
+    {"kTrackEta", 1},
+    {"kTrackPt", 2},
+    {"kElectronPID", 3},
+    {"kPionRejLowMom", 4},
+    {"kPionRejHighMom", 5},
+    {"kTPCFoundOverFindableCls", 6},
+    {"kTPCCrossedRowsOverFindableCls", 7},
+    {"kV0Radius", 8},
+    {"kArmenteros", 9},
+    {"kPsiPair", 10},
+    {"kCosinePA", 11},
+    {"kPhotonOut", 12}};
+
+  //~ lXaxis = registry.get<TH1>(HIST("hEvents"))->GetXaxis();
+  //~ lXaxis->SetBinLabel(1, "in");
+  //~ lXaxis->SetBinLabel(2, "int7||sel7");
+  //~ lXaxis->SetBinLabel(3, "cent");
+  //~ lXaxis->SetBinLabel(4, "out");
 
   void init(InitContext const&)
   {
-    TAxis* lXaxis = registry.get<TH1>(HIST("IsPhotonSelected"))->GetXaxis();
-    for (size_t i = 0; i < fPhotCutsLabels.size(); ++i) {
-      lXaxis->SetBinLabel(i + 1, fPhotCutsLabels[i]);
+    for (auto bac : std::vector<std::string>{"beforeCuts/", "afterCuts/"}) {
+
+      // reconstructed data histograms
+      {
+        // track histograms
+        {
+          std::string lPath(fPrefixReconstructedInfoHistos + "track/" + bac);
+      for (auto& tHisto : fTrackHistoDefinitions) {
+        std::string lFullName(lPath + tHisto.name);
+        fTrackHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+      }
     }
 
-    lXaxis = registry.get<TH1>(HIST("hEvents"))->GetXaxis();
-    lXaxis->SetBinLabel(1, "in");
-    lXaxis->SetBinLabel(2, "int7||sel7");
-    lXaxis->SetBinLabel(3, "cent");
-    lXaxis->SetBinLabel(4, "out");
-  }
-
-  template <typename TTRACKS, typename TCOLL, typename TV0>
-  bool processPhoton(TCOLL const& theCollision, const TV0& theV0)
-  {
-    fillHistogramsBeforeCuts(theV0);
-
-    auto lTrackPos = theV0.template posTrack_as<TTRACKS>(); //positive daughter
-    auto lTrackNeg = theV0.template negTrack_as<TTRACKS>(); //negative daughter
-
-    // apply track cuts
-    if (!(trackPassesCuts(lTrackPos) && trackPassesCuts(lTrackNeg))) {
-      return kFALSE;
-    }
-
-    float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
-
-    // apply photon cuts
-    if (!passesPhotonCuts(theV0, lV0CosinePA)) {
-      return kFALSE;
-    }
-
-    fillHistogramsAfterCuts(theV0, lTrackPos, lTrackNeg, lV0CosinePA);
-
-    return kTRUE;
-  }
-
-  template <typename TV0, typename TMC>
-  void processTruePhoton(const TV0& theV0, const TMC& theMcParticles)
-  {
-    auto lTrackPos = theV0.template posTrack_as<tracksAndTPCInfoMC>(); //positive daughter
-    auto lTrackNeg = theV0.template negTrack_as<tracksAndTPCInfoMC>(); //negative daughter
-
-    // todo: verify it is enough to check only mother0 being equal
-    if (lTrackPos.template mcParticle_as<aod::McParticles_000>().has_mother0() &&
-        lTrackPos.template mcParticle_as<aod::McParticles_000>().mother0Id() == lTrackNeg.template mcParticle_as<aod::McParticles_000>().mother0Id()) {
-      auto lMother = lTrackPos.template mcParticle_as<aod::McParticles_000>().template mother0_as<TMC>();
-
-      if (lMother.pdgCode() == 22) {
-
-        registry.fill(HIST("resolutions/hPtRes"), theV0.pt() - lMother.pt());
-        registry.fill(HIST("resolutions/hEtaRes"), theV0.eta() - lMother.eta());
-        registry.fill(HIST("resolutions/hPhiRes"), theV0.phi() - lMother.phi());
-
-        TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-        TVector3 lPosTrackVtxMC(lTrackPos.template mcParticle_as<aod::McParticles_000>().vx(), lTrackPos.template mcParticle_as<aod::McParticles_000>().vy(), lTrackPos.template mcParticle_as<aod::McParticles_000>().vz());
-        // take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
-        TVector3 lConvPointMC(lPosTrackVtxMC);
-
-        registry.fill(HIST("resolutions/hConvPointRRes"), lConvPointRec.Perp() - lConvPointMC.Perp());
-        registry.fill(HIST("resolutions/hConvPointAbsoluteDistanceRes"), TVector3(lConvPointRec - lConvPointMC).Mag());
+    // v0 histograms
+    {
+      std::string lPath(fPrefixReconstructedInfoHistos + "v0/" + bac);
+      for (auto tHisto : fV0HistoDefinitions) {
+        if (tHisto.name == "IsPhotonSelected" && bac == "beforeCuts/") {
+          continue;
+        }
+        std::string lFullName(lPath + tHisto.name);
+        fV0Histos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
       }
     }
   }
+
+  // MC information histos
+  {
+    // v0 Resolution histos
+    {
+      std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + bac);
+      for (auto tHisto : fV0ResolutionHistoDefinitions) {
+        std::string lFullName(lPath + tHisto.name);
+        fV0ResolutionHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+      }
+    }
+
+    // reconstructed info of MC validated V0s histos
+    {
+      {std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + bac);
+    for (auto tHisto : fV0ReconstructedInfoMCValidatedHistoDefinitions) {
+      std::string lFullName(lPath + tHisto.name);
+      fV0ReconstructedInfoMCValidatedHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+    }
+  }
+}
+
+// v0 Info only histos
+{
+  std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + bac);
+  for (auto tHisto : fV0MCInfoOnlyHistoDefinitions) {
+    std::string lFullName(lPath + tHisto.name);
+    fV0MCInfoOnlyHistos.insert(std::pair{lFullName, fHistogramRegistry.add(lFullName.data(), tHisto.title.data(), tHisto.config)});
+  }
+}
+}
+}
+
+{
+  // do some labeling
+  auto lIsPhotonSelectedHisto = fV0Histos.find(fFullNameIsPhotonSelectedHisto);
+  if (lIsPhotonSelectedHisto != fV0Histos.end()) {
+    TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lIsPhotonSelectedHisto->second)->GetXaxis();
+    for (auto& lPairIt : fPhotonCutIndeces) {
+      lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
+    }
+  }
+}
+}
+
+// SFS todo: think about if this is actually too expensive. Going the other way round with the indices as keys wouldnt require lookups at inserting but pbly produce a but of code duplication at the definition of the cut names
+size_t gMax_size = (size_t)-1;
+size_t getPhotonCutIndex(std::string const& theKey)
+{
+  auto lPairIt = fPhotonCutIndeces.find(theKey);
+  if (lPairIt != fPhotonCutIndeces.end()) {
+    return lPairIt->second;
+  }
+  return gMax_size;
+}
+
+template <typename TCOLL, typename TV0, typename TTRACK>
+bool processPhoton(TCOLL const& theCollision, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg)
+{
+  float lV0CosinePA = theV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+
+  fillReconstructedInfoHistograms("beforeCuts/",
+                                  theV0,
+                                  theTrackPos,
+                                  theTrackNeg,
+                                  lV0CosinePA);
+  // apply track cuts
+  if (!(trackPassesCuts(theTrackPos) && trackPassesCuts(theTrackNeg))) {
+    return kFALSE;
+  }
+
+  // apply photon cuts
+  if (!passesPhotonCuts(theV0, lV0CosinePA)) {
+    return kFALSE;
+  }
+
+  fillReconstructedInfoHistograms("afterCuts/",
+                                  theV0,
+                                  theTrackPos,
+                                  theTrackNeg,
+                                  lV0CosinePA);
+
+  return kTRUE;
+}
+
+template <typename TV0, typename TTRACK, typename TMC>
+void processTruePhoton(std::string theBAC, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, const TMC& theMcParticles)
+{
+  // todo: verify it is enough to check only mother0 being equal
+
+  /* example from https://aliceo2group.github.io/analysis-framework/docs/tutorials/indexTables.html?highlight=_as:
+   * track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0
+   */
+
+  //~ // use & here?
+  auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles_001>();
+  auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles_001>();
+
+  //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+  std::vector<int> lMothers;
+  for (auto& mP : lMcPos.template mothers_as<aod::McParticles_001>()) {
+    LOGF(info, "   mother index mP: %d", mP.globalIndex());
+    lMothers.push_back(mP.globalIndex());
+  }
+
+  if (lMothers.size() > 0) {
+    for (auto& mN : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+      LOGF(info, "   mother index mN: %d", mN.globalIndex());
+      lMothers.push_back(mN.globalIndex());
+    }
+  }
+
+  // SFS verify theyre all the same category and remove
+  int lSame = 0;
+  {
+    if (lMothers.size() == 2) {
+      if (lMothers[0] == lMothers[1]) {
+        LOGF(info, "size2: 01");
+        lSame = 1;
+      }
+    }
+
+    if (lMothers.size() == 3) {
+      if (lMothers[0] == lMothers[1]) {
+        LOGF(info, "size3: 01");
+        lSame = 2;
+      }
+      if (lMothers[0] == lMothers[2]) {
+        LOGF(info, "size2: 02");
+        lSame = 3;
+      }
+      if (lMothers[1] == lMothers[2]) {
+        LOGF(info, "size2: 12");
+        lSame = 4;
+      }
+    }
+
+    if (lMothers.size() == 4) {
+      if (lMothers[0] == lMothers[2]) {
+        LOGF(info, "size4 02");
+        lSame = 4;
+      }
+      if (lMothers[1] == lMothers[3]) {
+        LOGF(info, "size4 13");
+        lSame = 5;
+      }
+      if (lMothers[0] == lMothers[3]) {
+        LOGF(info, "size4 03");
+        lSame = 6;
+      }
+      if (lMothers[1] == lMothers[2]) {
+        LOGF(info, "size4 12");
+        lSame = 7;
+      }
+      if (lMothers[0] == lMothers[1]) {
+        LOGF(info, "size4 01");
+        lSame = 8;
+      }
+      if (lMothers[2] == lMothers[3]) {
+        LOGF(info, "size4 23");
+        lSame = 9;
+      }
+    }
+  }
+
+  if (lSame) {
+
+    // SFS todo: actually no loop required here, for this
+    for (auto& lMother : lMcNeg.template mothers_as<aod::McParticles_001>()) {
+
+      if (lMother.pdgCode() == 22) {
+
+        TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
+        TVector3 lPosTrackVtxMC(theTrackPos.template mcParticle_as<aod::McParticles_001>().vx(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vy(), theTrackPos.template mcParticle_as<aod::McParticles_001>().vz());
+
+        // take the origin of the positive mc track as conversion point (should be identical with negative, verified this on a few photons)
+        TVector3 lConvPointMC(lPosTrackVtxMC);
+
+        // v0 resolution histos
+        {
+          std::string lPath(fPrefixMCInfoNeededHistos + "v0/resolutions/" + theBAC);
+          fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lMother.pt());
+          fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lMother.eta());
+          fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lMother.phi());
+          fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", lConvPointRec.Perp() - lConvPointMC.Perp());
+          fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointMC).Mag());
+        }
+
+        // reconstructed info of MC validated V0s histos
+        {
+          std::string lPath(fPrefixMCInfoNeededHistos + "v0/reconstructedInfoOfMCvalidated/" + theBAC);
+          fillTH1(fV0ReconstructedInfoMCValidatedHistos, lPath + "hValidatedPtRec", theV0.pt());
+        }
+
+        // v0 MCInfoOnly histos
+        {
+          std::string lPath(fPrefixMCInfoNeededHistos + "v0/MCinformationOnly/" + theBAC);
+          fillTH1(fV0MCInfoOnlyHistos, lPath + "hValidatedPtTrue", lMother.pt());
+        }
+      }
+    }
+  }
+}
 
   void processMC(collisionEvSelIt const& theCollision,
                  aod::V0Datas const& theV0s,
                  tracksAndTPCInfoMC const& theTracks,
                  aod::McParticles const& theMcParticles)
   {
-    registry.fill(HIST("hEvents"), 0);
-    if (fDoEventSel && !theCollision.sel7()) {
-      registry.fill(HIST("hEvents"), 1);
-      return;
-    }
-    registry.fill(HIST("hEvents"), 3);
-
     for (auto& lV0 : theV0s) {
-      if (!processPhoton<tracksAndTPCInfoMC>(theCollision, lV0)) {
+
+      auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
+      auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+
+      processTruePhoton("beforeCuts/",
+                        lV0,
+                        lTrackPos,
+                        lTrackNeg,
+                        theMcParticles);
+
+      if (!processPhoton(theCollision, lV0, lTrackPos, lTrackNeg)) {
         continue;
       }
-      processTruePhoton(lV0, theMcParticles);
+      processTruePhoton("afterCuts/",
+                        lV0,
+                        lTrackPos,
+                        lTrackNeg,
+                        theMcParticles);
     }
   }
 
   PROCESS_SWITCH(GammaConversionsmc, processMC, "Process MC", true);
 
   template <typename T>
-  void fillHistogramsBeforeCuts(const T& theV0)
+  std::shared_ptr<T> getTH(std::map<std::string, HistPtr> const& theMap, std::string const& theName)
   {
-    // fill some QA histograms before any cuts
-    registry.fill(HIST("beforeCuts/hPtRec"), theV0.pt());
-    registry.fill(HIST("beforeCuts/hEtaRec"), theV0.eta());
-    registry.fill(HIST("beforeCuts/hPhiRec"), theV0.phi());
-    registry.fill(HIST("beforeCuts/hConvPointR"), theV0.v0radius());
-    registry.fill(HIST("IsPhotonSelected"), kPhotonIn);
+    auto lPairIt = theMap.find(theName);
+    if (lPairIt == theMap.end()) {
+      LOGF(warning, "SFS getTH(): No element with key %s in map.", theName.data());
+      return std::shared_ptr<T>(); // SFS todo verify this is correct
+    }
+    if (!std::holds_alternative<std::shared_ptr<T>>(lPairIt->second)) {
+      LOGF(warning, "SFS getTH(): No shared_ptr<T> in map for key %s.", theName.data());
+      return std::shared_ptr<T>();
+    }
+    std::shared_ptr<T> lHisto = std::get<std::shared_ptr<T>>(lPairIt->second);
+    if (lHisto == nullptr) {
+      LOGF(warning, "SFS getTH(): Found shared_ptr<T> for key %s but it is a nullptr.", theName.data());
+      return std::shared_ptr<T>();
+    }
+    return lHisto;
+  }
+
+  void fillTH1(std::map<std::string, HistPtr> const& theMap, std::string const& theName, float theValue)
+  {
+    std::shared_ptr<TH1> lHisto = getTH<TH1>(theMap, theName);
+    if (lHisto != nullptr) {
+      lHisto->Fill(theValue);
+    }
+  }
+
+  void fillTH2(std::map<std::string, HistPtr> const& theMap, std::string const& theName, float theValueX, float theValueY)
+  {
+    std::shared_ptr<TH2> lHisto = getTH<TH2>(theMap, theName);
+    if (lHisto != nullptr) {
+      lHisto->Fill(theValueX, theValueY);
+    }
+  }
+
+  template <typename TTRACK>
+  void fillTrackHistograms(std::string theHistoPath, const TTRACK& theTrackPos, const TTRACK& theTrackNeg)
+  {
+    auto fillTrackHistogramsI = [&](const TTRACK& theTrack) {
+      fillTH1(fTrackHistos, theHistoPath + "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
+      fillTH1(fTrackHistos, theHistoPath + "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
+      fillTH2(fTrackHistos, theHistoPath + "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
+      fillTH2(fTrackHistos, theHistoPath + "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
+      fillTH2(fTrackHistos, theHistoPath + "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
+    };
+    fillTrackHistogramsI(theTrackPos);
+    fillTrackHistogramsI(theTrackNeg);
+  }
+
+  template <typename TV0>
+  void fillV0Histograms(std::string theHistoPath, const TV0& theV0, float theV0CosinePA)
+  {
+    fillTH1(fV0Histos, theHistoPath + "hPtRec", theV0.pt());
+    fillTH1(fV0Histos, theHistoPath + "hEtaRec", theV0.eta());
+    fillTH1(fV0Histos, theHistoPath + "hPhiRec", theV0.phi());
+    fillTH1(fV0Histos, theHistoPath + "hConvPointR", theV0.v0radius());
+    fillTH1(fV0Histos, theHistoPath + "hCosPAngle", theV0CosinePA);
+    fillTH2(fV0Histos, theHistoPath + "hArmenteros", theV0.alpha(), theV0.qtarm());
+    fillTH2(fV0Histos, theHistoPath + "hPsiPtRec", theV0.psipair(), theV0.pt());
   }
 
   template <typename T>
   bool trackPassesCuts(const T& theTrack)
   {
-
     // single track eta cut
     if (TMath::Abs(theTrack.eta()) > fEtaCut) {
-      registry.fill(HIST("IsPhotonSelected"), kTrackEta);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
       return kFALSE;
     }
 
     // single track pt cut
     if (theTrack.pt() < fSinglePtCut) {
-      registry.fill(HIST("IsPhotonSelected"), kTrackPt);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
       return kFALSE;
     }
 
@@ -264,12 +530,12 @@ struct GammaConversionsmc {
     }
 
     if (theTrack.tpcFoundOverFindableCls() < fMinTPCFoundOverFindableCls) {
-      registry.fill(HIST("IsPhotonSelected"), kTPCFoundOverFindableCls);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCFoundOverFindableCls"));
       return kFALSE;
     }
 
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
-      registry.fill(HIST("IsPhotonSelected"), kTPCCrossedRowsOverFindableCls);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCCrossedRowsOverFindableCls"));
       return kFALSE;
     }
 
@@ -280,22 +546,22 @@ struct GammaConversionsmc {
   bool passesPhotonCuts(const T& theV0, float theV0CosinePA)
   {
     if (theV0.v0radius() < fMinR || theV0.v0radius() > fMaxR) {
-      registry.fill(HIST("IsPhotonSelected"), kV0Radius);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
       return kFALSE;
     }
 
     if (!ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
-      registry.fill(HIST("IsPhotonSelected"), kArmenteros);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kArmenteros"));
       return kFALSE;
     }
 
     if (TMath::Abs(theV0.psipair()) > fPsiPairCut) {
-      registry.fill(HIST("IsPhotonSelected"), kPsiPair);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
       return kFALSE;
     }
 
     if (theV0CosinePA < fCosPAngleCut) {
-      registry.fill(HIST("IsPhotonSelected"), kCosinePA);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
       return kFALSE;
     }
 
@@ -303,33 +569,16 @@ struct GammaConversionsmc {
   }
 
   template <typename TV0, typename TTRACK>
-  void fillHistogramsAfterCuts(const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, float theV0CosinePA)
+  void fillReconstructedInfoHistograms(std::string theBAC, const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, float theV0CosinePA)
   {
-    registry.fill(HIST("IsPhotonSelected"), kPhotonOut);
+    fillTrackHistograms(fPrefixReconstructedInfoHistos + "track/" + theBAC, theTrackPos, theTrackNeg);
+    fillV0Histograms(fPrefixReconstructedInfoHistos + "v0/" + theBAC, theV0, theV0CosinePA);
 
-    registry.fill(HIST("hPtRec"), theV0.pt());
-    registry.fill(HIST("hEtaRec"), theV0.eta());
-    registry.fill(HIST("hPhiRec"), theV0.phi());
-    registry.fill(HIST("hConvPointR"), theV0.v0radius());
-
-    registry.fill(HIST("hTPCdEdxSigEl"), theTrackNeg.p(), theTrackNeg.tpcNSigmaEl());
-    registry.fill(HIST("hTPCdEdxSigEl"), theTrackPos.p(), theTrackPos.tpcNSigmaEl());
-    registry.fill(HIST("hTPCdEdxSigPi"), theTrackNeg.p(), theTrackNeg.tpcNSigmaPi());
-    registry.fill(HIST("hTPCdEdxSigPi"), theTrackPos.p(), theTrackPos.tpcNSigmaPi());
-
-    registry.fill(HIST("hTPCdEdx"), theTrackNeg.p(), theTrackNeg.tpcSignal());
-    registry.fill(HIST("hTPCdEdx"), theTrackPos.p(), theTrackPos.tpcSignal());
-
-    registry.fill(HIST("hTPCFoundOverFindableCls"), theTrackNeg.tpcFoundOverFindableCls());
-    registry.fill(HIST("hTPCFoundOverFindableCls"), theTrackPos.tpcFoundOverFindableCls());
-
-    registry.fill(HIST("hTPCCrossedRowsOverFindableCls"), theTrackNeg.tpcCrossedRowsOverFindableCls());
-    registry.fill(HIST("hTPCCrossedRowsOverFindableCls"), theTrackPos.tpcCrossedRowsOverFindableCls());
-
-    registry.fill(HIST("hArmenteros"), theV0.alpha(), theV0.qtarm());
-    registry.fill(HIST("hPsiPtRec"), theV0.psipair(), theV0.pt());
-
-    registry.fill(HIST("hCosPAngle"), theV0CosinePA);
+    if (theBAC == "beforeCuts/") {
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));
+    } else if (theBAC == "afterCuts/") {
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonOut"));
+    }
   }
 
   Bool_t ArmenterosQtCut(Double_t theAlpha, Double_t theQt, Double_t thePt)
@@ -350,7 +599,7 @@ struct GammaConversionsmc {
   {
     // TPC Electron Line
     if (theTrack.tpcNSigmaEl() < fPIDnSigmaBelowElectronLine || theTrack.tpcNSigmaEl() > fPIDnSigmaAboveElectronLine) {
-      registry.fill(HIST("IsPhotonSelected"), kElectronPID);
+      fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
       return kFALSE;
     }
 
@@ -359,14 +608,14 @@ struct GammaConversionsmc {
       // low pt Pion rej
       if (theTrack.p() < fPIDMaxPnSigmaAbovePionLine) {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaBelowElectronLine && theTrack.tpcNSigmaEl() < fPIDnSigmaAboveElectronLine && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLine) {
-          registry.fill(HIST("IsPhotonSelected"), kPionRejLowMom);
+          fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaBelowElectronLine && theTrack.tpcNSigmaEl() < fPIDnSigmaAboveElectronLine && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighP) {
-          registry.fill(HIST("IsPhotonSelected"), kPionRejHighMom);
+          fillTH1(fV0Histos, fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
           return kFALSE;
         }
       }
