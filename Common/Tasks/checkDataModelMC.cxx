@@ -112,16 +112,6 @@ struct CheckMcParticlesIndicesGrouped {
   }
 };
 
-struct CheckMcParticlesIndicesGrouped {
-  void process(aod::McCollision const& collision,
-               aod::McParticles const& particlesMC)
-  {
-    for (auto& particle : particlesMC) {
-      checkDaughters(particlesMC, particle);
-    }
-  }
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
