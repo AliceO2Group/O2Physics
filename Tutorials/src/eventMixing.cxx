@@ -22,6 +22,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+namespace o2::aod
+{
+namespace hash
+{
+DECLARE_SOA_COLUMN(Bin, bin, int);
+} // namespace hash
+DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
+
+} // namespace o2::aod
+
 struct MixedEventsPartitionedTracks {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
@@ -129,12 +139,70 @@ struct MixedEventsPartitionedTracks {
 //   }
 // };
 
+struct HashTask {
+  std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072};
+  std::vector<float> yBins{-0.320f, -0.301f, -0.300f, 0.330f, 0.340f, 0.350f, 0.360};
+  Produces<aod::Hashes> hashes;
+
+  // Calculate hash for an element based on 2 properties and their bins.
+  int getHash(const std::vector<float>& xBins, const std::vector<float>& yBins, float colX, float colY)
+  {
+    // underflow
+    if (colX < xBins[0] || colY < yBins[0])
+      return -1;
+
+    for (unsigned int i = 1; i < xBins.size(); i++) {
+      if (colX < xBins[i]) {
+        for (unsigned int j = 1; j < yBins.size(); j++) {
+          if (colY < yBins[j]) {
+            return i + j * (xBins.size() + 1);
+          }
+        }
+        // overflow for yBins only
+        return -1;
+      }
+    }
+
+    // overflow
+    return -1;
+  }
+
+  void process(aod::Tracks const& tracks)
+  {
+    for (auto& track : tracks) {
+      int hash = getHash(xBins, yBins, track.x(), track.y());
+      LOGF(info, "Track: %d (%f, %f, %f) hash: %d", track.index(), track.x(), track.y(), track.z(), hash);
+      hashes(hash);
+    }
+  }
+};
+
+//struct MixedEventsWithHashTask {
+//  NoBinningPolicy<aod::hash::Bin> hashBin;
+//  SameKindPair<aod::Collisions, aod::Tracks> pair{hashBin, 5, -1};
+//
+//  void process(aod::Collisions& collisions, aod::Tracks& tracks)
+//  {
+//    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+//
+//    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+//      int bin = hashBin.getBin({c1.posX(), c1.posY()});
+//      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+//      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+//        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.globalIndex(), t2.globalIndex(), c1.globalIndex(), c2.globalIndex());
+//      }
+//    }
+//  }
+//};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     // To be enabled once new event mixing interface will be merged in O2
     // adaptAnalysisTask<MixedEvents>(cfgc),
     // adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
+    //adaptAnalysisTask<HashTask>(cfgc),
+    // adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
   };
 }
