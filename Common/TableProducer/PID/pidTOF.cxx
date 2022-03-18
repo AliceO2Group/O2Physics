@@ -27,9 +27,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "TableHelper.h"
-#include "Framework/StaticFor.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "pidTOFBase.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -125,7 +124,7 @@ struct tofPid {
     }
   }
 
-  using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection>;
+  using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
   void processEvTime(TrksEvTime const& tracks, aod::Collisions const&)
@@ -157,10 +156,8 @@ struct tofPid {
     reserveTable(pidHe, tablePIDHe);
     reserveTable(pidAl, tablePIDAl);
 
-    int lastCollisionId = -1;      // Last collision ID analysed
-    for (auto const& t : tracks) { // Loop on collisions
-      if (!t.has_collision()) {    // Track was not assigned, cannot compute event time
-
+    for (auto const& trk : tracks) { // Loop on collisions
+      if (!trk.has_collision()) {    // Track was not assigned, cannot compute event time
         auto fillEmptyTable = [](const Configurable<int>& flag, auto& table) {
           if (flag.value != 1) {
             return;
@@ -180,39 +177,13 @@ struct tofPid {
         fillEmptyTable(pidAl, tablePIDAl);
 
         continue;
-      } else if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
-        continue;
       }
-      /// Create new table for the tracks in a collision
-      lastCollisionId = t.collisionId(); /// Cache last collision ID
-
-      const auto tracksInCollision = tracks.sliceBy(aod::track::collisionId, lastCollisionId);
-      // First make table for event time
-      const auto evTime = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, response);
-      static constexpr bool removebias = true;
-      int ngoodtracks = 0;
 
       // Check and fill enabled tables
-      auto makeTable = [&tracksInCollision, &evTime, &ngoodtracks, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
+      auto makeTable = [&trk, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
         if (flag.value == 1) {
-          ngoodtracks = 0;
-          // Prepare memory for enabled tables
-          table.reserve(tracksInCollision.size());
-          for (auto const& trk : tracksInCollision) { // Loop on Tracks
-            float et = evTime.mEventTime;
-            float erret = evTime.mEventTimeError;
-            if constexpr (removebias) {
-              evTime.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, ngoodtracks, et, erret);
-            }
-            if (erret > 199.f) {
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                    table);
-              continue;
-            }
-
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePID.GetSeparation(response, trk, et, erret),
-                                                                  table);
-          }
+          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePID.GetSeparation(response, trk, trk.tofEvTime(), trk.tofEvTimeErr()),
+                                                                table);
         }
       };
 
@@ -383,8 +354,7 @@ struct tofPidQa {
   void fillParticleHistos(const T& t)
   {
     if (applyRapidityCut) {
-      const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
-      if (abs(y) > 0.5) {
+      if (abs(t.rapidity(PID::getMass(id))) > 0.5) {
         return;
       }
     }
@@ -503,8 +473,7 @@ struct tofPidQa {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc),
-                               adaptAnalysisTask<tofPid>(cfgc)};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<tofPid>(cfgc)};
   if (cfgc.options().get<int>("add-qa")) {
     workflow.push_back(adaptAnalysisTask<tofPidQa>(cfgc));
   }

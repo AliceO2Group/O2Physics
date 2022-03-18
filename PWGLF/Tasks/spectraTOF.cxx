@@ -242,7 +242,7 @@ struct tofSpectra {
                                     aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                                     // aod::pidTOFbeta, aod::TOFSignal,
-                                    aod::TrackSelection>;
+                                    aod::pidEvTimeFlags, aod::TrackSelection>;
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                TrackCandidates const& tracks)
