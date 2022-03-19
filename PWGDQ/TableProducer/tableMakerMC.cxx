@@ -559,7 +559,7 @@ struct TableMakerMC {
       //       Note that not all daughters from the original table are preserved in the skimmed MC stack
       std::vector<int> daughters;
       if (mctrack.has_daughters()) {
-        for (auto& d : mctrack.daughtersIds()) {
+        for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
           // TODO: remove this check as soon as issues with MC production are fixed
           if (d < mcTracks.size()) { // protect against bad daughter indices
             if (fNewLabels.find(d) != fNewLabels.end()) {
