@@ -55,7 +55,7 @@ struct SimpleApplyOnnxModelTask {
   // Minimum table requirements for sample model:
   // TPC signal (FullTracks), TOF signal (TOFSignal), TOF beta (pidTOFbeta), dcaXY and dcaZ (TracksExtended)
   // Filter on isGlobalTrack (TracksSelection)
-  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::TrackSelection>>;
 
   void init(InitContext const&)
   {

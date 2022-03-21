@@ -27,6 +27,7 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -295,7 +296,7 @@ struct bayesPid {
 
   /// Response of the TOF detector
   template <o2::track::PID::ID pid>
-  using respTOF = tof::ExpTimes<Trks::iterator, pid>;
+  using respTOF = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
 
   /// Compute PID probabilities for TOF
   template <o2::track::PID::ID pid>

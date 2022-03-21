@@ -15,6 +15,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
+#include "pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::pid;
@@ -34,7 +35,7 @@ struct tofPidBeta {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   using Colls = aod::Collisions;
   Produces<aod::pidTOFbeta> tablePIDBeta;
-  tof::Beta<Trks::iterator> responseBeta;
+  o2::pid::tof::Beta<Trks::iterator> responseBeta;
   Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
 
   void init(o2::framework::InitContext&)

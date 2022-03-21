@@ -24,6 +24,7 @@ DECLARE_SOA_COLUMN(Px, px, float);                                 //! Non-dynam
 DECLARE_SOA_COLUMN(Py, py, float);                                 //! Non-dynamic column with track y-momentum
 DECLARE_SOA_COLUMN(Pz, pz, float);                                 //! Non-dynamic column with track z-momentum
 DECLARE_SOA_COLUMN(Sign, sign, float);                             //! Non-dynamic column with track sign
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                   //! Private version of the TOF signal
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t); //!
 DECLARE_SOA_COLUMN(TOFExpSignalDiffEl, tofExpSignalDiffEl, float); //! Difference between signal and expected for electron
 DECLARE_SOA_COLUMN(TPCExpSignalDiffEl, tpcExpSignalDiffEl, float); //! Difference between signal and expected for electron
@@ -46,7 +47,7 @@ DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for pre
                   aod::track::TRDSignal,
                   aod::track::TrackEtaEMCAL,
                   aod::track::TrackPhiEMCAL,
-                  aod::pidtofsignal::TOFSignal,
+                  aod::pidtracks::TOFSignal,
                   aod::pidtofbeta::Beta,
                   pidtracks::P,
                   aod::track::Pt,
@@ -102,7 +103,7 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for training
                   aod::track::TRDSignal,
                   aod::track::TrackEtaEMCAL,
                   aod::track::TrackPhiEMCAL,
-                  aod::pidtofsignal::TOFSignal,
+                  aod::pidtracks::TOFSignal,
                   aod::pidtofbeta::Beta,
                   pidtracks::P,
                   aod::track::Pt,

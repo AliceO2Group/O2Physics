@@ -31,7 +31,7 @@ struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::McTrackLabels>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentV0Ms, aod::Mults>::iterator;
 
   void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles_000 const& mctracks)
@@ -45,7 +45,7 @@ struct CreateTableMc {
                      collision.multZNA(), collision.multZNC(),
                      collision.multTracklets(), collision.multTPC(),
                      track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
-                     track.tofSignal(), track.beta(),
+                     o2::aod::pidutils::tofFromBeta(track), track.beta(),
                      track.p(), track.pt(), track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),
@@ -73,7 +73,7 @@ struct CreateTableReal {
   Produces<aod::PidTracksReal> pidTracksTable;
 
   Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
-  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentV0Ms, aod::Mults>::iterator;
 
   void process(MyCollision const& collision, BigTracks const& tracks)
@@ -85,7 +85,7 @@ struct CreateTableReal {
                      collision.multZNA(), collision.multZNC(),
                      collision.multTracklets(), collision.multTPC(),
                      track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
-                     track.tofSignal(), track.beta(),
+                     o2::aod::pidutils::tofFromBeta(track), track.beta(),
                      track.p(), track.pt(), track.px(), track.py(), track.pz(),
                      track.sign(),
                      track.x(), track.y(), track.z(),

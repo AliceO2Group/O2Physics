@@ -18,7 +18,7 @@ o2physics_add_dpl_workflow(pid-tof
 
 o2physics_add_dpl_workflow(pid-tof-beta
                     SOURCES pidTOFbeta.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::TOFBase
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-tof-qa-mc
@@ -59,5 +59,5 @@ o2physics_add_dpl_workflow(pid-hmpid-qa
 
 o2physics_add_dpl_workflow(pid-bayes
                     SOURCES pidBayes.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::TOFBase
                     COMPONENT_NAME Analysis)

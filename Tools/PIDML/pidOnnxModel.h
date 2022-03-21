@@ -134,10 +134,11 @@ struct PidONNXModel {
   template <typename T>
   std::vector<float> createInputsSingle(const T& track)
   {
+
     // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
     // sign is short, trackType and tpcNClsShared uint8_t
     float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-    float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
+    float scaledTOFSignal = (o2::aod::pidutils::tofFromBeta(track) - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
     float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
     float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
     float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;

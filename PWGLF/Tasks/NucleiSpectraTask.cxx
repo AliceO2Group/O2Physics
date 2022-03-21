@@ -69,7 +69,7 @@ struct NucleiSpectraTask {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TOFSignal>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::pidTOFbeta>>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks)
   {
@@ -114,10 +114,7 @@ struct NucleiSpectraTask {
         if (!track.hasTOF()) {
           continue;
         }
-        Float_t tofTime = track.tofSignal();
-        Float_t tofLength = track.length();
-        Float_t beta = tofLength / (TMath::C() * 1e-10 * tofTime);
-        spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), beta);
+        spectra.fill(HIST("histTofSignalData"), track.tpcInnerParam() * track.sign(), track.beta());
         spectra.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
         if (abs(track.tofNSigmaHe()) < 4.0) {
           //

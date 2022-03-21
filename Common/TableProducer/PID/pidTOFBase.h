@@ -22,12 +22,26 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "TOFBase/EventTimeMaker.h"
 #include "TableHelper.h"
 
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+namespace o2::aod
+{
+
+namespace pidtofsignal
+{
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! TOF signal from track time
+} // namespace pidtofsignal
+
+DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
+                  pidtofsignal::TOFSignal);
+
+} // namespace o2::aod
 
 /// Task to produce the TOF signal from the trackTime information
 struct tofSignal {

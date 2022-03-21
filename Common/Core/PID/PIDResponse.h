@@ -27,6 +27,9 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
 
+// ROOT includes
+#include "TMath.h"
+
 namespace o2::aod
 {
 namespace pidutils
@@ -353,6 +356,15 @@ const auto tofExpSignalDiff(const o2::track::PID::ID index, const TrackType& tra
   }
 }
 
+// Value of the TOF computed from the track beta in ps
+template <typename TrackType>
+const auto tofFromBeta(const TrackType& track)
+{
+  static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; /// Speed of light in TOF units (cm/ps)
+  // beta = length / (tofSignal - collisionTime) / kCSPEED
+  return track.length() / (track.beta() * kCSPEED);
+}
+
 template <class T>
 using hasTPCEl = decltype(std::declval<T&>().tpcNSigmaEl());
 template <class T>
@@ -662,11 +674,6 @@ const auto tpcExpSignalDiff(const o2::track::PID::ID index, const TrackType& tra
 
 } // namespace pidutils
 
-namespace pidtofsignal
-{
-DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! TOF signal from track time
-} // namespace pidtofsignal
-
 namespace pidtofbeta
 {
 DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
@@ -778,9 +785,6 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaHe, tofNSigmaHe); //! Unwrapped (float) nsi
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsigma with the TOF detector for alpha
 
 } // namespace pidtof_tiny
-
-DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
-                  pidtofsignal::TOFSignal);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::Beta, pidtofbeta::BetaError,

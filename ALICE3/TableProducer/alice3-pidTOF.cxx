@@ -42,36 +42,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-struct ALICE3tofSignal { /// Task that produces the TOF signal from the trackTime
-  Produces<o2::aod::TOFSignal> table;
-  bool enableTable = false;
-
-  void init(o2::framework::InitContext& initContext)
-  {
-    // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      for (auto input : device.inputs) {
-        const std::string table = "TOFSignal";
-        if (input.matcher.binding == table) {
-          enableTable = true;
-        }
-      }
-    }
-  }
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-  void process(Trks const& tracks)
-  {
-    if (!enableTable) {
-      return;
-    }
-    table.reserve(tracks.size());
-    for (auto& t : tracks) {
-      table(t.trackTime() * 1000.f);
-    }
-  }
-};
-
 struct ALICE3pidTOFTask {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
   using Coll = aod::Collisions;
@@ -290,11 +260,9 @@ struct ALICE3pidTOFTaskQA {
       }
 
       const float tofSignal = t.trackTime() * 1e3f;
-      // const float tof = t.tofSignal() - collisionTime_ps;
       const float tof = tofSignal - collisionTime_ps;
 
       //
-      // histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
       histos.fill(HIST("event/tofsignal"), t.p(), tofSignal);
       histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom() / o2::pid::tof::kCSPEED);
       histos.fill(HIST("event/eta"), t.eta());
@@ -317,8 +285,7 @@ struct ALICE3pidTOFTaskQA {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto workflow = WorkflowSpec{adaptAnalysisTask<ALICE3pidTOFTask>(cfgc, TaskName{"alice3-pidTOF-task"}),
-                               adaptAnalysisTask<ALICE3tofSignal>(cfgc, TaskName{"alice3-tof-signal-task"})};
+  auto workflow = WorkflowSpec{adaptAnalysisTask<ALICE3pidTOFTask>(cfgc, TaskName{"alice3-pidTOF-task"})};
   if (cfgc.options().get<int>("add-qa")) {
     workflow.push_back(adaptAnalysisTask<ALICE3pidTOFTaskQA>(cfgc, TaskName{"alice3-pidTOFQA-task"}));
   }
