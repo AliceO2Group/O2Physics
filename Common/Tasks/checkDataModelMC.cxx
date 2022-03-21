@@ -22,19 +22,33 @@ using namespace o2::framework::expressions;
 
 /// Check the complete list of indices of final-state daughters of an MC particle.
 /// \param particlesMC  table with MC particles
-/// \param particle  MC particle
-template <typename T>
+/// \param offset       offset in case of grouped tables
+/// \param particle     MC particle
+/// \param debugMode    flag for debug mode
+/// \param debugHisto   histo to fill for debug
+template <typename T, typename H>
 void checkDaughters(const T& particlesMC,
-                    const typename T::iterator& particle)
+                    const typename T::iterator& particle,
+                    int& offset,
+                    bool& debugMode,
+                    H debugHisto)
 {
   auto firstDauIdx = particle.daughtersIds().front();
   auto lastDauIdx = particle.daughtersIds().back();
   if ((firstDauIdx < 0 && lastDauIdx >= 0) || (lastDauIdx < 0 && firstDauIdx >= 0)) {
-    LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has first and last daughter indices " << firstDauIdx << ", " << lastDauIdx;
+    if (debugMode) {
+      debugHisto->Fill(0);
+    } else {
+      LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has first and last daughter indices " << firstDauIdx << ", " << lastDauIdx;
+    }
   }
   for (auto& idxDau : particle.daughtersIds()) {
-    if (idxDau > particlesMC.size()) {
-      LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with index " << idxDau << " > MC particle table size (" << particlesMC.size() << ")";
+    if (idxDau > offset + particlesMC.size() || idxDau < offset) {
+      if (debugMode) {
+        debugHisto->Fill(1);
+      } else {
+        LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with index " << idxDau << " > MC particle table size (+ offset) (" << particlesMC.size() + offset << ")";
+      }
     }
   }
 }
@@ -51,21 +65,50 @@ struct LoadTable {
 };
 
 struct CheckMcParticlesIndices {
+
+  Configurable<bool> debugMode{"debugMode", false, "flag to enable debug mode"};
+
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  std::shared_ptr<TH1> hDebug;
+
+  void init(o2::framework::InitContext&)
+  {
+    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{2, -0.5, 1.5}});
+    hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
+    hDebug->GetXaxis()->SetBinLabel(2, "out of range");
+  }
+
   void process(aod::McParticles const& particlesMC)
   {
+    int offset = 0;
     for (auto& particle : particlesMC) {
-      checkDaughters(particlesMC, particle);
+      checkDaughters(particlesMC, particle, offset, debugMode.value, hDebug);
     }
   }
 };
 
 struct CheckMcParticlesIndicesGrouped {
+
+  Configurable<bool> debugMode{"debugMode", false, "flag to enable debug mode"};
+
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  std::shared_ptr<TH1> hDebug;
+
+  void init(o2::framework::InitContext&)
+  {
+    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{2, -0.5, 1.5}});
+    hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
+    hDebug->GetXaxis()->SetBinLabel(2, "out of range");
+  }
+
+  int offset = 0;
   void process(aod::McCollision const& collision,
                aod::McParticles const& particlesMC)
   {
     for (auto& particle : particlesMC) {
-      checkDaughters(particlesMC, particle);
+      checkDaughters(particlesMC, particle, offset, debugMode.value, hDebug);
     }
+    offset += particlesMC.size();
   }
 };
 
