@@ -212,21 +212,12 @@ struct tofPidFull {
       static constexpr bool removebias = true;
       int ngoodtracks = 0;
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
-        float et = evTime.eventTime;
-        float erret = evTime.eventTimeError;
-        if (!filterForTOFEventTime(trk)) { // Check if it was used for the event time
-          tableEvTime(et, erret, evTime.eventTimeMultiplicity);
-          continue;
-        }
+        float et = evTime.mEventTime;
+        float erret = evTime.mEventTimeError;
         if constexpr (removebias) {
-          float sumw = 1. / erret / erret;
-          et *= sumw;
-          et -= evTime.weights[ngoodtracks] * evTime.tracktime[ngoodtracks];
-          sumw -= evTime.weights[ngoodtracks++];
-          et /= sumw;
-          erret = sqrt(1. / sumw);
+          evTime.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, ngoodtracks, et, erret);
         }
-        tableEvTime(et, erret, evTime.eventTimeMultiplicity);
+        tableEvTime(et, erret, evTime.mEventTimeMultiplicity);
       }
 
       // Check and fill enabled tables
@@ -236,21 +227,16 @@ struct tofPidFull {
           // Prepare memory for enabled tables
           table.reserve(tracksInCollision.size());
           for (auto const& trk : tracksInCollision) { // Loop on Tracks
-            float et = evTime.eventTime;
-            float erret = evTime.eventTimeError;
+
+            float et = evTime.mEventTime;
+            float erret = evTime.mEventTimeError;
+            if constexpr (removebias) {
+              evTime.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, ngoodtracks, et, erret);
+            }
+
             if (erret > 199.f) {
               table(erret, 999.f);
               continue;
-            }
-            if (filterForTOFEventTime(trk)) { // Check if it was used for the event time
-              if constexpr (removebias) {
-                float sumw = 1. / erret / erret;
-                et *= sumw;
-                et -= evTime.weights[ngoodtracks] * evTime.tracktime[ngoodtracks];
-                sumw -= evTime.weights[ngoodtracks++];
-                et /= sumw;
-                erret = sqrt(1. / sumw);
-              }
             }
 
             table(responsePID.GetExpectedSigma(response, trk, trk.tofSignal(), erret),
@@ -472,7 +458,6 @@ struct tofPidFullQa {
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
-  Configurable<bool> doEtaPhiMap{"doEtaPhiMap", true, "Flag to do Eta-Phi at TOF map"};
 
   template <uint8_t i>
   void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)

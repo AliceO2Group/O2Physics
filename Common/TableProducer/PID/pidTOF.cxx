@@ -203,8 +203,11 @@ struct tofPid {
           // Prepare memory for enabled tables
           table.reserve(tracksInCollision.size());
           for (auto const& trk : tracksInCollision) { // Loop on Tracks
-            float et = evTime.eventTime;
-            float erret = evTime.eventTimeError;
+            float et = evTime.mEventTime;
+            float erret = evTime.mEventTimeError;
+            if constexpr (removebias) {
+              evTime.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, ngoodtracks, et, erret);
+            }
             if (erret > 199.f) {
               aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
                                          aod::pidtof_tiny::upper_bin,
@@ -213,16 +216,6 @@ struct tofPid {
                                                                       aod::pidtof_tiny::binned_max,
                                                                       aod::pidtof_tiny::bin_width);
               continue;
-            }
-            if (filterForTOFEventTime(trk)) { // Check if it was used for the event time
-              if constexpr (removebias) {
-                float sumw = 1. / erret / erret;
-                et *= sumw;
-                et -= evTime.weights[ngoodtracks] * evTime.tracktime[ngoodtracks];
-                sumw -= evTime.weights[ngoodtracks++];
-                et /= sumw;
-                erret = sqrt(1. / sumw);
-              }
             }
 
             const float separation = responsePID.GetSeparation(response, trk, et, erret);
