@@ -229,9 +229,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 40, 0.0, 20.0, VarManager::kPairMass, 40, 0.0, 20.0, VarManager::kPairPt);
   }
 
-  if (groupStr.Contains("dilepton-lepton-mass")) {
-    hm->AddHistogram(histClass, "Mass", "", false, 40, 0.0, 20.0, VarManager::kPairMass);
-    hm->AddHistogram(histClass, "Mass_Pt", "", false, 40, 0.0, 20.0, VarManager::kPairMass, 40, 0.0, 20.0, VarManager::kPairPt);
+  if (groupStr.Contains("dilepton-lepton")) {
+    hm->AddHistogram(histClass, "Mass", "", false, 250, 0.0, 10.0, VarManager::kPairMass);
+    hm->AddHistogram(histClass, "Mass_Pt", "", false, 250, 0.0, 10.0, VarManager::kPairMass, 200, 0.0, 20.0, VarManager::kPairPt);
+    hm->AddHistogram(histClass, "Mass_dilepton_daughter", "", false, 250, 0.0, 10.0, VarManager::kPairMassDau);
+    hm->AddHistogram(histClass, "Pt_dilepton_daughter", "", false, 250, 0.0, 10.0, VarManager::kPairPtDau);
+    hm->AddHistogram(histClass, "Pt_lepton_daughter", "", false, 250, 0.0, 10.0, VarManager::kPt);
+    hm->AddHistogram(histClass, "Pt_vs_Pt_dilepton_daughter", "", false, 200, 0.0, 20.0, VarManager::kPairPt, 200, 0.0, 20.0, VarManager::kPairPtDau);
+    hm->AddHistogram(histClass, "Pt_vs_Pt_lepton_daughter", "", false, 200, 0.0, 20.0, VarManager::kPairPt, 200, 0.0, 20.0, VarManager::kPt);
   }
 
   if (groupStr.Contains("dilepton-hadron-correlation")) {

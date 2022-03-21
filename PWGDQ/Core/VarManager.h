@@ -272,6 +272,7 @@ class VarManager : public TObject
     kPairMass,
     kPairMassDau,
     kPairPt,
+    kPairPtDau,
     kPairEta,
     kPairPhi,
     kDeltaEta,
@@ -405,6 +406,7 @@ class VarManager : public TObject
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProng;
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProng;
   static o2::vertexing::FwdDCAFitterN<2> FwdfgFitterTwoProng;
+  static o2::vertexing::FwdDCAFitterN<3> FwdfgFitterThreeProng;
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -1058,7 +1060,7 @@ void VarManager::FillJpsiLepton(C const& collision, T1 const& lepton1, T2 const&
   if (!values) {
     values = fgValues;
   }
-  
+
   float m1 = fgkMuonMass;
   float m2 = fgkMuonMass;
   float m3 = fgkMuonMass;
@@ -1076,6 +1078,8 @@ void VarManager::FillJpsiLepton(C const& collision, T1 const& lepton1, T2 const&
   values[VarManager::kPairEta] = v123.Eta();
 
   values[VarManager::kPairMassDau] = v12.M();
+  values[VarManager::kPairPtDau] = v12.Pt();
+  values[VarManager::kPt] = lepton3.pt();
   int procCode = 0;
   int procCodeJpsi = 0;
 
@@ -1096,10 +1100,10 @@ void VarManager::FillJpsiLepton(C const& collision, T1 const& lepton1, T2 const&
                                     lepton3.cSnpSnp(), lepton3.cTglY(), lepton3.cTglZ(), lepton3.cTglSnp(), lepton3.cTglTgl(),
                                     lepton3.c1PtY(), lepton3.c1PtZ(), lepton3.c1PtSnp(), lepton3.c1PtTgl(), lepton3.c1Pt21Pt2()};
     o2::track::TrackParCov pars3{lepton3.x(), lepton3.alpha(), lepton3pars, lepton3covs};
-    procCode = VarManager::fgFitterThreeProng.process(pars1, pars2, pars3);
-    procCodeJpsi = VarManager::fgFitterTwoProng.process(pars1, pars2);    
-    auto jpsiTrack = fgFitterTwoProng.createParentTrackParCov();
-  } 
+    procCode = VarManager::FwdfgFitterThreeProng.process(pars1, pars2, pars3);
+    procCodeJpsi = VarManager::FwdfgFitterTwoProng.process(pars1, pars2);
+    //auto jpsiTrack = fgFitterTwoProng.createParentTrackParCov();
+  }
   else {
     return;
   }

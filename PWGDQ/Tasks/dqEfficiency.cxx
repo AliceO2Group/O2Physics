@@ -549,22 +549,27 @@ struct AnalysisSameEventPairing {
         for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
           std::vector<TString> names = {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
-            Form("DileptonLeptonMass_%s", objArray->At(icut)->GetName()),
+            Form("DileptonLepton_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())
           };
-          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          histNames += Form("%s;%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data(), names[3].Data());
           fMuonHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
             for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
               MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
               if (sig) {
-                if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
-                  continue;
-                }
+                //if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
+                  //continue;
+                //}
                 fRecMCSignals.push_back(*sig);
-                TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
+                //TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
+                //histNames += Form("%s;", histName.Data());
+                //TString tmpHistName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
+                //histNames += Form("%s;", tmpHistName.Data());
+
+                TString histName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
                 histNames += Form("%s;", histName.Data());
                 mcSigClasses.push_back(histName);
               }
@@ -744,8 +749,8 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
 
     unsigned int ncuts = fBarrelHistNames.size();
-    std::vector<std::vector<TString>> histNames = fBarrelHistNames;
-    std::vector<std::vector<TString>> histNamesMCmatched = fBarrelHistNamesMCmatched;
+    std::vector<std::vector<TString>> histNames = fMuonHistNames;
+    std::vector<std::vector<TString>> histNamesMCmatched = fMuonHistNamesMCmatched;
     ncuts = fMuonHistNames.size();
     histNames = fMuonHistNames;
     histNamesMCmatched = fMuonHistNamesMCmatched;
@@ -782,32 +787,63 @@ struct AnalysisSameEventPairing {
         if (twoTrackFilter & (uint8_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+            for (auto& t3 : tracks) {
+              if (!(uint32_t(t3.isMuonSelected()))){
+                continue;
+              }
+
+              if (t1.sign() * t2.sign() > 0) continue;
+              if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
+              if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
+
+              VarManager::FillJpsiLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
+              fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+            }
+
+
+            ////////////////////------////////////////////
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
-                fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
+                std::cout << "MC matched Jpsi" << std::endl;
+              }
+
+              if (!(mcDecision)) continue;
+
+              for (auto& t3 : tracks) {
+                auto t3MC = t3.reducedMCTrack();
+
+                if (!(uint32_t(t3.isMuonSelected()))){
+                  continue;
+                }
+
+                if (t1.sign() * t2.sign() > 0) continue;
+                if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
+                if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
+
+                int iisig = 0;
+                for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iisig++) {
+                  if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
+                    if ((*sig).CheckSignal(false, tracksMC, t1MC, t2MC, t3MC)) {
+                      VarManager::FillJpsiLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
+                      fHistMan->FillHistClass(histNamesMCmatched[icut][iisig].Data(), VarManager::fgValues);
+                    }
+                  }
+                } // end loop over MC signals
+
               }
             }
+            ////////////////////------////////////////////
+
+
+
           } else {
             if (t1.sign() > 0) {
-              fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
-            } else {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+            } else {
+              fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
             }
           }
         }
-      }
-
-      for (auto& t3 : tracks) {
-        if (!(uint32_t(t3.isMuonSelected()))){
-          continue;
-        }
-
-        if (t1.sign() * t2.sign() > 0) continue;
-        if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
-        if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
-
-        VarManager::FillJpsiLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
-        fHistMan->FillHistClass("DileptonLeptonMass", VarManager::fgValues);
       }
 
     }
@@ -988,8 +1024,8 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
     }
 
-    if (classStr.Contains("DileptonLeptonMass")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-lepton-mass");
+    if (classStr.Contains("DileptonLepton")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-lepton");
     }
   } // end loop over histogram classes
 }
