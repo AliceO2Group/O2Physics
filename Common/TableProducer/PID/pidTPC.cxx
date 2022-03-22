@@ -169,13 +169,8 @@ struct tpcPid {
           return;
         }
 
-        const float numbersigma = response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid);
-        aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
-                                   aod::pidtpc_tiny::upper_bin,
-                                   aod::pidtpc_tiny::lower_bin>(numbersigma, table,
-                                                                aod::pidtpc_tiny::binned_min,
-                                                                aod::pidtpc_tiny::binned_max,
-                                                                aod::pidtpc_tiny::bin_width);
+        aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+                                                              table);
       };
       makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
       makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
