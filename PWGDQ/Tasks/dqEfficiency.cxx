@@ -563,15 +563,18 @@ struct AnalysisSameEventPairing {
                 //if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
                   //continue;
                 //}
-                fRecMCSignals.push_back(*sig);
-                //TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
-                //histNames += Form("%s;", histName.Data());
-                //TString tmpHistName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
-                //histNames += Form("%s;", tmpHistName.Data());
-
-                TString histName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
-                histNames += Form("%s;", histName.Data());
-                mcSigClasses.push_back(histName);
+                if (sig->GetNProngs() == 2) {
+                  fRecMCSignals.push_back(*sig);
+                  TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
+                  histNames += Form("%s;", histName.Data());
+                  mcSigClasses.push_back(histName);
+                }
+                if (sig->GetNProngs() == 3) {
+                  fRecMCSignals.push_back(*sig);
+                  TString histName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
+                  histNames += Form("%s;", histName.Data());
+                  mcSigClasses.push_back(histName);
+                }
               }
             } // end loop over MC signals
           }
@@ -800,11 +803,9 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
             }
 
-
-            ////////////////////------////////////////////
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
-                std::cout << "MC matched Jpsi" << std::endl;
+                fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
               }
 
               if (!(mcDecision)) continue;
@@ -812,10 +813,7 @@ struct AnalysisSameEventPairing {
               for (auto& t3 : tracks) {
                 auto t3MC = t3.reducedMCTrack();
 
-                if (!(uint32_t(t3.isMuonSelected()))){
-                  continue;
-                }
-
+                if (!(uint32_t(t3.isMuonSelected()))) continue;
                 if (t1.sign() * t2.sign() > 0) continue;
                 if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
                 if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
@@ -832,10 +830,6 @@ struct AnalysisSameEventPairing {
 
               }
             }
-            ////////////////////------////////////////////
-
-
-
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
