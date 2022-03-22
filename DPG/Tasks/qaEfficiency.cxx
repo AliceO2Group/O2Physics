@@ -313,7 +313,6 @@ struct QaEfficiencyMc {
     if (makeEff) {
       LOG(debug) << "Making TEfficiency";
       TList* subList = new TList();
-      const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
       subList->SetName(partName);
       listEfficiency->Add(subList);
       auto makeEfficiency = [&](TString effname, auto templateHisto) {
@@ -355,7 +354,7 @@ struct QaEfficiencyMc {
       };
       makeEfficiency2D("efficiencyVsPtVsEta", HIST(hPtEtaNum[id]));
     }
-    LOG(info) << "Done with particle: " << partName;
+    LOG(debug) << "Done with particle: " << partName;
   }
 
   void init(InitContext&)
@@ -463,7 +462,7 @@ struct QaEfficiencyMc {
   template <o2::track::PID::ID id, typename trackType>
   void fillTrackHistograms(const trackType& track)
   {
-    LOG(debug) << "Filling track histograms for id " << id;
+    LOG(debug) << "Filling track histograms for id " << static_cast<int>(id);
     const auto mcParticle = track.mcParticle();
 
     if (!isPdgSelected<id>(mcParticle)) { // Selecting PDG code
@@ -518,7 +517,7 @@ struct QaEfficiencyMc {
   template <o2::track::PID::ID id, typename particleType>
   void fillParticleHistograms(const particleType& mcParticle)
   {
-    LOG(debug) << "Filling particle histograms for id " << id;
+    LOG(debug) << "Filling particle histograms for id " << static_cast<int>(id);
     if (!isPdgSelected<id>(mcParticle)) { // Selecting PDG code
       return;
     }
@@ -549,13 +548,21 @@ struct QaEfficiencyMc {
     if (!makeEff) {
       return;
     }
-    TList* subList = static_cast<TList*>(listEfficiency->FindObject(o2::track::PID::getName(id)));
+    const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
+    LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
+    TList* subList = static_cast<TList*>(listEfficiency->FindObject(partName));
     if (!subList) {
+      LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
     }
 
-    auto doFillEfficiency = [&](auto name, auto num, auto den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(name));
+    auto doFillEfficiency = [&](TString effname, auto num, auto den) {
+      effname = partName + effname;
+      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+      if (!eff) {
+        LOG(warning) << "Cannot find TEfficiency " << effname;
+        return;
+      }
       eff->SetTotalHistogram(*histos.get<TH1>(den).get(), "f");
       eff->SetPassedHistogram(*histos.get<TH1>(num).get(), "f");
     };
@@ -567,9 +574,13 @@ struct QaEfficiencyMc {
     doFillEfficiency("efficiencyVsP", HIST(hPNum[id]), HIST(hPDen[id]));
     doFillEfficiency("efficiencyVsEta", HIST(hEtaNum[id]), HIST(hEtaDen[id]));
     doFillEfficiency("efficiencyVsPhi", HIST(hPhiNum[id]), HIST(hPhiDen[id]));
-
-    auto fillEfficiency2D = [&](auto name, auto num, auto den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(name));
+    auto fillEfficiency2D = [&](TString effname, auto num, auto den) {
+      effname = partName + effname;
+      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+      if (!eff) {
+        LOG(warning) << "Cannot find TEfficiency " << effname;
+        return;
+      }
       eff->SetTotalHistogram(*histos.get<TH2>(den).get(), "f");
       eff->SetPassedHistogram(*histos.get<TH2>(num).get(), "f");
     };
