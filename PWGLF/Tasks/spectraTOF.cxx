@@ -44,6 +44,8 @@ struct tofSpectra {
                                                      "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}", "#bar{d}", "#bar{t}", "{}^{3}#bar{He}", "#bar{#alpha}"};
   static constexpr int PDGs[NpCharge] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
                                          -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
+  static constexpr bool enabledParticle[NpCharge] = {0, 0, 1, 1, 1, 1, 0, 0, 0,
+                                                     0, 0, 1, 1, 1, 1, 0, 0, 0};
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -52,6 +54,11 @@ struct tofSpectra {
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
   Configurable<bool> isRun2{"isRun2", false, "Flag to process Run 2 data"};
   Configurable<bool> doMC{"doMC", false, "Flag to process MC data"};
+  Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
+  Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
+  Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -67,12 +74,39 @@ struct tofSpectra {
                                                      "pt/neg/el", "pt/neg/mu", "pt/neg/pi",
                                                      "pt/neg/ka", "pt/neg/pr", "pt/neg/de",
                                                      "pt/neg/tr", "pt/neg/he", "pt/neg/al"};
-  static constexpr std::string_view hnsigmatpctof[NpCharge] = {"nsigmatpctof/pos/el", "nsigmatpctof/pos/mu", "nsigmatpctof/pos/pi",
+  // Nsigma
+  static constexpr std::string_view hNSigmaTpcTof[NpCharge] = {"nsigmatpctof/pos/el", "nsigmatpctof/pos/mu", "nsigmatpctof/pos/pi",
                                                                "nsigmatpctof/pos/ka", "nsigmatpctof/pos/pr", "nsigmatpctof/pos/de",
                                                                "nsigmatpctof/pos/tr", "nsigmatpctof/pos/he", "nsigmatpctof/pos/al",
                                                                "nsigmatpctof/neg/el", "nsigmatpctof/neg/mu", "nsigmatpctof/neg/pi",
                                                                "nsigmatpctof/neg/ka", "nsigmatpctof/neg/pr", "nsigmatpctof/neg/de",
                                                                "nsigmatpctof/neg/tr", "nsigmatpctof/neg/he", "nsigmatpctof/neg/al"};
+  static constexpr std::string_view hNSigmaTof[NpCharge] = {"nsigmatof/pos/el", "nsigmatof/pos/mu", "nsigmatof/pos/pi",
+                                                            "nsigmatof/pos/ka", "nsigmatof/pos/pr", "nsigmatof/pos/de",
+                                                            "nsigmatof/pos/tr", "nsigmatof/pos/he", "nsigmatof/pos/al",
+                                                            "nsigmatof/neg/el", "nsigmatof/neg/mu", "nsigmatof/neg/pi",
+                                                            "nsigmatof/neg/ka", "nsigmatof/neg/pr", "nsigmatof/neg/de",
+                                                            "nsigmatof/neg/tr", "nsigmatof/neg/he", "nsigmatof/neg/al"};
+  static constexpr std::string_view hNSigmaTpc[NpCharge] = {"nsigmatpc/pos/el", "nsigmatpc/pos/mu", "nsigmatpc/pos/pi",
+                                                            "nsigmatpc/pos/ka", "nsigmatpc/pos/pr", "nsigmatpc/pos/de",
+                                                            "nsigmatpc/pos/tr", "nsigmatpc/pos/he", "nsigmatpc/pos/al",
+                                                            "nsigmatpc/neg/el", "nsigmatpc/neg/mu", "nsigmatpc/neg/pi",
+                                                            "nsigmatpc/neg/ka", "nsigmatpc/neg/pr", "nsigmatpc/neg/de",
+                                                            "nsigmatpc/neg/tr", "nsigmatpc/neg/he", "nsigmatpc/neg/al"};
+  // Signal - expected
+  static constexpr std::string_view hDeltaTof[NpCharge] = {"deltatof/pos/el", "deltatof/pos/mu", "deltatof/pos/pi",
+                                                           "deltatof/pos/ka", "deltatof/pos/pr", "deltatof/pos/de",
+                                                           "deltatof/pos/tr", "deltatof/pos/he", "deltatof/pos/al",
+                                                           "deltatof/neg/el", "deltatof/neg/mu", "deltatof/neg/pi",
+                                                           "deltatof/neg/ka", "deltatof/neg/pr", "deltatof/neg/de",
+                                                           "deltatof/neg/tr", "deltatof/neg/he", "deltatof/neg/al"};
+  static constexpr std::string_view hDeltaTpc[NpCharge] = {"deltatpc/pos/el", "deltatpc/pos/mu", "deltatpc/pos/pi",
+                                                           "deltatpc/pos/ka", "deltatpc/pos/pr", "deltatpc/pos/de",
+                                                           "deltatpc/pos/tr", "deltatpc/pos/he", "deltatpc/pos/al",
+                                                           "deltatpc/neg/el", "deltatpc/neg/mu", "deltatpc/neg/pi",
+                                                           "deltatpc/neg/ka", "deltatpc/neg/pr", "deltatpc/neg/de",
+                                                           "deltatpc/neg/tr", "deltatpc/neg/he", "deltatpc/neg/al"};
+  // DCA
   static constexpr std::string_view hdcaxy[NpCharge] = {"dcaxy/pos/el", "dcaxy/pos/mu", "dcaxy/pos/pi",
                                                         "dcaxy/pos/ka", "dcaxy/pos/pr", "dcaxy/pos/de",
                                                         "dcaxy/pos/tr", "dcaxy/pos/he", "dcaxy/pos/al",
@@ -157,6 +191,9 @@ struct tofSpectra {
     histos.add("p/Unselected", "Unselected", kTH1F, {pAxis});
     histos.add("pt/Unselected", "Unselected", kTH1F, {ptAxis});
     for (int i = 0; i < NpCharge; i++) {
+      if (!enabledParticle[i]) {
+        continue;
+      }
       histos.add(hp[i].data(), pTCharge[i], kTH1F, {pAxis});
       histos.add(hpt[i].data(), pTCharge[i], kTH1F, {ptAxis});
     }
@@ -171,9 +208,18 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{600, -3.005, 2.995, "DCA_{z} (cm)"};
     for (int i = 0; i < NpCharge; i++) {
-      const AxisSpec nsigmaTPCAxis{200, -10, 10, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
-      const AxisSpec nsigmaTOFAxis{200, -10, 10, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
-      histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3F, {{10, 0.f, 2.f, "#it{p}_{T} GeV/#it{c}"}, nsigmaTPCAxis, nsigmaTOFAxis});
+      if (!enabledParticle[i]) {
+        continue;
+      }
+      const AxisSpec nsigmaTPCAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
+      const AxisSpec deltaTPCAxis{200, -400.f, 400.f, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pTCharge[i])};
+      const AxisSpec nsigmaTOFAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
+      const AxisSpec deltaTOFAxis{200, -1000.f, 1000.f, Form("t-t_{ev}-t_{exp}(%s) (ps)", pTCharge[i])};
+      histos.add(hNSigmaTpcTof[i].data(), pTCharge[i], kTH3F, {{10, 0.f, 2.f, "#it{p}_{T} GeV/#it{c}"}, nsigmaTPCAxis, nsigmaTOFAxis});
+      histos.add(hNSigmaTpc[i].data(), pTCharge[i], kTH2F, {ptAxis, nsigmaTPCAxis});
+      histos.add(hNSigmaTof[i].data(), pTCharge[i], kTH2F, {ptAxis, nsigmaTOFAxis});
+      histos.add(hDeltaTpc[i].data(), pTCharge[i], kTH2F, {ptAxis, deltaTPCAxis});
+      histos.add(hDeltaTof[i].data(), pTCharge[i], kTH2F, {ptAxis, deltaTOFAxis});
       histos.add(hdcaxy[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaXyAxis});
       histos.add(hdcaz[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaZAxis});
       histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2F, {phiAxis, dcaXyAxis});
@@ -198,13 +244,20 @@ struct tofSpectra {
     const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     if (track.sign() > 0) {
-      histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF);
+      histos.fill(HIST(hNSigmaTpc[id]), track.pt(), nsigmaTPC);
+      histos.fill(HIST(hNSigmaTof[id]), track.pt(), nsigmaTOF);
+      histos.fill(HIST(hNSigmaTpcTof[id]), track.pt(), nsigmaTPC, nsigmaTOF);
+      histos.fill(HIST(hDeltaTpc[id]), track.pt(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      histos.fill(HIST(hDeltaTof[id]), track.pt(), o2::aod::pidutils::tofExpSignalDiff<id>(track));
     } else {
-      histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF);
+      histos.fill(HIST(hNSigmaTpc[id + Np]), track.pt(), nsigmaTPC);
+      histos.fill(HIST(hNSigmaTof[id + Np]), track.pt(), nsigmaTOF);
+      histos.fill(HIST(hNSigmaTpcTof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF);
+      histos.fill(HIST(hDeltaTpc[id + Np]), track.pt(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      histos.fill(HIST(hDeltaTof[id + Np]), track.pt(), o2::aod::pidutils::tofExpSignalDiff<id>(track));
     }
 
-    // if (std::abs(nsigmaTOF) < 2) {
-    if (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2) {
+    if (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f) {
       if (track.sign() > 0) {
         histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
@@ -235,14 +288,9 @@ struct tofSpectra {
   }
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
-                                    aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                    aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                                    aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                    aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                    aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                    aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                                    // aod::pidTOFbeta, aod::TOFSignal,
-                                    aod::TrackSelection>;
+                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
+                                    aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                    aod::pidTOFFullFlags, aod::TrackSelection>;
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                TrackCandidates const& tracks)
@@ -279,25 +327,10 @@ struct tofSpectra {
       histos.fill(HIST("p/Unselected"), track.p());
       histos.fill(HIST("pt/Unselected"), track.pt());
 
-      fillParticleHistos<PID::Electron>(track);
-      fillParticleHistos<PID::Muon>(track);
       fillParticleHistos<PID::Pion>(track);
       fillParticleHistos<PID::Kaon>(track);
       fillParticleHistos<PID::Proton>(track);
       fillParticleHistos<PID::Deuteron>(track);
-      fillParticleHistos<PID::Triton>(track);
-      fillParticleHistos<PID::Helium3>(track);
-      fillParticleHistos<PID::Alpha>(track);
-
-      //
-      // if (TMath::Abs(track.separationbetael() < 1.f)) {
-      //   histos.fill(HIST("electronbeta/hp_El"), track.p());
-      //   histos.fill(HIST("electronbeta/hpt_El"), track.pt());
-      //   histos.fill(HIST("electronbeta/hlength_El"), track.length());
-      //   histos.fill(HIST("electronbeta/htime_El"), track.tofSignal() / 1000);
-      //   histos.fill(HIST("electronbeta/hp_beta_El"), track.p(), track.diffbetael());
-      //   histos.fill(HIST("electronbeta/hp_betasigma_El"), track.p(), track.separationbetael());
-      // }
     }
   } // end of the process function
 

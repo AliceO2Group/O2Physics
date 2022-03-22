@@ -56,14 +56,15 @@ struct tofSpectraTiny {
     }
   }
 
-  template <std::size_t i, typename T>
-  void fillParticleHistos(const T& track, const float& nsigma)
+  template <std::size_t id, typename T>
+  void fillParticleHistos(const T& track)
   {
+    const auto& nsigma = o2::aod::pidutils::tofNSigma<id>(track);
     if (abs(nsigma) > cfgNSigmaCut) {
       return;
     }
-    histos.fill(HIST(hp[i]), track.p());
-    histos.fill(HIST(hpt[i]), track.pt());
+    histos.fill(HIST(hp[id]), track.p());
+    histos.fill(HIST(hpt[id]), track.pt());
   }
 
   //Defining filters and input
@@ -103,15 +104,15 @@ struct tofSpectraTiny {
       histos.fill(HIST("p/Unselected"), track.p());
       histos.fill(HIST("pt/Unselected"), track.pt());
 
-      fillParticleHistos<0>(track, track.tofNSigmaEl());
-      fillParticleHistos<1>(track, track.tofNSigmaMu());
-      fillParticleHistos<2>(track, track.tofNSigmaPi());
-      fillParticleHistos<3>(track, track.tofNSigmaKa());
-      fillParticleHistos<4>(track, track.tofNSigmaPr());
-      fillParticleHistos<5>(track, track.tofNSigmaDe());
-      fillParticleHistos<6>(track, track.tofNSigmaTr());
-      fillParticleHistos<7>(track, track.tofNSigmaHe());
-      fillParticleHistos<8>(track, track.tofNSigmaAl());
+      fillParticleHistos<0>(track);
+      fillParticleHistos<1>(track);
+      fillParticleHistos<2>(track);
+      fillParticleHistos<3>(track);
+      fillParticleHistos<4>(track);
+      fillParticleHistos<5>(track);
+      fillParticleHistos<6>(track);
+      fillParticleHistos<7>(track);
+      fillParticleHistos<8>(track);
     }
   } // end of the process function
 };
