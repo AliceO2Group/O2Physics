@@ -561,13 +561,13 @@ struct AnalysisSameEventPairing {
               if (sig) {
                 if (sig->GetNProngs() == 2) {
                   fRecMCSignals.push_back(*sig);
-                  TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
+                  TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
                   histNames += Form("%s;", histName.Data());
                   mcSigClasses.push_back(histName);
                 }
                 if (sig->GetNProngs() == 3) {
                   fRecMCSignals.push_back(*sig);
-                  TString histName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
+                  TString histName = Form("DileptonLepton_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
                   histNames += Form("%s;", histName.Data());
                   mcSigClasses.push_back(histName);
                 }
