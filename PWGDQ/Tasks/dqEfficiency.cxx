@@ -740,7 +740,6 @@ struct AnalysisSameEventPairing {
   }   // end runPairing
 
 
-  ////////////////////////////////////////////////////////
   // Template function to run pair - lepton combinations
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
   void runDileptonLepton(TEvent const& event, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
@@ -791,15 +790,13 @@ struct AnalysisSameEventPairing {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (auto& t3 : tracks) {
-              if (!(uint32_t(t3.isMuonSelected()))){
-                continue;
-              }
 
+              if (!(uint32_t(t3.isMuonSelected()))) continue;
               if (t1.sign() * t2.sign() > 0) continue;
               if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
               if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
 
-              VarManager::FillJpsiLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
+              VarManager::FillDileptonLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
             }
 
@@ -822,7 +819,7 @@ struct AnalysisSameEventPairing {
                 for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iisig++) {
                   if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
                     if ((*sig).CheckSignal(false, tracksMC, t1MC, t2MC, t3MC)) {
-                      VarManager::FillJpsiLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
+                      VarManager::FillDileptonLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
                       fHistMan->FillHistClass(histNamesMCmatched[icut][iisig].Data(), VarManager::fgValues);
                     }
                   }
@@ -843,7 +840,6 @@ struct AnalysisSameEventPairing {
     }
 
   }
-  ////////////////////////////////////////////////////////
 
   template <typename TTracksMC>
   void runMCGen(TTracksMC const& groupedMCTracks)
@@ -922,7 +918,6 @@ struct AnalysisSameEventPairing {
     runMCGen(groupedMCTracks);
   }
 
-  ////////////////////////////////////////////////////////
   void processDileptonLepton(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithCov> const& tracks,
                       ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
@@ -932,12 +927,7 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
 
     runDileptonLepton<gkEventFillMapWithCov, gkMuonFillMapWithCov>(event, tracks, eventsMC, tracksMC);
-    //for(int i=0;i<10;i++)
-    //std::cout<<"test\n";
-    //auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
-    //runMCGen(tracksMC, event);
   }
-  ////////////////////////////////////////////////////////
 
   /*void processElectronMuonSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                   soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons,

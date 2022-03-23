@@ -379,7 +379,7 @@ class VarManager : public TObject
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-  static void FillJpsiLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values = nullptr);
+  static void FillDleptonLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values = nullptr);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
 
@@ -1052,7 +1052,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 }
 
 template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-void VarManager::FillJpsiLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values)
+void VarManager::FillDleptonLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values)
 {
 
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
