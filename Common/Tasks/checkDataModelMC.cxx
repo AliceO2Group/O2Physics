@@ -29,7 +29,7 @@ using namespace o2::framework::expressions;
 template <typename T, typename H>
 void checkDaughters(const T& particlesMC,
                     const typename T::iterator& particle,
-                    int& offset,
+                    long unsigned int offset,
                     bool& debugMode,
                     H debugHisto)
 {
@@ -43,7 +43,7 @@ void checkDaughters(const T& particlesMC,
     }
   }
   for (auto& idxDau : particle.daughtersIds()) {
-    if (idxDau > offset + particlesMC.size() || idxDau < offset) {
+    if ((long unsigned int)idxDau > offset + particlesMC.size() || (long unsigned int)idxDau < offset) {
       if (debugMode) {
         debugHisto->Fill(1);
       } else {
@@ -80,7 +80,7 @@ struct CheckMcParticlesIndices {
 
   void process(aod::McParticles const& particlesMC)
   {
-    int offset = 0;
+    long unsigned int offset = 0;
     for (auto& particle : particlesMC) {
       checkDaughters(particlesMC, particle, offset, debugMode.value, hDebug);
     }
@@ -101,14 +101,12 @@ struct CheckMcParticlesIndicesGrouped {
     hDebug->GetXaxis()->SetBinLabel(2, "out of range");
   }
 
-  int offset = 0;
   void process(aod::McCollision const& collision,
                aod::McParticles const& particlesMC)
   {
     for (auto& particle : particlesMC) {
-      checkDaughters(particlesMC, particle, offset, debugMode.value, hDebug);
+      checkDaughters(particlesMC, particle, particlesMC.offset(), debugMode.value, hDebug);
     }
-    offset += particlesMC.size();
   }
 };
 
