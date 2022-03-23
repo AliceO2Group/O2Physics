@@ -248,6 +248,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonRAtAbsorberEnd] = "cm";
   fgVariableNames[kMuonPDca] = "p x dca";
   fgVariableUnits[kMuonPDca] = "cm x GeV/c";
+  fgVariableNames[kMCHBitMap] = "MCH bitmap";
+  fgVariableUnits[kMCHBitMap] = "";
   fgVariableNames[kMuonChi2] = "#chi^{2}";
   fgVariableUnits[kMuonChi2] = "";
   fgVariableNames[kMuonChi2MatchMCHMID] = "#chi^{2} MCH-MID";
