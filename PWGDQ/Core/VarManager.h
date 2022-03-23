@@ -1064,7 +1064,6 @@ void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 co
   float m1 = fgkMuonMass;
   float m2 = fgkMuonMass;
   float m3 = fgkMuonMass;
-  float mjpsi = 3.096916;
   float mlepton = fgkMuonMass;
 
   ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), m1);
@@ -1124,13 +1123,8 @@ void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 co
   }
 
   Vec3D secondaryVertex;
-  float bz = 0;
-  std::array<float, 3> pvec0;
-  std::array<float, 3> pvec1;
-  std::array<float, 3> pvec2;
 
   if constexpr (eventHasVtxCov) {
-    double* covMatrixPCA;
     o2::dataformats::DCA impactParameter0;
     o2::dataformats::DCA impactParameter1;
     o2::dataformats::DCA impactParameter2;
@@ -1142,11 +1136,6 @@ void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 co
     //auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
 
-    double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
-    double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
-                              std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
-                                        (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
-
     values[VarManager::kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                                         (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
     values[VarManager::kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
@@ -1156,10 +1145,11 @@ void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 co
     values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
     values[VarManager::kVertexingPseudoCTau] = ((secondaryVertex[0] - collision.posY()) * v123.Px() + (secondaryVertex[1] - collision.posY()) * v123.Py()) / (v123.Pt() * v123.Pt()) * mlepton;
 
-    values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                             (collision.posY() - secondaryVertex[1]) * v123.Py() +
+    values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() + 
+                                             (collision.posY() - secondaryVertex[1]) * v123.Py() + 
                                              (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
                                             (v123.P() * values[VarManager::kVertexingLxyz]);
+
   }
 }
 
