@@ -24,7 +24,8 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/PID/PIDTPC.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
@@ -43,7 +44,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 struct bayesPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
-  using Coll = aod::Collisions;
+  using Coll = soa::Join<aod::Collisions, aod::Mults>;
 
   // Tables to produce
   Produces<o2::aod::pidBayesEl> tablePIDEl; /// Table for the Electron
@@ -69,11 +70,13 @@ struct bayesPid {
   // Detector response and input parameters
   std::array<DetectorResponse, kNDet> Response;
   static constexpr const char* detectorName[kNDet] = {"TOF", "TPC"};
+  // TPC PID Response
+  o2::pid::tpc::Response responseTPC;
+  o2::pid::tpc::Response* responseTPCptr = nullptr;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
+  Configurable<std::string> paramfileTOF{"param-file-TOF", "", "Path to the TOF parametrization object, if emtpy the parametrization is not taken from file"};
+  Configurable<std::string> paramfileTPC{"param-file-TPC", "", "Path to the TPC parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> TOFsigmaname{"param-tof-sigma", "TOFReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
-  Configurable<std::string> TPCsignalname{"param-tpc-signal", "BetheBloch", "Name of the parametrization for the expected signal, used in both file and CCDB mode"};
-  Configurable<std::string> TPCsigmaname{"param-tpc-sigma", "TPCReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<bool> enableTOF{"enableTOF", false, "Enabling TOF"};
   Configurable<bool> enableTPC{"enableTPC", false, "Enabling TPC"};
   /// Ordering has to respect the one in ProbType
@@ -82,7 +85,7 @@ struct bayesPid {
 
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathTOF{"ccdbPathTOF", "Analysis/PID/TOF", "Path of the TOF parametrization on the CCDB"};
-  Configurable<std::string> ccdbPathTPC{"ccdbPathTPC", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
+  Configurable<std::string> ccdbPathTPC{"ccdbPathTPC", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
   Configurable<long> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   // Configuration flags to include and exclude particle hypotheses
   // Configurable<LabeledArray<int>> pid{"pid",
@@ -219,45 +222,42 @@ struct bayesPid {
     //
     const std::vector<float> p = {0.008, 0.008, 0.002, 40.0};
     Response[kTOF].SetParameters(DetectorResponse::kSigma, p);
-    const std::string fname = paramfile.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << TOFsigmaname.value;
-      Response[kTOF].LoadParamFromFile(fname.data(), TOFsigmaname.value, DetectorResponse::kSigma);
-
-      LOG(info) << "Loading exp. signal parametrization from file" << fname << ", using param: " << TPCsignalname.value;
-      Response[kTPC].LoadParamFromFile(fname.data(), TPCsignalname.value, DetectorResponse::kSignal);
-
-      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << TPCsigmaname.value;
-      Response[kTPC].LoadParamFromFile(fname.data(), TPCsigmaname.value, DetectorResponse::kSigma);
-
+    const std::string fnameTOF = paramfileTOF.value;
+    const TString fnameTPC = paramfileTPC.value;
+    if (!fnameTOF.empty()) { // Loading the parametrization from file
+      LOG(info) << "Loading exp. sigma parametrization from file" << fnameTOF << ", using param: " << TOFsigmaname.value;
+      Response[kTOF].LoadParamFromFile(fnameTOF.data(), TOFsigmaname.value, DetectorResponse::kSigma);
     } else { // Loading it from CCDB
       std::string path = ccdbPathTOF.value + "/" + TOFsigmaname.value;
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
       Response[kTOF].LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
-
-      path = ccdbPathTPC.value + "/" + TPCsignalname.value;
-      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      Response[kTPC].LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
-
-      path = ccdbPathTPC.value + "/" + TPCsigmaname.value;
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << path << " for timestamp " << timestamp.value;
-      Response[kTPC].LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
+    }
+    if (fnameTPC != "") { // Loading the parametrization from file
+      LOGP(info, "Loading TPC response from file {}", fnameTPC);
+      try {
+        std::unique_ptr<TFile> f(TFile::Open(fnameTPC, "READ"));
+        f->GetObject("Response", responseTPCptr);
+        responseTPC.SetParameters(responseTPCptr);
+      } catch (...) {
+        LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC);
+      };
+    } else {
+      const std::string pathTPC = ccdbPathTPC.value;
+      const auto time = timestamp.value;
+      responseTPC.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(pathTPC, time));
+      LOGP(info, "Loading TPC response from CCDB, using path: {} for timestamp {}", pathTPC, time);
+      responseTPC.PrintAll();
     }
   }
 
-  template <o2::track::PID::ID pid>
-  using respTPC = tpc::ELoss<Trks::iterator, pid>;
-
   /// Computes PID probabilities for the TPC
   template <o2::track::PID::ID pid>
-  void ComputeTPCProbability(const Trks::iterator& track)
+  void ComputeTPCProbability(const Coll::iterator& collision, const Trks::iterator& track)
   {
 
     if (!checkEnabled<kTPC, pid>()) {
       return;
     }
-
-    constexpr respTPC<pid> responseTPCPID;
 
     const float dedx = track.tpcSignal();
     bool mismatch = true;
@@ -265,12 +265,11 @@ struct bayesPid {
     // if (fTuneMConData && ((fTuneMConDataMask & kDetTPC) == kDetTPC)){
     //   dedx = GetTPCsignalTunedOnData(track);
     // }
-
-    const float bethe = responseTPCPID.GetExpectedSignal(Response[kTPC], track);
-    const float sigma = responseTPCPID.GetExpectedSigma(Response[kTPC], track);
-    LOG(info) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
-    // bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
-    // sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
+    const float bethe = responseTPC.GetExpectedSignal(track, pid);
+    const float sigma = responseTPC.GetExpectedSigma(collision, track, pid);
+    // LOG(info) << "For " << pid_constants::sNames[pid] << " computing bethe " << bethe << " and sigma " << sigma;
+    //  bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
+    //  sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
 
     if (abs(dedx - bethe) > fRange * sigma) {
       // Probability[kTPC][pid] = exp(-0.5 * fRange * fRange) / sigma; // BUG fix
@@ -453,15 +452,16 @@ struct bayesPid {
 
     for (auto const& trk : tracks) { // Loop on Tracks
 
-      ComputeTPCProbability<PID::Electron>(trk);
-      ComputeTPCProbability<PID::Muon>(trk);
-      ComputeTPCProbability<PID::Pion>(trk);
-      ComputeTPCProbability<PID::Kaon>(trk);
-      ComputeTPCProbability<PID::Proton>(trk);
-      ComputeTPCProbability<PID::Deuteron>(trk);
-      ComputeTPCProbability<PID::Triton>(trk);
-      ComputeTPCProbability<PID::Helium3>(trk);
-      ComputeTPCProbability<PID::Alpha>(trk);
+      auto collision = collisions.iteratorAt(trk.collisionId());
+      ComputeTPCProbability<PID::Electron>(collision, trk);
+      ComputeTPCProbability<PID::Muon>(collision, trk);
+      ComputeTPCProbability<PID::Pion>(collision, trk);
+      ComputeTPCProbability<PID::Kaon>(collision, trk);
+      ComputeTPCProbability<PID::Proton>(collision, trk);
+      ComputeTPCProbability<PID::Deuteron>(collision, trk);
+      ComputeTPCProbability<PID::Triton>(collision, trk);
+      ComputeTPCProbability<PID::Helium3>(collision, trk);
+      ComputeTPCProbability<PID::Alpha>(collision, trk);
 
       ComputeTOFProbability<PID::Electron>(trk);
       ComputeTOFProbability<PID::Muon>(trk);

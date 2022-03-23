@@ -165,12 +165,8 @@ struct tofPid {
           if (flag.value != 1) {
             return;
           }
-          aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
-                                     aod::pidtof_tiny::upper_bin,
-                                     aod::pidtof_tiny::lower_bin>(-999.f, table,
-                                                                  aod::pidtof_tiny::binned_min,
-                                                                  aod::pidtof_tiny::binned_max,
-                                                                  aod::pidtof_tiny::bin_width);
+          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
+                                                                table);
         };
 
         fillEmptyTable(pidEl, tablePIDEl);
@@ -203,35 +199,19 @@ struct tofPid {
           // Prepare memory for enabled tables
           table.reserve(tracksInCollision.size());
           for (auto const& trk : tracksInCollision) { // Loop on Tracks
-            float et = evTime.eventTime;
-            float erret = evTime.eventTimeError;
+            float et = evTime.mEventTime;
+            float erret = evTime.mEventTimeError;
+            if constexpr (removebias) {
+              evTime.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, ngoodtracks, et, erret);
+            }
             if (erret > 199.f) {
-              aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
-                                         aod::pidtof_tiny::upper_bin,
-                                         aod::pidtof_tiny::lower_bin>(-999.f, table,
-                                                                      aod::pidtof_tiny::binned_min,
-                                                                      aod::pidtof_tiny::binned_max,
-                                                                      aod::pidtof_tiny::bin_width);
+              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
+                                                                    table);
               continue;
             }
-            if (filterForTOFEventTime(trk)) { // Check if it was used for the event time
-              if constexpr (removebias) {
-                float sumw = 1. / erret / erret;
-                et *= sumw;
-                et -= evTime.weights[ngoodtracks] * evTime.tracktime[ngoodtracks];
-                sumw -= evTime.weights[ngoodtracks++];
-                et /= sumw;
-                erret = sqrt(1. / sumw);
-              }
-            }
 
-            const float separation = responsePID.GetSeparation(response, trk, et, erret);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
-                                       aod::pidtof_tiny::upper_bin,
-                                       aod::pidtof_tiny::lower_bin>(separation, table,
-                                                                    aod::pidtof_tiny::binned_min,
-                                                                    aod::pidtof_tiny::binned_max,
-                                                                    aod::pidtof_tiny::bin_width);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePID.GetSeparation(response, trk, et, erret),
+                                                                  table);
           }
         }
       };
@@ -271,13 +251,8 @@ struct tofPid {
         // Prepare memory for enabled tables
         table.reserve(tracks.size());
         for (auto const& trk : tracks) { // Loop on Tracks
-          const float separation = responsePID.GetSeparation(response, trk);
-          aod::pidutils::packInTable<aod::pidtof_tiny::binned_nsigma_t,
-                                     aod::pidtof_tiny::upper_bin,
-                                     aod::pidtof_tiny::lower_bin>(separation, table,
-                                                                  aod::pidtof_tiny::binned_min,
-                                                                  aod::pidtof_tiny::binned_max,
-                                                                  aod::pidtof_tiny::bin_width);
+          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePID.GetSeparation(response, trk),
+                                                                table);
         }
       }
     };
