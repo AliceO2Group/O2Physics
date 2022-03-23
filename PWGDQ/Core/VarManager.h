@@ -1134,7 +1134,6 @@ void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 co
     std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
     o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
     //auto primaryVertex = getPrimaryVertex(collision);
-    auto covMatrixPV = primaryVertex.getCov();
 
     values[VarManager::kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                                         (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
@@ -1145,10 +1144,11 @@ void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 co
     values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
     values[VarManager::kVertexingPseudoCTau] = ((secondaryVertex[0] - collision.posY()) * v123.Px() + (secondaryVertex[1] - collision.posY()) * v123.Py()) / (v123.Pt() * v123.Pt()) * mlepton;
 
-    values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
-                                             (collision.posY() - secondaryVertex[1]) * v123.Py() +
+    values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() + 
+                                             (collision.posY() - secondaryVertex[1]) * v123.Py() + 
                                              (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
                                             (v123.P() * values[VarManager::kVertexingLxyz]);
+
   }
 }
 
