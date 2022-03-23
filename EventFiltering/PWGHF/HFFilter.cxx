@@ -84,6 +84,12 @@ enum beautyParticles {
   kNBeautyParticles
 };
 
+enum beautyTrackSelection {
+  kRejected = 0,
+  kSoftPion,
+  kRegular
+};
+
 static const std::array<std::string, kNtriggersHF> HfTriggerNames{"highPt", "beauty", "femto", "doubleCharm"};
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
@@ -258,6 +264,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> deltaMassXib{"deltaMassXib", 0.3, "invariant-mass delta with respect to the Lb mass"};
   Configurable<float> deltaMassDStar{"deltaMassDStar", 0.1, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
   Configurable<float> pTMinBeautyBachelor{"pTMinBeautyBachelor", 0.5, "minumum pT for bachelor pion track used to build b-hadron candidates"};
+  Configurable<float> pTMinSoftPion{"pTMinSoftPion", 0.1, "minumum pT for soft pion track used to build D* mesons in the b-hadron decay chain"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
   Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
@@ -355,41 +362,47 @@ struct HfFilter { // Main struct for HF triggers
 
   /// Single-track cuts for bachelor track of beauty candidates
   /// \param track is a track
-  /// \return true if track passes all cuts
+  /// \return 0 if track is rejected, 1 if track is soft pion, 2 if it is regular beauty
   template <typename T>
-  bool isSelectedTrackForBeauty(const T& track, const int candType)
+  int isSelectedTrackForBeauty(const T& track, const int candType)
   {
     auto pT = track.pt();
-    if (pT < pTMinBeautyBachelor) {
-      return false;
-    }
     auto pTBinTrack = findBin(pTBinsTrack, pT);
     if (pTBinTrack == -1) {
-      return false;
+      return kRejected;
+    }
+
+    if (pT < pTMinSoftPion) { // soft pion should be more stringent than usual tracks
+      return kRejected;
     }
 
     if (std::abs(track.eta()) > 0.8) {
-      return false;
-    }
-
-    if (track.isGlobalTrack() != (uint8_t) true) {
-      return false; // use only global tracks
+      return kRejected;
     }
 
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
+      return kRejected; // minimum DCAxy
     }
     if (std::abs(track.dcaXY()) > cutsSingleTrackBeauty[candType].get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
+      return kRejected; // maximum DCAxy
     }
-    return true;
+
+    // below only regular beauty tracks, not required for soft pions
+    if (pT < pTMinBeautyBachelor) {
+      return kSoftPion;
+    }
+    if (track.isGlobalTrack() != (uint8_t) true) {
+      return kSoftPion; // use only global tracks except for
+    }
+
+    return kRegular;
   }
 
   /// Basic selection of proton candidates
   /// \param track is a track
   /// \return true if track passes all cuts
   template <typename T>
-  bool isSelectedProton(const T& track)
+  bool isSelectedProton4Femto(const T& track)
   {
     if (track.pt() < femtoMinProtonPt) {
       return false;
@@ -686,11 +699,12 @@ struct HfFilter { // Main struct for HF triggers
         std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
 
         if (!keepEvent[kBeauty] && isBeautyTagged) {
-          if (isSelectedTrackForBeauty(track, kBeauty3Prong) && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0))) {
+          int isTrackSelected = isSelectedTrackForBeauty(track, kBeauty3Prong);
+          if (isTrackSelected && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0))) {
             auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
             auto pVecBeauty3Prong = RecoDecay::PVec(pVec2Prong, pVecThird);
             auto ptCand = RecoDecay::Pt(pVecBeauty3Prong);
-            if (std::abs(massCand - massBPlus) <= deltaMassBPlus) {
+            if (isTrackSelected == kRegular && std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
               if (activateQA) {
                 hMassVsPtB[kBplus]->Fill(ptCand, massCand);
@@ -700,7 +714,7 @@ struct HfFilter { // Main struct for HF triggers
                 hMassVsPtC[kNCharmParticles]->Fill(ptCand, massCand);
               }
               for (const auto& trackB : tracks) { // start loop over tracks
-                if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong)) {
+                if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong) == kRegular) {
                   std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
                   auto massCandB0 = RecoDecay::M(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
@@ -719,7 +733,7 @@ struct HfFilter { // Main struct for HF triggers
 
         // 2-prong femto
         if (!keepEvent[kFemto] && isCharmTagged) {
-          bool isProton = isSelectedProton(track);
+          bool isProton = isSelectedProton4Femto(track);
           if (isProton) {
             float relativeMomentum = computeRelativeMomentum(track, pVec2Prong, massD0);
             if (relativeMomentum < femtoMaxRelativeMomentum) {
@@ -807,7 +821,7 @@ struct HfFilter { // Main struct for HF triggers
         float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
         float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
-        if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong)) {
+        if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty]; ++iHypo) {
             if ((iHypo != 1 && specieCharmHyposInMass[iHypo] > 0) || (iHypo == 1 && ((TESTBIT(specieCharmHyposInMass[iHypo], 0) && TESTBIT(specieCharmHyposInMass[iHypo], 2)) || (TESTBIT(specieCharmHyposInMass[iHypo], 1) && TESTBIT(specieCharmHyposInMass[iHypo], 3))))) {
               auto massCandB = RecoDecay::M(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
@@ -824,7 +838,7 @@ struct HfFilter { // Main struct for HF triggers
         } // end beauty selection
 
         // 3-prong femto
-        if (isSelectedProton(track)) {
+        if (isSelectedProton4Femto(track)) {
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
             if ((iHypo != 1 && specieCharmHypos[iHypo]) || (iHypo == 1 && specieCharmHypos[iHypo] && (TESTBIT(specieCharmHyposInMass[iHypo], 2) || TESTBIT(specieCharmHyposInMass[iHypo], 3)))) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
