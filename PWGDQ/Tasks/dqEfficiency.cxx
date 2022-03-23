@@ -551,8 +551,7 @@ struct AnalysisSameEventPairing {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("DileptonLepton_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
-            Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())
-          };
+            Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
           histNames += Form("%s;%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data(), names[3].Data());
           fMuonHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
@@ -560,9 +559,6 @@ struct AnalysisSameEventPairing {
             for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
               MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
               if (sig) {
-                //if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
-                  //continue;
-                //}
                 if (sig->GetNProngs() == 2) {
                   fRecMCSignals.push_back(*sig);
                   TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName(), objArray->At(icut)->GetName(), sig->GetName());
@@ -739,7 +735,6 @@ struct AnalysisSameEventPairing {
     } // end loop over barrel track pairs
   }   // end runPairing
 
-
   // Template function to run pair - lepton combinations
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
   void runDileptonLepton(TEvent const& event, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
@@ -765,7 +760,8 @@ struct AnalysisSameEventPairing {
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
       }
-      if(!(twoTrackFilter & (uint32_t(1) << 0))) continue;
+      if (!(twoTrackFilter & (uint32_t(1) << 0)))
+        continue;
 
       auto t1MC = t1.reducedMCTrack();
       auto t2MC = t2.reducedMCTrack();
@@ -791,10 +787,14 @@ struct AnalysisSameEventPairing {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (auto& t3 : tracks) {
 
-              if (!(uint32_t(t3.isMuonSelected()))) continue;
-              if (t1.sign() * t2.sign() > 0) continue;
-              if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
-              if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
+              if (!(uint32_t(t3.isMuonSelected())))
+                continue;
+              if (t1.sign() * t2.sign() > 0)
+                continue;
+              if (TMath::Abs(t1.pt() - t3.pt()) < 0.001)
+                continue;
+              if (TMath::Abs(t2.pt() - t3.pt()) < 0.001)
+                continue;
 
               VarManager::FillDileptonLepton<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, fValuesLepton);
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
@@ -805,15 +805,20 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
               }
 
-              if (!(mcDecision)) continue;
+              if (!(mcDecision))
+                continue;
 
               for (auto& t3 : tracks) {
                 auto t3MC = t3.reducedMCTrack();
 
-                if (!(uint32_t(t3.isMuonSelected()))) continue;
-                if (t1.sign() * t2.sign() > 0) continue;
-                if (TMath::Abs(t1.pt() - t3.pt()) < 0.001) continue;
-                if (TMath::Abs(t2.pt() - t3.pt()) < 0.001) continue;
+                if (!(uint32_t(t3.isMuonSelected())))
+                  continue;
+                if (t1.sign() * t2.sign() > 0)
+                  continue;
+                if (TMath::Abs(t1.pt() - t3.pt()) < 0.001)
+                  continue;
+                if (TMath::Abs(t2.pt() - t3.pt()) < 0.001)
+                  continue;
 
                 int iisig = 0;
                 for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iisig++) {
@@ -824,7 +829,6 @@ struct AnalysisSameEventPairing {
                     }
                   }
                 } // end loop over MC signals
-
               }
             }
           } else {
@@ -836,9 +840,7 @@ struct AnalysisSameEventPairing {
           }
         }
       }
-
     }
-
   }
 
   template <typename TTracksMC>
@@ -919,7 +921,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processDileptonLepton(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithCov> const& tracks,
-                      ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                             ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);

@@ -379,7 +379,7 @@ class VarManager : public TObject
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-  static void FillDleptonLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values = nullptr);
+  static void FillDileptonLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values = nullptr);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
 
@@ -1052,7 +1052,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 }
 
 template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-void VarManager::FillDleptonLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values)
+void VarManager::FillDileptonLepton(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& lepton3, float* values)
 {
 
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
@@ -1083,28 +1083,26 @@ void VarManager::FillDleptonLepton(C const& collision, T1 const& lepton1, T2 con
   int procCode = 0;
   int procCodeJpsi = 0;
 
-
   if constexpr (trackHasCov) {
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
     std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
-                                    lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
-                                    lepton1.c1PtY(), lepton1.c1PtZ(), lepton1.c1PtSnp(), lepton1.c1PtTgl(), lepton1.c1Pt21Pt2()};
+                                         lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
+                                         lepton1.c1PtY(), lepton1.c1PtZ(), lepton1.c1PtSnp(), lepton1.c1PtTgl(), lepton1.c1Pt21Pt2()};
     o2::track::TrackParCov pars1{lepton1.x(), lepton1.alpha(), lepton1pars, lepton1covs};
     std::array<float, 5> lepton2pars = {lepton2.y(), lepton2.z(), lepton2.snp(), lepton2.tgl(), lepton2.signed1Pt()};
     std::array<float, 15> lepton2covs = {lepton2.cYY(), lepton2.cZY(), lepton2.cZZ(), lepton2.cSnpY(), lepton2.cSnpZ(),
-                                    lepton2.cSnpSnp(), lepton2.cTglY(), lepton2.cTglZ(), lepton2.cTglSnp(), lepton2.cTglTgl(),
-                                    lepton2.c1PtY(), lepton2.c1PtZ(), lepton2.c1PtSnp(), lepton2.c1PtTgl(), lepton2.c1Pt21Pt2()};
+                                         lepton2.cSnpSnp(), lepton2.cTglY(), lepton2.cTglZ(), lepton2.cTglSnp(), lepton2.cTglTgl(),
+                                         lepton2.c1PtY(), lepton2.c1PtZ(), lepton2.c1PtSnp(), lepton2.c1PtTgl(), lepton2.c1Pt21Pt2()};
     o2::track::TrackParCov pars2{lepton2.x(), lepton2.alpha(), lepton2pars, lepton2covs};
     std::array<float, 5> lepton3pars = {lepton3.y(), lepton3.z(), lepton3.snp(), lepton3.tgl(), lepton3.signed1Pt()};
     std::array<float, 15> lepton3covs = {lepton3.cYY(), lepton3.cZY(), lepton3.cZZ(), lepton3.cSnpY(), lepton3.cSnpZ(),
-                                    lepton3.cSnpSnp(), lepton3.cTglY(), lepton3.cTglZ(), lepton3.cTglSnp(), lepton3.cTglTgl(),
-                                    lepton3.c1PtY(), lepton3.c1PtZ(), lepton3.c1PtSnp(), lepton3.c1PtTgl(), lepton3.c1Pt21Pt2()};
+                                         lepton3.cSnpSnp(), lepton3.cTglY(), lepton3.cTglZ(), lepton3.cTglSnp(), lepton3.cTglTgl(),
+                                         lepton3.c1PtY(), lepton3.c1PtZ(), lepton3.c1PtSnp(), lepton3.c1PtTgl(), lepton3.c1Pt21Pt2()};
     o2::track::TrackParCov pars3{lepton3.x(), lepton3.alpha(), lepton3pars, lepton3covs};
     procCode = VarManager::FwdfgFitterThreeProng.process(pars1, pars2, pars3);
     procCodeJpsi = VarManager::FwdfgFitterTwoProng.process(pars1, pars2);
     //auto jpsiTrack = fgFitterTwoProng.createParentTrackParCov();
-  }
-  else {
+  } else {
     return;
   }
   values[VarManager::kVertexingProcCode] = procCode;
@@ -1150,17 +1148,17 @@ void VarManager::FillDleptonLepton(C const& collision, T1 const& lepton1, T2 con
                                         (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
 
     values[VarManager::kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
-                            (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
+                                        (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
     values[VarManager::kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
     values[VarManager::kVertexingLxyz] = values[VarManager::kVertexingLxy] + values[VarManager::kVertexingLz];
     values[VarManager::kVertexingLxy] = std::sqrt(values[VarManager::kVertexingLxy]);
     values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
     values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
-    values[VarManager::kVertexingPseudoCTau] = ((secondaryVertex[0] - collision.posY())*v123.Px()+(secondaryVertex[1] - collision.posY())*v123.Py())/(v123.Pt()*v123.Pt())*mlepton;
+    values[VarManager::kVertexingPseudoCTau] = ((secondaryVertex[0] - collision.posY())* v123.Px() + (secondaryVertex[1] - collision.posY()) * v123.Py()) / (v123.Pt() * v123.Pt()) * mlepton;
 
-    values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px()+
-                                            (collision.posY() - secondaryVertex[1]) * v123.Py()+
-                                            (collision.posZ() - secondaryVertex[2]) * v123.Pz())/(v123.P()*values[VarManager::kVertexingLxyz]);
+    values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() + 
+                                            (collision.posY() - secondaryVertex[1]) * v123.Py() + 
+                                            (collision.posZ() - secondaryVertex[2]) * v123.Pz()) / (v123.P() * values[VarManager::kVertexingLxyz]);
 
   }
 
