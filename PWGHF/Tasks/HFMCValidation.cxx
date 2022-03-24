@@ -132,6 +132,7 @@ struct ValidationGenLevel {
       for (std::size_t iD = 0; iD < PDGArrayParticle.size(); ++iD) {
         int whichHadron = -1;
         if (std::abs(particlePdgCode) == PDGArrayParticle[iD]) {
+          whichHadron = iD;
           RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           if (listDaughters.size() == arrayPDGsize) {
