@@ -363,11 +363,13 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
     histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
 
     if constexpr (IS_MC) {
-      // resolution plots
-      auto particle = track.mcParticle();
-      histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
-      histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
-      histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
+      if (track.has_mcParticle()) {
+        // resolution plots
+        auto particle = track.mcParticle();
+        histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
+        histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
+        histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
+      }
     }
   }
 }
