@@ -19,15 +19,15 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-//included from NucleiSpectraTask.cxx
-#include "Framework/AnalysisDataModel.h" 
-#include "Framework/ASoAHelpers.h"  
+// included from NucleiSpectraTask.cxx
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "Common/Core/PID/PIDResponse.h" 
+#include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h" 
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 
 #include <TLorentzVector.h>
@@ -45,20 +45,24 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(E, e, float);
-DECLARE_SOA_COLUMN(NSigTPCPi0, nsigTPCPi0, float);
-DECLARE_SOA_COLUMN(NSigTPCPr0, nsigTPCPr0, float);
-DECLARE_SOA_COLUMN(NSigTPCDe0, nsigTPCD0, float);
-DECLARE_SOA_COLUMN(NSigTPC3He0, nsigTPC3He0, float);
-DECLARE_SOA_COLUMN(NSigTOFPi0, nsigTOFPi0, float);
-DECLARE_SOA_COLUMN(NSigTOFPr0, nsigTOFPr0, float);
-DECLARE_SOA_COLUMN(NSigTOFDe0, nsigTOFD0, float);
-DECLARE_SOA_COLUMN(NSigTOF3He0, nsigTOF3He0, float);
+DECLARE_SOA_COLUMN(NSigTPCPi, nsigTPCPi, float);
+DECLARE_SOA_COLUMN(NSigTPCKa, nsigTPCKa, float);
+DECLARE_SOA_COLUMN(NSigTPCPr, nsigTPCPr, float);
+DECLARE_SOA_COLUMN(NSigTPCDe, nsigTPCD, float);
+DECLARE_SOA_COLUMN(NSigTPC3He, nsigTPC3He, float);
+DECLARE_SOA_COLUMN(NSigTOFPi, nsigTOFPi, float);
+DECLARE_SOA_COLUMN(NSigTOFKa, nsigTOFKa, float);
+DECLARE_SOA_COLUMN(NSigTOFPr, nsigTOFPr, float);
+DECLARE_SOA_COLUMN(NSigTOFDe, nsigTOFD, float);
+DECLARE_SOA_COLUMN(NSigTOF3He, nsigTOF3He, float);
 DECLARE_SOA_COLUMN(TOFmatch, tofMatch, bool);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
 // Events
@@ -68,26 +72,25 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 
 DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "HFCANDP3Full",
                   collision::BCId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  full::NSigTPCPi0,
-                  full::NSigTPCPr0,
-                  full::NSigTPCDe0,
-                  full::NSigTPC3He0,
-                  full::NSigTOFPi0,
-                  full::NSigTOFPr0,
-                  full::NSigTOFDe0,
-                  full::NSigTOF3He0,
+                  full::NSigTPCPi,
+                  full::NSigTPCKa,
+                  full::NSigTPCPr,
+                  full::NSigTPCDe,
+                  full::NSigTPC3He,
+                  full::NSigTOFPi,
+                  full::NSigTOFKa,
+                  full::NSigTOFPr,
+                  full::NSigTOFDe,
+                  full::NSigTOF3He,
                   full::TOFmatch,
+                  full::Px,
+                  full::Py,
+                  full::Pz,
                   full::Pt,
                   full::P,
                   full::Eta,
                   full::Phi,
-                  full::Y,
-                  full::E,
-                  full::sign,
+                  full::Sign,
                   full::MCflag);
 
 DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLFullE",
@@ -118,10 +121,15 @@ struct CandidateTreeWriter {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection, aod::TOFSignal>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+                                                  aod::pidTPCFullPi, aod::pidTOFFullPi,
+                                                  aod::pidTPCFullKa, aod::pidTOFFullKa,
+                                                  aod::pidTPCFullPr, aod::pidTOFFullPr,
+                                                  aod::pidTPCFullDe, aod::pidTOFFullDe,
+                                                  aod::pidTPCFullHe, aod::pidTOFFullHe>>;
 
-  void process(soa::Filtered<soa::Join<aod::Collisions const& collisions,
-               aod::EvSels>>::iterator const& collision, 
+  void process(soa::Filtered<soa::Join<aod::Collisions const & collisions,
+                                       aod::EvSels>>::iterator const& collision,
                TrackCandidates const& tracks)
   {
     // Filling event properties
@@ -133,40 +141,32 @@ struct CandidateTreeWriter {
         collision.posX(),
         collision.posY(),
         collision.posZ(),
-        0,
-        1);
+        0,  // iseventselected
+        1); // runnumber
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
-                           float FunctionY,
-                           float FunctionE) {
-        if (FunctionSelection >= 1) {
-          rowCandidateFull(
-            collision.bcId(),
-            collision.numContrib(),
-            track.tpcNSigmaPi(),
-            track.tpcNSigmaPr(),
-            track.tpcNSigmaDe(),
-            track.tpcNSigmaHe(),
-            track.tofNSigmaPi(),
-            track.tofNSigmaPr(),
-            track.tofNSigmaD(),
-            track.tofNSigmaHe(),
-            track.hasTOF(),
-            track.pt(),
-            candidate.p(),
-            candidate.eta(),
-            candidate.phi(),
-            FunctionY,
-            FunctionE,
-            track.sign(),
-            candidate.flagMCMatchRec());
-        }
-      };
+      rowCandidateFull(
+        collision.bcId(),
+        candidate.tpcNSigmaPi(),
+        candidate.tpcNSigmaKa(),
+        candidate.tpcNSigmaPr(),
+        candidate.tpcNSigmaDe(),
+        candidate.tpcNSigmaHe(),
+        candidate.tofNSigmaPi(),
+        candidate.tofNSigmaKa(),
+        candidate.tofNSigmaPr(),
+        candidate.tofNSigmaDe(),
+        candidate.tofNSigmaHe(),
+        candidate.hasTOF(),
+        candidate.pt(),
+        candidate.p(),
+        candidate.eta(),
+        candidate.phi(),
+        candidate.sign(),
+        candidate.flagMCMatchRec());
     }
   }
 };
