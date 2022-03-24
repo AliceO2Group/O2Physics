@@ -53,7 +53,9 @@ struct QaImpactPar {
   /// Input parameters
   ConfigurableAxis binningImpPar{"binningImpPar", {200, -500.f, 500.f}, "Impact parameter binning"};
   // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
-  Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0) event selection"};
+  Configurable<bool> useTriggerkINT7{"useTriggerkINT7", false, "Use kINT7 trigger"};
+  Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0A & T0C) event selection"};
+  Configurable<bool> useIsGlobalTrackFilter{"useIsGlobalTrackFilter", true, "Use or not 'isGlobalTrack' filter"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
   // Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum track pt [GeV/c]"};
@@ -90,7 +92,7 @@ struct QaImpactPar {
   Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
   // Global tracks
   // with Run 3 data/MC enable '--isRun3 1' option
-  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
+  Filter globalTrackFilter = (useIsGlobalTrackFilter.node() == false) || (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 
@@ -239,16 +241,14 @@ struct QaImpactPar {
     // constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
-    /// trigger selection (remove for the moment, need to join with o2::aod::EvSels)
-    // if (useINT7Trigger) {
-    //     // from Tutorial/src/multiplicityEventTrackSelection.cxx
-    //     if (!collision.alias()[kINT7]) {
-    //         return;
-    //     }
-    //     if (!collision.sel7()) {
-    //         return;
-    //     }
-    // }
+    /// trigger selection
+    if (useTriggerkINT7) {
+      // from Tutorial/src/multiplicityEventTrackSelection.cxx
+      if (!collision.alias()[kINT7]) {
+        return;
+      }
+    }
+    /// offline event selections
     if (usesel8 && !collision.sel8()) {
       return;
     }
@@ -480,15 +480,13 @@ struct QaImpactPar {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
     /// trigger selection
-    // if (useINT7TriggerMC) {
-    //     // from Tutorial/src/multiplicityEventTrackSelection.cxx
-    //     if (!collision.alias()[kINT7]) {
-    //         return;
-    //     }
-    //     if (!collision.sel7()) {
-    //         return;
-    //     }
-    // }
+    if (useTriggerkINT7) {
+      // from Tutorial/src/multiplicityEventTrackSelection.cxx
+      if (!collision.alias()[kINT7]) {
+        return;
+      }
+    }
+    /// offline event selection
     if (usesel8 && !collision.sel8()) {
       return;
     }

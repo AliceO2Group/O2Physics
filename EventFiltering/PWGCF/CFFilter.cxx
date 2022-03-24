@@ -66,10 +66,10 @@ static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"}
 // uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
 static constexpr uint8_t Track = 0;      // Track
 static constexpr uint8_t V0 = 1;         // V0
-static constexpr uint8_t V0Daughter = 2; // V0  daughters
+// static constexpr uint8_t V0Daughter = 2; // V0  daughters
 static constexpr uint32_t kSignMinusMask = 1;
 static constexpr uint32_t kSignPlusMask = 2;
-static constexpr uint32_t knSigmaProton = 48;
+// static constexpr uint32_t knSigmaProton = 48;
 static constexpr uint32_t kValue0 = 0;
 
 } // namespace

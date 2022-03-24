@@ -47,6 +47,10 @@ DECLARE_SOA_COLUMN(TrackacceptedAsTwo, trackacceptedastwo, uint8_t); //! Track a
 DECLARE_SOA_COLUMN(Pt, pt, float);                                   //! The track transverse momentum
 DECLARE_SOA_COLUMN(Eta, eta, float);                                 //! The track pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! The track azimuthal angle
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,                               //! Charge: positive: 1, negative: -1
+                           [](uint8_t trackacceptedasone, uint8_t trackacceptedastwo) -> short {
+                             return (trackacceptedasone == uint8_t(true) ? 1 : (trackacceptedastwo ? -1 : 0));
+                           });
 } // namespace dptdptfilter
 DECLARE_SOA_TABLE(ScannedTracks, "AOD", "SCANNEDTRACKS", //! The reconstructed tracks filtered table
                   dptdptfilter::DptDptCFAcceptedCollisionId,
@@ -54,14 +58,16 @@ DECLARE_SOA_TABLE(ScannedTracks, "AOD", "SCANNEDTRACKS", //! The reconstructed t
                   dptdptfilter::TrackacceptedAsTwo,
                   dptdptfilter::Pt,
                   dptdptfilter::Eta,
-                  dptdptfilter::Phi);
+                  dptdptfilter::Phi,
+                  dptdptfilter::Sign<dptdptfilter::TrackacceptedAsOne, dptdptfilter::TrackacceptedAsTwo>);
 DECLARE_SOA_TABLE(ScannedTrueTracks, "AOD", "SCANTRUETRACKS", //! The generated particles filtered table
                   dptdptfilter::DptDptCFAcceptedTrueCollisionId,
                   dptdptfilter::TrackacceptedAsOne,
                   dptdptfilter::TrackacceptedAsTwo,
                   dptdptfilter::Pt,
                   dptdptfilter::Eta,
-                  dptdptfilter::Phi);
+                  dptdptfilter::Phi,
+                  dptdptfilter::Sign<dptdptfilter::TrackacceptedAsOne, dptdptfilter::TrackacceptedAsTwo>);
 } // namespace aod
 } // namespace o2
 
