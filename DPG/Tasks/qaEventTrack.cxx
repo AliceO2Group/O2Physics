@@ -350,7 +350,7 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
       }
     }
     if (!trkHasITS) {
-      histograms.fill(HIST("Tracks/ITS/itsHits"), -1, itsNhits);
+      histos.fill(HIST("Tracks/ITS/itsHits"), -1, itsNhits);
     }
 
     // fill TPC variables
