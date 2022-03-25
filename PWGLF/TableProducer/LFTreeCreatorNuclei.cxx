@@ -19,7 +19,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-// included from NucleiSpectraTask.cxx
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
@@ -39,7 +39,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-// using namespace o2::aod::lf_cand_nucleus;
 
 namespace o2::aod
 {
@@ -64,7 +63,7 @@ DECLARE_SOA_COLUMN(NSigTOFPr, nsigTOFPr, float);
 DECLARE_SOA_COLUMN(NSigTOFDe, nsigTOFD, float);
 DECLARE_SOA_COLUMN(NSigTOF3He, nsigTOF3He, float);
 DECLARE_SOA_COLUMN(TOFmatch, tofMatch, bool);
-//DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -139,8 +138,8 @@ struct CandidateTreeWriter {
       collision.posX(),
       collision.posY(),
       collision.posZ(),
-      0,  // iseventselected
-      1); // runnumber
+      0,  // iseventselected //to be set
+      1); // runnumber //to be sets
 
     // Filling candidate properties
     rowCandidateFull.reserve(tracks.size());
