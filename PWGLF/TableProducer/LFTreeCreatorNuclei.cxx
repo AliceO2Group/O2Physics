@@ -39,7 +39,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::lf_cand_nucleus;
+// using namespace o2::aod::lf_cand_nucleus;
 
 namespace o2::aod
 {
@@ -64,7 +64,7 @@ DECLARE_SOA_COLUMN(NSigTOFPr, nsigTOFPr, float);
 DECLARE_SOA_COLUMN(NSigTOFDe, nsigTOFD, float);
 DECLARE_SOA_COLUMN(NSigTOF3He, nsigTOF3He, float);
 DECLARE_SOA_COLUMN(TOFmatch, tofMatch, bool);
-DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+//DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -90,8 +90,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "HFCANDP3Full",
                   full::P,
                   full::Eta,
                   full::Phi,
-                  full::Sign,
-                  full::MCflag);
+                  full::Sign);
 
 DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLFullE",
                   collision::BCId,
@@ -128,45 +127,45 @@ struct CandidateTreeWriter {
                                                   aod::pidTPCFullDe, aod::pidTOFFullDe,
                                                   aod::pidTPCFullHe, aod::pidTOFFullHe>>;
 
-  void process(soa::Filtered<soa::Join<aod::Collisions const & collisions,
+  void process(soa::Filtered<soa::Join<aod::Collisions,
                                        aod::EvSels>>::iterator const& collision,
                TrackCandidates const& tracks)
   {
     // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
-      rowCandidateFullEvents(
-        collision.bcId(),
-        collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ(),
-        0,  // iseventselected
-        1); // runnumber
-    }
+    rowCandidateFullEvents.reserve(collision.size());
+    rowCandidateFullEvents(
+      collision.bcId(),
+      collision.numContrib(),
+      collision.posX(),
+      collision.posY(),
+      collision.posZ(),
+      0,  // iseventselected
+      1); // runnumber
 
     // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    rowCandidateFull.reserve(tracks.size());
+    for (auto& track : tracks) {
       rowCandidateFull(
         collision.bcId(),
-        candidate.tpcNSigmaPi(),
-        candidate.tpcNSigmaKa(),
-        candidate.tpcNSigmaPr(),
-        candidate.tpcNSigmaDe(),
-        candidate.tpcNSigmaHe(),
-        candidate.tofNSigmaPi(),
-        candidate.tofNSigmaKa(),
-        candidate.tofNSigmaPr(),
-        candidate.tofNSigmaDe(),
-        candidate.tofNSigmaHe(),
-        candidate.hasTOF(),
-        candidate.pt(),
-        candidate.p(),
-        candidate.eta(),
-        candidate.phi(),
-        candidate.sign(),
-        candidate.flagMCMatchRec());
+        track.tpcNSigmaPi(),
+        track.tpcNSigmaKa(),
+        track.tpcNSigmaPr(),
+        track.tpcNSigmaDe(),
+        track.tpcNSigmaHe(),
+        track.tofNSigmaPi(),
+        track.tofNSigmaKa(),
+        track.tofNSigmaPr(),
+        track.tofNSigmaDe(),
+        track.tofNSigmaHe(),
+        track.hasTOF(),
+        track.px(),
+        track.py(),
+        track.pz(),
+        track.pt(),
+        track.p(),
+        track.eta(),
+        track.phi(),
+        track.sign());
     }
   }
 };
