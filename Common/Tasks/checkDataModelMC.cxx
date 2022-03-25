@@ -43,7 +43,7 @@ void checkDaughters(const T& particlesMC,
     }
   }
   for (auto& idxDau : particle.daughtersIds()) {
-    if ((long unsigned int)idxDau > offset + particlesMC.size() || (long unsigned int)idxDau < offset) {
+    if ((idxDau > offset + particlesMC.size() || idxDau < offset) && idxDau >= 0) {
       if (debugMode) {
         debugHisto->Fill(1);
       } else {
