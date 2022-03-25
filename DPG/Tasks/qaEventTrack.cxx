@@ -200,7 +200,7 @@ void qaEventTrack::init(InitContext const&)
   // its histograms
   histos.add("Tracks/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
   histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
-  histos.add("Tracks/ITS/itsHits", "No. of hits vs ITS layer;layer ITS", kTH2D, {{7, -0.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+  histos.add("Tracks/ITS/itsHits", "No. of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
 
   // tpc histograms
   histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
@@ -342,10 +342,15 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
         itsNhits += 1;
       }
     }
+    bool trkHasITS = false;
     for (unsigned int i = 0; i < 7; i++) {
       if (track.itsClusterMap() & (1 << i)) {
+        trkHasITS = true;
         histos.fill(HIST("Tracks/ITS/itsHits"), i, itsNhits);
       }
+    }
+    if (!trkHasITS) {
+      histos.fill(HIST("Tracks/ITS/itsHits"), -1, itsNhits);
     }
 
     // fill TPC variables
