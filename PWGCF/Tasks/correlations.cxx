@@ -297,7 +297,7 @@ struct CorrelationTask {
       LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
     }
 
-    LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centRun2V0M());
+    //LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centRun2V0M());
 
     const auto centrality = collision.centRun2V0M();
 
@@ -334,7 +334,7 @@ struct CorrelationTask {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
+      //LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
       // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
@@ -568,7 +568,7 @@ struct CorrelationHashTask {
   {
     for (auto& collision : collisions) {
       int hash = getHash(collision.posZ(), collision.centRun2V0M());
-      LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centRun2V0M(), hash);
+      //LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centRun2V0M(), hash);
       hashes(hash);
     }
   }
