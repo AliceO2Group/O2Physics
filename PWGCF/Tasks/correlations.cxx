@@ -327,6 +327,10 @@ struct CorrelationTask {
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
+    for (auto& collision : collisions) {
+      LOGF(info, "processMixedAOD: collision: %d bin: %d", collision.index(), collision.bin());
+    }
+
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
     GroupSlicer slicer(collisions, tracksTuple);
@@ -334,7 +338,7 @@ struct CorrelationTask {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      //LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
+      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
       // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
