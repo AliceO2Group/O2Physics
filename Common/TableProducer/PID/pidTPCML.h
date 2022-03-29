@@ -126,7 +126,7 @@ Network& Network::operator=(Network& inst)
 
   mEnv = inst.mEnv;
   mSession = inst.mSession;
-  //sessionOptions = inst.sessionOptions; // Comment (Christian): Somehow the session options throw an error when copying
+  // sessionOptions = inst.sessionOptions; // Comment (Christian): Somehow the session options throw an error when copying
   mInputNames = inst.mInputNames;
   mInputShapes = inst.mInputShapes;
   mOutputNames = inst.mOutputNames;
