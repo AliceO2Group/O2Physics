@@ -69,7 +69,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "HFCANDP3Full",
+DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   collision::BCId,
                   full::NSigTPCPi,
                   full::NSigTPCKa,
@@ -91,7 +91,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "HFCANDP3Full",
                   full::Phi,
                   full::Sign);
 
-DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLFullE",
+DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLEvent",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
