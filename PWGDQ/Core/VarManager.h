@@ -213,6 +213,7 @@ class VarManager : public TObject
     kMuonNClusters,
     kMuonPDca,
     kMuonRAtAbsorberEnd,
+    kMCHBitMap,
     kMuonChi2,
     kMuonChi2MatchMCHMID,
     kMuonChi2MatchMCHMFT,
@@ -721,6 +722,7 @@ void VarManager::FillTrack(T const& track, float* values)
   if constexpr ((fillMap & ReducedMuonExtra) > 0 || (fillMap & Muon) > 0) {
     values[kMuonNClusters] = track.nClusters();
     values[kMuonPDca] = track.pDca();
+    values[kMCHBitMap] = track.mchBitMap();
     values[kMuonRAtAbsorberEnd] = track.rAtAbsorberEnd();
     values[kMuonChi2] = track.chi2();
     values[kMuonChi2MatchMCHMID] = track.chi2MatchMCHMID();
@@ -863,7 +865,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
     m2 = fgkMuonMass;
   }
 
-  //TODO : implement resolution smearing.
+  // TODO : implement resolution smearing.
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -889,8 +891,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   int procCode = 0;
 
   // TODO: use trackUtilities functions to initialize the various matrices to avoid code duplication
-  //auto pars1 = getTrackParCov(t1);
-  //auto pars2 = getTrackParCov(t2);
+  // auto pars1 = getTrackParCov(t1);
+  // auto pars2 = getTrackParCov(t2);
   // We need to hide the cov data members from the cases when no cov table is provided
   if constexpr ((pairType == kJpsiToEE) && trackHasCov) {
     std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
@@ -905,7 +907,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
     procCode = fgFitterTwoProng.process(pars1, pars2);
   } else if constexpr ((pairType == kJpsiToMuMu) && muonHasCov) {
-    //Initialize track parameters for forward
+    // Initialize track parameters for forward
     double chi21 = t1.chi2();
     double chi22 = t2.chi2();
     SMatrix5 t1pars(t1.x(), t1.y(), t1.phi(), t1.tgl(), t1.signed1Pt());
@@ -959,7 +961,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
     std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
     o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
-    //auto primaryVertex = getPrimaryVertex(collision);
+    // auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
 
     if constexpr (pairType == kJpsiToEE && trackHasCov) {
@@ -975,7 +977,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
     } else if constexpr (pairType == kJpsiToMuMu && muonHasCov) {
-      //Get pca candidate from forward DCA fitter
+      // Get pca candidate from forward DCA fitter
       m1 = fgkMuonMass;
       m2 = fgkMuonMass;
 
@@ -996,8 +998,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       trackParVar1.propagateToZlinear(primaryVertex.getZ());
     }
     // get uncertainty of the decay length
-    //double phi, theta;
-    //getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
+    // double phi, theta;
+    // getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
     double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
     double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
                               std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +

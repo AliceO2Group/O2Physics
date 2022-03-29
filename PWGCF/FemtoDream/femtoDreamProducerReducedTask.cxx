@@ -39,9 +39,9 @@ using namespace o2::framework::expressions;
 namespace o2::aod
 {
 
-using FilteredFullCollision = soa::Filtered<soa::Join<aod::Collisions,
-                                                      aod::EvSels,
-                                                      aod::Mults>>::iterator;
+using FilteredFullCollision = soa::Join<aod::Collisions,
+                                        aod::EvSels,
+                                        aod::Mults>::iterator;
 using FilteredFullTracks = soa::Join<aod::FullTracks,
                                      aod::TracksExtended, aod::TOFSignal,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -70,8 +70,6 @@ struct femtoDreamProducerReducedTask {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
-
-  Filter colFilter = (ConfIsTrigger == (uint8_t) true) || (nabs(aod::collision::posZ) < ConfEvtZvtx);
 
   FemtoDreamTrackSelection trackCuts;
   Configurable<std::vector<float>> ConfTrkCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "ConfTrk"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Track selection: ")};

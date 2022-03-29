@@ -223,10 +223,22 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kXeXe:
       switch (fTriggerSelection) {
         case kMB:
-          if (collision.alias()[kINT7]) {
-            if (collision.sel7()) {
+          switch (fDataType) {
+            case kData:
+              if (collision.alias()[kINT7]) {
+                if (collision.sel7()) {
+                  trigsel = true;
+                }
+              }
+              break;
+            case kMC:
+              if (collision.sel7()) {
+                trigsel = true;
+              }
+              break;
+            default:
               trigsel = true;
-            }
+              break;
           }
           break;
         case kNONE:

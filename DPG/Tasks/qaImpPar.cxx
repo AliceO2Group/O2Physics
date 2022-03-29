@@ -35,6 +35,7 @@
 
 #include "iostream"
 #include "vector"
+#include "set"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -53,7 +54,9 @@ struct QaImpactPar {
   /// Input parameters
   ConfigurableAxis binningImpPar{"binningImpPar", {200, -500.f, 500.f}, "Impact parameter binning"};
   // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
-  Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0) event selection"};
+  Configurable<bool> useTriggerkINT7{"useTriggerkINT7", false, "Use kINT7 trigger"};
+  Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0A & T0C) event selection"};
+  Configurable<bool> useIsGlobalTrackFilter{"useIsGlobalTrackFilter", true, "Use or not 'isGlobalTrack' filter"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
   // Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum track pt [GeV/c]"};
@@ -80,9 +83,16 @@ struct QaImpactPar {
   Configurable<float> minDeltaZ_PVrefit{"minDeltaZ_PVrefit", -0.5, "Min. DeltaZ value for PV refit (cm)"};
   Configurable<float> maxDeltaZ_PVrefit{"maxDeltaZ_PVrefit", 0.5, "Max. DeltaZ value for PV refit (cm)"};
   Configurable<uint16_t> minPVcontrib{"minPVcontrib", 0, "Minimum number of PV contributors"};
-  Configurable<uint16_t> maxPVcontrib{"maxPVcontrib", 1000, "Maximum number of PV contributors"};
+  Configurable<uint16_t> maxPVcontrib{"maxPVcontrib", 10000, "Maximum number of PV contributors"};
   Configurable<bool> removeDiamondConstraint{"removeDiamondConstraint", true, "Remove the diamond constraint for the PV refit"};
   Configurable<bool> keepAllTracksPVrefit{"keepAllTracksPVrefit", false, "Keep all tracks for PV refit (for debug)"};
+  Configurable<bool> use_customITSHitMap{"use_customITSHitMap", false, "Use custom ITS hitmap selection"};
+  Configurable<int> customITShitmap{"customITShitmap", 0, "Custom ITS hitmap (consider the binary representation)"};
+  Configurable<int> n_customMinITShits{"n_customMinITShits", 0, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
+  Configurable<bool> custom_forceITSTPCmatching{"custom_forceITSTPCmatching", false, "Consider or not only ITS-TPC macthed tracks when using custom ITS hitmap"};
+
+  /// Custom cut selection objects
+  TrackSelection selector_ITShitmap;
 
   /// Selections with Filter (from o2::framework::expressions)
   // Primary vertex |z_vtx|<XXX cm
@@ -90,7 +100,7 @@ struct QaImpactPar {
   Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
   // Global tracks
   // with Run 3 data/MC enable '--isRun3 1' option
-  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
+  Filter globalTrackFilter = (useIsGlobalTrackFilter.node() == false) || (o2::aod::track::isGlobalTrack == (uint8_t) true); /// filterbit 4 track selections + tight DCA cuts
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 
@@ -156,6 +166,26 @@ struct QaImpactPar {
     }
     mRunNumber = 0;
 
+    /// Custom cut selection objects
+    std::set<uint8_t> set_customITShitmap; // = {};
+    if (use_customITSHitMap) {
+      for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
+        if ((customITShitmap & (1 << index_ITSlayer)) > 0) {
+          set_customITShitmap.insert(static_cast<uint8_t>(index_ITSlayer));
+        }
+      }
+      LOG(info) << "### customITShitmap: " << customITShitmap;
+      LOG(info) << "### n_customMinITShits: " << n_customMinITShits;
+      LOG(info) << "### set_customITShitmap.size(): " << set_customITShitmap.size();
+      LOG(info) << "### Custom ITS hitmap checked: ";
+      for (std::set<uint8_t>::iterator it = set_customITShitmap.begin(); it != set_customITShitmap.end(); it++) {
+        LOG(info) << "Layer " << (int)(*it) << " ";
+      }
+      LOG(info) << "############";
+
+      selector_ITShitmap.SetRequireHitsInITSLayers(n_customMinITShits, set_customITShitmap);
+    }
+
     // tracks
     const AxisSpec trackPtAxis{100, 0.f, 10.f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec trackEtaAxis{40, -2.f, 2.f, "#it{#eta}"};
@@ -171,6 +201,13 @@ struct QaImpactPar {
     const AxisSpec trackPDGAxis{3, 0.5f, 3.5f, "species (1: pi, 2: K, 3: p)"};
 
     histograms.add("Data/pt", "", kTH1D, {trackPtAxis});
+    histograms.add("Data/itsHits", "Number of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5, "ITS layer"}, {8, -0.5, 7.5, "Number of hits"}});
+    histograms.add("Data/refitRun3", "Refit conditions for tracks", kTH1D, {{5, 0.5, 5.5, ""}});
+    histograms.get<TH1>(HIST("Data/refitRun3"))->GetXaxis()->SetBinLabel(1, "hasTPC");
+    histograms.get<TH1>(HIST("Data/refitRun3"))->GetXaxis()->SetBinLabel(2, "hasITS");
+    histograms.get<TH1>(HIST("Data/refitRun3"))->GetXaxis()->SetBinLabel(3, "hasTPC && !hasITS");
+    histograms.get<TH1>(HIST("Data/refitRun3"))->GetXaxis()->SetBinLabel(4, "!hasTPC && hasITS");
+    histograms.get<TH1>(HIST("Data/refitRun3"))->GetXaxis()->SetBinLabel(5, "hasTPC && hasITS");
     histograms.add("Data/h4ImpPar", "", kTHnD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis});
     histograms.add("Data/h4ImpParZ", "", kTHnD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis});
     if (isPIDPionApplied) {
@@ -239,16 +276,14 @@ struct QaImpactPar {
     // constexpr float magneticField{5.0};      // in kG
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
-    /// trigger selection (remove for the moment, need to join with o2::aod::EvSels)
-    // if (useINT7Trigger) {
-    //     // from Tutorial/src/multiplicityEventTrackSelection.cxx
-    //     if (!collision.alias()[kINT7]) {
-    //         return;
-    //     }
-    //     if (!collision.sel7()) {
-    //         return;
-    //     }
-    // }
+    /// trigger selection
+    if (useTriggerkINT7) {
+      // from Tutorial/src/multiplicityEventTrackSelection.cxx
+      if (!collision.alias()[kINT7]) {
+        return;
+      }
+    }
+    /// offline event selections
     if (usesel8 && !collision.sel8()) {
       return;
     }
@@ -349,6 +384,49 @@ struct QaImpactPar {
       ///  continue;
       ///}
 
+      /// apply custom ITS hitmap selections, if asked
+      if (use_customITSHitMap && !selector_ITShitmap.IsSelected(track, TrackSelection::TrackCuts::kITSHits)) {
+        /// skip this track and go on, because it does not satisfy the ITS hit requirements
+        continue;
+      }
+      if (use_customITSHitMap && custom_forceITSTPCmatching && (!track.hasITS() || !track.hasTPC())) {
+        // if (use_customITSHitMap && custom_forceITSTPCmatching && track.hasITS()) {  ///ATTEMPT: REMOVE TRACKS WITH ITS
+        /// skip this track because it is not global (no matching ITS-TPC)
+        continue;
+      }
+      int itsNhits = 0;
+      for (unsigned int i = 0; i < 7; i++) {
+        if (track.itsClusterMap() & (1 << i)) {
+          itsNhits += 1;
+        }
+      }
+      bool trkHasITS = false;
+      for (unsigned int i = 0; i < 7; i++) {
+        if (track.itsClusterMap() & (1 << i)) {
+          trkHasITS = true;
+          histograms.fill(HIST("Data/itsHits"), i, itsNhits);
+        }
+      }
+      if (!trkHasITS) {
+        histograms.fill(HIST("Data/itsHits"), -1, itsNhits);
+      }
+      /// Test refit conditions
+      if (track.hasTPC()) { // hasTPC
+        histograms.fill(HIST("Data/refitRun3"), 1);
+      }
+      if (track.hasITS()) { // hasITS
+        histograms.fill(HIST("Data/refitRun3"), 2);
+      }
+      if (track.hasTPC() && !track.hasITS()) { // hasTPC && !hasITS
+        histograms.fill(HIST("Data/refitRun3"), 3);
+      }
+      if (!track.hasTPC() && track.hasITS()) { // !hasTPC && hasITS
+        histograms.fill(HIST("Data/refitRun3"), 4);
+      }
+      if (track.hasTPC() && track.hasITS()) { // hasTPC && hasITS
+        histograms.fill(HIST("Data/refitRun3"), 5);
+      }
+
       pt = track.pt();
       tpcNSigmaPion = track.tpcNSigmaPi();
       tpcNSigmaKaon = track.tpcNSigmaKa();
@@ -420,7 +498,7 @@ struct QaImpactPar {
 
           cnt++;
         }
-      }
+      } /// end 'if (doPVrefit && PVrefit_doable)'
 
       /// impact parameter to the PV
       // value calculated wrt global PV (not recalculated) ---> coming from trackextension workflow
@@ -463,9 +541,12 @@ struct QaImpactPar {
         histograms.fill(HIST("Data/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
     }
-  }
+  } /// end processData
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
 
+  ///////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
   // void processMC(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>>::iterator& collision,
   void processMC(const o2::soa::Filtered<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>::iterator& collision,
                  o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra> const& unfiltered_tracks,
@@ -480,15 +561,13 @@ struct QaImpactPar {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
     /// trigger selection
-    // if (useINT7TriggerMC) {
-    //     // from Tutorial/src/multiplicityEventTrackSelection.cxx
-    //     if (!collision.alias()[kINT7]) {
-    //         return;
-    //     }
-    //     if (!collision.sel7()) {
-    //         return;
-    //     }
-    // }
+    if (useTriggerkINT7) {
+      // from Tutorial/src/multiplicityEventTrackSelection.cxx
+      if (!collision.alias()[kINT7]) {
+        return;
+      }
+    }
+    /// offline event selection
     if (usesel8 && !collision.sel8()) {
       return;
     }

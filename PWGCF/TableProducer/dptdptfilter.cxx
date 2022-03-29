@@ -405,9 +405,14 @@ struct DptDptFilter {
         particleMaxDCAxy = cfgTrackSelection->mDCAxy;
         particleMaxDCAZ = cfgTrackSelection->mDCAz;
       }
+      ownTrackSelection.ResetITSRequirements();
+      ownTrackSelection.SetRequireITSRefit(false);
+      ownTrackSelection.SetRequireTPCRefit(false);
+      ownTrackSelection.SetRequireGoldenChi2(false);
       ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
       ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
-      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(cfgTrackSelection->mTPCXRoFClusters);
+      ownTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(0);
+      ownTrackSelection.SetMaxChi2PerClusterITS(1e6f);
       ownTrackSelection.SetMaxDcaXYPtDep(std::function<float(float)>{});
       ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
       ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);

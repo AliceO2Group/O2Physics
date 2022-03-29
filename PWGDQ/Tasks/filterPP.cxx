@@ -81,12 +81,24 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExten
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+using MyBarrelTracksTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                     aod::pidTPCKa, aod::pidTPCPr,
+                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
+
 using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                          aod::DQBarrelTrackCuts>;
+using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+                                             aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                             aod::pidTPCKa, aod::pidTPCPr,
+                                             aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta,
+                                             aod::DQBarrelTrackCuts>;
 using MyMuons = aod::FwdTracks;
 using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::DQMuonsCuts>;
 
@@ -238,12 +250,17 @@ struct DQBarrelTrackSelection {
   {
     runTrackSelection<gkEventFillMap, gkTrackFillMap>(collision, bcs, tracks);
   }
+  void processSelectionTiny(MyEvents::iterator const& collision, aod::BCs const& bcs, MyBarrelTracksTiny const& tracks)
+  {
+    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collision, bcs, tracks);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(DQBarrelTrackSelection, processSelection, "Run barrel track selection", false);
+  PROCESS_SWITCH(DQBarrelTrackSelection, processSelectionTiny, "Run barrel track selection", false);
   PROCESS_SWITCH(DQBarrelTrackSelection, processDummy, "Dummy function", false);
 };
 
@@ -600,6 +617,13 @@ struct DQFilterPPTask {
   {
     runFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
   }
+
+  void processFilterPPTiny(MyEventsSelected::iterator const& collision, aod::BCs const& bcs,
+                           soa::Filtered<MyBarrelTracksSelectedTiny> const& tracks, soa::Filtered<MyMuonsSelected> const& muons)
+  {
+    runFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons);
+  }
+
   // TODO: dummy function for the case when no process function is enabled
   void processDummy(MyEvents&)
   {
@@ -607,6 +631,7 @@ struct DQFilterPPTask {
   }
 
   PROCESS_SWITCH(DQFilterPPTask, processFilterPP, "Run filter task", false);
+  PROCESS_SWITCH(DQFilterPPTask, processFilterPPTiny, "Run filter task", false);
   PROCESS_SWITCH(DQFilterPPTask, processDummy, "Dummy function", false);
 };
 
