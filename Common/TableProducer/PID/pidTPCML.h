@@ -13,7 +13,7 @@
 /// \file     pidTPCML.h
 ///
 /// \author   Christian Sonnabend <christian.sonnabend@cern.ch>
-/// \author   Nicolo Jacazio <nicolo.jacazio@cern.ch>
+/// \author   Nicolò Jacazio <nicolo.jacazio@cern.ch>
 ///
 /// \brief    A class for loading an ONNX neural network and evaluating it for the TPC PID response
 ///
