@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
             exitCode = 3;
           }
 
-          // clone tree
+          // Connect trees but do not copy entries (using the clone function)
           // NOTE Basket size etc. are copied in CloneTree()
           if (!outputDir) {
             outputDir = outputFile->mkdir(dfName);
@@ -216,118 +216,97 @@ int main(int argc, char* argv[])
             printf("Writing to output folder %s\n", dfName);
           }
           outputDir->cd();
-          auto outputTree = inputTree->CloneTree(-1, "fast");
+          auto outputTree = inputTree->CloneTree(0);
           outputTree->SetAutoFlush(0);
           trees[treeName] = outputTree;
-          currentDirSize += inputTree->GetTotBytes();
         } else {
-          // append tree
-          auto outputTree = trees[treeName];
+          // adjust addresses tree
+          trees[treeName]->CopyAddresses(inputTree);
+        }
 
-          outputTree->CopyAddresses(inputTree);
+        auto outputTree = trees[treeName];
+        // register index and connect VLA columns
+        std::vector<std::pair<int*, int>> indexList;
+        std::vector<char*> vlaPointers;
+        std::vector<int*> indexPointers;
+        TObjArray* branches = inputTree->GetListOfBranches();
+        for (int i = 0; i < branches->GetEntriesFast(); ++i) {
+          TBranch* br = (TBranch*)branches->UncheckedAt(i);
+          TString branchName(br->GetName());
 
-          // register index and connect VLA columns
-          std::vector<std::pair<int*, int>> indexList;
-          std::vector<char*> vlaPointers;
-          std::vector<int*> indexPointers;
-          TObjArray* branches = inputTree->GetListOfBranches();
-          for (int i = 0; i < branches->GetEntriesFast(); ++i) {
-            TBranch* br = (TBranch*)branches->UncheckedAt(i);
-            TString branchName(br->GetName());
+          // detect VLA
+          if (((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount() != nullptr) {
+            int maximum = ((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount()->GetMaximum();
 
-            // detect VLA
-            if (((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount() != nullptr) {
-              int maximum = ((TLeaf*)br->GetListOfLeaves()->First())->GetLeafCount()->GetMaximum();
+            // get type
+            static TClass* cls;
+            EDataType type;
+            br->GetExpectedType(cls, type);
+            auto typeSize = TDataType::GetDataType(type)->Size();
 
-              // get type
-              static TClass* cls;
-              EDataType type;
-              br->GetExpectedType(cls, type);
-              auto typeSize = TDataType::GetDataType(type)->Size();
+            char* buffer = new char[maximum * typeSize];
+            memset(buffer, 0, maximum * typeSize);
+            vlaPointers.push_back(buffer);
+            printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
+            inputTree->SetBranchAddress(br->GetName(), buffer);
+            outputTree->SetBranchAddress(br->GetName(), buffer);
 
-              char* buffer = new char[maximum * typeSize];
-              memset(buffer, 0, maximum * typeSize);
-              vlaPointers.push_back(buffer);
-              printf("      Allocated VLA buffer of length %d with %d bytes each for branch name %s\n", maximum, typeSize, br->GetName());
-              inputTree->SetBranchAddress(br->GetName(), buffer);
-              outputTree->SetBranchAddress(br->GetName(), buffer);
-
-              if (branchName.BeginsWith("fIndexArray")) {
-                for (int i = 0; i < maximum; i++) {
-                  indexList.push_back({reinterpret_cast<int*>(buffer + i * typeSize), offsets[getTableName(branchName, treeName)]});
-                }
-              }
-            } else if (branchName.BeginsWith("fIndexSlice")) {
-              int* buffer = new int[2];
-              memset(buffer, 0, 2 * sizeof(buffer[0]));
-              vlaPointers.push_back(reinterpret_cast<char*>(buffer));
-
-              inputTree->SetBranchAddress(br->GetName(), buffer);
-              outputTree->SetBranchAddress(br->GetName(), buffer);
-
-              indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
-              indexList.push_back({buffer + 1, offsets[getTableName(branchName, treeName)]});
-            } else if (branchName.BeginsWith("fIndex") && !branchName.EndsWith("_size")) {
-              int* buffer = new int;
-              *buffer = 0;
-              indexPointers.push_back(buffer);
-
-              inputTree->SetBranchAddress(br->GetName(), buffer);
-              outputTree->SetBranchAddress(br->GetName(), buffer);
-
-              indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
-            }
-          }
-
-          // on the first appending pass we need to find out the most negative index in the existing output
-          // to correctly continue negative index assignment
-          if (mergedDFs == 2) {
-            int minIndex = -1;
-            if (indexList.size() > 0) {
-              outputTree->SetBranchStatus("*", 0);
-              outputTree->SetBranchStatus("fIndex*", 1);
-              auto outentries = outputTree->GetEntries();
-              for (int i = 0; i < outentries; ++i) {
-                outputTree->GetEntry(i);
-                for (const auto& idx : indexList) {
-                  minIndex = std::min(*(idx.first), minIndex);
-                }
-              }
-              outputTree->SetBranchStatus("*", 1);
-            }
-            unassignedIndexOffset[treeName] = minIndex;
-          }
-
-          auto entries = inputTree->GetEntries();
-          int minIndexOffset = unassignedIndexOffset[treeName];
-          auto newMinIndexOffset = minIndexOffset;
-          for (int i = 0; i < entries; i++) {
-            inputTree->GetEntry(i);
-            // shift index columns by offset
-            for (const auto& idx : indexList) {
-              // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
-              if (*(idx.first) < 0) {
-                *(idx.first) += minIndexOffset;
-                newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
-              } else {
-                *(idx.first) += idx.second;
+            if (branchName.BeginsWith("fIndexArray")) {
+              for (int i = 0; i < maximum; i++) {
+                indexList.push_back({reinterpret_cast<int*>(buffer + i * typeSize), offsets[getTableName(branchName, treeName)]});
               }
             }
-            int nbytes = outputTree->Fill();
-            if (nbytes > 0) {
-              currentDirSize += nbytes;
+          } else if (branchName.BeginsWith("fIndexSlice")) {
+            int* buffer = new int[2];
+            memset(buffer, 0, 2 * sizeof(buffer[0]));
+            vlaPointers.push_back(reinterpret_cast<char*>(buffer));
+
+            inputTree->SetBranchAddress(br->GetName(), buffer);
+            outputTree->SetBranchAddress(br->GetName(), buffer);
+
+            indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
+            indexList.push_back({buffer + 1, offsets[getTableName(branchName, treeName)]});
+          } else if (branchName.BeginsWith("fIndex") && !branchName.EndsWith("_size")) {
+            int* buffer = new int;
+            *buffer = 0;
+            indexPointers.push_back(buffer);
+
+            inputTree->SetBranchAddress(br->GetName(), buffer);
+            outputTree->SetBranchAddress(br->GetName(), buffer);
+
+            indexList.push_back({buffer, offsets[getTableName(branchName, treeName)]});
+          }
+        }
+
+        auto entries = inputTree->GetEntries();
+        int minIndexOffset = unassignedIndexOffset[treeName];
+        auto newMinIndexOffset = minIndexOffset;
+        for (int i = 0; i < entries; i++) {
+          inputTree->GetEntry(i);
+          // shift index columns by offset
+          for (const auto& idx : indexList) {
+            // if negative, the index is unassigned. In this case, the different unassigned blocks have to get unique negative IDs
+            if (*(idx.first) < 0) {
+              *(idx.first) += minIndexOffset;
+              newMinIndexOffset = std::min(newMinIndexOffset, *(idx.first));
+            } else {
+              *(idx.first) += idx.second;
             }
           }
-          unassignedIndexOffset[treeName] = newMinIndexOffset;
-
-          delete inputTree;
-
-          for (auto& buffer : indexPointers) {
-            delete buffer;
+          int nbytes = outputTree->Fill();
+          if (nbytes > 0) {
+            currentDirSize += nbytes;
           }
-          for (auto& buffer : vlaPointers) {
-            delete[] buffer;
-          }
+        }
+        unassignedIndexOffset[treeName] = newMinIndexOffset;
+
+        delete inputTree;
+
+        for (auto& buffer : indexPointers) {
+          delete buffer;
+        }
+        for (auto& buffer : vlaPointers) {
+          delete[] buffer;
         }
       }
       if (exitCode > 0) {
