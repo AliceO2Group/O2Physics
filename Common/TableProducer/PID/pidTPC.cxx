@@ -203,8 +203,6 @@ struct tpcPid {
 
     if (useNetworkCorrection) {
 
-      Network network(networkPathLocally.value);
-
       int count_elem = 0;
       auto start_overhead = std::chrono::high_resolution_clock::now();
       std::vector<float> track_properties;
