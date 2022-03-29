@@ -37,7 +37,6 @@ class Network
   // Constructor, destructor and copy-constructor
   Network() = default;
   Network(std::string, bool);
-  Network(Network&) = default;
   ~Network() = default;
 
   // Operators
