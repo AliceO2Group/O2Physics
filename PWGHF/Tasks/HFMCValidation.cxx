@@ -133,13 +133,13 @@ struct ValidationGenLevel {
         int whichHadron = -1;
         if (std::abs(particlePdgCode) == PDGArrayParticle[iD]) {
           whichHadron = iD;
-          RecoDecay::getDaughters(particlesMC, particle, &listDaughters, arrPDGFinal[iD], -1);
+          RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           if (listDaughters.size() == arrayPDGsize) {
             counter[iD]++;
           }
           for (std::size_t iDau = 0; iDau < listDaughters.size(); ++iDau) {
-            auto daughter = particlesMC.rawIteratorAt(listDaughters.at(iDau));
+            auto daughter = particlesMC.rawIteratorAt(listDaughters.at(iDau) - particlesMC.offset());
             sumPxDau += daughter.px();
             sumPyDau += daughter.py();
             sumPzDau += daughter.pz();
@@ -232,7 +232,7 @@ struct ValidationRecLevel {
       if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand2Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
@@ -278,7 +278,7 @@ struct ValidationRecLevel {
       if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand3Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
