@@ -69,13 +69,16 @@ struct tpcPid {
   // TPC PID Response
   o2::pid::tpc::Response response;
   o2::pid::tpc::Response* responseptr = nullptr;
+  // Network correction for TPC PID response
+  Network network;
+
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
-  // Network correction
+  // Parameters for loading network from a file / downloading the file
   Configurable<int> useNetworkCorrection{"useNetworkCorrection", 0, "Using the network correction for the TPC dE/dx signal"};
   Configurable<int> downloadNetworkFromAlien{"downloadNetworkFromAlien", 0, "Download network from AliEn (1) or use a local file (filepath must be provided by --networkPathLocally /path/to/file) (0)"};
   Configurable<std::string> networkPathAlien{"networkPathAlien", "alien:///alice/cern.ch/user/c/csonnabe/tpc_network_testing/net_onnx_0.onnx", "Path to .onnx file containing the network on AliEn"};
@@ -144,6 +147,36 @@ struct tpcPid {
       LOGP(info, "Loading TPC response from CCDB, using path: {} for ccdbTimestamp {}", path, time);
       response.PrintAll();
     }
+
+    if (useNetworkCorrection) {
+
+      if (downloadNetworkFromAlien.value) {
+        boost::filesystem::path local_file{networkPathLocally.value};
+        if (boost::filesystem::exists(local_file)) {
+          LOG(info) << "Local file (" + networkPathLocally.value + ") exists! It will be overwritten.";
+          std::remove((networkPathLocally.value).c_str());
+          LOG(info) << "Downloading network-file from AliEn...";
+        } else {
+          LOG(info) << "Downloading network-file from AliEn...";
+        }
+
+        if ((networkPathAlien.value).substr(0, 8) == "alien://") {
+          std::string download_command = "alien_cp " + networkPathAlien.value + " file://" + networkPathLocally.value;
+          LOG(info) << "Command executed for downloading: [" + download_command + "]";
+          gSystem->Exec(download_command.c_str());
+        } else {
+          LOG(info) << "Please start the networkPathAlien with alien://... Continuing with path alien://" + networkPathAlien.value + " for now...";
+          std::string download_command = "alien_cp alien://" + networkPathAlien.value + " file://" + networkPathLocally.value;
+          LOG(info) << "Command executed for downloading: [" + download_command + "]";
+          gSystem->Exec(download_command.c_str());
+        }
+      } else {
+        LOG(info) << "Loading network from local file [" + networkPathLocally.value + "]";
+      }
+
+      Network temp_net(networkPathLocally.value);
+      network = temp_net;
+    }
   }
 
   void process(Coll const& collisions, Trks const& tracks,
@@ -170,36 +203,7 @@ struct tpcPid {
 
     if (useNetworkCorrection) {
 
-      Network network;
-
-      if (downloadNetworkFromAlien) {
-        boost::filesystem::path local_file{networkPathLocally.value};
-        if (boost::filesystem::exists(local_file)) {
-          LOG(info) << "Local file (" + networkPathLocally.value + ") exists! It will be overwritten.";
-          std::remove((networkPathLocally.value).c_str());
-          LOG(info) << "Downloading network-file from AliEn...";
-        } else {
-          LOG(info) << "Downloading network-file from AliEn...";
-        }
-
-        if ((networkPathAlien.value).substr(0, 8) == "alien://") {
-          std::string download_command = "alien_cp " + networkPathAlien.value + " file://" + networkPathLocally.value;
-          LOG(info) << "Command executed for downloading: [" + download_command + "]";
-          gSystem->Exec(download_command.c_str());
-        } else {
-          LOG(info) << "Please start the networkPathAlien with alien://... Continuing with path alien://" + networkPathAlien.value + " for now...";
-          std::string download_command = "alien_cp alien://" + networkPathAlien.value + " file://" + networkPathLocally.value;
-          LOG(info) << "Command executed for downloading: [" + download_command + "]";
-          gSystem->Exec(download_command.c_str());
-        }
-
-        Network temp_net(networkPathLocally.value);
-        network = temp_net;
-      } else {
-        LOG(info) << "Loading network from local file [" + networkPathLocally.value + "]";
-        Network temp_net(networkPathLocally.value);
-        network = temp_net;
-      }
+      Network network(networkPathLocally.value);
 
       int count_elem = 0;
       auto start_overhead = std::chrono::high_resolution_clock::now();
