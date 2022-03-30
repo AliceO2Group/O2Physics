@@ -128,7 +128,8 @@ struct CandidateTreeWriter {
 
   void process(soa::Filtered<soa::Join<aod::Collisions,
                                        aod::EvSels>>::iterator const& collision,
-               TrackCandidates const& tracks)
+               TrackCandidates const& tracks,
+               aod::BC const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collision.size());
@@ -138,9 +139,9 @@ struct CandidateTreeWriter {
       collision.posX(),
       collision.posY(),
       collision.posZ(),
-      0,  // iseventselected //to be set
-      1); // runnumber //to be sets
-
+      collision.sel8(),  
+      collision.bc().runNumber()); 
+    
     // Filling candidate properties
     rowCandidateFull.reserve(tracks.size());
     for (auto& track : tracks) {
