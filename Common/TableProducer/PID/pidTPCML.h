@@ -44,10 +44,10 @@ class Network
 
   // Functions
   template <typename T>
-  std::vector<float> createInputFromTrack(const T&, uint8_t); // create a std::vector<float> with all the inputs for the network
-  std::vector<Ort::Value> createTensor(std::vector<float>);   // create a std::vector<Ort::Value> (= ONNX tensor) for model input
-  float* evalNetwork(std::vector<Ort::Value>);                // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
-  float* evalNetwork(std::vector<float>);                     // evaluate the network on a std::vector<float>
+  std::vector<float> createInputFromTrack(const T&, const uint8_t) const; // create a std::vector<float> with all the inputs for the network
+  std::vector<Ort::Value> createTensor(std::vector<float>) const;         // create a std::vector<Ort::Value> (= ONNX tensor) for model input
+  float* evalNetwork(std::vector<Ort::Value>);                            // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
+  float* evalNetwork(std::vector<float>);                                 // evaluate the network on a std::vector<float>
 
  private:
   // Environment variables for the ONNX runtime
@@ -138,7 +138,7 @@ Network& Network::operator=(Network& inst)
 } // Network& Network::operator=(const Network &)
 
 template <typename T>
-std::vector<float> Network::createInputFromTrack(const T& track, uint8_t id)
+std::vector<float> Network::createInputFromTrack(const T& track, const uint8_t id) const
 {
 
   /*
@@ -150,13 +150,13 @@ std::vector<float> Network::createInputFromTrack(const T& track, uint8_t id)
     -- inputValues:   std::vector<float>  ;   A std::vector<float> with the input variables for the network;
   */
 
-  float p = track.tpcInnerParam();
-  float tgl = track.tgl();
-  float signed1Pt = track.signed1Pt();
-  float eta = track.eta();
-  float mass = o2::track::pid_constants::sMasses[id];
-  float bg = p / mass;
-  float ncl = std::sqrt(63. / track.tpcNClsFound());
+  const float p = track.tpcInnerParam();
+  const float tgl = track.tgl();
+  const float signed1Pt = track.signed1Pt();
+  const float eta = track.eta();
+  const float mass = o2::track::pid_constants::sMasses[id];
+  const float bg = p / mass;
+  const float ncl = std::sqrt(63. / track.tpcNClsFound());
 
   std::vector<float> inputValues{p, tgl, signed1Pt, eta, mass, bg, ncl};
 
@@ -164,7 +164,7 @@ std::vector<float> Network::createInputFromTrack(const T& track, uint8_t id)
 
 } // std::vector<float> Network::createInputFromTrack(const T&, uint8_t)
 
-std::vector<Ort::Value> Network::createTensor(std::vector<float> input)
+std::vector<Ort::Value> Network::createTensor(std::vector<float> input) const
 {
 
   /*
