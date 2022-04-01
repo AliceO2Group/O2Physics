@@ -31,7 +31,8 @@ using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 struct vertexingfwd {
 
   // Configurable<int> rangeBC{"rangeBC", 10, "Range for collision BCId and BCglobalIndex correspondance"};
-  int rangeBC = 10;
+  int rangeBC = 2;
+
 
   HistogramRegistry registry{
     "registry",
@@ -44,26 +45,6 @@ struct vertexingfwd {
     }                                                                                                                //
   };
 
-  //     std::vector<double> propagateToZlinear(double zEnd, aod::AmbiguousTrack const& track)
-  //     {
-  //       // Track parameters and their covariances linearly extrapolated to the plane at "zEnd".
-  //
-  //       //Calculate the jacobian related to the track parameters extrapolated to "zEnd"
-  //       auto dZ = (zEnd - track.z());
-  //       auto phi0 = track.phi();
-  //       auto tanl0 = track.tgl();
-  //       auto invtanl0 = 1.0 / tanl0;
-  //       auto [sinphi0, cosphi0] = o2::math_utils::sincosd(phi0);
-  //       auto n = dZ * invtanl0;
-  //
-  //       std::vector<double> T ={track.x(),track.y(),zEnd};
-  //       // Extrapolate track parameters to "zEnd"
-  //       T[0] += n * cosphi0;
-  //       T[1] += n * sinphi0;
-  //
-  //       //Update to do : Add the jacobian and turn it to a method if possible
-  //       return(T);
-  ////     }
 
   void process(aod::AmbiguousTracks const& ambitracks, aod::BCs const&, aod::Collisions const& collisions, aod::Tracks const& tracks) // AmbiguousMFTTracks and fwd doesn't work yet
   {
@@ -88,8 +69,6 @@ struct vertexingfwd {
             //printf("collision BC ID = %d, bc.globalIndex() %lld\n", collision.bcId(), bc.globalIndex());
             //printf("collision pos Z %f\n", collision.posZ());
 
-            // T = propagateToZlinear(collision.posZ(), track);
-            // printf("T[0] %f, T[1] %f\n", T[0], T[1]);
             
             SMatrix5 tpars(extAmbiTrack.x(), extAmbiTrack.y(), extAmbiTrack.phi(), extAmbiTrack.tgl(), extAmbiTrack.signed1Pt());
 
