@@ -27,8 +27,15 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/V0.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
+#include "DetectorsVertexing/PVertexer.h"       // for PV refit
+#include "ReconstructionDataFormats/Vertex.h"   // for PV refit
+#include "CCDB/BasicCCDBManager.h"              // for PV refit
+#include "DataFormatsParameters/GRPObject.h"    // for PV refit
+#include "DetectorsBase/Propagator.h"           // for PV refit
+#include "DetectorsBase/GeometryManager.h"      // for PV refit
 
 #include <algorithm>
+#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -233,10 +240,12 @@ struct HfTagSelCollisions {
 /// Track selection
 struct HfTagSelTracks {
   Produces<aod::HFSelTrack> rowSelectedTrack;
+  Produces<aod::HFPVrefitTrack> tabPVrefitTrack;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<bool> debug{"debug", true, "debug mode"};
   Configurable<double> bz{"bz", 5., "bz field"};
+  Configurable<bool> doPVrefit{"doPVrefit", false, "do PV refit excluding the considered track"};
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
@@ -255,6 +264,16 @@ struct HfTagSelTracks {
   Configurable<double> ptMinTrackBach{"ptMinTrackBach", 0.3, "min. track pT for bachelor in cascade candidate"}; // 0.5 for PbPb 2015?
   Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
   Configurable<double> etaMaxBach{"etaMaxBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
+  // QA of PV refit
+  Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
+  Configurable<int> nBins_DeltaY_PVrefit{"nBins_DeltaY_PVrefit", 1000, "Number of bins of DeltaY for PV refit"};
+  Configurable<int> nBins_DeltaZ_PVrefit{"nBins_DeltaZ_PVrefit", 1000, "Number of bins of DeltaZ for PV refit"};
+  Configurable<float> minDeltaX_PVrefit{"minDeltaX_PVrefit", -0.5, "Min. DeltaX value for PV refit (cm)"};
+  Configurable<float> maxDeltaX_PVrefit{"maxDeltaX_PVrefit", 0.5, "Max. DeltaX value for PV refit (cm)"};
+  Configurable<float> minDeltaY_PVrefit{"minDeltaY_PVrefit", -0.5, "Min. DeltaY value for PV refit (cm)"};
+  Configurable<float> maxDeltaY_PVrefit{"maxDeltaY_PVrefit", 0.5, "Max. DeltaY value for PV refit (cm)"};
+  Configurable<float> minDeltaZ_PVrefit{"minDeltaZ_PVrefit", -0.5, "Min. DeltaZ value for PV refit (cm)"};
+  Configurable<float> maxDeltaZ_PVrefit{"maxDeltaZ_PVrefit", 0.5, "Max. DeltaZ value for PV refit (cm)"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -262,6 +281,26 @@ struct HfTagSelTracks {
   Configurable<std::vector<int>> indexK0Sneg{"indexK0Sneg", {730, 2867, 4755, 5458, 6892, 7825, 9244, 9811}, "indices of K0S negative daughters, for debug"};
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
+
+  // Needed for PV refitting
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  const char* ccdbpath_lut = "GLO/Param/MatLUT";
+  const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
+  const char* ccdbpath_grp = "GLO/GRP/GRP";
+  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int mRunNumber;
+  const AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
+  const AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
+  const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
+  const AxisSpec collisionXOrigAxis{1000, -20.f, 20.f, "X original PV (cm)"};
+  const AxisSpec collisionYOrigAxis{1000, -20.f, 20.f, "Y original PV (cm)"};
+  const AxisSpec collisionZOrigAxis{1000, -20.f, 20.f, "Z original PV (cm)"};
+  const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
+  const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
+  const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
+  const AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
 
   HistogramRegistry registry{
     "registry",
@@ -295,6 +334,32 @@ struct HfTagSelTracks {
         registry.get<TH1>(HIST("hRejTracks"))->GetXaxis()->SetBinLabel((nCuts + 1) * iCandType + iCut + 1, Form("%s %s", candNames[iCandType].data(), cutNames[iCut].data()));
       }
     }
+
+    // Needed for PV refitting
+    if (doPVrefit) {
+      registry.add("Data/vertices_perTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
+      registry.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(1, "All PV");
+      registry.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
+      registry.get<TH1>(HIST("Data/vertices_perTrack"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
+      registry.add("Data/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaX_PVrefit});
+      registry.add("Data/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaY_PVrefit});
+      registry.add("Data/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaZ_PVrefit});
+      registry.add("Data/nContrib_vs_Chi2PVrefit", "", kTH2D, {collisionNumberContributorAxis, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+      registry.add("Data/X_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionXAxis, collisionXOrigAxis});
+      registry.add("Data/Y_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionYAxis, collisionYOrigAxis});
+      registry.add("Data/Z_PVrefitChi2minus1", "PV refit with #chi^{2}==-1", kTH2D, {collisionZAxis, collisionZOrigAxis});
+      registry.add("Data/nContrib_PVrefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {collisionNumberContributorAxis});
+      registry.add("Data/nContrib_PVrefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {collisionNumberContributorAxis});
+    
+      ccdb->setURL(ccdburl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(ccdbpath_geo);
+      }
+      mRunNumber = 0;
+    }
   }
 
   /// Single-track cuts for 2-prongs or 3-prongs
@@ -318,8 +383,174 @@ struct HfTagSelTracks {
     return true;
   }
 
+  /// Method to retrieve the contributors for the original primary vertex determination
+  /// \param vec_globID_contr: vector of contributor global indices (to be filled inside the function)
+  /// \param vec_TrkContributors: vector of contributor TrackParCov, necessary for new PV refit (to be filled inside the function)
+  /// \param unfiltered_tracks: vector of all BigTracks in the collisions, queried to look for original PV contributors
+  void retrievePVContributors(std::vector<int64_t>& vec_globID_contr, std::vector<o2::track::TrackParCov>& vec_TrkContributors, const BigTracks unfiltered_tracks)
+  {
+    LOG(info) << "\n === New collision";
+    const int nTrk = unfiltered_tracks.size();
+    int nContrib = 0;
+    int nNonContrib = 0;
+    for (const auto& unfiltered_track : unfiltered_tracks) {
+      if (!unfiltered_track.isPVContributor()) {
+        /// the track did not contribute to fit the primary vertex
+        nNonContrib++;
+        continue;
+      }
+      vec_globID_contr.push_back(unfiltered_track.globalIndex());
+      vec_TrkContributors.push_back(getTrackParCov(unfiltered_track));
+      LOG(info) << "---> a contributor! stuff saved";
+      nContrib++;
+      LOG(info) << "vec_contrib size: " << vec_TrkContributors.size() << ", nContrib: " << nContrib;
+    }
+    LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
+
+    return;
+  }
+
+  /// Method for the PV refit and DCA recalculation for tracks with a collision assigned
+  void process_PVrefit(aod::Collision const& collision,
+                       BigTracks const& unfiltered_tracks,
+                       aod::BCsWithTimestamps const& bcstmpstp,
+                       const int64_t gindex_track,
+                       std::array<float, 5>& vec_output)
+  {
+      /// retrieve the tracks contributing to the primary vertex fitting
+      std::vector<int64_t> vec_globID_contr = {};
+      std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
+      retrievePVContributors(vec_globID_contr, vec_TrkContributos, unfiltered_tracks);
+      if (vec_TrkContributos.size() != collision.numContrib()) {
+        LOG(info) << "!!! something wrong in the number of contributor tracks for PV fit !!! " << vec_TrkContributos.size() << " vs. " << collision.numContrib();
+        return;
+      }
+      std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
+
+      /// Prepare the vertex refitting
+      // Get the magnetic field for the Propagator
+      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      if (mRunNumber != bc.runNumber()) {
+        auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          o2::base::Propagator::Instance()->setMatLUT(lut);
+          LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+        } else {
+          LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+        mRunNumber = bc.runNumber();
+      }
+
+      // build the VertexBase to initialize the vertexer
+      o2::dataformats::VertexBase Pvtx;
+      Pvtx.setX(collision.posX());
+      Pvtx.setY(collision.posY());
+      Pvtx.setZ(collision.posZ());
+      Pvtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      // configure PVertexer
+      o2::vertexing::PVertexer vertexer;
+      o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); /// remove diamond constraint (let's keep it at the moment...)
+      vertexer.init();
+      bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
+      if (!PVrefit_doable) {
+        LOG(info) << "Not enough tracks accepted for the refit";
+        if (doPVrefit) {
+          registry.fill(HIST("Data/nContrib_PVrefitNotDoable"), collision.numContrib());
+        }
+      }
+      LOG(info) << "prepareVertexRefit = " << PVrefit_doable << " Ncontrib= " << vec_TrkContributos.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << Pvtx.asString();
+
+      registry.fill(HIST("Data/vertices_perTrack"), 1);
+      if (PVrefit_doable) {
+        registry.fill(HIST("Data/vertices_perTrack"), 2);
+      }
+      /// PV refitting, if the tracks contributed to this at the beginning
+      o2::dataformats::VertexBase PVbase_recalculated;
+      bool recalc_imppar = false;
+      if (doPVrefit && PVrefit_doable) {
+        recalc_imppar = true;
+        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), gindex_track); /// track global index
+        if (it_trk != vec_globID_contr.end()) {
+
+          /// this track contributed to the PV fit: let's do the refit without it
+          const int entry = std::distance(vec_globID_contr.begin(), it_trk);
+
+          //if (!keepAllTracksPVrefit) {
+          vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
+          //}
+
+          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
+          //LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
+          LOG(info) << "refit for track with global index " << gindex_track << " " << Pvtx_refitted.asString();
+          if (Pvtx_refitted.getChi2() < 0) {
+            LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
+            registry.fill(HIST("Data/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
+            registry.fill(HIST("Data/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
+            registry.fill(HIST("Data/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
+            registry.fill(HIST("Data/nContrib_PVrefitChi2minus1"), collision.numContrib());
+            recalc_imppar = false;
+          } else {
+            registry.fill(HIST("Data/vertices_perTrack"), 3);
+          }
+          registry.fill(HIST("Data/nContrib_vs_Chi2PVrefit"), vec_useTrk_PVrefit.size() - 1, Pvtx_refitted.getChi2());
+
+          vec_useTrk_PVrefit[entry] = true; /// restore the track for the next PV refitting
+
+          if (recalc_imppar) {
+            // fill the histograms for refitted PV with good Chi2
+            const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
+            const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
+            const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
+            registry.fill(HIST("Data/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
+            registry.fill(HIST("Data/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
+            registry.fill(HIST("Data/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
+
+            // fill the newly calculated PV
+            PVbase_recalculated.setX(Pvtx_refitted.getX());
+            PVbase_recalculated.setY(Pvtx_refitted.getY());
+            PVbase_recalculated.setZ(Pvtx_refitted.getZ());
+            PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
+          }
+
+          //cnt++;
+        }
+      } /// end 'if (doPVrefit && PVrefit_doable)'
+
+      // updated value after PV recalculation
+      float xPVrefit = 0.f;
+      float yPVrefit = 0.f;
+      float zPVrefit = 0.f;
+      float impParRPhi = 1e10f;
+      float impParZ = 1e10f;
+      if (recalc_imppar) {
+        auto trackPar = getTrackPar(unfiltered_tracks.rawIteratorAt(gindex_track));
+        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+          xPVrefit = PVbase_recalculated.getX();
+          yPVrefit = PVbase_recalculated.getY();
+          zPVrefit = PVbase_recalculated.getZ();
+          impParRPhi = dcaInfo[0];  // [cm]
+          impParZ = dcaInfo[1];     // [cm]
+        }
+      }
+
+      /// Final values
+      vec_output[0] = xPVrefit;
+      vec_output[1] = yPVrefit;
+      vec_output[2] = zPVrefit;
+      vec_output[3] = impParRPhi;
+      vec_output[4] = impParZ;
+      return;
+  } /// end of process_PVrefit function
+
+
+
   void process(aod::Collisions const& collisions,
-               MY_TYPE1 const& tracks
+               MY_TYPE1 const& tracks,
+               aod::BCsWithTimestamps const& bcstmstp,       // for PV refit
+               BigTracks const& unfiltered_tracks  // for PV refit
 #ifdef MY_DEBUG
                ,
                aod::McParticles& mcParticles
@@ -334,6 +565,16 @@ struct HfTagSelTracks {
       bool isProtonFromLc = isProtonFromLcFunc(indexBach, indexProton);
 
 #endif
+
+      // PV refit and DCA recalculation only for tracks with an assigned collision
+      std::array<float, 5> pvrefit_PVxPVyPVz_DCAxyDCAz{0.f,0.f,0.f,1e10f, 1e10f};
+      if(doPVrefit) {
+        if(track.has_collision()) {
+          /// Perform the PV refit only for tracks with an assigned collision
+          process_PVrefit(track.collision_as<aod::Collision>(), unfiltered_tracks, bcstmstp, track.globalIndex(), pvrefit_PVxPVyPVz_DCAxyDCAz);
+        }
+      }
+      tabPVrefitTrack(pvrefit_PVxPVyPVz_DCAxyDCAz[0],pvrefit_PVxPVyPVz_DCAxyDCAz[1],pvrefit_PVxPVyPVz_DCAxyDCAz[2],pvrefit_PVxPVyPVz_DCAxyDCAz[3],pvrefit_PVxPVyPVz_DCAxyDCAz[4]); /// new columns with PV refit info
 
       MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "\nWe found the proton " << indexBach);
 
@@ -453,6 +694,10 @@ struct HfTagSelTracks {
       iDebugCut = 5;
       // DCA cut
       array<float, 2> dca{track.dcaXY(), track.dcaZ()};
+      if(doPVrefit) {
+        dca[0] = pvrefit_PVxPVyPVz_DCAxyDCAz[3];  // dcaXY with respect to PV refit
+        dca[1] = pvrefit_PVxPVyPVz_DCAxyDCAz[4];  // dcaXY with respect to PV refit
+      }
       if ((debug || statusProng > 0)) {
         if ((debug || TESTBIT(statusProng, CandidateType::Cand2Prong)) && !isSelectedTrack(track, dca, CandidateType::Cand2Prong)) {
           CLRBIT(statusProng, CandidateType::Cand2Prong);

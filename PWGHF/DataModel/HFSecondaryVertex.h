@@ -52,6 +52,22 @@ DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
                   hf_seltrack::PyProng,
                   hf_seltrack::PzProng);
 
+namespace hf_pvrefittrack
+{
+DECLARE_SOA_COLUMN(XPVrefit, xPVrefit, float); //!
+DECLARE_SOA_COLUMN(YPVrefit, yPVrefit, float); //!
+DECLARE_SOA_COLUMN(ZPVrefit, zPVrefit, float); //!
+DECLARE_SOA_COLUMN(DCAXYPVrefit, dcaXYPVrefit, float); //!
+DECLARE_SOA_COLUMN(DCAZPVrefit, dcaZPVrefit, float); //!
+} // namespace hf_pvrefittrack
+
+DECLARE_SOA_TABLE(HFPVrefitTrack, "AOD", "HFPVREFITTRACK", //!
+                  hf_pvrefittrack::XPVrefit,
+                  hf_pvrefittrack::YPVrefit,
+                  hf_pvrefittrack::ZPVrefit,
+                  hf_pvrefittrack::DCAXYPVrefit,
+                  hf_pvrefittrack::DCAZPVrefit);
+
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
 using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;
 using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
