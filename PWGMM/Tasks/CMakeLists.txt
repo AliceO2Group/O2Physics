@@ -37,6 +37,7 @@ o2physics_add_dpl_workflow(flatenicity-fv0
 o2physics_add_dpl_workflow(vertexing-fwd
                     SOURCES vertexing-fwd.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                                          O2::ReconstructionDataFormats
                     COMPONENT_NAME Analysis)
                     
 o2physics_add_dpl_workflow(lumi
