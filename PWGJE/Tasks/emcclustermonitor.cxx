@@ -56,7 +56,7 @@ struct ClusterMonitor {
   o2::emcal::Geometry* mGeometry = nullptr;
 
   // configurable parameters
-  // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7) 
+  // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   o2::framework::Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
 
   o2::framework::Configurable<int> mVetoBCID{"vetoBCID", -1, "BC ID to be excluded, this should be used as an alternative to the event selection"};
@@ -76,13 +76,13 @@ struct ClusterMonitor {
     // create histograms for cluster QA
     Double_t timeMin = -600;
     Double_t timeMax = 900;
-    
+
     // create common axes
     LOG(info) << "Creating histograms";
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeEnergyBinning(), "E_{clus} (GeV)"};
     const o2Axis timeAxis{800, timeMin, timeMax};
-    
+
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -104,7 +104,7 @@ struct ClusterMonitor {
   {
 
     mHistManager.fill(HIST("eventsAll"), 1);
-    
+
     // do event selection if mDoEventSel is specified
     // currently the event selection is hard coded to kINT7
     // but other selections are possible that are defined in TriggerAliases.h

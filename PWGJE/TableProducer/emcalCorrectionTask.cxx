@@ -195,9 +195,9 @@ struct EmcalCorrectionTask {
       // We have our necessary properties. Now we store outputs
 
       //LOG(debug) << "Cluster E: " << cluster.E();
-      clusters(collision, cluster.getID(), cluster.E(),cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
-               cluster.getM02(),cluster.getM20(),cluster.getNCells(),cluster.getClusterTime(),
-               cluster.getIsExotic(),cluster.getDistanceToBadChannel(),cluster.getNExMax());
+      clusters(collision, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
+               cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
+               cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax());
       //if (cluster.E() < 0.300) {
       //    continue;
       //}
