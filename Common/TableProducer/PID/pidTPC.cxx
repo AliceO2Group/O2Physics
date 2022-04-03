@@ -215,30 +215,31 @@ struct tpcPid {
           }
         }
       }
+      int track_prop_size = track_properties.size() / 7; // == tracks.size() * 9
       auto stop_overhead = std::chrono::high_resolution_clock::now();
       float duration_overhead = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_overhead - start_overhead).count();
-      float time_per_track_overhead = duration_overhead * 7 / track_properties.size(); // There are 7 variables in each track which are being extracted in track_properties. Each network evaluation takes time_per_track_overhead/9 nano-seconds
+      float time_per_track_overhead = duration_overhead / track_prop_size; // There are 7 variables in each track which are being extracted in track_properties. Each network evaluation takes time_per_track_overhead/9 nano-seconds
       LOG(info) << "Time per track (overhead): " << time_per_track_overhead << "ns ; Overhead total: " << duration_overhead / 1000000000 << "s";
 
       auto start_network = std::chrono::high_resolution_clock::now();
       float* output_network = network.evalNetwork(track_properties);
-      for (int i = 0; i < count_elem; i++) {
+      for (int i = 0; i < track_prop_size; i++) {
         network_prediction.push_back(output_network[i]);
       }
-      int tracks_size = track_properties.size();
       track_properties.clear();
       auto stop_network = std::chrono::high_resolution_clock::now();
       float duration_network = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network - start_network).count();
-      float time_per_track_net = duration_network * 7 / tracks_size;
-      LOG(info) << "Time per track (net): " << time_per_track_net << "ns ; Network total: " << duration_network / 1000000000 << "s";
+      float time_per_track_net = duration_network / track_prop_size;
+      LOG(info) << "Time per track (net): " << time_per_track_net << "ns ; Network total: " << duration_network / 1000000000 << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
 
+      // Uncomment if you want to check example-outputs of the netwwork:
       // for(int i=0; i<100; i++){
       //   LOG(info) << "Output " << i << ": " << network_prediction[i] << " ; Input: [" << track_properties[7*i + 0] << ", " << track_properties[7*i + 1] << ", " << track_properties[7*i + 2] << ", " << track_properties[7*i + 3] << ", " << track_properties[7*i + 4] << ", " << track_properties[7*i + 5] << ", " << track_properties[7*i + 6] << "]";
       // }
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
-    int count = 0;
+    int count_tracks = 0;
     int tracks_size = tracks.size();
 
     for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
@@ -248,14 +249,13 @@ struct tpcPid {
         response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
       }
       // Check and fill enabled tables
-      auto makeTable = [&trk, &collisions, &network_prediction, &count, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
+      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
         if (flag.value != 1) {
           return;
         }
 
         if (useNetworkCorrection) {
-          aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - (network_prediction[count + tracks_size * pid]) * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
-          count++;
+          aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - (network_prediction[count_tracks + tracks_size * pid]) * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
         } else {
           aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
         }
@@ -270,6 +270,10 @@ struct tpcPid {
       makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
       makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
       makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
+    }
+
+    if (useNetworkCorrection) {
+      count_tracks++;
     }
   }
 };
