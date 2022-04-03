@@ -57,13 +57,14 @@ struct FT0Qa {
     float sumAmpFT0 = 0;
     float sumAmpFV0 = 0;
     int innerFV0 = 24;
+    float fv0Time = -5000;
     uint16_t nContrib = col.numContrib();
     hNcontrib->Fill(nContrib);
     float colTime = col.collisionTime();
     hColTime->Fill(float(colTime));
     if (col.has_foundFV0()) {
       auto fv0 = col.foundFV0();
-      float fv0Time = fv0.time();
+      fv0Time = fv0.time();
       hNcontribV0->Fill(nContrib);
       for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
         hAmpV0->Fill(fv0.amplitude()[ich]);
@@ -71,37 +72,41 @@ struct FT0Qa {
           continue;
         sumAmpFV0 += fv0.amplitude()[ich];
       }
-      if (col.has_foundFT0()) {
-        auto ft0 = col.foundFT0();
-        if (col.t0ACorrectedValid()) {
-          hT0A->Fill(col.t0ACorrected());
-          hNcontribA->Fill(nContrib);
+    }
+    if (col.has_foundFT0()) {
+      auto ft0 = col.foundFT0();
+      if (col.t0ACorrectedValid()) {
+        hT0A->Fill(col.t0ACorrected());
+        hNcontribA->Fill(nContrib);
+        if (col.has_foundFV0()) {
           hT0V0time->Fill(fv0Time, ft0.timeA());
-          for (auto amplitude : ft0.amplitudeA()) {
-            sumAmpFT0 += amplitude;
-            hAmpT0->Fill(amplitude);
-          }
         }
+        for (auto amplitude : ft0.amplitudeA()) {
+          sumAmpFT0 += amplitude;
+          hAmpT0->Fill(amplitude);
+        }
+      }
+      if (col.has_foundFV0()) {
         if (sumAmpFV0 > 0 && sumAmpFT0 > 0) {
           hT0V0mult->Fill(sumAmpFV0, sumAmpFT0);
           LOG(debug) << "V0 amp  " << sumAmpFV0 << " T0 amp " << sumAmpFT0;
         }
-        if (col.t0CCorrectedValid()) {
-          hT0C->Fill(col.t0CCorrected());
-          hNcontribC->Fill(nContrib);
-        }
-        if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
-          LOGF(debug, "multV0A=%f;  multT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ColTime=%f", col.multV0A(), col.multT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
-          hT0AC->Fill(col.t0AC());
-          hT0Vertex->Fill(ft0.posZ());
-          hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
-          hPV->Fill(col.posZ());
-          hT0res->Fill((col.t0ACorrected() - col.t0CCorrected()) / 2.);
-          hT0VertexDiff->Fill(ft0.posZ() - col.posZ());
-          hResMult->Fill(nContrib, (col.t0ACorrected() - col.t0CCorrected()) / 2.);
-          hResColMult->Fill(nContrib, colTime);
-          hNcontribAC->Fill(nContrib);
-        }
+      }
+      if (col.t0CCorrectedValid()) {
+        hT0C->Fill(col.t0CCorrected());
+        hNcontribC->Fill(nContrib);
+      }
+      if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
+        LOGF(debug, "multV0A=%f;  multT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f ColTime=%f", col.multV0A(), col.multT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
+        hT0AC->Fill(col.t0AC());
+        hT0Vertex->Fill(ft0.posZ());
+        hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());
+        hPV->Fill(col.posZ());
+        hT0res->Fill((col.t0ACorrected() - col.t0CCorrected()) / 2.);
+        hT0VertexDiff->Fill(ft0.posZ() - col.posZ());
+        hResMult->Fill(nContrib, (col.t0ACorrected() - col.t0CCorrected()) / 2.);
+        hResColMult->Fill(nContrib, colTime);
+        hNcontribAC->Fill(nContrib);
       }
     }
   }
