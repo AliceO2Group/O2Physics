@@ -277,10 +277,10 @@ struct tpcPidFull {
       makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
       makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
       makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
-    }
 
-    if (useNetworkCorrection) {
-      count_tracks++;
+      if (useNetworkCorrection) {
+        count_tracks++;
+      }
     }
   }
 };
