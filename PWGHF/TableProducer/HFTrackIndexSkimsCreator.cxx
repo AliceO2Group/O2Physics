@@ -291,16 +291,16 @@ struct HfTagSelTracks {
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
-  const AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
-  const AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
-  const AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
-  const AxisSpec collisionXOrigAxis{1000, -20.f, 20.f, "X original PV (cm)"};
-  const AxisSpec collisionYOrigAxis{1000, -20.f, 20.f, "Y original PV (cm)"};
-  const AxisSpec collisionZOrigAxis{1000, -20.f, 20.f, "Z original PV (cm)"};
-  const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
-  const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
-  const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
-  const AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
+  AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
+  AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
+  AxisSpec collisionZAxis{100, -20.f, 20.f, "Z (cm)"};
+  AxisSpec collisionXOrigAxis{1000, -20.f, 20.f, "X original PV (cm)"};
+  AxisSpec collisionYOrigAxis{1000, -20.f, 20.f, "Y original PV (cm)"};
+  AxisSpec collisionZOrigAxis{1000, -20.f, 20.f, "Z original PV (cm)"};
+  AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
+  AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
+  AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
+  AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
 
   HistogramRegistry registry{
     "registry",
@@ -571,7 +571,7 @@ struct HfTagSelTracks {
       if(doPVrefit) {
         if(track.has_collision()) {
           /// Perform the PV refit only for tracks with an assigned collision
-          process_PVrefit(track.collision_as<aod::Collision>(), unfiltered_tracks, bcstmstp, track.globalIndex(), pvrefit_PVxPVyPVz_DCAxyDCAz);
+          process_PVrefit(track.collision(), unfiltered_tracks, bcstmstp, track.globalIndex(), pvrefit_PVxPVyPVz_DCAxyDCAz);
         }
       }
       tabPVrefitTrack(pvrefit_PVxPVyPVz_DCAxyDCAz[0],pvrefit_PVxPVyPVz_DCAxyDCAz[1],pvrefit_PVxPVyPVz_DCAxyDCAz[2],pvrefit_PVxPVyPVz_DCAxyDCAz[3],pvrefit_PVxPVyPVz_DCAxyDCAz[4]); /// new columns with PV refit info
