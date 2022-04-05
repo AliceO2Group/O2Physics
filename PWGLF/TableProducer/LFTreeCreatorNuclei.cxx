@@ -139,9 +139,9 @@ struct CandidateTreeWriter {
       collision.posX(),
       collision.posY(),
       collision.posZ(),
-      collision.sel8(),  
-      collision.bc().runNumber()); 
-    
+      collision.sel8(),
+      collision.bc().runNumber());
+
     // Filling candidate properties
     rowCandidateFull.reserve(tracks.size());
     for (auto& track : tracks) {
