@@ -22,7 +22,7 @@ namespace o2::aod
 {
 namespace emcalcluster
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //!
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //!
 DECLARE_SOA_COLUMN(ID, id, int);                                       //!
 DECLARE_SOA_COLUMN(Energy, energy, float);                             //!
 DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //!
@@ -39,7 +39,7 @@ DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //!
 } // namespace emcalcluster
 
 DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTERS", //!
-                  o2::soa::Index<>, emcalcluster::CollisionId, emcalcluster::ID, emcalcluster::Energy,
+                  o2::soa::Index<>, emcalcluster::BCId, emcalcluster::ID, emcalcluster::Energy,
                   emcalcluster::CoreEnergy, emcalcluster::Eta, emcalcluster::Phi, emcalcluster::M02,
                   emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
                   emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM);
