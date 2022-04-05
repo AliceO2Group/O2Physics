@@ -114,9 +114,10 @@ struct EmcalCorrectionTask {
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
   }
 
-  // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
-  // void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
-  // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
+  //void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
+  //void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
+  //void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
+
   //  Appears to need the BC to be accessed to be available in the collision table...
   void process(aod::Collision const& collision, aod::Calos const& cells, aod::BCs const& bcs)
   {
@@ -157,7 +158,7 @@ struct EmcalCorrectionTask {
       LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
     }
 
-    LOG(info) << "Converted cells. Contains: " << mEmcalCells.size() << ". Originally " << cells.size() << ". About to run clusterizer.";
+    LOG(debug) << "Converted cells. Contains: " << mEmcalCells.size() << ". Originally " << cells.size() << ". About to run clusterizer.";
 
     // Run the clusterizer
     mClusterizer->findClusters(mEmcalCells);
@@ -192,11 +193,14 @@ struct EmcalCorrectionTask {
       pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
       // We have our necessary properties. Now we store outputs
-      // LOG(debug) << "Cluster E: " << cluster.E();
-      clusters(collision, cluster.E(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02());
-      // if (cluster.E() < 0.300) {
-      //     continue;
-      // }
+
+      //LOG(debug) << "Cluster E: " << cluster.E();
+      clusters(collision, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
+               cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
+               cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax());
+      //if (cluster.E() < 0.300) {
+      //    continue;
+      //}
       hClusterE->Fill(cluster.E());
       hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
     }
