@@ -13,6 +13,7 @@
 //
 // Author: Raymond Ehlers
 
+#include <algorithm>
 #include <cmath>
 
 #include "CCDB/BasicCCDBManager.h"
@@ -114,19 +115,19 @@ struct EmcalCorrectionTask {
     hClusterEtaPhi.setObject(new TH2F("hClusterEtaPhi", "hClusterEtaPhi", 160, -0.8, 0.8, 72, 0, 2 * 3.14159));
   }
 
-  //void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
-  //void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
-  //void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
+  // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
+  // void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
+  // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
 
   //  Appears to need the BC to be accessed to be available in the collision table...
-  void process(aod::Collision const& collision, aod::Calos const& cells, aod::BCs const& bcs)
+  void process(aod::BC const& bc, aod::Collisions const& collisions, aod::Calos const& cells)
   {
     LOG(debug) << "Starting process.";
     // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
     // In particular, we need to filter only EMCAL cells.
     mEmcalCells.clear();
     for (auto& cell : cells) {
-      if (cell.caloType() != selectedCellType || cell.bc() != collision.bc()) {
+      if (cell.caloType() != selectedCellType) {
         // LOG(debug) << "Rejected";
         continue;
       }
@@ -183,24 +184,43 @@ struct EmcalCorrectionTask {
     }
     LOG(debug) << "Converted to analysis clusters.";
 
+    float vx = 0, vy = 0, vz = 0;
+    bool hasCollision = false;
+    if (collisions.size() > 1) {
+      LOG(error) << "More than one collision in the bc. This is not supported.";
+    } else {
+      for (const auto& col : collisions) {
+        if (col.bc() != bc) {
+          continue;
+        }
+        vx = col.posX();
+        vy = col.posY();
+        vz = col.posZ();
+        hasCollision = true;
+      }
+    }
+    if (!hasCollision) {
+      LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
+    }
+
     // Store the clusters in the table
     clusters.reserve(mAnalysisClusters.size());
     for (const auto& cluster : mAnalysisClusters) {
       // Determine the cluster eta, phi, correcting for the vertex position.
       auto pos = cluster.getGlobalPosition();
-      pos = pos - math_utils::Point3D<float>{collision.posX(), collision.posY(), collision.posZ()};
+      pos = pos - math_utils::Point3D<float>{vx, vy, vz};
       // Normalize the vector and rescale by energy.
       pos *= (cluster.E() / std::sqrt(pos.Mag2()));
 
       // We have our necessary properties. Now we store outputs
 
-      //LOG(debug) << "Cluster E: " << cluster.E();
-      clusters(collision, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
+      // LOG(debug) << "Cluster E: " << cluster.E();
+      clusters(bc, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
                cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
                cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax());
-      //if (cluster.E() < 0.300) {
-      //    continue;
-      //}
+      // if (cluster.E() < 0.300) {
+      //     continue;
+      // }
       hClusterE->Fill(cluster.E());
       hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
     }
