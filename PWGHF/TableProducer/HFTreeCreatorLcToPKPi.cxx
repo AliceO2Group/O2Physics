@@ -218,8 +218,8 @@ struct CandidateTreeWriter {
                            float FunctionE) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.index0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
+            trackPos1.collision().bcId(),
+            trackPos1.collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -344,8 +344,8 @@ struct CandidateTreeWriter {
                            float FunctionE) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.index0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
+            trackPos1.collision().bcId(),
+            trackPos1.collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
