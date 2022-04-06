@@ -9,12 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+///
 /// \file LFTreeCreatorNuclei.cxx
 /// \brief Writer of the nuclei candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug or for the local optimization of analysis on small samples.
 ///        In this file are defined and filled the output tables
 ///
-/// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch> and Francesca Bellini <fbellini@cern.ch>
+/// \author Nicolò Jacazio <nicolo.jacazio@cern.ch> and Francesca Bellini <fbellini@cern.ch>
+///
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -102,7 +104,7 @@ DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLEvent",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct CandidateTreeWriter {
+struct LfTreeCreatorNuclei {
   Produces<o2::aod::LfCandNucleusFull> rowCandidateFull;
   Produces<o2::aod::LfCandNucleusFullEvents> rowCandidateFullEvents;
 
@@ -129,10 +131,9 @@ struct CandidateTreeWriter {
   void process(soa::Filtered<soa::Join<aod::Collisions,
                                        aod::EvSels>>::iterator const& collision,
                TrackCandidates const& tracks,
-               aod::BC const&)
+               aod::BCs const&)
   {
     // Filling event properties
-    rowCandidateFullEvents.reserve(collision.size());
     rowCandidateFullEvents(
       collision.bcId(),
       collision.numContrib(),
@@ -172,7 +173,5 @@ struct CandidateTreeWriter {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<CandidateTreeWriter>(cfgc, TaskName{"lf-tree-creator-nucleus"}));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<LfTreeCreatorNuclei>(cfgc)};
 }
