@@ -75,8 +75,10 @@ struct TimestampTask {
       }
       int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
 
-      if (isRun2MC) {
-        // bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
+      bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
+      if (isRun2MC || isUnanchoredRun3MC) {
+        // isRun2MC: bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
+        // isUnanchoredRun3MC: assuming orbit-reset is done in the beginning of each run
         // Setting orbit-reset timestamp to start-of-run timestamp
         orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
       } else {
