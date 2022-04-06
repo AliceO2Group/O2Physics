@@ -22,6 +22,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "CommonDataFormat/InteractionRecord.h"
 #include "DetectorsRaw/HBFUtils.h"
+#include <vector>
 #include <map>
 
 using namespace o2::framework;
@@ -29,90 +30,75 @@ using namespace o2::header;
 using namespace o2;
 
 struct TimestampTask {
-  Produces<aod::Timestamps> timestampTable;    /// Table with SOR timestamps produced by the task
-  Service<o2::ccdb::BasicCCDBManager> ccdb;    /// Object manager in CCDB
-  o2::ccdb::CcdbApi ccdb_api;                  /// API to access CCDB
-  std::map<int, int>* mapStartOrbit = nullptr; /// Map of the starting orbit for the run
-  std::map<int, long> mapRunToTimestamp;       /// Cache of processed run numbers
-  int lastRunNumber = 0;                       /// Last run number processed
-  long runNumberTimeStamp = 0;                 /// Timestamp of the run number, used in the process function to work out the timestamp of the BC
-  uint32_t initialOrbit = 0;                   /// Index of the first orbit of the run number, used in the process function to evaluate the offset with respect to the starting of the run
-  static constexpr uint16_t initialBC = 0;     /// Index of the initial bc, exact bc number not relevant due to ms precision of timestamps
-  InteractionRecord initialIR;                 /// Initial interaction record, used to compute the delta with respect to the start of the run
+  Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
+  Service<o2::ccdb::BasicCCDBManager> ccdb;  /// CCDB manager to access orbit-reset timestamp
+  o2::ccdb::CcdbApi ccdb_api;                /// API to access CCDB headers
+  std::map<int, int64_t> mapRunToOrbitReset; /// Cache of orbit reset timestamps
+  int lastRunNumber = 0;                     /// Last run number processed
+  int64_t orbitResetTimestamp = 0;           /// Orbit-reset timestamp in us
 
   // Configurables
   Configurable<bool> verbose{"verbose", false, "verbose mode"};
   Configurable<std::string> rct_path{"rct-path", "RCT/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
-  Configurable<std::string> start_orbit_path{"start-orbit-path", "GRP/StartOrbit", "path to the ccdb SOR orbit objects"};
+  Configurable<std::string> orbit_reset_path{"orbit-reset-path", "CTP/Calib/OrbitReset", "path to the ccdb orbit-reset objects"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
-  Configurable<bool> isRun2MC{"isRun2MC", false, "Running mode: enable only for Run 2 MC. The timestamp of the BC is computed from initialBC and initialOrbit and does not use the global BC."};
+  Configurable<bool> isRun2MC{"isRun2MC", false, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp"};
 
   void init(o2::framework::InitContext&)
   {
     LOGF(info, "Initializing TimestampTask");
     ccdb->setURL(url.value); // Setting URL of CCDB manager from configuration
-    LOGF(debug, "Getting SOR orbit map from CCDB url '%s' path '%s'", url.value, start_orbit_path.value);
-    mapStartOrbit = ccdb->get<std::map<int, int>>(start_orbit_path.value);
-    if (!mapStartOrbit) {
-      LOGF(fatal, "Cannot find map of SOR orbits in CCDB in path %s", start_orbit_path.value.data());
-    }
     ccdb_api.init(url.value);
     if (!ccdb_api.isHostReachable()) {
       LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward", url.value.data());
     }
   }
 
-  void makeInitialOrbit(aod::BC const& bunchCrossing)
-  {
-    if (!mapStartOrbit->count(bunchCrossing.runNumber())) {
-      LOGF(fatal, "Cannot find run %i in mapStartOrbit map", bunchCrossing.runNumber());
-    }
-    initialOrbit = mapStartOrbit->at(bunchCrossing.runNumber());
-    initialIR.bc = initialBC;
-    initialIR.orbit = initialOrbit;
-    // Setting lastCall
-    LOGF(debug, "Setting the last call of the timestamp for run %i to %llu", bunchCrossing.runNumber(), runNumberTimeStamp);
-    lastRunNumber = bunchCrossing.runNumber(); // Setting latest run number information
-  }
-
   void process(aod::BC const& bc)
   {
-    // First: we need to set the timestamp from the run number.
-    // This is done with caching if the run number of the BC was already processed before
-    // If not the timestamp of the run number from BC is queried from CCDB and added to the cache
-    if (bc.runNumber() == lastRunNumber) { // The run number coincides to the last run processed
-      LOGF(debug, "Using timestamp from last call");
-    } else if (mapRunToTimestamp.count(bc.runNumber())) { // The run number was already requested before: getting it from cache!
-      LOGF(debug, "Getting timestamp from cache");
-      runNumberTimeStamp = mapRunToTimestamp[bc.runNumber()];
-      makeInitialOrbit(bc);
+    int runNumber = bc.runNumber();
+    // We need to set the orbit-reset timestamp for the run number.
+    // This is done with caching if the run number was already processed before.
+    // If not the orbit-reset timestamp for the run number is queried from CCDB and added to the cache
+    if (runNumber == lastRunNumber) { // The run number coincides to the last run processed
+      LOGF(debug, "Using orbit-reset timestamp from last call");
+    } else if (mapRunToOrbitReset.count(runNumber)) { // The run number was already requested before: getting it from cache!
+      LOGF(debug, "Getting orbit-reset timestamp from cache");
+      orbitResetTimestamp = mapRunToOrbitReset[runNumber];
     } else { // The run was not requested before: need to acccess CCDB!
-      LOGF(debug, "Getting timestamp from CCDB");
+      LOGF(debug, "Getting start-of-run timestamp from CCDB");
       std::map<std::string, std::string> metadata, headers;
-      const std::string run_path = Form("%s/%i", rct_path.value.data(), bc.runNumber());
+      const std::string run_path = Form("%s/%i", rct_path.value.data(), runNumber);
       headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
       if (headers.count("SOR") == 0) {
-        LOGF(fatal, "Cannot find run-number to timestamp in path '%s'.", run_path.data());
+        LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
       }
-      runNumberTimeStamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
+      int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
+
+      if (isRun2MC) {
+        // bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
+        // Setting orbit-reset timestamp to start-of-run timestamp
+        orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
+      } else {
+        LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), sorTimestamp);
+        orbitResetTimestamp = (*ctp)[0];
+      }
 
       // Adding the timestamp to the cache map
-      std::pair<std::map<int, long>::iterator, bool> check;
-      check = mapRunToTimestamp.insert(std::pair<int, long>(bc.runNumber(), runNumberTimeStamp));
+      std::pair<std::map<int, int64_t>::iterator, bool> check;
+      check = mapRunToOrbitReset.insert(std::pair<int, int64_t>(runNumber, orbitResetTimestamp));
       if (!check.second) {
-        LOGF(fatal, "Run number %i already existed with a timestamp of %llu", bc.runNumber(), check.first->second);
+        LOGF(fatal, "Run number %i already existed with a orbit-reset timestamp of %llu", runNumber, check.first->second);
       }
-      makeInitialOrbit(bc);
-      LOGF(info, "Add new run number %i with timestamp %llu to cache", bc.runNumber(), runNumberTimeStamp);
+      LOGF(info, "Add new run number %i with orbit-reset timestamp %llu to cache", runNumber, orbitResetTimestamp);
     }
 
     if (verbose.value) {
-      LOGF(info, "Run-number to timestamp found! %i %llu ms", bc.runNumber(), runNumberTimeStamp);
+      LOGF(info, "Orbit-reset timestamp for run number %i found: %llu us", runNumber, orbitResetTimestamp);
     }
-    const uint16_t currentBC = isRun2MC ? initialBC : (bc.globalBC() % o2::constants::lhc::LHCMaxBunches);
-    const uint32_t currentOrbit = isRun2MC ? initialOrbit : (bc.globalBC() / o2::constants::lhc::LHCMaxBunches);
-    const InteractionRecord currentIR(currentBC, currentOrbit);
-    timestampTable(runNumberTimeStamp + (currentIR - initialIR).bc2ns() * 1e-6);
+
+    timestampTable((orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000); // us -> ms
   }
 };
 
