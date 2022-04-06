@@ -19,4 +19,12 @@ o2physics_add_dpl_workflow(gammaconversionsmc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phoscellqa
+                    SOURCES phosCellQA.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing O2::PHOSBase
+                    COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phoscluqa 
+                    SOURCES phosCluQA.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing O2::PHOSBase
+                    COMPONENT_NAME Analysis)
