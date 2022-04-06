@@ -119,7 +119,7 @@ struct NucleiSpectraEfficiencyRec {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTOFFullHe, aod::TrackSelection>>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator const& collision,
-               TrackCandidates const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+               TrackCandidates const& tracks, aod::McParticles_000& mcParticles, aod::McCollisions const& mcCollisions)
   {
     //
     // check the vertex-z distribution
@@ -147,7 +147,7 @@ struct NucleiSpectraEfficiencyRec {
       //
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() != -1000020030) {
+        if (track.mcParticle_as<aod::McParticles_000>().pdgCode() != -1000020030) {
           continue;
         }
         // fill reconstructed histogram

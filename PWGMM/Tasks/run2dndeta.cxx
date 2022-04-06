@@ -24,6 +24,8 @@
 #include "CommonConstants/MathConstants.h"
 #include "TDatabasePDG.h"
 
+#include <TF1.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -36,6 +38,10 @@ struct PseudorapidityDensity {
   ConfigurableAxis percentileBinning{"pBins",
                                      {VARIABLE_WIDTH, 0., 0.01, 0.1, 0.5, 1, 5, 10, 15, 20, 30, 40, 50, 70, 100},
                                      "Centrality/multiplicity percentile binning"};
+
+  Configurable<std::vector<float>> parRatio{"parRatio", {0.965475, -0.0010506, 0.00242833, 1.42873e-05, -1.49124e-05, 6.45095e-09, -1.0309e-08}, "parameters of pol6 of mes /reco tracks versus zvtx"};
+
+  TF1* fRatio = 0;
 
   HistogramRegistry registry{
     "registry",
@@ -76,6 +82,10 @@ struct PseudorapidityDensity {
       x->SetBinLabel(3, "Reconstructed");
       x->SetBinLabel(4, "Selected");
       x->SetBinLabel(5, "Selected INEL>0");
+
+      fRatio = new TF1("fRatio", "pol6", -15, 15);
+      auto param = (std::vector<float>)parRatio;
+      fRatio->SetParameters(param[0], param[1], param[2], param[3], param[4], param[5], param[6]);
     }
 
     if (doprocessBinned) {
@@ -100,23 +110,51 @@ struct PseudorapidityDensity {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, Trks const& tracks)
   {
     registry.fill(HIST("EventSelection"), 1.);
-    if (!useEvSel || (useEvSel && collision.sel7())) {
-      registry.fill(HIST("EventSelection"), 2.);
-      auto z = collision.posZ();
-      auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      if (perCollisionSample.size() > 0) {
-        registry.fill(HIST("EventSelection"), 3.);
-      }
-      registry.fill(HIST("EventsNtrkZvtx"), perCollisionSample.size(), z);
-      for (auto& track : tracks) {
-        registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
-        registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
-        if (perCollisionSample.size() > 0) {
-          registry.fill(HIST("TracksEtaZvtx_gt0"), track.eta(), z);
+    if (doprocessGen) //we are sudying the MC, that needs correction
+    {
+      if (!useEvSel || (useEvSel && collision.sel7())) {
+
+        auto z = collision.posZ();
+        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+        double w = 1;
+        if ((z > -12) && (z < 12)) {
+          w = fRatio->Eval(z);
         }
+
+        registry.fill(HIST("EventSelection"), 2., w);
+        if (perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 3., w);
+        }
+        registry.fill(HIST("EventsNtrkZvtx"), perCollisionSample.size(), z, w);
+        for (auto& track : tracks) {
+          registry.fill(HIST("TracksEtaZvtx"), track.eta(), z, w);
+          registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta(), w);
+          if (perCollisionSample.size() > 0) {
+            registry.fill(HIST("TracksEtaZvtx_gt0"), track.eta(), z, w);
+          }
+        }
+      } else {
+        registry.fill(HIST("EventSelection"), 4.);
       }
     } else {
-      registry.fill(HIST("EventSelection"), 4.);
+      if (!useEvSel || (useEvSel && collision.sel7())) {
+        registry.fill(HIST("EventSelection"), 2.);
+        auto z = collision.posZ();
+        auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+        if (perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 3.);
+        }
+        registry.fill(HIST("EventsNtrkZvtx"), perCollisionSample.size(), z);
+        for (auto& track : tracks) {
+          registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
+          registry.fill(HIST("TracksPhiEta"), track.phi(), track.eta());
+          if (perCollisionSample.size() > 0) {
+            registry.fill(HIST("TracksEtaZvtx_gt0"), track.eta(), z);
+          }
+        }
+      } else {
+        registry.fill(HIST("EventSelection"), 4.);
+      }
     }
   }
 

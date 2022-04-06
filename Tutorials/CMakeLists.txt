@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(Skimming)
+add_subdirectory(OpenData)
 
 o2physics_add_dpl_workflow(histogram-track-selection
                     SOURCES src/histogramTrackSelection.cxx

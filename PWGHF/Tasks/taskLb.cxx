@@ -188,8 +188,8 @@ struct HfTaskLbMc {
       auto candLc = candidate.index0_as<aod::HfCandProng3>();
       if (std::abs(candidate.flagMCMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMCGen>>(), pdg::Code::kLambdaB0, true);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMCGen>>(), pdg::Code::kLambdaB0, true);
+        auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
         registry.fill(HIST("hPtRecSig"), candidate.pt());
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), candidate.pt());
@@ -242,11 +242,12 @@ struct HfTaskLbMc {
         }
 
         float ptProngs[2], yProngs[2], etaProngs[2];
-        for (int iD = particle.daughter0Id(), counter = 0; iD <= particle.daughter1Id(); ++iD, counter++) {
-          auto daught = particlesMC.iteratorAt(iD);
+        int counter = 0;
+        for (auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::Y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          counter++;
         }
 
         registry.fill(HIST("hPtProng0Gen"), ptProngs[0], particle.pt());

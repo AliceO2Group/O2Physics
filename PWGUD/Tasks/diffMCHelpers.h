@@ -28,6 +28,7 @@
 using namespace o2;
 using namespace o2::framework;
 
+// -----------------------------------------------------------------------------
 // The associations between collisions and BCs can be ambiguous.
 // By default a collision is associated with the BC closest in time.
 // The collision time t_coll is determined by the tracks which are used to
@@ -77,10 +78,11 @@ T getMCCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLab
   return slice;
 }
 
-// In PYTHIA a central diffractive produced (CD) particle hs the ID
+// -----------------------------------------------------------------------------
+// In PYTHIA a central diffractive produced (CD) particle has the ID
 // 9900110. Check the particles of a MC event to contain a CD particle.
 template <typename T>
-bool isMcCDE(T MCparts)
+bool isPythiaCDE(T MCparts)
 {
   for (auto mcpart : MCparts) {
     if (mcpart.pdgCode() == 9900110) {
@@ -89,5 +91,30 @@ bool isMcCDE(T MCparts)
   }
   return false;
 }
+
+// -----------------------------------------------------------------------------
+// In pp events produced with GRANIITTI the stack starts with
+// 22212/22212/99/22212/2212/99/90
+template <typename T>
+bool isGraniittiCDE(T MCparts)
+{
+  if (MCparts.iteratorAt(0).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(1).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(2).pdgCode() != 99)
+    return false;
+  if (MCparts.iteratorAt(3).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(4).pdgCode() != 2212)
+    return false;
+  if (MCparts.iteratorAt(5).pdgCode() != 99)
+    return false;
+  if (MCparts.iteratorAt(6).pdgCode() != 90)
+    return false;
+  return true;
+}
+
+// -----------------------------------------------------------------------------
 
 #endif // O2_ANALYSIS_DIFFRACTION_MCHELPER_H_

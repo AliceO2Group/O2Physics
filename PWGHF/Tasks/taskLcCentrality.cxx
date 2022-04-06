@@ -155,8 +155,8 @@ struct TaskLcCentralityMC {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kLambdaCPlus, true);
-        auto particleMother = particlesMC.iteratorAt(indexMother);
+        auto indexMother = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kLambdaCPlus, true);
+        auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT

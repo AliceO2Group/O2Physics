@@ -12,6 +12,8 @@
 #ifndef O2_ANALYSIS_DIFFRACTION_SELECTOR_H_
 #define O2_ANALYSIS_DIFFRACTION_SELECTOR_H_
 
+#include "TLorentzVector.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/DataTypes.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -27,6 +29,7 @@ bool hasGoodPID(cutHolder diffCuts, TC track);
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs);
 
+// -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events
 // Selector for Double Gap events
 struct DGSelector {
@@ -48,58 +51,69 @@ struct DGSelector {
       }
     }
 
-    // Number of tracks
-    // All tracks in vertex
-    LOGF(debug, "Number of tracks: %i in vertex: %i", tracks.size(), collision.numContrib());
-    if (collision.numContrib() != tracks.size()) {
-      return 2;
-    }
-    if (tracks.size() < diffCuts.minNTracks() || tracks.size() > diffCuts.maxNTracks()) {
-      return 3;
-    }
-
-    // all tracks must be global tracks
-    // and some need to have a TOF hit
-    // chaeck also net charge
-    auto goodTracks = true;
-    int nTracksWithTOFHit = 0;
-    auto netCharge = 0;
-    LOGF(debug, "Tracks");
-    for (auto& track : tracks) {
-      goodTracks &= (track.isGlobalTrack() > 0);
-
-      // update netCharge
-      netCharge += track.sign();
-
-      // TOF hit with good match quality
-      if (track.hasTOF() && track.tofChi2() < diffCuts.maxTOFChi2()) {
-        nTracksWithTOFHit++;
-      }
-      LOGF(debug, "   global %i, TOF [%i] signal %f / chi2: %f", track.isGlobalTrack(), (track.hasTOF() ? 1 : 0), track.tofSignal(), track.tofChi2());
-    }
-    LOGF(debug, "  Tracks net charge %i, with TOF hit %i / %i", netCharge, nTracksWithTOFHit, diffCuts.minNTracksWithTOFHit());
-    goodTracks &= (nTracksWithTOFHit >= diffCuts.minNTracksWithTOFHit());
-    goodTracks &= (netCharge >= diffCuts.minNetCharge() && netCharge <= diffCuts.maxNetCharge());
-    if (!goodTracks) {
-      return 4;
-    }
-
-    // only tracks with good PID
-    auto goodPID = true;
-    for (auto& track : tracks) {
-      goodPID &= hasGoodPID(diffCuts, track);
-    }
-    if (!goodPID) {
-      return 5;
-    }
-
-    // check no activity in muon arm
+    // no activity in muon arm
     LOGF(debug, "Muons %i", fwdtracks.size());
     for (auto& muon : fwdtracks) {
       LOGF(debug, "  %i / %f / %f / %f", muon.trackType(), muon.eta(), muon.pt(), muon.p());
     }
     if (fwdtracks.size() > 0) {
-      return 6;
+      return 2;
+    }
+
+    // no global tracks which are no vtx tracks
+    for (auto& track : tracks) {
+      if (track.isGlobalTrack() && !track.isPVContributor()) {
+        return 3;
+      }
+    }
+
+    // number of vertex tracks
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
+      return 4;
+    }
+
+    // PID, pt, and eta of tracks, invariant mass, and net charge
+    // consider only vertex tracks
+
+    // which particle hypothesis?
+    auto mass2Use = constants::physics::MassPionCharged;
+    if (diffCuts.pidHypothesis() == 321) {
+      mass2Use = constants::physics::MassKaonCharged;
+    }
+
+    auto netCharge = 0;
+    auto lvtmp = TLorentzVector();
+    auto ivm = TLorentzVector();
+    for (auto& track : tracks) {
+      if (track.isPVContributor()) {
+
+        // PID
+        if (!hasGoodPID(diffCuts, track)) {
+          return 5;
+        }
+
+        // pt
+        lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
+        if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
+          return 6;
+        }
+
+        // eta
+        if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
+          return 7;
+        }
+        netCharge += track.sign();
+        ivm += lvtmp;
+      }
+    }
+
+    // net charge
+    if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
+      return 8;
+    }
+    // invariant mass
+    if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
+      return 9;
     }
 
     // if we arrive here then the event is good!
@@ -107,6 +121,7 @@ struct DGSelector {
   };
 };
 
+// -----------------------------------------------------------------------------
 // The associations between collsisions and BCs can be ambiguous.
 // By default a collision is associated with the BC closest in time.
 // The collision time t_coll is determined by the tracks which are used to
@@ -156,6 +171,7 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   return slice;
 }
 
+// -----------------------------------------------------------------------------
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
 template <typename TC>
@@ -210,5 +226,7 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
   }
   return false;
 }
+
+// -----------------------------------------------------------------------------
 
 #endif // O2_ANALYSIS_DIFFRACTION_SELECTOR_H_

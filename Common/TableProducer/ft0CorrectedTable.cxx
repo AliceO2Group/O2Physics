@@ -20,6 +20,8 @@ using namespace o2::framework;
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/FT0Corrected.h"
+#include "DataFormatsFT0/Digit.h"
+#include <bitset>
 
 using namespace o2::aod;
 struct FT0CorrectedTable {
@@ -36,11 +38,11 @@ struct FT0CorrectedTable {
       float t0C = 1e10;
       if (collision.has_foundFT0()) {
         auto ft0 = collision.foundFT0();
-        int triggersignals = ft0.triggerMask();
-        bool ora = (triggersignals & (1 << 0)) != 0;
-        bool orc = (triggersignals & (1 << 1)) != 0;
+        std::bitset<8> triggers = ft0.triggerMask();
+        bool ora = triggers[o2::ft0::Triggers::bitA];
+        bool orc = triggers[o2::ft0::Triggers::bitC];
         LOGF(debug, "triggers OrA %i OrC %i ", ora, orc);
-        LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f, triggersignals %i", ft0.timeA(), ft0.timeC(), vertex_corr, triggersignals);
+        LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f", ft0.timeA(), ft0.timeC(), vertex_corr);
         if (ora) {
           t0A = ft0.timeA() + vertex_corr;
         }

@@ -31,18 +31,20 @@ namespace o2::analysis::femtoDream
 namespace femtoDreamTrackSelection
 {
 /// The different selections this task is capable of doing
-enum TrackSel { kSign,        ///< Sign of the track
-                kpTMin,       ///< Min. p_T (GeV/c)
-                kpTMax,       ///< Max. p_T (GeV/c)
-                kEtaMax,      ///< Max. |eta|
-                kTPCnClsMin,  ///< Min. number of TPC clusters
-                kTPCfClsMin,  ///< Min. fraction of crossed rows/findable TPC clusters
-                kTPCcRowsMin, ///< Min. number of crossed TPC rows
-                kTPCsClsMax,  ///< Max. number of shared TPC clusters
-                kDCAxyMax,    ///< Max. DCA_xy (cm)
-                kDCAzMax,     ///< Max. DCA_z (cm)
-                kDCAMin,      ///< Min. DCA_xyz (cm)
-                kPIDnSigmaMax ///< Max. |n_sigma| for PID
+enum TrackSel { kSign,         ///< Sign of the track
+                kpTMin,        ///< Min. p_T (GeV/c)
+                kpTMax,        ///< Max. p_T (GeV/c)
+                kEtaMax,       ///< Max. |eta|
+                kTPCnClsMin,   ///< Min. number of TPC clusters
+                kTPCfClsMin,   ///< Min. fraction of crossed rows/findable TPC clusters
+                kTPCcRowsMin,  ///< Min. number of crossed TPC rows
+                kTPCsClsMax,   ///< Max. number of shared TPC clusters
+                kITSnClsMin,   ///< Min. number of ITS clusters
+                kITSnClsIbMin, ///< Min. number of ITS clusters in the inner barrel
+                kDCAxyMax,     ///< Max. DCA_xy (cm)
+                kDCAzMax,      ///< Max. DCA_z (cm)
+                kDCAMin,       ///< Min. DCA_xyz (cm)
+                kPIDnSigmaMax  ///< Max. |n_sigma| for PID
 };
 
 enum TrackContainerPosition {
@@ -64,6 +66,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                nTPCfMinSel(0),
                                nTPCcMinSel(0),
                                nTPCsMaxSel(0),
+                               nITScMinSel(0),
+                               nITScIbMinSel(0),
                                nDCAxyMaxSel(0),
                                nDCAzMaxSel(0),
                                nDCAMinSel(0),
@@ -156,7 +160,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   static int findSelectionIndex(const std::string_view& obs, std::string_view prefix = "")
   {
     for (int index = 0; index < kNtrackSelection; index++) {
-      std::string_view cmp{static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index])};
+      std::string comp = static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index]);
+      std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
     }
@@ -189,6 +194,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   int nTPCfMinSel;
   int nTPCcMinSel;
   int nTPCsMaxSel;
+  int nITScMinSel;
+  int nITScIbMinSel;
   int nDCAxyMaxSel;
   int nDCAzMaxSel;
   int nDCAMinSel;
@@ -200,12 +207,14 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   float fClsMin;
   float cTPCMin;
   float sTPCMax;
+  float nITSclsMin;
+  float nITSclsIbMin;
   float dcaXYMax;
   float dcaZMax;
   float dcaMin;
   float nSigmaPIDMax;
   std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
-  static constexpr int kNtrackSelection = 12;
+  static constexpr int kNtrackSelection = 14;
   static constexpr std::string_view mSelectionNames[kNtrackSelection] = {"Sign",
                                                                          "PtMin",
                                                                          "PtMax",
@@ -214,6 +223,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                          "TPCfClsMin",
                                                                          "TPCcRowsMin",
                                                                          "TPCsClsMax",
+                                                                         "ITSnClsMin",
+                                                                         "ITSnClsIbMin",
                                                                          "DCAxyMax",
                                                                          "DCAzMax",
                                                                          "DCAMin",
@@ -227,6 +238,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                                         femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kUpperLimit,
+                                                                                        femtoDreamSelection::kLowerLimit,
+                                                                                        femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
@@ -240,6 +253,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                           "Minimum fraction of crossed rows/findable clusters",
                                                                           "Minimum number of crossed TPC rows",
                                                                           "Maximal number of shared TPC cluster",
+                                                                          "Minimum number of ITS clusters",
+                                                                          "Minimum number of ITS clusters in the inner barrel",
                                                                           "Maximal DCA_xy (cm)",
                                                                           "Maximal DCA_z (cm)",
                                                                           "Minimal DCA (cm)",
@@ -266,18 +281,36 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
       LOG(fatal) << "FemtoDreamTrackCuts: Number of selections too large for your container - quitting!";
     }
 
-    mHistogramRegistry->add((folderName + "/pThist").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-    mHistogramRegistry->add((folderName + "/etahist").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-    mHistogramRegistry->add((folderName + "/phihist").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    mHistogramRegistry->add((folderName + "/tpcnclshist").c_str(), "; TPC Cluster; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/tpcfclshist").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
-    mHistogramRegistry->add((folderName + "/tpcnrowshist").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/tpcnsharedhist").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/dcaXYhist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-    mHistogramRegistry->add((folderName + "/dcaZhist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-    mHistogramRegistry->add((folderName + "/dcahist").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH1F, {{301, 0., 1.5}});
-    mHistogramRegistry->add((folderName + "/tpcdEdx").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
-    mHistogramRegistry->add((folderName + "/tofSignal").c_str(), "; #it{p} (GeV/#it{c}); TOF Signal", kTH2F, {{100, 0, 10}, {1000, 0, 100e3}});
+    mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
+    mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
+    mHistogramRegistry->add((folderName + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
+    mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
+    mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
+    mHistogramRegistry->add((folderName + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
+    mHistogramRegistry->add((folderName + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
   }
   /// set cuts
   nPtMinSel = getNSelections(femtoDreamTrackSelection::kpTMin);
@@ -287,6 +320,8 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
   nTPCfMinSel = getNSelections(femtoDreamTrackSelection::kTPCfClsMin);
   nTPCcMinSel = getNSelections(femtoDreamTrackSelection::kTPCcRowsMin);
   nTPCsMaxSel = getNSelections(femtoDreamTrackSelection::kTPCsClsMax);
+  nITScMinSel = getNSelections(femtoDreamTrackSelection::kITSnClsMin);
+  nITScIbMinSel = getNSelections(femtoDreamTrackSelection::kITSnClsIbMin);
   nDCAxyMaxSel = getNSelections(femtoDreamTrackSelection::kDCAxyMax);
   nDCAzMaxSel = getNSelections(femtoDreamTrackSelection::kDCAzMax);
   nDCAMinSel = getNSelections(femtoDreamTrackSelection::kDCAMin);
@@ -299,6 +334,8 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
   fClsMin = getMinimalSelection(femtoDreamTrackSelection::kTPCfClsMin, femtoDreamSelection::kLowerLimit);
   cTPCMin = getMinimalSelection(femtoDreamTrackSelection::kTPCcRowsMin, femtoDreamSelection::kLowerLimit);
   sTPCMax = getMinimalSelection(femtoDreamTrackSelection::kTPCsClsMax, femtoDreamSelection::kUpperLimit);
+  nITSclsMin = getMinimalSelection(femtoDreamTrackSelection::kITSnClsMin, femtoDreamSelection::kLowerLimit);
+  nITSclsIbMin = getMinimalSelection(femtoDreamTrackSelection::kITSnClsIbMin, femtoDreamSelection::kLowerLimit);
   dcaXYMax = getMinimalSelection(femtoDreamTrackSelection::kDCAxyMax, femtoDreamSelection::kAbsUpperLimit);
   dcaZMax = getMinimalSelection(femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
   dcaMin = getMinimalSelection(femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
@@ -308,63 +345,18 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
 template <typename T>
 auto FemtoDreamTrackSelection::getNsigmaTPC(T const& track, o2::track::PID pid)
 {
-  switch (pid) {
-    case o2::track::PID::Electron:
-      return track.tpcNSigmaEl();
-      break;
-    case o2::track::PID::Muon:
-      return track.tpcNSigmaMu();
-      break;
-    case o2::track::PID::Pion:
-      return track.tpcNSigmaPi();
-      break;
-    case o2::track::PID::Kaon:
-      return track.tpcNSigmaKa();
-      break;
-    case o2::track::PID::Proton:
-      return track.tpcNSigmaPr();
-      break;
-    case o2::track::PID::Deuteron:
-      return track.tpcNSigmaDe();
-      break;
-    default:
-      return 999.f;
-      break;
-  }
+  return o2::aod::pidutils::tpcNSigma(pid, track);
 }
 
 template <typename T>
 auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
 {
   /// skip tracks without TOF signal
-  /// \todo not sure what the error flags mean...
-  if (track.tofSignal() <= 0.f || std::abs(track.tofSignal() - 99998) < 0.01 || std::abs(track.tofSignal() - 99999) < 0.01) {
+  if (!track.hasTOF()) {
     return 999.f;
   }
 
-  switch (pid) {
-    case o2::track::PID::Electron:
-      return track.tofNSigmaEl();
-      break;
-    case o2::track::PID::Muon:
-      return track.tofNSigmaMu();
-      break;
-    case o2::track::PID::Pion:
-      return track.tofNSigmaPi();
-      break;
-    case o2::track::PID::Kaon:
-      return track.tofNSigmaKa();
-      break;
-    case o2::track::PID::Proton:
-      return track.tofNSigmaPr();
-      break;
-    case o2::track::PID::Deuteron:
-      return track.tofNSigmaDe();
-      break;
-    default:
-      return 999.f;
-      break;
-  }
+  return o2::aod::pidutils::tofNSigma(pid, track);
 }
 
 template <typename T>
@@ -376,6 +368,8 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
   const auto tpcNClsS = track.tpcNClsShared();
+  const auto itsNCls = track.itsNCls();
+  const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
   const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
@@ -404,6 +398,12 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
     return false;
   }
   if (nTPCsMaxSel > 0 && tpcNClsS > sTPCMax) {
+    return false;
+  }
+  if (nITScMinSel > 0 && itsNCls < nITSclsMin) {
+    return false;
+  }
+  if (nITScIbMinSel > 0 && itsNClsIB < nITSclsIbMin) {
     return false;
   }
   if (nDCAxyMaxSel > 0 && std::abs(dcaXY) > dcaXYMax) {
@@ -446,6 +446,8 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
   const auto tpcNClsS = track.tpcNClsShared();
+  const auto itsNCls = track.itsNCls();
+  const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
   const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
@@ -494,6 +496,12 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
         case (femtoDreamTrackSelection::kTPCsClsMax):
           observable = tpcNClsS;
           break;
+        case (femtoDreamTrackSelection::kITSnClsMin):
+          observable = itsNCls;
+          break;
+        case (femtoDreamTrackSelection::kITSnClsIbMin):
+          observable = itsNClsIB;
+          break;
         case (femtoDreamTrackSelection::kDCAxyMax):
           observable = dcaXY;
           break;
@@ -516,18 +524,36 @@ template <o2::aod::femtodreamparticle::ParticleType part, typename T>
 void FemtoDreamTrackSelection::fillQA(T const& track, std::string_view WhichDaugh)
 {
   if (mHistogramRegistry) { /// \TODO to add possibility to write to Daughters folders
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/pThist"), track.pt());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/etahist"), track.eta());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/phihist"), track.phi());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/tpcnclshist"), track.tpcNClsFound());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/tpcfclshist"), track.tpcCrossedRowsOverFindableCls());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/tpcnrowshist"), track.tpcNClsCrossedRows());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/tpcnsharedhist"), track.tpcNClsShared());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/dcaXYhist"), track.pt(), track.dcaXY());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/dcaZhist"), track.pt(), track.dcaZ());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/dcahist"), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/tpcdEdx"), track.tpcInnerParam(), track.tpcSignal());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/tofSignal"), track.p(), track.tofSignal());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hPt"), track.pt());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hEta"), track.eta());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hPhi"), track.phi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCfindable"), track.tpcNClsFindable());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCfound"), track.tpcNClsFound());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCcrossedOverFindalbe"), track.tpcCrossedRowsOverFindableCls());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCcrossedRows"), track.tpcNClsCrossedRows());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCfindableVsCrossed"), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCshared"), track.tpcNClsShared());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hITSclusters"), track.itsNCls());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hITSclustersIB"), track.itsNClsInnerBarrel());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_K"), track.p(), track.tpcNSigmaKa());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_p"), track.p(), track.tpcNSigmaPr());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_pi"), track.p(), track.tofNSigmaPi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_K"), track.p(), track.tofNSigmaKa());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_p"), track.p(), track.tofNSigmaPr());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_d"), track.p(), track.tofNSigmaDe());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaComb_el"), track.p(), std::sqrt(track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaComb_pi"), track.p(), std::sqrt(track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaComb_K"), track.p(), std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaComb_p"), track.p(), std::sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaComb_d"), track.p(), std::sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()));
   }
 }
 

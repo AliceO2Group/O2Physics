@@ -9,14 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Use a hash to sort tracks into a 2D histogram. The hash is used to
-//         create pairs of tracks from the same hash bin with function selfCombinations.
+/// \brief Iterate over pair of tracks with combinations interface, without and with binning.
+//         Iterate over pairs of collisions with configurable binning.
+//         Iterate over pairs of tracks with binning predefined by a hash task.
 /// \author
 /// \since
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/Multiplicity.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::soa;
 
 namespace o2::aod
 {
@@ -28,49 +34,85 @@ DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
 
 } // namespace o2::aod
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-
 struct TrackCombinations {
   void process(aod::Tracks const& tracks)
   {
+    int count = 0;
     // Strictly upper tracks
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       LOGF(info, "Tracks pair: %d %d", t0.index(), t1.index());
+      count++;
+      if (count > 100)
+        break;
+    }
+  }
+};
+
+struct BinnedTrackCombinations {
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+  BinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}, true};
+
+  void process(aod::Tracks const& tracks)
+  {
+    int count = 0;
+    // Strictly upper tracks binned by x and y position
+    for (auto& [t0, t1] : selfCombinations(trackBinning, 5, -1, tracks, tracks)) {
+      int bin = trackBinning.getBin({t0.x(), t0.y()});
+      LOGF(info, "Tracks bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", bin, t0.index(), t0.x(), t0.y(), t0.z(), t1.index(), t1.x(), t1.y(), t1.z());
+      count++;
+      if (count > 100)
+        break;
+    }
+  }
+};
+
+struct ConfigurableBinnedCollisionCombinations {
+  ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
+
+  void process(soa::Join<aod::Collisions, aod::Mults> const& collisions)
+  {
+    // MultV0M cannot be used as it is a dynamic column
+    BinningPolicy<aod::collision::PosZ, aod::mult::MultV0A> colBinning{{axisVertex, axisMultiplicity}, true};
+    int count = 0;
+    // Strictly upper tracks binned by x and y position
+    for (auto& [c0, c1] : selfCombinations(colBinning, 5, -1, collisions, collisions)) {
+      int bin = colBinning.getBin({c0.posZ(), c0.multV0A()});
+      LOGF(info, "Collision bin: %d pair: %d (%f, %f), %d (%f, %f)", bin, c0.index(), c0.posZ(), c0.multV0A(), c1.index(), c1.posZ(), c1.multV0A());
+      count++;
+      if (count > 100)
+        break;
     }
   }
 };
 
 struct HashTask {
-  std::vector<float> xBins{-1.5f, -1.0f, -0.5f, 0.0f, 0.5f, 1.0f, 1.5f};
-  std::vector<float> yBins{-1.5f, -1.0f, -0.5f, 0.0f, 0.5f, 1.0f, 1.5f};
+  std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072};
+  std::vector<float> yBins{-0.320f, -0.301f, -0.300f, 0.330f, 0.340f, 0.350f, 0.360};
   Produces<aod::Hashes> hashes;
 
   // Calculate hash for an element based on 2 properties and their bins.
   int getHash(const std::vector<float>& xBins, const std::vector<float>& yBins, float colX, float colY)
   {
-    for (unsigned int i = 0; i < xBins.size(); i++) {
+    // underflow
+    if (colX < xBins[0] || colY < yBins[0])
+      return -1;
+
+    for (unsigned int i = 1; i < xBins.size(); i++) {
       if (colX < xBins[i]) {
-        for (unsigned int j = 0; j < yBins.size(); j++) {
+        for (unsigned int j = 1; j < yBins.size(); j++) {
           if (colY < yBins[j]) {
             return i + j * (xBins.size() + 1);
           }
         }
         // overflow for yBins only
-        return i + yBins.size() * (xBins.size() + 1);
+        return -1;
       }
     }
 
-    // overflow for xBins only
-    for (unsigned int j = 0; j < yBins.size(); j++) {
-      if (colY < yBins[j]) {
-        return xBins.size() + j * (xBins.size() + 1);
-      }
-    }
-
-    // overflow for both bins
-    return (yBins.size() + 1) * (xBins.size() + 1) - 1;
+    // overflow
+    return -1;
   }
 
   void process(aod::Tracks const& tracks)
@@ -83,12 +125,19 @@ struct HashTask {
   }
 };
 
-struct BinnedTrackCombinations {
+struct BinnedTrackCombinationsWithHashTable {
+  NoBinningPolicy<aod::hash::Bin> hashBin;
+
   void process(soa::Join<aod::Hashes, aod::Tracks> const& hashedTracks)
   {
+    int count = 0;
     // Strictly upper categorised tracks
-    for (auto& [t0, t1] : selfCombinations("fBin", 5, -1, hashedTracks, hashedTracks)) {
-      LOGF(info, "Tracks bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", t0.bin(), t0.index(), t0.x(), t0.y(), t0.z(), t1.index(), t1.x(), t1.y(), t1.z());
+    for (auto& [t0, t1] : selfCombinations(hashBin, 5, -1, hashedTracks, hashedTracks)) {
+      int bin = hashBin.getBin({t0.bin()});
+      LOGF(info, "Tracks bin: %d from policy: %d  pair: %d (%f, %f, %f), %d (%f, %f, %f)", t0.bin(), bin, t0.index(), t0.x(), t0.y(), t0.z(), t1.index(), t1.x(), t1.y(), t1.z());
+      count++;
+      if (count > 100)
+        break;
     }
   }
 };
@@ -97,7 +146,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<TrackCombinations>(cfgc),
-    adaptAnalysisTask<HashTask>(cfgc),
     adaptAnalysisTask<BinnedTrackCombinations>(cfgc),
+    adaptAnalysisTask<ConfigurableBinnedCollisionCombinations>(cfgc),
+    adaptAnalysisTask<HashTask>(cfgc),
+    adaptAnalysisTask<BinnedTrackCombinationsWithHashTable>(cfgc),
   };
 }

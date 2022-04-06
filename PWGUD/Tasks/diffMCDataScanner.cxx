@@ -14,6 +14,7 @@
 /// \since  01.10.2021
 
 #include "Framework/ConfigParamSpec.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -29,7 +30,6 @@ using namespace o2::framework::expressions;
 
 // Loop over collisions
 // find for each collision the number of compatible BCs
-// runCase = 1
 struct CompatibleBCs {
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
@@ -45,7 +45,7 @@ struct CompatibleBCs {
 };
 
 // Fill histograms with collision and compatible BCs related information
-// runCase = 1
+// runCase = 0
 struct collisionsInfo {
   int cnt = 0;
   HistogramRegistry registry{
@@ -103,12 +103,12 @@ struct collisionsInfo {
 
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, /* MFs& mfttracks,*/ FWs& fwdtracks, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-               aod::McCollisions& McCols, aod::McParticles& McParts)
+               aod::McCollisions& McCols, aod::McParticles_000& McParts)
   {
 
     // obtain slice of compatible BCs
     auto bcSlice = getMCCompatibleBCs(collision, 4, bct0s);
-    LOGF(debug, "  Number of compatible BCs: %i", bcSlice.size());
+    LOGF(info, "  Number of compatible BCs: %i", bcSlice.size());
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
     // check that there are no FIT signals in any of the compatible BCs
@@ -184,13 +184,13 @@ struct collisionsInfo {
       }
     }
     cnt++;
-    LOGF(debug, "#Collisions: %d", cnt);
+    LOGF(info, "#Collisions: %d", cnt);
   }
 };
 
 // Loop over BCs
 // check aliases, selection, and FIT signals per BC
-// runCase = 1
+// runCase = 0
 struct BCInfo {
   int cnt = 0;
   HistogramRegistry registry{
@@ -198,7 +198,7 @@ struct BCInfo {
     {{"numberCollisions", "#numberCollisions", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"numberCollisionsGT", "#numberCollisionsGT", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
      {"Aliases", "#Aliases", {HistType::kTH1F, {{kNaliases, 0., kNaliases}}}},
-     {"Selection", "#Selection", {HistType::kTH1F, {{aod::kNsel, 0., aod::kNsel}}}},
+     {"Selection", "#Selection", {HistType::kTH1F, {{evsel::kNsel, 0., evsel::kNsel}}}},
      {"DetectorSignals", "#DetectorSignals", {HistType::kTH1F, {{6, 0., 6}}}}}};
 
   void init(o2::framework::InitContext&)
@@ -232,7 +232,7 @@ struct BCInfo {
 
     // update Selection
     auto selections = bc.selection();
-    for (auto ii = 0; ii < aod::kNsel; ii++) {
+    for (auto ii = 0; ii < evsel::kNsel; ii++) {
       registry.get<TH1>(HIST("Selection"))->Fill(ii, selections[ii]);
     }
 
@@ -263,7 +263,7 @@ struct BCInfo {
 
 // Loop over tracks
 // Make histograms with track type and time resolution
-// runCase = 1
+// runCase = 0
 struct TrackTypes {
   HistogramRegistry registry{
     "registry",
@@ -336,22 +336,23 @@ struct TrackTypes {
 };
 
 // MCTruth tracks
-// runCase = 2
+// runCase = 1
 struct MCTracks {
 
   using CCs = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using CC = CCs::iterator;
 
-  void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles& McParts)
+  void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles_000& McParts)
   {
 
     for (auto collision : collisions) {
+      LOGF(info, "Start of loop");
 
       // get McCollision which belongs to collision
       auto MCCol = collision.mcCollision();
 
-      LOGF(info, "Collision %i MC collision %i",
-           collision.globalIndex(), MCCol.globalIndex());
+      LOGF(info, "Collision %i MC collision %i Type %i",
+           collision.globalIndex(), MCCol.globalIndex(), MCCol.generatorsID());
 
       // get MCParticles which belong to MCCol
       auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
@@ -388,23 +389,25 @@ struct MCTracks {
         auto mass = TMath::Sqrt(etot * etot - (px * px + py * py + pz * pz));
         LOGF(info, "  mass of X: %f, prongs: %i", mass, prongs);
       }
+
+      LOGF(info, "End of loop");
     }
   }
 };
 
 // TPC nSigma
-// runCase = 3
+// runCase = 2
 struct TPCnSigma {
   Produces<aod::UDnSigmas> nSigmas;
 
   using TCs = soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels>;
   using TCwPIDs = soa::Join<TCs, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-  void process(TCwPIDs& tracks, aod::McParticles const& mcParticles)
+  void process(TCwPIDs& tracks, aod::McParticles_000 const& mcParticles)
   {
     for (auto track : tracks) {
       if (track.isGlobalTrack()) {
-        nSigmas(track.mcParticle().pdgCode(), track.mcParticle().pt(),
+        nSigmas(track.mcParticle_as<aod::McParticles_000>().pdgCode(), track.mcParticle_as<aod::McParticles_000>().pt(),
                 track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(), track.tpcNSigmaPr());
       }

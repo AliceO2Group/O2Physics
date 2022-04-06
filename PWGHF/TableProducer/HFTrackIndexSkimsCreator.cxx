@@ -74,15 +74,15 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 //#define MY_DEBUG
 
 #ifdef MY_DEBUG
-using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels>;
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
+using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using MY_TYPE1 = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>;
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksCov, aod::HFSelTrack, aod::TracksExtended>;
+using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksExtended, aod::TrackSelection>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksExtended>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -524,9 +524,9 @@ struct HfTagSelTracks {
 
 /// Pre-selection of 2-prong and 3-prong secondary vertices
 struct HfTrackIndexSkimsCreator {
-  Produces<aod::HfTrackIndexProng2> rowTrackIndexProng2;
+  Produces<aod::Hf2Prong> rowTrackIndexProng2;
   Produces<aod::HfCutStatusProng2> rowProng2CutStatus;
-  Produces<aod::HfTrackIndexProng3> rowTrackIndexProng3;
+  Produces<aod::Hf3Prong> rowTrackIndexProng3;
   Produces<aod::HfCutStatusProng3> rowProng3CutStatus;
 
   //Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
@@ -897,7 +897,7 @@ struct HfTrackIndexSkimsCreator {
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::HFSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksExtended, aod::HFSelTrack>>;
 
   // FIXME
   //Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
@@ -1323,15 +1323,14 @@ struct HfTrackIndexSkimsCreator {
 //________________________________________________________________________________________________________________________
 
 /// Pre-selection of cascade secondary vertices
-/// It will produce in any case a HfTrackIndexProng2 object, but mixing a V0
+/// It will produce in any case a Hf2Prong object, but mixing a V0
 /// with a track, instead of 2 tracks
 
 /// to run: o2-analysis-weak-decay-indices --aod-file AO2D.root -b | o2-analysis-lambdakzerobuilder -b |
 ///         o2-analysis-trackextension -b | o2-analysis-hf-track-index-skims-creator -b
 
 struct HfTrackIndexSkimsCreatorCascades {
-  Produces<aod::HfTrackIndexCasc> rowTrackIndexCasc;
-  //  Produces<aod::HfTrackIndexProng2> rowTrackIndexCasc;
+  Produces<aod::HfCascade> rowTrackIndexCasc;
 
   // whether to do or not validation plots
   Configurable<bool> doValPlots{"doValPlots", true, "fill histograms"};
@@ -1393,7 +1392,6 @@ struct HfTrackIndexSkimsCreatorCascades {
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hmass2", "2-prong candidates;inv. mass (K0s p) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
-  // NB: using FullTracks = soa::Join<Tracks, TracksCov, TracksExtra>; defined in Framework/Core/include/Framework/AnalysisDataModel.h
   //using MyTracks = aod::BigTracksMC;
   //Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
   // using SelectedV0s = soa::Filtered<aod::V0Datas>;
@@ -1411,7 +1409,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
   void process(SelectedCollisions::iterator const& collision,
                aod::BCs const& bcs,
-               //soa::Filtered<aod::V0Datas> const& V0s,
+               // soa::Filtered<aod::V0Datas> const& V0s,
                aod::V0Datas const& V0s,
                MyTracks const& tracks
 #ifdef MY_DEBUG
@@ -1578,8 +1576,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
         // fill table row
         rowTrackIndexCasc(bach.globalIndex(),
-                          v0.globalIndex(),
-                          1); // 1 should be the value for the Lc
+                          v0.globalIndex());
         // fill histograms
         if (doValPlots) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc && isLc, LOG(info) << "KEPT! True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg);

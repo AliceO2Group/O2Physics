@@ -42,6 +42,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! z-component of the track momentum GeV/c
                              return pt * std::sinh(eta);
                            });
 
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Momentum GeV/c
+                           [](float pt, float eta) -> float {
+                             return pt * std::cosh(eta);
+                           });
+
 } // namespace trackpropagated
 
 DECLARE_SOA_TABLE(TracksPropagated, "AOD", "TRACKPROPAG", //! commonly used track parameters, propagated to the primary vertex
@@ -54,7 +59,8 @@ DECLARE_SOA_TABLE(TracksPropagated, "AOD", "TRACKPROPAG", //! commonly used trac
                   trackpropagated::Eta,
                   trackpropagated::Px<trackpropagated::Pt, trackpropagated::Phi>,
                   trackpropagated::Py<trackpropagated::Pt, trackpropagated::Phi>,
-                  trackpropagated::Pz<trackpropagated::Pt, trackpropagated::Eta>);
+                  trackpropagated::Pz<trackpropagated::Pt, trackpropagated::Eta>,
+                  trackpropagated::P<trackpropagated::Pt, trackpropagated::Eta>);
 
 using TrackPropagated = TracksPropagated::iterator;
 

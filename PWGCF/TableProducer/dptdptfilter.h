@@ -72,6 +72,14 @@ enum CentMultEstimatorType {
   knCentMultEstimators ///< number of centrality/mutiplicity estimator
 };
 
+/// \enum TriggerSelectionType
+/// \brief The type of trigger to apply for event selection
+enum TriggerSelectionType {
+  kNONE = 0,       ///< do not use trigger selection
+  kMB,             ///< Minimum bias trigger
+  knEventSelection ///< number of triggers for event selection
+};
+
 //============================================================================================
 // The DptDptFilter configuration objects
 //============================================================================================
@@ -89,9 +97,32 @@ int tracktype = 1;
 int trackonecharge = 1;
 int tracktwocharge = -1;
 
+TrackSelection* globalRun3 = nullptr;
+TrackSelection* globalSDDRun3 = nullptr;
+
+inline void initializeTrackSelection()
+{
+  switch (tracktype) {
+    case 3: /* Run3 track */
+      globalRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      globalRun3->ResetITSRequirements();
+      globalRun3->SetRequireHitsInITSLayers(1, {0, 1, 2});
+      globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalSDDRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      globalSDDRun3->ResetITSRequirements();
+      globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
+      globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
+      break;
+    default:
+      break;
+  }
+}
+
 SystemType fSystem = kNoSystem;
 DataType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
+TriggerSelectionType fTriggerSelection = kMB;
 
 /* adaptations for the pp nightly checks */
 analysis::CheckRangeCfg traceDCAOutliers;
@@ -105,6 +136,18 @@ float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
 TDatabasePDG* fPDG = nullptr;
+
+inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
+{
+  if (triggstr.empty() or triggstr == "MB") {
+    return kMB;
+  } else if (triggstr == "None") {
+    return kNONE;
+  } else {
+    LOGF(fatal, "Wrong trigger selection: %s", triggstr.c_str());
+    return kNONE;
+  }
+}
 
 inline SystemType getSystemType(std::string const& sysstr)
 {
@@ -124,7 +167,7 @@ inline SystemType getSystemType(std::string const& sysstr)
   } else if (sysstr == "ppRun3") {
     return kppRun3;
   } else {
-    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %d", sysstr.c_str());
+    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
   }
   return kPbPb;
 }
@@ -178,15 +221,45 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbp:
     case kPbPb:
     case kXeXe:
-      if (collision.alias()[kINT7]) {
-        if (collision.sel7()) {
+      switch (fTriggerSelection) {
+        case kMB:
+          switch (fDataType) {
+            case kData:
+              if (collision.alias()[kINT7]) {
+                if (collision.sel7()) {
+                  trigsel = true;
+                }
+              }
+              break;
+            case kMC:
+              if (collision.sel7()) {
+                trigsel = true;
+              }
+              break;
+            default:
+              trigsel = true;
+              break;
+          }
+          break;
+        case kNONE:
           trigsel = true;
-        }
+          break;
+        default:
+          break;
       }
       break;
     case kppRun3:
-      if (collision.sel8()) {
-        trigsel = true;
+      switch (fTriggerSelection) {
+        case kMB:
+          if (collision.sel8()) {
+            trigsel = true;
+          }
+          break;
+        case kNONE:
+          trigsel = true;
+          break;
+        default:
+          break;
       }
       break;
     default:
@@ -290,7 +363,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 
 /// \brief Centrality selection when there is not centrality/multiplicity information
 template <typename CollisionObject>
-inline bool centralitySelectionNoMult(CollisionObject collision, float& centmult)
+inline bool centralitySelectionNoMult(CollisionObject const&, float& centmult)
 {
   bool centmultsel = false;
   switch (fCentMultEstimator) {
@@ -342,7 +415,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McColli
 
 /// \brief Centrality selection for generator level collision table
 template <>
-inline bool centralitySelection<aod::McCollision>(aod::McCollision const& collision, float& centmult)
+inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
   if (centmult < 100 and 0 < centmult) {
     return true;
@@ -390,7 +463,7 @@ inline bool matchTrackType(TrackObject const& track)
         }
         break;
       case 3: /* Run3 track */
-        if (track.isGlobalTrack() != 0 || track.isGlobalTrackSDD() != 0) {
+        if (globalRun3->IsSelected(track) || globalSDDRun3->IsSelected(track)) {
           return true;
         } else {
           return false;
@@ -403,29 +476,43 @@ inline bool matchTrackType(TrackObject const& track)
 }
 
 template <typename TrackObject>
-inline void AcceptTrack(TrackObject const& track, bool& asone, bool& astwo)
+inline void AcceptTrack(TrackObject const& track, uint8_t& asone, uint8_t& astwo)
 {
-  asone = false;
-  astwo = false;
+  asone = uint8_t(false);
+  astwo = uint8_t(false);
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if (matchTrackType(track)) {
     if (ptlow < track.pt() and track.pt() < ptup and etalow < track.eta() and track.eta() < etaup) {
       if (((track.sign() > 0) and (trackonecharge > 0)) or ((track.sign() < 0) and (trackonecharge < 0))) {
-        asone = true;
+        asone = uint8_t(true);
       }
       if (((track.sign() > 0) and (tracktwocharge > 0)) or ((track.sign() < 0) and (tracktwocharge < 0))) {
-        astwo = true;
+        astwo = uint8_t(true);
       }
     }
   }
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
-inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, bool& asone, bool& astwo)
+void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {
-  asone = false;
-  astwo = false;
+  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+    LOGF(info, "   mother index: %d", m.globalIndex());
+    LOGF(info, "   Tracking back mother");
+    LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
+    LOGF(info, "   index: %d, pdg code: %d", m.globalIndex(), m.pdgCode());
+    LOGF(info, "   Passed  isPhysicalPrimary(): %s", m.isPhysicalPrimary() ? "YES" : "NO");
+
+    exploreMothers(m, collision);
+  }
+}
+
+template <typename ParticleObject, typename MCCollisionObject>
+inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision, uint8_t& asone, uint8_t& astwo)
+{
+  asone = uint8_t(false);
+  astwo = uint8_t(false);
 
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
@@ -439,31 +526,23 @@ inline void AcceptParticle(ParticleObject& particle, MCCollisionObject const& co
       float dcaz = TMath::Abs(particle.vz() - collision.posZ());
       if (not((dcaxy < particleMaxDCAxy) and (dcaz < particleMaxDCAZ))) {
         if ((particle.mcCollisionId() == 0) and traceCollId0) {
-          auto currparticle = particle;
           LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
-          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", currparticle.mcCollisionId(), collision.globalIndex());
+          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
           LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
           LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
-          LOGF(info, "   index: %d, pdg code: %d", currparticle.globalIndex(), currparticle.pdgCode());
-          while (currparticle.has_mother0()) {
-            LOGF(info, "   mother0 index: %d, mother1 index: %d", currparticle.mother0Id(), currparticle.mother1Id());
-            LOGF(info, "  Tracking back mother0 index");
-            auto newcurrparticle = currparticle.template mother0_as<aod::McParticles>();
-            LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", newcurrparticle.mcCollisionId(), collision.globalIndex());
-            LOGF(info, "   index: %d, pdg code: %d", newcurrparticle.globalIndex(), newcurrparticle.pdgCode());
-            LOGF(info, "   Passed  isPhysicalPrimary(): %s", newcurrparticle.isPhysicalPrimary() ? "YES" : "NO");
-            currparticle = newcurrparticle;
-          }
+          LOGF(info, "   index: %d, pdg code: %d", particle.globalIndex(), particle.pdgCode());
+
+          exploreMothers(particle, collision);
         }
         return;
       }
     }
     if (ptlow < particle.pt() and particle.pt() < ptup and etalow < particle.eta() and particle.eta() < etaup) {
       if (((charge > 0) and (trackonecharge > 0)) or ((charge < 0) and (trackonecharge < 0))) {
-        asone = true;
+        asone = uint8_t(true);
       }
       if (((charge > 0) and (tracktwocharge > 0)) or ((charge < 0) and (tracktwocharge < 0))) {
-        astwo = true;
+        astwo = uint8_t(true);
       }
     }
   } else {

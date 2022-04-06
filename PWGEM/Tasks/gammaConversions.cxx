@@ -19,7 +19,6 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h" // for BigTracks
 
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
 
 #include <TH1F.h>
 #include <TVector3.h>
@@ -78,7 +77,7 @@ struct GammaConversions {
     "registry",
     {
       {"hEvents", "hEvents", {HistType::kTH1F, {{13, -0.5f, 11.5f}}}},
-      {"IsPhotonSelected", "IsPhotonSelected", {HistType::kTH1F, {{13, -0.5f, 11.5f}}}},
+      {"IsPhotonSelected", "IsPhotonSelected", {HistType::kTH1F, {{15, -0.5f, 13.5f}}}},
 
       {"beforeCuts/hPtRec", "hPtRec_before", {HistType::kTH1F, {{100, 0.0f, 25.0f}}}},
       {"beforeCuts/hEtaRec", "hEtaRec_before", {HistType::kTH1F, {{1000, -2.f, 2.f}}}},
@@ -276,7 +275,6 @@ struct GammaConversions {
   void fillHistogramsAfterCuts(const TV0& theV0, const TTRACK& theTrackPos, const TTRACK& theTrackNeg, float theV0CosinePA)
   {
     registry.fill(HIST("IsPhotonSelected"), kPhotonOut);
-
     registry.fill(HIST("hPtRec"), theV0.pt());
     registry.fill(HIST("hEtaRec"), theV0.eta());
     registry.fill(HIST("hPhiRec"), theV0.phi());

@@ -38,12 +38,12 @@ using namespace o2::soa;
 namespace
 {
 static constexpr int nPart = 2;
-static constexpr int nCuts = 4;
+static constexpr int nCuts = 5;
 static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF"};
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 static const float cutsTable[nPart][nCuts]{
-  {4.05f, 0.75f, 3.f, 3.f},
-  {4.05f, 0.75f, 3.f, 3.f}};
+  {4.05f, 0.75f, 3.f, 3.f, 100.f},
+  {4.05f, 0.75f, 3.f, 3.f, 100.f}};
 
 static constexpr int nNsigma = 3;
 static constexpr float kNsigma[nNsigma] = {3.5f, 3.f, 2.5f};
@@ -78,7 +78,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                 (aod::femtodreamparticle::pt < cfgCutTable->get("PartOne", "MaxPt")) &&
+                                                 //  (aod::femtodreamparticle::pt < cfgCutTable->get("PartOne", "MaxPt")) &&
                                                  ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
@@ -92,7 +92,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                 (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
+                                                 //  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
                                                  ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
   /// Histogramming for particle 2
@@ -107,6 +107,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Correlation part
   // ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis CfgmTBins{"CfgmTBins", {225, 0., 7.5}, "binning mT"};
@@ -234,6 +235,9 @@ struct femtoDreamPairTaskTrackTrack {
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
+      if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        continue;
+      }
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
@@ -241,6 +245,9 @@ struct femtoDreamPairTaskTrackTrack {
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
+        if (part.p() > cfgCutTable->get("PartTwo", "MaxP") || part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+          continue;
+        }
         if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }
@@ -249,6 +256,9 @@ struct femtoDreamPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+      if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+        continue;
+      }
       if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
         continue;
       }
@@ -273,10 +283,11 @@ struct femtoDreamPairTaskTrackTrack {
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
-                         o2::aod::Hashes& hashes,
                          o2::aod::FemtoDreamParticles& parts)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations("fBin", ConfNEventsMix, -1, soa::join(hashes, cols), soa::join(hashes, cols))) {
+    BinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
@@ -298,6 +309,9 @@ struct femtoDreamPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+          continue;
+        }
         if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
           continue;
         }

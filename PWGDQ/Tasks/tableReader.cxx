@@ -81,10 +81,11 @@ using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuo
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
+constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 //constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
-//constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
+constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 
 constexpr static int pairTypeEE = VarManager::kJpsiToEE;
 constexpr static int pairTypeMuMu = VarManager::kJpsiToMuMu;
@@ -573,6 +574,7 @@ struct AnalysisEventMixing {
 struct AnalysisSameEventPairing {
 
   Produces<aod::Dileptons> dileptonList;
+  Produces<aod::DileptonsExtra> dileptonExtraList;
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
@@ -620,7 +622,7 @@ struct AnalysisSameEventPairing {
         }
       }
     }
-    if (context.mOptions.get<bool>("processJpsiToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processJpsiToMuMuSkimmed") || context.mOptions.get<bool>("processJpsiToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigMuonCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -691,7 +693,9 @@ struct AnalysisSameEventPairing {
 
     uint32_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
+    uint32_t dileptonMcDecision = 0; // placeholder, copy of the dqEfficiency.cxx one
     dileptonList.reserve(1);
+    dileptonExtraList.reserve(1);
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kJpsiToEE) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -714,7 +718,12 @@ struct AnalysisSameEventPairing {
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
       dileptonFilterMap = twoTrackFilter;
-      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap);
+      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+
+      constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
+      if constexpr ((TPairType == pairTypeMuMu) && muonHasCov) {
+        dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+      }
 
       for (unsigned int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
@@ -746,6 +755,13 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, muons);
   }
+  void processJpsiToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithCov> const& muons)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(event, muons, muons);
+  }
   void processElectronMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
@@ -770,6 +786,7 @@ struct AnalysisSameEventPairing {
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuSkimmed, "Run muon-muon pairing, with skimmed muons", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuVertexingSkimmed, "Run muon-muon pairing and vertexing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonSkimmed, "Run electron-muon pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);

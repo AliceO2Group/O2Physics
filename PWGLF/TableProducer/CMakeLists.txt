@@ -29,3 +29,7 @@ o2physics_add_dpl_workflow(cascadefinder
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(nucleustreecreator
+                    SOURCES LFTreeCreatorNuclei.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore 
+                    COMPONENT_NAME Analysis)

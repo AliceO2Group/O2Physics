@@ -19,8 +19,8 @@ o2physics_add_dpl_workflow(dndeta
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(analyse-mft-tracks
-                    SOURCES analyse-mft-tracks.cxx
+o2physics_add_dpl_workflow(dndeta-mft
+                    SOURCES dndeta-mft.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -31,5 +31,14 @@ o2physics_add_dpl_workflow(ue-charged
 
 o2physics_add_dpl_workflow(lumi
                     SOURCES lumi.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                                          O2::ReconstructionDataFormats
+                                          O2::DetectorsBase
+                                          O2::DetectorsCommonDataFormats
+                                          O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(assessment-mft
+                    SOURCES assessment-mft.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

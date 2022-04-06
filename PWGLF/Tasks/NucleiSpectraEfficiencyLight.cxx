@@ -69,7 +69,7 @@ struct NucleiSpectraEfficiencyLightGen {
     spectra.add("histGenPtHe3", "generated particles", HistType::kTH1F, {ptAxis});
   }
 
-  void process(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  void process(aod::McCollision const& mcCollision, aod::McParticles_000& mcParticles)
   {
     //
     // loop over generated particles and fill generated particles
@@ -132,7 +132,7 @@ struct NucleiSpectraEfficiencyLightRec {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTPCFullPr, aod::pidTPCFullPi>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>::iterator const& collision,
-               TrackCandidates const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+               TrackCandidates const& tracks, aod::McParticles_000& mcParticles, aod::McCollisions const& mcCollisions)
   {
     //
     // check event selection
@@ -196,7 +196,7 @@ struct NucleiSpectraEfficiencyLightRec {
       //
       if (nSigmaPi > nsigmacutLow && nSigmaPi < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() == 211 && track.mcParticle().isPhysicalPrimary()) {
+        if (track.mcParticle_as<aod::McParticles_000>().pdgCode() == 211 && track.mcParticle_as<aod::McParticles_000>().isPhysicalPrimary()) {
           TLorentzVector lorentzVector{};
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPionCharged);
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
@@ -209,7 +209,7 @@ struct NucleiSpectraEfficiencyLightRec {
       //
       if (nSigmaPr > nsigmacutLow && nSigmaPr < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() == -2212 && track.mcParticle().isPhysicalPrimary()) {
+        if (track.mcParticle_as<aod::McParticles_000>().pdgCode() == -2212 && track.mcParticle_as<aod::McParticles_000>().isPhysicalPrimary()) {
           TLorentzVector lorentzVector{};
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
@@ -222,7 +222,7 @@ struct NucleiSpectraEfficiencyLightRec {
       //
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
         // check on perfect PID
-        if (track.mcParticle().pdgCode() == -1000020030) {
+        if (track.mcParticle_as<aod::McParticles_000>().pdgCode() == -1000020030) {
           TLorentzVector lorentzVector{};
           lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           if (lorentzVector.Rapidity() > -0.5 && lorentzVector.Rapidity() < 0.5) {
