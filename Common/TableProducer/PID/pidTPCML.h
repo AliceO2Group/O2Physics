@@ -22,6 +22,9 @@
 #define O2_PID_TPC_NETWORK_H_
 
 #include <vector>
+#include <boost/filesystem.hpp>
+
+#include "TSystem.h"
 
 // O2 includes
 #include "Framework/Logger.h"
@@ -36,7 +39,7 @@ class Network
  public:
   // Constructor, destructor and copy-constructor
   Network() = default;
-  Network(std::string, bool);
+  Network(std::string, bool, std::string, bool);
   ~Network() = default;
 
   // Operators
@@ -76,22 +79,53 @@ class Network
 
 }; // class Network
 
-Network::Network(std::string modelPath, bool enableOptimization = true)
+Network::Network(std::string pathLocally,
+                 bool loadFromAlien = false,
+                 std::string pathAlien = "alien:///alice/cern.ch/user/c/csonnabe/tpc_network_testing/net_onnx_0.onnx",
+                 bool enableOptimization = true)
 {
 
   /*
   Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
   - Input:
-    -- modelPath:           std::string   ; Path to the model file;
+    -- pathLocally:         std::string   ; Path to the model file;
+    -- loadFromAlien:       bool          ; Download network from AliEn directory (true) or use local file (false)
+    -- pathAlien:           std::string   ; if loadFromAlien is true, then the network will be downloaded from pathAlien
     -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
   */
 
   LOG(info) << "--- Neural Network for the TPC PID response correction ---";
+
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
   if (enableOptimization) {
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
   }
-  mSession.reset(new Ort::Experimental::Session{*mEnv, modelPath, sessionOptions});
+
+  if (loadFromAlien) {
+    boost::filesystem::path local_file{pathLocally};
+    if (boost::filesystem::exists(local_file)) {
+      LOG(info) << "Local file [" + pathLocally + "] exists! It will be overwritten.";
+      std::remove((pathLocally).c_str());
+      LOG(info) << "Removed local file [" + pathLocally + "]";
+    }
+    LOG(info) << "Downloading network-file from AliEn...";
+
+    if ((pathAlien).substr(0, 8) == "alien://") {
+      std::string download_command = "alien_cp " + pathAlien + " file://" + pathLocally;
+      LOG(info) << "Command executed for downloading: " + download_command;
+      gSystem->Exec(download_command.c_str());
+    } else {
+      LOG(info) << "Please start pathAlien with alien://...";
+      LOG(info) << "Continuing with path alien://" + pathAlien + " for now...";
+      std::string download_command = "alien_cp alien://" + pathAlien + " file://" + pathLocally;
+      LOG(info) << "Command executed for downloading: " + download_command;
+      gSystem->Exec(download_command.c_str());
+    }
+  } else {
+    LOG(info) << "Loading network from local file [" + pathLocally + "]";
+  }
+
+  mSession.reset(new Ort::Experimental::Session{*mEnv, pathLocally, sessionOptions});
 
   mInputNames = mSession->GetInputNames();
   mInputShapes = mSession->GetInputShapes();
@@ -125,7 +159,7 @@ Network& Network::operator=(Network& inst)
 
   mEnv = inst.mEnv;
   mSession = inst.mSession;
-  // sessionOptions = inst.sessionOptions; // Comment (Christian): Somehow the session options throw an error when copying
+  // sessionOptions = inst.sessionOptions; // Comment (Christian): Somehow the session options throw an error when trying to copy
   mInputNames = inst.mInputNames;
   mInputShapes = inst.mInputShapes;
   mOutputNames = inst.mOutputNames;

@@ -19,8 +19,6 @@
 ///
 
 #include "TFile.h"
-#include "TSystem.h"
-#include <boost/filesystem.hpp>
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
@@ -149,33 +147,13 @@ struct tpcPidFull {
       response.PrintAll();
     }
 
-    if (useNetworkCorrection) {
-
-      if (downloadNetworkFromAlien.value) {
-        boost::filesystem::path local_file{networkPathLocally.value};
-        if (boost::filesystem::exists(local_file)) {
-          LOG(info) << "Local file (" + networkPathLocally.value + ") exists! It will be overwritten.";
-          std::remove((networkPathLocally.value).c_str());
-          LOG(info) << "Downloading network-file from AliEn...";
-        } else {
-          LOG(info) << "Downloading network-file from AliEn...";
-        }
-
-        if ((networkPathAlien.value).substr(0, 8) == "alien://") {
-          std::string download_command = "alien_cp " + networkPathAlien.value + " file://" + networkPathLocally.value;
-          LOG(info) << "Command executed for downloading: [" + download_command + "]";
-          gSystem->Exec(download_command.c_str());
-        } else {
-          LOG(info) << "Please start the networkPathAlien with alien://... Continuing with path alien://" + networkPathAlien.value + " for now...";
-          std::string download_command = "alien_cp alien://" + networkPathAlien.value + " file://" + networkPathLocally.value;
-          LOG(info) << "Command executed for downloading: [" + download_command + "]";
-          gSystem->Exec(download_command.c_str());
-        }
-      } else {
-        LOG(info) << "Loading network from local file [" + networkPathLocally.value + "]";
-      }
-
-      Network temp_net(networkPathLocally.value);
+    if (!useNetworkCorrection) {
+      return;
+    } else {
+      Network temp_net(networkPathLocally.value,
+                       downloadNetworkFromAlien.value,
+                       networkPathAlien.value,
+                       true);
       network = temp_net;
     }
   }
@@ -204,8 +182,6 @@ struct tpcPidFull {
 
     if (useNetworkCorrection) {
 
-      int count_elem = 0;
-
       auto start_overhead = std::chrono::high_resolution_clock::now();
       std::vector<float> track_properties;
       for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
@@ -213,19 +189,18 @@ struct tpcPidFull {
           std::vector<float> net_tensor = network.createInputFromTrack(trk, i);
           for (auto value : net_tensor) {
             track_properties.push_back(value);
-            count_elem++;
           }
         }
       }
-      int track_prop_size = track_properties.size() / 7; // == tracks.size() * 9
+      const unsigned long track_prop_size = tracks.size() * 9;
       auto stop_overhead = std::chrono::high_resolution_clock::now();
       float duration_overhead = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_overhead - start_overhead).count();
-      float time_per_track_overhead = duration_overhead / track_prop_size; // There are 7 variables in each track which are being extracted in track_properties. Each network evaluation takes time_per_track_overhead/9 nano-seconds
+      float time_per_track_overhead = duration_overhead / track_prop_size; // There are n (typically n=7) variables in each track which are being extracted in track_properties. Each network evaluation takes time_per_track_overhead/9 nano-seconds
       LOG(info) << "Time per track (overhead): " << time_per_track_overhead << "ns ; Overhead total: " << duration_overhead / 1000000000 << "s";
 
       auto start_network = std::chrono::high_resolution_clock::now();
       float* output_network = network.evalNetwork(track_properties);
-      for (int i = 0; i < track_prop_size; i++) {
+      for (unsigned long i = 0; i < track_prop_size; i++) {
         network_prediction.push_back(output_network[i]);
       }
       track_properties.clear();
@@ -241,8 +216,8 @@ struct tpcPidFull {
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
-    int count_tracks = 0;
-    int tracks_size = tracks.size();
+    unsigned long count_tracks = 0;
+    const int tracks_size = tracks.size();
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
@@ -250,7 +225,7 @@ struct tpcPidFull {
         lastCollisionId = trk.collisionId();
         const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
         response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
-      };
+      }
 
       // Check and fill enabled tables
       auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
@@ -278,9 +253,7 @@ struct tpcPidFull {
       makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
       makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
 
-      if (useNetworkCorrection) {
-        count_tracks++;
-      }
+      count_tracks++;
     }
   }
 };
