@@ -265,7 +265,7 @@ struct flowTracksPerCollision {
   {
     // Some utilities
     //_______________________________________________________________________________
-    auto getRapidity = [](Double_t mass, Double_t Pt, Double_t Eta) { return TMath::ASinH(Pt / TMath::Sqrt(mass * mass + Pt * Pt) * TMath::SinH(Eta)); };
+    // auto getRapidity = [](Double_t mass, Double_t Pt, Double_t Eta) { return TMath::ASinH(Pt / TMath::Sqrt(mass * mass + Pt * Pt) * TMath::SinH(Eta)); };
 
     auto findMinNSigma = [&](Double_t nSpi, Double_t nSk, Double_t nSp) {
       Short_t kPID = 0;
@@ -476,34 +476,34 @@ struct flowTracksPerCollision {
 
       // pi high pT
       if ((Dpi > minPiCut) && (Dpi < maxPiCut) && (trackpt >= 3.) /*&& (aodTrk1->GetTPCmomentum() > 3.)*/) {
-        Double_t rapPiHPt = getRapidity(0.139570, trackpt, tracketa);
-        if (TMath::Abs(rapPiHPt) < 0.5) {
-          if (tracketa < -etaGap && multGapC > 0) {
-            Double_t vnSPPihA = harmGapC / multGapC;
-            fillVnPihighPtA(trackpt, v0Centr, vnSPPihA, sinHarmn, cosHarmn);
-          }
-
-          if (tracketa > etaGap && multGapA > 0) {
-            Double_t vnSPPihC = harmGapA / multGapA;
-            fillVnPihighPtC(trackpt, v0Centr, vnSPPihC, sinHarmn, cosHarmn);
-          }
+        // Double_t rapPiHPt = getRapidity(0.139570, trackpt, tracketa);
+        // if (TMath::Abs(rapPiHPt) < 0.5) {
+        if (tracketa < -etaGap && multGapC > 0) {
+          Double_t vnSPPihA = harmGapC / multGapC;
+          fillVnPihighPtA(trackpt, v0Centr, vnSPPihA, sinHarmn, cosHarmn);
         }
+
+        if (tracketa > etaGap && multGapA > 0) {
+          Double_t vnSPPihC = harmGapA / multGapA;
+          fillVnPihighPtC(trackpt, v0Centr, vnSPPihC, sinHarmn, cosHarmn);
+        }
+        //}
       }
 
       // p high pT
       if ((Dpi > minPCut) && (Dpi < maxPCut) && (trackpt >= 3.) /*&& (aodTrk1->GetTPCmomentum() > 3.)*/) {
-        Double_t rapPHPt = getRapidity(0.938272, trackpt, tracketa);
-        if (TMath::Abs(rapPHPt) < 0.5) {
-          if (tracketa < -etaGap && multGapC > 0) {
-            Double_t vnSPPhA = harmGapC / multGapC;
-            fillVnPhighPtA(trackpt, v0Centr, vnSPPhA, sinHarmn, cosHarmn);
-          }
-
-          if (tracketa > etaGap && multGapA > 0) {
-            Double_t vnSPPhC = harmGapA / multGapA;
-            fillVnPhighPtC(trackpt, v0Centr, vnSPPhC, sinHarmn, cosHarmn);
-          }
+        // Double_t rapPHPt = getRapidity(0.938272, trackpt, tracketa);
+        // if (TMath::Abs(rapPHPt) < 0.5) {
+        if (tracketa < -etaGap && multGapC > 0) {
+          Double_t vnSPPhA = harmGapC / multGapC;
+          fillVnPhighPtA(trackpt, v0Centr, vnSPPhA, sinHarmn, cosHarmn);
         }
+
+        if (tracketa > etaGap && multGapA > 0) {
+          Double_t vnSPPhC = harmGapA / multGapA;
+          fillVnPhighPtC(trackpt, v0Centr, vnSPPhC, sinHarmn, cosHarmn);
+        }
+        //}
       }
 
       Double_t nSigPiTPC = track.tpcNSigmaPi();
@@ -564,42 +564,42 @@ struct flowTracksPerCollision {
       if (trackpt < 4. && minSigma == 1 && !getDoubleCountingPi(nSigmaPi, minSigma) &&
           ((trackpt >= 0.4 && betaPiK > 0.4) || (trackpt < 0.4 && betaPiK < 0))) {
 
-        Double_t rapPi = getRapidity(0.139570, trackpt, tracketa);
-        if (TMath::Abs(rapPi) < 0.5) {
-          if (tracketa < -etaGap && multGapC > 0) {
-            Double_t vnSPPiA = harmGapC / multGapC;
-            fillVnPiA(trackpt, v0Centr, vnSPPiA, sinHarmn, cosHarmn);
-          }
-
-          if (tracketa > etaGap && multGapA > 0) {
-            Double_t vnSPPiC = harmGapA / multGapA;
-            fillVnPiC(trackpt, v0Centr, vnSPPiC, sinHarmn, cosHarmn);
-          }
-
-          if (hasQA && TMath::Abs(tracketa) > etaGap)
-            fillQAPi(track.p(), v0Centr, track.tpcSignal(), betaPiK);
+        // Double_t rapPi = getRapidity(0.139570, trackpt, tracketa);
+        // if (TMath::Abs(rapPi) < 0.5) {
+        if (tracketa < -etaGap && multGapC > 0) {
+          Double_t vnSPPiA = harmGapC / multGapC;
+          fillVnPiA(trackpt, v0Centr, vnSPPiA, sinHarmn, cosHarmn);
         }
+
+        if (tracketa > etaGap && multGapA > 0) {
+          Double_t vnSPPiC = harmGapA / multGapA;
+          fillVnPiC(trackpt, v0Centr, vnSPPiC, sinHarmn, cosHarmn);
+        }
+
+        if (hasQA && TMath::Abs(tracketa) > etaGap)
+          fillQAPi(track.p(), v0Centr, track.tpcSignal(), betaPiK);
+        //}
       }
 
       // K
       if (trackpt < 4. && minSigma == 2 && !getDoubleCountingK(nSigmaK, minSigma) &&
           ((trackpt >= 0.4 && betaPiK > 0.4) || (trackpt < 0.4 && betaPiK < 0))) {
 
-        Double_t rapK = getRapidity(0.493667, trackpt, tracketa);
-        if (TMath::Abs(rapK) < 0.5) {
-          if (tracketa < -etaGap && multGapC > 0) {
-            Double_t vnSPKA = harmGapC / multGapC;
-            fillVnKA(trackpt, v0Centr, vnSPKA, sinHarmn, cosHarmn);
-          }
-
-          if (tracketa > etaGap && multGapA > 0) {
-            Double_t vnSPKC = harmGapA / multGapA;
-            fillVnKC(trackpt, v0Centr, vnSPKC, sinHarmn, cosHarmn);
-          }
-
-          if (hasQA && TMath::Abs(tracketa) > etaGap)
-            fillQAK(track.p(), v0Centr, track.tpcSignal(), betaPiK);
+        // Double_t rapK = getRapidity(0.493667, trackpt, tracketa);
+        // if (TMath::Abs(rapK) < 0.5) {
+        if (tracketa < -etaGap && multGapC > 0) {
+          Double_t vnSPKA = harmGapC / multGapC;
+          fillVnKA(trackpt, v0Centr, vnSPKA, sinHarmn, cosHarmn);
         }
+
+        if (tracketa > etaGap && multGapA > 0) {
+          Double_t vnSPKC = harmGapA / multGapA;
+          fillVnKC(trackpt, v0Centr, vnSPKC, sinHarmn, cosHarmn);
+        }
+
+        if (hasQA && TMath::Abs(tracketa) > etaGap)
+          fillQAK(track.p(), v0Centr, track.tpcSignal(), betaPiK);
+        //}
       }
 
       // p
@@ -607,21 +607,21 @@ struct flowTracksPerCollision {
           ((trackpt >= 0.5 && betaP > 0.4) || (trackpt < 0.5 && betaP < 0))) {
 
         if ((track.sign() < 0 && trackpt < 2.) || (trackpt >= 2.)) {
-          Double_t rapP = getRapidity(0.938272, trackpt, tracketa);
-          if (TMath::Abs(rapP) < 0.5) {
-            if (tracketa < -etaGap && multGapC > 0) {
-              Double_t vnSPPA = harmGapC / multGapC;
-              fillVnPA(trackpt, v0Centr, vnSPPA, sinHarmn, cosHarmn);
-            }
-
-            if (tracketa > etaGap && multGapA > 0) {
-              Double_t vnSPPC = harmGapA / multGapA;
-              fillVnPC(trackpt, v0Centr, vnSPPC, sinHarmn, cosHarmn);
-            }
-
-            if (hasQA && TMath::Abs(tracketa) > etaGap)
-              fillQAP(track.p(), v0Centr, track.tpcSignal(), betaP);
+          // Double_t rapP = getRapidity(0.938272, trackpt, tracketa);
+          // if (TMath::Abs(rapP) < 0.5) {
+          if (tracketa < -etaGap && multGapC > 0) {
+            Double_t vnSPPA = harmGapC / multGapC;
+            fillVnPA(trackpt, v0Centr, vnSPPA, sinHarmn, cosHarmn);
           }
+
+          if (tracketa > etaGap && multGapA > 0) {
+            Double_t vnSPPC = harmGapA / multGapA;
+            fillVnPC(trackpt, v0Centr, vnSPPC, sinHarmn, cosHarmn);
+          }
+
+          if (hasQA && TMath::Abs(tracketa) > etaGap)
+            fillQAP(track.p(), v0Centr, track.tpcSignal(), betaP);
+          //}
         }
       }
     }
