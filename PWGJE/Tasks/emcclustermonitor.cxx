@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <map>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "Framework/runDataProcessing.h"
@@ -58,8 +60,10 @@ struct ClusterMonitor {
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   o2::framework::Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
-
-  o2::framework::Configurable<int> mVetoBCID{"vetoBCID", -1, "BC ID to be excluded, this should be used as an alternative to the event selection"};
+  o2::framework::Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
+  o2::framework::Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
+  std::vector<int> mVetoBCIDs;
+  std::vector<int> mSelectBCIDs;
 
   // TODO add multiple configurables that allow to cut on cluster properties
 
@@ -98,6 +102,27 @@ struct ClusterMonitor {
     mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{100, 0, 100}});
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
+
+    if (mVetoBCID->length()) {
+      std::stringstream parser(mVetoBCID.value);
+      std::string token;
+      int bcid;
+      while (std::getline(parser, token, ',')) {
+        bcid = std::stoi(token);
+        LOG(info) << "Veto BCID " << bcid;
+        mVetoBCIDs.push_back(bcid);
+      }
+    }
+    if (mSelectBCID.value != "all") {
+      std::stringstream parser(mSelectBCID.value);
+      std::string token;
+      int bcid;
+      while (std::getline(parser, token, ',')) {
+        bcid = std::stoi(token);
+        LOG(info) << "Select BCID " << bcid;
+        mSelectBCIDs.push_back(bcid);
+      }
+    }
   }
   /// \brief Process EMCAL clusters
   void process(collisionEvSelIt const& theCollision, o2::aod::EMCALClusters const& clusters, o2::aod::BCs const& bcs)
@@ -120,8 +145,13 @@ struct ClusterMonitor {
       o2::InteractionRecord eventIR;
       eventIR.setFromLong(bc.globalBC());
       mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
-      if (mVetoBCID >= 0 && eventIR.bc == mVetoBCID)
-        return;
+      if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
+        LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
+        continue;
+      }
+      if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+        continue;
+      }
       mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
     }
 
@@ -132,6 +162,14 @@ struct ClusterMonitor {
       // loaded from the flat table, in the future one should
       // consider using the AnalysisCluster object to work with
       // after loading.
+      o2::InteractionRecord eventIR;
+      eventIR.setFromLong(cluster.bc().globalBC());
+      if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
+        continue;
+      }
+      if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+        continue;
+      }
       LOG(debug) << "Cluster energy: " << cluster.energy();
       LOG(debug) << "Cluster time: " << cluster.time();
       LOG(debug) << "Cluster M02: " << cluster.m02();
