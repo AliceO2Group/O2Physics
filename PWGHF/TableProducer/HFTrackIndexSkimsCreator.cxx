@@ -387,23 +387,25 @@ struct HfTagSelTracks {
   /// \param vec_globID_contr: vector of contributor global indices (to be filled inside the function)
   /// \param vec_TrkContributors: vector of contributor TrackParCov, necessary for new PV refit (to be filled inside the function)
   /// \param unfiltered_tracks: vector of all BigTracks in the collisions, queried to look for original PV contributors
-  void retrievePVContributors(std::vector<int64_t>& vec_globID_contr, std::vector<o2::track::TrackParCov>& vec_TrkContributors, const BigTracks unfiltered_tracks)
+  void retrievePVContributors(std::vector<int64_t>& vec_globID_contr, std::vector<o2::track::TrackParCov>& vec_TrkContributors, const BigTracks unfiltered_tracks, const uint64_t collid)
   {
     LOG(info) << "\n === New collision";
     const int nTrk = unfiltered_tracks.size();
     int nContrib = 0;
     int nNonContrib = 0;
     for (const auto& unfiltered_track : unfiltered_tracks) {
-      if (!unfiltered_track.isPVContributor()) {
+      if (!unfiltered_track.isPVContributor() && ((uint64_t) unfiltered_track.collisionId() == collid)) {
         /// the track did not contribute to fit the primary vertex
         nNonContrib++;
         continue;
       }
-      vec_globID_contr.push_back(unfiltered_track.globalIndex());
-      vec_TrkContributors.push_back(getTrackParCov(unfiltered_track));
-      LOG(info) << "---> a contributor! stuff saved";
-      nContrib++;
-      LOG(info) << "vec_contrib size: " << vec_TrkContributors.size() << ", nContrib: " << nContrib;
+      else if ( unfiltered_track.isPVContributor() &&  ((uint64_t) unfiltered_track.collisionId() == collid)) {
+        vec_globID_contr.push_back(unfiltered_track.globalIndex());
+        vec_TrkContributors.push_back(getTrackParCov(unfiltered_track));
+        LOG(info) << "---> a contributor! stuff saved";
+        nContrib++;
+        LOG(info) << "vec_contrib size: " << vec_TrkContributors.size() << ", nContrib: " << nContrib;
+      }
     }
     LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
 
@@ -414,13 +416,16 @@ struct HfTagSelTracks {
   void process_PVrefit(aod::Collision const& collision,
                        BigTracks const& unfiltered_tracks,
                        aod::BCsWithTimestamps const& bcstmpstp,
-                       const int64_t gindex_track,
-                       std::array<float, 5>& vec_output)
+                       BigTracks::iterator const& my_track,
+                       std::array<float, 5>& array_output)
   {
       /// retrieve the tracks contributing to the primary vertex fitting
       std::vector<int64_t> vec_globID_contr = {};
       std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
-      retrievePVContributors(vec_globID_contr, vec_TrkContributos, unfiltered_tracks);
+      LOG(info) << "[INSIDE process_PVrefit] collision.globalIndex(): " << collision.globalIndex();
+      LOG(info) << "[INSIDE process_PVrefit] unfiltered_tracks.size(): " << unfiltered_tracks.size();
+      retrievePVContributors(vec_globID_contr, vec_TrkContributos, unfiltered_tracks, collision.globalIndex());
+      LOG(info) << "===> numContrib(): " << collision.numContrib() << ", vec_TrkContributos.size(): " << vec_TrkContributos.size();
       if (vec_TrkContributos.size() != collision.numContrib()) {
         LOG(info) << "!!! something wrong in the number of contributor tracks for PV fit !!! " << vec_TrkContributos.size() << " vs. " << collision.numContrib();
         return;
@@ -471,7 +476,7 @@ struct HfTagSelTracks {
       bool recalc_imppar = false;
       if (doPVrefit && PVrefit_doable) {
         recalc_imppar = true;
-        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), gindex_track); /// track global index
+        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), my_track.globalIndex()); /// track global index
         if (it_trk != vec_globID_contr.end()) {
 
           /// this track contributed to the PV fit: let's do the refit without it
@@ -483,7 +488,7 @@ struct HfTagSelTracks {
 
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
           //LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
-          LOG(info) << "refit for track with global index " << gindex_track << " " << Pvtx_refitted.asString();
+          LOG(info) << "refit for track with global index " << (int) my_track.globalIndex() << " " << Pvtx_refitted.asString();
           if (Pvtx_refitted.getChi2() < 0) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
             registry.fill(HIST("Data/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
@@ -525,23 +530,27 @@ struct HfTagSelTracks {
       float impParRPhi = 1e10f;
       float impParZ = 1e10f;
       if (recalc_imppar) {
-        auto trackPar = getTrackPar(unfiltered_tracks.rawIteratorAt(gindex_track));
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
-        if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
-          xPVrefit = PVbase_recalculated.getX();
-          yPVrefit = PVbase_recalculated.getY();
-          zPVrefit = PVbase_recalculated.getZ();
-          impParRPhi = dcaInfo[0];  // [cm]
-          impParZ = dcaInfo[1];     // [cm]
-        }
+        
+          /// TODO
+            auto trackPar = getTrackPar(my_track);
+            o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+            if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
+              xPVrefit = PVbase_recalculated.getX();
+              yPVrefit = PVbase_recalculated.getY();
+              zPVrefit = PVbase_recalculated.getZ();
+              impParRPhi = dcaInfo[0];  // [cm]
+              impParZ = dcaInfo[1];     // [cm]
+            }
+        
+        
       }
 
       /// Final values
-      vec_output[0] = xPVrefit;
-      vec_output[1] = yPVrefit;
-      vec_output[2] = zPVrefit;
-      vec_output[3] = impParRPhi;
-      vec_output[4] = impParZ;
+      array_output[0] = xPVrefit;
+      array_output[1] = yPVrefit;
+      array_output[2] = zPVrefit;
+      array_output[3] = impParRPhi;
+      array_output[4] = impParZ;
       return;
   } /// end of process_PVrefit function
 
@@ -557,6 +566,12 @@ struct HfTagSelTracks {
 #endif
   )
   {
+
+    if(doPVrefit) {
+      LOG(info) << ">>> number of tracks: " << tracks.size();
+      LOG(info) << ">>> number of collisions: " << collisions.size();
+    }
+
     for (auto& track : tracks) {
 
 #ifdef MY_DEBUG
@@ -566,15 +581,20 @@ struct HfTagSelTracks {
 
 #endif
 
+      /// TODO: maybe better to do a first loop on the collisions and loop on the tracks on that collisions
+      /// ---> gain: do the pv contributors search once per collision
+
       // PV refit and DCA recalculation only for tracks with an assigned collision
       std::array<float, 5> pvrefit_PVxPVyPVz_DCAxyDCAz{0.f,0.f,0.f,1e10f, 1e10f};
       if(doPVrefit) {
         if(track.has_collision()) {
           /// Perform the PV refit only for tracks with an assigned collision
-          process_PVrefit(track.collision(), unfiltered_tracks, bcstmstp, track.globalIndex(), pvrefit_PVxPVyPVz_DCAxyDCAz);
+          LOG(info) << "[BEFORE process_PVrefit] track.collisionId(): " << track.collisionId();
+          auto unf_tracks_per_coll = unfiltered_tracks.sliceBy(aod::track::collisionId, track.collisionId());
+          process_PVrefit(track.collision(), (BigTracks const&) unf_tracks_per_coll, bcstmstp, (BigTracks::iterator const&) track, pvrefit_PVxPVyPVz_DCAxyDCAz);
         }
+        tabPVrefitTrack(pvrefit_PVxPVyPVz_DCAxyDCAz[0],pvrefit_PVxPVyPVz_DCAxyDCAz[1],pvrefit_PVxPVyPVz_DCAxyDCAz[2],pvrefit_PVxPVyPVz_DCAxyDCAz[3],pvrefit_PVxPVyPVz_DCAxyDCAz[4]); /// new columns with PV refit info
       }
-      tabPVrefitTrack(pvrefit_PVxPVyPVz_DCAxyDCAz[0],pvrefit_PVxPVyPVz_DCAxyDCAz[1],pvrefit_PVxPVyPVz_DCAxyDCAz[2],pvrefit_PVxPVyPVz_DCAxyDCAz[3],pvrefit_PVxPVyPVz_DCAxyDCAz[4]); /// new columns with PV refit info
 
       MY_DEBUG_MSG(isProtonFromLc, LOG(info) << "\nWe found the proton " << indexBach);
 
