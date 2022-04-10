@@ -29,15 +29,21 @@ using namespace o2;
 using namespace o2::framework;
 
 struct MultiplicityQa {
-  OutputObj<TH1F> hMultV0M{TH1F("hMultV0M", "", 50000, 0., 50000.)};
-  OutputObj<TH1F> hMultT0M{TH1F("hMultT0M", "", 10000, 0., 200000.)};
-  OutputObj<TH1F> hMultZNA{TH1F("hMultZNA", "", 600, 0., 240000.)};
-  OutputObj<TH1F> hMultZNC{TH1F("hMultZNC", "", 600, 0., 240000.)};
+  //Raw multiplicities
+  OutputObj<TH1F> hRawMultV0M{TH1F("hRawMultV0M", "", 50000, 0., 50000.)};
+  OutputObj<TH1F> hRawMultT0M{TH1F("hRawMultT0M", "", 10000, 0., 200000.)};
+  OutputObj<TH1F> hRawMultFDD{TH1F("hRawMultFDD", "", 10000, 0., 200000.)};
+  OutputObj<TH1F> hRawMultZNA{TH1F("hRawMultZNA", "", 600, 0., 240000.)};
+  OutputObj<TH1F> hRawMultZNC{TH1F("hRawMultZNC", "", 600, 0., 240000.)};
   OutputObj<TH2F> hMultV0MvsT0M{TH2F("hMultV0MvsT0M", ";V0M;T0M", 200, 0., 50000., 200, 0., 200000.)};
 
   //For vertex-Z corrections
-  OutputObj<TProfile> hVtxProfV0M{TProfile("hVtxProfV0M", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfT0M{TProfile("hVtxProfT0M", "", 150, -15, 15)};
+  OutputObj<TProfile> hVtxProfV0A{TProfile("hVtxProfV0A", "", 150, -15, 15)};
+  OutputObj<TProfile> hVtxProfV0C{TProfile("hVtxProfV0C", "", 150, -15, 15)};
+  OutputObj<TProfile> hVtxProfT0A{TProfile("hVtxProfT0A", "", 150, -15, 15)};
+  OutputObj<TProfile> hVtxProfT0C{TProfile("hVtxProfT0C", "", 150, -15, 15)};
+  OutputObj<TProfile> hVtxProfFDDA{TProfile("hVtxProfFDDA", "", 150, -15, 15)};
+  OutputObj<TProfile> hVtxProfFDDC{TProfile("hVtxProfFDDC", "", 150, -15, 15)};
   OutputObj<TProfile> hVtxProfZNA{TProfile("hVtxProfZNA", "", 150, -15, 15)};
   OutputObj<TProfile> hVtxProfZNC{TProfile("hVtxProfZNC", "", 150, -15, 15)};
 
@@ -65,19 +71,27 @@ struct MultiplicityQa {
     }
 
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multV0M=%5.0f multT0A=%5.0f multT0C=%5.0f multT0M=%5.0f", col.multV0A(), col.multV0C(), col.multV0M(), col.multT0A(), col.multT0C(), col.multT0M());
-    // fill calibration histos
-    hMultV0M->Fill(col.multV0M());
-    hMultT0M->Fill(col.multT0M());
-    hMultZNA->Fill(col.multZNA());
-    hMultZNC->Fill(col.multZNC());
+
+    //Raw multiplicities
+    hRawMultV0M->Fill(col.multV0M());
+    hRawMultT0M->Fill(col.multT0M());
+    hRawMultFDD->Fill(col.multFDD());
+    hRawMultZNA->Fill(col.multZNA());
+    hRawMultZNC->Fill(col.multZNC());
     hMultV0MvsT0M->Fill(col.multV0M(), col.multT0M());
     hMultNtrackletsVsV0M->Fill(col.multV0M(), col.multTracklets());
 
-    //Vertex-Z dependencies
-    hVtxProfV0M->Fill(col.posZ(), col.multV0M());
-    hVtxProfT0M->Fill(col.posZ(), col.multT0M());
+    //Vertex-Z dependencies, necessary for CCDB objects
+    hVtxProfV0A->Fill(col.posZ(), col.multV0A());
+    hVtxProfV0C->Fill(col.posZ(), col.multV0C());
+    hVtxProfT0A->Fill(col.posZ(), col.multT0A());
+    hVtxProfT0C->Fill(col.posZ(), col.multT0C());
+    hVtxProfFDDA->Fill(col.posZ(), col.multFDDA());
+    hVtxProfFDDC->Fill(col.posZ(), col.multFDDC());
     hVtxProfZNA->Fill(col.posZ(), col.multZNA());
     hVtxProfZNC->Fill(col.posZ(), col.multZNC());
+
+    //To be added here: vertex-Z calibrated signals (actually used in calibs)
   }
 };
 
