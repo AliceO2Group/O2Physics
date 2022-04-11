@@ -29,6 +29,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
 
 #include <TH1F.h>
 #include <cmath>
@@ -48,11 +49,13 @@ using namespace o2::analysis::hf_cuts_d0_topik;
 struct TaskHfCorrelations {
 
   HistogramRegistry registry{"registry"};
-  OutputObj<CorrelationContainer> sameCh{"sameEventChHadrons"};
+  OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
+  OutputObj<CorrelationContainer> sameTPCMFTCh{"sameEventTPCMFTChHadrons"};
   OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
 
   //  configurables for processing options
-  Configurable<bool> processChHadrons{"processChHadrons", "true", "Flag to process h-h correlations"};
+  Configurable<bool> processTPCTPChh{"processTPCTPChh", "true", "Flag to process TPC-TPC h-h correlations"};
+  Configurable<bool> processTPCMFThh{"processTPCMFThh", "true", "Flag to process TPC-MFT h-h correlations"};
   Configurable<bool> processHFHadrons{"processHFHadrons", "false", "Flag to process HF-h correlations"};
 
   //  configurables for associated particles
@@ -71,9 +74,7 @@ struct TaskHfCorrelations {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  //  TODO: if we use multiplicity instead of centrality (maybe better in pp), how to bin it?
-  //ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 30, 50, 70, 100, 150, 200.1}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 30, 50, 70, 100, 150, 200.1}, "multiplicity axis for histograms"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
@@ -112,6 +113,11 @@ struct TaskHfCorrelations {
     registry.add("eta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("phi", "phi", {HistType::kTH1F, {{100, 0, 2 * M_PI, "#varphi"}}});
 
+    //  histograms for MFT tracks
+    registry.add("etaphiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+    registry.add("etaMFT", "etaMFT", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("phiMFT", "phiMFT", {HistType::kTH1F, {{100, -1 * M_PI, M_PI, "#varphi"}}});
+
     //  histograms for candidates
     auto vbins = (std::vector<double>)bins;
 
@@ -137,13 +143,14 @@ struct TaskHfCorrelations {
     std::vector<AxisSpec> axisList = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
-                                      {axisMultiplicity, "multiplicity / centrality"},
+                                      {axisMultiplicity, "multiplicity"},
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
                                       {axisVertex, "z-vtx (cm)"},
                                       {axisEtaEfficiency, "#eta"},
                                       {axisPtEfficiency, "p_{T} (GeV/c)"},
                                       {axisVertexEfficiency, "z-vtx (cm)"}};
-    sameCh.setObject(new CorrelationContainer("sameEventChHadrons", "sameEventChHadrons", axisList));
+    sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", axisList));
+    sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", axisList));
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", axisList));
   }
 
@@ -173,6 +180,16 @@ struct TaskHfCorrelations {
       registry.fill(HIST("phi"), track1.phi());
       registry.fill(HIST("yields"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphi"), multiplicity, track1.eta(), track1.phi());
+    }
+  }
+
+  template <typename TTracks>
+  void fillMFTQA(float multiplicity, TTracks tracks)
+  {
+    for (auto& track1 : tracks) {
+      registry.fill(HIST("etaMFT"), track1.eta());
+      registry.fill(HIST("phiMFT"), track1.phi());
+      registry.fill(HIST("etaphiMFT"), multiplicity, track1.eta(), track1.phi());
     }
   }
 
@@ -216,8 +233,8 @@ struct TaskHfCorrelations {
     }
   }
 
-  template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float multiplicity, float posZ)
+  template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
+  void fillCorrelations(TTarget target, TTracksTrig tracks1, TTracksAssoc tracks2, float multiplicity, float posZ)
   {
 
     auto triggerWeight = 1;
@@ -227,50 +244,21 @@ struct TaskHfCorrelations {
 
       //  TODO: add getter for NUE trigger efficiency here
 
-      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, triggerWeight);
-
-      for (auto& track2 : tracks2) {
-
-        if (track1 == track2) {
+      if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
+        if (isAcceptedCandidate(track1) == false) {
           continue;
-        } 
-
-        //  TODO: add getter for NUE associated efficiency here
-    
-        //  TODO: add pair cuts on phi*
-
-        float deltaPhi = track1.phi() - track2.phi();
-        if (deltaPhi > 1.5f * PI) {
-          deltaPhi -= TwoPI;
         }
-        if (deltaPhi < -PIHalf) {
-          deltaPhi += TwoPI;
-        }
-
-        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ,
-                                    triggerWeight * associatedWeight);
       }
-    }
-  }
-
-  template <typename TTarget, typename HFTracks, typename TTracks>
-  void fillHFCorrelations(TTarget target, HFTracks tracks1, TTracks tracks2, float multiplicity, float posZ)
-  {
-
-    auto triggerWeight = 1;
-    auto associatedWeight = 1;
-
-    for (auto& track1 : tracks1) {
-
-      if (isAcceptedCandidate(track1) == false) {
-        continue;
-      }
-      //  TODO: add getter for NUE trigger efficiency here
 
       target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, triggerWeight);
 
       for (auto& track2 : tracks2) {
+
+        if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) { // case of h-h correlations where the two types of tracks are the same
+          if (track1 == track2) {
+            continue;
+          } 
+        }
 
         //  TODO: add getter for NUE associated efficiency here
     
@@ -294,24 +282,28 @@ struct TaskHfCorrelations {
   // =====================================
   //    process same event correlations
   // =====================================
-  void processSameAOD(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, aodTracks const& tracks, hfCandidates const& candidates)
+  void processSameAOD(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, aodTracks const& tracks, aod::MFTTracks const& mfttracks, hfCandidates const& candidates)
   {
-    const auto multiplicity = collision.multV0M();  //  multV0M ? (right now it seems only FV0A is filed)
-    //const auto centrality = collision.centV0M();  //  NOTE: no centrality selection for Run3 available, but maybe we won't need it in pp
+    const auto multiplicity = collision.multV0M();  //  multV0M ? (work on adding centrality selection for Run3 ongoing)
     registry.fill(HIST("hMultiplicity"), multiplicity);
 
     if (fillCollision(collision, multiplicity) == false) {
       return;
     }
 
-    if (processChHadrons == true) {
+    if (processTPCTPChh == true) {
       fillQA(multiplicity, tracks);
-      fillCorrelations(sameCh, tracks, tracks, multiplicity, collision.posZ());
+      fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
+    }
+
+    if (processTPCMFThh == true) {
+      fillMFTQA(multiplicity, mfttracks);
+      fillCorrelations(sameTPCMFTCh, tracks, mfttracks, multiplicity, collision.posZ());
     }
 
     if (processHFHadrons == true) {
       fillCandidateQA(multiplicity, candidates);
-      fillHFCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
+      fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
 
   }
