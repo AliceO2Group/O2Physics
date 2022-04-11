@@ -24,8 +24,8 @@ using namespace o2::framework;
 
 using namespace evsel;
 
-using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
-using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparseFDD_001>;
+using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparseFDD_001>;
 using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
 struct BcSelectionTask {
@@ -45,7 +45,7 @@ struct BcSelectionTask {
     aod::FV0As const&,
     aod::FV0Cs const&,
     aod::FT0s const&,
-    aod::FDDs const&)
+    aod::FDDs_001 const&)
   {
 
     for (auto& bc : bcs) {
@@ -168,7 +168,7 @@ struct BcSelectionTask {
                    aod::Zdcs const&,
                    aod::FV0As const&,
                    aod::FT0s const&,
-                   aod::FDDs const&)
+                   aod::FDDs_001 const&)
   {
 
     for (auto& bc : bcs) {
