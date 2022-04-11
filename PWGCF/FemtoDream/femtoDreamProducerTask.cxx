@@ -74,7 +74,7 @@ struct femtoDreamProducerTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputTracks;
-  Produces<aod::FemtoDreamDebugParticles> outputDebugTracks;
+  Produces<aod::FemtoDreamDebugTracks> outputDebugTracks;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 

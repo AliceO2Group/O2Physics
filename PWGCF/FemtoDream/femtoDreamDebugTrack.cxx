@@ -25,6 +25,7 @@
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamParticleHisto.h"
 #include "FemtoDreamEventHisto.h"
+#include "FemtoUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -38,8 +39,7 @@ static constexpr int nCuts = 5;
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.5f, 3.5f, 100.f}};
 
-static constexpr int nNsigma = 3;
-static constexpr float kNsigma[nNsigma] = {3.5f, 3.f, 2.5f};
+static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
 enum kPIDselection {
   k3d5sigma = 0,
@@ -63,7 +63,7 @@ struct femtoDreamDebugTrack {
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
 
-  using FemtoFullTracks = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
+  using FemtoFullTracks = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugTracks>;
 
   Partition<FemtoFullTracks> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                         // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
@@ -127,76 +127,6 @@ struct femtoDreamDebugTrack {
     ccdb->setCreatedNotAfter(now);
   }
 
-  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
-  float getMagneticFieldTesla(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
-    }
-    float output = 0.1 * (grpo->getNominalL3Field());
-    return output;
-  }
-
-  /// internal function that returns the kPIDselection element corresponding to a specifica n-sigma value
-  /// \param number of sigmas for PIF
-  /// \return kPIDselection corresponing to n-sigma
-  kPIDselection getPIDselection(float nSigma)
-  {
-    for (int i = 0; i < nNsigma; i++) {
-      if (abs(nSigma - kNsigma[i]) < 1e-3) {
-        return static_cast<kPIDselection>(i);
-      }
-    }
-    LOG(info) << "Invalid value of nSigma: " << nSigma << ". Standard 3 sigma returned." << std::endl;
-    return kPIDselection::k3sigma;
-  }
-
-  /// function that checks whether the PID selection specified in the vectors is fulfilled
-  /// \param pidcut Bit-wise container for the PID
-  /// \param vSpecies Vector with the different selections
-  /// \return Whether the PID selection specified in the vectors is fulfilled
-  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
-  {
-    bool pidSelection = true;
-    kPIDselection kNsigma = getPIDselection(nSigma);
-    for (auto iSpecies : vSpecies) {
-      //\todo we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-      // if (!((pidcut >> it.first) & it.second)) {
-      int bit_to_check = cfgNspecies * kDetector::kNdetectors * kNsigma + iSpecies * kDetector::kNdetectors + iDet;
-      if (!(pidcut & (1UL << bit_to_check))) {
-        pidSelection = false;
-      }
-    }
-    return pidSelection;
-  };
-
-  /// function that checks whether the PID selection specified in the vectors is fulfilled, depending on the momentum TPC or TPC+TOF PID is conducted
-  /// \param pidcut Bit-wise container for the PID
-  /// \param mom Momentum of the track
-  /// \param pidThresh Momentum threshold that separates between TPC and TPC+TOF PID
-  /// \param vecTPC Vector with the different selections for the TPC PID
-  /// \param vecComb Vector with the different selections for the TPC+TOF PID
-  /// \return Whether the PID selection is fulfilled
-  bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const& momentum, float const& pidThresh, std::vector<int> const& vSpecies, float nSigmaTPC = 3.5, float nSigmaTPCTOF = 3.5)
-  {
-    bool pidSelection = true;
-    if (momentum < pidThresh) {
-      /// TPC PID only
-      pidSelection = isPIDSelected(pidCut, vSpecies, nSigmaTPC, kDetector::kTPC);
-    } else {
-      /// TPC + TOF PID
-      pidSelection = isPIDSelected(pidCut, vSpecies, nSigmaTPCTOF, kDetector::kTPCTOF);
-    }
-    return pidSelection;
-  };
-
   /// Porduce QA plots for sigle track selection in FemtoDream framework
   void process(o2::aod::FemtoDreamCollision& col, FemtoFullTracks& parts)
   {
@@ -208,7 +138,7 @@ struct femtoDreamDebugTrack {
       if (part.p() > cfgCutTable->get("MaxP") || part.pt() > cfgCutTable->get("MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
+      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("nSigmaTPC"), cfgCutTable->get("nSigmaTPCTOF"))) {
         continue;
       }
 
