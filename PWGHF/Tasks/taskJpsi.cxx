@@ -231,7 +231,7 @@ struct TaskJpsiMC {
       }
       if (candidate.flagMCMatchRec() == 1 << decayMode) {
         //Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle_as<McParticlesHf>(), pdg::Code::kJpsi, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<McParticlesHf>(), pdg::Code::kJpsi, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         registry.fill(HIST("hPtRecSig"), candidate.pt());      // rec. level pT

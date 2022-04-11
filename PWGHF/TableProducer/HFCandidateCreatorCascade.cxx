@@ -275,7 +275,7 @@ struct HFCandidateCreatorCascadeMC {
         MY_DEBUG_MSG(sign, LOG(info) << "Lc in K0S p");
         arrDaughLcIndex.clear();
         // checking that the final daughters (decay depth = 3) are p, pi+, pi-
-        RecoDecay::getDaughters(particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
+        RecoDecay::getDaughters(particlesMC, particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
         if (arrDaughLcIndex.size() == 3) {
           for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
             auto daughI = particlesMC.rawIteratorAt(arrDaughLcIndex[iProng]);
