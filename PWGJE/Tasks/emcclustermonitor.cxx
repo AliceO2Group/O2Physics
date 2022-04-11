@@ -62,6 +62,7 @@ struct ClusterMonitor {
   o2::framework::Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
   o2::framework::Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   o2::framework::Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
+  o2::framework::Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
 
@@ -84,7 +85,7 @@ struct ClusterMonitor {
     // create common axes
     LOG(info) << "Creating histograms";
     const o2Axis bcAxis{3501, -0.5, 3500.5};
-    const o2Axis energyAxis{makeEnergyBinning(), "E_{clus} (GeV)"};
+    const o2Axis energyAxis{makeEnergyBinningAliPhysics(), "E_{clus} (GeV)"};
     const o2Axis timeAxis{800, timeMin, timeMax};
 
     // event properties
@@ -92,14 +93,16 @@ struct ClusterMonitor {
     mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
+    mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
     // cluster properties
-    mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {{600, 0, 100}});
+    mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
-    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{100, 0, 3}});
-    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{100, 0, 3}});
-    mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{20, 0, 20}});
-    mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{100, 0, 100}});
+    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
+    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5}});
+    mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10}});
+    mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50}});
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
 
@@ -127,7 +130,6 @@ struct ClusterMonitor {
   /// \brief Process EMCAL clusters
   void process(collisionEvSelIt const& theCollision, o2::aod::EMCALClusters const& clusters, o2::aod::BCs const& bcs)
   {
-
     mHistManager.fill(HIST("eventsAll"), 1);
 
     // do event selection if mDoEventSel is specified
@@ -137,7 +139,13 @@ struct ClusterMonitor {
       LOG(info) << "Event not selected becaus it is not kINT7, skipping";
       return;
     }
+    mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
+    if (mVertexCut > 0 && theCollision.posZ() > mVertexCut) {
+      LOG(info) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
+      return;
+    }
     mHistManager.fill(HIST("eventsSelected"), 1);
+    mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
 
     // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
     // this can be used as alternative to event selection (e.g. for pilot beam data)
@@ -203,6 +211,29 @@ struct ClusterMonitor {
     fillBinLimits(result, 50., 2.);
     fillBinLimits(result, 100., 5.);
     fillBinLimits(result, 200., 10.);
+    return result;
+  }
+
+  /// \brief Create binning for cluster energy axis (variable bin size)
+  /// direct port from binning often used in AliPhysics for debugging
+  /// \return vector with bin limits
+  std::vector<double> makeEnergyBinningAliPhysics() const
+  {
+    
+    std::vector<double> result;
+    Int_t nBinsClusterE = 235;
+    for(Int_t i=0; i<nBinsClusterE+1;i++){
+      if (i < 1) result.emplace_back(0.3*i);
+      else if(i<55) result.emplace_back(0.3+0.05*(i-1));
+      else if(i<105) result.emplace_back(3.+0.1*(i-55));
+      else if(i<140) result.emplace_back(8.+0.2*(i-105));
+      else if(i<170) result.emplace_back(15.+0.5*(i-140));
+      else if(i<190) result.emplace_back(30.+1.0*(i-170));
+      else if(i<215) result.emplace_back(50.+2.0*(i-190));
+      else if(i<235) result.emplace_back(100.+5.0*(i-215));
+      else if(i<245) result.emplace_back(200.+10.0*(i-235));
+      
+    }
     return result;
   }
 };
