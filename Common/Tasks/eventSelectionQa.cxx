@@ -22,22 +22,6 @@ using namespace o2::framework;
 using namespace o2;
 using namespace evsel;
 
-// temporary code during transition from FDD_000 to FDD_001
-namespace o2::aod
-{
-namespace indices_fdd_001
-{
-using FDD_001 = FDDs_001::iterator;
-DECLARE_SOA_INDEX_COLUMN_FULL(FDD_001, fdd, int, FDDs_001, ""); //!
-} // namespace indices_fdd_001
-DECLARE_SOA_INDEX_TABLE(Run3MatchedToBCSparseFDD_001, BCs, "MA_RN3_BC_SP", //!
-                        indices::BCId, indices::ZdcId, indices::FT0Id, indices::FV0AId, indices_fdd_001::FDD_001Id);
-
-DECLARE_SOA_INDEX_TABLE(Run2MatchedToBCSparseFDD_001, BCs, "MA_RN2_BC_SP", //!
-                        indices::BCId, indices::ZdcId, indices::FT0Id, indices::FV0AId, indices::FV0CId, indices_fdd_001::FDD_001Id);
-
-} // namespace o2::aod
-
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparseFDD_001>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparseFDD_001>;
 
