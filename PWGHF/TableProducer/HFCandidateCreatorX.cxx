@@ -305,7 +305,7 @@ struct HFCandidateCreatorXMC {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particle, 5, true) > -1 ? NonPrompt : Prompt);
+        origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
 
       rowMCMatchRec(flag, origin, channel);
@@ -323,7 +323,7 @@ struct HFCandidateCreatorXMC {
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeX, array{pdgCodeJpsi, +kPiPlus, -kPiPlus}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particle, &arrDaughter, array{pdgCodeJpsi}, 1);
+        RecoDecay::getDaughters(particlesMC, particle, &arrDaughter, array{pdgCodeJpsi}, 1);
         auto jpsiCandMC = particlesMC.rawIteratorAt(arrDaughter[0]);
         if (RecoDecay::isMatchedMCGen(particlesMC, jpsiCandMC, pdgCodeJpsi, array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_x::DecayType::XToJpsiToEEPiPi;
@@ -338,7 +338,7 @@ struct HFCandidateCreatorXMC {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particle, 5, true) > -1 ? NonPrompt : Prompt);
+        origin = (RecoDecay::getMother(particlesMC, particle, 5, true) > -1 ? NonPrompt : Prompt);
       }
 
       rowMCMatchGen(flag, origin, channel);
