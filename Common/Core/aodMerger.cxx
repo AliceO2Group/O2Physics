@@ -18,6 +18,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TList.h"
+#include "THashList.h"
 #include "TDirectory.h"
 #include "TObjString.h"
 #include <TGrid.h>
@@ -197,10 +198,16 @@ int main(int argc, char* argv[])
 
       for (auto key2 : *treeList) {
         auto treeName = ((TObjString*)key2)->GetString().Data();
+        printf("    Processing tree %s\n", treeName);
+        bool found = (std::find(foundTrees.begin(), foundTrees.end(), treeName) != foundTrees.end());
+        if (found == true) {
+          printf("    Tree %s was already merged, skipping\n", treeName);
+          continue;
+        }
         foundTrees.push_back(treeName);
 
         auto inputTree = (TTree*)inputFile->Get(Form("%s/%s", dfName, treeName));
-        printf("    Processing tree %s with %lld entries\n", treeName, inputTree->GetEntries());
+        printf("    Tree %s has %lld entries\n", treeName, inputTree->GetEntries());
 
         if (trees.count(treeName) == 0) {
           if (mergedDFs > 1) {
