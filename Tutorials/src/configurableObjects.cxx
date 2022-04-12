@@ -82,7 +82,7 @@ struct ConfigurableObjectDemo {
   void init(InitContext const&)
   {
     LOGP(info, "min_pt: {}; require_tof: {}", min_pt, require_tof);
-    LOGF(info, "max_eta: %f; min_clusters: %d", trackcuts.max_eta, trackcuts.min_clusters);
+    LOGF(info, "max_eta: %f; min_clusters: %d", (float)trackcuts.max_eta, (int)trackcuts.min_clusters);
     LOGF(info, "Cut1 bins: %s; Cut2 bins: %s", printArray(cut->getBins()), printArray(mutable_cut->getBins()));
     LOGF(info, "Cut1 labels: %s; Cut2 labels: %s", printArray(cut->getLabels()), printArray(mutable_cut->getLabels()));
     auto vec = (std::vector<int>)array;
