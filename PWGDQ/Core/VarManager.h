@@ -90,11 +90,11 @@ class VarManager : public TObject
 
   enum PairCandidateType {
     // TODO: need to agree on a scheme to incorporate all various hypotheses (e.g. e - mu, jpsi - K+, Jpsi - pipi,...)
-    kJpsiToEE = 0, // J/psi        -> e+ e-
-    kJpsiToMuMu,   // J/psi        -> mu+ mu-
-    kElectronMuon, // Electron - muon correlations
+    kJpsiToEE = 0,   // J/psi        -> e+ e-
+    kJpsiToMuMu,     // J/psi        -> mu+ mu-
+    kElectronMuon,   // Electron - muon correlations
     kBcToThreeMuons, // Bc         -> mu+ mu- mu+
-    kBtoJpsiEEK, // B+             -> e+ e- K+
+    kBtoJpsiEEK,     // B+             -> e+ e- K+
     kNMaxCandidateTypes
   };
 
