@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
@@ -79,7 +80,7 @@ jobs:
           echo ::set-output name=clean::false
         fi
 
-    - name: pull-request
+    - name: Create pull request with formatting changes
       uses: alisw/pull-request@master
       with:
         source_branch: 'alibuild:alibot-cleanup-${{ github.event.pull_request.number }}'
@@ -106,7 +107,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
@@ -133,20 +135,20 @@ jobs:
         # Run copyright notice check
         COPYRIGHT=$(printf '%s' "$COPYRIGHT")  # strip trailing newline
         copyright_lines=$(echo "$COPYRIGHT" | wc -l)
-        base_commit=$(git merge-base HEAD ${{ github.event.pull_request.base.sha }})
         have_err=
         while read -r file; do
           if [ "$(head -n "$copyright_lines" "$file")" != "$COPYRIGHT" ]; then
-            echo "::error::$file: missing or malformed copyright notice" >&2
+            echo "::error file=$file,line=1,endLine=$copyright_lines::Missing or malformed copyright notice"
             have_err=1
           fi
-        done < <(git diff --diff-filter d --name-only "$base_commit" -- '*.cxx' '*.h')
+        done < <(git diff --diff-filter d --name-only --merge-base \
+                     ${{ github.event.pull_request.base.sha }} -- '*.cxx' '*.h')
 
         # Tell user what to do in case of copyright notice error
         if [ -n "$have_err" ]; then
-          echo '::error::The files listed above are missing the correct copyright notice.' >&2
-          echo '::error::Make sure all your source files begin with the following exact lines:' >&2
-          echo "$COPYRIGHT" >&2
+          echo '::error::The files listed above are missing the correct copyright notice.'
+          echo '::error::Make sure all your source files begin with the following exact lines:'
+          echo "$COPYRIGHT"
           exit 1
         fi
 
@@ -181,7 +183,7 @@ jobs:
             BEGIN { exit_code = 0 }
             function error(message) {
               printf "::error file=%s,line=%i,col=%i,endColumn=%i::%s\n",
-                     FILENAME, NR, RSTART, RSTART + RLENGTH, message
+                     FILENAME, FNR, RSTART, RSTART + RLENGTH, message
               exit_code = 1
             }
             match($0, / +$/) { error("Trailing spaces found") }
