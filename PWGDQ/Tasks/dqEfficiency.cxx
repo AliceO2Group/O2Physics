@@ -836,11 +836,6 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
 };
 
-
-
-
-
-
 struct AnalysisDileptonTrack {
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
@@ -1100,7 +1095,6 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("DileptonTrackInvMass")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track-mass");
     }
-
 
   } // end loop over histogram classes
 }
