@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
             } else {
               // key is a duplicate, let's remove it
               treeList->Remove(kj);
-	      j--;
+              j--;
             }
           } else {
             // we changed key, since they are sorted, we won't have the same anymore
