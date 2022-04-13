@@ -1052,22 +1052,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values = fgValues;
   }
 
-  //auto lepton1 = dilepton.index0_as<track>();
-  //auto lepton2 = dilepton.index1_as<track>();
-  //auto lepton1 = dilepton.index0_as<o2::aod::ReducedMuonsLabels>();
-  //auto lepton2 = dilepton.index1_as<o2::aod::ReducedMuonsLabels>();
-  //auto lepton1 = track.iteratorAt(dilepton.index0());
-  //auto lepton2 = track.iteratorAt(dilepton.index1());
-
-  //auto lepton1 = track.rawIteratorAt(dilepton.index0Id());
-  //auto lepton2 = track.rawIteratorAt(dilepton.index1Id());
-
-  //auto lepton1 = dilepton.index0Id();
-  //auto lepton2 = dilepton.index1Id();
-
-  //auto lepton1 = track.rawIteratorAt(dilepton.index0Id());
-  //auto lepton2 = track.rawIteratorAt(dilepton.index1Id());
-
   float mtrack;
 
   int procCode = 0;
@@ -1159,9 +1143,31 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   Vec3D secondaryVertex;
 
   if constexpr (eventHasVtxCov) {
+    double* covMatrixPCA;
+    o2::dataformats::DCA impactParameter0;
+    o2::dataformats::DCA impactParameter1;
+
     o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
     std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
     o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
+    auto covMatrixPV = primaryVertex.getCov();
+
+    if constexpr (pairType == kJpsiToEE && trackHasCov) {
+      secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
+      covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrix().Array();
+    } else if constexpr (pairType == kJpsiToMuMu && muonHasCov) {
+      secondaryVertex = fgFitterThreeProngFwd.getPCACandidate();
+      covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrix().Array();
+    }
+
+    double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
+    double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
+                              std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
+                                        (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
+
+    values[kVertexingLxyzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+    values[kVertexingLxyErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+    values[kVertexingLzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, 0, theta) + getRotatedCovMatrixXX(covMatrixPCA, 0, theta));
 
     values[VarManager::kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                                         (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
@@ -1171,6 +1177,12 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
     values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
     values[VarManager::kVertexingPseudoCTau] = ((secondaryVertex[0] - collision.posY()) * v123.Px() + (secondaryVertex[1] - collision.posY()) * v123.Py()) / (v123.Pt() * v123.Pt()) * mtrack;
+
+    values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauxy] = values[kVertexingLxy] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);
+
+    values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);
 
     values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
                                              (collision.posY() - secondaryVertex[1]) * v123.Py() +
