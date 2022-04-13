@@ -836,6 +836,11 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
 };
 
+
+
+
+
+
 struct AnalysisDileptonTrack {
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
@@ -938,6 +943,7 @@ struct AnalysisDileptonTrack {
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
 
     // Set the global index offset to find the proper lepton
+    // TO DO: remove it once the issue with lepton index is solved
     int indexOffset = -999;
     for (auto dilepton : dileptons) {
 
@@ -1095,6 +1101,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("DileptonTrackInvMass")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track-mass");
     }
+
 
   } // end loop over histogram classes
 }
