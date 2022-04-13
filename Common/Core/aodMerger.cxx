@@ -18,7 +18,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TList.h"
-#include "THashList.h"
+#include "TKey.h"
 #include "TDirectory.h"
 #include "TObjString.h"
 #include <TGrid.h>
@@ -194,6 +194,28 @@ int main(int argc, char* argv[])
       ++totalMergedDFs;
       auto folder = (TDirectoryFile*)inputFile->Get(dfName);
       auto treeList = folder->GetListOfKeys();
+
+      treeList->Sort();
+
+      // purging keys from duplicates
+      for (auto i = 0; i < treeList->GetEntries(); ++i) {
+        TKey* ki = (TKey*)treeList->At(i);
+        for (int j = i + 1; j < treeList->GetEntries(); ++j) {
+          TKey* kj = (TKey*)treeList->At(j);
+          if (std::strcmp(ki->GetName(), kj->GetName()) == 0 && std::strcmp(ki->GetTitle(), kj->GetTitle()) == 0) {
+            if (ki->GetCycle() < kj->GetCycle()) {
+              printf("    ***WARNING*** we had ordered the keys, first cycle should be higher, let's continue anyway");
+            } else {
+              // key is a duplicate, let's remove it
+              treeList->Remove(kj);
+            }
+          } else {
+            // we changed key, since they are sorted, we won't have the same anymore
+            break;
+          }
+        }
+      }
+
       std::list<std::string> foundTrees;
 
       for (auto key2 : *treeList) {
@@ -201,7 +223,7 @@ int main(int argc, char* argv[])
         printf("    Processing tree %s\n", treeName);
         bool found = (std::find(foundTrees.begin(), foundTrees.end(), treeName) != foundTrees.end());
         if (found == true) {
-          printf("    Tree %s was already merged, skipping\n", treeName);
+          printf("    ***WARNING*** Tree %s was already merged (even if we purged duplicated trees before, so this should not happen), skipping\n", treeName);
           continue;
         }
         foundTrees.push_back(treeName);
