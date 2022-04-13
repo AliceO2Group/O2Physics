@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
           if (std::strcmp(ki->GetName(), kj->GetName()) == 0 && std::strcmp(ki->GetTitle(), kj->GetTitle()) == 0) {
             if (ki->GetCycle() < kj->GetCycle()) {
               printf("    *** FATAL *** we had ordered the keys, first cycle should be higher, please check");
-	      exitCode = 5;
+              exitCode = 5;
             } else {
               // key is a duplicate, let's remove it
               treeList->Remove(kj);
