@@ -1052,7 +1052,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values = fgValues;
   }
 
-
   //auto lepton1 = dilepton.index0_as<track>();
   //auto lepton2 = dilepton.index1_as<track>();
   //auto lepton1 = dilepton.index0_as<o2::aod::ReducedMuonsLabels>();
@@ -1177,7 +1176,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
                                              (collision.posY() - secondaryVertex[1]) * v123.Py() +
                                              (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
                                             (v123.P() * values[VarManager::kVertexingLxyz]);
-
   }
 }
 
