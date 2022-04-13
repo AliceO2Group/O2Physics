@@ -846,6 +846,7 @@ struct HfTrackIndexSkimsCreator {
   Configurable<bool> debug{"debug", false, "debug mode"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<int> do3prong{"do3prong", 0, "do 3 prong"};
+  Configurable<bool> doPVrefit{"doPVrefit", false, "do PV refit excluding the considered track"};
   // preselection parameters
   Configurable<double> pTTolerance{"pTTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // vertexing parameters
@@ -1017,6 +1018,9 @@ struct HfTrackIndexSkimsCreator {
       // imp. par. product cut
       if (debug || TESTBIT(isSelected, iDecay2P)) {
         auto impParProduct = hfTrack0.dcaXY() * hfTrack1.dcaXY();
+        if (doPVrefit) {
+          impParProduct = hfTrack0.dcaXYPVrefit() * hfTrack1.dcaXYPVrefit();
+        }
         if (impParProduct > cut2Prong[iDecay2P].get(pTBin, d0d0Index[iDecay2P])) {
           CLRBIT(isSelected, iDecay2P);
           if (debug) {
@@ -1210,7 +1214,7 @@ struct HfTrackIndexSkimsCreator {
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksExtended, aod::HFSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksExtended, aod::HFSelTrack, aod::HFPVrefitTrack>>;
 
   // FIXME
   //Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
