@@ -1052,6 +1052,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values = fgValues;
   }
 
+
   //auto lepton1 = dilepton.index0_as<track>();
   //auto lepton2 = dilepton.index1_as<track>();
   //auto lepton1 = dilepton.index0_as<o2::aod::ReducedMuonsLabels>();
@@ -1102,7 +1103,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
     procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
   } else if constexpr ((pairType == kJpsiToEE) && trackHasCov) {
-    float mtrack = fgkElectronMass;
+    mtrack = fgkElectronMass;
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
     std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
                                          lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
@@ -1176,6 +1177,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
                                              (collision.posY() - secondaryVertex[1]) * v123.Py() +
                                              (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
                                             (v123.P() * values[VarManager::kVertexingLxyz]);
+
   }
 }
 
