@@ -64,6 +64,7 @@ struct PseudorapidityDensity {
   Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
   Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
 
+  Configurable<bool> usePhiCut{"usePhiCut", false, "apply azimuthal cuts"};
   Configurable<Array2D<float>> exclusionPhi{"exclusionPhi", {&phi[0][0], 1, 2}, "Azimuthal regions to exclude"};
 
   HistogramRegistry registry{
@@ -166,16 +167,19 @@ struct PseudorapidityDensity {
         registry.fill(HIST("Events/Selection"), 3.);
       }
       registry.fill(HIST("Events/NtrkZvtx"), perCollisionSample.size(), z);
+
       for (auto& track : tracks) {
-        auto exclude = false;
-        for (auto i = 0u; i < exclusionPhi->rows; ++i) {
-          if (track.phi() >= exclusionPhi->operator()(i, 0) && track.phi() <= exclusionPhi->operator()(i, 1)) {
-            exclude = true;
-            break;
+        if (usePhiCut) {
+          auto exclude = false;
+          for (auto i = 0u; i < exclusionPhi->rows; ++i) {
+            if (track.phi() >= exclusionPhi->operator()(i, 0) && track.phi() <= exclusionPhi->operator()(i, 1)) {
+              exclude = true;
+              break;
+            }
           }
-        }
-        if (exclude) {
-          continue;
+          if (exclude) {
+            continue;
+          }
         }
         registry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
         registry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
@@ -268,15 +272,17 @@ struct PseudorapidityDensity {
       registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
     }
     for (auto& particle : particles) {
-      auto exclude = false;
-      for (auto i = 0u; i < exclusionPhi->rows; ++i) {
-        if (particle.phi() >= exclusionPhi->operator()(i, 0) && particle.phi() <= exclusionPhi->operator()(i, 1)) {
-          exclude = true;
-          break;
+      if (usePhiCut) {
+        auto exclude = false;
+        for (auto i = 0u; i < exclusionPhi->rows; ++i) {
+          if (particle.phi() >= exclusionPhi->operator()(i, 0) && particle.phi() <= exclusionPhi->operator()(i, 1)) {
+            exclude = true;
+            break;
+          }
         }
-      }
-      if (exclude) {
-        continue;
+        if (exclude) {
+          continue;
+        }
       }
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0.;
