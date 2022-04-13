@@ -1352,7 +1352,9 @@ struct HfTrackIndexSkimsCreator {
           }
           registry.fill(HIST("PVrefit/nContrib_vs_Chi2PVrefit"), vec_useTrk_PVrefit.size() - 1, Pvtx_refitted.getChi2());
 
-          for(int i=0; i< (int) vec_gind_candContr.size(); i++)  vec_useTrk_PVrefit[i] = true; /// restore the track for the next PV refitting
+          for(int i=0; i< (int) vec_gind_candContr.size(); i++) {
+            vec_useTrk_PVrefit[i] = true; /// restore the tracks for the next PV refitting
+          }
 
           if (recalc_PVrefit) {
             // fill the histograms for refitted PV with good Chi2
@@ -1567,6 +1569,7 @@ struct HfTrackIndexSkimsCreator {
               }
               else {
                 LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                coord_PVrefit_2prong = {collision.posX(), collision.posY(), collision.posZ()};  /// original PV
               }
             }
 
@@ -1711,6 +1714,7 @@ struct HfTrackIndexSkimsCreator {
               }
               else {
                 LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                coord_PVrefit_3prong_2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};  /// original PV
               }
             }
 
@@ -1860,6 +1864,7 @@ struct HfTrackIndexSkimsCreator {
               }
               else {
                 LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
+                coord_PVrefit_3prong_1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};  /// original PV
               }
             }
 
