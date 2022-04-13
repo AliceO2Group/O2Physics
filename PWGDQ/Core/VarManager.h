@@ -49,6 +49,7 @@ using Vec3D = ROOT::Math::SVector<double, 3>;
 // TODO: create an array holding these constants for all needed particles or check for a place where these are already defined
 static const float fgkElectronMass = 0.000511; // GeV
 static const float fgkMuonMass = 0.105658;     // GeV
+static const float fgkKaonMass = 0.493677;     // GeV
 
 //_________________________________________________________________________
 class VarManager : public TObject
@@ -92,6 +93,8 @@ class VarManager : public TObject
     kJpsiToEE = 0, // J/psi        -> e+ e-
     kJpsiToMuMu,   // J/psi        -> mu+ mu-
     kElectronMuon, // Electron - muon correlations
+    kBcToThreeMuons, // Bc         -> mu+ mu- mu+
+    kBtoJpsiEEK, // B+             -> e+ e- K+
     kNMaxCandidateTypes
   };
 
@@ -367,8 +370,8 @@ class VarManager : public TObject
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kJpsiToEE);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
-  template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-  static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& track, float* values);
+  template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
+  static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
 
@@ -1041,8 +1044,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   }
 }
 
-template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& track, float* values)
+template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
+void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values)
 {
 
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
@@ -1053,11 +1056,13 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   }
 
   float mtrack;
+  float mlepton;
 
   int procCode = 0;
   int procCodeJpsi = 0;
 
-  if constexpr ((pairType == kJpsiToMuMu) && muonHasCov) {
+  if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
+    mlepton = fgkMuonMass;
     mtrack = fgkMuonMass;
 
     double chi21 = lepton1.chi2();
@@ -1085,8 +1090,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     o2::track::TrackParCovFwd pars3{track.z(), t3pars, t3covs, chi23};
     procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
     procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
-  } else if constexpr ((pairType == kJpsiToEE) && trackHasCov) {
-    mtrack = fgkElectronMass;
+  } else if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
+    mlepton = fgkElectronMass;
+    mtrack = fgkKaonMass;
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
     std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
                                          lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
@@ -1108,8 +1114,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     return;
   }
 
-  ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mtrack);
-  ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mtrack);
+  ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mlepton);
+  ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mlepton);
   ROOT::Math::PtEtaPhiMVector v3(track.pt(), track.eta(), track.phi(), mtrack);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
   ROOT::Math::PtEtaPhiMVector vdilepton(v12.pt(), v12.eta(), v12.phi(), v12.M());
@@ -1152,10 +1158,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
     auto covMatrixPV = primaryVertex.getCov();
 
-    if constexpr (pairType == kJpsiToEE && trackHasCov) {
+    if constexpr (candidateType == kBtoJpsiEEK && trackHasCov) {
       secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
       covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrix().Array();
-    } else if constexpr (pairType == kJpsiToMuMu && muonHasCov) {
+    } else if constexpr (candidateType == kBcToThreeMuons && muonHasCov) {
       secondaryVertex = fgFitterThreeProngFwd.getPCACandidate();
       covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrix().Array();
     }
@@ -1176,7 +1182,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values[VarManager::kVertexingLxy] = std::sqrt(values[VarManager::kVertexingLxy]);
     values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
     values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
-    values[VarManager::kVertexingPseudoCTau] = ((secondaryVertex[0] - collision.posY()) * v123.Px() + (secondaryVertex[1] - collision.posY()) * v123.Py()) / (v123.Pt() * v123.Pt()) * mtrack;
 
     values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
     values[kVertexingTauxy] = values[kVertexingLxy] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);

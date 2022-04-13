@@ -934,8 +934,8 @@ struct AnalysisDileptonTrack {
   }
 
   // Template function to run pair - track combinations
-  template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runDileptonLepton(TEvent const& event, TTracks const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
+  void runDileptonTrack(TEvent const& event, TTracks const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesTrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -999,7 +999,7 @@ struct AnalysisDileptonTrack {
           continue;
         }
 
-        VarManager::FillDileptonTrackVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesTrack);
+        VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesTrack);
         fHistMan->FillHistClass("DileptonTrackInvMass", fValuesTrack);
 
         mcDecision = 0;
@@ -1023,11 +1023,7 @@ struct AnalysisDileptonTrack {
 
   void processDimuonMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyMuonTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
-    VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::FillEvent<gkEventFillMap>(event);
-    VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
-
-    runDileptonLepton<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
+    runDileptonTrack<VarManager::kBcToThreeMuons, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
   }
   void processDummy(MyEvents&)
   {
