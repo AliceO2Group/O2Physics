@@ -204,10 +204,12 @@ int main(int argc, char* argv[])
           TKey* kj = (TKey*)treeList->At(j);
           if (std::strcmp(ki->GetName(), kj->GetName()) == 0 && std::strcmp(ki->GetTitle(), kj->GetTitle()) == 0) {
             if (ki->GetCycle() < kj->GetCycle()) {
-              printf("    ***WARNING*** we had ordered the keys, first cycle should be higher, let's continue anyway");
+              printf("    *** FATAL *** we had ordered the keys, first cycle should be higher, please check");
+	      exitCode = 5;
             } else {
               // key is a duplicate, let's remove it
               treeList->Remove(kj);
+	      j--;
             }
           } else {
             // we changed key, since they are sorted, we won't have the same anymore
