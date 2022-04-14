@@ -28,7 +28,7 @@ struct gammaConversionsRubenDirect {
   HistogramRegistry registry{
     "registry",
     {
-      {"hGammaReconctructedPtTrue", "#gammaReconctructedPtTrue", {HistType::kTH1F, {{800, -0.f, 25.f}}}},
+      {"hGammaReconctructedPtTrue", "hGammaReconctructedPtTrue", {HistType::kTH1F, {{800, -0.f, 25.f}}}},
     },
   };
 
@@ -131,12 +131,12 @@ struct gammaConversionsMcTruthOnly {
   HistogramRegistry registry{
     "registry",
     {
-      {"hCollisionZ", "#collisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
-      {"hGammaProdInAcc", "#gammaProdInAcc", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaMoreThanTwoDaughtersPt", "#gammaMoreThanTwoDaughtersPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaConvertedPt", "#gammaConvertedPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaConvertedR", "#gammaConvertedR", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
-      {"hGammaConvertedRPt", "#gammaConvertedRPt", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hGammaProdInAcc", "hGammaProdInAcc", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaMoreThanTwoDaughtersPt", "hGammaMoreThanTwoDaughtersPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedPt", "hGammaConvertedPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedR", "hGammaConvertedR", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
+      {"hGammaConvertedRPt", "hGammaConvertedRPt", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
     },
   };
 
@@ -147,7 +147,6 @@ struct gammaConversionsMcTruthOnly {
                aod::McParticles const& theMcParticles)
   {
     for (auto& collision : collisions) {
-      registry.fill(HIST("hEventCounter"), 0.5);
 
       registry.fill(HIST("hCollisionZ"), collision.posZ());
       for (auto& lMcParticle : theMcParticles) {
