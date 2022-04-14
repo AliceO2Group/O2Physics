@@ -29,11 +29,12 @@ jobs:
       id: clang_format
       env:
         ALIBUILD_GITHUB_TOKEN: ${{secrets.ALIBUILD_GITHUB_TOKEN}}
+        PR_BRANCH: ${{ github.event.pull_request.head.ref }}
       run: |
         set -x
         # We need to fetch the other commit.
         git fetch origin ${{ github.event.pull_request.base.ref }} \
-                         pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}
+                         "pull/${{ github.event.pull_request.number }}/head:$PR_BRANCH"
 
         # We create a new branch which we will use for the eventual PR.
         git config --global user.email "alibuild@cern.ch"
@@ -68,7 +69,7 @@ jobs:
             patch -p1
           echo "clang-format failed."
           echo "To reproduce it locally please run"
-          echo -e "\tgit checkout ${{ github.event.pull_request.head.ref }}"
+          echo -e "\tgit checkout $PR_BRANCH"
           echo -e "\tgit-clang-format --commit $BASE_COMMIT --diff --style file"
           echo "Note: using clang-format version $(clang-format --version)"
           echo "Opening a PR to your branch with the fixes"
