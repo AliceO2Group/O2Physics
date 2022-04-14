@@ -978,10 +978,13 @@ struct HfTrackIndexSkimsCreator {
 
     // needed for PV refitting
     if (doPVrefit) {
-      registry.add("PVrefit/vertices_perCandidate", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
+      registry.add("PVrefit/vertices_perCandidate", "", kTH1D, {{6, 0.5f, 6.5f, ""}});
       registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(1, "All PV");
       registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
       registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
+      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(4, "PV refit #chi^{2}==-1");
+      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(5, "1 daughter contr.");
+      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(6, "no PV refit");
       registry.add("PVrefit/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaX_PVrefit});
       registry.add("PVrefit/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaY_PVrefit});
       registry.add("PVrefit/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaZ_PVrefit});
@@ -1315,7 +1318,7 @@ struct HfTrackIndexSkimsCreator {
       }
       LOG(info) << "prepareVertexRefit = " << PVrefit_doable << " Ncontrib= " << vec_TrkContributos.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << Pvtx.asString();
 
-      registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
+      //registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
       if (PVrefit_doable) {
         registry.fill(HIST("PVrefit/vertices_perCandidate"), 2);
       }
@@ -1328,64 +1331,65 @@ struct HfTrackIndexSkimsCreator {
         for(uint64_t my_gIndex: vec_gind_candContr) {
           auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), my_gIndex); /// track global index
           if (it_trk != vec_globID_contr.end()) {
+            /// this is a contributor, let's remove it for the PV refit
             const int entry = std::distance(vec_globID_contr.begin(), it_trk);
             vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
             n_candContr++;
           }
         }
         
-        /// do the PV refit only if all the candidate daughters contributed to the PV fit originally
-        if (n_candContr == (int) vec_gind_candContr.size()) {
-          LOG(info) << "### PV refit after removing " << n_candContr << " tracks";
-          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
-          //LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
-          //LOG(info) << "refit for track with global index " << (int) my_track.globalIndex() << " " << Pvtx_refitted.asString();
-          if (Pvtx_refitted.getChi2() < 0) {
-            LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
-            registry.fill(HIST("PVrefit/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
-            registry.fill(HIST("PVrefit/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
-            registry.fill(HIST("PVrefit/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
-            registry.fill(HIST("PVrefit/nContrib_PVrefitChi2minus1"), collision.numContrib());
-            recalc_PVrefit = false;
-          } else {
-            registry.fill(HIST("PVrefit/vertices_perCandidate"), 3);
-          }
-          registry.fill(HIST("PVrefit/nContrib_vs_Chi2PVrefit"), vec_useTrk_PVrefit.size() - 1, Pvtx_refitted.getChi2());
-
-          for(int i=0; i< (int) vec_gind_candContr.size(); i++) {
-            vec_useTrk_PVrefit[i] = true; /// restore the tracks for the next PV refitting
-          }
-
-          if (recalc_PVrefit) {
-            // fill the histograms for refitted PV with good Chi2
-            const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
-            const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
-            const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
-            registry.fill(HIST("PVrefit/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
-            registry.fill(HIST("PVrefit/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
-            registry.fill(HIST("PVrefit/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
-
-            // fill the newly calculated PV
-            PVbase_recalculated.setX(Pvtx_refitted.getX());
-            PVbase_recalculated.setY(Pvtx_refitted.getY());
-            PVbase_recalculated.setZ(Pvtx_refitted.getZ());
-            PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
-
-          } else {
-            /// copy the original collision PV
-            PVbase_recalculated.setX(Pvtx.getX());
-            PVbase_recalculated.setY(Pvtx.getY());
-            PVbase_recalculated.setZ(Pvtx.getZ());
-            PVbase_recalculated.setCov(Pvtx.getSigmaX2(), Pvtx.getSigmaXY(), Pvtx.getSigmaY2(), Pvtx.getSigmaXZ(), Pvtx.getSigmaYZ(), Pvtx.getSigmaZ2());
-          }
-
-          // fill the output
-          coord_PVrefit[0] = PVbase_recalculated.getX();
-          coord_PVrefit[1] = PVbase_recalculated.getY();
-          coord_PVrefit[2] = PVbase_recalculated.getZ();
-
-          //cnt++;
+        /// do the PV refit excluding the candidate daughters that originally contributed to fit it
+        LOG(info) << "### PV refit after removing " << n_candContr << " tracks";
+        auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
+        //LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
+        //LOG(info) << "refit for track with global index " << (int) my_track.globalIndex() << " " << Pvtx_refitted.asString();
+        if (Pvtx_refitted.getChi2() < 0) {
+          LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
+          registry.fill(HIST("PVrefit/vertices_perCandidate"), 4);
+          registry.fill(HIST("PVrefit/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
+          registry.fill(HIST("PVrefit/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
+          registry.fill(HIST("PVrefit/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
+          registry.fill(HIST("PVrefit/nContrib_PVrefitChi2minus1"), collision.numContrib());
+          recalc_PVrefit = false;
+        } else {
+          registry.fill(HIST("PVrefit/vertices_perCandidate"), 3);
         }
+        registry.fill(HIST("PVrefit/nContrib_vs_Chi2PVrefit"), vec_useTrk_PVrefit.size() - 1, Pvtx_refitted.getChi2());
+        
+        for(int i=0; i<(int) vec_globID_contr.size(); i++) {
+          vec_useTrk_PVrefit[i] = true; /// restore the tracks for the next PV refitting (probably not necessary here)
+        }
+
+        if (recalc_PVrefit) {
+          // fill the histograms for refitted PV with good Chi2
+          const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
+          const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
+          const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
+          registry.fill(HIST("PVrefit/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
+          registry.fill(HIST("PVrefit/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
+          registry.fill(HIST("PVrefit/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
+
+          // fill the newly calculated PV
+          PVbase_recalculated.setX(Pvtx_refitted.getX());
+          PVbase_recalculated.setY(Pvtx_refitted.getY());
+          PVbase_recalculated.setZ(Pvtx_refitted.getZ());
+          PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
+
+        } else {
+          /// copy the original collision PV
+          PVbase_recalculated.setX(Pvtx.getX());
+          PVbase_recalculated.setY(Pvtx.getY());
+          PVbase_recalculated.setZ(Pvtx.getZ());
+          PVbase_recalculated.setCov(Pvtx.getSigmaX2(), Pvtx.getSigmaXY(), Pvtx.getSigmaY2(), Pvtx.getSigmaXZ(), Pvtx.getSigmaYZ(), Pvtx.getSigmaZ2());
+        }
+
+        // fill the output
+        coord_PVrefit[0] = PVbase_recalculated.getX();
+        coord_PVrefit[1] = PVbase_recalculated.getY();
+        coord_PVrefit[2] = PVbase_recalculated.getZ();
+      
+        //cnt++;
+        
       } /// end 'if (doPVrefit && PVrefit_doable)'
 
       return;
@@ -1546,30 +1550,49 @@ struct HfTrackIndexSkimsCreator {
             df2.getTrack(0).getPxPyPzGlo(pvec0);
             df2.getTrack(1).getPxPyPzGlo(pvec1);
 
-            /// PV refit excluding the candidate daughters
-            array<float,3> coord_PVrefit_2prong = {};
+            /// PV refit excluding the candidate daughters, if contributors
+            array<float,3> coord_PVrefit_2prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
             if (doPVrefit) {
+              registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
               int nCandContr = 2;
               auto it_first_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackPos1.globalIndex());
               auto it_second_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackNeg1.globalIndex());
+              bool is_first_contr = true;
+              bool is_second_contr = true;
               if (it_first_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [2 Prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_first_contr = false;
               }
               if (it_second_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [2 Prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_second_contr = false;
               }
               if (nCandContr==2) {
                 /// Both the daughter tracks were used for the original PV refit, let's refit it ater excluding them
                 LOG(info) << "### [2 Prong] Calling process_PVrefit for HF 2 prong candidate";
                 process_PVrefit((aod::Collision const&) trackPos1.collision(),bcstmpstp,vec_globID_contr,vec_TrkContributors,{trackPos1.globalIndex(),trackNeg1.globalIndex()},coord_PVrefit_2prong);
               }
+              else if (nCandContr==1) {
+                /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
+                LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
+                registry.fill(HIST("PVrefit/vertices_perCandidate"), 5);
+                if (is_first_contr && !is_second_contr) {
+                  /// the first daughter is contributor, the second is not
+                  coord_PVrefit_2prong = {trackPos1.xPVrefit(), trackPos1.yPVrefit(), trackPos1.zPVrefit()};
+                }
+                else if (!is_first_contr && is_second_contr) {
+                  ///  the second daughter is contributor, the first is not
+                  coord_PVrefit_2prong = {trackNeg1.xPVrefit(), trackNeg1.yPVrefit(), trackNeg1.zPVrefit()};
+                }
+              } 
               else {
+                /// 0 contributors among the HF candidate daughters
+                registry.fill(HIST("PVrefit/vertices_perCandidate"), 6);
                 LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
-                coord_PVrefit_2prong = {collision.posX(), collision.posY(), collision.posZ()};  /// original PV
               }
             }
 
@@ -1685,36 +1708,74 @@ struct HfTrackIndexSkimsCreator {
             df3.getTrack(1).getPxPyPzGlo(pvec1);
             df3.getTrack(2).getPxPyPzGlo(pvec2);
 
-            /// PV refit excluding the candidate daughters
-            array<float,3> coord_PVrefit_3prong_2Pos1Neg = {};
+            /// PV refit excluding the candidate daughters, if contributors
+            array<float,3> coord_PVrefit_3prong_2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
             if (doPVrefit) {
+              registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
               int nCandContr = 3;
               auto it_first_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackPos1.globalIndex());
               auto it_second_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackNeg1.globalIndex());
               auto it_third_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackPos2.globalIndex());
+              bool is_first_contr = true;
+              bool is_second_contr = true;
+              bool is_third_contr = true;
               if (it_first_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_first_contr = false;
               }
               if (it_second_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_second_contr = false;
               }
               if (it_third_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [3 prong] trackPos2 with globalIndex " << trackPos2.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_third_contr = false;
               }
-              if (nCandContr==3) {
-                /// Both the daughter tracks were used for the original PV refit, let's refit it ater excluding them
-                LOG(info) << "### [3 prong] Calling process_PVrefit for HF 3 prong candidate";
-                process_PVrefit((aod::Collision const&) trackPos1.collision(),bcstmpstp,vec_globID_contr,vec_TrkContributors,{trackPos1.globalIndex(),trackNeg1.globalIndex(),trackPos2.globalIndex()},coord_PVrefit_3prong_2Pos1Neg);
+
+              // Fill a vector with global ID of candidate daughters that are contributors
+              std::vector<int64_t> vec_gi_candContr = {};
+              if (is_first_contr) {
+                vec_gi_candContr.push_back(trackPos1.globalIndex());
+              }
+              if (is_second_contr) {
+                vec_gi_candContr.push_back(trackNeg1.globalIndex());
+              }
+              if (is_third_contr) {
+                vec_gi_candContr.push_back(trackPos2.globalIndex());
+              }
+
+              if (nCandContr==3 || nCandContr==2) {
+                /// At least two of the daughter tracks were used for the original PV refit, let's refit it ater excluding them
+                LOG(info) << "### [3 prong] Calling process_PVrefit for HF 3 prong candidate, removing " << nCandContr << " daughters";
+                process_PVrefit((aod::Collision const&) trackPos1.collision(),bcstmpstp,vec_globID_contr,vec_TrkContributors,vec_gi_candContr,coord_PVrefit_3prong_2Pos1Neg);
+              }
+              else if (nCandContr==1) {
+                /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
+                LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
+                registry.fill(HIST("PVrefit/vertices_perCandidate"), 5);
+                if(is_first_contr && !is_second_contr && !is_third_contr) {
+                  /// the first daughter is contributor, the second and the third are not
+                  coord_PVrefit_3prong_2Pos1Neg = {trackPos1.xPVrefit(), trackPos1.yPVrefit(), trackPos1.zPVrefit()};
+                }
+                else if(!is_first_contr && is_second_contr && !is_third_contr) {
+                  /// the second daughter is contributor, the first and the third are not
+                  coord_PVrefit_3prong_2Pos1Neg = {trackNeg1.xPVrefit(), trackNeg1.yPVrefit(), trackNeg1.zPVrefit()};
+                }
+                else if(!is_first_contr && !is_second_contr && is_third_contr) {
+                  /// the third daughter is contributor, the first and the second are not
+                  coord_PVrefit_3prong_2Pos1Neg = {trackPos2.xPVrefit(), trackPos2.yPVrefit(), trackPos2.zPVrefit()};
+                }
               }
               else {
+                /// 0 contributors among the HF candidate daughters
+                registry.fill(HIST("PVrefit/vertices_perCandidate"), 6);
                 LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
-                coord_PVrefit_3prong_2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};  /// original PV
               }
             }
 
@@ -1835,41 +1896,78 @@ struct HfTrackIndexSkimsCreator {
             df3.getTrack(1).getPxPyPzGlo(pvec1);
             df3.getTrack(2).getPxPyPzGlo(pvec2);
 
-            /// PV refit excluding the candidate daughters
-            array<float,3> coord_PVrefit_3prong_1Pos2Neg = {};
+            /// PV refit excluding the candidate daughters, if contributors
+            array<float,3> coord_PVrefit_3prong_1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
             if (doPVrefit) {
+              registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
               int nCandContr = 3;
               auto it_first_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackPos1.globalIndex());
               auto it_second_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackNeg1.globalIndex());
               auto it_third_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), trackNeg2.globalIndex());
+              bool is_first_contr = true;
+              bool is_second_contr = true;
+              bool is_third_contr = true;
               if (it_first_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [3 prong] trackPos1 with globalIndex " << trackPos1.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_first_contr = false;
               }
               if (it_second_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [3 prong] trackNeg1 with globalIndex " << trackNeg1.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_second_contr = false;
               }
               if (it_third_trk == vec_globID_contr.end()) {
                 /// This track did not contribute to the original PV refit
                 LOG(info) << "--- [3 prong] trackNeg2 with globalIndex " << trackNeg2.globalIndex() << " was not a PV contributor";
                 nCandContr--;
+                is_third_contr = false;
               }
-              if (nCandContr==3) {
-                /// Both the daughter tracks were used for the original PV refit, let's refit it ater excluding them
-                LOG(info) << "### [3 prong] Calling process_PVrefit for HF 3 prong candidate";
-                process_PVrefit( (aod::Collision const&)trackPos1.collision(),bcstmpstp,vec_globID_contr,vec_TrkContributors,{trackPos1.globalIndex(),trackNeg1.globalIndex(),trackNeg2.globalIndex()},coord_PVrefit_3prong_1Pos2Neg);
+
+              // Fill a vector with global ID of candidate daughters that are contributors
+              std::vector<int64_t> vec_gi_candContr = {};
+              if (is_first_contr) {
+                vec_gi_candContr.push_back(trackPos1.globalIndex());
+              }
+              if (is_second_contr) {
+                vec_gi_candContr.push_back(trackNeg1.globalIndex());
+              }
+              if (is_third_contr) {
+                vec_gi_candContr.push_back(trackNeg2.globalIndex());
+              }
+
+              if (nCandContr==3 || nCandContr==2) {
+                /// At least two of the daughter tracks were used for the original PV refit, let's refit it ater excluding them
+                LOG(info) << "### [3 prong] Calling process_PVrefit for HF 3 prong candidate, removing " << nCandContr << " daughters";
+                process_PVrefit( (aod::Collision const&)trackPos1.collision(),bcstmpstp,vec_globID_contr,vec_TrkContributors,vec_gi_candContr,coord_PVrefit_3prong_1Pos2Neg);
+              }
+              else if (nCandContr==1) {
+                /// Only one daughter was a contributor, let's use then the PV recalculated by excluding only it
+                LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
+                registry.fill(HIST("PVrefit/vertices_perCandidate"), 5);
+                if(is_first_contr && !is_second_contr && !is_third_contr) {
+                  /// the first daughter is contributor, the second and the third are not
+                  coord_PVrefit_3prong_1Pos2Neg = {trackPos1.xPVrefit(), trackPos1.yPVrefit(), trackPos1.zPVrefit()};
+                }
+                else if(!is_first_contr && is_second_contr && !is_third_contr) {
+                  /// the second daughter is contributor, the first and the third are not
+                  coord_PVrefit_3prong_1Pos2Neg = {trackNeg1.xPVrefit(), trackNeg1.yPVrefit(), trackNeg1.zPVrefit()};
+                }
+                else if(!is_first_contr && !is_second_contr && is_third_contr) {
+                  /// the third daughter is contributor, the first and the second are not
+                  coord_PVrefit_3prong_1Pos2Neg = {trackNeg2.xPVrefit(), trackNeg2.yPVrefit(), trackNeg2.zPVrefit()};
+                }
               }
               else {
+                /// 0 contributors among the HF candidate daughters
+                registry.fill(HIST("PVrefit/vertices_perCandidate"), 6);
                 LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
-                coord_PVrefit_3prong_1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};  /// original PV
               }
             }
 
             auto pVecCandProng3Neg = RecoDecay::PVec(pvec0, pvec1, pvec2);
-
             // 3-prong selections after secondary vertex
             array<float,3> array_PVcoord_3prong_1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
             if (doPVrefit) {
