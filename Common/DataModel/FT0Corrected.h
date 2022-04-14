@@ -26,7 +26,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(T0ACorrectedValid, t0ACorrectedValid, //! Was T0ACorr
 DECLARE_SOA_DYNAMIC_COLUMN(T0CCorrectedValid, t0CCorrectedValid, //! Was T0CCorrected computable?
                            [](float t0) -> bool { return t0 < 1e9; });
 DECLARE_SOA_DYNAMIC_COLUMN(T0resolution, t0resolution, //! Was T0CCorrected computable?
-                           [](float t0C, float t0A) -> float { return 0.5 * (t0A - t0C); });
+                           [](float t0C, float t0A) -> float { return 0.5f * (t0A - t0C); });
 
 } // namespace ft0
 DECLARE_SOA_TABLE(FT0sCorrected, "AOD", "FT0CORRECTED", //! Table with corrected FT0 values
