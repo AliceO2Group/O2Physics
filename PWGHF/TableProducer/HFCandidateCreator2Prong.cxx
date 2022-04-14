@@ -32,6 +32,7 @@ using namespace o2::aod::hf_cand_prong2;
 struct HFCandidateCreator2Prong {
   Produces<aod::HfCandProng2Base> rowCandidateBase;
 
+  Configurable<bool> doPVrefit{"doPVrefit", false, "do PV refit excluding the candidate daughters, if contributors"};
   Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
@@ -50,7 +51,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::Hf2Prong const& rowsTrackIndexProng2,
+               soa::Join<aod::Hf2Prong, aod::HfPVrefitProng2> const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -92,6 +93,22 @@ struct HFCandidateCreator2Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
+      if (doPVrefit) {
+        /// use PV refit
+        /// Using it in the rowCandidateBase all dynamic columns shall take it into account
+        // coordinates
+        primaryVertex.setX(rowTrackIndexProng2.xPVrefit_noProngs());
+        primaryVertex.setY(rowTrackIndexProng2.yPVrefit_noProngs());
+        primaryVertex.setZ(rowTrackIndexProng2.zPVrefit_noProngs());
+        // covariance matrix
+        primaryVertex.setSigmaX2(rowTrackIndexProng2.sigmaX2PVrefit_noProngs());
+        primaryVertex.setSigmaXY(rowTrackIndexProng2.sigmaXYPVrefit_noProngs());
+        primaryVertex.setSigmaY2(rowTrackIndexProng2.sigmaY2PVrefit_noProngs());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng2.sigmaXZPVrefit_noProngs());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng2.sigmaYZPVrefit_noProngs());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng2.sigmaZ2PVrefit_noProngs());
+        covMatrixPV = primaryVertex.getCov();
+      }
       hCovPVXX->Fill(covMatrixPV[0]);
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
@@ -100,13 +117,13 @@ struct HFCandidateCreator2Prong {
 
       // get uncertainty of the decay length
       double phi, theta;
-      getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
+      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       // fill candidate table rows
       rowCandidateBase(collision.globalIndex(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
                        chi2PCA,
