@@ -44,6 +44,10 @@ struct HFCandidateCreator2Prong {
   OutputObj<TH1F> hmass2{TH1F("hmass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH2F> hDCAxyProngs{TH2F("hDCAxyProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH2F> hDCAzProngs{TH2F("hDCAzProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);", 100, 0., 20., 200, -500., 500.)};
+
+  float toMicrometers = 10000.; // from cm to µm
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
@@ -114,6 +118,10 @@ struct HFCandidateCreator2Prong {
       o2::dataformats::DCA impactParameter1;
       trackParVar0.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
+      hDCAxyProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
+      hDCAxyProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
+      hDCAzProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
+      hDCAzProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
 
       // get uncertainty of the decay length
       double phi, theta;
