@@ -9,9 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Task performing basic track selection.
-//
+///
+/// \file   trackselection.cxx
+/// \author Mario Krüger <mario.kruger@cern.ch>
+/// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>
+///
+/// \brief Task performing basic track selection.
+///
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -53,7 +57,8 @@ struct TrackSelectionTask {
   {
     for (auto& track : tracks) {
       filterTable((uint8_t)globalTracks.IsSelected(track),
-                  (uint8_t)globalTracksSDD.IsSelected(track));
+                  (uint8_t)globalTracksSDD.IsSelected(track),
+                  globalTracks.IsSelectedFlag(track));
     }
   }
 };
