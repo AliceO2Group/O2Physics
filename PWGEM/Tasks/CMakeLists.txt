@@ -9,23 +9,13 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(gammaconversions
-                    SOURCES gammaConversions.cxx
+o2physics_add_dpl_workflow(gammaconversionsmc
+                    SOURCES gammaConversionsMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(gammaconversionsmctruthonly
-                    SOURCES gammaConversionsMcTruthOnly.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-                    
-o2physics_add_dpl_workflow(gammaconversionsskimmermc
-                    SOURCES gammaConversionsSkimmermc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-                    
-o2physics_add_dpl_workflow(gammaconversionsconsumermc
-                    SOURCES gammaConversionsConsumermc.cxx
+o2physics_add_dpl_workflow(gammaconversionstruthonlymc
+                    SOURCES gammaConversionsTruthOnlyMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -34,7 +24,17 @@ o2physics_add_dpl_workflow(phoscellqa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing O2::PHOSBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(phoscluqa 
+o2physics_add_dpl_workflow(phoscluqa
                     SOURCES phosCluQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing O2::PHOSBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmergammaconversionsmc
+                    SOURCES skimmerGammaConversionsMc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmergammaconversionstruthonlymc
+                    SOURCES skimmerGammaConversionsTruthOnlyMc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
