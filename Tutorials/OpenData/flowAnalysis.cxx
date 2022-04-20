@@ -17,31 +17,33 @@
 
 #include <TF1.h>
 #include <TH3.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include <Framework/runDataProcessing.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Common/DataModel/EventSelection.h>
+#include <Common/CCDB/TriggerAliases.h>
+#include <Common/DataModel/Centrality.h>
+#include <Common/DataModel/Multiplicity.h>
+#include <Common/DataModel/TrackSelectionTables.h>
+#include <Common/Core/PID/PIDResponse.h>
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPObject.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct flowTracksPerCollision {
+struct flow_base {
 
-  using BCsWithRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos>;
+  using BCsWithRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, o2::aod::Timestamps>;
   using Colls_EvSels_Mults_Cents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentV0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
   using FilteredCollisions = soa::Filtered<Colls_EvSels_Mults_Cents>;
   using TracksPID = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, TracksPID>;
   using FilteredTracks = soa::Filtered<TrackCandidates>;
 
-  Configurable<bool> eventSelection{"eventSelection", false, "event selection"};
+  Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
   Configurable<bool> phiCut{"phiCut", false, "activate phi cut"};
   Configurable<bool> crsRowsFrcShCls{"crsRowsFrcShCls", false, "crsRowsFrcShCl"};
   Configurable<bool> hasQA{"hasQA", true, "Activate QA"};
@@ -57,11 +59,13 @@ struct flowTracksPerCollision {
   Configurable<float> minPiCut{"minPiCut", 1.0, "Minimum Pi cut"};
   Configurable<float> maxPiCut{"maxPiCut", 7.0, "Maximum Pi cut"};
   Configurable<float> minPCut{"minPCut", -25.0, "Minimum P cut"};
-  Configurable<float> maxPCut{"maxPCut", -14.0, "Maximum P cut"};
+  Configurable<float> maxPCut{"maxPCut", -15.0, "Maximum P cut"};
   Configurable<float> nsigCut{"nsigCut", 3.0, "Nsigma cut for PID"};
 
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   static constexpr int ncent_bins = 10;
 
@@ -250,6 +254,8 @@ struct flowTracksPerCollision {
     histos.add("protons/CosnPC", "#LT cos(n*#phi) #GT proton C", kTProfile2D, {{axisPtBinsLow}, {axisCentBins}});
 
     histos.add("QA/DeltaPi", "#Delta#pi", kTH3F, {{axisPtBinsHigh}, {axisDpi}, {axisCentBins}});
+    histos.add("QA/DeltaPiPi", "#Delta#pi pions", kTH3F, {{axisPtBinsHigh}, {axisDpi}, {axisCentBins}});
+    histos.add("QA/DeltaPiP", "#Delta#pi protons", kTH3F, {{axisPtBinsHigh}, {axisDpi}, {axisCentBins}});
     histos.add("QA/QADedxPi", "dEdx pi", kTH3F, {{axisQAP}, {axisQADedx}, {axisCentBins}});
     histos.add("QA/QABetaPi", "#beta pi", kTH3F, {{axisQAP}, {axisQABeta}, {axisCentBins}});
     histos.add("QA/QADedxK", "dEdx K", kTH3F, {{axisQAP}, {axisQADedx}, {axisCentBins}});
@@ -259,6 +265,28 @@ struct flowTracksPerCollision {
 
     fPhiCutLow = new TF1("fPhiCutLow", "0.1/x/x+pi/18.0-0.025", 0, 100);
     fPhiCutHigh = new TF1("fPhiCutHigh", "0.12/x+pi/18.0+0.035", 0, 100);
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
+  }
+
+  int getMagneticField(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
   }
 
   void process(FilteredCollisions::iterator const& collision, BCsWithRun2Infos const& bcs, FilteredTracks const& tracks)
@@ -286,15 +314,10 @@ struct flowTracksPerCollision {
 
     auto getDoubleCountingP = [&](Double_t nSp, Short_t minNSigma) { return (nSp < nsigCut && minNSigma != 3); };
 
-    if (eventSelection && !collision.alias()[kINT7]) {
+    if ((eventSelection == 1) && (!collision.alias()[kINT7] || !collision.sel7())) {
       // LOGF(info, "Collision index : %d skipped not kINT7", collision.index());
       return;
     }
-    // if (eventSelection && !collision.sel7()) {
-    //   LOGF(info, "Collision index : %d skipped not sel7", collision.index());
-    //   return;
-    // }
-    //  `tracks` contains tracks belonging to `collision`
 
     float zvtx = -999;
     if (collision.numContrib() > 1) {
@@ -330,6 +353,8 @@ struct flowTracksPerCollision {
     // float errTot = collision.covZZ();
 
     auto bc = collision.bc_as<BCsWithRun2Infos>();
+    auto field = getMagneticField(bc.timestamp());
+
     auto nITSClsLy0 = bc.spdClustersL0();
     auto nITSClsLy1 = bc.spdClustersL1();
     auto nITSCls = nITSClsLy0 + nITSClsLy1;
@@ -422,8 +447,8 @@ struct flowTracksPerCollision {
 
       if (phiCut) {
         Double_t phimod = track.phi();
-        // if (aod->GetMagneticField() < 0)   // for negative polarity field
-        //   phimod = TMath::TwoPi() - phimod;
+        if (field < 0) // for negative polarity field
+          phimod = TMath::TwoPi() - phimod;
         if (track.sign() < 0) // for negative charge
           phimod = TMath::TwoPi() - phimod;
         if (phimod < 0)
@@ -478,6 +503,8 @@ struct flowTracksPerCollision {
       if ((Dpi > minPiCut) && (Dpi < maxPiCut) && (trackpt >= 3.) /*&& (aodTrk1->GetTPCmomentum() > 3.)*/) {
         // Double_t rapPiHPt = getRapidity(0.139570, trackpt, tracketa);
         // if (TMath::Abs(rapPiHPt) < 0.5) {
+        if (hasQA)
+          histos.fill(HIST("QA/DeltaPiPi"), trackpt, Dpi, v0Centr);
         if (tracketa < -etaGap && multGapC > 0) {
           Double_t vnSPPihA = harmGapC / multGapC;
           fillVnPihighPtA(trackpt, v0Centr, vnSPPihA, sinHarmn, cosHarmn);
@@ -494,6 +521,8 @@ struct flowTracksPerCollision {
       if ((Dpi > minPCut) && (Dpi < maxPCut) && (trackpt >= 3.) /*&& (aodTrk1->GetTPCmomentum() > 3.)*/) {
         // Double_t rapPHPt = getRapidity(0.938272, trackpt, tracketa);
         // if (TMath::Abs(rapPHPt) < 0.5) {
+        if (hasQA)
+          histos.fill(HIST("QA/DeltaPiP"), trackpt, Dpi, v0Centr);
         if (tracketa < -etaGap && multGapC > 0) {
           Double_t vnSPPhA = harmGapC / multGapC;
           fillVnPhighPtA(trackpt, v0Centr, vnSPPhA, sinHarmn, cosHarmn);
@@ -631,6 +660,6 @@ struct flowTracksPerCollision {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowTracksPerCollision>(cfgc),
+    adaptAnalysisTask<flow_base>(cfgc),
   };
 }
