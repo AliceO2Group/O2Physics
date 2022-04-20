@@ -8,13 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+// O2 includes
+
 // \file multFilter.cxx
 // \task for selection of high multiplicity events
 //
 // \author Antonio Ortiz <antonio.ortiz.velasquez@cern.ch>, ICN-UNAM
-// \last update: 17/04/2022
-// O2 includes
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
