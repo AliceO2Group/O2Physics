@@ -175,7 +175,7 @@ struct HfTaskXicMc {
 
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XicToPKPi) {
         // Signal
-        auto indexMother = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kXiCPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kXiCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT

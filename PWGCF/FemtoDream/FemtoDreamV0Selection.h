@@ -217,16 +217,16 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
     }
     std::string folderName = static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]);
     /// \todo initialize histograms for children tracks of v0s
-    mHistogramRegistry->add((folderName + "/pThist").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});
-    mHistogramRegistry->add((folderName + "/etahist").c_str(), "; #eta; Entries", kTH1F, {{1000, -1, 1}});
-    mHistogramRegistry->add((folderName + "/phihist").c_str(), "; #phi; Entries", kTH1F, {{1000, 0, 2. * M_PI}});
-    mHistogramRegistry->add((folderName + "/dcaDauToVtx").c_str(), "; DCADaug_{Vtx} (cm); Entries", kTH1F, {{1000, 0, 10}});
-    mHistogramRegistry->add((folderName + "/transRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
-    mHistogramRegistry->add((folderName + "/decayVtxXPV").c_str(), "; #it{iVtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    mHistogramRegistry->add((folderName + "/decayVtxYPV").c_str(), "; #it{iVtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
-    mHistogramRegistry->add((folderName + "/decayVtxZPV").c_str(), "; #it{iVtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    mHistogramRegistry->add((folderName + "/cpa").c_str(), "; #it{cos(#alpha)}; Entries", kTH1F, {{1000, 0.9, 1.}});
-    mHistogramRegistry->add((folderName + "/cpapTBins").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos(#alpha)}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
+    mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{1000, -1, 1}});
+    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{1000, 0, 2. * M_PI}});
+    mHistogramRegistry->add((folderName + "/hDaughDCAtoVtx").c_str(), "; DCA^{daugh}_{Vtx} (cm); Entries", kTH1F, {{1000, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
+    mHistogramRegistry->add((folderName + "/hDecatVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
+    mHistogramRegistry->add((folderName + "/hDecatVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
+    mHistogramRegistry->add((folderName + "/hDecatVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
+    mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{cos(#sigma_{p})}; Entries", kTH1F, {{1000, 0.9, 1.}});
+    mHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos(#sigma_{p})}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
 
     PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry, "Pos");
     NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry, "Neg");

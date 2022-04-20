@@ -184,11 +184,11 @@ struct CandidateTreeWriter {
   {
   }
 
-  void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particles,
-               aod::BigTracksPID const& tracks)
+  void processMC(aod::Collisions const& collisions,
+                 aod::McCollisions const& mccollisions,
+                 soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particles,
+                 aod::BigTracksPID const& tracks)
   {
 
     // Filling event properties
@@ -207,6 +207,9 @@ struct CandidateTreeWriter {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (auto& candidate : candidates) {
+      auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
@@ -215,8 +218,8 @@ struct CandidateTreeWriter {
                            float FunctionE) {
         if (FunctionSelection >= 1) {
           rowCandidateFull(
-            candidate.index0_as<aod::BigTracksPID>().collision().bcId(),
-            candidate.index0_as<aod::BigTracksPID>().collision().numContrib(),
+            trackPos1.collision().bcId(),
+            trackPos1.collision().numContrib(),
             candidate.posX(),
             candidate.posY(),
             candidate.posZ(),
@@ -255,24 +258,24 @@ struct CandidateTreeWriter {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             candidate.errorImpactParameter2(),
-            candidate.index0_as<aod::BigTracksPID>().tpcNSigmaPi(),
-            candidate.index0_as<aod::BigTracksPID>().tpcNSigmaKa(),
-            candidate.index0_as<aod::BigTracksPID>().tpcNSigmaPr(),
-            candidate.index0_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.index0_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.index0_as<aod::BigTracksPID>().tofNSigmaPr(),
-            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaPi(),
-            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaKa(),
-            candidate.index1_as<aod::BigTracksPID>().tpcNSigmaPr(),
-            candidate.index1_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.index1_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.index1_as<aod::BigTracksPID>().tofNSigmaPr(),
-            candidate.index2_as<aod::BigTracksPID>().tpcNSigmaPi(),
-            candidate.index2_as<aod::BigTracksPID>().tpcNSigmaKa(),
-            candidate.index2_as<aod::BigTracksPID>().tpcNSigmaPr(),
-            candidate.index2_as<aod::BigTracksPID>().tofNSigmaPi(),
-            candidate.index2_as<aod::BigTracksPID>().tofNSigmaKa(),
-            candidate.index2_as<aod::BigTracksPID>().tofNSigmaPr(),
+            trackPos1.tpcNSigmaPi(),
+            trackPos1.tpcNSigmaKa(),
+            trackPos1.tpcNSigmaPr(),
+            trackPos1.tofNSigmaPi(),
+            trackPos1.tofNSigmaKa(),
+            trackPos1.tofNSigmaPr(),
+            trackNeg.tpcNSigmaPi(),
+            trackNeg.tpcNSigmaKa(),
+            trackNeg.tpcNSigmaPr(),
+            trackNeg.tofNSigmaPi(),
+            trackNeg.tofNSigmaKa(),
+            trackNeg.tofNSigmaPr(),
+            trackPos2.tpcNSigmaPi(),
+            trackPos2.tpcNSigmaKa(),
+            trackPos2.tpcNSigmaPr(),
+            trackPos2.tofNSigmaPi(),
+            trackPos2.tofNSigmaKa(),
+            trackPos2.tofNSigmaPr(),
             1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
@@ -307,6 +310,119 @@ struct CandidateTreeWriter {
       }
     }
   }
+  PROCESS_SWITCH(CandidateTreeWriter, processMC, "Process MC tree writer", true);
+
+  void processData(aod::Collisions const& collisions,
+                   soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate> const& candidates,
+                   aod::BigTracksPID const& tracks)
+  {
+
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (auto& collision : collisions) {
+      rowCandidateFullEvents(
+        collision.bcId(),
+        collision.numContrib(),
+        collision.posX(),
+        collision.posY(),
+        collision.posZ(),
+        0,
+        1);
+    }
+
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
+    for (auto& candidate : candidates) {
+      auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto fillTable = [&](int CandFlag,
+                           int FunctionSelection,
+                           float FunctionInvMass,
+                           float FunctionCt,
+                           float FunctionY,
+                           float FunctionE) {
+        if (FunctionSelection >= 1) {
+          rowCandidateFull(
+            trackPos1.collision().bcId(),
+            trackPos1.collision().numContrib(),
+            candidate.posX(),
+            candidate.posY(),
+            candidate.posZ(),
+            candidate.xSecondaryVertex(),
+            candidate.ySecondaryVertex(),
+            candidate.zSecondaryVertex(),
+            candidate.errorDecayLength(),
+            candidate.errorDecayLengthXY(),
+            candidate.chi2PCA(),
+            candidate.rSecondaryVertex(),
+            candidate.decayLength(),
+            candidate.decayLengthXY(),
+            candidate.decayLengthNormalised(),
+            candidate.decayLengthXYNormalised(),
+            candidate.impactParameterNormalised0(),
+            candidate.ptProng0(),
+            RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            candidate.impactParameterNormalised1(),
+            candidate.ptProng1(),
+            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+            candidate.impactParameterNormalised2(),
+            candidate.ptProng2(),
+            RecoDecay::P(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+            candidate.pxProng0(),
+            candidate.pyProng0(),
+            candidate.pzProng0(),
+            candidate.pxProng1(),
+            candidate.pyProng1(),
+            candidate.pzProng1(),
+            candidate.pxProng2(),
+            candidate.pyProng2(),
+            candidate.pzProng2(),
+            candidate.impactParameter0(),
+            candidate.impactParameter1(),
+            candidate.impactParameter2(),
+            candidate.errorImpactParameter0(),
+            candidate.errorImpactParameter1(),
+            candidate.errorImpactParameter2(),
+            trackPos1.tpcNSigmaPi(),
+            trackPos1.tpcNSigmaKa(),
+            trackPos1.tpcNSigmaPr(),
+            trackPos1.tofNSigmaPi(),
+            trackPos1.tofNSigmaKa(),
+            trackPos1.tofNSigmaPr(),
+            trackNeg.tpcNSigmaPi(),
+            trackNeg.tpcNSigmaKa(),
+            trackNeg.tpcNSigmaPr(),
+            trackNeg.tofNSigmaPi(),
+            trackNeg.tofNSigmaKa(),
+            trackNeg.tofNSigmaPr(),
+            trackPos2.tpcNSigmaPi(),
+            trackPos2.tpcNSigmaKa(),
+            trackPos2.tpcNSigmaPr(),
+            trackPos2.tofNSigmaPi(),
+            trackPos2.tofNSigmaKa(),
+            trackPos2.tofNSigmaPr(),
+            1 << CandFlag,
+            FunctionInvMass,
+            candidate.pt(),
+            candidate.p(),
+            candidate.cpa(),
+            candidate.cpaXY(),
+            FunctionCt,
+            candidate.eta(),
+            candidate.phi(),
+            FunctionY,
+            FunctionE,
+            0.,
+            0.);
+        }
+      };
+
+      fillTable(0, candidate.isSelLcpKpi(), InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(1, candidate.isSelLcpiKp(), InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+    }
+  }
+  PROCESS_SWITCH(CandidateTreeWriter, processData, "Process data tree writer", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

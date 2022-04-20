@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <map>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "Framework/runDataProcessing.h"
@@ -47,12 +49,15 @@ struct CellMonitor {
   o2::framework::Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0., "Minimum cell amplitude for histograms."};
   o2::framework::Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50, "Min. cell time of main bunch selection"};
   o2::framework::Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100, "Max. cell time of main bunch selection"};
-  o2::framework::Configurable<int> mVetoBCID{"vetoBCID", -1, "BC ID to be excluded"};
+  o2::framework::Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID to be excluded"};
+  o2::framework::Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID to be included"};
 
   o2::framework::HistogramRegistry mHistManager{"CellMonitorHistograms"};
 
   o2::emcal::Geometry* mGeometry = nullptr;
   std::shared_ptr<o2::emcal::BadChannelMap> mBadChannels;
+  std::vector<int> mVetoBCIDs;
+  std::vector<int> mSelectBCIDs;
 
   /// \brief Create output histograms and initialize geometry
   void init(o2::framework::InitContext const&)
@@ -88,31 +93,53 @@ struct CellMonitor {
     mHistManager.add("cellTimeMain", "Time distribution per cell for the main bunch", o2HistType::kTH2F, {timeAxisMainBunch, cellAxis});
     mHistManager.add("cellAmplitudeBC", "Cell amplitude vs. bunch crossing ID", o2HistType::kTH2F, {bcAxis, amplitudeAxis});
     mHistManager.add("celTimeBC", "Cell time vs. bunch crossing ID", o2HistType::kTH2F, {bcAxis, timeAxisLarge});
-    //mCellClusterOccurrency.setObject(new TH1F("cellClusterOccurrency", "Occurrency of a cell in clusters", nCells, -0.5, nCells - 0.5));
-    //mCellAmplitudeFractionCluster.setObject(new TH2F("cellAmplitudeFractionCluster", "Summed cell amplitude fraction in a cluster", nCells, -0.5, nCells - 0.5, 200, 0., 200.));
+    // mCellClusterOccurrency.setObject(new TH1F("cellClusterOccurrency", "Occurrency of a cell in clusters", nCells, -0.5, nCells - 0.5));
+    // mCellAmplitudeFractionCluster.setObject(new TH2F("cellAmplitudeFractionCluster", "Summed cell amplitude fraction in a cluster", nCells, -0.5, nCells - 0.5, 200, 0., 200.));
 
     for (int ism = 0; ism < 20; ++ism) {
       mHistManager.add(Form("cellAmplitudeSM/cellAmpSM%d", ism), Form("Integrated cell amplitudes for SM %d", ism), o2HistType::kTH2F, {colAxis, rowAxis});
       mHistManager.add(Form("cellCountSM/cellCountSM%d", ism), Form("Count rate per cell for SM %d; col; row", ism), o2HistType::kTH2F, {colAxis, rowAxis});
       mHistManager.add(Form("cellAmplitudeTime/cellAmpTimeCorrSM%d", ism), Form("Correlation between cell amplitude and time in Supermodule %d", ism), o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge});
     }
+    if (mVetoBCID->length()) {
+      std::stringstream parser(mVetoBCID.value);
+      std::string token;
+      int bcid;
+      while (std::getline(parser, token, ',')) {
+        bcid = std::stoi(token);
+        LOG(info) << "Veto BCID " << bcid;
+        mVetoBCIDs.push_back(bcid);
+      }
+    }
+    if (mSelectBCID.value != "all") {
+      std::stringstream parser(mSelectBCID.value);
+      std::string token;
+      int bcid;
+      while (std::getline(parser, token, ',')) {
+        bcid = std::stoi(token);
+        LOG(info) << "Select BCID " << bcid;
+        mSelectBCIDs.push_back(bcid);
+      }
+    }
     LOG(info) << "Cell monitor task configured ...";
   }
 
   /// \brief Process EMCAL cells
-  void process(o2::aod::Calos const& cells, o2::aod::BCs const& bcs)
+  void process(o2::aod::BC const bc, o2::aod::Calos const& cells)
   {
     LOG(debug) << "Processing next event";
-    for (const auto& bc : bcs) {
-      o2::InteractionRecord eventIR;
-      eventIR.setFromLong(bc.globalBC());
-      mHistManager.fill(HIST("eventsAll"), 1);
-      mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
-      if (mVetoBCID >= 0 && eventIR.bc == mVetoBCID)
-        continue;
-      mHistManager.fill(HIST("eventsSelected"), 1);
-      mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
+    o2::InteractionRecord eventIR;
+    eventIR.setFromLong(bc.globalBC());
+    mHistManager.fill(HIST("eventsAll"), 1);
+    mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
+      return;
     }
+    if (mSelectBCIDs.size() > 0 && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+      return;
+    }
+    mHistManager.fill(HIST("eventsSelected"), 1);
+    mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
     for (const auto& cell : cells) {
       // cell.cellNumber(),
       // cell.amplitude(),
@@ -124,8 +151,6 @@ struct CellMonitor {
       o2::InteractionRecord cellIR;
       cellIR.setFromLong(cell.bc().globalBC());
       mHistManager.fill(HIST("cellBCAll"), cellIR.bc);
-      if (mVetoBCID >= 0 && cellIR.bc == mVetoBCID)
-        continue;
       mHistManager.fill(HIST("cellBCSelected"), cellIR.bc);
       mHistManager.fill(HIST("cellAmplitude"), cell.amplitude(), cell.cellNumber());
       if (cell.amplitude() < mMinCellAmplitude)
