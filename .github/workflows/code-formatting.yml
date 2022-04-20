@@ -83,7 +83,7 @@ jobs:
           fi
 
       - name: Create pull request with formatting changes
-        uses: alisw/pull-request@master
+        uses: repo-sync/pull-request@v2
         with:
           source_branch: 'alibuild:alibot-cleanup-${{ github.event.pull_request.number }}'
           destination_branch: '${{ github.event.pull_request.head.label }}'
