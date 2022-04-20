@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+//
 // \file multFilter.cxx
 // \task for selection of high multiplicity events
 //
@@ -58,7 +58,7 @@ struct multFilter {
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
-  Configurable<int> cfgNetaBins{"cfgNetaBins", 2, "number of bins in eta"};
+  Configurable<int> cfgNetaBins{"cfgNetaBins", 4, "number of bins in eta"};
   Configurable<int> cfgNphiBins{"cfgNphiBins", 10, "number of bins in phi"};
 
   HistogramRegistry multiplicity{"multiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -86,11 +86,10 @@ struct multFilter {
 
     auto scalers{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM + 2, -0.5, kNtriggersMM + 2 - 0.5}}))};
     for (size_t iBin = 0; iBin < eventTitles.size() + mmObjectsNames.size(); iBin++) {
-      if (iBin < 2) {
+      if (iBin < 2)
         scalers->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
-      } else {
+      else
         scalers->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin - 2].data());
-      }
     }
   }
 
@@ -169,9 +168,9 @@ struct multFilter {
     for (int i_phi = 0; i_phi < cfgNphiBins + 1; ++i_phi) {
       PhiBins[i_phi] = 0;
       if (i_phi < cfgNphiBins) {
-        PhiBins[i_phi] = i_phi * deltaPhi;
+        PhiBins[i_phi] = i_phi * deltaPhi - 1.0 * M_PI;
       } else {
-        PhiBins[i_phi] = 2.0 * M_PI;
+        PhiBins[i_phi] = 1.0 * M_PI;
       }
     }
     int NchLattice[nEta][nPhi];
@@ -212,11 +211,10 @@ struct multFilter {
     }
     for (int i_eta = 0; i_eta < cfgNetaBins; ++i_eta) {
       for (int i_phi = 0; i_phi < cfgNphiBins; ++i_phi) {
-        if (NchLattice[i_eta][i_phi] > 0) {
+        if (NchLattice[i_eta][i_phi] > 0)
           MpTLattice[i_eta][i_phi] /= (1.0 * NchLattice[i_eta][i_phi]);
-        } else {
+        else
           MpTLattice[i_eta][i_phi] = 0.0;
-        }
       }
     }
 
