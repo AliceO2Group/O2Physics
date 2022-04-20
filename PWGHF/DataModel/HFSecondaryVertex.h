@@ -54,31 +54,31 @@ DECLARE_SOA_TABLE(HFSelTrack, "AOD", "HFSELTRACK", //!
 
 namespace hf_pvrefittrack
 {
-DECLARE_SOA_COLUMN(XPVrefit, xPVrefit, float);             //!
-DECLARE_SOA_COLUMN(YPVrefit, yPVrefit, float);             //!
-DECLARE_SOA_COLUMN(ZPVrefit, zPVrefit, float);             //!
-DECLARE_SOA_COLUMN(SIGMAX2PVrefit, sigmaX2PVrefit, float); //!
-DECLARE_SOA_COLUMN(SIGMAXYPVrefit, sigmaXYPVrefit, float); //!
-DECLARE_SOA_COLUMN(SIGMAY2PVrefit, sigmaY2PVrefit, float); //!
-DECLARE_SOA_COLUMN(SIGMAXZPVrefit, sigmaXZPVrefit, float); //!
-DECLARE_SOA_COLUMN(SIGMAYZPVrefit, sigmaYZPVrefit, float); //!
-DECLARE_SOA_COLUMN(SIGMAZ2PVrefit, sigmaZ2PVrefit, float); //!
-DECLARE_SOA_COLUMN(DCAXYPVrefit, dcaXYPVrefit, float);     //!
-DECLARE_SOA_COLUMN(DCAZPVrefit, dcaZPVrefit, float);       //!
+DECLARE_SOA_COLUMN(PVrefitX, pvrefitX, float);             //!
+DECLARE_SOA_COLUMN(PVrefitY, pvrefitY, float);             //!
+DECLARE_SOA_COLUMN(PVrefitZ, pvrefitZ, float);             //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAX2, pvrefitSigmaX2, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAXY, pvrefitSigmaXY, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAY2, pvrefitSigmaY2, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAXZ, pvrefitSigmaXZ, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAYZ, pvrefitSigmaYZ, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAZ2, pvrefitSigmaZ2, float); //!
+DECLARE_SOA_COLUMN(PVrefitDCAXY, pvrefitDCAxy, float);     //!
+DECLARE_SOA_COLUMN(PVrefitDCAZ, pvrefitDCAz, float);       //!
 } // namespace hf_pvrefittrack
 
 DECLARE_SOA_TABLE(HFPVrefitTrack, "AOD", "HFPVREFITTRACK", //!
-                  hf_pvrefittrack::XPVrefit,
-                  hf_pvrefittrack::YPVrefit,
-                  hf_pvrefittrack::ZPVrefit,
-                  hf_pvrefittrack::SIGMAX2PVrefit,
-                  hf_pvrefittrack::SIGMAXYPVrefit,
-                  hf_pvrefittrack::SIGMAY2PVrefit,
-                  hf_pvrefittrack::SIGMAXZPVrefit,
-                  hf_pvrefittrack::SIGMAYZPVrefit,
-                  hf_pvrefittrack::SIGMAZ2PVrefit,
-                  hf_pvrefittrack::DCAXYPVrefit,
-                  hf_pvrefittrack::DCAZPVrefit);
+                  hf_pvrefittrack::PVrefitX,
+                  hf_pvrefittrack::PVrefitY,
+                  hf_pvrefittrack::PVrefitZ,
+                  hf_pvrefittrack::PVrefitSIGMAX2,
+                  hf_pvrefittrack::PVrefitSIGMAXY,
+                  hf_pvrefittrack::PVrefitSIGMAY2,
+                  hf_pvrefittrack::PVrefitSIGMAXZ,
+                  hf_pvrefittrack::PVrefitSIGMAYZ,
+                  hf_pvrefittrack::PVrefitSIGMAZ2,
+                  hf_pvrefittrack::PVrefitDCAXY,
+                  hf_pvrefittrack::PVrefitDCAZ);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
 using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;
@@ -149,51 +149,51 @@ DECLARE_SOA_TABLE(HfCutStatusProng3, "AOD", "HFCUTSTATUSP3", //!
 
 namespace hf_PVrefit_candProng2
 {
-DECLARE_SOA_COLUMN(XPVrefit_noProngs, xPVrefit_noProngs, float);             //!
-DECLARE_SOA_COLUMN(YPVrefit_noProngs, yPVrefit_noProngs, float);             //!
-DECLARE_SOA_COLUMN(ZPVrefit_noProngs, zPVrefit_noProngs, float);             //!
-DECLARE_SOA_COLUMN(SIGMAX2PVrefit_noProngs, sigmaX2PVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAXYPVrefit_noProngs, sigmaXYPVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAY2PVrefit_noProngs, sigmaY2PVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAXZPVrefit_noProngs, sigmaXZPVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAYZPVrefit_noProngs, sigmaYZPVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAZ2PVrefit_noProngs, sigmaZ2PVrefit_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitX_noProngs, pvrefitX_noProngs, float);             //!
+DECLARE_SOA_COLUMN(PVrefitY_noProngs, pvrefitY_noProngs, float);             //!
+DECLARE_SOA_COLUMN(PVrefitZ_noProngs, pvrefitZ_noProngs, float);             //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAX2_noProngs, pvrefitSigmaX2_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAXY_noProngs, pvrefitSigmaXY_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAY2_noProngs, pvrefitSigmaY2_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAXZ_noProngs, pvrefitSigmaXZ_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAYZ_noProngs, pvrefitSigmaYZ_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAZ2_noProngs, pvrefitSigmaZ2_noProngs, float); //!
 } // namespace hf_PVrefit_candProng2
 
 DECLARE_SOA_TABLE(HfPVrefitProng2, "AOD", "HFPVREFITPRONG2", //!
-                  hf_PVrefit_candProng2::XPVrefit_noProngs,
-                  hf_PVrefit_candProng2::YPVrefit_noProngs,
-                  hf_PVrefit_candProng2::ZPVrefit_noProngs,
-                  hf_PVrefit_candProng2::SIGMAX2PVrefit_noProngs,
-                  hf_PVrefit_candProng2::SIGMAXYPVrefit_noProngs,
-                  hf_PVrefit_candProng2::SIGMAY2PVrefit_noProngs,
-                  hf_PVrefit_candProng2::SIGMAXZPVrefit_noProngs,
-                  hf_PVrefit_candProng2::SIGMAYZPVrefit_noProngs,
-                  hf_PVrefit_candProng2::SIGMAZ2PVrefit_noProngs);
+                  hf_PVrefit_candProng2::PVrefitX_noProngs,
+                  hf_PVrefit_candProng2::PVrefitY_noProngs,
+                  hf_PVrefit_candProng2::PVrefitZ_noProngs,
+                  hf_PVrefit_candProng2::PVrefitSIGMAX2_noProngs,
+                  hf_PVrefit_candProng2::PVrefitSIGMAXY_noProngs,
+                  hf_PVrefit_candProng2::PVrefitSIGMAY2_noProngs,
+                  hf_PVrefit_candProng2::PVrefitSIGMAXZ_noProngs,
+                  hf_PVrefit_candProng2::PVrefitSIGMAYZ_noProngs,
+                  hf_PVrefit_candProng2::PVrefitSIGMAZ2_noProngs);
 
 namespace hf_PVrefit_candProng3
 {
-DECLARE_SOA_COLUMN(XPVrefit_noProngs, xPVrefit_noProngs, float);             //!
-DECLARE_SOA_COLUMN(YPVrefit_noProngs, yPVrefit_noProngs, float);             //!
-DECLARE_SOA_COLUMN(ZPVrefit_noProngs, zPVrefit_noProngs, float);             //!
-DECLARE_SOA_COLUMN(SIGMAX2PVrefit_noProngs, sigmaX2PVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAXYPVrefit_noProngs, sigmaXYPVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAY2PVrefit_noProngs, sigmaY2PVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAXZPVrefit_noProngs, sigmaXZPVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAYZPVrefit_noProngs, sigmaYZPVrefit_noProngs, float); //!
-DECLARE_SOA_COLUMN(SIGMAZ2PVrefit_noProngs, sigmaZ2PVrefit_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitX_noProngs, pvrefitX_noProngs, float);             //!
+DECLARE_SOA_COLUMN(PVrefitY_noProngs, pvrefitY_noProngs, float);             //!
+DECLARE_SOA_COLUMN(PVrefitZ_noProngs, pvrefitZ_noProngs, float);             //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAX2_noProngs, pvrefitSigmaX2_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAXY_noProngs, pvrefitSigmaXY_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAY2_noProngs, pvrefitSigmaY2_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAXZ_noProngs, pvrefitSigmaXZ_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAYZ_noProngs, pvrefitSigmaYZ_noProngs, float); //!
+DECLARE_SOA_COLUMN(PVrefitSIGMAZ2_noProngs, pvrefitSigmaZ2_noProngs, float); //!
 } // namespace hf_PVrefit_candProng3
 
 DECLARE_SOA_TABLE(HfPVrefitProng3, "AOD", "HFPVREFITPRONG3", //!
-                  hf_PVrefit_candProng3::XPVrefit_noProngs,
-                  hf_PVrefit_candProng3::YPVrefit_noProngs,
-                  hf_PVrefit_candProng3::ZPVrefit_noProngs,
-                  hf_PVrefit_candProng3::SIGMAX2PVrefit_noProngs,
-                  hf_PVrefit_candProng3::SIGMAXYPVrefit_noProngs,
-                  hf_PVrefit_candProng3::SIGMAY2PVrefit_noProngs,
-                  hf_PVrefit_candProng3::SIGMAXZPVrefit_noProngs,
-                  hf_PVrefit_candProng3::SIGMAYZPVrefit_noProngs,
-                  hf_PVrefit_candProng3::SIGMAZ2PVrefit_noProngs);
+                  hf_PVrefit_candProng3::PVrefitX_noProngs,
+                  hf_PVrefit_candProng3::PVrefitY_noProngs,
+                  hf_PVrefit_candProng3::PVrefitZ_noProngs,
+                  hf_PVrefit_candProng3::PVrefitSIGMAX2_noProngs,
+                  hf_PVrefit_candProng3::PVrefitSIGMAXY_noProngs,
+                  hf_PVrefit_candProng3::PVrefitSIGMAY2_noProngs,
+                  hf_PVrefit_candProng3::PVrefitSIGMAXZ_noProngs,
+                  hf_PVrefit_candProng3::PVrefitSIGMAYZ_noProngs,
+                  hf_PVrefit_candProng3::PVrefitSIGMAZ2_noProngs);
 
 // general decay properties
 namespace hf_cand

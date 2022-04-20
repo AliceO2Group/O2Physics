@@ -101,16 +101,16 @@ struct HFCandidateCreator2Prong {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
-        primaryVertex.setX(rowTrackIndexProng2.xPVrefit_noProngs());
-        primaryVertex.setY(rowTrackIndexProng2.yPVrefit_noProngs());
-        primaryVertex.setZ(rowTrackIndexProng2.zPVrefit_noProngs());
+        primaryVertex.setX(rowTrackIndexProng2.pvrefitX_noProngs());
+        primaryVertex.setY(rowTrackIndexProng2.pvrefitY_noProngs());
+        primaryVertex.setZ(rowTrackIndexProng2.pvrefitZ_noProngs());
         // covariance matrix
-        primaryVertex.setSigmaX2(rowTrackIndexProng2.sigmaX2PVrefit_noProngs());
-        primaryVertex.setSigmaXY(rowTrackIndexProng2.sigmaXYPVrefit_noProngs());
-        primaryVertex.setSigmaY2(rowTrackIndexProng2.sigmaY2PVrefit_noProngs());
-        primaryVertex.setSigmaXZ(rowTrackIndexProng2.sigmaXZPVrefit_noProngs());
-        primaryVertex.setSigmaYZ(rowTrackIndexProng2.sigmaYZPVrefit_noProngs());
-        primaryVertex.setSigmaZ2(rowTrackIndexProng2.sigmaZ2PVrefit_noProngs());
+        primaryVertex.setSigmaX2(rowTrackIndexProng2.pvrefitSigmaX2_noProngs());
+        primaryVertex.setSigmaXY(rowTrackIndexProng2.pvrefitSigmaXY_noProngs());
+        primaryVertex.setSigmaY2(rowTrackIndexProng2.pvrefitSigmaY2_noProngs());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng2.pvrefitSigmaXZ_noProngs());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng2.pvrefitSigmaYZ_noProngs());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvrefitSigmaZ2_noProngs());
         covMatrixPV = primaryVertex.getCov();
       }
       hCovPVXX->Fill(covMatrixPV[0]);

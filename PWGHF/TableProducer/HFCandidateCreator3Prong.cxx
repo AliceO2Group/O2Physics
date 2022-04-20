@@ -111,16 +111,16 @@ struct HFCandidateCreator3Prong {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
-        primaryVertex.setX(rowTrackIndexProng3.xPVrefit_noProngs());
-        primaryVertex.setY(rowTrackIndexProng3.yPVrefit_noProngs());
-        primaryVertex.setZ(rowTrackIndexProng3.zPVrefit_noProngs());
+        primaryVertex.setX(rowTrackIndexProng3.pvrefitX_noProngs());
+        primaryVertex.setY(rowTrackIndexProng3.pvrefitY_noProngs());
+        primaryVertex.setZ(rowTrackIndexProng3.pvrefitZ_noProngs());
         // covariance matrix
-        primaryVertex.setSigmaX2(rowTrackIndexProng3.sigmaX2PVrefit_noProngs());
-        primaryVertex.setSigmaXY(rowTrackIndexProng3.sigmaXYPVrefit_noProngs());
-        primaryVertex.setSigmaY2(rowTrackIndexProng3.sigmaY2PVrefit_noProngs());
-        primaryVertex.setSigmaXZ(rowTrackIndexProng3.sigmaXZPVrefit_noProngs());
-        primaryVertex.setSigmaYZ(rowTrackIndexProng3.sigmaYZPVrefit_noProngs());
-        primaryVertex.setSigmaZ2(rowTrackIndexProng3.sigmaZ2PVrefit_noProngs());
+        primaryVertex.setSigmaX2(rowTrackIndexProng3.pvrefitSigmaX2_noProngs());
+        primaryVertex.setSigmaXY(rowTrackIndexProng3.pvrefitSigmaXY_noProngs());
+        primaryVertex.setSigmaY2(rowTrackIndexProng3.pvrefitSigmaY2_noProngs());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng3.pvrefitSigmaXZ_noProngs());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng3.pvrefitSigmaYZ_noProngs());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng3.pvrefitSigmaZ2_noProngs());
         covMatrixPV = primaryVertex.getCov();
       }
       hCovPVXX->Fill(covMatrixPV[0]);
@@ -277,7 +277,7 @@ struct HFCandidateCreator3ProngExpressions {
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
           RecoDecay::getDaughters(particlesMC, particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
