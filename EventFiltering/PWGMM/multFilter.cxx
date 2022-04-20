@@ -86,10 +86,11 @@ struct multFilter {
 
     auto scalers{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM + 2, -0.5, kNtriggersMM + 2 - 0.5}}))};
     for (size_t iBin = 0; iBin < eventTitles.size() + mmObjectsNames.size(); iBin++) {
-      if (iBin < 2)
+      if (iBin < 2) {
         scalers->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
-      else
+      } else {
         scalers->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin - 2].data());
+      }
     }
   }
 
@@ -211,10 +212,11 @@ struct multFilter {
     }
     for (int i_eta = 0; i_eta < cfgNetaBins; ++i_eta) {
       for (int i_phi = 0; i_phi < cfgNphiBins; ++i_phi) {
-        if (NchLattice[i_eta][i_phi] > 0)
+        if (NchLattice[i_eta][i_phi] > 0) {
           MpTLattice[i_eta][i_phi] /= (1.0 * NchLattice[i_eta][i_phi]);
-        else
+        } else {
           MpTLattice[i_eta][i_phi] = 0.0;
+        }
       }
     }
 
