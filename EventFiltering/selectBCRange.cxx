@@ -86,7 +86,7 @@ struct BCRangeSelector {
       res.emplace_back(IR1, IR2);
     }
     // make res an output
-    pc.outputs().snapshot({"PPF", "BCR", 0, Lifetime::Timeframe}, res);
+    pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);
     
     // clean up
     cbcrs.reset();
@@ -105,7 +105,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   DataProcessorSpec spec{adaptAnalysisTask<BCRangeSelector>(cfgc, TaskName{"bc-ranges-selector-task"})};
 
   // add output
-  spec.outputs.emplace_back("PPF", "BCR", 0, Lifetime::Timeframe);
+  spec.outputs.emplace_back("PPF", "IFRAMES", 0, Lifetime::Timeframe);
   LOGF(debug, "Output %i", spec.outputs.size());
 
   return WorkflowSpec{spec};
