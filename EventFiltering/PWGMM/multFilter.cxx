@@ -19,18 +19,13 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "../filterTables.h"
-
 #include "Framework/HistogramRegistry.h"
-
 #include <cmath>
 #include <string>
 #include <TMath.h>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -344,7 +339,5 @@ struct multFilter {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-
-  return WorkflowSpec{
-    adaptAnalysisTask<multFilter>(cfg)};
+  return WorkflowSpec{adaptAnalysisTask<multFilter>(cfg)};
 }
