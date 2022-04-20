@@ -28,6 +28,7 @@ using namespace o2::framework::expressions;
 // Run 3
 struct BCRangeSelector {
 
+  Configurable<int> nTimeRes{"nTimeRes", 4, "Range to consider for search of compatible BCs in units of vertex-time-resolution."};
   Configurable<double> fillFac{"fillFactor", 0.0, "Factor of MB events to add"};
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -64,7 +65,7 @@ struct BCRangeSelector {
 
     // 1. loop over collisions
     for (auto collision : cols) {
-      auto bcRange = compatibleBCs(collision, 4, bcs);
+      auto bcRange = compatibleBCs(collision, nTimeRes, bcs);
 
       // update list of ranges
       auto bcfirst = bcRange.rawIteratorAt(0);
@@ -73,7 +74,6 @@ struct BCRangeSelector {
     }
 
     // 2. sort, merge, and extend ranges of compatible BCs
-    //LOGP(info, "fillFac {}", fillFac);
     cbcrs.compact(bcs, fillFac);
 
     // fill res
