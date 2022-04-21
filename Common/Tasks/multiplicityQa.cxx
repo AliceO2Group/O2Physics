@@ -47,7 +47,7 @@ struct MultiplicityQa {
   Configurable<float> MaxMultV0{"MaxMultV0", 20000, "Max V0 signal"};
   Configurable<float> MaxMultT0{"MaxMultT0", 10000, "Max T0 signal"};
   Configurable<float> MaxMultFDD{"MaxMultFDD", 10000, "Max FDD signal"};
-  Configurable<float> MaxMultNTracks{"MaxMultNTracks", 10000, "Max Ntracks"};
+  Configurable<float> MaxMultNTracks{"MaxMultNTracks", 1000, "Max Ntracks"};
   Configurable<int> NBinsVertexZ{"NBinsVertexZ", 400, "max vertex Z (cm)"};
   
   void init(InitContext&)
@@ -64,7 +64,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hRawV0", "Raw V0", kTH1D, {axisMultV0});
     histos.add("multiplicityQa/hRawT0", "Raw T0", kTH1D, {axisMultT0});
     histos.add("multiplicityQa/hRawFDD", "Raw FDD", kTH1D, {axisMultFDD});
-    histos.add("multiplicityQa/hRawNTracks", "Raw NTracks", kTH1D, {axisMultFDD});
+    histos.add("multiplicityQa/hRawNTracks", "Raw NTracks", kTH1D, {axisMultNTracks});
     histos.add("multiplicityQa/hZeqV0", "vtx-z eq V0", kTH1D, {axisMultV0});
     histos.add("multiplicityQa/hZeqT0", "vtx-z eq T0", kTH1D, {axisMultT0});
     histos.add("multiplicityQa/hZeqFDD", "vtx-z eq FDD", kTH1D, {axisMultFDD});
