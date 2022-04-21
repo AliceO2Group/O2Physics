@@ -9,25 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \file multFilter.cxx
-// \task for selection of high multiplicity events
-//
-// \author Antonio Ortiz <antonio.ortiz.velasquez@cern.ch>, ICN-UNAM
-//
-// O2 includes
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "../filterTables.h"
-
 #include "Framework/HistogramRegistry.h"
-
 #include <cmath>
 #include <string>
 #include <TMath.h>
@@ -58,7 +48,7 @@ struct multFilter {
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
-  Configurable<int> cfgNetaBins{"cfgNetaBins", 4, "number of bins in eta"};
+  Configurable<int> cfgNetaBins{"cfgNetaBins", 2, "number of bins in eta"};
   Configurable<int> cfgNphiBins{"cfgNphiBins", 10, "number of bins in phi"};
 
   HistogramRegistry multiplicity{"multiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -67,6 +57,7 @@ struct multFilter {
 
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
     multiplicity.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
+    multiplicity.add("hPhi", "Phi", HistType::kTH1F, {{20, -2.0 * M_PI, 2.0 * M_PI, " "}});
     multiplicity.add("fLeadingTrackPt", "Lead trk pT", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     multiplicity.add("fMultFv0", "FV0 amp", HistType::kTH1F, {{800, -0.5, +39999.5, "FV0 amplitude"}});
     multiplicity.add("fTrackMult", "trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
@@ -81,6 +72,22 @@ struct multFilter {
     multiplicity.add("fTrackMultSelected", "sel trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
     multiplicity.add("fTrackMultTransSelected", "sel trk mult (TS)", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (TS)"}});
     multiplicity.add("fDeltaPhiTrans", "delta phi distribution in TS", HistType::kTH1F, {{64, -M_PI / 2.0, +3.0 * M_PI / 2.0, "#Delta#varphi (rad)"}});
+    // control histograms vs V0A
+    multiplicity.add("fMpTVsMultFv0", "Av pT vs FV0 amp", HistType::kTProfile, {{800, -0.5, +39999.5, "sum AmpFV0"}});
+    multiplicity.add("fnMpTVsMultFv0", "Av pT (#eta<0) vs FV0 amp", HistType::kTProfile, {{800, -0.5, +39999.5, "sum AmpFV0"}});
+    multiplicity.add("fTrackMultVsMultFv0", "Av trk mult vs FV0 amp", HistType::kTProfile, {{800, -0.5, +39999.5, "sum AmpFV0"}});
+    // control histograms vs T0
+    multiplicity.add("fMpTVsMultFt0", "Av pT vs FT0 amp", HistType::kTProfile, {{200, -0.5, +999.5, "sum AmpFT0"}});
+    multiplicity.add("fnMpTVsMultFt0", "Av pT (#eta<0) vs FT0 amp", HistType::kTProfile, {{200, -0.5, +999.5, "sum AmpFT0"}});
+    multiplicity.add("fTrackMultVsMultFt0", "Av trk mult vs FT0 amp", HistType::kTProfile, {{200, -0.5, +999.5, "sum AmpFT0"}});
+    // control histograms vs trk mult
+    multiplicity.add("fMpTVsTrackMult", "Av pT vs trk mult", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
+    multiplicity.add("fMpTVsTrackMultFlat", "Av pT vs trk mult (flat)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
+    multiplicity.add("fnMpTVsTrackMult", "Av pT (#eta<0) vs trk mult", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
+    // quick check, mult in T0 + V0
+    multiplicity.add("fMpTVsMultFt0v0", "Av pT vs FT0+FV0 amp", HistType::kTProfile, {{800, -0.5, +39999.5, "sum AmpFT0+AmpFV0"}});
+    multiplicity.add("fnMpTVsMultFt0v0", "Av pT (#eta<0) vs FT0+FV0 amp", HistType::kTProfile, {{800, -0.5, +39999.5, "sum AmpFT0+AmpFV0"}});
+    multiplicity.add("fTrackMultVsMultFt0v0", "Av trk mult vs FT0+FV0 amp", HistType::kTProfile, {{800, -0.5, +39999.5, "sum AmpFT0+AmpFV0"}});
 
     std::array<std::string, 2> eventTitles = {"all", "rejected"};
 
@@ -168,9 +175,9 @@ struct multFilter {
     for (int i_phi = 0; i_phi < cfgNphiBins + 1; ++i_phi) {
       PhiBins[i_phi] = 0;
       if (i_phi < cfgNphiBins) {
-        PhiBins[i_phi] = i_phi * deltaPhi - 1.0 * M_PI;
+        PhiBins[i_phi] = i_phi * deltaPhi;
       } else {
-        PhiBins[i_phi] = 1.0 * M_PI;
+        PhiBins[i_phi] = 2.0 * M_PI;
       }
     }
     int NchLattice[nEta][nPhi];
@@ -190,6 +197,7 @@ struct multFilter {
     for (auto& track : tracks) {
       multTrack++;
       multiplicity.fill(HIST("hdNdeta"), track.eta());
+      multiplicity.fill(HIST("hPhi"), track.phi());
       for (int i_eta = 0; i_eta < cfgNetaBins; ++i_eta) {
         for (int i_phi = 0; i_phi < cfgNphiBins; ++i_phi) {
           if (track.eta() >= EtaBins[i_eta] && track.eta() < EtaBins[i_eta + 1] &&
@@ -205,10 +213,28 @@ struct multFilter {
         flPhi = track.phi();
       }
     }
+    // filling tprofiles
+    for (auto& track : tracks) {
+      multiplicity.fill(HIST("fMpTVsTrackMult"), multTrack, track.pt());
+      multiplicity.fill(HIST("fMpTVsMultFv0"), sumAmpFV0, track.pt());
+      multiplicity.fill(HIST("fMpTVsMultFt0"), sumAmpFT0, track.pt());
+      multiplicity.fill(HIST("fMpTVsMultFt0v0"), sumAmpFT0 + sumAmpFT0, track.pt());
+      if (track.eta() < 0) {
+        multiplicity.fill(HIST("fnMpTVsTrackMult"), multTrack, track.pt());
+        multiplicity.fill(HIST("fnMpTVsMultFv0"), sumAmpFV0, track.pt());
+        multiplicity.fill(HIST("fnMpTVsMultFt0"), sumAmpFT0, track.pt());
+        multiplicity.fill(HIST("fnMpTVsMultFt0v0"), sumAmpFT0 + sumAmpFT0, track.pt());
+      }
+    }
+    multiplicity.fill(HIST("fTrackMultVsMultFv0"), sumAmpFV0, multTrack);
+    multiplicity.fill(HIST("fTrackMultVsMultFt0"), sumAmpFT0, multTrack);
+    multiplicity.fill(HIST("fTrackMultVsMultFt0v0"), sumAmpFT0 + sumAmpFT0, multTrack);
+
     if (nchtotal < minMult) {
       rho_mMpT = -1;
       rho_mNch = -1;
     }
+
     for (int i_eta = 0; i_eta < cfgNetaBins; ++i_eta) {
       for (int i_phi = 0; i_phi < cfgNphiBins; ++i_phi) {
         if (NchLattice[i_eta][i_phi] > 0)
@@ -244,6 +270,12 @@ struct multFilter {
     double sMpT = TMath::Sqrt(sMpT_tmp);
     rho_mMpT = sMpT / mMpT;
     rho_mNch = sNch / mNch;
+    if (rho_mNch < 0.95) {
+      for (auto& track : tracks) {
+        multiplicity.fill(HIST("fMpTVsTrackMultFlat"), multTrack, track.pt());
+      }
+    }
+
     multiplicity.fill(HIST("fRhoNVsTrkMult"), multTrack, rho_mNch);
     multiplicity.fill(HIST("fRhoPVsTrkMult"), multTrack, rho_mMpT);
     multiplicity.fill(HIST("fLeadingTrackPt"), flPt);
@@ -303,7 +335,5 @@ struct multFilter {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-
-  return WorkflowSpec{
-    adaptAnalysisTask<multFilter>(cfg)};
+  return WorkflowSpec{adaptAnalysisTask<multFilter>(cfg)};
 }
