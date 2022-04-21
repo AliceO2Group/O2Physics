@@ -65,14 +65,14 @@ DECLARE_SOA_COLUMN(HighTrackMultOverlap, hasHighTrackMultOverlap, bool); //! hig
 
 } // namespace filtering
 
-namespace decision 
+namespace decision
 {
 
-DECLARE_SOA_COLUMN(BCId, hasBCId, int); //! Bunch crossing Id
-DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float); //! Collision time 
-DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool); //! CEFP decision
+DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float); //! Collision time
+DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
 
-}
+} // namespace decision
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!

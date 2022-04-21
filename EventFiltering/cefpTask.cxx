@@ -236,7 +236,7 @@ struct centralEventFilterTask {
       auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
       auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
       for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
-        tags(BCArray->Value(iD),CollTimeArray->Value(iD),outDecision[iD]);
+        tags(BCArray->Value(iD), CollTimeArray->Value(iD), outDecision[iD]);
         entryD++;
       }
     }
