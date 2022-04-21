@@ -21,8 +21,10 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {kFALSE};
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
-o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProng;
-o2::vertexing::FwdDCAFitterN<2> VarManager::FwdfgFitterTwoProng;
+o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
+o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
+o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
+o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()

@@ -35,6 +35,7 @@
 
 using std::cout;
 using std::endl;
+using std::string;
 
 using namespace o2;
 using namespace o2::framework;
@@ -791,7 +792,7 @@ struct AnalysisSameEventPairing {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
-    
+
     runPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMCEventFillMap, gkMuonFillMap>(event, muons, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     runMCGen(groupedMCTracks);
@@ -835,13 +836,207 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
 };
 
+struct AnalysisDileptonTrack {
+  OutputObj<THashList> fOutputList{"output"};
+  // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
+  Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
+  Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
+  //Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
+  //Filter dileptonFilter = aod::reducedpair::mass > 2.6f && aod::reducedpair::mass < 3.5f && aod::reducedpair::sign == 0;
+
+  Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
+  Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
+
+  constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
+
+  // use two values array to avoid mixing up the quantities
+  float* fValuesDilepton;
+  float* fValuesTrack;
+  HistogramManager* fHistMan;
+
+  std::vector<std::vector<TString>> fMuonHistNames;
+  std::vector<std::vector<TString>> fMuonHistNamesMCmatched;
+  std::vector<TString> fRecMCSignalsNames;
+
+  std::vector<MCSignal> fRecMCSignals;
+  std::vector<MCSignal> fGenMCSignals;
+
+  // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
+  //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
+  //      The current condition should be replaced when bitwise operators will become available in Filter expresions
+  int fNHadronCutBit;
+
+  void init(o2::framework::InitContext& context)
+  {
+    TString sigNamesStr = fConfigMCRecSignals.value;
+    std::unique_ptr<TObjArray> objRecSigArray(sigNamesStr.Tokenize(","));
+    TString histNames;
+
+    fValuesDilepton = new float[VarManager::kNVars];
+    fValuesTrack = new float[VarManager::kNVars];
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
+    // TODO: Implement possibly multiple selections for the associated track ?
+    if (context.mOptions.get<bool>("processDimuonMuonSkimmed")) {
+      //DefineHistograms(fHistMan, "DileptonsSelected;DileptonTrackInvMass;DileptonsSelected_matchedMC;DileptonTrackInvMass_matchedMC;"); // define all histograms
+      //VarManager::SetUseVars(fHistMan->GetUsedVars());
+      //fOutputList.setObject(fHistMan->GetMainHistogramList());
+
+      histNames += "DileptonsSelected;DileptonTrackInvMass;";
+
+      if (!sigNamesStr.IsNull()) {
+        for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
+          MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
+          if (sig) {
+            if (sig->GetNProngs() == 1) {
+              fRecMCSignals.push_back(*sig);
+              TString histName = Form("LeptonsSelected_matchedMC_%s", sig->GetName());
+              histNames += Form("%s;", histName.Data());
+              fRecMCSignalsNames.push_back(sig->GetName());
+            }
+            if (sig->GetNProngs() == 2) {
+              fRecMCSignals.push_back(*sig);
+              TString histName = Form("DileptonsSelected_matchedMC_%s", sig->GetName());
+              histNames += Form("%s;", histName.Data());
+              fRecMCSignalsNames.push_back(sig->GetName());
+            }
+            if (sig->GetNProngs() == 3) {
+              fRecMCSignals.push_back(*sig);
+              TString histName = Form("DileptonTrackInvMass_matchedMC_%s", sig->GetName());
+              histNames += Form("%s;", histName.Data());
+              fRecMCSignalsNames.push_back(sig->GetName());
+            }
+          }
+        }
+      }
+
+      DefineHistograms(fHistMan, histNames.Data()); // define all histograms
+      VarManager::SetUseVars(fHistMan->GetUsedVars());
+      fOutputList.setObject(fHistMan->GetMainHistogramList());
+    }
+
+    TString configCutNamesStr = fConfigTrackCuts.value;
+    if (!configCutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(configCutNamesStr.Tokenize(","));
+      fNHadronCutBit = objArray->GetEntries();
+    } else {
+      fNHadronCutBit = 0;
+    }
+  }
+
+  // Template function to run pair - track combinations
+  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
+  void runDileptonTrack(TEvent const& event, TTracks const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  {
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesTrack);
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
+    VarManager::FillEvent<TEventFillMap>(event, fValuesTrack);
+    VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
+
+    // Set the global index offset to find the proper lepton
+    // TO DO: remove it once the issue with lepton index is solved
+    int indexOffset = -999;
+    for (auto dilepton : dileptons) {
+
+      int indexLepton1 = dilepton.index0Id();
+      int indexLepton2 = dilepton.index1Id();
+
+      if (indexOffset == -999) {
+        indexOffset = indexLepton1;
+      }
+
+      auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
+      auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
+
+      // Check that the dilepton has zero charge
+      if (dilepton.sign() != 0) {
+        continue;
+      }
+
+      // Check that the muons are opposite sign
+      if (lepton1.sign() * lepton2.sign() > 0) {
+        continue;
+      }
+
+      VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
+      fHistMan->FillHistClass("DileptonsSelected", fValuesDilepton);
+
+      auto lepton1MC = lepton1.reducedMCTrack();
+      auto lepton2MC = lepton2.reducedMCTrack();
+
+      // run MC matching for this pair
+      uint32_t mcDecision = 0;
+      int isig = 0;
+      for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+        if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
+          if ((*sig).CheckSignal(false, tracksMC, lepton1MC, lepton2MC)) {
+            mcDecision |= (uint32_t(1) << isig);
+          }
+        }
+      } // end loop over MC signals
+
+      for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+        if (mcDecision & (uint32_t(1) << isig)) {
+          fHistMan->FillHistClass(Form("DileptonsSelected_matchedMC_%s", fRecMCSignalsNames[isig].Data()), fValuesDilepton);
+        }
+      }
+
+      for (auto& track : tracks) {
+        auto trackMC = track.reducedMCTrack();
+        int index = track.globalIndex();
+
+        // Remove combinations in which the track index is the same as the dilepton legs indices
+        if (index == indexLepton1 || index == indexLepton2) {
+          continue;
+        }
+
+        VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesTrack);
+        fHistMan->FillHistClass("DileptonTrackInvMass", fValuesTrack);
+
+        mcDecision = 0;
+        isig = 0;
+        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+          if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
+            if ((*sig).CheckSignal(false, tracksMC, lepton1MC, lepton2MC, trackMC)) {
+              mcDecision |= (uint32_t(1) << isig);
+            }
+          }
+        }
+
+        for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+          if (mcDecision & (uint32_t(1) << isig)) {
+            fHistMan->FillHistClass(Form("DileptonTrackInvMass_matchedMC_%s", fRecMCSignalsNames[isig].Data()), fValuesTrack);
+          }
+        }
+      }
+    }
+  }
+
+  void processDimuonMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyMuonTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
+    runDileptonTrack<VarManager::kBcToThreeMuons, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
+  }
+  void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDimuonMuonSkimmed, "Run dimuon-muon pairing, using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", false);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
-    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
+    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
+    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)};
 }
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses)
@@ -888,5 +1083,15 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 500, -5.0, 5.0, VarManager::kMCEta);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
     }
+    if (classStr.Contains("DileptonsSelected")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel");
+    }
+    if (classStr.Contains("LeptonsSelected")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+    }
+    if (classStr.Contains("DileptonTrackInvMass")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track-mass");
+    }
+
   } // end loop over histogram classes
 }
