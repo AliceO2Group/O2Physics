@@ -16,6 +16,11 @@
 // This task is not strictly necessary in a typical analysis workflow,
 // except for centrality calibration! The necessary task is the multiplicity
 // tables.
+//
+// Questions / comments / suggestions? Please write to:
+//  - victor.gonzalez@cern.ch
+//  - david.dobrigkeit.chinellato@cern.ch
+//
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -29,69 +34,88 @@ using namespace o2;
 using namespace o2::framework;
 
 struct MultiplicityQa {
-  //Raw multiplicities
-  OutputObj<TH1F> hRawMultV0M{TH1F("hRawMultV0M", "", 50000, 0., 50000.)};
-  OutputObj<TH1F> hRawMultT0M{TH1F("hRawMultT0M", "", 10000, 0., 200000.)};
-  OutputObj<TH1F> hRawMultFDD{TH1F("hRawMultFDD", "", 10000, 0., 200000.)};
-  OutputObj<TH1F> hRawMultZNA{TH1F("hRawMultZNA", "", 600, 0., 240000.)};
-  OutputObj<TH1F> hRawMultZNC{TH1F("hRawMultZNC", "", 600, 0., 240000.)};
-  OutputObj<TH2F> hMultV0MvsT0M{TH2F("hMultV0MvsT0M", ";V0M;T0M", 200, 0., 50000., 200, 0., 200000.)};
-
-  //For vertex-Z corrections
-  OutputObj<TProfile> hVtxProfV0A{TProfile("hVtxProfV0A", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfV0C{TProfile("hVtxProfV0C", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfT0A{TProfile("hVtxProfT0A", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfT0C{TProfile("hVtxProfT0C", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfFDDA{TProfile("hVtxProfFDDA", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfFDDC{TProfile("hVtxProfFDDC", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfZNA{TProfile("hVtxProfZNA", "", 150, -15, 15)};
-  OutputObj<TProfile> hVtxProfZNC{TProfile("hVtxProfZNC", "", 150, -15, 15)};
-
-  OutputObj<TProfile> hMultNtrackletsVsV0M{TProfile("hMultNtrackletsVsV0M", "", 50000, 0., 50000.)};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
-  Configurable<int> selection{"sel", 7, "trigger: 7 - sel7, 8 - sel8"};
+  Configurable<int> selection{"sel", 7, "trigger: 0 - none, 7 - sel7, 8 - sel8"};
+  Configurable<float> vertexZ{"vertexZ", 10, "max vertex Z position (cm)"};
+  
+  //Configurables related to binning of the final histograms
+  Configurable<float> MaxMultV0{"MaxMultV0", 10000.f, "Maximum multiplicity in V0"};
+  Configurable<float> MaxMultT0{"MaxMultT0", 10000.f, "Maximum multiplicity in T0"};
+  Configurable<float> MaxMultFDD{"MaxMultFDD", 10000.f, "Maximum multiplicity in FDD"};
+  Configurable<int> NBinsMultV0{"NBinsMultV0", 1000, "N bins V0"};
+  Configurable<int> NBinsMultT0{"NBinsMultT0", 1000, "N bins T0"};
+  Configurable<int> NBinsMultFDD{"NBinsMultFDD", 1000, "N bins FDD"};
+  Configurable<int> NBinsVertexZ{"NBinsVertexZ", 150, "N bins vertex Z profiles"};
+  
 
+  void init(InitContext&)
+  {
+    const AxisSpec axisEvent{10, 0, 10, "Event counter"};
+    const AxisSpec axisMultV0{(int)NBinsMultV0, 0, MaxMultV0, "V0 total amplitude"};
+    const AxisSpec axisMultT0{(int)NBinsMultT0, 0, MaxMultT0, "T0 total amplitude"};
+    const AxisSpec axisMultFDD{(int)NBinsMultFDD, 0, MaxMultFDD, "FDD total amplitude"};
+    const AxisSpec axisMultZ{(int)NBinsVertexZ, -15, 15, "vertex Z (cm)"};
+    
+    //Initialize basic raw histograms
+    histos.add("multiplicityQa/hEventCounter", "Event Counter", kTH1D, {axisEvent});
+    histos.add("multiplicityQa/hRawV0", "V0 total amplitude (raw)", kTH1D, {axisMultV0});
+    histos.add("multiplicityQa/hRawT0", "T0 total amplitude (raw)", kTH1D, {axisMultT0});
+    histos.add("multiplicityQa/hRawFDD", "FDD total amplitude (raw)", kTH1D, {axisMultFDD});
+    histos.add("multiplicityQa/hZEqV0", "V0 total amplitude (vtx-z-eq)", kTH1D, {axisMultV0});
+    histos.add("multiplicityQa/hZEqT0", "T0 total amplitude (vtx-z-eq)", kTH1D, {axisMultT0});
+    histos.add("multiplicityQa/hZEqFDD", "FDD total amplitude (vtx-z-eq)", kTH1D, {axisMultFDD});
+    
+    //Initialize basic vertex-Z histograms
+    histos.add("multiplicityQa/hVertexZV0A", "V0A vertex Z profile", kTProfile, {axisMultZ});
+    histos.add("multiplicityQa/hVertexZT0A", "T0A vertex Z profile", kTProfile, {axisMultZ});
+    histos.add("multiplicityQa/hVertexZT0C", "T0C vertex Z profile", kTProfile, {axisMultZ});
+    histos.add("multiplicityQa/hVertexZFDDA", "FDDA vertex Z profile", kTProfile, {axisMultZ});
+    histos.add("multiplicityQa/hVertexZFDDC", "FDDC vertex Z profile", kTProfile, {axisMultZ});
+  }
+  
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& col)
   {
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 0.5);
     if (!isMC && !col.alias()[kINT7]) {
       return;
     }
-
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 1.5);
     if (selection == 7 && !col.sel7()) {
       return;
     }
-
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 2.5);
     if (selection == 8 && !col.sel8()) {
       return;
     }
-
-    if (selection != 7 && selection != 8) {
-      LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8`");
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 3.5);
+    if (selection != 7 && selection != 8 && selection != 0) {
+      LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8` or `--sel 0` (no selection)");
     }
-
+    
+    histos.fill(HIST("multiplicityQa/hVertexZV0A"), col.posZ(), col.multFDD());
+    histos.fill(HIST("multiplicityQa/hVertexZT0A"), col.posZ(), col.multT0A());
+    histos.fill(HIST("multiplicityQa/hVertexZT0C"), col.posZ(), col.multT0C());
+    histos.fill(HIST("multiplicityQa/hVertexZFDDA"), col.posZ(), col.multFDDA());
+    histos.fill(HIST("multiplicityQa/hVertexZFDDC"), col.posZ(), col.multFDDC());
+    
+    if (TMath::Abs(col.posZ())>vertexZ) {
+      return;
+    }
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 4.5);
+    
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multV0M=%5.0f multT0A=%5.0f multT0C=%5.0f multT0M=%5.0f", col.multV0A(), col.multV0C(), col.multV0M(), col.multT0A(), col.multT0C(), col.multT0M());
 
     //Raw multiplicities
-    hRawMultV0M->Fill(col.multV0M());
-    hRawMultT0M->Fill(col.multT0M());
-    hRawMultFDD->Fill(col.multFDD());
-    hRawMultZNA->Fill(col.multZNA());
-    hRawMultZNC->Fill(col.multZNC());
-    hMultV0MvsT0M->Fill(col.multV0M(), col.multT0M());
-    hMultNtrackletsVsV0M->Fill(col.multV0M(), col.multTracklets());
-
-    //Vertex-Z dependencies, necessary for CCDB objects
-    hVtxProfV0A->Fill(col.posZ(), col.multV0A());
-    hVtxProfV0C->Fill(col.posZ(), col.multV0C());
-    hVtxProfT0A->Fill(col.posZ(), col.multT0A());
-    hVtxProfT0C->Fill(col.posZ(), col.multT0C());
-    hVtxProfFDDA->Fill(col.posZ(), col.multFDDA());
-    hVtxProfFDDC->Fill(col.posZ(), col.multFDDC());
-    hVtxProfZNA->Fill(col.posZ(), col.multZNA());
-    hVtxProfZNC->Fill(col.posZ(), col.multZNC());
-
-    //To be added here: vertex-Z calibrated signals (actually used in calibs)
+    histos.fill(HIST("multiplicityQa/hRawV0"), col.multV0M());
+    histos.fill(HIST("multiplicityQa/hRawT0"), col.multT0M());
+    histos.fill(HIST("multiplicityQa/hRawFDD"), col.multFDD());
+    
+    //Vertex-Z equalized multiplicities - FIXME
+    histos.fill(HIST("multiplicityQa/hZEqV0"), col.multV0M());
+    histos.fill(HIST("multiplicityQa/hZEqT0"), col.multT0M());
+    histos.fill(HIST("multiplicityQa/hZEqFDD"), col.multFDD());
   }
 };
 
