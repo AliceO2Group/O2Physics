@@ -22,8 +22,8 @@ using namespace o2::framework;
 using namespace o2;
 using namespace evsel;
 
-using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparseFDD_001>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparseFDD_001>;
 
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
@@ -198,7 +198,7 @@ struct EventSelectionQaTask {
     aod::FV0As const& fv0as,
     aod::FV0Cs const& fv0cs,
     aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    aod::FDDs_001 const& fdds)
   {
     if (!applySelection) {
       auto first_bc = bcs.iteratorAt(0);
@@ -291,11 +291,11 @@ struct EventSelectionQaTask {
         multT0C += amplitude;
       }
       float multFDA = 0;
-      for (auto amplitude : bc.fdd().amplitudeA()) {
+      for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeA()) {
         multFDA += amplitude;
       }
       float multFDC = 0;
-      for (auto amplitude : bc.fdd().amplitudeC()) {
+      for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeC()) {
         multFDC += amplitude;
       }
       float multZNA = bc.zdc().energyCommonZNA();
@@ -366,7 +366,7 @@ struct EventSelectionQaTask {
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
     aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    aod::FDDs_001 const& fdds)
   {
     // per-DF info to deduce FT0 rate
     if (bcs.size() > 0) {
@@ -453,11 +453,11 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitFDD"), orbit);
         histos.fill(HIST("hBcFDD"), localBC);
         float multFDA = 0;
-        for (auto amplitude : bc.fdd().amplitudeA()) {
+        for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeA()) {
           multFDA += amplitude;
         }
         float multFDC = 0;
-        for (auto amplitude : bc.fdd().amplitudeC()) {
+        for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeC()) {
           multFDC += amplitude;
         }
         histos.fill(HIST("hMultFDAall"), multFDA);
@@ -576,10 +576,10 @@ struct EventSelectionQaTask {
       float multFDA = 0;
       float multFDC = 0;
       if (foundBC.has_fdd()) {
-        for (auto amplitude : foundBC.fdd().amplitudeA()) {
+        for (auto amplitude : foundBC.fdd_as<aod::FDDs_001>().chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : foundBC.fdd().amplitudeC()) {
+        for (auto amplitude : foundBC.fdd_as<aod::FDDs_001>().chargeC()) {
           multFDC += amplitude;
         }
       }
