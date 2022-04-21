@@ -160,7 +160,7 @@ class TrackSelection
         return track.tpcChi2NCl() <= mMaxChi2PerClusterTPC;
 
       case TrackCuts::kTPCRefit:
-        return (isRun2 && mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true;
+        return (mRequireTPCRefit ? (isRun2 ? (track.flags() & o2::aod::track::TPCrefit) : track.hasTPC()) : true);
 
       case TrackCuts::kITSNCls:
         return track.itsNCls() >= mMinNClustersITS;
