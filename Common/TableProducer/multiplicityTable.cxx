@@ -30,20 +30,22 @@ struct MultiplicityTableTaskIndexed {
   Produces<aod::Mults> mult;
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   void processRun2(aod::Run2MatchedSparse::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
   {
-    float multV0A = -1.f;
-    float multV0C = -1.f;
-    float multT0A = -1.f;
-    float multT0C = -1.f;
-    float multFDDA = -1.f;
-    float multFDDC = -1.f;
-    float multZNA = -1.f;
-    float multZNC = -1.f;
+    float multV0A = 0.f;
+    float multV0C = 0.f;
+    float multT0A = 0.f;
+    float multT0C = 0.f;
+    float multFDDA = 0.f;
+    float multFDDC = 0.f;
+    float multZNA = 0.f;
+    float multZNC = 0.f;
     auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
     int multTracklets = trackletsGrouped.size();
     int multTPC = tracksGrouped.size();
+    int multNContribs = 0;
 
     if (collision.has_fv0a()) {
       for (auto amplitude : collision.fv0a().amplitude()) {
@@ -71,23 +73,25 @@ struct MultiplicityTableTaskIndexed {
     }
 
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-    mult(multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
+    mult(multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const& bcs, aod::Zdcs const& zdcs, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
-    float multV0A = -1.f;
-    float multV0C = -1.f;
-    float multT0A = -1.f;
-    float multT0C = -1.f;
-    float multFDDA = -1.f;
-    float multFDDC = -1.f;
-    float multZNA = -1.f;
-    float multZNC = -1.f;
-    int multTracklets = -1;
+    float multV0A = 0.f;
+    float multV0C = 0.f;
+    float multT0A = 0.f;
+    float multT0C = 0.f;
+    float multFDDA = 0.f;
+    float multFDDC = 0.f;
+    float multZNA = 0.f;
+    float multZNC = 0.f;
+    int multTracklets = 0;
     auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto pvContribsGrouped = pvContribTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
     int multTPC = tracksGrouped.size();
+    int multNContribs = tracksGrouped.size();
 
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {
@@ -117,7 +121,7 @@ struct MultiplicityTableTaskIndexed {
       }
     }
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-    mult(multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
+    mult(multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
 };
