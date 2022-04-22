@@ -52,11 +52,17 @@ struct TaskHfCorrelations {
   OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
   OutputObj<CorrelationContainer> sameTPCMFTCh{"sameEventTPCMFTChHadrons"};
   OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
+  OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
 
   //  configurables for processing options
   Configurable<bool> processTPCTPChh{"processTPCTPChh", "true", "Flag to process TPC-TPC h-h correlations"};
   Configurable<bool> processTPCMFThh{"processTPCMFThh", "true", "Flag to process TPC-MFT h-h correlations"};
   Configurable<bool> processHFHadrons{"processHFHadrons", "false", "Flag to process HF-h correlations"};
+
+  Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+
+  //  configurables for collisions
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
 
   //  configurables for associated particles
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -74,18 +80,30 @@ struct TaskHfCorrelations {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 30, 50, 70, 100, 150, 200.1}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
-  // Charged track filters
+  //  Collision filters
+  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+
+  //  Note: derived tables (such as multV0M) cannot be used in BinningPolicy 
+  //        -> using multV0A below is a temporary placeholder until multiplicity in Run 3 is solved
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultV0A>; 
+
+  //  Charged track filters
   Filter trackFilter =  (nabs(aod::track::eta) < cfgCutEta) && 
                         (aod::track::pt > cfgCutPt) && 
                         ((aod::track::isGlobalTrack == (uint8_t) true) || 
                         (aod::track::isGlobalTrackSDD == (uint8_t) true));
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>>;
+  //using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>>;
+  //  Note: mixing cannot be done on filtered and partitioned tables, Maja is working on it
+  //        -> below is a temporary solution of unfiltered tracks + do the filtering at the fillCorrelations function
+  using aodTracks = soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>;
 
+  //  HF candidate filter
   Filter candidateFilter =  (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || 
                             aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
   using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>;  
@@ -105,7 +123,11 @@ struct TaskHfCorrelations {
       registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
     registry.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{200, 0, 200}}});
-    
+   
+    //  histograms for event mixing
+    const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
+    registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+
     //  histograms for associated particles
     registry.add("yields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
@@ -152,29 +174,20 @@ struct TaskHfCorrelations {
     sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", axisList));
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", axisList));
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", axisList));
+    mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", axisList));
   }
 
   //  ---------------
   //    templates
   //  ---------------
-  template <typename TCollision>
-  bool fillCollision(TCollision collision, float multiplicity)
-  {
-    registry.fill(HIST("eventCounter"), 1);
-
-    if (!collision.sel8()) {
-      return false;
-    }
-
-    registry.fill(HIST("eventCounter"), 2);
-
-    return true;
-  }
-
   template <typename TTracks>
   void fillQA(float multiplicity, TTracks tracks)
   {
     for (auto& track1 : tracks) {
+      //  Temporary track selection here, until mixing is solved for filtered tables
+      if (isAcceptedTrack(track1) == false) {
+        continue;
+      }
       registry.fill(HIST("pT"), track1.pt());
       registry.fill(HIST("eta"), track1.eta());
       registry.fill(HIST("phi"), track1.phi());
@@ -193,6 +206,32 @@ struct TaskHfCorrelations {
     }
   }
 
+  template <typename TCollision>
+  bool isCollisionSelected(TCollision collision)
+  {
+    if (!collision.sel8()) {
+      return false;
+    }
+    return true;
+  }
+
+  //  Temporary solution, because now event mixing cannot be used on filtered tracks
+  template <typename TTrack>
+  bool isAcceptedTrack(TTrack track)
+  {
+    if (TMath::Abs(track.eta()) > cfgCutEta) {
+      return false;
+    }
+    if (TMath::Abs(track.pt()) < cfgCutPt) {
+      return false;
+    }
+    if ((track.isGlobalTrack() == (uint8_t) false) && (track.isGlobalTrackSDD() == (uint8_t) false)) {
+      return false;
+    }
+    return true;
+  }
+
+  //  Check how to put this into a Filter
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack candidate)
   {
@@ -205,6 +244,7 @@ struct TaskHfCorrelations {
     return true;
   }
 
+  //  Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
   template <typename TTracks>
   void fillCandidateQA(float multiplicity, TTracks candidates)
   {
@@ -244,6 +284,13 @@ struct TaskHfCorrelations {
 
       //  TODO: add getter for NUE trigger efficiency here
 
+      //  Temporary solution: do the charged track filtering here, until mixing is fixed
+      if constexpr (std::is_same_v<aodTracks, TTracksTrig>) {
+        if (isAcceptedTrack(track1) == false) {
+          continue;
+        }
+      }
+
       if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
         if (isAcceptedCandidate(track1) == false) {
           continue;
@@ -258,6 +305,13 @@ struct TaskHfCorrelations {
           if (track1 == track2) {
             continue;
           } 
+        }
+
+        //  Temporary solution: do the charged track filetring here, until mixing is fixed
+        if constexpr (std::is_same_v<aodTracks, TTracksAssoc>) {
+          if (isAcceptedTrack(track2) == false) {
+            continue;
+          }
         }
 
         //  TODO: add getter for NUE associated efficiency here
@@ -282,14 +336,19 @@ struct TaskHfCorrelations {
   // =====================================
   //    process same event correlations
   // =====================================
-  void processSameAOD(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& collision, aodTracks const& tracks, aod::MFTTracks const& mfttracks, hfCandidates const& candidates)
+  void processSame( aodCollisions::iterator const& collision, 
+                    aodTracks const& tracks, 
+                    aod::MFTTracks const& mfttracks, 
+                    hfCandidates const& candidates)
   {
     const auto multiplicity = collision.multV0M();  //  multV0M ? (work on adding centrality selection for Run3 ongoing)
     registry.fill(HIST("hMultiplicity"), multiplicity);
 
-    if (fillCollision(collision, multiplicity) == false) {
+    registry.fill(HIST("eventCounter"), 1);
+    if (isCollisionSelected(collision) == false) {
       return;
     }
+    registry.fill(HIST("eventCounter"), 2);
 
     if (processTPCTPChh == true) {
       fillQA(multiplicity, tracks);
@@ -307,7 +366,41 @@ struct TaskHfCorrelations {
     }
 
   }
-  PROCESS_SWITCH(TaskHfCorrelations, processSameAOD, "Process same event on AOD", true);
+  PROCESS_SWITCH(TaskHfCorrelations, processSame, "Process same event", true);
+
+  // =====================================
+  //    process mixed event correlations
+  // =====================================
+  //  TODO: these collisions do not contain trigger selection, because SameKindPair needs table, not iterator -> check if it can be solved
+  void processMixed(aodCollisions& collisions, 
+                    aodTracks const& tracks)
+  {
+    BinningType pairBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
+    auto tracksTuple = std::make_tuple(tracks);
+    //SameKindPair<aodCollisions, aodTracks, BinningType> pair{pairBinning, cfgNoMixedEvents, -1, aod::track::collisionId, collisions, tracksTuple}; // add this once O2 is updated
+    SameKindPair<aodCollisions, aodTracks, BinningType> pair{pairBinning, cfgNoMixedEvents, -1, collisions, tracksTuple};
+   
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) { 
+
+      if (isCollisionSelected(collision1) == false) {
+        continue;
+      }
+      if (isCollisionSelected(collision2) == false) {
+        continue;
+      }
+
+      const auto multiplicity = collision1.multV0A();
+
+      int bin = pairBinning.getBin({collision1.posZ(), multiplicity});
+      registry.fill(HIST("eventcount"), bin);
+
+      if (processTPCTPChh == true) {
+        fillCorrelations(mixedTPCTPCCh, tracks1, tracks2, multiplicity, collision1.posZ());
+      }
+    }
+  }
+  PROCESS_SWITCH(TaskHfCorrelations, processMixed, "Process mixed event", true);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
