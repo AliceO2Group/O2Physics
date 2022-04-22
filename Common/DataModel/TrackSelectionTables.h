@@ -40,10 +40,12 @@ struct TrackSelectionFlags {
   static constexpr flagtype kGoldenChi2 = 1 << 12;
   static constexpr flagtype kDCAxy = 1 << 13;
   static constexpr flagtype kDCAz = 1 << 14;
+  static constexpr flagtype kGlobalTrack = kTrackType | kPtRange | kEtaRange | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
 };
 
 // Columns to store track filter decisions
-DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, uint8_t);                     //!
+DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack, //! Flag for global tracks
+                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kGlobalTrack) == TrackSelectionFlags::kGlobalTrack; });
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
 DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged
 DECLARE_SOA_DYNAMIC_COLUMN(IsTrackType, isTrackType,                           //! Passed the track cut: kTrackType
@@ -83,9 +85,9 @@ DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
                   track::DcaZ);
 
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //!
-                  track::IsGlobalTrack,
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
+                  track::IsGlobalTrack<track::TrackCutFlag>,
                   track::IsTrackType<track::TrackCutFlag>,
                   track::IsPtRange<track::TrackCutFlag>,
                   track::IsEtaRange<track::TrackCutFlag>,
