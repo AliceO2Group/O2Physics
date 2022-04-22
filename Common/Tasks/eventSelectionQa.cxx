@@ -198,7 +198,7 @@ struct EventSelectionQaTask {
     aod::FV0As const& fv0as,
     aod::FV0Cs const& fv0cs,
     aod::FT0s const& ft0s,
-    aod::FDDs_001 const& fdds)
+    aod::FDDs const& fdds)
   {
     if (!applySelection) {
       auto first_bc = bcs.iteratorAt(0);
@@ -291,11 +291,11 @@ struct EventSelectionQaTask {
         multT0C += amplitude;
       }
       float multFDA = 0;
-      for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeA()) {
+      for (auto amplitude : bc.fdd().chargeA()) {
         multFDA += amplitude;
       }
       float multFDC = 0;
-      for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeC()) {
+      for (auto amplitude : bc.fdd().chargeC()) {
         multFDC += amplitude;
       }
       float multZNA = bc.zdc().energyCommonZNA();
@@ -366,7 +366,7 @@ struct EventSelectionQaTask {
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
     aod::FT0s const& ft0s,
-    aod::FDDs_001 const& fdds)
+    aod::FDDs const& fdds)
   {
     // per-DF info to deduce FT0 rate
     if (bcs.size() > 0) {
@@ -453,11 +453,11 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitFDD"), orbit);
         histos.fill(HIST("hBcFDD"), localBC);
         float multFDA = 0;
-        for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeA()) {
+        for (auto amplitude : bc.fdd().chargeA()) {
           multFDA += amplitude;
         }
         float multFDC = 0;
-        for (auto amplitude : bc.fdd_as<aod::FDDs_001>().chargeC()) {
+        for (auto amplitude : bc.fdd().chargeC()) {
           multFDC += amplitude;
         }
         histos.fill(HIST("hMultFDAall"), multFDA);
@@ -576,10 +576,10 @@ struct EventSelectionQaTask {
       float multFDA = 0;
       float multFDC = 0;
       if (foundBC.has_fdd()) {
-        for (auto amplitude : foundBC.fdd_as<aod::FDDs_001>().chargeA()) {
+        for (auto amplitude : foundBC.fdd().chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : foundBC.fdd_as<aod::FDDs_001>().chargeC()) {
+        for (auto amplitude : foundBC.fdd().chargeC()) {
           multFDC += amplitude;
         }
       }
