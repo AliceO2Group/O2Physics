@@ -22,8 +22,8 @@ using namespace o2::framework;
 using namespace o2;
 using namespace evsel;
 
-using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparseFDD_001>;
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparseFDD_001>;
+using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
