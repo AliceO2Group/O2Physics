@@ -41,7 +41,7 @@ struct MultiplicityTableTaskIndexed {
   
   void init(InitContext& context)
   {
-    ccdb->setURL("Users/v/victor/Centrality/Calibration"); //temporary - to be tuned  shortly
+    ccdb->setURL("http://ccdb-test.cern.ch:8080"); //temporary - to be tuned  shortly
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -134,15 +134,6 @@ struct MultiplicityTableTaskIndexed {
     TProfile *hVtxZFDDC    = (TProfile*) lCalibObjects->FindObject("hVtxZFDDC");
     TProfile *hVtxZNTracks = (TProfile*) lCalibObjects->FindObject("hVtxZNTracks");
     
-    if(fabs(collision.posZ())<15.0f){
-      multZeqV0A       = multV0A/hVtxZV0A->Interpolate( collision.posZ() );
-      multZeqT0A       = multT0A/hVtxZT0A->Interpolate( collision.posZ() );
-      multZeqT0C       = multT0C/hVtxZT0C->Interpolate( collision.posZ() );
-      multZeqFDDA      = multFDDA/hVtxZFDDA->Interpolate( collision.posZ() );
-      multZeqFDDC      = multFDDC/hVtxZFDDC->Interpolate( collision.posZ() );
-      multZeqNContribs = multNContribs/hVtxZNTracks->Interpolate( collision.posZ() );
-    }
-    
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -170,6 +161,16 @@ struct MultiplicityTableTaskIndexed {
         multV0A += amplitude;
       }
     }
+    
+    if(fabs(collision.posZ())<15.0f){
+      multZeqV0A       = hVtxZV0A->Interpolate( 0.0 ) * multV0A/hVtxZV0A->Interpolate( collision.posZ() );
+      multZeqT0A       = hVtxZT0A->Interpolate( 0.0 ) * multT0A/hVtxZT0A->Interpolate( collision.posZ() );
+      multZeqT0C       = hVtxZT0C->Interpolate( 0.0 ) * multT0C/hVtxZT0C->Interpolate( collision.posZ() );
+      multZeqFDDA      = hVtxZFDDA->Interpolate( 0.0 ) * multFDDA/hVtxZFDDA->Interpolate( collision.posZ() );
+      multZeqFDDC      = hVtxZFDDC->Interpolate( 0.0 ) * multFDDC/hVtxZFDDC->Interpolate( collision.posZ() );
+      multZeqNContribs = hVtxZNTracks->Interpolate( 0.0 ) * multNContribs/hVtxZNTracks->Interpolate( collision.posZ() );
+    }
+    
     LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
     mult(multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs,
          multZeqV0A, multZeqT0A, multZeqT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);

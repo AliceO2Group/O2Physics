@@ -118,7 +118,7 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/hRawNTracks"), col.multNContribs());
     
     //vertex-Z corrected - FIXME
-    histos.fill(HIST("multiplicityQa/hZeqV0"), col.multV0A());
+    histos.fill(HIST("multiplicityQa/hZeqV0"), col.multZeqV0A());
     histos.fill(HIST("multiplicityQa/hZeqT0"), col.multZeqT0A()+col.multZeqT0C());
     histos.fill(HIST("multiplicityQa/hZeqFDD"), col.multZeqFDDA()+col.multZeqFDDC());
     histos.fill(HIST("multiplicityQa/hZeqNTracks"), col.multZeqNContribs());
