@@ -331,8 +331,8 @@ struct DQMuonsSelection {
         // fill event information which might be needed in histograms or cuts that combine track and event properties
         if (muon.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
           CollisionId = muon.collisionId();
-            auto collision = muon.template collision_as<TEvent>();
-              VarManager::FillEvent<TEventFillMap>(collision);
+          auto collision = muon.template collision_as<TEvent>();
+          VarManager::FillEvent<TEventFillMap>(collision);
         }
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fConfigQA) {
