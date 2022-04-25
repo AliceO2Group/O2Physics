@@ -222,29 +222,39 @@ struct DQBarrelTrackSelection {
   {
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
+    int CollisionId = -1;
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-    for (auto& collision : collisions) {
-      // fill event information which might be needed in histograms or cuts that combine track and event properties
-      VarManager::FillEvent<TEventFillMap>(collision);
-    }
- 
+
     for (auto& track : tracksBarrel) {
       filterMap = uint32_t(0);
-      VarManager::FillTrack<TTrackFillMap>(track);
-      if (fConfigQA) {
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
-      }
-      int i = 0;
-      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
-          if (fConfigQA) {
-            fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
+      if (!track.has_collision()) {
+        trackSel(uint32_t(0));
+      } else {
+        // fill event information which might be needed in histograms or cuts that combine track and event properties
+        if (track.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
+          CollisionId = track.collisionId();
+          for (auto& collision : collisions) {
+            if (track.collisionId() == collision.index()) {
+              VarManager::FillEvent<TEventFillMap>(collision);
+            }
           }
         }
+        VarManager::FillTrack<TTrackFillMap>(track);
+        if (fConfigQA) {
+          fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        }
+        int i = 0;
+        for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
+          if ((*cut).IsSelected(VarManager::fgValues)) {
+            filterMap |= (uint32_t(1) << i);
+            if (fConfigQA) {
+              fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
+            }
+          }
+        }
+        trackSel(filterMap);
       }
-      trackSel(filterMap);
     } // end loop over tracks
   }
 
@@ -312,30 +322,40 @@ struct DQMuonsSelection {
   {
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(muons.size());
+    int CollisionId = -1;
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
-    for (auto& collision : collisions) {
-      // fill event information which might be needed in histograms or cuts that combine track and event properties
-      VarManager::FillEvent<TEventFillMap>(collision);
-    }
 
     for (auto& muon : muons) {
       filterMap = uint32_t(0);
-      VarManager::FillTrack<TMuonFillMap>(muon);
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
-      }
-      int i = 0;
-      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
-          if (fConfigQA) {
-            fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
+      if (!muon.has_collision()) {
+        trackSel(uint32_t(0));
+      } else {
+        // fill event information which might be needed in histograms or cuts that combine track and event properties
+        if (muon.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
+          CollisionId = muon.collisionId();
+          for (auto& collision : collisions) {
+            if (muon.collisionId() == collision.index()) {
+              VarManager::FillEvent<TEventFillMap>(collision);
+            }
           }
         }
+        VarManager::FillTrack<TMuonFillMap>(muon);
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
+        }
+        int i = 0;
+        for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
+          if ((*cut).IsSelected(VarManager::fgValues)) {
+            filterMap |= (uint32_t(1) << i);
+            if (fConfigQA) {
+              fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
+            }
+          }
+        }
+        trackSel(filterMap);
       }
-      trackSel(filterMap);
-    }
+    } // end loop over tracks
   }
 
   void processSelection(MyEvents const& collisions, aod::BCs const& bcs, MyMuons const& muons)
