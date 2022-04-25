@@ -30,7 +30,7 @@ using namespace o2::framework::expressions;
  */
 //****************************************************************************************
 struct Alice3TrackSelectionTask {
-  Produces<aod::TrackSelection> filterTable;
+  Produces<aod::TrackSelectionStore> filterTable;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
 
   Configurable<float> MaxDCAxy{"MaxDCAxy", 0.1f, "Maximum DCAxy"};

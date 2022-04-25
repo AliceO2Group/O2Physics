@@ -44,50 +44,39 @@ struct TrackSelectionFlags {
 };
 
 // Columns to store track filter decisions
-DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack, //! Flag for global tracks
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kGlobalTrack) == TrackSelectionFlags::kGlobalTrack; });
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
 DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrackType, isTrackType,                           //! Passed the track cut: kTrackType
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kTrackType) == TrackSelectionFlags::kTrackType; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsPtRange, isPtRange, //! Passed the track cut: kPtRange
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kPtRange) == TrackSelectionFlags::kPtRange; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsEtaRange, isEtaRange, //! Passed the track cut: kEtaRange
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kEtaRange) == TrackSelectionFlags::kEtaRange; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTPCNCls, isTPCNCls, //! Passed the track cut: kTPCNCls
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kTPCNCls) == TrackSelectionFlags::kTPCNCls; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTPCCrossedRows, isTPCCrossedRows, //! Passed the track cut: kTPCCrossedRows
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kTPCCrossedRows) == TrackSelectionFlags::kTPCCrossedRows; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTPCCrossedRowsOverNCls, isTPCCrossedRowsOverNCls, //! Passed the track cut: kTPCCrossedRowsOverNCls
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kTPCCrossedRowsOverNCls) == TrackSelectionFlags::kTPCCrossedRowsOverNCls; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTPCChi2NDF, isTPCChi2NDF, //! Passed the track cut: kTPCChi2NDF
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kTPCChi2NDF) == TrackSelectionFlags::kTPCChi2NDF; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTPCRefit, isTPCRefit, //! Passed the track cut: kTPCRefit
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kTPCRefit) == TrackSelectionFlags::kTPCRefit; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsITSNCls, isITSNCls, //! Passed the track cut: kITSNCls
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kITSNCls) == TrackSelectionFlags::kITSNCls; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsITSChi2NDF, isITSChi2NDF, //! Passed the track cut: kITSChi2NDF
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kITSChi2NDF) == TrackSelectionFlags::kITSChi2NDF; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsITSRefit, isITSRefit, //! Passed the track cut: kITSRefit
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kITSRefit) == TrackSelectionFlags::kITSRefit; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsITSHits, isITSHits, //! Passed the track cut: kITSHits
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kITSHits) == TrackSelectionFlags::kITSHits; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsGoldenChi2, isGoldenChi2, //! Passed the track cut: kGoldenChi2
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kGoldenChi2) == TrackSelectionFlags::kGoldenChi2; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsDCAxy, isDCAxy, //! Passed the track cut: kDCAxy
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kDCAxy) == TrackSelectionFlags::kDCAxy; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsDCAz, isDCAz, //! Passed the track cut: kDCAz
-                           [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & TrackSelectionFlags::kDCAz) == TrackSelectionFlags::kDCAz; });
+#define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
+  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & mask) == mask; });
+
+DECLARE_SOA_EXPRESSION_COLUMN(IsGlobalTrack, isGlobalTrack, bool, //! Flag for global tracks
+                              (aod::track::trackCutFlag& TrackSelectionFlags::kGlobalTrack) == TrackSelectionFlags::kGlobalTrack);
+
+DECLARE_DYN_TRKSEL_COLUMN(IsTrackType, isTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
+DECLARE_DYN_TRKSEL_COLUMN(IsPtRange, isPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
+DECLARE_DYN_TRKSEL_COLUMN(IsEtaRange, isEtaRange, TrackSelectionFlags::kEtaRange);                                           //! Passed the track cut: kEtaRange
+DECLARE_DYN_TRKSEL_COLUMN(IsTPCNCls, isTPCNCls, TrackSelectionFlags::kTPCNCls);                                              //! Passed the track cut: kTPCNCls
+DECLARE_DYN_TRKSEL_COLUMN(IsTPCCrossedRows, isTPCCrossedRows, TrackSelectionFlags::kTPCCrossedRows);                         //! Passed the track cut: kTPCCrossedRows
+DECLARE_DYN_TRKSEL_COLUMN(IsTPCCrossedRowsOverNCls, isTPCCrossedRowsOverNCls, TrackSelectionFlags::kTPCCrossedRowsOverNCls); //! Passed the track cut: kTPCCrossedRowsOverNCls
+DECLARE_DYN_TRKSEL_COLUMN(IsTPCChi2NDF, isTPCChi2NDF, TrackSelectionFlags::kTPCChi2NDF);                                     //! Passed the track cut: kTPCChi2NDF
+DECLARE_DYN_TRKSEL_COLUMN(IsTPCRefit, isTPCRefit, TrackSelectionFlags::kTPCRefit);                                           //! Passed the track cut: kTPCRefit
+DECLARE_DYN_TRKSEL_COLUMN(IsITSNCls, isITSNCls, TrackSelectionFlags::kITSNCls);                                              //! Passed the track cut: kITSNCls
+DECLARE_DYN_TRKSEL_COLUMN(IsITSChi2NDF, isITSChi2NDF, TrackSelectionFlags::kITSChi2NDF);                                     //! Passed the track cut: kITSChi2NDF
+DECLARE_DYN_TRKSEL_COLUMN(IsITSRefit, isITSRefit, TrackSelectionFlags::kITSRefit);                                           //! Passed the track cut: kITSRefit
+DECLARE_DYN_TRKSEL_COLUMN(IsITSHits, isITSHits, TrackSelectionFlags::kITSHits);                                              //! Passed the track cut: kITSHits
+DECLARE_DYN_TRKSEL_COLUMN(IsGoldenChi2, isGoldenChi2, TrackSelectionFlags::kGoldenChi2);                                     //! Passed the track cut: kGoldenChi2
+DECLARE_DYN_TRKSEL_COLUMN(IsDCAxy, isDCAxy, TrackSelectionFlags::kDCAxy);                                                    //! Passed the track cut: kDCAxy
+DECLARE_DYN_TRKSEL_COLUMN(IsDCAz, isDCAz, TrackSelectionFlags::kDCAz);                                                       //! Passed the track cut: kDCAz
+#undef DECLARE_DYN_TRKSEL_COLUMN
 
 } // namespace track
 DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
                   track::DcaXY,
                   track::DcaZ);
 
-DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //!
+DECLARE_SOA_TABLE(TrackSelectionStore, "AOD", "TRACKSELECTION", //! Stored information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
-                  track::IsGlobalTrack<track::TrackCutFlag>,
                   track::IsTrackType<track::TrackCutFlag>,
                   track::IsPtRange<track::TrackCutFlag>,
                   track::IsEtaRange<track::TrackCutFlag>,
@@ -103,6 +92,10 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //!
                   track::IsGoldenChi2<track::TrackCutFlag>,
                   track::IsDCAxy<track::TrackCutFlag>,
                   track::IsDCAz<track::TrackCutFlag>);
+
+DECLARE_SOA_EXTENDED_TABLE(TrackSelection, TrackSelectionStore, "TRACKSELECTION", //! Split information on the track selection decision
+                           track::IsGlobalTrack);
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_TRACKSELECTIONTABLES_H_

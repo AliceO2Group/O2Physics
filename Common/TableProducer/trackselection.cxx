@@ -38,7 +38,7 @@ struct TrackSelectionTask {
   // FIXME: this will be removed once we can get this via meta data
   Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
 
-  Produces<aod::TrackSelection> filterTable;
+  Produces<aod::TrackSelectionStore> filterTable;
 
   TrackSelection globalTracks;
   TrackSelection globalTracksSDD;
