@@ -217,14 +217,18 @@ struct DQBarrelTrackSelection {
     }
   }
 
-  template <uint32_t TTrackFillMap, typename TTracks>
-  void runTrackSelection(TTracks const& tracksBarrel)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
+  void runTrackSelection(TEvent const& collisions, aod::BCs const& bcs, TTracks const& tracksBarrel)
   {
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-
+    for (auto& collision : collisions) {
+      // fill event information which might be needed in histograms or cuts that combine track and event properties
+      VarManager::FillEvent<TEventFillMap>(collision);
+    }
+ 
     for (auto& track : tracksBarrel) {
       filterMap = uint32_t(0);
       VarManager::FillTrack<TTrackFillMap>(track);
@@ -244,13 +248,13 @@ struct DQBarrelTrackSelection {
     } // end loop over tracks
   }
 
-  void processSelection(MyBarrelTracks const& tracks)
+  void processSelection(MyEvents const& collisions, aod::BCs const& bcs, MyBarrelTracks const& tracks)
   {
-    runTrackSelection<gkTrackFillMap>(tracks);
+    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
-  void processSelectionTiny(MyBarrelTracksTiny const& tracks)
+  void processSelectionTiny(MyEvents const& collisions, aod::BCs const& bcs, MyBarrelTracksTiny const& tracks)
   {
-    runTrackSelection<gkTrackFillMap>(tracks);
+    runTrackSelection<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
   void processDummy(MyEvents&)
   {
@@ -303,13 +307,17 @@ struct DQMuonsSelection {
     }
   }
 
-  template <uint32_t TMuonFillMap, typename TMuons>
-  void runMuonSelection(TMuons const& muons)
+  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuons>
+  void runMuonSelection(TEvent const& collisions, aod::BCs const& bcs, TMuons const& muons)
   {
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(muons.size());
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
+    for (auto& collision : collisions) {
+      // fill event information which might be needed in histograms or cuts that combine track and event properties
+      VarManager::FillEvent<TEventFillMap>(collision);
+    }
 
     for (auto& muon : muons) {
       filterMap = uint32_t(0);
@@ -330,9 +338,9 @@ struct DQMuonsSelection {
     }
   }
 
-  void processSelection(MyMuons const& muons)
+  void processSelection(MyEvents const& collisions, aod::BCs const& bcs, MyMuons const& muons)
   {
-    runMuonSelection<gkMuonFillMap>(muons);
+    runMuonSelection<gkEventFillMap, gkMuonFillMap>(collisions, bcs, muons);
   }
   void processDummy(MyEvents&)
   {
