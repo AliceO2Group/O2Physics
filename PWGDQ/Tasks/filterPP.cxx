@@ -234,11 +234,8 @@ struct DQBarrelTrackSelection {
         // fill event information which might be needed in histograms or cuts that combine track and event properties
         if (track.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
           CollisionId = track.collisionId();
-          for (auto& collision : collisions) {
-            if (track.collisionId() == collision.index()) {
-              VarManager::FillEvent<TEventFillMap>(collision);
-            }
-          }
+          auto collision = track.template collision_as<TEvent>();
+          VarManager::FillEvent<TEventFillMap>(collision);
         }
         VarManager::FillTrack<TTrackFillMap>(track);
         if (fConfigQA) {
@@ -334,11 +331,8 @@ struct DQMuonsSelection {
         // fill event information which might be needed in histograms or cuts that combine track and event properties
         if (muon.collisionId() != CollisionId) { // check if the track belongs to a different event than the previous one
           CollisionId = muon.collisionId();
-          for (auto& collision : collisions) {
-            if (muon.collisionId() == collision.index()) {
+            auto collision = muon.template collision_as<TEvent>();
               VarManager::FillEvent<TEventFillMap>(collision);
-            }
-          }
         }
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fConfigQA) {
