@@ -38,7 +38,7 @@ struct TrackSelectionTask {
   // FIXME: this will be removed once we can get this via meta data
   Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
 
-  Produces<aod::TrackSelectionStore> filterTable;
+  Produces<aod::TrackSelection> filterTable;
 
   TrackSelection globalTracks;
   TrackSelection globalTracksSDD;
@@ -56,8 +56,11 @@ struct TrackSelectionTask {
   void process(soa::Join<aod::FullTracks, aod::TracksExtended> const& tracks)
   {
     for (auto& track : tracks) {
-      filterTable((uint8_t)globalTracksSDD.IsSelected(track),
-                  globalTracks.IsSelectedFlag(track));
+      const aod::track::TrackSelectionFlags::flagtype flags = globalTracks.IsSelectedFlag(track);
+      const bool isGlobalTrack = (flags & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack;
+      filterTable((uint8_t)isGlobalTrack,
+                  (uint8_t)globalTracksSDD.IsSelected(track),
+                  flags);
     }
   }
 };
@@ -69,6 +72,6 @@ struct TrackSelectionTask {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<TrackSelectionTask>(cfgc, TaskName{"track-selection"})};
+  WorkflowSpec workflow{adaptAnalysisTask<TrackSelectionTask>(cfgc)};
   return workflow;
 }

@@ -44,13 +44,11 @@ struct TrackSelectionFlags {
 };
 
 // Columns to store track filter decisions
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, uint8_t);                     //!
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
 DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
   DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & mask) == mask; });
-
-DECLARE_SOA_EXPRESSION_COLUMN(IsGlobalTrack, isGlobalTrack, bool, //! Flag for global tracks
-                              (aod::track::trackCutFlag& TrackSelectionFlags::kGlobalTrack) == TrackSelectionFlags::kGlobalTrack);
 
 DECLARE_DYN_TRKSEL_COLUMN(IsTrackType, isTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
 DECLARE_DYN_TRKSEL_COLUMN(IsPtRange, isPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
@@ -74,7 +72,8 @@ DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
                   track::DcaXY,
                   track::DcaZ);
 
-DECLARE_SOA_TABLE(TrackSelectionStore, "AOD", "TRACKSELECTION", //! Stored information on the track selection decision + split dynamic information
+DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Stored information on the track selection decision + split dynamic information
+                  track::IsGlobalTrack,
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
                   track::IsTrackType<track::TrackCutFlag>,
@@ -92,9 +91,6 @@ DECLARE_SOA_TABLE(TrackSelectionStore, "AOD", "TRACKSELECTION", //! Stored infor
                   track::IsGoldenChi2<track::TrackCutFlag>,
                   track::IsDCAxy<track::TrackCutFlag>,
                   track::IsDCAz<track::TrackCutFlag>);
-
-DECLARE_SOA_EXTENDED_TABLE(TrackSelection, TrackSelectionStore, "TRACKSELECTION", //! Split information on the track selection decision
-                           track::IsGlobalTrack);
 
 } // namespace o2::aod
 
