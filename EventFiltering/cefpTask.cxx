@@ -220,12 +220,8 @@ struct centralEventFilterTask {
     if (outDecision.size() != nColls) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
     }
-    auto columnBCId{collTabPtr->GetColumnByName("BC")};
-    auto columnCollTime{collTabPtr->GetColumnByName("CollisionTime")};
-
-    if (columnBCId->num_chunks() != columnCollTime->num_chunks()) {
-      LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
-    }
+    auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
+    auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
 
     int entryD = 0;
 
@@ -265,6 +261,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
         if (std::string_view(workflow["workflow_name"].GetString()) == std::string_view(FilteringTaskNames[iFilter])) {
           inputs.emplace_back(std::string(AvailableFilters[iFilter]), "AOD", FilterDescriptions[iFilter], 0, Lifetime::Timeframe);
           enabledFilters[iFilter] = true;
+          LOG(info) << "    * Adding inputs from " << AvailableFilters[iFilter] << " to workflow";
           break;
         }
       }

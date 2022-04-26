@@ -87,12 +87,10 @@ struct nucleiFilter {
     }
   }
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == static_cast<uint8_t>(1u));
 
-  using SelectedCollisions = soa::Filtered<aod::Collisions>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksExtended, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
-  void process(SelectedCollisions::iterator const& collision, TrackCandidates const& tracks)
+  void process(aod::Collisions::iterator const& collision, TrackCandidates const& tracks)
   {
     // collision process loop
     bool keepEvent[nNuclei]{false};
