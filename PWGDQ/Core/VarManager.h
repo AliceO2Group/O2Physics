@@ -487,7 +487,7 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionCent) > 0) {
-    values[kCentVZERO] = event.centV0M();
+    values[kCentVZERO] = event.centRun2V0M();
   }
 
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
@@ -503,7 +503,7 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & ReducedEventExtended) > 0) {
     values[kBC] = event.globalBC();
     values[kTimestamp] = event.timestamp();
-    values[kCentVZERO] = event.centV0M();
+    values[kCentVZERO] = event.centRun2V0M();
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.triggerAlias() & (uint32_t(1) << kINT7)) > 0;
     }

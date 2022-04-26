@@ -158,9 +158,9 @@ struct PseudorapidityDensity {
     }
   }
 
-  void processBinned(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
+  void processBinned(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
   {
-    auto p = collision.centV0M();
+    auto p = collision.centRun2V0M();
     registry.fill(HIST("EventSelectionBin"), 1., p);
     if (!useEvSel || (useEvSel && collision.sel7())) {
       registry.fill(HIST("EventSelectionBin"), 2., p);

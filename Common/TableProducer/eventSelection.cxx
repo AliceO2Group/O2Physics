@@ -111,13 +111,13 @@ struct BcSelectionTask {
       // Calculate V0 multiplicity per ring
       float multRingV0A[5] = {0.};
       float multRingV0C[4] = {0.};
-      float multV0A = 0;
-      float multV0C = 0;
+      float multFV0A = 0;
+      float multFV0C = 0;
       if (bc.has_fv0a()) {
         for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
           int ring = bc.fv0a().channel()[i] / 8;
           multRingV0A[ring] += bc.fv0a().amplitude()[i];
-          multV0A += bc.fv0a().amplitude()[i];
+          multFV0A += bc.fv0a().amplitude()[i];
         }
       }
 
@@ -125,14 +125,14 @@ struct BcSelectionTask {
         for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
           int ring = bc.fv0c().channel()[i] / 8;
           multRingV0C[ring] += bc.fv0c().amplitude()[i];
-          multV0C += bc.fv0c().amplitude()[i];
+          multFV0C += bc.fv0c().amplitude()[i];
         }
       }
       uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
 
       // Calculate pileup and background related selection flags
       // V0A0 excluded from online V0A charge sum => excluding also from offline sum for consistency
-      float ofV0M = multV0A + multV0C - multRingV0A[0];
+      float ofV0M = multFV0A + multFV0C - multRingV0A[0];
       float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
       float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
       float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();

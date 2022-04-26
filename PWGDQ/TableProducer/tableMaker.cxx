@@ -62,7 +62,7 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
-using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>;
+using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
