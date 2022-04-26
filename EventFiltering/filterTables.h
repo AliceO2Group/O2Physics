@@ -65,6 +65,15 @@ DECLARE_SOA_COLUMN(HighTrackMultOverlap, hasHighTrackMultOverlap, bool); //! hig
 
 } // namespace filtering
 
+namespace decision
+{
+
+DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float); //! Collision time
+DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
+
+} // namespace decision
+
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
                   filtering::H2, filtering::H3, filtering::He3, filtering::He4);
@@ -107,6 +116,11 @@ using StrangenessFilter = StrangenessFilters::iterator;
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
                   filtering::LeadingPtTrack, filtering::HighMultFv0, filtering::HighTrackMult, filtering::HighTrackMultTrans, filtering::HighTrackMultOverlap);
 using MultFilter = MultFilters::iterator;
+
+// cefp decision
+DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
+                  decision::BCId, decision::CollisionTime, decision::CefpSelected);
+using CefpDecision = CefpDecisions::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{8};

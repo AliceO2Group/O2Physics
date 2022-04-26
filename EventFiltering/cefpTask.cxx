@@ -105,6 +105,7 @@ static const float defaultDownscaling[32][1]{
 struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  Produces<aod::CefpDecisions> tags;
 
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -168,6 +169,7 @@ struct centralEventFilterTask {
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
 
     int64_t nEvents{-1};
+    std::vector<bool> outDecision;
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -180,6 +182,9 @@ struct centralEventFilterTask {
         LOG(fatal) << "Inconsistent number of rows across trigger tables.";
       }
 
+      if (outDecision.size() == 0)
+        outDecision.resize(nEvents, false);
+
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
         int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
@@ -187,6 +192,7 @@ struct centralEventFilterTask {
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
+          int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
             auto chunk{column->chunk(iC)};
             auto boolArray = std::static_pointer_cast<arrow::BooleanArray>(chunk);
@@ -195,8 +201,10 @@ struct centralEventFilterTask {
                 mScalers->Fill(binCenter);
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
+                  outDecision[entry] = true;
                 }
               }
+              entry++;
             }
           }
         }
@@ -204,6 +212,29 @@ struct centralEventFilterTask {
     }
     mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents);
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
+
+    //Filling output table
+    auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
+    auto collTabPtr{collTabConsumer->asArrowTable()};
+    if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
+      LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
+    }
+    auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
+    auto columnCollTime{collTabPtr->GetColumnByName("fCollisionTime")};
+
+    int entryD = 0;
+
+    for (int64_t iC{0}; iC < columnBCId->num_chunks(); ++iC) {
+      auto chunkBC{columnBCId->chunk(iC)};
+      auto chunkCollTime{columnCollTime->chunk(iC)};
+
+      auto BCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkBC);
+      auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::DoubleType>>(chunkCollTime);
+      for (int64_t iD{0}; iD < chunkBC->length(); ++iD) {
+        tags(BCArray->Value(iD), CollTimeArray->Value(iD), outDecision[iD]);
+        entryD++;
+      }
+    }
   }
 
   std::mt19937_64 mGeneratorEngine;
@@ -213,6 +244,7 @@ struct centralEventFilterTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
   std::vector<InputSpec> inputs;
+  inputs.emplace_back("Collisions", "AOD", "COLLISION", 0, Lifetime::Timeframe);
 
   auto config = cfg.options().get<std::string>("train_config");
   Document d;
@@ -228,6 +260,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
         if (std::string_view(workflow["workflow_name"].GetString()) == std::string_view(FilteringTaskNames[iFilter])) {
           inputs.emplace_back(std::string(AvailableFilters[iFilter]), "AOD", FilterDescriptions[iFilter], 0, Lifetime::Timeframe);
           enabledFilters[iFilter] = true;
+          LOG(info) << "    * Adding inputs from " << AvailableFilters[iFilter] << " to workflow";
           break;
         }
       }
