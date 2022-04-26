@@ -216,8 +216,7 @@ struct centralEventFilterTask {
     //Filling output table
     auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
     auto collTabPtr{collTabConsumer->asArrowTable()};
-    int64_t nColls{collTabPtr->num_rows()};
-    if (outDecision.size() != nColls) {
+    if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
       LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
     }
     auto columnBCId{collTabPtr->GetColumnByName("fIndexBCs")};
