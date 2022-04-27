@@ -60,8 +60,6 @@ DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R 
 DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);         //! event contains leading track
 DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);               //! high FV0 muliplicity
 DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);           //! high muliplicity collision
-DECLARE_SOA_COLUMN(HighTrackMultTrans, hasHighTrackMultTrans, bool); //! high muliplicity collision based on activity in TS
-DECLARE_SOA_COLUMN(HighTrackMultOverlap, hasHighTrackMultOverlap, bool); //! high trk mult and high transverse act
 
 } // namespace filtering
 
@@ -114,7 +112,7 @@ using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
-                  filtering::LeadingPtTrack, filtering::HighMultFv0, filtering::HighTrackMult, filtering::HighTrackMultTrans, filtering::HighTrackMultOverlap);
+                  filtering::LeadingPtTrack, filtering::HighMultFv0, filtering::HighTrackMult);
 using MultFilter = MultFilters::iterator;
 
 // cefp decision
