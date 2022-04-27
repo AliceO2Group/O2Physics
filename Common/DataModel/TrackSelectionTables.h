@@ -44,11 +44,13 @@ struct TrackSelectionFlags {
 };
 
 // Columns to store track filter decisions
-DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, uint8_t);                     //!
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
 DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
   DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & mask) == mask; });
+
+// DECLARE_SOA_EXPRESSION_COLUMN(IsGlobalTrack, isGlobalTrack, bool, //! Flag for global tracks
+//                               (aod::track::trackCutFlag& TrackSelectionFlags::kGlobalTrack) == TrackSelectionFlags::kGlobalTrack);
 
 DECLARE_DYN_TRKSEL_COLUMN(IsTrackType, isTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
 DECLARE_DYN_TRKSEL_COLUMN(IsPtRange, isPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
@@ -65,6 +67,7 @@ DECLARE_DYN_TRKSEL_COLUMN(IsITSHits, isITSHits, TrackSelectionFlags::kITSHits); 
 DECLARE_DYN_TRKSEL_COLUMN(IsGoldenChi2, isGoldenChi2, TrackSelectionFlags::kGoldenChi2);                                     //! Passed the track cut: kGoldenChi2
 DECLARE_DYN_TRKSEL_COLUMN(IsDCAxy, isDCAxy, TrackSelectionFlags::kDCAxy);                                                    //! Passed the track cut: kDCAxy
 DECLARE_DYN_TRKSEL_COLUMN(IsDCAz, isDCAz, TrackSelectionFlags::kDCAz);                                                       //! Passed the track cut: kDCAz
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                                  //! Passed the track cut: kGlobalTrack
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
 } // namespace track
@@ -72,8 +75,7 @@ DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
                   track::DcaXY,
                   track::DcaZ);
 
-DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Stored information on the track selection decision + split dynamic information
-                  track::IsGlobalTrack,
+DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELSTORE", //! Stored information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
                   track::IsTrackType<track::TrackCutFlag>,
@@ -90,7 +92,8 @@ DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Stored informatio
                   track::IsITSHits<track::TrackCutFlag>,
                   track::IsGoldenChi2<track::TrackCutFlag>,
                   track::IsDCAxy<track::TrackCutFlag>,
-                  track::IsDCAz<track::TrackCutFlag>);
+                  track::IsDCAz<track::TrackCutFlag>,
+                  track::IsGlobalTrack<track::TrackCutFlag>);
 
 } // namespace o2::aod
 

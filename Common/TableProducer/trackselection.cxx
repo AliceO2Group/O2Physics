@@ -56,11 +56,8 @@ struct TrackSelectionTask {
   void process(soa::Join<aod::FullTracks, aod::TracksExtended> const& tracks)
   {
     for (auto& track : tracks) {
-      const aod::track::TrackSelectionFlags::flagtype flags = globalTracks.IsSelectedFlag(track);
-      const bool isGlobalTrack = (flags & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack;
-      filterTable((uint8_t)isGlobalTrack,
-                  (uint8_t)globalTracksSDD.IsSelected(track),
-                  flags);
+      filterTable((uint8_t)globalTracksSDD.IsSelected(track),
+                  globalTracks.IsSelectedFlag(track));
     }
   }
 };

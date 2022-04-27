@@ -120,7 +120,7 @@ struct qaEventTrack {
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
 
   // TODO: ask if one can have different filters for both process functions
-  Filter trackFilter = !selectGlobalTracks || aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = !selectGlobalTracks || (aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack;
 
   HistogramRegistry histos;
 
