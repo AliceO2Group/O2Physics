@@ -57,7 +57,7 @@ DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);           //!
 DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);           //!
 DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);           //!
 DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //!
-} // namespace multzeq
+} // namespace multZeq
 DECLARE_SOA_TABLE(MultZeqs, "AOD", "MULTZEQ", //!
                   multZeq::MultZeqFV0A,
                   multZeq::MultZeqFT0A, multZeq::MultZeqFT0C,

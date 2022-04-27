@@ -58,12 +58,12 @@ struct MultiplicityTableTaskIndexed {
     float multZNA = 0.f;
     float multZNC = 0.f;
 
-//    float multZeqFV0A = 0.f;
-//    float multZeqFT0A = 0.f;
-//    float multZeqFT0C = 0.f;
-//    float multZeqFDDA = 0.f;
-//    float multZeqFDDC = 0.f;
-//    float multZeqNContribs = 0.f;
+    //    float multZeqFV0A = 0.f;
+    //    float multZeqFT0A = 0.f;
+    //    float multZeqFT0C = 0.f;
+    //    float multZeqFDDA = 0.f;
+    //    float multZeqFDDC = 0.f;
+    //    float multZeqNContribs = 0.f;
 
     auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
