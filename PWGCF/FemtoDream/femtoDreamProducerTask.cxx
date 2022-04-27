@@ -40,15 +40,15 @@ using namespace o2::framework::expressions;
 namespace o2::aod
 {
 
-using FilteredFullCollision = soa::Join<aod::Collisions,
-                                        aod::EvSels,
-                                        aod::Mults>::iterator;
-using FilteredFullTracks = soa::Join<aod::FullTracks,
-                                     aod::TracksExtended, aod::TOFSignal,
-                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                     aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
-                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+using FemtoFullCollision = soa::Join<aod::Collisions,
+                                     aod::EvSels,
+                                     aod::Mults>::iterator;
+using FemtoFullTracks = soa::Join<aod::FullTracks,
+                                  aod::TracksExtended, aod::TOFSignal,
+                                  aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                  aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
+                                  aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                  aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
 } // namespace o2::aod
 
@@ -73,8 +73,8 @@ int getRowDaughters(int daughID, T const& vecID)
 struct femtoDreamProducerTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
-  Produces<aod::FemtoDreamParticles> outputTracks;
-  Produces<aod::FemtoDreamDebugTracks> outputDebugTracks;
+  Produces<aod::FemtoDreamParticles> outputParts;
+  Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -180,7 +180,7 @@ struct femtoDreamProducerTask {
     }
   }
 
-  void process(aod::FilteredFullCollision const& col, aod::BCsWithTimestamps const&, aod::FilteredFullTracks const& tracks,
+  void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
     auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
@@ -220,45 +220,50 @@ struct femtoDreamProducerTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
       // now the table is filled
-      outputTracks(outputCollision.lastIndex(),
-                   track.pt(),
-                   track.eta(),
-                   track.phi(),
-                   aod::femtodreamparticle::ParticleType::kTrack,
-                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-                   track.dcaXY(),
-                   childIDs);
+      outputParts(outputCollision.lastIndex(),
+                  track.pt(),
+                  track.eta(),
+                  track.phi(),
+                  aod::femtodreamparticle::ParticleType::kTrack,
+                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                  track.dcaXY(),
+                  childIDs);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfDebugOutput) {
-        outputDebugTracks(track.sign(),
-                          (uint8_t)track.tpcNClsFound(),
-                          track.tpcNClsFindable(),
-                          (uint8_t)track.tpcNClsCrossedRows(),
-                          track.tpcNClsShared(),
-                          track.tpcInnerParam(),
-                          track.itsNCls(),
-                          track.itsNClsInnerBarrel(),
-                          track.dcaXY(),
-                          track.dcaZ(),
-                          track.tpcSignal(),
-                          track.tpcNSigmaStoreEl(),
-                          track.tpcNSigmaStorePi(),
-                          track.tpcNSigmaStoreKa(),
-                          track.tpcNSigmaStorePr(),
-                          track.tpcNSigmaStoreDe(),
-                          track.tofNSigmaStoreEl(),
-                          track.tofNSigmaStorePi(),
-                          track.tofNSigmaStoreKa(),
-                          track.tofNSigmaStorePr(),
-                          track.tofNSigmaStoreDe());
+        outputDebugParts(track.sign(),
+                         (uint8_t)track.tpcNClsFound(),
+                         track.tpcNClsFindable(),
+                         (uint8_t)track.tpcNClsCrossedRows(),
+                         track.tpcNClsShared(),
+                         track.tpcInnerParam(),
+                         track.itsNCls(),
+                         track.itsNClsInnerBarrel(),
+                         track.dcaXY(),
+                         track.dcaZ(),
+                         track.tpcSignal(),
+                         track.tpcNSigmaStoreEl(),
+                         track.tpcNSigmaStorePi(),
+                         track.tpcNSigmaStoreKa(),
+                         track.tpcNSigmaStorePr(),
+                         track.tpcNSigmaStoreDe(),
+                         track.tofNSigmaStoreEl(),
+                         track.tofNSigmaStorePi(),
+                         track.tofNSigmaStoreKa(),
+                         track.tofNSigmaStorePr(),
+                         track.tofNSigmaStoreDe(),
+                         -999.,
+                         -999.,
+                         -999.,
+                         -999.,
+                         -999.);
       }
     }
 
     if (ConfStoreV0) {
       for (auto& v0 : fullV0s) {
-        auto postrack = v0.posTrack_as<aod::FilteredFullTracks>();
-        auto negtrack = v0.negTrack_as<aod::FilteredFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
+        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
+        auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
@@ -274,17 +279,97 @@ struct femtoDreamProducerTask {
           rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
           childIDs[0] = rowInPrimaryTrackTablePos;
           childIDs[1] = 0;
-          outputTracks(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs);
-          const int rowOfPosTrack = outputTracks.lastIndex();
+          outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs);
+          const int rowOfPosTrack = outputParts.lastIndex();
           int negtrackID = v0.negTrackId();
           int rowInPrimaryTrackTableNeg = -1;
           rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
           childIDs[0] = 0;
           childIDs[1] = rowInPrimaryTrackTableNeg;
-          outputTracks(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs);
-          const int rowOfNegTrack = outputTracks.lastIndex();
+          outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs);
+          const int rowOfNegTrack = outputParts.lastIndex();
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
-          outputTracks(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID);
+          outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID);
+          if (ConfDebugOutput) {
+            outputDebugParts(postrack.sign(),
+                             (uint8_t)postrack.tpcNClsFound(),
+                             postrack.tpcNClsFindable(),
+                             (uint8_t)postrack.tpcNClsCrossedRows(),
+                             postrack.tpcNClsShared(),
+                             postrack.tpcInnerParam(),
+                             postrack.itsNCls(),
+                             postrack.itsNClsInnerBarrel(),
+                             postrack.dcaXY(),
+                             postrack.dcaZ(),
+                             postrack.tpcSignal(),
+                             postrack.tpcNSigmaStoreEl(),
+                             postrack.tpcNSigmaStorePi(),
+                             postrack.tpcNSigmaStoreKa(),
+                             postrack.tpcNSigmaStorePr(),
+                             postrack.tpcNSigmaStoreDe(),
+                             postrack.tofNSigmaStoreEl(),
+                             postrack.tofNSigmaStorePi(),
+                             postrack.tofNSigmaStoreKa(),
+                             postrack.tofNSigmaStorePr(),
+                             postrack.tofNSigmaStoreDe(),
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.); // QA for positive daughter
+            outputDebugParts(negtrack.sign(),
+                             (uint8_t)negtrack.tpcNClsFound(),
+                             negtrack.tpcNClsFindable(),
+                             (uint8_t)negtrack.tpcNClsCrossedRows(),
+                             negtrack.tpcNClsShared(),
+                             negtrack.tpcInnerParam(),
+                             negtrack.itsNCls(),
+                             negtrack.itsNClsInnerBarrel(),
+                             negtrack.dcaXY(),
+                             negtrack.dcaZ(),
+                             negtrack.tpcSignal(),
+                             negtrack.tpcNSigmaStoreEl(),
+                             negtrack.tpcNSigmaStorePi(),
+                             negtrack.tpcNSigmaStoreKa(),
+                             negtrack.tpcNSigmaStorePr(),
+                             negtrack.tpcNSigmaStoreDe(),
+                             negtrack.tofNSigmaStoreEl(),
+                             negtrack.tofNSigmaStorePi(),
+                             negtrack.tofNSigmaStoreKa(),
+                             negtrack.tofNSigmaStorePr(),
+                             negtrack.tofNSigmaStoreDe(),
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.); // QA for negative daughter
+            outputDebugParts(-999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             -999.,
+                             v0.dcaV0daughters(),
+                             v0.v0radius(),
+                             v0.x(),
+                             v0.y(),
+                             v0.z()); // QA for V0
+          }
         }
       }
     }

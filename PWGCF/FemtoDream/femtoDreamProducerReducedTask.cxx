@@ -39,22 +39,22 @@ using namespace o2::framework::expressions;
 namespace o2::aod
 {
 
-using FilteredFullCollision = soa::Join<aod::Collisions,
-                                        aod::EvSels,
-                                        aod::Mults>::iterator;
-using FilteredFullTracks = soa::Join<aod::FullTracks,
-                                     aod::TracksExtended, aod::TOFSignal,
-                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
-                                     aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
-                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+using FemtoFullCollision = soa::Join<aod::Collisions,
+                                     aod::EvSels,
+                                     aod::Mults>::iterator;
+using FemtoFullTracks = soa::Join<aod::FullTracks,
+                                  aod::TracksExtended, aod::TOFSignal,
+                                  aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                  aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
+                                  aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                  aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
 } // namespace o2::aod
 
 struct femtoDreamProducerReducedTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputTracks;
-  Produces<aod::FemtoDreamDebugTracks> outputDebugTracks;
+  Produces<aod::FemtoDreamDebugParticles> outputDebugTracks;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -114,7 +114,7 @@ struct femtoDreamProducerReducedTask {
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
   }
 
-  void process(aod::FilteredFullCollision const& col, aod::BCsWithTimestamps const&, aod::FilteredFullTracks const& tracks) /// \todo with FilteredFullV0s
+  void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
   {
     auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     const auto vtxZ = col.posZ();
@@ -182,7 +182,12 @@ struct femtoDreamProducerReducedTask {
                           track.tofNSigmaStorePi(),
                           track.tofNSigmaStoreKa(),
                           track.tofNSigmaStorePr(),
-                          track.tofNSigmaStoreDe());
+                          track.tofNSigmaStoreDe(),
+                          -999.,
+                          -999.,
+                          -999.,
+                          -999.,
+                          -999.);
       }
     }
   }
