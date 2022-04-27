@@ -58,12 +58,12 @@ struct MultiplicityTableTaskIndexed {
     float multZNA = 0.f;
     float multZNC = 0.f;
 
-    float multZeqFV0A = 0.f;
-    float multZeqFT0A = 0.f;
-    float multZeqFT0C = 0.f;
-    float multZeqFDDA = 0.f;
-    float multZeqFDDC = 0.f;
-    float multZeqNContribs = 0.f;
+//    float multZeqFV0A = 0.f;
+//    float multZeqFT0A = 0.f;
+//    float multZeqFT0C = 0.f;
+//    float multZeqFDDA = 0.f;
+//    float multZeqFDDC = 0.f;
+//    float multZeqNContribs = 0.f;
 
     auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
@@ -98,7 +98,7 @@ struct MultiplicityTableTaskIndexed {
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
     mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs);
-    multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+    //multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
@@ -124,7 +124,7 @@ struct MultiplicityTableTaskIndexed {
     auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto pvContribsGrouped = pvContribTracks->sliceByCached(aod::track::collisionId, collision.globalIndex());
     int multTPC = tracksGrouped.size();
-    int multNContribs = tracksGrouped.size();
+    int multNContribs = pvContribsGrouped.size();
 
     TList* lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", 1635634560883); //temporary
 
