@@ -34,12 +34,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultFDDM, multFDDM, //!
 DECLARE_SOA_COLUMN(MultTracklets, multTracklets, int);
 DECLARE_SOA_COLUMN(MultTPC, multTPC, int);
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
-DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);           //!
-DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //!
 
 } // namespace mult
 DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
@@ -52,12 +46,24 @@ DECLARE_SOA_TABLE(Mults, "AOD", "MULT", //!
                   mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>,
                   mult::MultTracklets,
                   mult::MultTPC,
-                  mult::MultNTracksPV,
-                  mult::MultZeqFV0A,
-                  mult::MultZeqFT0A, mult::MultZeqFT0C,
-                  mult::MultZeqFDDA, mult::MultZeqFDDC,
-                  mult::MultZeqNTracksPV);
+                  mult::MultNTracksPV);
 using Mult = Mults::iterator;
+
+namespace multZeq
+{
+DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);           //!
+DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);           //!
+DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);           //!
+DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);           //!
+DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);           //!
+DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //!
+} // namespace multzeq
+DECLARE_SOA_TABLE(MultZeqs, "AOD", "MULTZEQ", //!
+                  multZeq::MultZeqFV0A,
+                  multZeq::MultZeqFT0A, multZeq::MultZeqFT0C,
+                  multZeq::MultZeqFDDA, multZeq::MultZeqFDDC,
+                  multZeq::MultZeqNTracksPV);
+using MultZeq = MultZeqs::iterator;
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_MULTIPLICITY_H_

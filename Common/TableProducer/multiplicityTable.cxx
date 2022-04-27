@@ -29,6 +29,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 
 struct MultiplicityTableTaskIndexed {
   Produces<aod::Mults> mult;
+  Produces<aod::MultZeqs> multzeq;
 
   //For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -48,18 +49,18 @@ struct MultiplicityTableTaskIndexed {
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)
   {
-    float multV0A = 0.f;
-    float multV0C = 0.f;
-    float multT0A = 0.f;
-    float multT0C = 0.f;
+    float multFV0A = 0.f;
+    float multFV0C = 0.f;
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
     float multFDDA = 0.f;
     float multFDDC = 0.f;
     float multZNA = 0.f;
     float multZNC = 0.f;
 
-    float multZeqV0A = 0.f;
-    float multZeqT0A = 0.f;
-    float multZeqT0C = 0.f;
+    float multZeqFV0A = 0.f;
+    float multZeqFT0A = 0.f;
+    float multZeqFT0C = 0.f;
     float multZeqFDDA = 0.f;
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
@@ -72,21 +73,21 @@ struct MultiplicityTableTaskIndexed {
 
     if (collision.has_fv0a()) {
       for (auto amplitude : collision.fv0a().amplitude()) {
-        multV0A += amplitude;
+        multFV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
       for (auto amplitude : collision.fv0c().amplitude()) {
-        multV0C += amplitude;
+        multFV0C += amplitude;
       }
     }
     if (collision.has_ft0()) {
       auto ft0 = collision.ft0();
       for (auto amplitude : ft0.amplitudeA()) {
-        multT0A += amplitude;
+        multFT0A += amplitude;
       }
       for (auto amplitude : ft0.amplitudeC()) {
-        multT0C += amplitude;
+        multFT0C += amplitude;
       }
     }
     if (collision.has_zdc()) {
@@ -95,9 +96,9 @@ struct MultiplicityTableTaskIndexed {
       multZNC = zdc.energyCommonZNC();
     }
 
-    LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-    mult(multV0A, multV0C, multT0A, multT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs,
-         multZeqV0A, multZeqT0A, multZeqT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
+    mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs);
+    multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
@@ -147,10 +148,10 @@ struct MultiplicityTableTaskIndexed {
     // using FDD row index from event selection task
     if (collision.has_foundFDD()) {
       auto fdd = collision.foundFDD();
-      for (auto amplitude : fdd.amplitudeA()) {
+      for (auto amplitude : fdd.chargeA()) {
         multFDDA += amplitude;
       }
-      for (auto amplitude : fdd.amplitudeC()) {
+      for (auto amplitude : fdd.chargeC()) {
         multFDDC += amplitude;
       }
     }
@@ -171,9 +172,9 @@ struct MultiplicityTableTaskIndexed {
       multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
     }
 
-    LOGF(debug, "multV0A=%5.0f multV0C=%5.0f multT0A=%5.0f multT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
-    mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs,
-         multZeqFV0A, multZeqFT0A, multZeqFT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
+    mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs);
+    multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0A, multZeqFDDA, multZeqFDDC, multZeqNContribs);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", false);
 };

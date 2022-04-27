@@ -79,7 +79,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hVtxZNTracksPV", "Av NTracks vs vertex Z", kTProfile, {axisVertexZ});
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator const& col)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs>::iterator const& col)
   {
     histos.fill(HIST("multiplicityQa/hEventCounter"), 0.5);
     if (selection == 7 && !col.sel7()) {
