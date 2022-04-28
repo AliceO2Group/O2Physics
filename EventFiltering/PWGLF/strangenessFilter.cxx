@@ -160,7 +160,6 @@ struct strangenessFilter {
   using MCCollisionCandidates = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
-  using MCDaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::McTrackLabels>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
@@ -417,7 +416,7 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3MC(MCCollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, MCDaughterTracks& dtracks)
+  void processRun3(MCCollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, DaughterTracks& dtracks)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -647,7 +646,7 @@ struct strangenessFilter {
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
   }
   //
-  PROCESS_SWITCH(strangenessFilter, processRun3MC, "Process Run3 MC", true);
+  PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
