@@ -137,7 +137,7 @@ struct MultiplicityTableTaskIndexed {
     int multNContribs = pvContribsGrouped.size();
 
     /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCs>();
+    auto bc = collision.bc();
     if (bc.runNumber() != mRunNumber) {
       lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", 1635634560883); //temporary
       if (lCalibObjects) {
@@ -149,9 +149,13 @@ struct MultiplicityTableTaskIndexed {
         hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracks");
         mRunNumber = bc.runNumber();
         lCalibLoaded = true;
+        //Capture error
+        if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC) {
+          LOGF(info, "Problem loading CCDB objects! Please check");
+          lCalibLoaded = false;
+        }
       }
     }
-
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -179,7 +183,6 @@ struct MultiplicityTableTaskIndexed {
         multFV0A += amplitude;
       }
     }
-
     if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
       multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
       multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());

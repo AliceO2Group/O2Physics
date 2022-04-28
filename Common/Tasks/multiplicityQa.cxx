@@ -64,7 +64,7 @@ struct MultiplicityQa {
     histos.add("multiplicityQa/hRawFV0", "Raw FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hRawFT0", "Raw FT0", kTH1D, {axisMultFT0});
     histos.add("multiplicityQa/hRawFDD", "Raw FDD", kTH1D, {axisMultFDD});
-    histos.add("multiplicityQa/hRawNTracks", "Raw NTracks", kTH1D, {axisMultNTracks});
+    histos.add("multiplicityQa/hRawNTracksPV", "Raw NTracks", kTH1D, {axisMultNTracks});
     histos.add("multiplicityQa/hZeqFV0", "vtx-z eq FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hZeqFT0", "vtx-z eq FT0", kTH1D, {axisMultFT0});
     histos.add("multiplicityQa/hZeqFDD", "vtx-z eq FDD", kTH1D, {axisMultFDD});
