@@ -562,7 +562,6 @@ class RecoDecay
   }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
-  /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param PDGMother  expected mother PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle of the expected mother
@@ -570,8 +569,7 @@ class RecoDecay
   /// \param depthMax  maximum decay tree level to check; Mothers up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if found, -1 otherwise
   template <typename T>
-  static int getMother(const T& particlesMC,
-                       const typename T::iterator& particle,
+  static int getMother(const T& particle,
                        int PDGMother,
                        bool acceptAntiParticles = false,
                        int8_t* sign = nullptr,
@@ -588,8 +586,8 @@ class RecoDecay
       if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
         return -1;
       }
-      auto indexMotherTmp = particleMother.mothersIds().front();
-      particleMother = particlesMC.rawIteratorAt(indexMotherTmp - particlesMC.offset());
+      particleMother = particleMother.template mothers_first_as<typename std::decay_t<T>::parent_t>(); // get mother 0
+      auto indexMotherTmp = particleMother.globalIndex();
       // Check mother's PDG code.
       auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
       //printf("getMother: ");
@@ -614,7 +612,6 @@ class RecoDecay
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
-  /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
@@ -623,8 +620,7 @@ class RecoDecay
   /// \note Final state is defined as particles from arrPDGFinal plus final daughters of any other decay branch.
   /// \note Antiparticles of particles in arrPDGFinal are accepted as well.
   template <std::size_t N, typename T>
-  static void getDaughters(const T& particlesMC,
-                           const typename T::iterator& particle,
+  static void getDaughters(const T& particle,
                            std::vector<int>* list,
                            const array<int, N>& arrPDGFinal,
                            int8_t depthMax = -1,
@@ -675,12 +671,8 @@ class RecoDecay
     //printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    if (particle.daughtersIds().front() != particle.daughtersIds().back()) {
-      for (auto& idxDau : particle.daughtersIds()) {
-        getDaughters(particlesMC, particlesMC.rawIteratorAt(idxDau - particlesMC.offset()), list, arrPDGFinal, depthMax, stage);
-      }
-    } else {
-      getDaughters(particlesMC, particlesMC.rawIteratorAt(particle.daughtersIds().front() - particlesMC.offset()), list, arrPDGFinal, depthMax, stage);
+    for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
+      getDaughters(dau, list, arrPDGFinal, depthMax, stage);
     }
   }
 
@@ -721,7 +713,7 @@ class RecoDecay
       if (iProng == 0) {
         // Get the mother index and its sign.
         // PDG code of the first daughter's mother determines whether the expected mother is a particle or antiparticle.
-        indexMother = getMother(particlesMC, particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
+        indexMother = getMother(particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
         // Check whether mother was found.
         if (indexMother <= -1) {
           //Printf("MC Rec: Rejected: bad mother index or PDG");
@@ -740,7 +732,7 @@ class RecoDecay
           return -1;
         }
         // Get the list of actual final daughters.
-        getDaughters(particlesMC, particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
         //printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         //for (auto i : arrAllDaughtersIndex) {
         //  printf(" %d", i);
@@ -858,7 +850,7 @@ class RecoDecay
         return false;
       }
       // Get the list of actual final daughters.
-      getDaughters(particlesMC, candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
       //printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       //for (auto i : arrAllDaughtersIndex) {
       //  printf(" %d", i);
