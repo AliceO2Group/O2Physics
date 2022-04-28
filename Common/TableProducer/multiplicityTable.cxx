@@ -38,10 +38,28 @@ struct MultiplicityTableTaskIndexed {
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
 
-  TList fCalibObjects; //for storing calibration objects
+  int mRunNumber;
+  bool lCalibLoaded;
+  TList* lCalibObjects;
+  TProfile* hVtxZFV0A;
+  TProfile* hVtxZFT0A;
+  TProfile* hVtxZFT0C;
+  TProfile* hVtxZFDDA;
+  TProfile* hVtxZFDDC;
+  TProfile* hVtxZNTracks;
 
   void init(InitContext& context)
   {
+    mRunNumber = 0;
+    lCalibLoaded = false;
+    lCalibObjects = nullptr;
+    hVtxZFV0A = nullptr;
+    hVtxZFT0A = nullptr;
+    hVtxZFT0C = nullptr;
+    hVtxZFDDA = nullptr;
+    hVtxZFDDC = nullptr;
+    hVtxZNTracks = nullptr;
+
     ccdb->setURL("http://ccdb-test.cern.ch:8080"); //temporary - to be tuned  shortly
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -57,13 +75,6 @@ struct MultiplicityTableTaskIndexed {
     float multFDDC = 0.f;
     float multZNA = 0.f;
     float multZNC = 0.f;
-
-    //    float multZeqFV0A = 0.f;
-    //    float multZeqFT0A = 0.f;
-    //    float multZeqFT0C = 0.f;
-    //    float multZeqFDDA = 0.f;
-    //    float multZeqFDDC = 0.f;
-    //    float multZeqNContribs = 0.f;
 
     auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex());
     auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex());
@@ -98,7 +109,6 @@ struct MultiplicityTableTaskIndexed {
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
     mult(multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs);
-    //multzeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
   }
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", true);
 
@@ -126,14 +136,21 @@ struct MultiplicityTableTaskIndexed {
     int multTPC = tracksGrouped.size();
     int multNContribs = pvContribsGrouped.size();
 
-    TList* lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", 1635634560883); //temporary
-
-    TProfile* hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
-    TProfile* hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
-    TProfile* hVtxZFT0C = (TProfile*)lCalibObjects->FindObject("hVtxZFT0C");
-    TProfile* hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
-    TProfile* hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
-    TProfile* hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracks");
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCs>();
+    if (bc.runNumber() != mRunNumber) {
+      lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", 1635634560883); //temporary
+      if (lCalibObjects) {
+        hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
+        hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
+        hVtxZFT0C = (TProfile*)lCalibObjects->FindObject("hVtxZFT0C");
+        hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
+        hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
+        hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracks");
+        mRunNumber = bc.runNumber();
+        lCalibLoaded = true;
+      }
+    }
 
     // using FT0 row index from event selection task
     if (collision.has_foundFT0()) {
@@ -163,7 +180,7 @@ struct MultiplicityTableTaskIndexed {
       }
     }
 
-    if (fabs(collision.posZ()) < 15.0f) {
+    if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
       multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
       multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
       multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
