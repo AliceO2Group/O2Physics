@@ -104,6 +104,7 @@ struct strangenessFilter {
   Configurable<float> nsigmatof{"nsigmatof", 5, "N Sigmas TOF (OOB condition)"};
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
+  Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
 
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.8f, "Eta range for trigger particles"};
@@ -171,6 +172,9 @@ struct strangenessFilter {
       return;
     }
     if (sel7 && !collision.sel7()) {
+      return;
+    }
+    if (sel8 && !collision.sel8()) {
       return;
     }
 
@@ -414,10 +418,7 @@ struct strangenessFilter {
 
   void processRun3MC(MCCollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, MCDaughterTracks& dtracks)
   {
-    if (kint7 && !collision.alias()[kINT7]) {
-      return;
-    }
-    if (sel7 && !collision.sel7()) {
+    if (sel8 && !collision.sel8()) {
       return;
     }
 
