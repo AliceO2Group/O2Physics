@@ -150,13 +150,12 @@ struct strangenessFilter {
   }
 
   // Filters
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cutzvertex);
   Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (aod::track::isGlobalTrack == static_cast<uint8_t>(1u));
   // Filter preFilterCasc = nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
   // Tables
-  using CollisionCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator;
-  using MCCollisionCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
+  using MCCollisionCandidates = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
   using MCDaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::McTrackLabels>;
@@ -174,6 +173,8 @@ struct strangenessFilter {
     if (sel7 && !collision.sel7()) {
       return;
     }
+
+    if (nabs(collision.posZ()) > cutzvertex) return;
 
     QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
     QAHistos.fill(HIST("hCentrality"), collision.centV0M());
@@ -419,6 +420,8 @@ struct strangenessFilter {
     if (sel7 && !collision.sel7()) {
       return;
     }
+
+    if (nabs(collision.posZ()) > cutzvertex) return;
 
     QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
     hProcessedEvents->Fill(0.5);
