@@ -613,8 +613,8 @@ struct HfTagSelTracks {
       std::array<float, 6> pvrefit_PVcovM{1e10f, 1e10f, 1e10f, 1e10f, 1e10f, 1e10f};
       std::array<float, 2> pvrefit_DCAxyDCAz{track.dcaXY(), track.dcaZ()};
       if (track.has_collision()) {
-          pvrefit_PVxPVyPVz = {track.collision().posX(), track.collision().posY(), track.collision().posZ()};
-          pvrefit_PVcovM = {track.collision().covXX(), track.collision().covXY(), track.collision().covYY(), track.collision().covXZ(), track.collision().covYZ(), track.collision().covZZ()};
+        pvrefit_PVxPVyPVz = {track.collision().posX(), track.collision().posY(), track.collision().posZ()};
+        pvrefit_PVcovM = {track.collision().covXX(), track.collision().covXY(), track.collision().covYY(), track.collision().covXZ(), track.collision().covYZ(), track.collision().covZZ()};
       }
 
       if (doPVrefit) {
