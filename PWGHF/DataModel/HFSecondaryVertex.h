@@ -103,7 +103,7 @@ namespace hf_track_index
 DECLARE_SOA_INDEX_COLUMN_FULL(IndexD0, indexD0, int, Hf2Prong, ""); //! Index to a D0 prong
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(HfDStar, "AOD", "HFDSTAR", //! D* -> D0pi candidates
+DECLARE_SOA_TABLE(HfDstar, "AOD", "HFDSTAR", //! D* -> D0pi candidates
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
                   hf_track_index::IndexD0Id);
