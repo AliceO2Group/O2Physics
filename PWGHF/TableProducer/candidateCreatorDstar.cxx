@@ -32,6 +32,10 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
   OutputObj<TH1F> hMass{TH1F("hMass", "D* candidates;inv. mass (#pi D^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hPtPi{TH1F("hPtPi", "#pi candidates;#it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hPtD0Prong0{TH1F("hPtD0Prong0", "D^{0} candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hPtD0Prong1{TH1F("hPtD0Prong1", "D^{0} candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hPtD0{TH1F("hPtD0", "D^{0} candidates;candidate #it{p}_{T} (GeV/#it{c});entries", 500, 0., 5.)};
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
@@ -59,6 +63,10 @@ struct HfCandidateCreatorDstar {
 
       // fill histograms
       if (fillHistograms) {
+        hPtPi->Fill(RecoDecay::Pt(pVecPi));
+        hPtD0->Fill(RecoDecay::Pt(pVecD0));
+        hPtD0Prong0->Fill(RecoDecay::Pt(pVecD0Prong0));
+        hPtD0Prong1->Fill(RecoDecay::Pt(pVecD0Prong1));
         // calculate invariant mass
         auto mass = RecoDecay::M(std::array{pVecPi, pVecD0}, std::array{massPi, massD0});
         hMass->Fill(mass);
