@@ -373,16 +373,16 @@ template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreampar
 void FemtoDreamV0Selection::fillQA(C const& col, V const& v0, T const& posTrack, T const& negTrack)
 {
   if (mHistogramRegistry) {
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/pThist"), v0.pt());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/etahist"), v0.eta());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/phihist"), v0.phi());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/dcaDauToVtx"), v0.dcaV0daughters());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/transRadius"), v0.v0radius());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/decayVtxXPV"), v0.x());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/decayVtxYPV"), v0.y());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/decayVtxZPV"), v0.z());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/cpa"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/cpapTBins"), v0.pt(), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hPt"), v0.pt());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hEta"), v0.eta());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hPhi"), v0.phi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDaughDCAtoVtx"), v0.dcaV0daughters());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTransRadius"), v0.v0radius());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDecatVtxX"), v0.x());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDecatVtxY"), v0.y());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDecatVtxZ"), v0.z());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hCPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hCPAvsPt"), v0.pt(), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
   }
   /// \TODO to add possibility to write to Daughters folders
   // PosDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child>(posTrack, "Pos");

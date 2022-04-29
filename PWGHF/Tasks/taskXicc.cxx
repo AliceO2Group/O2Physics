@@ -185,7 +185,7 @@ struct HfTaskXiccMc {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::XiccToXicPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMCGen>>(), 4422, true);
+        auto indexMother = RecoDecay::getMother(candidate.index1_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXiccMCGen>>(), 4422, true);
         auto particleXicc = particlesMC.rawIteratorAt(indexMother);
         auto particleXic = particlesMC.rawIteratorAt(particleXicc.daughtersIds().front());
         /*
