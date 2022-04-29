@@ -265,15 +265,9 @@ struct HfTagSelTracks {
   Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], npTBinsTrack, nCutVarsTrack, pTBinLabelsTrack, cutVarLabelsTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
   Configurable<double> etaMaxBach{"etaMaxBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
   // QA of PV refit
-  Configurable<int> pvrefit_nBinsDeltaX{"pvrefit_nBinsDeltaX", 1000, "Number of bins of DeltaX for PV refit"};
-  Configurable<int> pvrefit_nBinsDeltaY{"pvrefit_nBinsDeltaY", 1000, "Number of bins of DeltaY for PV refit"};
-  Configurable<int> pvrefit_nBinsDeltaZ{"pvrefit_nBinsDeltaZ", 1000, "Number of bins of DeltaZ for PV refit"};
-  Configurable<float> pvrefit_minDeltaX{"pvrefit_minDeltaX", -0.5, "Min. DeltaX value for PV refit (cm)"};
-  Configurable<float> pvrefit_maxDeltaX{"pvrefit_maxDeltaX", 0.5, "Max. DeltaX value for PV refit (cm)"};
-  Configurable<float> pvrefit_minDeltaY{"pvrefit_minDeltaY", -0.5, "Min. DeltaY value for PV refit (cm)"};
-  Configurable<float> pvrefit_maxDeltaY{"pvrefit_maxDeltaY", 0.5, "Max. DeltaY value for PV refit (cm)"};
-  Configurable<float> pvrefit_minDeltaZ{"pvrefit_minDeltaZ", -0.5, "Min. DeltaZ value for PV refit (cm)"};
-  Configurable<float> pvrefit_maxDeltaZ{"pvrefit_maxDeltaZ", 0.5, "Max. DeltaZ value for PV refit (cm)"};
+  ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -291,16 +285,6 @@ struct HfTagSelTracks {
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
-  AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
-  AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
-  AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
-  AxisSpec axisCollisionXoriginal{1000, -20.f, 20.f, "X original PV (cm)"};
-  AxisSpec axisCollisionYoriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
-  AxisSpec axisCollisionZoriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
-  AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
-  AxisSpec axisCollisionDeltaX{pvrefit_nBinsDeltaX, pvrefit_minDeltaX, pvrefit_maxDeltaX, "#Delta x_{PV} (cm)"};
-  AxisSpec axisCollisionDeltaY{pvrefit_nBinsDeltaY, pvrefit_minDeltaY, pvrefit_maxDeltaY, "#Delta y_{PV} (cm)"};
-  AxisSpec axisCollisionDeltaZ{pvrefit_nBinsDeltaZ, pvrefit_minDeltaZ, pvrefit_maxDeltaZ, "#Delta z_{PV} (cm)"};
 
   HistogramRegistry registry{
     "registry",
@@ -337,6 +321,17 @@ struct HfTagSelTracks {
 
     // Needed for PV refitting
     if (doPVrefit) {
+      AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
+      AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
+      AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
+      AxisSpec axisCollisionXoriginal{1000, -20.f, 20.f, "X original PV (cm)"};
+      AxisSpec axisCollisionYoriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
+      AxisSpec axisCollisionZoriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
+      AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
+      AxisSpec axisCollisionDeltaX{axisPvRefitDeltaX, "#Delta x_{PV} (cm)"};
+      AxisSpec axisCollisionDeltaY{axisPvRefitDeltaY, "#Delta y_{PV} (cm)"};
+      AxisSpec axisCollisionDeltaZ{axisPvRefitDeltaZ, "#Delta z_{PV} (cm)"};
+
       registry.add("PVrefit/vertices_perTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
       registry.get<TH1>(HIST("PVrefit/vertices_perTrack"))->GetXaxis()->SetBinLabel(1, "All PV");
       registry.get<TH1>(HIST("PVrefit/vertices_perTrack"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
@@ -554,6 +549,9 @@ struct HfTagSelTracks {
         impParRPhi = dcaInfo[0]; // [cm]
         impParZ = dcaInfo[1];    // [cm]
       }
+    } else {
+      /// return, so that default values are not touched
+      return;
     }
 
     /// Final values
@@ -613,7 +611,12 @@ struct HfTagSelTracks {
       // PV refit and DCA recalculation only for tracks with an assigned collision
       std::array<float, 3> pvrefit_PVxPVyPVz{0.f, 0.f, 0.f};
       std::array<float, 6> pvrefit_PVcovM{1e10f, 1e10f, 1e10f, 1e10f, 1e10f, 1e10f};
-      std::array<float, 2> pvrefit_DCAxyDCAz{1e10f, 1e10f};
+      std::array<float, 2> pvrefit_DCAxyDCAz{track.dcaXY(), track.dcaZ()};
+      if (track.has_collision()) {
+          pvrefit_PVxPVyPVz = {track.collision().posX(), track.collision().posY(), track.collision().posZ()};
+          pvrefit_PVcovM = {track.collision().covXX(), track.collision().covXY(), track.collision().covYY(), track.collision().covXZ(), track.collision().covYZ(), track.collision().covZZ()};
+      }
+
       if (doPVrefit) {
         if (track.has_collision()) {
 
@@ -905,15 +908,9 @@ struct HfTrackIndexSkimsCreator {
   Configurable<std::vector<double>> pTBinsXicToPKPi{"pTBinsXicToPKPi", std::vector<double>{hf_cuts_presel_3prong::pTBinsVec}, "pT bin limits for Xic->pKpi pT-depentend cuts"};
   Configurable<LabeledArray<double>> cutsXicToPKPi{"cutsXicToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::npTBins, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::pTBinLabels, hf_cuts_presel_3prong::cutVarLabels}, "Xic->pKpi selections per pT bin"};
   // QA of PV refit
-  Configurable<int> pvrefit_nBinsDeltaX{"pvrefit_nBinsDeltaX", 1000, "Number of bins of DeltaX for PV refit"};
-  Configurable<int> pvrefit_nBinsDeltaY{"pvrefit_nBinsDeltaY", 1000, "Number of bins of DeltaY for PV refit"};
-  Configurable<int> pvrefit_nBinsDeltaZ{"pvrefit_nBinsDeltaZ", 1000, "Number of bins of DeltaZ for PV refit"};
-  Configurable<float> pvrefit_minDeltaX{"pvrefit_minDeltaX", -0.5, "Min. DeltaX value for PV refit (cm)"};
-  Configurable<float> pvrefit_maxDeltaX{"pvrefit_maxDeltaX", 0.5, "Max. DeltaX value for PV refit (cm)"};
-  Configurable<float> pvrefit_minDeltaY{"pvrefit_minDeltaY", -0.5, "Min. DeltaY value for PV refit (cm)"};
-  Configurable<float> pvrefit_maxDeltaY{"pvrefit_maxDeltaY", 0.5, "Max. DeltaY value for PV refit (cm)"};
-  Configurable<float> pvrefit_minDeltaZ{"pvrefit_minDeltaZ", -0.5, "Min. DeltaZ value for PV refit (cm)"};
-  Configurable<float> pvrefit_maxDeltaZ{"pvrefit_maxDeltaZ", 0.5, "Max. DeltaZ value for PV refit (cm)"};
+  ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
+  ConfigurableAxis axisPvRefitDeltaZ{"axisPvRefitDeltaZ", {1000, -0.5f, 0.5f}, "DeltaZ binning PV refit"};
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -924,16 +921,6 @@ struct HfTrackIndexSkimsCreator {
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
-  AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
-  AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
-  AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
-  AxisSpec axisCollisionXoriginal{1000, -20.f, 20.f, "X original PV (cm)"};
-  AxisSpec axisCollisionYoriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
-  AxisSpec axisCollisionZoriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
-  AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
-  AxisSpec axisCollisionDeltaX{pvrefit_nBinsDeltaX, pvrefit_minDeltaX, pvrefit_maxDeltaX, "#Delta x_{PV} (cm)"};
-  AxisSpec axisCollisionDeltaY{pvrefit_nBinsDeltaY, pvrefit_minDeltaY, pvrefit_maxDeltaY, "#Delta y_{PV} (cm)"};
-  AxisSpec axisCollisionDeltaZ{pvrefit_nBinsDeltaZ, pvrefit_minDeltaZ, pvrefit_maxDeltaZ, "#Delta z_{PV} (cm)"};
 
   HistogramRegistry registry{
     "registry",
@@ -1004,6 +991,16 @@ struct HfTrackIndexSkimsCreator {
 
     // needed for PV refitting
     if (doPVrefit) {
+      AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
+      AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
+      AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
+      AxisSpec axisCollisionXoriginal{1000, -20.f, 20.f, "X original PV (cm)"};
+      AxisSpec axisCollisionYoriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
+      AxisSpec axisCollisionZoriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
+      AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
+      AxisSpec axisCollisionDeltaX{axisPvRefitDeltaX, "#Delta x_{PV} (cm)"};
+      AxisSpec axisCollisionDeltaY{axisPvRefitDeltaY, "#Delta y_{PV} (cm)"};
+      AxisSpec axisCollisionDeltaZ{axisPvRefitDeltaZ, "#Delta z_{PV} (cm)"};
       registry.add("PVrefit/vertices_perCandidate", "", kTH1D, {{6, 0.5f, 6.5f, ""}});
       registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(1, "All PV");
       registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
