@@ -34,6 +34,11 @@ o2physics_add_dpl_workflow(femtodream-pair-track-v0
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-debug-v0
+          SOURCES femtoDreamDebugV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-hash
           SOURCES femtoDreamHashTask.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

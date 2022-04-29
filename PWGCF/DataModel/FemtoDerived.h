@@ -95,13 +95,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
-DECLARE_SOA_COLUMN(PosDCAptoVtx, posDCAtoVtx, float); //! Positive daughter DCA from the decay vertex
-DECLARE_SOA_COLUMN(NegDCAptoVtx, negDCAtoVtx, float); //! Negative daughter DCA from the decay vertex
-DECLARE_SOA_COLUMN(TransRadius, transRadius, float);  //! Transverse radius of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);      //! X position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);      //! Y position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);      //! Z position of the decay vertex
-DECLARE_SOA_COLUMN(CPA, cpa, float);                  //! Cosine of pointing angle
+DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 
 } // namespace femtodreamparticle
 DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
@@ -122,7 +120,7 @@ DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
                   femtodreamparticle::P<femtodreamparticle::Pt, femtodreamparticle::Eta>);
 using FemtoDreamParticle = FemtoDreamParticles::iterator;
 
-DECLARE_SOA_TABLE(FemtoDreamDebugTracks, "AOD", "FDDEBUGTRACKS",
+DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
                   femtodreamparticle::Sign,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
@@ -144,6 +142,11 @@ DECLARE_SOA_TABLE(FemtoDreamDebugTracks, "AOD", "FDDEBUGTRACKS",
                   pidtof_tiny::TOFNSigmaStoreKa,
                   pidtof_tiny::TOFNSigmaStorePr,
                   pidtof_tiny::TOFNSigmaStoreDe,
+                  femtodreamparticle::DaughDCA,
+                  femtodreamparticle::TransRadius,
+                  femtodreamparticle::DecayVtxX,
+                  femtodreamparticle::DecayVtxY,
+                  femtodreamparticle::DecayVtxZ,
                   femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>,
                   pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
                   pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
@@ -155,17 +158,7 @@ DECLARE_SOA_TABLE(FemtoDreamDebugTracks, "AOD", "FDDEBUGTRACKS",
                   pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
-using FemtoDreamDebugTrack = FemtoDreamDebugTracks::iterator;
-
-DECLARE_SOA_TABLE(FemtoDreamDebugV0s, "AOD", "FDDEBUGV0S",
-                  femtodreamparticle::PosDCAptoVtx,
-                  femtodreamparticle::NegDCAptoVtx,
-                  femtodreamparticle::TransRadius,
-                  femtodreamparticle::DecayVtxX,
-                  femtodreamparticle::DecayVtxY,
-                  femtodreamparticle::DecayVtxZ,
-                  femtodreamparticle::CPA);
-using FemtoDreamDebugV0 = FemtoDreamDebugV0s::iterator;
+using FemtoDreamDebugParticle = FemtoDreamDebugParticles::iterator;
 
 /// Hash
 namespace hash
