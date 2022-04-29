@@ -87,7 +87,7 @@ struct BCRangeSelector {
     }
     // make res an output
     pc.outputs().snapshot({"PPF", "IFRAMES", 0, Lifetime::Timeframe}, res);
-    
+
     // clean up
     cbcrs.reset();
     res.clear();
