@@ -74,7 +74,8 @@ struct multFilter {
     multiplicity.add("fTrackMultSelected", "sel trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
     // control histograms vs trk mult
     multiplicity.add("fMpTVsTrackMult", "Av pT vs trk mult", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
-    multiplicity.add("fMpTVsTrackMultFlat", "Av pT (#eta<0) vs trk mult (flat)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
+    multiplicity.add("fMpTVsTrackMultFlat", "Av pT vs trk mult (flat)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
+    multiplicity.add("fMpTVsTrackMultJetty", "Av pT vs trk mult (jetty)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
     // detector response FV0
     multiplicity.add("fEtaPhiFv0", "eta vs phi", HistType::kTH2F, {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
 
@@ -131,7 +132,101 @@ struct multFilter {
     }
     return i_ring;
   }
+  int getFV0IndexPhi(int i_ch)
+  {
+    int i_ring = -1;
 
+    if (i_ch >= 0 && i_ch < 8) {
+      if (i_ch < 4) {
+        i_ring = i_ch;
+      } else {
+        if (i_ch == 7) {
+          i_ring = 4;
+        } else if (i_ch == 6) {
+          i_ring = 5;
+        } else if (i_ch == 5) {
+          i_ring = 6;
+        } else if (i_ch == 4) {
+          i_ring = 7;
+        }
+      }
+    } else if (i_ch >= 8 && i_ch < 16) {
+      if (i_ch < 12) {
+        i_ring = i_ch;
+      } else {
+        if (i_ch == 15) {
+          i_ring = 12;
+        } else if (i_ch == 14) {
+          i_ring = 13;
+        } else if (i_ch == 13) {
+          i_ring = 14;
+        } else if (i_ch == 12) {
+          i_ring = 15;
+        }
+      }
+    } else if (i_ch >= 16 && i_ch < 24) {
+      if (i_ch < 20) {
+        i_ring = i_ch;
+      } else {
+        if (i_ch == 23) {
+          i_ring = 20;
+        } else if (i_ch == 22) {
+          i_ring = 21;
+        } else if (i_ch == 21) {
+          i_ring = 22;
+        } else if (i_ch == 20) {
+          i_ring = 23;
+        }
+      }
+    } else if (i_ch >= 24 && i_ch < 32) {
+      if (i_ch < 28) {
+        i_ring = i_ch;
+      } else {
+        if (i_ch == 31) {
+          i_ring = 28;
+        } else if (i_ch == 30) {
+          i_ring = 29;
+        } else if (i_ch == 29) {
+          i_ring = 30;
+        } else if (i_ch == 28) {
+          i_ring = 31;
+        }
+      }
+    } else if (i_ch == 32) {
+      i_ring = 32;
+    } else if (i_ch == 40) {
+      i_ring = 33;
+    } else if (i_ch == 33) {
+      i_ring = 34;
+    } else if (i_ch == 41) {
+      i_ring = 35;
+    } else if (i_ch == 34) {
+      i_ring = 36;
+    } else if (i_ch == 42) {
+      i_ring = 37;
+    } else if (i_ch == 35) {
+      i_ring = 38;
+    } else if (i_ch == 43) {
+      i_ring = 39;
+    } else if (i_ch == 47) {
+      i_ring = 40;
+    } else if (i_ch == 39) {
+      i_ring = 41;
+    } else if (i_ch == 46) {
+      i_ring = 42;
+    } else if (i_ch == 38) {
+      i_ring = 43;
+    } else if (i_ch == 45) {
+      i_ring = 44;
+    } else if (i_ch == 37) {
+      i_ring = 45;
+    } else if (i_ch == 44) {
+      i_ring = 46;
+    } else if (i_ch == 36) {
+      i_ring = 47;
+    }
+    return i_ring;
+  }
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
 
@@ -187,11 +282,12 @@ struct multFilter {
         double etav0 = -999.0;
         int channelv0 = fv0.channel()[ich];
         int ringindex = getFV0Ring(channelv0);
+        int channelv0phi = getFV0IndexPhi(channelv0);
         etav0 = cfgRhoMaxEtaCut - (detaFV0 / 2.0) * (2.0 * ringindex + 1);
         if (channelv0 < innerFV0) {
-          phiv0 = (2.0 * (channelv0 - 8 * ringindex) + 1) * M_PI / (8.0);
+          phiv0 = (2.0 * (channelv0phi - 8 * ringindex) + 1) * M_PI / (8.0);
         } else {
-          phiv0 = ((2.0 * channelv0) + 1 - 64.0) * 2.0 * M_PI / (32.0);
+          phiv0 = ((2.0 * channelv0phi) + 1 - 64.0) * 2.0 * M_PI / (32.0);
         }
         multiplicity.fill(HIST("fEtaPhiFv0"), phiv0, etav0);
         for (int i_eta = 0; i_eta < cfgRhoNetaBins; ++i_eta) {
@@ -201,7 +297,7 @@ struct multFilter {
               if (channelv0 < innerFV0) {
                 RhoLattice[i_eta][i_phi] = fv0.amplitude()[ich];
               } else {
-                RhoLattice[i_eta][i_phi] = fv0.amplitude()[ich] / 2.0; // two channels per bin
+                RhoLattice[i_eta][i_phi] += fv0.amplitude()[ich] / 2.0; // two channels per bin
               }
             }
           }
@@ -254,6 +350,9 @@ struct multFilter {
       multiplicity.fill(HIST("fMpTVsTrackMult"), multTrack, track.pt());
       if (rho_m < 0.8 && collision.has_foundFV0()) {
         multiplicity.fill(HIST("fMpTVsTrackMultFlat"), multTrack, track.pt());
+      }
+      if (rho_m > 2.0 && collision.has_foundFV0()) {
+        multiplicity.fill(HIST("fMpTVsTrackMultJetty"), multTrack, track.pt());
       }
     }
 
