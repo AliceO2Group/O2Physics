@@ -234,7 +234,7 @@ jobs:
             BEGIN { exit_code = 0 }
             function error(title, message) {
               printf "::error file=%s,line=%i,col=%i,endColumn=%i,title=%s::%s\n",
-                     FILENAME, FNR, RSTART, RSTART + RLENGTH, message
+                     FILENAME, FNR, RSTART, RSTART + RLENGTH, title, message
               exit_code = 1
             }
             match($0, / +$/) {
