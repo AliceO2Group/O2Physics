@@ -24,8 +24,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-11 100
-          sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format /usr/bin/git-clang-format-11 100
+          sudo update-alternatives --install /usr/bin/clang-format \
+            clang-format /usr/bin/clang-format-11 100
+          sudo update-alternatives --install /usr/bin/git-clang-format \
+            git-clang-format /usr/bin/git-clang-format-11 100
 
       - name: Run clang format
         id: clang_format
@@ -88,10 +90,15 @@ jobs:
           source_branch: 'alibuild:alibot-cleanup-${{ github.event.pull_request.number }}'
           destination_branch: '${{ github.event.pull_request.head.label }}'
           github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
-          pr_title: "Please consider the following formatting changes to #${{ github.event.pull_request.number }}"
-          pr_body: |
-            This PR cannot be merged as is. You should either run clang-format yourself and update the pull request, or merge this PR in yours.
-            You can find AliceO2 coding conventions at http://github.com/AliceO2Group/CodingGuidelines.
+          pr_title: >-
+            Please consider the following formatting changes to
+            #${{ github.event.pull_request.number }}
+          pr_body: >-
+            This PR cannot be merged as is. You should either run `clang-format`
+            yourself and update the pull request, or merge this PR in yours.
+
+            You can find the AliceO2 coding conventions at
+            <https://github.com/AliceO2Group/CodingGuidelines>.
         continue-on-error: true  # We do not create PRs if the branch is not there.
 
       - name: Exit with error if the PR is not clean
