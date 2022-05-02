@@ -219,10 +219,10 @@ jobs:
           base_branch: ${{ github.event.pull_request.base.ref }}
         run: |
           # Find changed files, ignoring binary files.
-          readarray files < \
+          readarray -d '' files < \
             <(git diff -z --diff-filter d --name-only --merge-base \
                   ${{ github.event.pull_request.base.sha }} |
-                xargs -0r isutf8 -il)
+                xargs -0r isutf8 -il | tr '\n' '\0')
           echo 'Changed text files are:'
           printf '%s\n' "${files[@]}"
           # Find tabs and trailing whitespaces in modified text files and show
