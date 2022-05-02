@@ -99,7 +99,7 @@ jobs:
           EOF
 
       - name: Update cleanup branch
-        if: ${{ secrets.ALIBUILD_GITHUB_TOKEN != '' }}
+        if: ${{ github.event.repository.owner.login == 'AliceO2Group' }}
         env:
           REMOTE_URL: https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@github.com/alibuild/O2Physics
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -110,7 +110,7 @@ jobs:
 
       - name: Create pull request with formatting changes
         uses: alisw/pull-request@v2
-        if: ${{ secrets.ALIBUILD_GITHUB_TOKEN != '' }}
+        if: ${{ github.event.repository.owner.login == 'AliceO2Group' }}
         with:
           source_branch: 'alibuild:alibot-cleanup-${{ github.event.pull_request.number }}'
           destination_branch: '${{ github.event.pull_request.head.label }}'
