@@ -172,16 +172,18 @@ jobs:
           have_err=
           for file in "${files[@]}"; do
             if [ "$(head -n "$copyright_lines" "$file")" != "$COPYRIGHT" ]; then
-              echo "::error::$file"   # show filename in Action output too
-              echo "::error file=$file,line=1,endLine=$copyright_lines::Missing or malformed copyright notice"
+              echo "File with incorrect copyright notice: $file"
+              echo "::error file=$file,line=1,endLine=$copyright_lines,"\
+                   "title=Missing or malformed copyright notice::"\
+                   "This source file is missing the correct copyright notice."
               have_err=1
             fi
           done
 
           # Tell user what to do in case of copyright notice error
           if [ -n "$have_err" ]; then
-            echo '::error::The files listed above are missing the correct copyright notice.'
-            echo '::error::Make sure all your source files begin with the following exact lines:'
+            echo '::error::Some files are missing the correct copyright notice.'
+            echo '::notice::Make sure all your source files begin with the following exact lines:'
             echo "$COPYRIGHT"
             exit 1
           fi
@@ -229,28 +231,30 @@ jobs:
           # where they are.
           exec awk '
             BEGIN { exit_code = 0 }
-            function error(message) {
-              printf "::error file=%s,line=%i,col=%i,endColumn=%i::%s\n",
+            function error(title, message) {
+              printf "::error file=%s,line=%i,col=%i,endColumn=%i,title=%s::%s\n",
                      FILENAME, FNR, RSTART, RSTART + RLENGTH, message
               exit_code = 1
             }
             match($0, / +$/) {
-              error("Trailing spaces found")
+              error("Trailing spaces",
+                    "Remove the trailing spaces at the end of the line.")
             }
             match($0, /\t+/) {
-              error("Tab character found -- use spaces to indent")
+              error("Tab characters found",
+                    "Indent code using spaces instead of tabs.")
             }
             END {
               if (exit_code != 0) {
-                print "::notice::Fix the errors in your editor (or with a command)"
-                print "::notice::Command tips:"
-                print "::notice::- Get list of files you changed: git diff --diff-filter d --name-only --merge-base upstream/" ENVIRON["base_branch"]
-                print "::notice::- Replace each tab with two spaces: sed -i \"s/\\t/  /g\" <files>"
-                print "::notice::- Remove trailing whitespaces: sed -i \"s/[[:space:]]*$//\" <files>"
-                print "::notice::To avoid these errors, configure your editor to:"
-                print "::notice::- Emit spaces when the Tab key is pressed."
-                print "::notice::- Display whitespace characters."
-                print "::notice::- Replace tabs with spaces and remove trailing whitespaces when a file is saved."
+                print "Fix the errors in your editor (or with a command)"
+                print "Command tips:"
+                print "- Get list of files you changed: git diff --diff-filter d --name-only --merge-base upstream/" ENVIRON["base_branch"]
+                print "- Replace each tab with two spaces: sed -i \"s/\\t/  /g\" <files>"
+                print "- Remove trailing whitespaces: sed -i \"s/[[:space:]]*$//\" <files>"
+                print "To avoid these errors, configure your editor to:"
+                print "- Emit spaces when the Tab key is pressed."
+                print "- Display whitespace characters."
+                print "- Replace tabs with spaces and remove trailing whitespaces when a file is saved."
               }
               exit exit_code
             }
