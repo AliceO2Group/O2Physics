@@ -29,63 +29,88 @@ jobs:
           sudo update-alternatives --install /usr/bin/git-clang-format \
             git-clang-format /usr/bin/git-clang-format-11 100
 
+      # We need to fetch the PR's head commit to base our cleanup commit on.
+      - name: Fetch PR branch
+        env:
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git config --global user.email 'alibuild@cern.ch'
+          git config --global user.name 'ALICE Action Bot'
+          git fetch origin "$BASE_BRANCH" "pull/$PR_NUMBER/head:$PR_BRANCH"
+
       - name: Run clang format
         id: clang_format
         env:
-          ALIBUILD_GITHUB_TOKEN: ${{secrets.ALIBUILD_GITHUB_TOKEN}}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -x
-          # We need to fetch the other commit.
-          git fetch origin ${{ github.event.pull_request.base.ref }} \
-                          "pull/${{ github.event.pull_request.number }}/head:$PR_BRANCH"
+          # $BASE_SHA is the latest commit on the branch the PR will be merged
+          # into, NOT the commit this PR derives from! For that, we need to find
+          # the latest common ancestor between the PR and the branch we are
+          # merging into.
+          base_commit=$(git merge-base HEAD "$BASE_SHA")
+          # Find changed files, ignoring binary files.
+          readarray -d '' commit_files < \
+            <(git diff -z --diff-filter d --name-only --merge-base "$BASE_SHA")
+          [ ${#commit_files[@]} -gt 0 ] || { echo "No files to check"; exit 0; }
 
-          # We create a new branch which we will use for the eventual PR.
-          git config --global user.email "alibuild@cern.ch"
-          git config --global user.name "ALICE Action Bot"
-          git checkout -b alibot-cleanup-${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
-
-          # github.event.pull_request.base.sha is the latest commit on the branch
-          # the PR will be merged into, NOT the commit this PR derives from! For
-          # that, we need to find the latest common ancestor between the PR and
-          # the branch we are merging into.
-          BASE_COMMIT=$(git merge-base HEAD ${{ github.event.pull_request.base.sha }})
-          echo "Running clang-format against branch ${{ github.event.pull_request.base.ref }}, with hash ${{ github.event.pull_request.base.sha }}"
-          COMMIT_FILES=$(git diff --diff-filter d --name-only $BASE_COMMIT)
-          [ -n "$COMMIT_FILES" ] || { echo "No files to check" ; exit 0; }
-          RESULT_OUTPUT=$(git-clang-format --commit $BASE_COMMIT --diff --style file $COMMIT_FILES)
-
-          for x in $COMMIT_FILES; do
-            case $x in
-              *.hxx|*.cc|*.hpp) echo "$x uses non-allowed extension." && exit 1 ;;
-              *) ;;
+          # Check for invalid file extensions for C++ code.
+          have_invalid_extension=
+          for file in "${commit_files[@]}"; do
+            case $file in
+              *.hxx|*.cc|*.hpp)
+                echo "::error file=$x::$x uses non-allowed extension"
+                have_invalid_extension=true ;;
             esac
           done
+          # Abort now if invalid file extensions found.
+          [ -z "$have_invalid_extension" ]
 
-          if [ "$RESULT_OUTPUT" = 'no modified files to format' ] ||
-            [ "$RESULT_OUTPUT" = 'clang-format did not modify any files' ]
+          patch=$(git-clang-format --commit "$base_commit" --diff
+                                   --style file "${commit_files[@]}")
+          if [ "$patch" = 'no modified files to format' ] ||
+             [ "$patch" = 'clang-format did not modify any files' ]
           then
-            echo "clang-format passed."
-            git push --set-upstream https://alibuild:$ALIBUILD_GITHUB_TOKEN@github.com/alibuild/O2Physics.git :alibot-cleanup-${{ github.event.pull_request.number }} -f || true
-            echo ::set-output name=clean::true
-          else
-            git-clang-format --diff --commit $BASE_COMMIT --style file $COMMIT_FILES |
-              patch -p1
-            echo "clang-format failed."
-            echo "To reproduce it locally please run"
-            echo -e "\tgit checkout $PR_BRANCH"
-            echo -e "\tgit-clang-format --commit $BASE_COMMIT --diff --style file"
-            echo "Note: using clang-format version $(clang-format --version)"
-            echo "Opening a PR to your branch with the fixes"
-            git commit -m 'Please consider the following formatting changes' -a
-            git show | cat
-            git fetch https://github.com/AliceO2Group/O2Physics.git pull/${{ github.event.pull_request.number }}/head
-            git push --set-upstream https://alibuild:$ALIBUILD_GITHUB_TOKEN@github.com/alibuild/O2Physics.git HEAD:refs/heads/alibot-cleanup-${{ github.event.pull_request.number }} -f
-            echo ::set-output name=clean::false
+            cat << EOF
+          ::notice::clang-format passed.
+          ::set-output name=cleanup_commit::
+          ::set-output name=clean::true
+          EOF
+            exit 0
           fi
 
+          echo "$patch" | patch -p1
+          git commit -am 'Please consider the following formatting changes'
+          cat << EOF
+          ::error::clang-format failed.
+          To reproduce it locally please run
+              git checkout $PR_BRANCH
+              git-clang-format --commit $base_commit --diff --style file
+          Note: using clang-format version $(clang-format --version)
+          Opening a PR to your branch with the fixes
+          ::set-output name=cleanup_commit::HEAD
+          ::set-output name=clean::false
+          EOF
+
+      - name: Update cleanup branch
+        if: ${{ secrets.ALIBUILD_GITHUB_TOKEN != '' }}
+        env:
+          REMOTE_URL: https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@github.com/alibuild/O2Physics
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # An empty CLEANUP_COMMIT means delete the branch.
+          CLEANUP_COMMIT: ${{ steps.clang_format.outputs.cleanup_commit }}
+        run: |
+          git push -f "$REMOTE_URL" "$CLEANUP_COMMIT:refs/heads/alibot-cleanup-$PR_NUMBER"
+
       - name: Create pull request with formatting changes
-        uses: alisw/pull-request@master
+        uses: alisw/pull-request@v2
+        if: ${{ secrets.ALIBUILD_GITHUB_TOKEN != '' }}
         with:
           source_branch: 'alibuild:alibot-cleanup-${{ github.event.pull_request.number }}'
           destination_branch: '${{ github.event.pull_request.head.label }}'
