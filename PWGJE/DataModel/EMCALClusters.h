@@ -17,11 +17,46 @@
 #define O2_ANALYSIS_DATAMODEL_EMCALCLUSTERS
 
 #include "Framework/AnalysisDataModel.h"
+#include "EMCALClusterDefinition.h"
 
 namespace o2::aod
 {
 namespace emcalcluster
 {
+
+// define global cluster definitions
+// the V1 algorithm is not yet implemented, but the V3 algorithm is
+// New definitions should be added here!
+const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.1, 0.5, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.1, 0.3, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.1, 0.2, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.1, 0.5, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.1, 0.3, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.1, 0.2, -10000, 10000, 0.03);
+
+/// \brief function returns EMCALClusterDefinition for the given name
+/// \param name name of the cluster definition
+/// \return EMCALClusterDefinition for the given name
+const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& clusterDefinitionName)
+{
+  if (clusterDefinitionName == "kV1Default") {
+    return kV1Default;
+  } else if (clusterDefinitionName == "kV1Variation1") {
+    return kV1Variation1;
+  } else if (clusterDefinitionName == "kV1Variation2") {
+    return kV1Variation2;
+  } else if (clusterDefinitionName == "kV3Default") {
+    return kV3Default;
+  } else if (clusterDefinitionName == "kV3Variation1") {
+    return kV3Variation1;
+  } else if (clusterDefinitionName == "kV3Variation2") {
+    return kV3Variation2;
+  } else {
+    throw std::invalid_argument("Cluster definition name not recognized");
+  }
+};
+
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //!
 DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //!
 DECLARE_SOA_COLUMN(ID, id, int);                                       //!
 DECLARE_SOA_COLUMN(Energy, energy, float);                             //!
@@ -35,16 +70,24 @@ DECLARE_SOA_COLUMN(Time, time, float);                                 //!
 DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //!
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //!
 DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //!
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //!
 
 } // namespace emcalcluster
-
+// table of clusters that could be matched to a collision
 DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTERS", //!
+                  o2::soa::Index<>, emcalcluster::CollisionId, emcalcluster::ID, emcalcluster::Energy,
+                  emcalcluster::CoreEnergy, emcalcluster::Eta, emcalcluster::Phi, emcalcluster::M02,
+                  emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
+                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
+// table of ambiguous clusters that could not be matched to a collision
+DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
                   o2::soa::Index<>, emcalcluster::BCId, emcalcluster::ID, emcalcluster::Energy,
                   emcalcluster::CoreEnergy, emcalcluster::Eta, emcalcluster::Phi, emcalcluster::M02,
                   emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
-                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM);
+                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
 
 using EMCALCluster = EMCALClusters::iterator;
+using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
 
 } // namespace o2::aod
 
