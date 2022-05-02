@@ -205,6 +205,7 @@ jobs:
 
       - name: Install prerequisites
         run: |
+          sudo -n apt update
           sudo -n apt install moreutils   # for isutf8
 
       # Fetch the PR's head commit to find the common ancestor.
