@@ -173,9 +173,7 @@ jobs:
           for file in "${files[@]}"; do
             if [ "$(head -n "$copyright_lines" "$file")" != "$COPYRIGHT" ]; then
               echo "File with incorrect copyright notice: $file"
-              echo "::error file=$file,line=1,endLine=$copyright_lines,"\
-                   "title=Missing or malformed copyright notice::"\
-                   "This source file is missing the correct copyright notice."
+              echo "::error file=$file,line=1,endLine=$copyright_lines,title=Missing or malformed copyright notice::This source file is missing the correct copyright notice."
               have_err=1
             fi
           done
