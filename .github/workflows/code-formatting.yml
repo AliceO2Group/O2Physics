@@ -103,10 +103,7 @@ jobs:
 
       - name: Exit with error if the PR is not clean
         run: |
-          if [ "X${{ steps.clang_format.outputs.clean }}" = X ]; then
-            exit 0
-          fi
-          case ${{ steps.clang_format.outputs.clean }} in
+          case "${{ steps.clang_format.outputs.clean }}" in
             true) echo 'PR clean' ; exit 0 ;;
             false) echo 'PR not clean' ; exit 1 ;;
           esac
