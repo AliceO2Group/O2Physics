@@ -201,11 +201,6 @@ jobs:
           # many commits back that point is.
           fetch-depth: 0
 
-      - name: Install prerequisites
-        run: |
-          sudo -n apt update
-          sudo -n apt install moreutils   # for isutf8
-
       # Fetch the PR's head commit to find the common ancestor.
       - name: Fetch PR branch
         env:
@@ -217,13 +212,12 @@ jobs:
 
       - name: Find bad spacing
         env:
-          base_branch: ${{ github.event.pull_request.base.ref }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
         run: |
           # Find changed files, ignoring binary files.
           readarray -d '' files < \
-            <(git diff -z --diff-filter d --name-only --merge-base \
-                  ${{ github.event.pull_request.base.sha }} |
-                xargs -0r isutf8 -il | tr '\n' '\0')
+            <(git diff -z --diff-filter d --name-only --merge-base ${{ github.event.pull_request.base.sha }} |
+                xargs -0r sh -c 'for f in "$@"; do file -bi "$f" | grep -q charset=binary || printf "%s\\0" "$f"; done' -)
           echo 'Changed text files are:'
           printf '%s\n' "${files[@]}"
           # Find tabs and trailing whitespaces in modified text files and show
@@ -247,7 +241,7 @@ jobs:
               if (exit_code != 0) {
                 print "Fix the errors in your editor (or with a command)"
                 print "Command tips:"
-                print "- Get list of files you changed: git diff --diff-filter d --name-only --merge-base upstream/" ENVIRON["base_branch"]
+                print "- Get list of files you changed: git diff --diff-filter d --name-only --merge-base upstream/" ENVIRON["BASE_BRANCH"]
                 print "- Replace each tab with two spaces: sed -i \"s/\\t/  /g\" <files>"
                 print "- Remove trailing whitespaces: sed -i \"s/[[:space:]]*$//\" <files>"
                 print "To avoid these errors, configure your editor to:"
