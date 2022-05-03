@@ -34,31 +34,32 @@ struct gammaConversionsTruthOnlyMc {
   HistogramRegistry registry{
     "registry",
     {
-      {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
+      {"hMcCollisionZ_MCTrue", "hMcCollisionZ_MCTrue", {HistType::kTH1F, {{400, -50.f, 50.f}}}},
+      {"hEtaDiff_MCTrue", "hEtaDiff_MCTrue", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
 
-      {"hNDaughters", "hNDaughters", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hPdgCodeDaughters", "hPdgCodeDaughters", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
-      {"hNElectrons", "hNElectrons", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hNDaughters_MCTrue", "hNDaughters_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hPdgCodeDaughters_MCTrue", "hPdgCodeDaughters_MCTrue", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
+      {"hNElectrons_MCTrue", "hNElectrons_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
 
-      {"hGammaProdAfterCutsP", "hGammaProdAfterCutsP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaProdAfterCutsP_MCTrue", "hGammaProdAfterCutsP_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
 
-      {"hGammaConvertedR", "hGammaConvertedR", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
-      {"hGammaConvertedRselP", "hGammaConvertedRselP", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
+      {"hGammaConvertedRselP_MCTrue", "hGammaConvertedRselP_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
 
-      {"hGammaConvertedEtaP", "hGammaConvertedEtaP", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedEtaR", "hGammaConvertedEtaR", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 250.f}}}},
-      {"hGammaConvertedEtaZ", "hGammaConvertedEtaZ", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, -250.f, 250.f}}}},
+      {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 250.f}}}},
+      {"hGammaConvertedEtaZ_MCTrue", "hGammaConvertedEtaZ_MCTrue", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, -250.f, 250.f}}}},
 
-      {"hGammaConvertedRP", "hGammaConvertedRP", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedRZ", "hGammaConvertedRZ", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
+      {"hGammaConvertedRP_MCTrue", "hGammaConvertedRP_MCTrue", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedRZ_MCTrue", "hGammaConvertedRZ_MCTrue", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
 
-      {"hGammaConvertedZP", "hGammaConvertedZP", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, 0.f, 25.f}}}},
 
-      {"hGammaProdAfterCutsPt", "hGammaProdAfterCutsPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaProdAfterCutsPt_MCTrue", "hGammaProdAfterCutsPt_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
 
-      {"hGammaConvertedRPt", "hGammaConvertedRPt", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedRselPt", "hGammaConvertedRselPt", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hPeculiarOccurences", "hPeculiarOccurences", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
+      {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedRselPt_MCTrue", "hGammaConvertedRselPt_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hPeculiarOccurences_MCTrue", "hPeculiarOccurences_MCTrue", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
     },
   };
 
@@ -82,22 +83,22 @@ struct gammaConversionsTruthOnlyMc {
     registry.fill(HIST("hEtaDiff"), lEtaDiff);*/
 
     float lConversionRadius = theMcConvGamma.v0Radius();
-    registry.fill(HIST("hGammaConvertedEtaP"), theMcConvGamma.eta(), theMcConvGamma.p());
-    registry.fill(HIST("hGammaConvertedEtaR"), theMcConvGamma.eta(), lConversionRadius);
-    registry.fill(HIST("hGammaConvertedEtaZ"), theMcConvGamma.eta(), theMcConvGamma.conversionZ());
-    registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
-    registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, theMcConvGamma.p());
-    registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, theMcConvGamma.pt());
-    registry.fill(HIST("hGammaConvertedRZ"), lConversionRadius, theMcConvGamma.conversionZ());
-    registry.fill(HIST("hGammaConvertedZP"), theMcConvGamma.conversionZ(), theMcConvGamma.p());
+    registry.fill(HIST("hGammaConvertedEtaP_MCTrue"), theMcConvGamma.eta(), theMcConvGamma.p());
+    registry.fill(HIST("hGammaConvertedEtaR_MCTrue"), theMcConvGamma.eta(), lConversionRadius);
+    registry.fill(HIST("hGammaConvertedEtaZ_MCTrue"), theMcConvGamma.eta(), theMcConvGamma.conversionZ());
+    registry.fill(HIST("hGammaConvertedR_MCTrue"), lConversionRadius);
+    registry.fill(HIST("hGammaConvertedRP_MCTrue"), lConversionRadius, theMcConvGamma.p());
+    registry.fill(HIST("hGammaConvertedRPt_MCTrue"), lConversionRadius, theMcConvGamma.pt());
+    registry.fill(HIST("hGammaConvertedRZ_MCTrue"), lConversionRadius, theMcConvGamma.conversionZ());
+    registry.fill(HIST("hGammaConvertedZP_MCTrue"), theMcConvGamma.conversionZ(), theMcConvGamma.p());
 
     TVector3 lDaughter0Vtx(theMcConvGamma.conversionX(), theMcConvGamma.conversionY(), theMcConvGamma.conversionZ());
     float_t lEtaDiff = lDaughter0Vtx.Eta() - theMcConvGamma.eta();
-    registry.fill(HIST("hEtaDiff"), lEtaDiff);
+    registry.fill(HIST("hEtaDiff_MCTrue"), lEtaDiff);
 
     if (lConversionRadius > 5. && lConversionRadius < 180.) {
-      registry.fill(HIST("hGammaConvertedRselP"), theMcConvGamma.p());
-      registry.fill(HIST("hGammaConvertedRselPt"), theMcConvGamma.pt());
+      registry.fill(HIST("hGammaConvertedRselP_MCTrue"), theMcConvGamma.p());
+      registry.fill(HIST("hGammaConvertedRselPt_MCTrue"), theMcConvGamma.pt());
     }
   }
 
@@ -121,17 +122,19 @@ struct gammaConversionsTruthOnlyMc {
                aod::McGammasTrue const& theMcGammas,
                aod::McGammaDaughtersTrue const& theMcGammaDaughters)
   {
+    registry.fill(HIST("hMcCollisionZ_MCTrue"), theMcCollision.posZ());
+
     for (auto& lMcGamma : theMcGammas) {
 
       if (!photonPassesCuts(lMcGamma)) {
         continue;
       }
 
-      registry.fill(HIST("hGammaProdAfterCutsP"), lMcGamma.p());
-      registry.fill(HIST("hGammaProdAfterCutsPt"), lMcGamma.pt());
+      registry.fill(HIST("hGammaProdAfterCutsP_MCTrue"), lMcGamma.p());
+      registry.fill(HIST("hGammaProdAfterCutsPt_MCTrue"), lMcGamma.pt());
 
       int const lNDaughters = lMcGamma.nDaughters();
-      registry.fill(HIST("hNDaughters"), 0.5 + lNDaughters);
+      registry.fill(HIST("hNDaughters_MCTrue"), 0.5 + lNDaughters);
       if (lNDaughters == 2) {
 
         fillConversionHistograms(lMcGamma);

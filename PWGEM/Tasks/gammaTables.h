@@ -49,28 +49,18 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
 
 namespace gammamctrue
 {
-DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);       //! just a number that can be used to associate daughter particles with a gamma
-DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); // SFS use unsigned!
+DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);       //! Used as reference for the daughters
+DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); //! Number of daughters
+DECLARE_SOA_COLUMN(Eta, eta, float);             //! Pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);             //! Angle phi in rad
+DECLARE_SOA_COLUMN(P, p, float);                 //! Absolute momentum in GeV/c
+DECLARE_SOA_COLUMN(Pt, pt, float);               //! Transversal momentum in GeV/c
+DECLARE_SOA_COLUMN(Y, y, float);                 //! Rapidity
 
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(P, p, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Y, y, float);
-
-DECLARE_SOA_COLUMN(ConversionX, conversionX, float);
-DECLARE_SOA_COLUMN(ConversionY, conversionY, float);
-DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float);
-DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
-/*
-DECLARE_SOA_COLUMN(DistOverTotMom, distOverTotMom, float);
-DECLARE_SOA_COLUMN(DCAV0Daughters, dCAV0Daughters, float);
-DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);
-DECLARE_SOA_COLUMN(DCAV0ToPV, dCAV0ToPV, float);
-DECLARE_SOA_COLUMN(Alpha, alpha, float);
-DECLARE_SOA_COLUMN(QtArm, qtArm, float);
-DECLARE_SOA_COLUMN(PsiPair, psiPair, float);
-*/
+DECLARE_SOA_COLUMN(ConversionX, conversionX, float); //! x of conversion point in cm
+DECLARE_SOA_COLUMN(ConversionY, conversionY, float); //! y of conversion point in cm
+DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float); //! z of conversion point in cm
+DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);       //! 2d radius of conversion point
 } // namespace gammamctrue
 
 DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
@@ -95,18 +85,18 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
-namespace gammamctrue
+namespace gammadaughtermctrue
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int64_t, McGammasTrue, ""); // SFS do I need to worry of overflows?
-DECLARE_SOA_COLUMN(NMothers, nMothers, int);
-} // namespace gammamctrue
+DECLARE_SOA_INDEX_COLUMN_FULL(Mother0, mother0, int64_t, McGammasTrue, ""); //! index of first mother
+DECLARE_SOA_COLUMN(NMothers, nMothers, int);                                //! the number of mothers
+} // namespace gammadaughtermctrue
 
 // table to hold mc truth information of daughter particles of MC gammas
 DECLARE_SOA_TABLE(McGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
                   o2::soa::Index<>,
                   mcparticle::McCollisionId, // SFS maybe drop since there is already a pointer to MCGammas which point to mccollision. But maybe still good to have for correct automatic grouping - not sure about that
-                  gammamctrue::MotherId,
-                  gammamctrue::NMothers,
+                  gammadaughtermctrue::Mother0Id,
+                  gammadaughtermctrue::NMothers,
 
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
@@ -118,5 +108,4 @@ DECLARE_SOA_TABLE(McGammaDaughtersTrue, "AOD", "MCGADAUGHTRUE",
                   mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
-
 } // namespace o2::aod
