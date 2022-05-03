@@ -20,7 +20,6 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/TrackPropagation.h"
 #include "Common/Core/trackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
