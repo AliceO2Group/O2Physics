@@ -29,12 +29,14 @@ using namespace o2::framework::expressions;
 struct BCRangeSelector {
 
   Configurable<int> nTimeRes{"nTimeRes", 4, "Range to consider for search of compatible BCs in units of vertex-time-resolution."};
+  Configurable<int> nMinBSs{"nMinBSs", 7, "Minimum width of time window to consider for search of compatible BCs in units of 2*BunchSpacing."};
   Configurable<double> fillFac{"fillFactor", 0.0, "Factor of MB events to add"};
 
+  using FDs = aod::CefpDecisions;
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  using BBCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using BBC = BBCs::iterator;
+  using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BC = BCs::iterator;
 
   uint64_t nBCs, nCompBCs, nNotCompBCs;
   uint64_t clast, cnew;
@@ -57,20 +59,31 @@ struct BCRangeSelector {
     auto t3 = pc.inputs().get<TableConsumer>("Run3MatchedToBCSparse")->asArrowTable();
     auto t4 = pc.inputs().get<TableConsumer>("Collisions")->asArrowTable();
     auto t5 = pc.inputs().get<TableConsumer>("EvSels")->asArrowTable();
+    auto t6 = pc.inputs().get<TableConsumer>("CefpDecisions")->asArrowTable();
 
     // join tables
-    auto bcs = BBCs({t1, t2, t3});
+    auto bcs = BCs({t1, t2, t3});
     auto cols = CCs({t4, t5});
     cols.bindExternalIndices(&bcs);
+    FDs fdecs{{t6}};
+    if (cols.size() != fdecs.size()) {
+      throw std::runtime_error("Collision table and CefpDecision do not have the same number of rows! ");
+    } 
 
     // 1. loop over collisions
+    auto filt = fdecs.begin();
     for (auto collision : cols) {
-      auto bcRange = compatibleBCs(collision, nTimeRes, bcs);
+      if (filt.hasCefpSelected()) {
 
-      // update list of ranges
-      auto bcfirst = bcRange.rawIteratorAt(0);
-      auto bclast = bcRange.rawIteratorAt(bcRange.size());
-      cbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+        // get range of compatible BCs
+        auto bcRange = compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
+      
+        // update list of ranges
+        auto bcfirst = bcRange.rawIteratorAt(0);
+        auto bclast = bcRange.rawIteratorAt(bcRange.size());
+        cbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      }
+      filt++;
     }
 
     // 2. sort, merge, and extend ranges of compatible BCs
@@ -95,7 +108,7 @@ struct BCRangeSelector {
 
   // need a trivial process method
   // the parameters determine the tables available in the input
-  void process(CCs const& collisions, BBCs const& bcs)
+  void process(CCs const& collisions, BCs const& bcs, FDs const& fdecisions)
   {
   }
 };
