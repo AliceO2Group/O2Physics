@@ -52,7 +52,6 @@ DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
-DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(NSigTPCPi, nsigTPCPi, float);
@@ -66,8 +65,8 @@ DECLARE_SOA_COLUMN(NSigTOFPr, nsigTOFPr, float);
 DECLARE_SOA_COLUMN(NSigTOFDe, nsigTOFD, float);
 DECLARE_SOA_COLUMN(NSigTOF3He, nsigTOF3He, float);
 DECLARE_SOA_COLUMN(TOFmatch, tofMatch, bool);
-DECLARE_SOA_COLUMN(NDCAxy, ndcaxy, float);
-DECLARE_SOA_COLUMN(NDCAz, ndcaz, float);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
+DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -76,8 +75,8 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 
 DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   collision::BCId,
-                  full::NDCAxy,
-                  full::NDCAz,
+                  full::DCAxy,
+                  full::DCAz,
                   full::NSigTPCPi,
                   full::NSigTPCKa,
                   full::NSigTPCPr,
@@ -94,7 +93,6 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::Pz,
                   full::Pt,
                   full::P,
-                  full::Y,
                   full::Eta,
                   full::Phi,
                   full::Sign);
@@ -128,7 +126,9 @@ struct LfTreeCreatorNuclei {
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::y) < yMax) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY)< cfgCutDCAxy) && (nabs(aod::track::dcaZ)< cfgCutDCAz);
+
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
@@ -176,7 +176,6 @@ struct LfTreeCreatorNuclei {
         track.pt(),
         track.p(),
         track.eta(),
-        track.y(),
         track.phi(),
         track.sign());
     }
