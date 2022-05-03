@@ -31,8 +31,8 @@ const char* removeVersionSuffix(const char* treeName)
   static TString tmp;
   tmp = treeName;
   if (tmp.First("_") >= 0) {
-      // add line so that there are some changes
-      tmp.Remove(tmp.First("_"));
+    // add line so that there are some changes
+    tmp.Remove(tmp.First("_"));
   }
   return tmp;
 }
