@@ -25,11 +25,15 @@
 #include <TMap.h>
 #include <TLeaf.h>
 
-const char* removeVersionSuffix(const char* treeName) {
+const char* removeVersionSuffix(const char* treeName)
+{
   // remove version suffix, e.g. O2v0_001 becomes O2v0
   static TString tmp;
   tmp = treeName;
-  if (tmp.First("_") >= 0) {tmp.Remove(tmp.First("_"));}
+  if (tmp.First("_") >= 0) {
+      // add line so that there are some changes
+      tmp.Remove(tmp.First("_"));
+  }
   return tmp;
 }
 
