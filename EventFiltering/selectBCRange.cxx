@@ -68,7 +68,7 @@ struct BCRangeSelector {
     FDs fdecs{{t6}};
     if (cols.size() != fdecs.size()) {
       throw std::runtime_error("Collision table and CefpDecision do not have the same number of rows! ");
-    } 
+    }
 
     // 1. loop over collisions
     auto filt = fdecs.begin();
@@ -77,7 +77,7 @@ struct BCRangeSelector {
 
         // get range of compatible BCs
         auto bcRange = compatibleBCs(collision, nTimeRes, bcs, nMinBSs);
-      
+
         // update list of ranges
         auto bcfirst = bcRange.rawIteratorAt(0);
         auto bclast = bcRange.rawIteratorAt(bcRange.size());
