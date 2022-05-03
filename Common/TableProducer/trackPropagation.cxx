@@ -97,6 +97,13 @@ struct TrackPropagation {
     mVtx = ccdb->get<o2::dataformats::MeanVertexObject>(mVtxPath);
   }
 
+  template <typename TTrack, typename TTrackPar>
+  void FillTracksPar(TTrack& track, TTrackPar& trackPar)
+  {
+    tracksParPropagated(track.collisionId(), track.trackType(), trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
+    tracksParExtensionPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
+  }
+
   void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const&)
   {
     gpu::gpustd::array<float, 2> dcaInfo;
@@ -113,8 +120,7 @@ struct TrackPropagation {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
         }
       }
-      tracksParPropagated(track.collisionId(), track.trackType(), trackPar.getX(), trackPar.getAlpha(), trackPar.getY(), trackPar.getZ(), trackPar.getSnp(), trackPar.getTgl(), trackPar.getQ2Pt());
-      tracksParExtensionPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
+      FillTracksPar(track, trackPar);
       if (fillTracksExtended) {
         tracksExtended(dcaInfo[0], dcaInfo[1]);
       }
@@ -138,12 +144,11 @@ struct TrackPropagation {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         } else {
           vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
-          vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); // this doesnt exist for the meanvertexobject
+          vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); // TODO this doesnt exist for the meanvertexobject
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         }
       }
-      tracksParPropagated(track.collisionId(), track.trackType(), trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
-      tracksParExtensionPropagated(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+      FillTracksPar(track, trackParCov);
       if (fillTracksExtended) {
         tracksExtended(dcaInfoCov.getY(), dcaInfoCov.getZ());
       }
