@@ -127,8 +127,7 @@ struct LfTreeCreatorNuclei {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY)< cfgCutDCAxy) && (nabs(aod::track::dcaZ)< cfgCutDCAz);
-
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
