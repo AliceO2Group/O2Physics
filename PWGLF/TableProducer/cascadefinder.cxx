@@ -387,7 +387,7 @@ struct cascadefinderQA {
                                                                                                           aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
   /// Connect to CascFinderData: newly indexed, note: CascDataExt table incompatible with standard V0 table!
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades)
   {
     if (!collision.alias()[kINT7]) {
       return;
@@ -404,17 +404,17 @@ struct cascadefinderQA {
           casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
         if (casc.sign() < 0) { // FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            h3dMassXiMinus->Fill(collision.centV0M(), casc.pt(), casc.mXi());
+            h3dMassXiMinus->Fill(collision.centRun2V0M(), casc.pt(), casc.mXi());
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            h3dMassOmegaMinus->Fill(collision.centV0M(), casc.pt(), casc.mOmega());
+            h3dMassOmegaMinus->Fill(collision.centRun2V0M(), casc.pt(), casc.mOmega());
           }
         } else {
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            h3dMassXiPlus->Fill(collision.centV0M(), casc.pt(), casc.mXi());
+            h3dMassXiPlus->Fill(collision.centRun2V0M(), casc.pt(), casc.mXi());
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            h3dMassOmegaPlus->Fill(collision.centV0M(), casc.pt(), casc.mOmega());
+            h3dMassOmegaPlus->Fill(collision.centRun2V0M(), casc.pt(), casc.mOmega());
           }
         }
       }

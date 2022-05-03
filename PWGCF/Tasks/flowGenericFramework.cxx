@@ -137,7 +137,7 @@ struct GenericFramework {
     return;
   }
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -158,7 +158,7 @@ struct GenericFramework {
     registry.fill(HIST("hVtxZ"), vtxz);
 
     fGFW->Clear();
-    const auto centrality = collision.centV0M();
+    const auto centrality = collision.centRun2V0M();
     if (centrality > 100)
       return;
     float l_Random = fRndm->Rndm();

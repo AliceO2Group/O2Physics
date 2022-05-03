@@ -122,9 +122,9 @@ struct femtoDreamProducerReducedTask {
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
     int mult = 0;
     if (ConfIsRun3) {
-      mult = col.multT0M(); /// Mult based on T0, temporary storing to be fixed and checked
+      mult = col.multFT0M(); /// Mult based on T0, temporary storing to be fixed and checked
     } else {
-      mult = 0.5 * (col.multV0M());
+      mult = 0.5 * (col.multFV0M());
     }
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:

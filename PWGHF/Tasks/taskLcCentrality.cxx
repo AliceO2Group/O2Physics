@@ -72,9 +72,9 @@ struct TaskLcCentrality {
 
   // FIXME: Add ALICE 2/3 switch!
   // void process(aod::HfCandProng3 const& candidates)
-  void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
+  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
   {
-    float centrality = collision.centV0M();
+    float centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
     for (auto& candidate : candidates) {

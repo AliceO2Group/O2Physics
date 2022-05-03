@@ -190,19 +190,19 @@ struct femtoDreamProducerTask {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
       }
       return;
     }
 
     const auto vtxZ = col.posZ();
-    const auto mult = col.multV0M();
+    const auto mult = col.multFV0M();
     const auto spher = colCuts.computeSphericity(col, tracks);
     colCuts.fillQA(col);
 
     // now the table is filled
     if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multT0M(), spher, bc.timestamp());
+      outputCollision(vtxZ, col.multFT0M(), spher, bc.timestamp());
     } else {
       outputCollision(vtxZ, mult, spher, bc.timestamp());
     }

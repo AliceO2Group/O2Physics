@@ -66,20 +66,21 @@ DECLARE_SOA_COLUMN(Sel8, sel8, bool);                                       //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundBC, foundBC, int, BCs, "_foundBC");      //! BC entry index in BCs table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFT0, foundFT0, int, FT0s, "_foundFT0");  //! FT0 entry index in FT0s table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0"); //! FV0 entry index in FV0As table (-1 if doesn't exist)
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! FDD entry index in FDDs table (-1 if doesn't exist)
 } // namespace evsel
 DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::Alias, evsel::Selection,
                   evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
                   evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
                   evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::NTracklets,
-                  evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id);
+                  evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId);
 using EvSel = EvSels::iterator;
 
 DECLARE_SOA_TABLE(BcSels, "AOD", "BCSEL", //!
                   evsel::Alias, evsel::Selection,
                   evsel::BBV0A, evsel::BBV0C, evsel::BGV0A, evsel::BGV0C,
                   evsel::BBFDA, evsel::BBFDC, evsel::BGFDA, evsel::BGFDC,
-                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0Id, evsel::FoundFV0Id);
+                  evsel::MultRingV0A, evsel::MultRingV0C, evsel::SpdClusters, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId);
 using BcSel = BcSels::iterator;
 } // namespace o2::aod
 

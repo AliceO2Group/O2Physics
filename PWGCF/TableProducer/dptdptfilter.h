@@ -26,8 +26,8 @@ namespace o2
 {
 namespace aod
 {
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentV0Ms>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentV0Ms>::iterator;
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
@@ -327,11 +327,11 @@ inline float extractMultiplicity(CollisionObject const& collision)
     case kPbPb:
     case kXeXe:
       /* for the time being let's extract V0M */
-      mult = collision.multV0M();
+      mult = collision.multFV0M();
       break;
     case kppRun3:
       /* for the time being let's extract T0M */
-      mult = collision.multT0M();
+      mult = collision.multFT0M();
       break;
     default:
       break;
@@ -350,8 +350,8 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
   bool centmultsel = false;
   switch (fCentMultEstimator) {
     case kV0M:
-      if (collision.centV0M() < 100 and 0 < collision.centV0M()) {
-        centmult = collision.centV0M();
+      if (collision.centRun2V0M() < 100 and 0 < collision.centRun2V0M()) {
+        centmult = collision.centRun2V0M();
         centmultsel = true;
       }
       break;

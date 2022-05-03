@@ -155,7 +155,7 @@ struct strangenessFilter {
   Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (!globaltrk || aod::track::isGlobalTrack == static_cast<uint8_t>(1u));
 
   // Tables
-  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator;
+  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
@@ -181,8 +181,8 @@ struct strangenessFilter {
       return;
 
     QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
-    QAHistos.fill(HIST("hCentrality"), collision.centV0M());
-    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centV0M());
+    QAHistos.fill(HIST("hCentrality"), collision.centRun2V0M());
+    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centRun2V0M());
     hProcessedEvents->Fill(0.5);
 
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
@@ -387,27 +387,27 @@ struct strangenessFilter {
     // Fill centrality dependent histos
     if (keepEvent[0]) {
       hProcessedEvents->Fill(1.5);
-      EventsvsMultiplicity.fill(HIST("OmegaEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("OmegaEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[1]) {
       hProcessedEvents->Fill(2.5);
-      EventsvsMultiplicity.fill(HIST("hXiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("hXiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[2]) {
       hProcessedEvents->Fill(3.5);
-      EventsvsMultiplicity.fill(HIST("2XiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("2XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[3]) {
       hProcessedEvents->Fill(4.5);
-      EventsvsMultiplicity.fill(HIST("3XiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("3XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[4]) {
       hProcessedEvents->Fill(5.5);
-      EventsvsMultiplicity.fill(HIST("4XiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("4XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[5]) {
       hProcessedEvents->Fill(6.5);
-      EventsvsMultiplicity.fill(HIST("SingleXiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("SingleXiEventsvsMultiplicity"), collision.centRun2V0M());
     }
 
     // Filling the table

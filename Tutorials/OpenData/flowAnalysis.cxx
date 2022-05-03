@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 struct flow_base {
 
   using BCsWithRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, o2::aod::Timestamps>;
-  using Colls_EvSels_Mults_Cents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentV0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
+  using Colls_EvSels_Mults_Cents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
   using FilteredCollisions = soa::Filtered<Colls_EvSels_Mults_Cents>;
   using TracksPID = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, TracksPID>;
@@ -337,7 +337,7 @@ struct flow_base {
     if (TMath::Abs(zvtx) > vtxCut)
       return;
 
-    auto v0Centr = collision.centV0M();
+    auto v0Centr = collision.centRun2V0M();
     auto cl1Centr = collision.centRun2CL1();
     auto cl0Centr = collision.centRun2CL0();
 
@@ -361,8 +361,8 @@ struct flow_base {
 
     auto nITSTrkls = collision.multTracklets();
 
-    auto multV0a = collision.multV0A();
-    auto multV0c = collision.multV0C();
+    auto multV0a = collision.multFV0A();
+    auto multV0c = collision.multFV0C();
     auto multV0Tot = multV0a + multV0c;
     auto multV0aOn = bc.v0TriggerChargeA();
     auto multV0cOn = bc.v0TriggerChargeC();
