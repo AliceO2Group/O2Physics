@@ -141,13 +141,13 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   // due to the filling scheme the most probably BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
   uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
-  
+
   // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
   if (deltaBC < nMinBSs) {
     deltaBC = nMinBSs;
   }
-  
+
   int64_t minBC = meanBC - deltaBC;
   uint64_t maxBC = meanBC + deltaBC;
   if (minBC < 0) {
