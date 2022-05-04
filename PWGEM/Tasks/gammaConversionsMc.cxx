@@ -259,8 +259,8 @@ struct GammaConversionsMc {
     }
     auto lMcPhoton = theMcPhotonForThisV0AsTable.begin();
 
-    fillV0HistogramsMcGamma(kMCTrue, theBAC, lMcPhoton, nullptr);
-    fillV0Histograms(kMCVal, theBAC, theV0, &theV0CosinePA);
+    fillV0HistogramsMcGamma(kMCTrue, theBAC, lMcPhoton);
+    fillV0Histograms(kMCVal, theBAC, theV0, theV0CosinePA);
 
     // v0 resolution histos
     {
@@ -344,15 +344,16 @@ struct GammaConversionsMc {
   void fillTrackHistograms(std::string const& theBAC, TTRACKS const& theV0Tracks)
   {
     std::string lPath = fPrefixReconstructedTrackHistos + theBAC;
+    std::string& lSuffix = fRecTrueStrings[kMCRec];
     auto fillTrackHistogramsI = [&](auto const& theTrack) {
-      fillTH1(fTrackHistos, lPath + "hTrackEta" + fRecTrueStrings[kMCRec], theTrack.eta());
-      fillTH1(fTrackHistos, lPath + "hTrackPhi" + fRecTrueStrings[kMCRec], theTrack.phi());
-      fillTH1(fTrackHistos, lPath + "hTrackPt" + fRecTrueStrings[kMCRec], theTrack.pt());
-      fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls" + fRecTrueStrings[kMCRec], theTrack.tpcFoundOverFindableCls());
-      fillTH1(fTrackHistos, lPath + "hTPCCrossedRowsOverFindableCls" + fRecTrueStrings[kMCRec], theTrack.tpcCrossedRowsOverFindableCls());
-      fillTH2(fTrackHistos, lPath + "hTPCdEdxSigEl" + fRecTrueStrings[kMCRec], theTrack.p(), theTrack.tpcNSigmaEl());
-      fillTH2(fTrackHistos, lPath + "hTPCdEdxSigPi" + fRecTrueStrings[kMCRec], theTrack.p(), theTrack.tpcNSigmaPi());
-      fillTH2(fTrackHistos, lPath + "hTPCdEdx" + fRecTrueStrings[kMCRec], theTrack.p(), theTrack.tpcSignal());
+      fillTH1(fTrackHistos, lPath + "hTrackEta" + lSuffix, theTrack.eta());
+      fillTH1(fTrackHistos, lPath + "hTrackPhi" + lSuffix, theTrack.phi());
+      fillTH1(fTrackHistos, lPath + "hTrackPt" + lSuffix, theTrack.pt());
+      fillTH1(fTrackHistos, lPath + "hTPCFoundOverFindableCls" + lSuffix, theTrack.tpcFoundOverFindableCls());
+      fillTH1(fTrackHistos, lPath + "hTPCCrossedRowsOverFindableCls" + lSuffix, theTrack.tpcCrossedRowsOverFindableCls());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdxSigEl" + lSuffix, theTrack.p(), theTrack.tpcNSigmaEl());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdxSigPi" + lSuffix, theTrack.p(), theTrack.tpcNSigmaPi());
+      fillTH2(fTrackHistos, lPath + "hTPCdEdx" + lSuffix, theTrack.p(), theTrack.tpcSignal());
     };
 
     for (auto& lTrack : theV0Tracks) {
@@ -361,33 +362,37 @@ struct GammaConversionsMc {
   }
 
   template <typename TV0>
-  void fillV0Histograms(eRecTrueEnum theRecTrue, std::string const& theBAC, TV0 const& theV0, float const* theV0CosinePA)
+  void fillV0Histograms(eRecTrueEnum theRecTrue, std::string const& theBAC, TV0 const& theV0, float const& theV0CosinePA)
   {
+    mapStringHistPtr& lContainer = fRecTrueV0Histos[theRecTrue];
     std::string lPath = fPrefixesV0HistosRecTrue[theRecTrue] + theBAC;
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hEta" + fRecTrueStrings[theRecTrue], theV0.eta());
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPhi" + fRecTrueStrings[theRecTrue], theV0.phi());
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPt" + fRecTrueStrings[theRecTrue], theV0.pt());
-
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hConvPointR" + fRecTrueStrings[theRecTrue], theV0.v0radius());
-    if (theV0CosinePA) {
-      fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hCosPAngle" + fRecTrueStrings[theRecTrue], *theV0CosinePA);
-    }
-    fillTH2(fRecTrueV0Histos[theRecTrue], lPath + "hArmenteros" + fRecTrueStrings[theRecTrue], theV0.alpha(), theV0.qtarm());
-    fillTH2(fRecTrueV0Histos[theRecTrue], lPath + "hPsiPt" + fRecTrueStrings[theRecTrue], theV0.psipair(), theV0.pt());
+    std::string& lSuffix = fRecTrueStrings[theRecTrue];
+    auto fullName = [&lPath, &lSuffix](std::string theName){
+      return lPath + theName + lSuffix;
+    };
+    fillTH1(lContainer, fullName("hEta"), theV0.eta());
+    fillTH1(lContainer, fullName("hPhi"), theV0.phi());
+    fillTH1(lContainer, fullName("hPt"), theV0.pt());
+    fillTH1(lContainer, fullName("hConvPointR"), theV0.v0radius());
+    fillTH1(lContainer, fullName("hCosPAngle"), theV0CosinePA);
+    fillTH2(lContainer, fullName("hArmenteros"), theV0.alpha(), theV0.qtarm());
+    fillTH2(lContainer, fullName("hPsiPt"), theV0.psipair(), theV0.pt());
   }
 
+  // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
   template <typename TMCGAMMA>
-  void fillV0HistogramsMcGamma(eRecTrueEnum theRecTrue, std::string const& theBAC, TMCGAMMA const& theMcGamma, float const* theV0CosinePA)
+  void fillV0HistogramsMcGamma(eRecTrueEnum theRecTrue, std::string const& theBAC, TMCGAMMA const& theMcGamma)
   {
+    mapStringHistPtr& lContainer = fRecTrueV0Histos[theRecTrue];
     std::string lPath = fPrefixesV0HistosRecTrue[theRecTrue] + theBAC;
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hEta" + fRecTrueStrings[theRecTrue], theMcGamma.eta());
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPhi" + fRecTrueStrings[theRecTrue], theMcGamma.phi());
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hPt" + fRecTrueStrings[theRecTrue], theMcGamma.pt());
-
-    fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hConvPointR" + fRecTrueStrings[theRecTrue], theMcGamma.v0Radius());
-    if (theV0CosinePA) {
-      fillTH1(fRecTrueV0Histos[theRecTrue], lPath + "hCosPAngle" + fRecTrueStrings[theRecTrue], *theV0CosinePA);
-    }
+    std::string& lSuffix = fRecTrueStrings[theRecTrue];
+    auto fullName = [&lPath, &lSuffix](std::string theName){
+      return lPath + theName + lSuffix;
+    };
+    fillTH1(lContainer, fullName("hEta"), theMcGamma.eta());
+    fillTH1(lContainer, fullName("hPhi"), theMcGamma.phi());
+    fillTH1(lContainer, fullName("hPt"), theMcGamma.pt());
+    fillTH1(lContainer, fullName("hConvPointR"), theMcGamma.v0Radius());
   }
 
   template <typename T>
@@ -451,7 +456,7 @@ struct GammaConversionsMc {
   void fillReconstructedInfoHistograms(std::string theBAC, TV0 const& theV0, TTRACKS const& theV0Tracks, float const& theV0CosinePA)
   {
     fillTrackHistograms(theBAC, theV0Tracks);
-    fillV0Histograms(kMCRec, theBAC, theV0, &theV0CosinePA);
+    fillV0Histograms(kMCRec, theBAC, theV0, theV0CosinePA);
 
     if (theBAC == "beforeCuts/") {
       fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));
