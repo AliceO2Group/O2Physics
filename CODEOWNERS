@@ -28,3 +28,4 @@
 /PWGLF @alibuild @njacazio
 /PWGMM @alibuild @aalkin
 /Tools/PIDML @alibuild @saganatt
+/Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
