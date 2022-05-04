@@ -322,13 +322,13 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
       if (sel.getSelectionValue() < 0) {
         auto nSigmaPr = negTrack.tpcNSigmaPr();
         auto nSigmaPi = posTrack.tpcNSigmaPi();
-        if (abs(nSigmaPr) < 3.5 && abs(nSigmaPi) < 3.5) {
+        if (abs(nSigmaPr) < 5 && abs(nSigmaPi) < 5) {
           sign = -1.;
         }
       } else {
         auto nSigmaPi = negTrack.tpcNSigmaPi();
         auto nSigmaPr = posTrack.tpcNSigmaPr();
-        if (abs(nSigmaPr) < 3.5 && abs(nSigmaPi) < 3.5) {
+        if (abs(nSigmaPr) < 5 && abs(nSigmaPi) < 5) {
           sign = 1.;
         }
       }

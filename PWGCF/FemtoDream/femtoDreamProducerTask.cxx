@@ -116,7 +116,7 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfV0Sign{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0Sign, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kpTV0Min, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kpTV0Min, "V0 selection: ")};
   Configurable<std::vector<float>> ConfDCAV0DaughMax{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kDCAV0DaughMax, "ConfV0"), std::vector<float>{1.2f, 1.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kDCAV0DaughMax, "V0 selection: ")};
-  Configurable<std::vector<float>> ConfCPAV0Min{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kCPAV0Min, "ConfV0"), std::vector<float>{0.9f, 0.995f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kCPAV0Min, "V0 selection: ")};
+  Configurable<std::vector<float>> ConfCPAV0Min{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kCPAV0Min, "ConfV0"), std::vector<float>{0.99f, 0.995f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kCPAV0Min, "V0 selection: ")};
 
   MutableConfigurable<float> V0TranRadV0Min{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kTranRadV0Min, "ConfV0"), 0.2f, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kTranRadV0Min, "V0 selection: ")}; // QUESTION: why mutable?
   MutableConfigurable<float> V0TranRadV0Max{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kTranRadV0Max, "ConfV0"), 100.f, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kTranRadV0Max, "V0 selection: ")};
@@ -228,7 +228,7 @@ struct femtoDreamProducerTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(),
-                  childIDs);
+                  childIDs, 0, 0);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfDebugOutput) {
         outputDebugParts(track.sign(),
@@ -279,17 +279,17 @@ struct femtoDreamProducerTask {
           rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
           childIDs[0] = rowInPrimaryTrackTablePos;
           childIDs[1] = 0;
-          outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs);
+          outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs, 0, 0);
           const int rowOfPosTrack = outputParts.lastIndex();
           int negtrackID = v0.negTrackId();
           int rowInPrimaryTrackTableNeg = -1;
           rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
           childIDs[0] = 0;
           childIDs[1] = rowInPrimaryTrackTableNeg;
-          outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs);
+          outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
           const int rowOfNegTrack = outputParts.lastIndex();
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
-          outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID);
+          outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
             outputDebugParts(postrack.sign(),
                              (uint8_t)postrack.tpcNClsFound(),
