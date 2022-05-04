@@ -37,17 +37,17 @@ struct PropagatedTracksQa {
     "registryTracks",
     {
       {"hcollx", ";collision x position (m);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}}},
-      {"hpt", ";track #it{p}_{T} propagated (GeV/#it{c});", {HistType::kTH1F, {{200, 0., 20.}}}},
+      {"hpt", ";track sign*#it{p}_{T} propagated (GeV/#it{c});", {HistType::kTH1F, {{400, -20., 20.}}}},
       {"hphi", ";track #phi propagated;entries", {HistType::kTH1F, {{140, 0., TwoPI}}}},
       {"heta", ";track #eta propagated;entries", {HistType::kTH1F, {{200, -2., 2.}}}},
-      {"hptIU", ";track #it{p}_{T} unpropagated (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}},
+      {"hptIU", ";track sign*#it{p}_{T} unpropagated (GeV/#it{c});entries", {HistType::kTH1F, {{400, -20., 20.}}}},
       {"hphiIU", ";track #phi unpropagated;entries", {HistType::kTH1F, {{140, 0., TwoPI}}}},
       {"hetaIU", ";track #eta unpropagated;entries", {HistType::kTH1F, {{200, -2., 2.}}}},
       {"hdcaXY", ";propagated track dcaXY;entries", {HistType::kTH1F, {{160, -2., 2.}}}},
       {"hx2D", "x unpropagated vs. x propagated", {HistType::kTH2F, {{100, -10., 10.}, {100, -10., 10.}}}},
       {"hphi2D", "#varphi unpropagated vs. #varphi propagated", {HistType::kTH2F, {{140, 0., TwoPI}, {140, 0., TwoPI}}}},
       {"heta2D", "#eta unpropagated vs. #eta propagated", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
-      {"hpt2D", "#it{p}_{T} unpropagated vs. #it{p}_{T} propagated", {HistType::kTH2F, {{200, 0., 20.}, {200, 0., 20.}}}},
+      {"hpt2D", "sign*#it{p}_{T} unpropagated vs. sign*#it{p}_{T} propagated", {HistType::kTH2F, {{400, -20., 20.}, {400, -20., 20.}}}},
       {"hdeltaphivspT", "#Delta#varphi vs. #it{p}_{T}", {HistType::kTH2F, {{200, 0, 20}, {200, -1., 1}}}},
     }};
 
@@ -55,12 +55,12 @@ struct PropagatedTracksQa {
   {
     registry.fill(HIST("hcollx"), collision.posX());
     for (auto& track : tracksIU) {
-      registry.fill(HIST("hptIU"), track.pt());
+      registry.fill(HIST("hptIU"), track.pt() * track.sign());
       registry.fill(HIST("hphiIU"), track.phi());
       registry.fill(HIST("hetaIU"), track.eta());
     }
     for (auto& track : tracks) {
-      registry.fill(HIST("hpt"), track.pt());
+      registry.fill(HIST("hpt"), track.pt() * track.sign());
       registry.fill(HIST("hphi"), track.phi());
       registry.fill(HIST("heta"), track.eta());
       registry.fill(HIST("hdcaXY"), track.dcaXY());
@@ -69,7 +69,7 @@ struct PropagatedTracksQa {
       registry.fill(HIST("hx2D"), tracks.iteratorAt(i).x(), tracksIU.iteratorAt(i).x());
       registry.fill(HIST("hphi2D"), tracks.iteratorAt(i).phi(), tracksIU.iteratorAt(i).phi());
       registry.fill(HIST("heta2D"), tracks.iteratorAt(i).eta(), tracksIU.iteratorAt(i).eta());
-      registry.fill(HIST("hpt2D"), tracks.iteratorAt(i).pt(), tracksIU.iteratorAt(i).pt());
+      registry.fill(HIST("hpt2D"), tracks.iteratorAt(i).pt() * tracks.iteratorAt(i).sign(), tracksIU.iteratorAt(i).pt() * tracks.iteratorAt(i).sign());
       registry.fill(HIST("hdeltaphivspT"), tracks.iteratorAt(i).pt(), tracks.iteratorAt(i).phi() - tracksIU.iteratorAt(i).phi());
     }
   }
@@ -80,7 +80,7 @@ struct PropagatedTracksExtra {
   HistogramRegistry registry{
     "registryTracks",
     {
-      {"hpt", ";track #it{p}_{T} propagated (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}},
+      {"hpt", ";track sign*#it{p}_{T} propagated (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}},
       {"hcrossedrows", ";track crossed rows;entries", {HistType::kTH1F, {{160, -0.5, 159.5}}}},
     }};
 
