@@ -8,21 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// This code calculates a centrality calibration based on output
-// from the multiplicityQa task.
-//
-// Comments, suggestions, questions? Please write to:
-// - victor.gonzalez@cern.ch
-// - david.dobrigkeit.chinellato@cern.ch
-//
-
-#ifdef __CINT__
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
 #pragma link C++ class multCalibrator + ;
-
-#endif
