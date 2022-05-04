@@ -91,7 +91,7 @@ struct TaskHfCorrelations {
 
   //  Note: derived tables (such as multV0M) cannot be used in BinningPolicy 
   //        -> using multV0A below is a temporary placeholder until multiplicity in Run 3 is solved
-  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultV0A>; 
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0A>; 
 
   //  Charged track filters
   Filter trackFilter =  (nabs(aod::track::eta) < cfgCutEta) && 
@@ -341,7 +341,7 @@ struct TaskHfCorrelations {
                     aod::MFTTracks const& mfttracks, 
                     hfCandidates const& candidates)
   {
-    const auto multiplicity = collision.multV0M();  //  multV0M ? (work on adding centrality selection for Run3 ongoing)
+    const auto multiplicity = collision.multFV0M();  //  multV0M ? (work on adding centrality selection for Run3 ongoing)
     registry.fill(HIST("hMultiplicity"), multiplicity);
 
     registry.fill(HIST("eventCounter"), 1);
@@ -389,7 +389,7 @@ struct TaskHfCorrelations {
         continue;
       }
 
-      const auto multiplicity = collision1.multV0A();
+      const auto multiplicity = collision1.multFV0A();
 
       int bin = pairBinning.getBin({collision1.posZ(), multiplicity});
       registry.fill(HIST("eventcount"), bin);
