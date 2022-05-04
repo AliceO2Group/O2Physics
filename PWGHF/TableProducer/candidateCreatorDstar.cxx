@@ -51,10 +51,10 @@ struct HfCandidateCreatorDstar {
       auto prongD0 = rowTrackIndexDstar.indexD0_as<aod::Hf2Prong>();
       auto trackD0Prong0 = prongD0.index0_as<aod::BigTracks>();
       auto trackD0Prong1 = prongD0.index1_as<aod::BigTracks>();
-      auto collisionPiId = trackPi.collisionId();
-      auto collisionD0Id = trackD0Prong0.collisionId();
+      // auto collisionPiId = trackPi.collisionId();
+      // auto collisionD0Id = trackD0Prong0.collisionId();
 
-      LOGF(info, "Pi collision %ld, D0 collision %ld", collisionPiId, collisionD0Id);
+      // LOGF(info, "Pi collision %ld, D0 collision %ld", collisionPiId, collisionD0Id);
 
       std::array<float, 3> pVecPi = {trackPi.px(), trackPi.py(), trackPi.pz()};
       std::array<float, 3> pVecD0Prong0 = {trackD0Prong0.px(), trackD0Prong0.py(), trackD0Prong0.pz()};
