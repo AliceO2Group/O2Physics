@@ -1,3 +1,8 @@
+#ifndef O2_ANALYSIS_HYPV0TABLE_H_
+#define O2_ANALYSIS_HYPV0TABLE_H_
+
+#include "Common/Core/RecoDecay.h"
+#include <cmath>
 
 namespace o2::aod
 {
@@ -155,3 +160,5 @@ DECLARE_SOA_INDEX_COLUMN(HypV0Data, Hypv0Data); // Inde to HypV0Data entry
 }
 
 }
+
+#endif
