@@ -68,7 +68,7 @@ struct tofPidBetaQa {
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
                                                    "nsigma/Ka", "nsigma/Pr", "nsigma/De",
                                                    "nsigma/Tr", "nsigma/He", "nsigma/Al"};
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};

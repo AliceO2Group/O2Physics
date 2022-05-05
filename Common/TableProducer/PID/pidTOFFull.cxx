@@ -310,7 +310,7 @@ struct tofPidCollisionTimeQa { /// Task that checks the TOF collision time
   Configurable<int> nBinsMultiplicity{"nBinsMultiplicity", 1000, "Number of bins for the multiplicity"};
   Configurable<float> rangeMultiplicity{"rangeMultiplicity", 1000.f, "Range in event time resolution"};
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext& initContext)
   {
     const AxisSpec evTimeAxis{nBinsEvTime, minEvTime, maxEvTime, "TOF event time (ps)"};
@@ -440,7 +440,7 @@ struct tofPidFullQa {
                                                         "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
                                                         "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};

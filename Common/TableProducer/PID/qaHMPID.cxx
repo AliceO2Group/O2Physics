@@ -24,7 +24,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct pidHMPIDQA {
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> nBinsP{"nBinsP", 500, "Number of momentum bins"};
   Configurable<float> minP{"minP", 0.01f, "Minimum momentum plotted (GeV/c)"};
   Configurable<float> maxP{"maxP", 10.f, "Maximum momentum plotted (GeV/c)"};
