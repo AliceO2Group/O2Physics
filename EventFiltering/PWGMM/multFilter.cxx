@@ -42,13 +42,14 @@ struct multFilter {
   // event selection cuts
   Configurable<float> selPtTrig{"selPtTrig", 5., "Minimum track pT leading threshold"};
   Configurable<float> selHMFv0{"selHMFv0", 15000., "Minimum FV0-amplitude  threshold"};
-  Configurable<float> selHTrkMult{"selHTrkMult", 24., "Minimum charged particle multiplicity threshold"};
+  Configurable<float> selHMMFTMult{"selHMMFTMult", 24., "Minimum MFT multilicity  threshold"};
+  Configurable<float> selHTrkMult{"selHTrkMult", 24., "Minimum global trk multiplicity threshold"};
+  Configurable<float> selHITSTrkMult{"selHITSTrkMult", 135., "Minimum ITS trk multiplicity threshold"};
 
   Produces<aod::MultFilters> tags;
 
   // acceptance cuts
-  Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
   // rho cuts
   Configurable<int> cfgRhoNetaBins{"cfgRhoNetaBins", 5, "number of bins in eta"};
@@ -60,24 +61,56 @@ struct multFilter {
   void init(o2::framework::InitContext&)
   {
 
+    // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
-    multiplicity.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
-    multiplicity.add("hPhi", "Phi", HistType::kTH1F, {{20, -2.0 * M_PI, 2.0 * M_PI, " "}});
+
+    // QA FV0
+    multiplicity.add("fEtaPhiFv0", "eta vs phi", HistType::kTH2F, {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
+
+    // QA global tracks
+    multiplicity.add("hdNdetaGlobal", "dNdeta", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
+    multiplicity.add("hPhiGlobal", "Phi", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
+
+    // QA ITS tracks
+    multiplicity.add("hdNdetaITS", "dNdeta (ITStracks)", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
+    multiplicity.add("hPhiITS", "Phi (ITStracks)", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
+
+    // QA MFT tracks
+    multiplicity.add("hdNdetaMFT", "dNdeta (MFTtracks)", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
+    multiplicity.add("hPhiMFT", "Phi (MFTtracks)", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
+
+    // QA leading track filter
     multiplicity.add("fLeadingTrackPt", "Lead trk pT", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
-    multiplicity.add("fMultFv0", "FV0 amp", HistType::kTH1F, {{800, -0.5, +39999.5, "FV0 amplitude"}});
-    multiplicity.add("fTrackMult", "trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
-    multiplicity.add("fRhoVsTrkMult", "rhoN vs trk mult", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {1000, -0.5, +9.5, "#rho"}});
-    multiplicity.add("fTrackMultVsV0A", "trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {800, -0.5, +39999.5, "sum AmpFV0"}});
-    multiplicity.add("fTrackMultVsT0A", "trk mult vs FT0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {200, -0.5, +999.5, "sum AmpFT0"}});
     multiplicity.add("fLeadingTrackPtSelected", "sel lead trk pT", HistType::kTH1F, {{150, 0., +150., "trk #it{p}_{T} (GeV/#it{c})"}});
+
+    // QA hm FV0 filter
+    multiplicity.add("fMultFv0", "FV0 amp", HistType::kTH1F, {{800, -0.5, +39999.5, "FV0 amplitude"}});
     multiplicity.add("fMultFv0Selected", "sel FV0 amp", HistType::kTH1F, {{800, -0.5, +39999.5, "FV0 amplitude"}});
+    multiplicity.add("fTrackMultVsV0A", "trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {800, -0.5, +39999.5, "sum AmpFV0"}});
+    multiplicity.add("fITSTrackMultVsV0A", "its trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "its trk mult (|#eta|<1.5)"}, {800, -0.5, +39999.5, "sum AmpFV0"}});
+
+    // QA hm MFT filter
+    multiplicity.add("fMFTTrackMult", "MFT trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
+    multiplicity.add("fMFTTrackMultSelected", "sel MFT trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
+    multiplicity.add("fTrackMultVsMFT", "trk mult vs MFT", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
+    multiplicity.add("fITSTrackMultVsMFT", "its trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "its trk mult (|#eta|<1.5)"}, {200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
+
+    // QA hm global track filter
+    multiplicity.add("fTrackMult", "trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
     multiplicity.add("fTrackMultSelected", "sel trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
-    // control histograms vs trk mult
+
+    // QA its track filter
+    multiplicity.add("fITSTrackMult", "ITS trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<1.5)"}});
+    multiplicity.add("fITSTrackMultSelected", "sel ITS trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "itstrk mult (|#eta|<1.5)"}});
+
+    // T0A
+    multiplicity.add("fTrackMultVsT0A", "trk mult vs FT0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {200, -0.5, +999.5, "sum AmpFT0"}});
+
+    // QA flatenicity
+    multiplicity.add("fRhoVsTrkMult", "rhoN vs trk mult", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {1000, -0.5, +9.5, "#rho"}});
     multiplicity.add("fMpTVsTrackMult", "Av pT vs trk mult", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
     multiplicity.add("fMpTVsTrackMultFlat", "Av pT vs trk mult (flat)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
     multiplicity.add("fMpTVsTrackMultJetty", "Av pT vs trk mult (jetty)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
-    // detector response FV0
-    multiplicity.add("fEtaPhiFv0", "eta vs phi", HistType::kTH2F, {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
 
     std::array<std::string, 2> eventTitles = {"all", "rejected"};
 
@@ -91,9 +124,9 @@ struct multFilter {
   }
 
   // declare filters on tracks and charged jets
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::isGlobalTrack == (uint8_t) true) && (aod::track::pt > cfgTrkLowPtCut);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
   float computeDeltaPhi(float phia, float phib,
                         float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)
   {
@@ -227,7 +260,7 @@ struct multFilter {
     }
     return i_ring;
   }
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& collision, TrackCandidates const& tracks, aod::MFTTracks const& mfttracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
 
     bool keepEvent[kNtriggersMM]{false};
@@ -236,6 +269,8 @@ struct multFilter {
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
     // global observables
     int multTrack = 0;
+    int multITSTrack = 0;
+    int multMFTTrack = 0;
     float flPt = 0; // leading pT
     double rho_m = -1;
 
@@ -336,17 +371,44 @@ struct multFilter {
         }
       }
     }
-
+    // ITStracks
     for (auto& track : tracks) {
+      if (track.detectorMap() && track.hasITS() != (uint8_t)0 && track.itsChi2NCl() < 36.0) {
+        continue;
+      }
+      multITSTrack++;
+      multiplicity.fill(HIST("hdNdetaITS"), track.eta());
+      multiplicity.fill(HIST("hPhiITS"), track.phi());
+    }
+    // MFTtracks
+    for (auto& track : mfttracks) {
+      float eta = track.eta();
+      float phi = track.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      if (eta > -2.5 || eta < -3.6) { // the MFT eta coverage
+        continue;
+      }
+      multMFTTrack++;
+      multiplicity.fill(HIST("hdNdetaMFT"), track.eta());
+      multiplicity.fill(HIST("hPhiMFT"), phi);
+    }
+    // Globaltracks
+    for (auto& track : tracks) {
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
       multTrack++;
-      multiplicity.fill(HIST("hdNdeta"), track.eta());
-      multiplicity.fill(HIST("hPhi"), track.phi());
+      multiplicity.fill(HIST("hdNdetaGlobal"), track.eta());
+      multiplicity.fill(HIST("hPhiGlobal"), track.phi());
       if (flPt < track.pt()) {
         flPt = track.pt();
       }
     }
     // filling tprofiles
     for (auto& track : tracks) {
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
       multiplicity.fill(HIST("fMpTVsTrackMult"), multTrack, track.pt());
       if (rho_m < 0.8 && collision.has_foundFV0()) {
         multiplicity.fill(HIST("fMpTVsTrackMultFlat"), multTrack, track.pt());
@@ -359,9 +421,15 @@ struct multFilter {
     multiplicity.fill(HIST("fRhoVsTrkMult"), multTrack, rho_m);
     multiplicity.fill(HIST("fLeadingTrackPt"), flPt);
     multiplicity.fill(HIST("fTrackMult"), multTrack);
+    multiplicity.fill(HIST("fITSTrackMult"), multITSTrack);
+    multiplicity.fill(HIST("fMFTTrackMult"), multMFTTrack);
+    multiplicity.fill(HIST("fTrackMultVsMFT"), multTrack, multMFTTrack);
+    multiplicity.fill(HIST("fITSTrackMultVsMFT"), multITSTrack, multMFTTrack);
+
     if (hasValidV0) {
       multiplicity.fill(HIST("fMultFv0"), sumAmpFV0);
       multiplicity.fill(HIST("fTrackMultVsV0A"), multTrack, sumAmpFV0);
+      multiplicity.fill(HIST("fITSTrackMultVsV0A"), multITSTrack, sumAmpFV0);
     }
     if (hasValidT0) {
       multiplicity.fill(HIST("fTrackMultVsT0A"), multTrack, sumAmpFT0);
@@ -371,6 +439,13 @@ struct multFilter {
       keepEvent[kHighTrackMult] = true; // accepted HM events
       multiplicity.fill(HIST("fTrackMultSelected"), multTrack);
     }
+    if (multITSTrack >= selHITSTrkMult) {
+      multiplicity.fill(HIST("fITSTrackMultSelected"), multITSTrack);
+    }
+    if (multMFTTrack >= selHMMFTMult) {
+      multiplicity.fill(HIST("fMFTTrackMultSelected"), multMFTTrack);
+    }
+
     // Check whether this event has a leading track candidate
     if (flPt >= selPtTrig) {
       multiplicity.fill(HIST("fLeadingTrackPtSelected"), flPt); // track pT which passed the cut
