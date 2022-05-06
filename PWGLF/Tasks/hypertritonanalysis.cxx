@@ -222,7 +222,7 @@ struct hypertritonAnalysis {
 
   PROCESS_SWITCH(hypertritonAnalysis, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, MyTracks const& tracks)
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
     if (!collision.alias()[kINT7]) {
@@ -261,7 +261,7 @@ struct hypertritonAnalysis {
         registry.fill(HIST("hPtHelium3"), v0.positivept());
         registry.fill(HIST("hPtPion"), v0.negativept());
       registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
-        registry.fill(HIST("h3dMassHypertriton"), collision.centV0M(), v0.pt(), v0.mHypertriton());
+        registry.fill(HIST("h3dMassHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mHypertriton());
         registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
         if (saveDcaHist == 1) {
           registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
@@ -274,7 +274,7 @@ struct hypertritonAnalysis {
         registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
         registry.fill(HIST("hPtAntiPion"), v0.positivept());
       registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
-        registry.fill(HIST("h3dMassAntiHypertriton"), collision.centV0M(), v0.pt(), v0.mAntiHypertriton());
+        registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
         registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
         if (saveDcaHist == 1) {
           registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
