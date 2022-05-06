@@ -37,17 +37,28 @@ struct skimmerGammaConversionsTruthOnlyMc {
   HistogramRegistry registry{
     "registry",
     {
+      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
       {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
     },
   };
 
-  // loop over MC truth McCollisions
-  void process(aod::McCollision const& theMcCollision,
-               aod::McParticles const& theMcParticles)
+  /* loop over collisions and go from a collision to its mcCollision
+   * to obtain all McParticles produced in this mcCollision */
+  void process(soa::Join<aod::Collisions,
+                         aod::McCollisionLabels>::iterator const& theCollision,
+               aod::McCollisions const&,
+               aod::McParticles& theMcParticles)
   {
-    registry.fill(HIST("hMcCollisionZ"), theMcCollision.posZ());
-    for (auto& lMcParticle : theMcParticles) {
+    auto lMCParticlesForCollision = theMcParticles.sliceByCached(aod::mcparticle::mcCollisionId,
+                                                                 theCollision.mcCollision().globalIndex());
+    lMCParticlesForCollision.bindInternalIndicesTo(&theMcParticles);
+    registry.fill(HIST("hCollisionZ"), theCollision.posZ());
+    registry.fill(HIST("hMcCollisionZ"), theCollision.mcCollision().posZ());
+    registry.fill(HIST("hMcParticlesSize"), lMCParticlesForCollision.size());
+
+    for (auto& lMcParticle : lMCParticlesForCollision) {
       if (lMcParticle.pdgCode() == 22) {
 
         size_t lNDaughters = 0;

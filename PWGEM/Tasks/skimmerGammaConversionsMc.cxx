@@ -36,6 +36,8 @@ struct skimmerGammaConversionsMc {
     "registry",
     {
       {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
       {"hMotherSameNess", "hMotherSameNess", {HistType::kTH1F, {{13, 0.f, 14.f}}}},
     },
   };
@@ -44,11 +46,13 @@ struct skimmerGammaConversionsMc {
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
 
   // ============================ FUNCTION DEFINITIONS ====================================================
-  void process(aod::Collisions::iterator const& theCollision,
+  void process(soa::Join<aod::Collisions,
+                         aod::McCollisionLabels>::iterator const& theCollision,
                aod::V0s,
                aod::V0Datas const& theV0s,
                tracksAndTPCInfoMC const& theTracks,
-               aod::McParticles const& theMcParticles)
+               aod::McCollisions const& theMcCollisions,
+               aod::McParticles& theMcParticles) // not needed!?
   {
     auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
       fFuncTableV0DaughterTracks(
@@ -68,7 +72,14 @@ struct skimmerGammaConversionsMc {
         theTrack.tpcSignal());
     };
 
-    registry.fill(HIST("hCollisionZ"), theCollision.posZ());
+    {
+      auto lMCParticlesForCollision = theMcParticles.sliceByCached(aod::mcparticle::mcCollisionId,
+                                                                   theCollision.mcCollision().globalIndex());
+      lMCParticlesForCollision.bindInternalIndicesTo(&theMcParticles);
+      registry.fill(HIST("hCollisionZ"), theCollision.posZ());
+      registry.fill(HIST("hMcCollisionZ"), theCollision.mcCollision().posZ());
+      registry.fill(HIST("hMcParticlesSize"), lMCParticlesForCollision.size());
+    }
 
     for (auto& lV0 : theV0s) {
 
@@ -77,8 +88,7 @@ struct skimmerGammaConversionsMc {
 
       bool lIsConversionPhoton = isConversionPhoton(lV0,
                                                     lTrackPos,
-                                                    lTrackNeg,
-                                                    theMcParticles);
+                                                    lTrackNeg);
 
       fillTrackTable(lV0, lTrackPos, true, lIsConversionPhoton);
       fillTrackTable(lV0, lTrackNeg, false, lIsConversionPhoton);
@@ -86,11 +96,10 @@ struct skimmerGammaConversionsMc {
   }
 
   // SFS todo: make pretty and short
-  template <typename TV0, typename TTRACK, typename TMC>
+  template <typename TV0, typename TTRACK>
   bool isConversionPhoton(TV0 const& theV0,
                           TTRACK const& theTrackPos,
-                          TTRACK const& theTrackNeg,
-                          TMC const& theMcParticles)
+                          TTRACK const& theTrackNeg)
   {
     bool result = false;
     // todo: verify it is enough to check only mother0 being equal

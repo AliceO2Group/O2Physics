@@ -367,7 +367,7 @@ struct GammaConversionsMc {
     mapStringHistPtr& lContainer = fRecTrueV0Histos[theRecTrue];
     std::string lPath = fPrefixesV0HistosRecTrue[theRecTrue] + theBAC;
     std::string& lSuffix = fRecTrueStrings[theRecTrue];
-    auto fullName = [&lPath, &lSuffix](std::string theName){
+    auto fullName = [&lPath, &lSuffix](std::string theName) {
       return lPath + theName + lSuffix;
     };
     fillTH1(lContainer, fullName("hEta"), theV0.eta());
@@ -386,7 +386,7 @@ struct GammaConversionsMc {
     mapStringHistPtr& lContainer = fRecTrueV0Histos[theRecTrue];
     std::string lPath = fPrefixesV0HistosRecTrue[theRecTrue] + theBAC;
     std::string& lSuffix = fRecTrueStrings[theRecTrue];
-    auto fullName = [&lPath, &lSuffix](std::string theName){
+    auto fullName = [&lPath, &lSuffix](std::string theName) {
       return lPath + theName + lSuffix;
     };
     fillTH1(lContainer, fullName("hEta"), theMcGamma.eta());
