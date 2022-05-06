@@ -56,21 +56,21 @@ const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& c
   }
 };
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //!
-DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //!
-DECLARE_SOA_COLUMN(ID, id, int);                                       //!
-DECLARE_SOA_COLUMN(Energy, energy, float);                             //!
-DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                                   //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                                   //!
-DECLARE_SOA_COLUMN(M02, m02, float);                                   //!
-DECLARE_SOA_COLUMN(M20, m20, float);                                   //!
-DECLARE_SOA_COLUMN(NCells, nCells, int);                               //!
-DECLARE_SOA_COLUMN(Time, time, float);                                 //!
-DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //!
-DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //!
-DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //!
-DECLARE_SOA_COLUMN(Definition, definition, int);                       //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
+DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
+DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
+DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
+DECLARE_SOA_COLUMN(M20, m20, float);                                   //! shower shape short axis
+DECLARE_SOA_COLUMN(NCells, nCells, int);                               //! number of cells in cluster
+DECLARE_SOA_COLUMN(Time, time, float);                                 //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
+DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
 
 } // namespace emcalcluster
 // table of clusters that could be matched to a collision
