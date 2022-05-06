@@ -70,6 +70,10 @@ struct TrackPropagation {
 
   void init(o2::framework::InitContext& initContext)
   {
+    if (doprocessCovariance == true && doprocessStandard == true) {
+      LOGF(fatal, "Cannot enable processStandard and processCovariance at the same time. Please choose one.");
+    }
+
     // Checking if the tables are requested in the workflow and enabling them
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
