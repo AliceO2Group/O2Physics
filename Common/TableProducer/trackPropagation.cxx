@@ -70,7 +70,7 @@ struct TrackPropagation {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (doprocessCovariance == true and doprocessStandard == true) {
+    if (doprocessCovariance == true && doprocessStandard == true) {
       LOGF(fatal, "Cannot enable processStandard and processCovariance at the same time. Please choose one.");
     }
 
