@@ -222,7 +222,8 @@ struct hypertritonAnalysis {
 
   PROCESS_SWITCH(hypertritonAnalysis, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, MyTracks const& tracks)
+  //void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, aod::HypV0Datas const& fullV0s, MyTracks const& tracks)
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
     if (!collision.alias()[kINT7]) {

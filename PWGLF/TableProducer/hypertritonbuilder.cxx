@@ -96,7 +96,6 @@ struct hypertritonBuilder {
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hGoodIndices", "hGoodIndices", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{9, 0.0f, 9.0f}}}},
     },
   };
@@ -136,6 +135,16 @@ struct hypertritonBuilder {
       o2::base::Propagator::initFieldFromGRP(grpo);
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
+
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(1, "Readin");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(2, "Run2 Cut");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(4, "DiffCol");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(5, "IsV01");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(6, "IsV02");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(7, "DcaDaus");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(8, "CosinrPA");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(9, "V0Radius");
   }
 
   void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks
@@ -166,7 +175,6 @@ struct hypertritonBuilder {
       auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
 #endif
 
-      registry.fill(HIST("hGoodIndices"), 0.5);
       registry.fill(HIST("hV0Candidate"), 0.5);
 
       if (isRun2) {
@@ -177,12 +185,11 @@ struct hypertritonBuilder {
           continue; // TPC refit
         }
       }
-      registry.fill(HIST("hGoodIndices"), 1.5);
       registry.fill(HIST("hV0Candidate"), 1.5);
+
       if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows || V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows  ) {
         continue;
       }
-      registry.fill(HIST("hGoodIndices"), 2.5);
       registry.fill(HIST("hV0Candidate"), 2.5);
 
       // Candidate building part
@@ -195,8 +202,6 @@ struct hypertritonBuilder {
       auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
 #endif
 
-      registry.fill(HIST("hV0Candidate"), 3.5);
-
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
 
@@ -204,6 +209,8 @@ struct hypertritonBuilder {
       if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks) {
         continue;
       }
+
+      registry.fill(HIST("hV0Candidate"), 3.5);
 
       // Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
