@@ -39,7 +39,7 @@ o2physics_add_dpl_workflow(vertexing-fwd
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                                           O2::ReconstructionDataFormats
                     COMPONENT_NAME Analysis)
-                    
+
 o2physics_add_dpl_workflow(lumi
                     SOURCES lumi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
