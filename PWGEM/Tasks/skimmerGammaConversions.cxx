@@ -28,9 +28,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi>;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
-struct skimmerGammaConversionsMc {
+struct skimmerGammaConversions {
 
   HistogramRegistry registry{
     "registry",
@@ -47,13 +48,49 @@ struct skimmerGammaConversionsMc {
 
   // ============================ FUNCTION DEFINITIONS ====================================================
   // SFS todo: don't use implicit grouping so sliceByCached will be fast. See skimmerGammaConversionsTruthOnlyMc
-  void process(soa::Join<aod::Collisions,
-                         aod::McCollisionLabels>::iterator const& theCollision,
-               aod::V0s,
-               aod::V0Datas const& theV0s,
-               tracksAndTPCInfoMC const& theTracks,
-               aod::McCollisions const& theMcCollisions,
-               aod::McParticles& theMcParticles) // not needed!?
+  void processRec(aod::Collisions::iterator const& theCollision,
+                  aod::V0s,
+                  aod::V0Datas const& theV0s,
+                  tracksAndTPCInfo const& theTracks)
+  {
+    auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
+      fFuncTableV0DaughterTracks(
+        theV0.v0Id(),
+        theIsFromConversionPhoton,
+        theTrack.dcaXY(),
+        theTrack.eta(),
+        theTrack.p(),
+        theTrack.phi(),
+        theTrack.pt(),
+        theIsPositive,
+        theTrack.tpcCrossedRowsOverFindableCls(),
+        theTrack.tpcFoundOverFindableCls(),
+        theTrack.tpcNClsCrossedRows(),
+        theTrack.tpcNSigmaEl(),
+        theTrack.tpcNSigmaPi(),
+        theTrack.tpcSignal());
+    };
+
+    registry.fill(HIST("hCollisionZ"), theCollision.posZ());
+
+    for (auto& lV0 : theV0s) {
+
+      auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
+      auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
+
+      fillTrackTable(lV0, lTrackPos, true, false);
+      fillTrackTable(lV0, lTrackNeg, false, false);
+    }
+  }
+  PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
+
+  void processMc(soa::Join<aod::Collisions,
+                           aod::McCollisionLabels>::iterator const& theCollision,
+                 aod::V0s,
+                 aod::V0Datas const& theV0s,
+                 tracksAndTPCInfoMC const& theTracks,
+                 aod::McCollisions const& theMcCollisions,
+                 aod::McParticles& theMcParticles)
   {
     auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
       fFuncTableV0DaughterTracks(
@@ -95,6 +132,7 @@ struct skimmerGammaConversionsMc {
       fillTrackTable(lV0, lTrackNeg, false, lIsConversionPhoton);
     }
   }
+  PROCESS_SWITCH(skimmerGammaConversions, processMc, "process reconstructed and mc info ", false);
 
   // SFS todo: make pretty and short
   template <typename TV0, typename TTRACK>
@@ -223,5 +261,5 @@ struct skimmerGammaConversionsMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionsMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversions>(cfgc)};
 }

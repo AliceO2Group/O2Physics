@@ -54,7 +54,7 @@ struct skimmerGammaConversionsTruthOnlyMc {
     for (auto& lCollision : theCollisions) {
 
       auto lMCParticlesForCollision = theMcParticles.sliceBy(aod::mcparticle::mcCollisionId,
-                                                                   lCollision.mcCollision().globalIndex());
+                                                             lCollision.mcCollision().globalIndex());
       lMCParticlesForCollision.bindInternalIndicesTo(&theMcParticles);
       registry.fill(HIST("hCollisionZ"), lCollision.posZ());
       registry.fill(HIST("hMcCollisionZ"), lCollision.mcCollision().posZ());

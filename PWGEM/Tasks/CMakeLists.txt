@@ -9,8 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(gammaconversionsmc
-                    SOURCES gammaConversionsMc.cxx
+o2physics_add_dpl_workflow(gammaconversions
+                    SOURCES gammaConversions.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -29,8 +29,8 @@ o2physics_add_dpl_workflow(phoscluqa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing O2::PHOSBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(skimmergammaconversionsmc
-                    SOURCES skimmerGammaConversionsMc.cxx
+o2physics_add_dpl_workflow(skimmergammaconversions
+                    SOURCES skimmerGammaConversions.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
