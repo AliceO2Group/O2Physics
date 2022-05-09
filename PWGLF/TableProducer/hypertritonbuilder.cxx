@@ -143,7 +143,7 @@ struct hypertritonBuilder {
     registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(5, "IsV01");
     registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(6, "IsV02");
     registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(7, "DcaDaus");
-    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(8, "CosinrPA");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(8, "CosinePA");
     registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(9, "V0Radius");
   }
 
