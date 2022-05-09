@@ -100,7 +100,7 @@ struct QaImpactPar {
   Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
   // Global tracks
   // with Run 3 data/MC enable '--isRun3 1' option
-  Filter globalTrackFilter = (useIsGlobalTrackFilter.node() == false) || ((aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack); /// filterbit 4 track selections + tight DCA cuts
+  Filter globalTrackFilter = (useIsGlobalTrackFilter.node() == false) || (requireGlobalTrackInFilter()); /// filterbit 4 track selections + tight DCA cuts
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 

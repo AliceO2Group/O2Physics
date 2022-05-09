@@ -57,7 +57,7 @@ struct TrackSelectionTask {
   {
     for (auto& track : tracks) {
       filterTable((uint8_t)globalTracksSDD.IsSelected(track),
-                  globalTracks.IsSelectedFlag(track));
+                  globalTracks.IsSelectedMask(track));
     }
   }
 };

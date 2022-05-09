@@ -121,7 +121,7 @@ struct collisionsInfo {
     }
 
     // global tracks
-    Partition<TCs> goodTracks = (aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack;
+    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);
     int cntGlobal = goodTracks.size();
 

@@ -102,7 +102,7 @@ class TrackSelection
 
   // Temporary function to check if track passes and return a flag. To be replaced by framework filters.
   template <typename T>
-  uint16_t IsSelectedFlag(T const& track)
+  uint16_t IsSelectedMask(T const& track)
   {
     uint16_t flag = 0;
 

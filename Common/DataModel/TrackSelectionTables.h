@@ -43,31 +43,31 @@ struct TrackSelectionFlags {
   static constexpr flagtype kGlobalTrack = kTrackType | kPtRange | kEtaRange | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
 };
 
+#define requireTrackCutInFilter(mask) (aod::track::trackCutFlag & aod::track::mask) == aod::track::mask
+#define requireGlobalTrackInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrack)
+
 // Columns to store track filter decisions
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
 DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, TrackSelectionFlags::flagtype); //! Flag with the single cut passed flagged
 #define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
   DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](TrackSelectionFlags::flagtype flags) -> bool { return (flags & mask) == mask; });
 
-// DECLARE_SOA_EXPRESSION_COLUMN(IsGlobalTrack, isGlobalTrack, bool, //! Flag for global tracks
-//                               (aod::track::trackCutFlag& TrackSelectionFlags::kGlobalTrack) == TrackSelectionFlags::kGlobalTrack);
-
-DECLARE_DYN_TRKSEL_COLUMN(IsTrackType, isTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
-DECLARE_DYN_TRKSEL_COLUMN(IsPtRange, isPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
-DECLARE_DYN_TRKSEL_COLUMN(IsEtaRange, isEtaRange, TrackSelectionFlags::kEtaRange);                                           //! Passed the track cut: kEtaRange
-DECLARE_DYN_TRKSEL_COLUMN(IsTPCNCls, isTPCNCls, TrackSelectionFlags::kTPCNCls);                                              //! Passed the track cut: kTPCNCls
-DECLARE_DYN_TRKSEL_COLUMN(IsTPCCrossedRows, isTPCCrossedRows, TrackSelectionFlags::kTPCCrossedRows);                         //! Passed the track cut: kTPCCrossedRows
-DECLARE_DYN_TRKSEL_COLUMN(IsTPCCrossedRowsOverNCls, isTPCCrossedRowsOverNCls, TrackSelectionFlags::kTPCCrossedRowsOverNCls); //! Passed the track cut: kTPCCrossedRowsOverNCls
-DECLARE_DYN_TRKSEL_COLUMN(IsTPCChi2NDF, isTPCChi2NDF, TrackSelectionFlags::kTPCChi2NDF);                                     //! Passed the track cut: kTPCChi2NDF
-DECLARE_DYN_TRKSEL_COLUMN(IsTPCRefit, isTPCRefit, TrackSelectionFlags::kTPCRefit);                                           //! Passed the track cut: kTPCRefit
-DECLARE_DYN_TRKSEL_COLUMN(IsITSNCls, isITSNCls, TrackSelectionFlags::kITSNCls);                                              //! Passed the track cut: kITSNCls
-DECLARE_DYN_TRKSEL_COLUMN(IsITSChi2NDF, isITSChi2NDF, TrackSelectionFlags::kITSChi2NDF);                                     //! Passed the track cut: kITSChi2NDF
-DECLARE_DYN_TRKSEL_COLUMN(IsITSRefit, isITSRefit, TrackSelectionFlags::kITSRefit);                                           //! Passed the track cut: kITSRefit
-DECLARE_DYN_TRKSEL_COLUMN(IsITSHits, isITSHits, TrackSelectionFlags::kITSHits);                                              //! Passed the track cut: kITSHits
-DECLARE_DYN_TRKSEL_COLUMN(IsGoldenChi2, isGoldenChi2, TrackSelectionFlags::kGoldenChi2);                                     //! Passed the track cut: kGoldenChi2
-DECLARE_DYN_TRKSEL_COLUMN(IsDCAxy, isDCAxy, TrackSelectionFlags::kDCAxy);                                                    //! Passed the track cut: kDCAxy
-DECLARE_DYN_TRKSEL_COLUMN(IsDCAz, isDCAz, TrackSelectionFlags::kDCAz);                                                       //! Passed the track cut: kDCAz
-DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                                  //! Passed the track cut: kGlobalTrack
+DECLARE_DYN_TRKSEL_COLUMN(PassedTrackType, passedTrackType, TrackSelectionFlags::kTrackType);                                        //! Passed the track cut: kTrackType
+DECLARE_DYN_TRKSEL_COLUMN(PassedPtRange, passedPtRange, TrackSelectionFlags::kPtRange);                                              //! Passed the track cut: kPtRange
+DECLARE_DYN_TRKSEL_COLUMN(PassedEtaRange, passedEtaRange, TrackSelectionFlags::kEtaRange);                                           //! Passed the track cut: kEtaRange
+DECLARE_DYN_TRKSEL_COLUMN(PassedTPCNCls, passedTPCNCls, TrackSelectionFlags::kTPCNCls);                                              //! Passed the track cut: kTPCNCls
+DECLARE_DYN_TRKSEL_COLUMN(PassedTPCCrossedRows, passedTPCCrossedRows, TrackSelectionFlags::kTPCCrossedRows);                         //! Passed the track cut: kTPCCrossedRows
+DECLARE_DYN_TRKSEL_COLUMN(PassedTPCCrossedRowsOverNCls, passedTPCCrossedRowsOverNCls, TrackSelectionFlags::kTPCCrossedRowsOverNCls); //! Passed the track cut: kTPCCrossedRowsOverNCls
+DECLARE_DYN_TRKSEL_COLUMN(PassedTPCChi2NDF, passedTPCChi2NDF, TrackSelectionFlags::kTPCChi2NDF);                                     //! Passed the track cut: kTPCChi2NDF
+DECLARE_DYN_TRKSEL_COLUMN(PassedTPCRefit, passedTPCRefit, TrackSelectionFlags::kTPCRefit);                                           //! Passed the track cut: kTPCRefit
+DECLARE_DYN_TRKSEL_COLUMN(PassedITSNCls, passedITSNCls, TrackSelectionFlags::kITSNCls);                                              //! Passed the track cut: kITSNCls
+DECLARE_DYN_TRKSEL_COLUMN(PassedITSChi2NDF, passedITSChi2NDF, TrackSelectionFlags::kITSChi2NDF);                                     //! Passed the track cut: kITSChi2NDF
+DECLARE_DYN_TRKSEL_COLUMN(PassedITSRefit, passedITSRefit, TrackSelectionFlags::kITSRefit);                                           //! Passed the track cut: kITSRefit
+DECLARE_DYN_TRKSEL_COLUMN(PassedITSHits, passedITSHits, TrackSelectionFlags::kITSHits);                                              //! Passed the track cut: kITSHits
+DECLARE_DYN_TRKSEL_COLUMN(PassedGoldenChi2, passedGoldenChi2, TrackSelectionFlags::kGoldenChi2);                                     //! Passed the track cut: kGoldenChi2
+DECLARE_DYN_TRKSEL_COLUMN(PassedDCAxy, passedDCAxy, TrackSelectionFlags::kDCAxy);                                                    //! Passed the track cut: kDCAxy
+DECLARE_DYN_TRKSEL_COLUMN(PassedDCAz, passedDCAz, TrackSelectionFlags::kDCAz);                                                       //! Passed the track cut: kDCAz
+DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGlobalTrack);                                          //! Passed the track cut: kGlobalTrack
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
 } // namespace track
@@ -78,21 +78,21 @@ DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
 DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELSTORE", //! Stored information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
-                  track::IsTrackType<track::TrackCutFlag>,
-                  track::IsPtRange<track::TrackCutFlag>,
-                  track::IsEtaRange<track::TrackCutFlag>,
-                  track::IsTPCNCls<track::TrackCutFlag>,
-                  track::IsTPCCrossedRows<track::TrackCutFlag>,
-                  track::IsTPCCrossedRowsOverNCls<track::TrackCutFlag>,
-                  track::IsTPCChi2NDF<track::TrackCutFlag>,
-                  track::IsTPCRefit<track::TrackCutFlag>,
-                  track::IsITSNCls<track::TrackCutFlag>,
-                  track::IsITSChi2NDF<track::TrackCutFlag>,
-                  track::IsITSRefit<track::TrackCutFlag>,
-                  track::IsITSHits<track::TrackCutFlag>,
-                  track::IsGoldenChi2<track::TrackCutFlag>,
-                  track::IsDCAxy<track::TrackCutFlag>,
-                  track::IsDCAz<track::TrackCutFlag>,
+                  track::PassedTrackType<track::TrackCutFlag>,
+                  track::PassedPtRange<track::TrackCutFlag>,
+                  track::PassedEtaRange<track::TrackCutFlag>,
+                  track::PassedTPCNCls<track::TrackCutFlag>,
+                  track::PassedTPCCrossedRows<track::TrackCutFlag>,
+                  track::PassedTPCCrossedRowsOverNCls<track::TrackCutFlag>,
+                  track::PassedTPCChi2NDF<track::TrackCutFlag>,
+                  track::PassedTPCRefit<track::TrackCutFlag>,
+                  track::PassedITSNCls<track::TrackCutFlag>,
+                  track::PassedITSChi2NDF<track::TrackCutFlag>,
+                  track::PassedITSRefit<track::TrackCutFlag>,
+                  track::PassedITSHits<track::TrackCutFlag>,
+                  track::PassedGoldenChi2<track::TrackCutFlag>,
+                  track::PassedDCAxy<track::TrackCutFlag>,
+                  track::PassedDCAz<track::TrackCutFlag>,
                   track::IsGlobalTrack<track::TrackCutFlag>);
 
 } // namespace o2::aod

@@ -80,7 +80,7 @@ struct JetFinderTask {
   Configurable<int> jetType2{"jetType2", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
-  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && ((aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack) && (aod::track::pt > trackPtCut);
+  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (requireGlobalTrackInFilter()) && (aod::track::pt > trackPtCut);
 
   std::vector<fastjet::PseudoJet> jets;
   std::vector<fastjet::PseudoJet> inputParticles;

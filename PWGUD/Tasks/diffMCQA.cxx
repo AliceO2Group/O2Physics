@@ -92,7 +92,7 @@ struct DiffQA {
     LOGF(debug, "<DiffQA> Number of compatible BCs: %i", bcSlice.size());
 
     // global tracks
-    Partition<TCs> goodTracks = (aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack;
+    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);
     LOGF(debug, "<DiffQA> Number of good tracks: %i", goodTracks.size());
 

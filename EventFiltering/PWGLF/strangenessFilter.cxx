@@ -152,7 +152,7 @@ struct strangenessFilter {
   }
 
   // Filters
-  Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (!globaltrk || (aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack);
+  Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (!globaltrk || requireGlobalTrackInFilter());
 
   // Tables
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;

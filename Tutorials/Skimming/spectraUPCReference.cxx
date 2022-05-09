@@ -36,7 +36,7 @@ struct UPCSpectraReferenceTask {
   }
 
   float mPion = 0.13957;
-  Filter trackFilter = ((aod::track::trackCutFlag & aod::track::TrackSelectionFlags::kGlobalTrack) == aod::track::TrackSelectionFlags::kGlobalTrack);
+  Filter trackFilter = (requireGlobalTrackInFilter());
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& col, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {
