@@ -46,8 +46,6 @@ struct vertexingfwd {
   HistogramRegistry registry{
     "registry",
     {{"TracksDCAXY", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-     {"TracksDCAXY2", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
-
      {"TracksDCAX", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{100, -10, 10}}}},
      {"TracksDCAY", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{100, -10, 10}}}},
      {"CollisionsSize", "; Collisions size", {HistType::kTH1F, {{10, -0.5, 9.5}}}},
@@ -154,36 +152,32 @@ struct vertexingfwd {
         registry.fill(HIST("DeltaZvtx"), collision.mcCollision().posZ() - zVtxMCAmbi);
       } // BCs loop
 
-      // o2::track::TrackParCovFwd pars1{extAmbiTrack.z(), tpars, tcovs, chi2};
-      pars1.propagateToZlinear(collision.posZ()); // track parameters propagation to the position of the z vertex
-
-      const auto dcaX(pars1.getX() - collision.posX());
-      const auto dcaY(pars1.getY() - collision.posY());
-      auto dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-
-      if (vecCollForAmb.size() == 0) { // do not use the vector with no collisions
+      int indexMinDCA = getIndexBestCollision(vecDCACollForAmb, 0); // obtain min value in the stored vector of DCAs
+      int indexMCcoll = vecCollForAmb[indexMinDCA];
+      registry.fill(HIST("CollisionsMatchIndicesMC"), mcCollAmbiID, indexMCcoll);
+      registry.fill(HIST("CollisionsSize"), vecCollForAmb.size());
+      registry.fill(HIST("CorrectMatch"), 3.0); // counting for amibuous track with N collisions >=0
+      if (vecCollForAmb.size() == 0) {          // do not use the vector with no collisions
         continue;
       }
-    registry.fill(HIST("DeltaZvtxBest"), vecZposCollForAmb[indexMinDCA] - zVtxMCAmbi);
-
-    //      for (auto& dca : vecDCACollForAmb) {
-    //        if (dca != vecDCACollForAmb[indexMinDCA]) {
-    //          registry.fill(HIST("DeltaDCAminNcoll"), vecCollForAmb.size(), std::abs(vecDCACollForAmb[indexMinDCA] - dca));
-    //          registry.fill(HIST("TracksDCAXYOther"), dca);
-    //        }
-    //      }
-
-    if (mcCollAmbiID == indexMCcoll) {
-      value = 1.0;
-      // LOGF(info, " --> Ambitrack correctly associated to collision, dca= %f", vecDCACollForAmb[indexMinDCA]);
-    }
-    registry.fill(HIST("TracksDCAXYBest"), vecDCACollForAmb[indexMinDCA]);
-    registry.fill(HIST("CorrectMatch"), value);
-    registry.fill(HIST("EfficiencyZvtx"), zVtxMCAmbi, value);
-    registry.fill(HIST("CorrectMatch"), 2.0); // Counting for amibuous track with N collisions > 0
-    if (value == 0.0) {
-      registry.fill(HIST("TracksDCAXYBestFalse"), vecDCACollForAmb[indexMinDCA]); // Incorrect association with min DCA
-    }
+      registry.fill(HIST("DeltaZvtxBest"), vecZposCollForAmb[indexMinDCA] - zVtxMCAmbi);
+      //      for (auto& dca : vecDCACollForAmb) {
+      //        if (dca != vecDCACollForAmb[indexMinDCA]) {
+      //          registry.fill(HIST("DeltaDCAminNcoll"), vecCollForAmb.size(), std::abs(vecDCACollForAmb[indexMinDCA] - dca));
+      //          registry.fill(HIST("TracksDCAXYOther"), dca);
+      //        }
+      //      }
+      if (mcCollAmbiID == indexMCcoll) {
+        value = 1.0;
+        // LOGF(info, " --> Ambitrack correctly associated to collision, dca= %f", vecDCACollForAmb[indexMinDCA]);
+      }
+      registry.fill(HIST("TracksDCAXYBest"), vecDCACollForAmb[indexMinDCA]);
+      registry.fill(HIST("CorrectMatch"), value);
+      registry.fill(HIST("EfficiencyZvtx"), zVtxMCAmbi, value);
+      registry.fill(HIST("CorrectMatch"), 2.0); // Counting for amibuous track with N collisions > 0
+      if (value == 0.0) {
+        registry.fill(HIST("TracksDCAXYBestFalse"), vecDCACollForAmb[indexMinDCA]); // Incorrect association with min DCA
+      }
 
     } // ambitracks loop
   }
