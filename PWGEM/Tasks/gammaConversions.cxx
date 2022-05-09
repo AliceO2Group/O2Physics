@@ -66,7 +66,8 @@ struct GammaConversions {
   };
 
   // collision histograms
-  std::string fNameCollisionPosZ{"hCollisionZ"};
+  std::vector<MyHistogramSpec> fCollisionHistoDefinitions{
+    {"hCollisionZ", "hCollisionZ;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}}};
 
   // track histograms
   std::vector<MyHistogramSpec> fTrackHistoDefinitions{
@@ -102,19 +103,20 @@ struct GammaConversions {
     {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;(cm);", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
   };
 
-  typedef std::map<std::string, HistPtr> mapStringHistPtr;
-  mapStringHistPtr fTrackHistos;
-  mapStringHistPtr fV0ResolutionHistos;
-
   enum eRecTrueEnum { kRec,
                       kMCTrue,
                       kMCVal };
-  std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
 
+  typedef std::map<std::string, HistPtr> mapStringHistPtr;
+  mapStringHistPtr fCollisionHistos;
+  mapStringHistPtr fTrackHistos;
+  mapStringHistPtr fV0ResolutionHistos;
   std::vector<mapStringHistPtr> fRecTrueV0Histos{3};
 
+  std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
+  std::string fFullNameIsPhotonSelectedHisto{""}; // will be initialzed in init()
   std::string fPrefixReconstructedInfoHistos{"reconstructedInformationOnly/"};
-  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelected"};
+  std::string fPrefixReconstructedCollisionHistos{fPrefixReconstructedInfoHistos + "collision/"};
   std::string fPrefixReconstructedTrackHistos{fPrefixReconstructedInfoHistos + "track/"};
 
   std::string fPrefixMCInfoNeededHistos{"MCinformationNeeded/"};
@@ -152,7 +154,7 @@ struct GammaConversions {
       std::string lTitle(lHisto->GetTitle());
       lHisto->SetTitle(lTitle.append(*theSuffix).data());
     } else {
-      LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained to append suffix to title.");
+      LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained in order to append suffix to title.");
     }
   }
 
@@ -181,16 +183,19 @@ struct GammaConversions {
     // todo: clean up
     if (doprocessRec) {
       for (auto& lString : fRecTrueStrings) {
-        lString.replace(1, 2, std::string(""));
+        lString.replace(1, 2, std::string("")); // remove 'MC' in '_MC*'
       }
     }
-    fNameCollisionPosZ.append(fRecTrueStrings[kRec]);
-    fFullNameIsPhotonSelectedHisto.append(fRecTrueStrings[kRec]);
-
-    HistogramSpec lSpec{fNameCollisionPosZ.data(), fNameCollisionPosZ.data(), {HistType::kTH1F, {{800, -50.f, 50.f}}}};
-    fHistogramRegistry.add(lSpec);
+    fFullNameIsPhotonSelectedHisto.append(fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelected" + fRecTrueStrings[kRec]);
 
     for (auto bac : std::vector<std::string>{"beforeCuts/", "afterCuts/"}) {
+
+      // collision histograms
+      addHistosToRegistry(fCollisionHistos,
+                          fCollisionHistoDefinitions,
+                          fPrefixReconstructedCollisionHistos + bac,
+                          &fRecTrueStrings[kRec]);
+
       // track histograms
       addHistosToRegistry(fTrackHistos,
                           fTrackHistoDefinitions,
@@ -298,6 +303,8 @@ struct GammaConversions {
                   aod::V0Datas const& theV0s,
                   aod::V0DaughterTracks const& theTracks)
   {
+    fillTH1(fCollisionHistos, fPrefixReconstructedCollisionHistos + "beforeCuts/hCollisionZ" + fRecTrueStrings[kRec], theCollision.posZ());
+
     for (auto& lV0 : theV0s) {
 
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
@@ -314,7 +321,7 @@ struct GammaConversions {
                  aod::V0DaughterTracks const& theTracks,
                  aod::McGammasTrue const& theV0sTrue)
   {
-    fHistogramRegistry.fill(HIST("hCollisionZ_MCRec"), theCollision.posZ());
+    fillTH1(fCollisionHistos, fPrefixReconstructedCollisionHistos + "beforeCuts/hCollisionZ" + fRecTrueStrings[kRec], theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
 
