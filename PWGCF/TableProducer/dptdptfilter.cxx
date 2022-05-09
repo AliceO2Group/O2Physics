@@ -915,7 +915,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
 
 void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centV0M());
+  processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
 
 void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks)
@@ -925,7 +925,7 @@ void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptD
 
 void DptDptFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks)
 {
-  processReconstructed(collision, ftracks, collision.centV0M());
+  processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
 
 void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, DptDptFullTracksPID const& ftracks)
@@ -935,7 +935,7 @@ void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, D
 
 void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centV0M());
+  processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
 
 void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
@@ -945,7 +945,7 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 
 void DptDptFilter::processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
-  processReconstructed(collision, ftracks, collision.centV0M());
+  processReconstructed(collision, ftracks, collision.centRun2V0M());
 }
 
 void DptDptFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
@@ -996,7 +996,7 @@ void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccolli
     if (tmpcollision.has_mcCollision()) {
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
         aod::CollisionsEvSelCent::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
-        float centmult = collision.centV0M();
+        float centmult = collision.centRun2V0M();
         if (IsEvtSelected(collision, centmult)) {
           fhTrueVertexZAA->Fill((mccollision.posZ()));
           processGenerated(mccollision, mcparticles, centmult);

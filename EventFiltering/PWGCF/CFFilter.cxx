@@ -41,7 +41,6 @@
 #include <string>
 
 #include <bitset>
-#include <iostream>
 
 namespace
 {
@@ -64,8 +63,8 @@ enum kDetector {
 static const std::vector<std::string> CfTriggerNames{"ppp", "ppL", "pLL", "LLL"};
 // uint8_t trackTypeSel = o2::aod::femtodreamparticle::ParticleType::kTrack; Fix this to work instead of below hardcoded lines
 // uint V0TypeSel = o2::aod::femtodreamparticle::ParticleType::kV0; Fix this to work instead of below hardcoded lines
-static constexpr uint8_t Track = 0;      // Track
-static constexpr uint8_t V0 = 1;         // V0
+static constexpr uint8_t Track = 0; // Track
+static constexpr uint8_t V0 = 1;    // V0
 // static constexpr uint8_t V0Daughter = 2; // V0  daughters
 static constexpr uint32_t kSignMinusMask = 1;
 static constexpr uint32_t kSignPlusMask = 2;
@@ -149,21 +148,26 @@ struct CFFilter {
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
+    registry.add("fMultiplicityBefore", "Multiplicity of all processed events", HistType::kTH1F, {{1000, 0, 1000}});
+    registry.add("fMultiplicityAfter", "Multiplicity of events which passed ppp trigger", HistType::kTH1F, {{1000, 0, 1000}});
+    registry.add("fZvtxBefore", "Zvtx of all processed events", HistType::kTH1F, {{1000, -15, 15}});
+    registry.add("fZvtxAfter", "Zvtx of events which passed ppp trigger", HistType::kTH1F, {{1000, -15, 15}});
+
     if (Q3Trigger == 0 || Q3Trigger == 11) {
       registry.add("fSameEventPartPPP", "CF - same event ppp distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPP", "CF - same event ppp distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
-      registry.add("fMultiplicityBefore", "Multiplicity of all processed events", HistType::kTH1F, {{1000, 0, 1000}});
-      registry.add("fMultiplicityAfter", "Multiplicity of events which passed ppp trigger", HistType::kTH1F, {{1000, 0, 1000}});
-      registry.add("fZvtxBefore", "Zvtx of all processed events", HistType::kTH1F, {{1000, -15, 15}});
-      registry.add("fZvtxAfter", "Zvtx of events which passed ppp trigger", HistType::kTH1F, {{1000, -15, 15}});
-      registry.add("fPtBefore", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtAfter", "Transverse momentum  of processed tracks which passed  selections", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtBeforeAnti", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
-      registry.add("fPtAfterAnti", "Transverse momentum  of processed antitracks passed selection", HistType::kTH1F, {{1000, 0, 10}});
+
+      registry.add("fPtBeforePPP", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtAfterPPP", "Transverse momentum  of processed tracks which passed  selections", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtBeforeAntiPPP", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtAfterAntiPPP", "Transverse momentum  of processed antitracks passed selection", HistType::kTH1F, {{1000, 0, 10}});
     }
     if (Q3Trigger == 1 || Q3Trigger == 11) {
       registry.add("fSameEventPartPPL", "CF - same event ppL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPL", "CF - same event ppL distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
+
+      registry.add("fPtPPL", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fPtAntiPPL", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
     }
 
     /// Initializing CCDB
@@ -208,25 +212,33 @@ struct CFFilter {
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
 
     for (auto p1pt : partsProton0) {
-      registry.get<TH1>(HIST("fPtBefore"))->Fill(p1pt.pt());
+      registry.get<TH1>(HIST("fPtBeforePPP"))->Fill(p1pt.pt());
     }
+
+    int prot = 0;
+    int antiprot = 0;
 
     for (auto p1pt : partsProton0) {
-      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p()))
-        registry.get<TH1>(HIST("fPtAfter"))->Fill(p1pt.pt());
+      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p())) {
+        registry.get<TH1>(HIST("fPtAfterPPP"))->Fill(p1pt.pt());
+        prot++;
+      }
     }
 
     for (auto p1pt : partsProton1) {
-      registry.get<TH1>(HIST("fPtBeforeAnti"))->Fill(p1pt.pt());
+      registry.get<TH1>(HIST("fPtBeforeAntiPPP"))->Fill(p1pt.pt());
     }
 
     for (auto p1pt : partsProton1) {
-      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p()))
-        registry.get<TH1>(HIST("fPtAfterAnti"))->Fill(p1pt.pt());
+      if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p())) {
+        registry.get<TH1>(HIST("fPtAfterAntiPPP"))->Fill(p1pt.pt());
+        antiprot++;
+      }
     }
 
     bool keepEvent[nTriplets]{false};
     int lowQ3Triplets[2] = {0, 0};
+
     if (partsFemto.size() != 0) {
       registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M());
       registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
@@ -284,15 +296,19 @@ struct CFFilter {
         } // end if
         //}
       }
-
+      // __________________________________________________________________________________________________________
       // TRIGGER FOR PPL TRIPLETS
-      /*if (Q3Trigger == 1 || Q3Trigger == 11) {
+      if (Q3Trigger == 1 || Q3Trigger == 11) {
         if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
           for (auto& partLambda : partsLambda0) {
+            registry.get<TH1>(HIST("fPtPPL"))->Fill(partLambda.pt());
             if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
               continue;
             }
             for (auto& [p1, p2] : combinations(partsProton0, partsProton0)) {
+              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
+                continue;
+              }
               if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
                 continue;
               }
@@ -314,10 +330,14 @@ struct CFFilter {
         if (lowQ3Triplets[1] == 0) { // if at least one triplet found in particles, no need to check antiparticles
           if (partsLambda1.size() >= 1 && partsProton1.size() >= 2) {
             for (auto& partLambda : partsLambda1) {
+              registry.get<TH1>(HIST("fPtAntiPPL"))->Fill(partLambda.pt());
               if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
                 continue;
               }
               for (auto& [p1, p2] : combinations(partsProton1, partsProton1)) {
+                if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
+                  continue;
+                }
                 if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
                   continue;
                 }
@@ -336,7 +356,7 @@ struct CFFilter {
             }
           } // end if
         }
-      }*/
+      }
     }
 
     if (lowQ3Triplets[0] > 0) {

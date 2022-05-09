@@ -64,6 +64,11 @@ o2physics_add_dpl_workflow(mc-converter
                     SOURCES mcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
                     COMPONENT_NAME Analysis)
+		    
+o2physics_add_dpl_workflow(fdd-converter
+                    SOURCES fddConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+		            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(calo-clusters  
                     SOURCES caloClusterProducer.cxx

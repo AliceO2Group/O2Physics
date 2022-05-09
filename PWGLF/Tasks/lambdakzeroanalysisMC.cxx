@@ -323,7 +323,7 @@ struct lambdakzeroAnalysisMc {
   }
   PROCESS_SWITCH(lambdakzeroAnalysisMc, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     if (!collision.alias()[kINT7]) {
       return;
@@ -349,18 +349,18 @@ struct lambdakzeroAnalysisMc {
           registry.fill(HIST("V0loopFiltersCounts"), 3.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
-            registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
-            registry.fill(HIST("h3dMassAntiLambda"), collision.centV0M(), v0.pt(), v0.mAntiLambda());
+            registry.fill(HIST("h3dMassLambda"), collision.centRun2V0M(), v0.pt(), v0.mLambda());
+            registry.fill(HIST("h3dMassAntiLambda"), collision.centRun2V0M(), v0.pt(), v0.mAntiLambda());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
             for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
               for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                 if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 3122) {
-                  registry.fill(HIST("h3dMassLambda_MC_truePt"), collision.centV0M(), particleMotherOfNeg.pt(), v0.mLambda());
+                  registry.fill(HIST("h3dMassLambda_MC_truePt"), collision.centRun2V0M(), particleMotherOfNeg.pt(), v0.mLambda());
                   registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                 }
                 if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122) {
-                  registry.fill(HIST("h3dMassAntiLambda_MC_truePt"), collision.centV0M(), particleMotherOfNeg.pt(), v0.mAntiLambda());
+                  registry.fill(HIST("h3dMassAntiLambda_MC_truePt"), collision.centRun2V0M(), particleMotherOfNeg.pt(), v0.mAntiLambda());
                   registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                 }
                 if (saveDcaHist == 1) {
@@ -382,13 +382,13 @@ struct lambdakzeroAnalysisMc {
           registry.fill(HIST("V0loopFiltersCounts"), 6.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
             registry.fill(HIST("V0loopFiltersCounts"), 7.5);
-            registry.fill(HIST("h3dMassK0Short"), collision.centV0M(), v0.pt(), v0.mK0Short());
+            registry.fill(HIST("h3dMassK0Short"), collision.centRun2V0M(), v0.pt(), v0.mK0Short());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
             for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
               for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
                 if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310) {
-                  registry.fill(HIST("h3dMassK0Short_MC_truePt"), collision.centV0M(), particleMotherOfNeg.pt(), v0.mK0Short());
+                  registry.fill(HIST("h3dMassK0Short_MC_truePt"), collision.centRun2V0M(), particleMotherOfNeg.pt(), v0.mK0Short());
                   registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
                 }
                 if (saveDcaHist == 1) {

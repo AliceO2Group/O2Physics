@@ -26,14 +26,14 @@ using namespace o2;
 using namespace o2::framework;
 
 struct CentralityTable {
-  Produces<aod::CentV0Ms> centVOM;
+  Produces<aod::CentRun2V0Ms> centRun2V0M;
   Produces<aod::CentRun2SPDTrks> centRun2SPDTracklets;
   Produces<aod::CentRun2SPDClss> centRun2SPDClusters;
   Produces<aod::CentRun2CL0s> centRun2CL0;
   Produces<aod::CentRun2CL1s> centRun2CL1;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Configurable<int> estV0M{"estV0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estRun2V0M{"estRun2V0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2SPDTrklets{"estRun2SPDtks", -1, {"Produces Run2 centrality percentiles using SPD tracklets multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2SPDClusters{"estRun2SPDcls", -1, {"Produces Run2 centrality percentiles using SPD clusters multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2CL0{"estRun2CL0", -1, {"Produces Run2 centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -93,7 +93,7 @@ struct CentralityTable {
             }
           }
         };
-        enable("V0M", estV0M);
+        enable("Run2V0M", estRun2V0M);
         enable("Run2SPDTrk", estRun2SPDTrklets);
         enable("Run2SPDCls", estRun2SPDClusters);
         enable("Run2CL0", estRun2CL0);
@@ -130,7 +130,7 @@ struct CentralityTable {
           TFormula* f = (TFormula*)callst->FindObject(ccdbhname);
           return f;
         };
-        if (estV0M == 1) {
+        if (estRun2V0M == 1) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
           V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
@@ -204,22 +204,22 @@ struct CentralityTable {
       return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
-    if (estV0M == 1) {
+    if (estRun2V0M == 1) {
       float cV0M = 105.0f;
       if (V0MInfo.mCalibrationStored) {
         float v0m;
         if (V0MInfo.mMCScale != nullptr) {
-          v0m = scaleMC(collision.multV0M(), V0MInfo.mMCScalePars);
-          LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", collision.multV0M(), v0m);
+          v0m = scaleMC(collision.multFV0M(), V0MInfo.mMCScalePars);
+          LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", collision.multFV0M(), v0m);
         } else {
-          v0m = collision.multV0A() * V0MInfo.mhVtxAmpCorrV0A->GetBinContent(V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
-                collision.multV0C() * V0MInfo.mhVtxAmpCorrV0C->GetBinContent(V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
+          v0m = collision.multFV0A() * V0MInfo.mhVtxAmpCorrV0A->GetBinContent(V0MInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ())) +
+                collision.multFV0C() * V0MInfo.mhVtxAmpCorrV0C->GetBinContent(V0MInfo.mhVtxAmpCorrV0C->FindFixBin(collision.posZ()));
         }
         cV0M = V0MInfo.mhMultSelCalib->GetBinContent(V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
-      LOGF(debug, "centV0M=%.0f", cV0M);
+      LOGF(debug, "centRun2V0M=%.0f", cV0M);
       // fill centrality columns
-      centVOM(cV0M);
+      centRun2V0M(cV0M);
     }
     if (estRun2SPDTrklets == 1) {
       float cSPD = 105.0f;

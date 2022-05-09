@@ -517,7 +517,7 @@ struct bayesPidQa {
   static constexpr std::string_view hprob[Np] = {"probability/El", "probability/Mu", "probability/Pi",
                                                  "probability/Ka", "probability/Pr", "probability/De",
                                                  "probability/Tr", "probability/He", "probability/Al"};
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};

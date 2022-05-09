@@ -19,6 +19,7 @@
 
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <vector>
 

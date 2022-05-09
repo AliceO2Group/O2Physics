@@ -63,7 +63,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-using MyEventsWithCents = soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::McCollisionLabels>;
+using MyEventsWithCents = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::McCollisionLabels>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
@@ -755,6 +755,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   // TODO: For now TableMakerMC works just for PbPb (cent table is present)
   //      Implement workflow arguments for pp/PbPb and possibly merge the task with tableMaker.cxx
   return WorkflowSpec{
-    adaptAnalysisTask<TableMakerMC>(cfgc)
-  };
+    adaptAnalysisTask<TableMakerMC>(cfgc)};
 }

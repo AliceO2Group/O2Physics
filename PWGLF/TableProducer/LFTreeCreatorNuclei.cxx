@@ -65,6 +65,8 @@ DECLARE_SOA_COLUMN(NSigTOFPr, nsigTOFPr, float);
 DECLARE_SOA_COLUMN(NSigTOFDe, nsigTOFD, float);
 DECLARE_SOA_COLUMN(NSigTOF3He, nsigTOF3He, float);
 DECLARE_SOA_COLUMN(TOFmatch, tofMatch, bool);
+DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
+DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -73,6 +75,8 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 
 DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   collision::BCId,
+                  full::DCAxy,
+                  full::DCAz,
                   full::NSigTPCPi,
                   full::NSigTPCKa,
                   full::NSigTPCPr,
@@ -115,12 +119,16 @@ struct LfTreeCreatorNuclei {
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
+  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa,
@@ -148,6 +156,8 @@ struct LfTreeCreatorNuclei {
     for (auto& track : tracks) {
       rowCandidateFull(
         collision.bcId(),
+        track.dcaXY(),
+        track.dcaZ(),
         track.tpcNSigmaPi(),
         track.tpcNSigmaKa(),
         track.tpcNSigmaPr(),

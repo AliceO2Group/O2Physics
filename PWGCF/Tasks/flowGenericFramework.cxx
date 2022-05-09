@@ -100,6 +100,8 @@ struct GenericFramework {
     oba->Add(new TNamed("ChFull24", "ChFull24")); // no-gap case
     oba->Add(new TNamed("ChGap32", "ChGap32"));   // gap-case
     oba->Add(new TNamed("ChGap42", "ChGap42"));   // gap case
+    oba->Add(new TNamed("ChSC244", "ChSC244"));   // gap case
+    oba->Add(new TNamed("ChSC234", "ChSC234"));   // gap case
     fFC->SetName("FlowContainer");
     fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
     delete oba;
@@ -116,6 +118,8 @@ struct GenericFramework {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {4} refN {-4}", "ChGap42", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 4} refN {-2 -4}", "ChSC244", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 3} refN {-2 -3}", "ChSC234", kFALSE));
   }
 
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
@@ -133,7 +137,7 @@ struct GenericFramework {
     return;
   }
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -145,15 +149,16 @@ struct GenericFramework {
       else
         LOGF(warning, "Could not load acceptance histogram from %s (%p)", cfgAcceptance.value.c_str(), (void*)cfg.mAcceptance);
     }
-
     if (tracks.size() < 1)
       return;
-    LOGF(info, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
+    if (!collision.sel7())
+      return;
+    // LOGF(info, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
 
     fGFW->Clear();
-    const auto centrality = collision.centV0M();
+    const auto centrality = collision.centRun2V0M();
     if (centrality > 100)
       return;
     float l_Random = fRndm->Rndm();

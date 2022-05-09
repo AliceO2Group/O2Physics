@@ -293,7 +293,7 @@ struct tofPidQa {
                                                         "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
                                                         "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};

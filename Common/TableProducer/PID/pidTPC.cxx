@@ -269,7 +269,7 @@ struct tpcPidQa {
                                                         "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
                                                         "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};

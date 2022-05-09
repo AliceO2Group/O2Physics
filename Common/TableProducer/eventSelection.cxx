@@ -111,13 +111,13 @@ struct BcSelectionTask {
       // Calculate V0 multiplicity per ring
       float multRingV0A[5] = {0.};
       float multRingV0C[4] = {0.};
-      float multV0A = 0;
-      float multV0C = 0;
+      float multFV0A = 0;
+      float multFV0C = 0;
       if (bc.has_fv0a()) {
         for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
           int ring = bc.fv0a().channel()[i] / 8;
           multRingV0A[ring] += bc.fv0a().amplitude()[i];
-          multV0A += bc.fv0a().amplitude()[i];
+          multFV0A += bc.fv0a().amplitude()[i];
         }
       }
 
@@ -125,14 +125,14 @@ struct BcSelectionTask {
         for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
           int ring = bc.fv0c().channel()[i] / 8;
           multRingV0C[ring] += bc.fv0c().amplitude()[i];
-          multV0C += bc.fv0c().amplitude()[i];
+          multFV0C += bc.fv0c().amplitude()[i];
         }
       }
       uint32_t spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
 
       // Calculate pileup and background related selection flags
       // V0A0 excluded from online V0A charge sum => excluding also from offline sum for consistency
-      float ofV0M = multV0A + multV0C - multRingV0A[0];
+      float ofV0M = multFV0A + multFV0C - multRingV0A[0];
       float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
       float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
       float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
@@ -154,12 +154,13 @@ struct BcSelectionTask {
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
+      int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
 
       // Fill bc selection columns
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
@@ -229,12 +230,13 @@ struct BcSelectionTask {
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
+      int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
       LOGP(debug, "foundFT0={}\n", foundFT0);
       // Fill bc selection columns
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
             bbFDA, bbFDC, bgFDA, bgFDC,
-            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0);
+            multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
@@ -273,6 +275,7 @@ struct EventSelectionTask {
     int32_t foundBC = bc.globalIndex();
     int32_t foundFT0 = bc.foundFT0Id();
     int32_t foundFV0 = bc.foundFV0Id();
+    int32_t foundFDD = bc.foundFDDId();
 
     // copy alias decisions from bcsel table
     int32_t alias[kNaliases];
@@ -330,7 +333,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundBC, foundFT0, foundFV0);
+          foundBC, foundFT0, foundFV0, foundFDD);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -378,6 +381,7 @@ struct EventSelectionTask {
     int32_t foundBC = bc.globalIndex();
     int32_t foundFT0 = bc.foundFT0Id();
     int32_t foundFV0 = bc.foundFV0Id();
+    int32_t foundFDD = bc.foundFDDId();
 
     LOGP(debug, "foundFT0 = {}", foundFT0);
 
@@ -428,7 +432,7 @@ struct EventSelectionTask {
           bbV0A, bbV0C, bgV0A, bgV0C,
           bbFDA, bbFDC, bgFDA, bgFDC,
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
-          foundBC, foundFT0, foundFV0);
+          foundBC, foundFT0, foundFV0, foundFDD);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };

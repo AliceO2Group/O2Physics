@@ -293,10 +293,12 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
 
   // vertex resolution
   if constexpr (IS_MC) {
-    const auto mcColl = collision.mcCollision();
-    histos.fill(HIST("Events/resoX"), collision.posX() - mcColl.posX(), collision.numContrib());
-    histos.fill(HIST("Events/resoY"), collision.posY() - mcColl.posY(), collision.numContrib());
-    histos.fill(HIST("Events/resoZ"), collision.posZ() - mcColl.posZ(), collision.numContrib());
+    if (collision.has_mcCollision()) {
+      const auto mcColl = collision.mcCollision();
+      histos.fill(HIST("Events/resoX"), collision.posX() - mcColl.posX(), collision.numContrib());
+      histos.fill(HIST("Events/resoY"), collision.posY() - mcColl.posY(), collision.numContrib());
+      histos.fill(HIST("Events/resoZ"), collision.posZ() - mcColl.posZ(), collision.numContrib());
+    }
   }
 
   histos.fill(HIST("Tracks/recoEff"), 1, tracks.tableSize());

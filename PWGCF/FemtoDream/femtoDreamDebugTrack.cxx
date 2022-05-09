@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamPairTaskTrackTrack.cxx
-/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \file femtoDreamDebugTrack.cxx
+/// \brief Tasks that reads the particle tables and fills QA histograms for tracks
+/// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -19,7 +19,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
@@ -40,18 +39,6 @@ static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "
 static const float cutsTable[1][nCuts] = {{4.05f, 0.75f, 3.5f, 3.5f, 100.f}};
 
 static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
-
-enum kPIDselection {
-  k3d5sigma = 0,
-  k3sigma = 1,
-  k2d5sigma = 2
-};
-
-enum kDetector {
-  kTPC = 0,
-  kTPCTOF = 1,
-  kNdetectors = 2
-};
 } // namespace
 
 struct femtoDreamDebugTrack {
@@ -63,11 +50,11 @@ struct femtoDreamDebugTrack {
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"};
 
-  using FemtoFullTracks = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugTracks>;
+  using FemtoFullParticles = soa::Join<aod::FemtoDreamParticles, aod::FemtoDreamDebugParticles>;
 
-  Partition<FemtoFullTracks> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                        // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
-                                        ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+                                           // (aod::femtodreamparticle::pt < cfgCutTable->get("MaxPt")) &&
+                                           ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -79,8 +66,6 @@ struct femtoDreamDebugTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry FullQaRegistry{"FullTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
@@ -88,14 +73,14 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/hPt", "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     FullQaRegistry.add("FullTrackQA/hEta", "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
     FullQaRegistry.add("FullTrackQA/hPhi", "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    FullQaRegistry.add("FullTrackQA/hTPCfindable", "; TPC findable clusters; Entries", kTH1F, {{163, 0, 163}});
-    FullQaRegistry.add("FullTrackQA/hTPCfound", "; TPC found clusters; Entries", kTH1F, {{163, 0, 163}});
+    FullQaRegistry.add("FullTrackQA/hTPCfindable", "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+    FullQaRegistry.add("FullTrackQA/hTPCfound", "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
     FullQaRegistry.add("FullTrackQA/hTPCcrossedOverFindalbe", "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
-    FullQaRegistry.add("FullTrackQA/hTPCcrossedRows", "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
-    FullQaRegistry.add("FullTrackQA/hTPCfindableVsCrossed", ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
-    FullQaRegistry.add("FullTrackQA/hTPCshared", "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
-    FullQaRegistry.add("FullTrackQA/hITSclusters", "; ITS clusters; Entries", kTH1F, {{10, 0, 10}});
-    FullQaRegistry.add("FullTrackQA/hITSclustersIB", "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
+    FullQaRegistry.add("FullTrackQA/hTPCcrossedRows", "; TPC crossed rows; Entries", kTH1F, {{163, -0.5, 162.5}});
+    FullQaRegistry.add("FullTrackQA/hTPCfindableVsCrossed", ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, -0.5, 162.5}, {163, -0.5, 162.5}});
+    FullQaRegistry.add("FullTrackQA/hTPCshared", "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+    FullQaRegistry.add("FullTrackQA/hITSclusters", "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
+    FullQaRegistry.add("FullTrackQA/hITSclustersIB", "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
     FullQaRegistry.add("FullTrackQA/hDCAxy", "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCAz", "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     FullQaRegistry.add("FullTrackQA/hDCA", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
@@ -117,18 +102,10 @@ struct femtoDreamDebugTrack {
     FullQaRegistry.add("FullTrackQA/nSigmaComb_d", "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
 
     vPIDPartOne = ConfPIDPartOne;
-
-    /// Initializing CCDB
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework
-  void process(o2::aod::FemtoDreamCollision& col, FemtoFullTracks& parts)
+  void process(o2::aod::FemtoDreamCollision& col, FemtoFullParticles& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
