@@ -46,6 +46,7 @@ struct skimmerGammaConversionsMc {
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
 
   // ============================ FUNCTION DEFINITIONS ====================================================
+  // SFS todo: don't use implicit grouping so sliceByCached will be fast. See skimmerGammaConversionsTruthOnlyMc
   void process(soa::Join<aod::Collisions,
                          aod::McCollisionLabels>::iterator const& theCollision,
                aod::V0s,
