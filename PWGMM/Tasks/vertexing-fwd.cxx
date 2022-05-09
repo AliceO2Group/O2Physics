@@ -48,6 +48,7 @@ struct vertexingfwd {
     {{"TracksDCAXY", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
      {"TracksDCAX", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{100, -10, 10}}}},
      {"TracksDCAY", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{100, -10, 10}}}},
+     {"AmbiguousTracksStatus", "; Status; counts", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
      {"CollisionsSize", "; Collisions size", {HistType::kTH1F, {{10, -0.5, 9.5}}}},
      {"NumberOfContributors", "; N_{tr} for vertexing; counts", {HistType::kTH1F, {{100, 0, 100}}}},
      {"CollisionsMatchIndicesMC", "; Rec. minDCA ambitrack coll.ID; Gen. ambitrack coll.ID", {HistType::kTH2F, {{401, -0.5, 1000.5}, {401, -0.5, 1000.5}}}},
@@ -63,11 +64,18 @@ struct vertexingfwd {
   void init(InitContext&)
   {
     auto hstat = registry.get<TH1>(HIST("CorrectMatch"));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "Incorrect match");
-    x->SetBinLabel(2, "Correct match");
-    x->SetBinLabel(3, "Total w N_{coll} > 0");
-    x->SetBinLabel(4, "Total w N_{coll} #geq 0");
+    auto* x1 = hstat->GetXaxis();
+    x1->SetBinLabel(1, "Incorrect match");
+    x1->SetBinLabel(2, "Correct match");
+    x1->SetBinLabel(3, "Total w N_{coll} > 0");
+    x1->SetBinLabel(4, "Total w N_{coll} #geq 0");
+
+    auto hstatus = registry.get<TH1>(HIST("AmbiguousTracksStatus"));
+    auto* x2 = hstatus->GetXaxis();
+    x2->SetBinLabel(1, "is from primary (all) ");
+    x2->SetBinLabel(2, "is from primary ");
+    x2->SetBinLabel(3, "not from primary (all) ");
+    x2->SetBinLabel(4, "not from primary ");
   }
 
   int getIndexBestCollision(std::vector<double> vecOfDCA, int method = 0)
@@ -102,6 +110,12 @@ struct vertexingfwd {
       mcCollAmbiID = particle.mcCollisionId();
       zVtxMCAmbi = particle.mcCollision().posZ();
 
+      if (particle.isPhysicalPrimary()) {
+        registry.fill(HIST("AmbiguousTracksStatus"), 0.0);
+      } else {
+        registry.fill(HIST("AmbiguousTracksStatus"), 2.0);
+      }
+
       // Fill the std::vector for ambiguous tracks with the quantities needed
       vecAmbTrack.push_back(track.x());
       vecAmbTrack.push_back(track.y());
@@ -112,12 +126,10 @@ struct vertexingfwd {
       vecAmbTrack.push_back(track.chi2());
 
       auto bcambis = ambitrack.bc_as<soa::Join<aod::BCs, aod::MatchedBCCollisionsSparse>>();
-      // LOGF(info, "  bcambis.size() %d", bcambis.size());
 
       for (auto& bcambi : bcambis) {
 
         if (!bcambi.has_collision()) {
-          // LOGF(warning, "No collision for ambiguous track, skip...");
           continue;
         }
 
@@ -158,6 +170,12 @@ struct vertexingfwd {
       registry.fill(HIST("CollisionsSize"), vecCollForAmb.size());
       registry.fill(HIST("CorrectMatch"), 3.0); // counting for amibuous track with N collisions >=0
       if (vecCollForAmb.size() == 0) {          // do not use the vector with no collisions
+        if (!particle.isPhysicalPrimary()) {
+          registry.fill(HIST("AmbiguousTracksStatus"), 3.0);
+        }
+        if (particle.isPhysicalPrimary()) {
+          registry.fill(HIST("AmbiguousTracksStatus"), 1.0);
+        }
         continue;
       }
       registry.fill(HIST("DeltaZvtxBest"), vecZposCollForAmb[indexMinDCA] - zVtxMCAmbi);
