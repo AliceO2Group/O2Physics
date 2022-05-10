@@ -48,7 +48,7 @@ struct vertexingfwd {
     {{"TracksDCAXY", "; DCA_{xy} (cm); counts", {HistType::kTH1F, {{100, -1, 10}}}},
      {"TracksDCAX", "; DCA_{x} (cm); counts", {HistType::kTH1F, {{100, -10, 10}}}},
      {"TracksDCAY", "; DCA_{y} (cm); counts", {HistType::kTH1F, {{100, -10, 10}}}},
-     {"AmbiguousTracksStatus", "; Status; counts", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
+     {"AmbiguousTracksStatus", "; Status; counts", {HistType::kTH1F, {{6, -0.5, 5.5}}}},
      {"CollisionsSize", "; Collisions size", {HistType::kTH1F, {{10, -0.5, 9.5}}}},
      {"NumberOfContributors", "; N_{tr} for vertexing; counts", {HistType::kTH1F, {{100, 0, 100}}}},
      {"CollisionsMatchIndicesMC", "; Rec. minDCA ambitrack coll.ID; Gen. ambitrack coll.ID", {HistType::kTH2F, {{401, -0.5, 1000.5}, {401, -0.5, 1000.5}}}},
@@ -72,10 +72,12 @@ struct vertexingfwd {
 
     auto hstatus = registry.get<TH1>(HIST("AmbiguousTracksStatus"));
     auto* x2 = hstatus->GetXaxis();
-    x2->SetBinLabel(1, "is from primary (all) ");
-    x2->SetBinLabel(2, "is from primary ");
-    x2->SetBinLabel(3, "not from primary (all) ");
-    x2->SetBinLabel(4, "not from primary ");
+    x2->SetBinLabel(1, "MFT tracks ");
+    x2->SetBinLabel(2, "MFT ambiguous tracks ");
+    x2->SetBinLabel(3, "is from primary (all) ");
+    x2->SetBinLabel(4, "is from primary ");
+    x2->SetBinLabel(5, "not from primary (all) ");
+    x2->SetBinLabel(6, "not from primary ");
   }
 
   int getIndexBestCollision(std::vector<double> vecOfDCA, int method = 0)
@@ -101,6 +103,8 @@ struct vertexingfwd {
 
       auto track = ambitrack.mfttrack_as<MFTTracksLabeled>(); // Obtain the MFT ambiguous track with the MC labels
       // auto extAmbiTrackid = ambitrack.mfttrackId(); // Global index of the MFT ambiguous track
+      int ntracks = tracks.size();
+      int nambitracks = ambitracks.size();
 
       if (!track.has_mcParticle()) {
         LOGF(warning, "No MC particle for ambiguous track, skip...");
@@ -110,10 +114,12 @@ struct vertexingfwd {
       mcCollAmbiID = particle.mcCollisionId();
       zVtxMCAmbi = particle.mcCollision().posZ();
 
+      registry.fill(HIST("AmbiguousTracksStatus"), 0.0, ntracks);
+      registry.fill(HIST("AmbiguousTracksStatus"), 1.0, nambitracks);
       if (particle.isPhysicalPrimary()) {
-        registry.fill(HIST("AmbiguousTracksStatus"), 0.0);
-      } else {
         registry.fill(HIST("AmbiguousTracksStatus"), 2.0);
+      } else {
+        registry.fill(HIST("AmbiguousTracksStatus"), 4.0);
       }
 
       // Fill the std::vector for ambiguous tracks with the quantities needed
@@ -171,10 +177,10 @@ struct vertexingfwd {
       registry.fill(HIST("CorrectMatch"), 3.0); // counting for amibuous track with N collisions >=0
       if (vecCollForAmb.size() == 0) {          // do not use the vector with no collisions
         if (!particle.isPhysicalPrimary()) {
-          registry.fill(HIST("AmbiguousTracksStatus"), 3.0);
+          registry.fill(HIST("AmbiguousTracksStatus"), 5.0);
         }
         if (particle.isPhysicalPrimary()) {
-          registry.fill(HIST("AmbiguousTracksStatus"), 1.0);
+          registry.fill(HIST("AmbiguousTracksStatus"), 3.0);
         }
         continue;
       }
