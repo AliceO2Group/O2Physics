@@ -26,7 +26,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-struct GammaConversionsMc {
+struct GammaConversions {
 
   // event cuts
   /*
@@ -65,6 +65,10 @@ struct GammaConversionsMc {
     HistogramSpec m{};
   };
 
+  // collision histograms
+  std::vector<MyHistogramSpec> fCollisionHistoDefinitions{
+    {"hCollisionZ", "hCollisionZ;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}}};
+
   // track histograms
   std::vector<MyHistogramSpec> fTrackHistoDefinitions{
     {"hTrackPt", "hTrackPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
@@ -99,18 +103,20 @@ struct GammaConversionsMc {
     {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;(cm);", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
   };
 
-  typedef std::map<std::string, HistPtr> mapStringHistPtr;
-  mapStringHistPtr fTrackHistos;
-  mapStringHistPtr fV0ResolutionHistos;
-
-  enum eRecTrueEnum { kMCRec,
+  enum eRecTrueEnum { kRec,
                       kMCTrue,
                       kMCVal };
-  std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
+
+  typedef std::map<std::string, HistPtr> mapStringHistPtr;
+  mapStringHistPtr fCollisionHistos;
+  mapStringHistPtr fTrackHistos;
+  mapStringHistPtr fV0ResolutionHistos;
   std::vector<mapStringHistPtr> fRecTrueV0Histos{3};
 
+  std::vector<std::string> fRecTrueStrings{"_MCRec", "_MCTrue", "_MCVal"};
+  std::string fFullNameIsPhotonSelectedHisto{""}; // will be initialzed in init()
   std::string fPrefixReconstructedInfoHistos{"reconstructedInformationOnly/"};
-  std::string fFullNameIsPhotonSelectedHisto{fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelected" + fRecTrueStrings[kMCRec]};
+  std::string fPrefixReconstructedCollisionHistos{fPrefixReconstructedInfoHistos + "collision/"};
   std::string fPrefixReconstructedTrackHistos{fPrefixReconstructedInfoHistos + "track/"};
 
   std::string fPrefixMCInfoNeededHistos{"MCinformationNeeded/"};
@@ -148,7 +154,7 @@ struct GammaConversionsMc {
       std::string lTitle(lHisto->GetTitle());
       lHisto->SetTitle(lTitle.append(*theSuffix).data());
     } else {
-      LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained to append suffix to title.");
+      LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained in order to append suffix to title.");
     }
   }
 
@@ -174,36 +180,53 @@ struct GammaConversionsMc {
       }
     };
 
-    HistogramSpec lSpec{"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}};
-    fHistogramRegistry.add(lSpec);
+    // todo: clean up
+    if (doprocessRec) {
+      for (auto& lString : fRecTrueStrings) {
+        lString.replace(1, 2, std::string("")); // remove 'MC' in '_MC*'
+      }
+    }
+    fFullNameIsPhotonSelectedHisto.append(fPrefixReconstructedInfoHistos + "v0/afterCuts/IsPhotonSelected" + fRecTrueStrings[kRec]);
 
     for (auto bac : std::vector<std::string>{"beforeCuts/", "afterCuts/"}) {
+
+      // collision histograms
+      addHistosToRegistry(fCollisionHistos,
+                          fCollisionHistoDefinitions,
+                          fPrefixReconstructedCollisionHistos + bac,
+                          &fRecTrueStrings[kRec]);
+
       // track histograms
       addHistosToRegistry(fTrackHistos,
                           fTrackHistoDefinitions,
                           fPrefixReconstructedTrackHistos + bac,
-                          &fRecTrueStrings[kMCRec]);
+                          &fRecTrueStrings[kRec]);
 
       // v0 histograms
-      std::vector<eRecTrueEnum> lRecTrue{kMCRec, kMCTrue, kMCVal};
+      std::vector<eRecTrueEnum> lRecTrue{kRec};
+      if (doprocessMc) {
+        lRecTrue.push_back(kMCTrue);
+        lRecTrue.push_back(kMCVal);
+
+        // v0 Resolution histos
+        addHistosToRegistry(fV0ResolutionHistos,
+                            fV0ResolutionHistoDefinitions,
+                            fPrefixResolutions + bac);
+      }
+
       for (auto iRecTrue : lRecTrue) {
         addHistosToRegistry(fRecTrueV0Histos[iRecTrue],
                             fV0HistoDefinitions,
                             fPrefixesV0HistosRecTrue[iRecTrue] + bac,
                             &fRecTrueStrings[iRecTrue],
-                            (iRecTrue != kMCRec || bac == "beforeCuts/"));
+                            (iRecTrue != kRec || bac == "beforeCuts/"));
       }
-
-      // v0 Resolution histos
-      addHistosToRegistry(fV0ResolutionHistos,
-                          fV0ResolutionHistoDefinitions,
-                          fPrefixResolutions + bac);
     }
 
     {
       // do some labeling
-      auto lIsPhotonSelectedHisto = fRecTrueV0Histos[kMCRec].find(fFullNameIsPhotonSelectedHisto);
-      if (lIsPhotonSelectedHisto != fRecTrueV0Histos[kMCRec].end()) {
+      auto lIsPhotonSelectedHisto = fRecTrueV0Histos[kRec].find(fFullNameIsPhotonSelectedHisto);
+      if (lIsPhotonSelectedHisto != fRecTrueV0Histos[kRec].end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lIsPhotonSelectedHisto->second)->GetXaxis();
         for (auto& lPairIt : fPhotonCutIndeces) {
           lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
@@ -276,12 +299,29 @@ struct GammaConversionsMc {
     }
   }
 
-  void process(aod::Collisions::iterator const& theCollision,
-               aod::V0Datas const& theV0s,
-               aod::V0DaughterTracks const& theTracks,
-               aod::McGammasTrue const& theV0sTrue)
+  void processRec(aod::Collisions::iterator const& theCollision,
+                  aod::V0Datas const& theV0s,
+                  aod::V0DaughterTracks const& theTracks)
   {
-    fHistogramRegistry.fill(HIST("hCollisionZ_MCRec"), theCollision.posZ());
+    fillTH1(fCollisionHistos, fPrefixReconstructedCollisionHistos + "beforeCuts/hCollisionZ" + fRecTrueStrings[kRec], theCollision.posZ());
+
+    for (auto& lV0 : theV0s) {
+
+      float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
+
+      if (!processPhoton(lV0, lV0CosinePA, theTracks)) {
+        continue;
+      }
+    }
+  }
+  PROCESS_SWITCH(GammaConversions, processRec, "process reconstructed info", true);
+
+  void processMc(aod::Collisions::iterator const& theCollision,
+                 aod::V0Datas const& theV0s,
+                 aod::V0DaughterTracks const& theTracks,
+                 aod::McGammasTrue const& theV0sTrue)
+  {
+    fillTH1(fCollisionHistos, fPrefixReconstructedCollisionHistos + "beforeCuts/hCollisionZ" + fRecTrueStrings[kRec], theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
 
@@ -303,6 +343,7 @@ struct GammaConversionsMc {
                                lMcPhotonForThisV0AsTable);
     }
   }
+  PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
 
   template <typename T>
   std::shared_ptr<T> getTH(mapStringHistPtr const& theMap, std::string const& theName)
@@ -344,7 +385,7 @@ struct GammaConversionsMc {
   void fillTrackHistograms(std::string const& theBAC, TTRACKS const& theV0Tracks)
   {
     std::string lPath = fPrefixReconstructedTrackHistos + theBAC;
-    std::string& lSuffix = fRecTrueStrings[kMCRec];
+    std::string& lSuffix = fRecTrueStrings[kRec];
     auto fillTrackHistogramsI = [&](auto const& theTrack) {
       fillTH1(fTrackHistos, lPath + "hTrackEta" + lSuffix, theTrack.eta());
       fillTH1(fTrackHistos, lPath + "hTrackPhi" + lSuffix, theTrack.phi());
@@ -400,13 +441,13 @@ struct GammaConversionsMc {
   {
     // single track eta cut
     if (TMath::Abs(theTrack.eta()) > fTrackEtaMax) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackEta"));
       return kFALSE;
     }
 
     // single track pt cut
     if (theTrack.pt() < fTrackPtMin) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTrackPt"));
       return kFALSE;
     }
 
@@ -415,12 +456,12 @@ struct GammaConversionsMc {
     }
 
     if (theTrack.tpcFoundOverFindableCls() < fMinTPCFoundOverFindableCls) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCFoundOverFindableCls"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCFoundOverFindableCls"));
       return kFALSE;
     }
 
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCCrossedRowsOverFindableCls"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kTPCCrossedRowsOverFindableCls"));
       return kFALSE;
     }
     return kTRUE;
@@ -430,22 +471,22 @@ struct GammaConversionsMc {
   bool photonPassesCuts(const T& theV0, float theV0CosinePA)
   {
     if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kV0Radius"));
       return kFALSE;
     }
 
     if (fV0PhotonAsymmetryMax > 0. && !ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kArmenteros"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kArmenteros"));
       return kFALSE;
     }
 
     if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPsiPair"));
       return kFALSE;
     }
 
     if (fV0CosPAngleMin > 0. && theV0CosinePA < fV0CosPAngleMin) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kCosinePA"));
       return kFALSE;
     }
 
@@ -456,12 +497,12 @@ struct GammaConversionsMc {
   void fillReconstructedInfoHistograms(std::string theBAC, TV0 const& theV0, TTRACKS const& theV0Tracks, float const& theV0CosinePA)
   {
     fillTrackHistograms(theBAC, theV0Tracks);
-    fillV0Histograms(kMCRec, theBAC, theV0, theV0CosinePA);
+    fillV0Histograms(kRec, theBAC, theV0, theV0CosinePA);
 
     if (theBAC == "beforeCuts/") {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonIn"));
     } else if (theBAC == "afterCuts/") {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonOut"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPhotonOut"));
     }
   }
 
@@ -483,7 +524,7 @@ struct GammaConversionsMc {
   {
     // TPC Electron Line
     if (fPIDnSigmaElectronMin && (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMax)) {
-      fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
+      fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kElectronPID"));
       return kFALSE;
     }
 
@@ -492,14 +533,14 @@ struct GammaConversionsMc {
       // low pt Pion rej
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
-          fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
+          fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejLowMom"));
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
-          fillTH1(fRecTrueV0Histos[kMCRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
+          fillTH1(fRecTrueV0Histos[kRec], fFullNameIsPhotonSelectedHisto, getPhotonCutIndex("kPionRejHighMom"));
           return kFALSE;
         }
       }
@@ -510,5 +551,5 @@ struct GammaConversionsMc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<GammaConversionsMc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<GammaConversions>(cfgc)};
 }
