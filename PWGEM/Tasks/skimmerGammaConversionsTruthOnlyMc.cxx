@@ -37,76 +37,76 @@ struct skimmerGammaConversionsTruthOnlyMc {
   HistogramRegistry registry{
     "registry",
     {
-      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
-      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
       {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
     },
   };
 
-  /* loop over collisions and go from a collision to its mcCollision
-   * to obtain all McParticles produced in this mcCollision */
-  void process(soa::Join<aod::Collisions,
-                         aod::McCollisionLabels> const& theCollisions,
-               aod::McCollisions const&,
-               aod::McParticles& theMcParticles)
+  void process(aod::McCollision const& theMcCollision,
+               soa::SmallGroups<soa::Join<aod::McCollisionLabels,
+                                          aod::Collisions>> const& theCollisions,
+               aod::McParticles const& theMcParticles)
   {
+    registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
+    if (theCollisions.size() == 0) {
+      return;
+    }
+    registry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
+    registry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
+
     for (auto& lCollision : theCollisions) {
+      registry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
+    }
 
-      auto lMCParticlesForCollision = theMcParticles.sliceBy(aod::mcparticle::mcCollisionId,
-                                                             lCollision.mcCollision().globalIndex());
-      lMCParticlesForCollision.bindInternalIndicesTo(&theMcParticles);
-      registry.fill(HIST("hCollisionZ"), lCollision.posZ());
-      registry.fill(HIST("hMcCollisionZ"), lCollision.mcCollision().posZ());
-      registry.fill(HIST("hMcParticlesSize"), lMCParticlesForCollision.size());
+    for (auto& lMcParticle : theMcParticles) {
+      if (lMcParticle.pdgCode() == 22) {
 
-      for (auto& lMcParticle : lMCParticlesForCollision) {
-        if (lMcParticle.pdgCode() == 22) {
+        size_t lNDaughters = 0;
+        float lDaughter0Vx = -1.;
+        float lDaughter0Vy = -1.;
+        float lDaughter0Vz = -1.;
+        float lV0Radius = -1.;
 
-          size_t lNDaughters = 0;
-          float lDaughter0Vx = -1.;
-          float lDaughter0Vy = -1.;
-          float lDaughter0Vz = -1.;
-          float lV0Radius = -1.;
+        if (lMcParticle.has_daughters()) {
+          auto lDaughters = lMcParticle.daughters_as<aod::McParticles>();
+          lNDaughters = lDaughters.size();
+          auto lDaughter0 = lDaughters.begin();
+          lDaughter0Vx = lDaughter0.vx();
+          lDaughter0Vy = lDaughter0.vy();
+          lDaughter0Vz = lDaughter0.vz();
+          lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
 
-          if (lMcParticle.has_daughters()) {
-            auto lDaughters = lMcParticle.daughters_as<aod::McParticles>();
-            lNDaughters = lDaughters.size();
-            auto lDaughter0 = lDaughters.begin();
-            lDaughter0Vx = lDaughter0.vx();
-            lDaughter0Vy = lDaughter0.vy();
-            lDaughter0Vz = lDaughter0.vz();
-            lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+          for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
 
-            for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-
-              // SFS this can be removed once the eta integrity is checked
-              TVector3 lDaughterVtx(lDaughter.vx(), lDaughter.vy(), lDaughter.vz());
-              if (lMcParticle.isPhysicalPrimary()) {
-                float_t lEtaDiff = lDaughterVtx.Eta() - lMcParticle.eta();
-                registry.fill(HIST("hEtaDiff"), lEtaDiff);
-              }
-              fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
-                                         lMcParticle.globalIndex(),
-                                         lDaughter.mothersIds().size(),
-                                         lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(),
-                                         lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
-                                         lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
+            // SFS this can be removed once the eta integrity is checked
+            TVector3 lDaughterVtx(lDaughter.vx(), lDaughter.vy(), lDaughter.vz());
+            if (lMcParticle.isPhysicalPrimary()) {
+              float_t lEtaDiff = lDaughterVtx.Eta() - lMcParticle.eta();
+              registry.fill(HIST("hEtaDiff"), lEtaDiff);
             }
+            fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
+                                       lMcParticle.globalIndex(),
+                                       lDaughter.mothersIds().size(),
+                                       lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(),
+                                       lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
+                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
           }
-          fFuncTableMcGammas(
-            lMcParticle.mcCollisionId(),
-            lMcParticle.globalIndex(),
-            -1, // V0Id when running in reconstructed task
-            lMcParticle.statusCode(),
-            lMcParticle.flags(),
-            lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(),
-            lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(),
-            lNDaughters,
-            lMcParticle.eta(), lMcParticle.phi(), lMcParticle.p(), lMcParticle.pt(), lMcParticle.y(),
-            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
-            lV0Radius);
         }
+        fFuncTableMcGammas(
+          lMcParticle.mcCollisionId(),
+          lMcParticle.globalIndex(),
+          -1, // V0Id when running in reconstructed task
+          lMcParticle.statusCode(),
+          lMcParticle.flags(),
+          lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(),
+          lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(),
+          lNDaughters,
+          lMcParticle.eta(), lMcParticle.phi(), lMcParticle.p(), lMcParticle.pt(), lMcParticle.y(),
+          lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
+          lV0Radius);
       }
     }
   }
