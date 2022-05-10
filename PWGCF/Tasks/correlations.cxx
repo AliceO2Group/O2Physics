@@ -301,7 +301,7 @@ struct CorrelationTask {
       LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
     }
 
-    // LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centRun2V0M());
+    LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centRun2V0M());
 
     const auto centrality = collision.centRun2V0M();
 
@@ -316,7 +316,7 @@ struct CorrelationTask {
 
   void processSameDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
-    // LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centRun2V0M());
+    LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centRun2V0M());
 
     const auto centrality = collision.centRun2V0M();
 
@@ -330,10 +330,6 @@ struct CorrelationTask {
   void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentRun2V0Ms>>& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
-
-    for (auto& collision : collisions) {
-      LOGF(info, "processMixedAOD: collision: %d bin: %d", collision.index(), collision.bin());
-    }
 
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
@@ -431,11 +427,6 @@ struct CorrelationTask {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& collision : collisions) {
-      int bin = pairBinning.getBin({collision.posZ(), collision.centRun2V0M()});
-      LOGF(info, "processMixedAOD: collision: %d bin: %d", collision.index(), bin);
-    }
-
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       int bin = pairBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
       LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", bin, collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
@@ -465,11 +456,6 @@ struct CorrelationTask {
     BinningType configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aodCollisions, aodTracks, BinningType> pairInProcess{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple};
-
-    for (auto& collision : collisions) {
-      int bin = configurableBinning.getBin({collision.posZ(), collision.centRun2V0M()});
-      LOGF(info, "processMixedAOD: collision: %d bin: %d", collision.index(), bin);
-    }
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairInProcess) {
       int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
