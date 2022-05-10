@@ -52,26 +52,83 @@ class TrackSelection
   template <typename T>
   bool IsSelected(T const& track)
   {
-    const bool isRun2 = track.trackType() == o2::aod::track::Run2Track || track.trackType() == o2::aod::track::Run2Tracklet;
-    if (track.trackType() == mTrackType &&
-        track.pt() >= mMinPt && track.pt() <= mMaxPt &&
-        track.eta() >= mMinEta && track.eta() <= mMaxEta &&
-        track.tpcNClsFound() >= mMinNClustersTPC &&
-        track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC &&
-        track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC &&
-        (track.itsNCls() >= mMinNClustersITS) &&
-        (track.itsChi2NCl() <= mMaxChi2PerClusterITS) &&
-        (track.tpcChi2NCl() <= mMaxChi2PerClusterTPC) &&
-        (mRequireITSRefit ? (isRun2 ? (track.flags() & o2::aod::track::ITSrefit) : track.hasITS()) : true) &&
-        (mRequireTPCRefit ? (isRun2 ? (track.flags() & o2::aod::track::TPCrefit) : track.hasTPC()) : true) &&
-        ((isRun2 && mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true) &&
-        FulfillsITSHitRequirements(track.itsClusterMap()) &&
-        abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY) &&
-        abs(track.dcaZ()) <= mMaxDcaZ) {
-      return true;
-    } else {
+    if (!IsSelected(track, TrackCuts::kTrackType)) {
       return false;
     }
+    if (!IsSelected(track, TrackCuts::kPtRange)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kEtaRange)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kTPCNCls)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kTPCCrossedRows)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kTPCCrossedRowsOverNCls)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kTPCChi2NDF)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kTPCRefit)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kITSNCls)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kITSChi2NDF)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kITSRefit)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kITSHits)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kGoldenChi2)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kDCAxy)) {
+      return false;
+    }
+    if (!IsSelected(track, TrackCuts::kDCAz)) {
+      return false;
+    }
+    return true;
+  }
+
+  // Temporary function to check if track passes and return a flag. To be replaced by framework filters.
+  template <typename T>
+  uint16_t IsSelectedMask(T const& track)
+  {
+    uint16_t flag = 0;
+
+    auto setFlag = [&](const TrackCuts& cut) {
+      if (IsSelected(track, cut)) {
+        flag |= 1UL << static_cast<int>(cut);
+      }
+    };
+
+    setFlag(TrackCuts::kTrackType);
+    setFlag(TrackCuts::kPtRange);
+    setFlag(TrackCuts::kEtaRange);
+    setFlag(TrackCuts::kTPCNCls);
+    setFlag(TrackCuts::kTPCCrossedRows);
+    setFlag(TrackCuts::kTPCCrossedRowsOverNCls);
+    setFlag(TrackCuts::kTPCChi2NDF);
+    setFlag(TrackCuts::kTPCRefit);
+    setFlag(TrackCuts::kITSNCls);
+    setFlag(TrackCuts::kITSChi2NDF);
+    setFlag(TrackCuts::kITSRefit);
+    setFlag(TrackCuts::kITSHits);
+    setFlag(TrackCuts::kGoldenChi2);
+    setFlag(TrackCuts::kDCAxy);
+    setFlag(TrackCuts::kDCAz);
+
+    return flag;
   }
 
   // Temporary function to check if track passes a given selection criteria. To be replaced by framework filters.
@@ -103,7 +160,7 @@ class TrackSelection
         return track.tpcChi2NCl() <= mMaxChi2PerClusterTPC;
 
       case TrackCuts::kTPCRefit:
-        return (isRun2 && mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true;
+        return (mRequireTPCRefit ? (isRun2 ? (track.flags() & o2::aod::track::TPCrefit) : track.hasTPC()) : true);
 
       case TrackCuts::kITSNCls:
         return track.itsNCls() >= mMinNClustersITS;
@@ -112,7 +169,7 @@ class TrackSelection
         return track.itsChi2NCl() <= mMaxChi2PerClusterITS;
 
       case TrackCuts::kITSRefit:
-        return (isRun2 && mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true;
+        return (mRequireITSRefit ? (isRun2 ? (track.flags() & o2::aod::track::ITSrefit) : track.hasITS()) : true);
 
       case TrackCuts::kITSHits:
         return FulfillsITSHitRequirements(track.itsClusterMap());

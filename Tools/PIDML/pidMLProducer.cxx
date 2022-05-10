@@ -30,7 +30,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
-  Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = requireGlobalTrackInFilter();
   using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
@@ -72,7 +72,7 @@ struct CreateTableMc {
 struct CreateTableReal {
   Produces<aod::PidTracksReal> pidTracksTable;
 
-  Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = requireGlobalTrackInFilter();
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
   using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
