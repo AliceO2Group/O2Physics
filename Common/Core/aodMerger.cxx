@@ -24,6 +24,7 @@
 #include <TGrid.h>
 #include <TMap.h>
 #include <TLeaf.h>
+#include <iostream>
 
 const char* removeVersionSuffix(const char* treeName)
 {
@@ -313,6 +314,9 @@ int main(int argc, char* argv[])
         int minIndexOffset = unassignedIndexOffset[treeName];
         auto newMinIndexOffset = minIndexOffset;
         for (int i = 0; i < entries; i++) {
+          for (auto& index : indexList) {
+            *(index.first) = 0;
+          }
           inputTree->GetEntry(i);
           // shift index columns by offset
           for (const auto& idx : indexList) {
