@@ -338,7 +338,7 @@ struct CorrelationTask {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
+      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
       // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
@@ -388,7 +388,7 @@ struct CorrelationTask {
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
+      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
       registry.fill(HIST("eventcount"), collision1.bin());
       mixed->fillEvent(collision1.centRun2V0M(), CorrelationContainer::kCFStepReconstructed);
