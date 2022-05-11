@@ -31,7 +31,7 @@ struct UPCSpectraProviderTask {
 
   Produces<aod::UDTracks> outputTracks;
 
-  Filter trackFilter = (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (requireGlobalTrackInFilter());
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {

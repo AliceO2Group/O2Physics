@@ -76,8 +76,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::BCs>>(cfgc, TaskName("BCs")),
       adaptAnalysisTask<LoadTable<aod::Collisions>>(cfgc, TaskName("Collisions")),
 
-      adaptAnalysisTask<LoadTable<aod::Tracks>>(cfgc, TaskName("Tracks")),
-      adaptAnalysisTask<LoadTable<aod::TracksCov>>(cfgc, TaskName("TracksCov")),
+      adaptAnalysisTask<LoadTable<aod::TracksIU>>(cfgc, TaskName("TracksIU")),
+      adaptAnalysisTask<LoadTable<aod::TracksCovIU>>(cfgc, TaskName("TracksCovIU")),
       adaptAnalysisTask<LoadTable<aod::TracksExtra>>(cfgc, TaskName("TracksExtra")),
 
       adaptAnalysisTask<LoadTable<aod::FwdTracks>>(cfgc, TaskName("FwdTracks")),

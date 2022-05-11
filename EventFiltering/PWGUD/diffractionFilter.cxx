@@ -50,7 +50,6 @@
 #include "Framework/AnalysisTask.h"
 #include "CommonConstants/LHCConstants.h"
 
-#include "cutHolder.h"
 #include "diffractionSelectors.h"
 #include "../filterTables.h"
 
@@ -76,8 +75,15 @@ struct DGFilterRun3 {
       {"aftercut", "#aftercut", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
     }};
 
-  // some general Collisions and Tracks filter
+  void init(InitContext&)
+  {
+    // 4 cases are knwon
+    if (diffCuts->cc() < 1 || diffCuts->cc() > 4) {
+      throw std::runtime_error("The cc value of cutHolder is out of bounds!");
+    }
+  }
 
+  // some general Collisions and Tracks filter
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -97,6 +103,8 @@ struct DGFilterRun3 {
                aod::FV0As& fv0as,
                aod::FDDs& fdds)
   {
+    bool ccs[4]{false};
+
     // nominal BC
     auto bc = collision.bc_as<BCs>();
 
@@ -111,7 +119,8 @@ struct DGFilterRun3 {
     if (isDGEvent == 0) {
       LOGF(debug, "This collision is a DG candidate!");
     }
-    filterTable(isDGEvent == 0);
+    ccs[diffCuts->cc() - 1] = (isDGEvent == 0);
+    filterTable(ccs[0], ccs[1], ccs[2], ccs[3]);
 
     // update histogram
     registry.get<TH1>(HIST("aftercut"))->Fill(isDGEvent);
