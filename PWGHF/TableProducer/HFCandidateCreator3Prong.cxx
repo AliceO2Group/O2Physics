@@ -55,7 +55,7 @@ struct HFCandidateCreator3Prong {
   double massPiKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::Hf3Prong const& rowsTrackIndexProng3,
+               aod::Hf3Prongs const& rowsTrackIndexProng3,
                aod::BigTracks const& tracks)
   {
     // 3-prong vertex fitter

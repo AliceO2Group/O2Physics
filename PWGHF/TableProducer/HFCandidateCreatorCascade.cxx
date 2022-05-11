@@ -76,7 +76,7 @@ struct HFCandidateCreatorCascade {
   double mass2K0sP{0.};
 
   void process(aod::Collisions const&,
-               aod::HfCascade const& rowsTrackIndexCasc,
+               aod::HfCascades const& rowsTrackIndexCasc,
                MyBigTracks const&,
                aod::V0sLinked const&,
                aod::V0Datas const&
