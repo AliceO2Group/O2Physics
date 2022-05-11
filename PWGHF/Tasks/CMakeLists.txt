@@ -32,7 +32,7 @@ o2physics_add_dpl_workflow(task-d0-alice3-barrel-mc
 o2physics_add_dpl_workflow(task-lc-alice3-mc
                     SOURCES taskLcALICE3.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)		  
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0-alice3-forward-mc
                     SOURCES taskD0ALICE3Forward.cxx
@@ -49,7 +49,7 @@ o2physics_add_dpl_workflow(task-lc-parametrized-pid-mc
                     SOURCES taskLcparametrizedPID.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
-		  
+
 o2physics_add_dpl_workflow(task-lc-centrality
                     SOURCES taskLcCentrality.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
