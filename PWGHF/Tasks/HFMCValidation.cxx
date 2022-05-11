@@ -151,12 +151,12 @@ struct ValidationGenLevel {
           whichHadron = iD;
           RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
-          int origin = 0;
+          int origin = -1;
           if (listDaughters.size() == arrayPDGsize) {
             origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-            if (origin == 4) {
+            if (origin == OriginType::Prompt) {
               counterPrompt[iD]++;
-            } else if (origin == 5) {
+            } else if (origin == OriginType::NonPrompt) {
               counterNonPrompt[iD]++;
             }
           }
@@ -181,10 +181,10 @@ struct ValidationGenLevel {
           registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
           registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
           registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
-          if (origin == 4) {
+          if (origin == OriginType::Prompt) {
             hPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
             hPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
-          } else if (origin == 5) {
+          } else if (origin == OriginType::NonPrompt) {
             hNonPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
             hNonPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
           }
@@ -271,7 +271,7 @@ struct ValidationRecLevel {
         whichHad = 6;
       }
       int whichOrigin = -1;
-      if (cand2Prong.originMCRec() == 4) {
+      if (cand2Prong.originMCRec() == OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
@@ -335,7 +335,7 @@ struct ValidationRecLevel {
         whichHad = 5;
       }
       int whichOrigin = -1;
-      if (cand3Prong.originMCRec() == 4) {
+      if (cand3Prong.originMCRec() == OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
