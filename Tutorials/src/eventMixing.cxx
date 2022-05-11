@@ -165,14 +165,16 @@ struct MixedEventsVariousKinds {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  Pair<aod::Collisions, aod::Tracks, aod::V0s, BinningType> pair{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins}, true};                                      // true is for 'ignore overflows' (true by default)
+  Pair<aod::Collisions, aod::Tracks, aod::V0s, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::V0s const& v0s)
   {
     LOGF(info, "Input data Collisions %d, Tracks %d V0s %d", collisions.size(), tracks.size(), v0s.size());
 
     int count = 0;
+    // tracks1 is an aod::Tracks table of tracks belonging to collision c1 (aod::Collision::iterator)
+    // tracks2 is an aod::V0s table of V0s belonging to collision c2 (aod::Collision::iterator)
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
@@ -196,8 +198,8 @@ struct MixedEventsTriple {
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   std::vector<double> zBins{7, -7, 7};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY, aod::collision::PosZ>;
-  BinningType binningOnPositions{{xBins, yBins, zBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindTriple<aod::Collisions, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins, zBins}, true};                                 // true is for 'ignore overflows' (true by default)
+  SameKindTriple<aod::Collisions, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
@@ -210,7 +212,7 @@ struct MixedEventsTriple {
       if (count == 100)
         break;
 
-      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
+      // Example of using tracks from mixed events -- iterate over all track triplets from the three collisions
       int trackCount = 0;
       for (auto& [t1, t2, t3] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2, tracks3))) {
         LOGF(info, "Mixed event tracks triple: (%d, %d, %d) from events (%d, %d, %d), track event: (%d, %d, %d)", t1.index(), t2.index(), t3.index(), c1.index(), c2.index(), c3.index(), t1.collision().index(), t2.collision().index(), t3.collision().index());
@@ -227,21 +229,24 @@ struct MixedEventsTripleVariousKinds {
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   std::vector<double> zBins{7, -7, 7};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY, aod::collision::PosZ>;
-  BinningType binningOnPositions{{xBins, yBins, zBins}, true}; // true is for 'ignore overflows' (true by default)
-  Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins, zBins}, true};                                                // true is for 'ignore overflows' (true by default)
+  Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::V0s const& v0s)
   {
     LOGF(info, "Input data Collisions %d, Tracks %d V0s %d", collisions.size(), tracks.size(), v0s.size());
 
     int count = 0;
+    // tracks1 is an aod::Tracks table of tracks belonging to collision c1 (aod::Collision::iterator)
+    // tracks2 is an aod::V0s table of V0s belonging to collision c2 (aod::Collision::iterator)
+    // tracks3 is an aod::Tracks table of tracks belonging to collision c3 (aod::Collision::iterator)
     for (auto& [c1, tracks1, c2, tracks2, c3, tracks3] : triple) {
       LOGF(info, "Mixed event collisions: (%d, %d, %d)", c1.globalIndex(), c2.globalIndex(), c3.globalIndex());
       count++;
       if (count == 100)
         break;
 
-      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
+      // Example of using tracks from mixed events -- iterate over all track triplets from the three collisions
       int trackCount = 0;
       for (auto& [t1, t2, t3] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2, tracks3))) {
         LOGF(info, "Mixed event tracks triple: (%d, %d, %d) from events (%d, %d, %d), track event: (%d, %d, %d)", t1.index(), t2.index(), t3.index(), c1.index(), c2.index(), c3.index(), t1.collision().index(), t2.collision().index(), t3.collision().index());
