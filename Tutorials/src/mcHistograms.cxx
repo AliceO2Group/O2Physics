@@ -59,6 +59,8 @@ struct AccessMcData {
   OutputObj<TH1F> phiH{TH1F("phi", "phi", 100, 0., TwoPI)};
   OutputObj<TH1F> etaH{TH1F("eta", "eta", 102, -2.01, 2.01)};
 
+  Configurable<bool> reduceOutput{"reduce-output", false, "Suppress info level output per track"};
+
   // group according to McCollisions
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -75,7 +77,9 @@ struct AccessMcData {
         if (mcParticle.has_mothers()) {
           // Check first mother
           auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
-          LOGF(info, "First mother: %d has pdg code %d", mother.globalIndex(), mother.pdgCode());
+          if (!reduceOutput) {
+            LOGF(info, "First mother: %d has pdg code %d", mother.globalIndex(), mother.pdgCode());
+          }
           // Loop over all mothers (needed for some MCs with junctions etc.)
           for (auto& m : mcParticle.mothers_as<aod::McParticles>()) {
             LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
