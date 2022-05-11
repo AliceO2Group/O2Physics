@@ -46,7 +46,6 @@
 #include <array>
 #include <cstdlib>
 #include "Framework/ASoAHelpers.h"
-#include "../Hypv0Table.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -75,7 +74,7 @@ struct hypertritonQa {
 
     registry.add("hMassCandidates", "hMassCandidates", {HistType::kTH1F, {massAxis}});
   }
-  void process(aod::Collision const& collision, aod::HypV0Datas const& fullV0s)
+  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s)
   {
 
     for (auto& v0 : fullV0s) {
@@ -141,17 +140,17 @@ struct hypertritonAnalysis {
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; //ct
 
-  //Filter dcaFilterV0 = aod::hypv0data::dcaV0daughters < dcav0dau;
+  //Filter dcaFilterV0 = aod::v0data::dcaV0daughters < dcav0dau;
 
   //Dynamic columns doesn't work in filters
-  //Filter cpaFilterV0 = aod::hypv0data::v0cosPA > v0cospa;
-  //Filter radiusFilterV0 = aod::hypv0data::v0radius > v0radius;
-  //Filter YFilterV0 = nabs(aod::hypv0data::yHypertriton) < rapidity;// need to be checked
+  //Filter cpaFilterV0 = aod::v0data::v0cosPA > v0cospa;
+  //Filter radiusFilterV0 = aod::v0data::v0radius > v0radius;
+  //Filter YFilterV0 = nabs(aod::v0data::yHypertriton) < rapidity;// need to be checked
   //Pt Cut; TPCTritonNSigmaCut; Pion PID;
 
   // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s) //for now CentV0M info is not available for run 3 pp
-  //void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, MyTracks const& tracks)
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::HypV0Datas const& fullV0s, MyTracks const& tracks)
+  //void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, MyTracks const& tracks)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, MyTracks const& tracks)
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
     /*if (eventSelection && !collision.sel8()) {
@@ -222,8 +221,8 @@ struct hypertritonAnalysis {
 
   PROCESS_SWITCH(hypertritonAnalysis, processRun3, "Process Run 3 data", true);
 
-  //void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, MyTracks const& tracks)
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, aod::HypV0Datas const& fullV0s, MyTracks const& tracks)
+  //void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, aod::V0Datas const& fullV0s, MyTracks const& tracks)
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
     if (!collision.alias()[kINT7]) {
@@ -287,15 +286,9 @@ struct hypertritonAnalysis {
   PROCESS_SWITCH(hypertritonAnalysis, processRun2, "Process Run 2 data", false);
 };
 
-struct hypertritonInitializer{
-  Spawns<aod::HypV0Datas> hypv0datas;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hypertritonInitializer>(cfgc),
       adaptAnalysisTask<hypertritonAnalysis>(cfgc),
       adaptAnalysisTask<hypertritonQa>(cfgc)};
 }

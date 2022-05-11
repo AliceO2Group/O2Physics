@@ -47,7 +47,6 @@
 #include <array>
 #include <cstdlib>
 #include "Framework/ASoAHelpers.h"
-#include "../Hypv0Table.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -80,7 +79,7 @@ struct hypertritonQa {
     registry.add("hMassAntiHypertriton", "hMassAntiHypertriton", {HistType::kTH1F, {massAxisHypertriton}});
   }
 
-  void process(aod::Collision const& collision, aod::HypV0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     for (auto& v0 : fullV0s) {
       registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
@@ -171,9 +170,9 @@ struct hypertritonAnalysisMc {
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutHypertriton", "lifetimecutK0S"}}, "lifetimecut"};
 
-  Filter preFilterV0 = aod::hypv0data::dcaV0daughters < dcav0dau;
+  Filter preFilterV0 = aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
     // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     /*if (eventSelection && !collision.sel8()) {
@@ -259,7 +258,7 @@ struct hypertritonAnalysisMc {
   }
   PROCESS_SWITCH(hypertritonAnalysisMc, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     if (!collision.alias()[kINT7]) {
       return;
