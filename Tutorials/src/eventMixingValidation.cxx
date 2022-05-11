@@ -118,11 +118,43 @@ struct MixedEventsJoinedTracks {
 //  }
 //};
 
+struct MixedEventsDynamicColumns {
+  using aodCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  std::vector<double> zBins{7, -7, 7};
+  std::vector<double> multBins{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1};
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
+  BinningType corrBinning{{zBins, multBins}, true}; // true is for 'ignore overflows' (true by default)
+  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{corrBinning, 5, -1};
+
+  void process(aodCollisions& collisions, aod::Tracks const& tracks)
+  {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+
+    int count = 0;
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      int bin = corrBinning.getBin({c1.posX(), c1.posY()});
+      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      count++;
+      if (count == 10)
+        break;
+
+      int trackCount = 0;
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+        trackCount++;
+        if (trackCount == 10)
+          break;
+      }
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<MixedEventsEmptyTables>(cfgc),
     adaptAnalysisTask<MixedEventsJoinedTracks>(cfgc),
     // adaptAnalysisTask<MixedEventsBadSubscription>(cfgc), // Should not compile
+    adaptAnalysisTask<MixedEventsDynamicColumns>(cfgc),
   };
 }
