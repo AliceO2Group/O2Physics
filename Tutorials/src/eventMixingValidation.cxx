@@ -152,8 +152,8 @@ struct MixedEventsDynamicColumns {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MixedEventsEmptyTables>(cfgc),
-    adaptAnalysisTask<MixedEventsJoinedTracks>(cfgc),
+    // adaptAnalysisTask<MixedEventsEmptyTables>(cfgc),
+    // adaptAnalysisTask<MixedEventsJoinedTracks>(cfgc),
     // adaptAnalysisTask<MixedEventsBadSubscription>(cfgc), // Should not compile
     adaptAnalysisTask<MixedEventsDynamicColumns>(cfgc),
   };
