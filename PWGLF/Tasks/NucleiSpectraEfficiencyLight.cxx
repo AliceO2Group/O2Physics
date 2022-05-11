@@ -127,7 +127,7 @@ struct NucleiSpectraEfficiencyLightRec {
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +20.0, "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  //Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::isGlobalTrack == (uint8_t) true);
+  //Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullHe, aod::pidTPCFullPr, aod::pidTPCFullPi>;
 

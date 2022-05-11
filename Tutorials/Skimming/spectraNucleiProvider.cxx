@@ -48,7 +48,7 @@ struct NucleiSpectraProviderTask {
   Configurable<float> nSigmaCutHigh{"nSigmaCutHigh", +3., "Value of the Nsigma cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
-  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::isGlobalTrack == (uint8_t) true) && (aod::track::pt > trackPtCut);
+  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (requireGlobalTrackInFilter()) && (aod::track::pt > trackPtCut);
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
                                                   aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe,

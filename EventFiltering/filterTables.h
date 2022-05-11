@@ -24,7 +24,10 @@ DECLARE_SOA_COLUMN(He3, hasHe3, bool); //!
 DECLARE_SOA_COLUMN(He4, hasHe4, bool); //!
 
 // diffraction
-DECLARE_SOA_COLUMN(DG, hasDG, bool); //! Double Gap events, DG
+DECLARE_SOA_COLUMN(TwoPi, has2pi, bool);  //! Double Gap events, DG, 2 pion
+DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
+DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
+DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
 
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
@@ -79,7 +82,7 @@ using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
 DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters
-                  filtering::DG);
+                  filtering::TwoPi, filtering::FourPi, filtering::TwoK, filtering::FourK);
 using DiffractionFilter = DiffractionFilters::iterator;
 
 // Dileptons & Quarkonia

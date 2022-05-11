@@ -87,7 +87,7 @@ struct TPCSpectraProviderTask {
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
-  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::pt > trackPtCut) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < trackEtaCut) && (aod::track::pt > trackPtCut) && (requireGlobalTrackInFilter());
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
                                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
