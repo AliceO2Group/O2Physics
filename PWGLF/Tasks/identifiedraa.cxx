@@ -277,7 +277,7 @@ struct identifiedraaTask {
     }
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
                    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
                              aod::pidTOFFullPi, aod::pidTOFFullKa,
                              aod::pidTOFFullPr, aod::pidTPCFullPi,
@@ -291,11 +291,11 @@ struct identifiedraaTask {
     if (!collision.sel7()) {
       return;
     }
-    histos.fill(HIST("Centrality"), collision.centV0M());
-    if (collision.centV0M() > 5.f || collision.centV0M() < 0.1f) {
+    histos.fill(HIST("Centrality"), collision.centRun2V0M());
+    if (collision.centRun2V0M() > 5.f || collision.centRun2V0M() < 0.1f) {
       return;
     }
-    histos.fill(HIST("CentralityAfterEvSel"), collision.centV0M());
+    histos.fill(HIST("CentralityAfterEvSel"), collision.centRun2V0M());
     histos.fill(HIST("VtxZ"), collision.posZ());
     if (std::abs(collision.posZ()) > 10.f) {
       return;

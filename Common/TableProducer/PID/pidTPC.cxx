@@ -11,27 +11,34 @@
 
 ///
 /// \file   pidTPC.cxx
-/// \author Nicolò Jacazio
+/// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
+/// \author Christian Sonnabend christian.sonnabend@cern.ch
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TPC split for each particle with only the Nsigma information.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+#include "TFile.h"
+
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/Core/PID/PIDTPC.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Framework/StaticFor.h"
+#include "Common/TableProducer/PID/pidTPCML.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::pid;
+using namespace o2::pid::tpc;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
@@ -43,10 +50,10 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
-/// Task to produce the TPC response table
+/// Task to produce the response table
 struct tpcPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = aod::Collisions;
+  using Coll = soa::Join<aod::Collisions, aod::Mults>;
   // Tables to produce
   Produces<o2::aod::pidTPCEl> tablePIDEl;
   Produces<o2::aod::pidTPCMu> tablePIDMu;
@@ -57,15 +64,23 @@ struct tpcPid {
   Produces<o2::aod::pidTPCTr> tablePIDTr;
   Produces<o2::aod::pidTPCHe> tablePIDHe;
   Produces<o2::aod::pidTPCAl> tablePIDAl;
-  // Detector response and input parameters
-  DetectorResponse response;
+  // TPC PID Response
+  o2::pid::tpc::Response response;
+  o2::pid::tpc::Response* responseptr = nullptr;
+  // Network correction for TPC PID response
+  Network network;
+
+  // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if emtpy the parametrization is not taken from file"};
-  Configurable<std::string> signalname{"param-signal", "BetheBloch", "Name of the parametrization for the expected signal, used in both file and CCDB mode"};
-  Configurable<std::string> sigmaname{"param-sigma", "TPCReso", "Name of the parametrization for the expected sigma, used in both file and CCDB mode"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC", "Path of the TPC parametrization on the CCDB"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
+  // Parameters for loading network from a file / downloading the file
+  Configurable<int> useNetworkCorrection{"useNetworkCorrection", 0, "Using the network correction for the TPC dE/dx signal"};
+  Configurable<int> downloadNetworkFromAlien{"downloadNetworkFromAlien", 0, "Download network from AliEn (1) or use a local file (filepath must be provided by --networkPathLocally /path/to/file) (0)"};
+  Configurable<std::string> networkPathAlien{"networkPathAlien", "alien:///alice/cern.ch/user/c/csonnabe/tpc_network_testing/net_onnx_0.onnx", "Path to .onnx file containing the network on AliEn"};
+  Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "Path to local .onnx file containing the network"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -79,8 +94,6 @@ struct tpcPid {
 
   // Paramatrization configuration
   bool useCCDBParam = false;
-  std::string ccdbPathSignal = "";
-  std::string ccdbPathSigma = "";
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -99,7 +112,6 @@ struct tpcPid {
         }
       }
     };
-
     enableFlag("El", pidEl);
     enableFlag("Mu", pidMu);
     enableFlag("Pi", pidPi);
@@ -110,56 +122,51 @@ struct tpcPid {
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
 
-    // Getting the parametrization parameters
-    ccdb->setURL(url.value);
-    ccdb->setTimestamp(ccdbTimestamp.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    //
-    const std::string fname = paramfile.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. signal parametrization from file" << fname << ", using param: " << signalname.value;
-      response.LoadParamFromFile(fname.data(), signalname.value, DetectorResponse::kSignal);
-
-      LOG(info) << "Loading exp. sigma parametrization from file" << fname << ", using param: " << sigmaname.value;
-      response.LoadParamFromFile(fname.data(), sigmaname.value, DetectorResponse::kSigma);
-    } else { // Loading it from CCDB
+    const TString fname = paramfile.value;
+    if (fname != "") { // Loading the parametrization from file
+      LOGP(info, "Loading TPC response from file {}", fname);
+      try {
+        std::unique_ptr<TFile> f(TFile::Open(fname, "READ"));
+        f->GetObject("Response", responseptr);
+        response.SetParameters(responseptr);
+      } catch (...) {
+        LOGF(fatal, "Loading the TPC PID Response from file {} failed!", fname);
+      };
+    } else {
       useCCDBParam = true;
-      ccdbPathSignal = ccdbPath.value + "/" + signalname.value;
-      LOG(info) << "Loading exp. signal parametrization from CCDB, using path: " << ccdbPathSignal << " for timestamp " << ccdbTimestamp.value;
-      response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(ccdbPathSignal, ccdbTimestamp.value));
+      const std::string path = ccdbPath.value;
+      const auto time = ccdbTimestamp.value;
+      ccdb->setURL(url.value);
+      ccdb->setTimestamp(time);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
+      LOGP(info, "Loading TPC response from CCDB, using path: {} for ccdbTimestamp {}", path, time);
+      response.PrintAll();
+    }
 
-      ccdbPathSigma = ccdbPath.value + "/" + sigmaname.value;
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << ccdbPathSigma << " for timestamp " << ccdbTimestamp.value;
-      response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(ccdbPathSigma, ccdbTimestamp.value));
+    if (!useNetworkCorrection) {
+      return;
+    } else {
+      Network temp_net(networkPathLocally.value,
+                       downloadNetworkFromAlien.value,
+                       networkPathAlien.value,
+                       true);
+      network = temp_net;
     }
   }
 
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tpc::ELoss<Trks::iterator, pid>;
-  void process(Trks const& tracks,
-               aod::BCsWithTimestamps const&,
-               Coll const&)
+  void process(Coll const& collisions, Trks const& tracks,
+               aod::BCsWithTimestamps const&)
   {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
-
     auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
         return;
       }
       table.reserve(tracks.size());
     };
-
+    // Prepare memory for enabled tables
     reserveTable(pidEl, tablePIDEl);
     reserveTable(pidMu, tablePIDMu);
     reserveTable(pidPi, tablePIDPi);
@@ -170,41 +177,77 @@ struct tpcPid {
     reserveTable(pidHe, tablePIDHe);
     reserveTable(pidAl, tablePIDAl);
 
+    std::vector<float> network_prediction;
+
+    if (useNetworkCorrection) {
+
+      auto start_overhead = std::chrono::high_resolution_clock::now();
+      std::vector<float> track_properties;
+      for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
+        for (auto const& trk : tracks) {
+          std::vector<float> net_tensor = network.createInputFromTrack(trk, i);
+          for (auto value : net_tensor) {
+            track_properties.push_back(value);
+          }
+        }
+      }
+      const unsigned long track_prop_size = tracks.size() * 9;
+      auto stop_overhead = std::chrono::high_resolution_clock::now();
+      float duration_overhead = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_overhead - start_overhead).count();
+      float time_per_track_overhead = duration_overhead / track_prop_size; // There are n (typically n=7) variables in each track which are being extracted in track_properties. Each network evaluation takes time_per_track_overhead/9 nano-seconds
+      LOG(info) << "Time per track (overhead): " << time_per_track_overhead << "ns ; Overhead total: " << duration_overhead / 1000000000 << "s";
+
+      auto start_network = std::chrono::high_resolution_clock::now();
+      float* output_network = network.evalNetwork(track_properties);
+      for (unsigned long i = 0; i < track_prop_size; i++) {
+        network_prediction.push_back(output_network[i]);
+      }
+      track_properties.clear();
+      auto stop_network = std::chrono::high_resolution_clock::now();
+      float duration_network = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network - start_network).count();
+      float time_per_track_net = duration_network / track_prop_size;
+      LOG(info) << "Time per track (net): " << time_per_track_net << "ns ; Network total: " << duration_network / 1000000000 << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
+
+      // Uncomment if you want to check example-outputs of the netwwork:
+      // for(int i=0; i<100; i++){
+      //   LOG(info) << "Output " << i << ": " << network_prediction[i] << " ; Input: [" << track_properties[7*i + 0] << ", " << track_properties[7*i + 1] << ", " << track_properties[7*i + 2] << ", " << track_properties[7*i + 3] << ", " << track_properties[7*i + 4] << ", " << track_properties[7*i + 5] << ", " << track_properties[7*i + 6] << "]";
+      // }
+    }
+
     int lastCollisionId = -1; // Last collision ID analysed
+    unsigned long count_tracks = 0;
+    const int tracks_size = tracks.size();
 
-    for (auto const& t : tracks) { // Loop on tracks
-
-      if (useCCDBParam && ccdbTimestamp.value == 0 && t.has_collision() && t.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
-
-        lastCollisionId = t.collisionId(); /// Cache last collision ID
-
-        const auto& bc = t.collision().bc_as<aod::BCsWithTimestamps>();
-        response.LoadParam(DetectorResponse::kSignal, ccdb->getForTimeStamp<Parametrization>(ccdbPathSignal, bc.timestamp()));
-        response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(ccdbPathSigma, bc.timestamp()));
+    for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
+      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+        lastCollisionId = trk.collisionId();
+        const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
+        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
       }
       // Check and fill enabled tables
-      auto makeTable = [&t](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
+      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
         if (flag.value != 1) {
           return;
         }
-        const float& separation = responsePID.GetSeparation(response, t);
-        aod::pidutils::packInTable<aod::pidtpc_tiny::binned_nsigma_t,
-                                   aod::pidtpc_tiny::upper_bin,
-                                   aod::pidtpc_tiny::lower_bin>(separation, table,
-                                                                aod::pidtpc_tiny::binned_min,
-                                                                aod::pidtpc_tiny::binned_max,
-                                                                aod::pidtpc_tiny::bin_width);
+
+        if (useNetworkCorrection) {
+          aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - (network_prediction[count_tracks + tracks_size * pid]) * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
+        } else {
+          aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
+        }
       };
 
-      makeTable(pidEl, tablePIDEl, response, responseEl);
-      makeTable(pidMu, tablePIDMu, response, responseMu);
-      makeTable(pidPi, tablePIDPi, response, responsePi);
-      makeTable(pidKa, tablePIDKa, response, responseKa);
-      makeTable(pidPr, tablePIDPr, response, responsePr);
-      makeTable(pidDe, tablePIDDe, response, responseDe);
-      makeTable(pidTr, tablePIDTr, response, responseTr);
-      makeTable(pidHe, tablePIDHe, response, responseHe);
-      makeTable(pidAl, tablePIDAl, response, responseAl);
+      makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
+      makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
+      makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
+      makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
+      makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
+      makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
+      makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
+      makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
+      makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
+
+      count_tracks++;
     }
   }
 };
@@ -226,16 +269,16 @@ struct tpcPidQa {
                                                         "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
                                                         "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use a log momentum axis"};
-  Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0, "Minimum momentum in range"};
+  Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
+  Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
+  Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
-  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
@@ -243,20 +286,24 @@ struct tpcPidQa {
   void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
     // NSigma
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, Form("N_{#sigma}^{TPC}(%s)", pT[i])};
-    histos.add(hnsigma[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigmapt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmapospt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmanegpt[i].data(), Form("N_{#sigma}^{TPC}(%s)", pT[i]), kTH2F, {ptAxis, nSigmaAxis});
+    const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[i]);
+    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
+    histos.add(hnsigma[i].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
   {
+
     const AxisSpec multAxis{1000, 0.f, 1000.f, "Track multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
+    const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
+    const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
     const AxisSpec pAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p} (GeV/#it{c})"};
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogaritmic();
       pAxis.makeLogaritmic();
@@ -271,9 +318,17 @@ struct tpcPidQa {
     h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
 
     histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
-    histos.add("event/multiplicity", "", kTH1F, {multAxis});
+    h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
+    for (int i = 0; i < 9; i++) {
+      h->GetXaxis()->SetBinLabel(i + 1, PID::getName(i));
+    }
+    histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
     histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
     histos.add("event/signedtpcsignal", "", kTH2F, {pAxisPosNeg, dedxAxis});
+    histos.add("event/eta", "", kTH1F, {etaAxis});
+    histos.add("event/length", "", kTH1F, {lAxis});
+    histos.add("event/pt", "", kTH1F, {ptAxis});
+    histos.add("event/p", "", kTH1F, {pAxis});
 
     static_for<0, 8>([&](auto i) {
       addParticleHistos<i>(pAxis, ptAxis);
@@ -289,8 +344,9 @@ struct tpcPidQa {
         return;
       }
     }
+
     // Fill histograms
-    const auto& nsigma = o2::aod::pidutils::tpcNSigma(id, t);
+    const auto& nsigma = o2::aod::pidutils::tpcNSigma<id>(t);
     histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
     histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
     if (t.sign() > 0) {
@@ -300,13 +356,15 @@ struct tpcPidQa {
     }
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra,
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                          aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                          aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl,
-                         aod::TrackSelection> const& tracks)
+                         aod::TrackSelection>;
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+               Trks const& tracks)
   {
+
     histos.fill(HIST("event/evsel"), 1);
     if (applyEvSel == 1) {
       if (!collision.sel7()) {
@@ -317,8 +375,10 @@ struct tpcPidQa {
         return;
       }
     }
+
     histos.fill(HIST("event/evsel"), 2);
 
+    // Computing Multiplicity first
     float ntracks = 0;
     for (auto t : tracks) {
       if (applyTrackCut && !t.isGlobalTrack()) {
@@ -335,16 +395,19 @@ struct tpcPidQa {
     }
     histos.fill(HIST("event/evsel"), 4);
     histos.fill(HIST("event/vertexz"), collision.posZ());
-    histos.fill(HIST("event/multiplicity"), ntracks);
+    histos.fill(HIST("event/trackmultiplicity"), ntracks);
 
     for (auto t : tracks) {
       if (applyTrackCut && !t.isGlobalTrack()) {
         continue;
       }
-      // const float mom = t.p();
-      const float mom = t.tpcInnerParam();
-      histos.fill(HIST("event/tpcsignal"), mom, t.tpcSignal());
-      histos.fill(HIST("event/signedtpcsignal"), mom * t.sign(), t.tpcSignal());
+      histos.fill(HIST("event/particlehypo"), t.pidForTracking());
+      histos.fill(HIST("event/tpcsignal"), t.tpcInnerParam(), t.tpcSignal());
+      histos.fill(HIST("event/signedtpcsignal"), t.tpcInnerParam() * t.sign(), t.tpcSignal());
+      histos.fill(HIST("event/eta"), t.eta());
+      histos.fill(HIST("event/length"), t.length());
+      histos.fill(HIST("event/pt"), t.pt());
+      histos.fill(HIST("event/p"), t.p());
       //
       fillParticleHistos<PID::Electron>(t);
       fillParticleHistos<PID::Muon>(t);

@@ -25,13 +25,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(T0ACorrectedValid, t0ACorrectedValid, //! Was T0ACorr
                            [](float t0) -> bool { return t0 < 1e9; });
 DECLARE_SOA_DYNAMIC_COLUMN(T0CCorrectedValid, t0CCorrectedValid, //! Was T0CCorrected computable?
                            [](float t0) -> bool { return t0 < 1e9; });
+DECLARE_SOA_DYNAMIC_COLUMN(T0resolution, t0resolution, //! Was T0CCorrected computable?
+                           [](float t0C, float t0A) -> float { return 0.5f * (t0A - t0C); });
 
 } // namespace ft0
 DECLARE_SOA_TABLE(FT0sCorrected, "AOD", "FT0CORRECTED", //! Table with corrected FT0 values
                   ft0::T0ACorrected, ft0::T0CCorrected,
                   ft0::T0AC<ft0::T0ACorrected, ft0::T0CCorrected>,
                   ft0::T0ACorrectedValid<ft0::T0ACorrected>,
-                  ft0::T0CCorrectedValid<ft0::T0CCorrected>);
+                  ft0::T0CCorrectedValid<ft0::T0CCorrected>,
+                  ft0::T0resolution<ft0::T0ACorrected, ft0::T0CCorrected>);
 using FT0Corrected = FT0sCorrected::iterator;
 } // namespace o2::aod
 

@@ -12,6 +12,10 @@
 #include "cutHolder.h"
 
 // setter
+void cutHolder::Setcc(int cc)
+{
+  mcase = cc;
+}
 void cutHolder::SetNDtcoll(int ndtcoll)
 {
   mNDtcoll = ndtcoll;
@@ -61,6 +65,7 @@ void cutHolder::SetMaxnSigmaTOF(float maxnSigma)
 }
 
 // getter
+int cutHolder::cc() const { return mcase; }
 int cutHolder::NDtcoll() const { return mNDtcoll; }
 int cutHolder::minNTracks() const { return mMinNTracks; }
 int cutHolder::maxNTracks() const { return mMaxNTracks; }

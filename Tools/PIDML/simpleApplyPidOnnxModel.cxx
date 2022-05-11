@@ -51,7 +51,7 @@ struct SimpleApplyOnnxModelTask {
 
   Produces<o2::aod::MlPidResults> pidMLResults;
 
-  Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = requireGlobalTrackInFilter();
   // Minimum table requirements for sample model:
   // TPC signal (FullTracks), TOF signal (TOFSignal), TOF beta (pidTOFbeta), dcaXY and dcaZ (TracksExtended)
   // Filter on isGlobalTrack (TracksSelection)

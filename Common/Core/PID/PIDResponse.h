@@ -32,17 +32,17 @@ namespace o2::aod
 namespace pidutils
 {
 // Function to pack a float into a binned value in table
-template <typename T, const T underflow, const T overflow, typename tableType>
-void packInTable(const float& separation, tableType& table, const float& lowest, const float& highest, const float& width)
+template <typename binningType, typename T>
+void packInTable(const float& valueToBin, T& table)
 {
-  if (separation <= lowest) {
-    table(underflow);
-  } else if (separation >= highest) {
-    table(overflow);
-  } else if (separation >= 0) {
-    table(static_cast<T>(separation / width + 0.5f));
+  if (valueToBin <= binningType::binned_min) {
+    table(binningType::underflowBin);
+  } else if (valueToBin >= binningType::binned_max) {
+    table(binningType::overflowBin);
+  } else if (valueToBin >= 0) {
+    table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) + 0.5f));
   } else {
-    table(static_cast<T>(separation / width - 0.5f));
+    table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) - 0.5f));
   }
 }
 
@@ -745,27 +745,31 @@ DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with 
 // Macro to convert the stored Nsigmas to floats
 #define DEFINE_UNWRAP_NSIGMA_COLUMN(COLUMN, COLUMN_NAME) \
   DECLARE_SOA_DYNAMIC_COLUMN(COLUMN, COLUMN_NAME,        \
-                             [](binned_nsigma_t nsigma_binned) -> float { return bin_width * static_cast<float>(nsigma_binned); });
+                             [](binning::binned_t nsigma_binned) -> float { return binning::bin_width * static_cast<float>(nsigma_binned); });
 
 namespace pidtof_tiny
 {
-typedef int8_t binned_nsigma_t;
-constexpr int nbins = (1 << 8 * sizeof(binned_nsigma_t)) - 2;
-constexpr binned_nsigma_t upper_bin = nbins >> 1;
-constexpr binned_nsigma_t lower_bin = -(nbins >> 1);
-constexpr float binned_max = 6.35;
-constexpr float binned_min = -6.35;
-constexpr float bin_width = (binned_max - binned_min) / nbins;
+struct binning {
+ public:
+  typedef int8_t binned_t;
+  static constexpr int nbins = (1 << 8 * sizeof(binned_t)) - 2;
+  static constexpr binned_t overflowBin = nbins >> 1;
+  static constexpr binned_t underflowBin = -(nbins >> 1);
+  static constexpr float binned_max = 6.35;
+  static constexpr float binned_min = -6.35;
+  static constexpr float bin_width = (binned_max - binned_min) / nbins;
+};
+
 // NSigma with reduced size 8 bit
-DECLARE_SOA_COLUMN(TOFNSigmaStoreEl, tofNSigmaStoreEl, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for electron
-DECLARE_SOA_COLUMN(TOFNSigmaStoreMu, tofNSigmaStoreMu, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for muon
-DECLARE_SOA_COLUMN(TOFNSigmaStorePi, tofNSigmaStorePi, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for pion
-DECLARE_SOA_COLUMN(TOFNSigmaStoreKa, tofNSigmaStoreKa, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for kaon
-DECLARE_SOA_COLUMN(TOFNSigmaStorePr, tofNSigmaStorePr, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for proton
-DECLARE_SOA_COLUMN(TOFNSigmaStoreDe, tofNSigmaStoreDe, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for deuteron
-DECLARE_SOA_COLUMN(TOFNSigmaStoreTr, tofNSigmaStoreTr, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for triton
-DECLARE_SOA_COLUMN(TOFNSigmaStoreHe, tofNSigmaStoreHe, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for helium3
-DECLARE_SOA_COLUMN(TOFNSigmaStoreAl, tofNSigmaStoreAl, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for alpha
+DECLARE_SOA_COLUMN(TOFNSigmaStoreEl, tofNSigmaStoreEl, binning::binned_t); //! Stored binned nsigma with the TOF detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaStoreMu, tofNSigmaStoreMu, binning::binned_t); //! Stored binned nsigma with the TOF detector for muon
+DECLARE_SOA_COLUMN(TOFNSigmaStorePi, tofNSigmaStorePi, binning::binned_t); //! Stored binned nsigma with the TOF detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaStoreKa, tofNSigmaStoreKa, binning::binned_t); //! Stored binned nsigma with the TOF detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaStorePr, tofNSigmaStorePr, binning::binned_t); //! Stored binned nsigma with the TOF detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaStoreDe, tofNSigmaStoreDe, binning::binned_t); //! Stored binned nsigma with the TOF detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaStoreTr, tofNSigmaStoreTr, binning::binned_t); //! Stored binned nsigma with the TOF detector for triton
+DECLARE_SOA_COLUMN(TOFNSigmaStoreHe, tofNSigmaStoreHe, binning::binned_t); //! Stored binned nsigma with the TOF detector for helium3
+DECLARE_SOA_COLUMN(TOFNSigmaStoreAl, tofNSigmaStoreAl, binning::binned_t); //! Stored binned nsigma with the TOF detector for alpha
 // NSigma with reduced size in [binned_min, binned_max] bin size bin_width
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaEl, tofNSigmaEl); //! Unwrapped (float) nsigma with the TOF detector for electron
 DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaMu, tofNSigmaMu); //! Unwrapped (float) nsigma with the TOF detector for muon
@@ -892,23 +896,28 @@ DECLARE_SOA_COLUMN(TPCNSigmaAl, tpcNSigmaAl, float); //! Nsigma separation with 
 
 namespace pidtpc_tiny
 {
-typedef int8_t binned_nsigma_t;
-constexpr int nbins = (1 << 8 * sizeof(binned_nsigma_t)) - 2;
-constexpr binned_nsigma_t upper_bin = nbins >> 1;
-constexpr binned_nsigma_t lower_bin = -(nbins >> 1);
-constexpr float binned_max = 6.35;
-constexpr float binned_min = -6.35;
-constexpr float bin_width = (binned_max - binned_min) / nbins;
+
+struct binning {
+ public:
+  typedef int8_t binned_t;
+  static constexpr int nbins = (1 << 8 * sizeof(binned_t)) - 2;
+  static constexpr binned_t overflowBin = nbins >> 1;
+  static constexpr binned_t underflowBin = -(nbins >> 1);
+  static constexpr float binned_max = 6.35;
+  static constexpr float binned_min = -6.35;
+  static constexpr float bin_width = (binned_max - binned_min) / nbins;
+};
+
 // NSigma with reduced size
-DECLARE_SOA_COLUMN(TPCNSigmaStoreEl, tpcNSigmaStoreEl, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for electron
-DECLARE_SOA_COLUMN(TPCNSigmaStoreMu, tpcNSigmaStoreMu, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for muon
-DECLARE_SOA_COLUMN(TPCNSigmaStorePi, tpcNSigmaStorePi, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for pion
-DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for kaon
-DECLARE_SOA_COLUMN(TPCNSigmaStorePr, tpcNSigmaStorePr, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for proton
-DECLARE_SOA_COLUMN(TPCNSigmaStoreDe, tpcNSigmaStoreDe, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for deuteron
-DECLARE_SOA_COLUMN(TPCNSigmaStoreTr, tpcNSigmaStoreTr, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for triton
-DECLARE_SOA_COLUMN(TPCNSigmaStoreHe, tpcNSigmaStoreHe, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for helium3
-DECLARE_SOA_COLUMN(TPCNSigmaStoreAl, tpcNSigmaStoreAl, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for alpha
+DECLARE_SOA_COLUMN(TPCNSigmaStoreEl, tpcNSigmaStoreEl, binning::binned_t); //! Stored binned nsigma with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCNSigmaStoreMu, tpcNSigmaStoreMu, binning::binned_t); //! Stored binned nsigma with the TPC detector for muon
+DECLARE_SOA_COLUMN(TPCNSigmaStorePi, tpcNSigmaStorePi, binning::binned_t); //! Stored binned nsigma with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binning::binned_t); //! Stored binned nsigma with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCNSigmaStorePr, tpcNSigmaStorePr, binning::binned_t); //! Stored binned nsigma with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCNSigmaStoreDe, tpcNSigmaStoreDe, binning::binned_t); //! Stored binned nsigma with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TPCNSigmaStoreTr, tpcNSigmaStoreTr, binning::binned_t); //! Stored binned nsigma with the TPC detector for triton
+DECLARE_SOA_COLUMN(TPCNSigmaStoreHe, tpcNSigmaStoreHe, binning::binned_t); //! Stored binned nsigma with the TPC detector for helium3
+DECLARE_SOA_COLUMN(TPCNSigmaStoreAl, tpcNSigmaStoreAl, binning::binned_t); //! Stored binned nsigma with the TPC detector for alpha
 // NSigma with reduced size in [binned_min, binned_max] bin size bin_width
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaEl, tpcNSigmaEl); //! Unwrapped (float) nsigma with the TPC detector for electron
 DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaMu, tpcNSigmaMu); //! Unwrapped (float) nsigma with the TPC detector for muon

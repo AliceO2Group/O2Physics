@@ -15,6 +15,12 @@ o2physics_add_dpl_workflow(central-event-filter-task
                            COMPONENT_NAME Analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
+o2physics_add_dpl_workflow(selected-bc-range-task
+                           SOURCES selectBCRange.cxx
+                           COMPONENT_NAME Analysis
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(nuclei-filter
                            SOURCES PWGLF/nucleiFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore

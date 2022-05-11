@@ -35,10 +35,10 @@ struct FilterCF {
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter centralityFilter = aod::cent::centV0M >= 0.0f && aod::cent::centV0M <= 100.0f;
+  Filter centralityFilter = aod::cent::centRun2V0M >= 0.0f && aod::cent::centRun2V0M <= 100.0f;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
   Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
-  Filter trackSelection = (aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
 
   OutputObj<TH3F> yields{TH3F("yields", "centrality vs pT vs eta", 100, 0, 100, 40, 0, 20, 100, -2, 2)};
   OutputObj<TH3F> etaphi{TH3F("etaphi", "centrality vs eta vs phi", 100, 0, 100, 100, -2, 2, 200, 0, 2 * M_PI)};
@@ -46,16 +46,16 @@ struct FilterCF {
   Produces<aod::CFCollisions> outputCollisions;
   Produces<aod::CFTracks> outputTracks;
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    LOGF(info, "Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.centV0M());
+    LOGF(info, "Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.centRun2V0M());
 
     if (!collision.alias()[kINT7] || !collision.sel7()) {
       return;
     }
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    outputCollisions(bc.runNumber(), collision.posZ(), collision.centV0M(), bc.timestamp());
+    outputCollisions(bc.runNumber(), collision.posZ(), collision.centRun2V0M(), bc.timestamp());
 
     for (auto& track : tracks) {
       uint8_t trackType = 0;
@@ -67,8 +67,8 @@ struct FilterCF {
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
 
-      yields->Fill(collision.centV0M(), track.pt(), track.eta());
-      etaphi->Fill(collision.centV0M(), track.eta(), track.phi());
+      yields->Fill(collision.centRun2V0M(), track.pt(), track.eta());
+      etaphi->Fill(collision.centRun2V0M(), track.eta(), track.phi());
     }
   }
 };

@@ -122,6 +122,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("Bc")) {
+    MCProng prong(1, {541}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Bc", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromJpsiFromBc")) {
+    MCProng prong(3, {13, 443, 541}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Muon pair from jpsi from Bc decays", {prong, prong}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromBc")) {
+    MCProng prong(2, {13, 541}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Muon from Bc decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("mumumuFromBc")) {
+    MCProng prongMuFromJpsi(3, {13, 443, 541}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongMuFromBc(2, {13, 541}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Trimuon from Bc decays", {prongMuFromJpsi, prongMuFromJpsi, prongMuFromBc}, {2, 2, 1});
+    return signal;
+  }
   if (!nameStr.compare("everythingFromBeauty")) {
     MCProng prong(2, {0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});

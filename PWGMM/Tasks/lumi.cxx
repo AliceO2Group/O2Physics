@@ -62,14 +62,14 @@ struct lumiTask {
                                        {"vertexx", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}},                                 //
                                        {"vertexy", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}},                                 //
                                        {"timestamp", "", {HistType::kTH1F, {{20000, 0, 2e7, "t"}}}},                             //
-                                       {"vertexx_timestamp", "", {HistType::kTH2F, {{1000, 0, 2e7, "t"}, {20000, -1, 1, "x"}}}}, //
-                                       {"vertexy_timestamp", "", {HistType::kTH2F, {{1000, 0, 2e7, "t"}, {20000, -1, 1, "y"}}}}, //
+                                       {"vertexx_timestamp", "", {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {20000, -1, 1, "x"}}}}, //
+                                       {"vertexy_timestamp", "", {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {20000, -1, 1, "y"}}}}, //
                                        {"chisquare", "", {HistType::kTH1F, {{1000, 0, 100, "#chi^{2}"}}}},                       //
 
                                        {"vertexx_Refitted", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}},                                 //
                                        {"vertexy_Refitted", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}},                                 //
-                                       {"vertexx_Refitted_timestamp", "", {HistType::kTH2F, {{1000, 0, 2e7, "t"}, {20000, -1, 1, "x"}}}}, //
-                                       {"vertexy_Refitted_timestamp", "", {HistType::kTH2F, {{1000, 0, 2e7, "t"}, {20000, -1, 1, "y"}}}}, //
+                                       {"vertexx_Refitted_timestamp", "", {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {20000, -1, 1, "x"}}}}, //
+                                       {"vertexy_Refitted_timestamp", "", {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {20000, -1, 1, "y"}}}}, //
                                        {"chisquare_Refitted", "", {HistType::kTH1F, {{1000, 0, 100, "#chi^{2}"}}}},                       //
 
                                        {"vertexx_Refitted_vertexx", "", {HistType::kTH2F, {{1000, -1, 1, "x"}, {1000, -1, 1, "rx"}}}}, //
@@ -103,7 +103,11 @@ struct lumiTask {
     int nContrib = 0;
     int nNonContrib = 0;
     for (const auto& unfiltered_track : unfiltered_tracks) {
-      if (!unfiltered_track.isPVContributor()) {
+      if (!unfiltered_track.hasITS()) {
+        nNonContrib++;
+        continue;
+      }
+      if (unfiltered_track.pt() < 0.8 || unfiltered_track.itsNCls() < 5) {
         nNonContrib++;
         continue;
       }
@@ -140,47 +144,26 @@ struct lumiTask {
     o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o MeanVertex constraint
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
-    double chi2 = 9999.;
-    for (const auto& track : tracks) {
-      bool recalc_imppar = false;
-      if (doPVrefit && PVrefit_doable) {
-        recalc_imppar = true;
+    double chi2;
+    double refitX;
+    double refitY;
 
-        auto it_trk = std::find(vec_globID_contr.begin(), vec_globID_contr.end(), track.globalIndex()); /// track global index
-        if (it_trk != vec_globID_contr.end()) {
-          const int entry = std::distance(vec_globID_contr.begin(), it_trk);
-          vec_useTrk_PVrefit[entry] = false;                                   /// remove the track from the PV refitting
-          auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
-          if (Pvtx_refitted.getChi2() < 0) {
-            recalc_imppar = false;
-          }
-          chi2 = Pvtx_refitted.getChi2();
-          vec_useTrk_PVrefit[entry] = true;
-
-          if (recalc_imppar) {
-            PVbase_recalculated.setX(Pvtx_refitted.getX());
-            PVbase_recalculated.setY(Pvtx_refitted.getY());
-            PVbase_recalculated.setZ(Pvtx_refitted.getZ());
-            PVbase_recalculated.setCov(Pvtx_refitted.getSigmaX2(), Pvtx_refitted.getSigmaXY(), Pvtx_refitted.getSigmaY2(), Pvtx_refitted.getSigmaXZ(), Pvtx_refitted.getSigmaYZ(), Pvtx_refitted.getSigmaZ2());
-          }
-        }
-      }
-      if (recalc_imppar) {
-        auto trackPar = getTrackPar(track);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-      }
+    if (doPVrefit && PVrefit_doable) {
+      auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
+      chi2 = Pvtx_refitted.getChi2();
+      refitX = Pvtx_refitted.getX();
+      refitY = Pvtx_refitted.getY();
     }
 
     //    LOGP(info,"chi2: {}, Ncont: {}, nonctr: {}",chi2,nContrib,nNonContrib);
 
     histos.fill(HIST("chisquare_Refitted"), chi2);
     if (nContrib > nContribMin && nContrib < nContribMax && (chi2 / nContrib) < 4.0 && chi2 > 0) {
-      histos.fill(HIST("vertexx_Refitted"), PVbase_recalculated.getX());
-      histos.fill(HIST("vertexy_Refitted"), PVbase_recalculated.getY());
+      histos.fill(HIST("vertexx_Refitted"), refitX);
+      histos.fill(HIST("vertexy_Refitted"), refitY);
 
-      histos.fill(HIST("vertexx_Refitted_timestamp"), bc.timestamp() - ftts, PVbase_recalculated.getX());
-      histos.fill(HIST("vertexy_Refitted_timestamp"), bc.timestamp() - ftts, PVbase_recalculated.getY());
+      histos.fill(HIST("vertexx_Refitted_timestamp"), bc.timestamp() - ftts, refitX);
+      histos.fill(HIST("vertexy_Refitted_timestamp"), bc.timestamp() - ftts, refitY);
     }
     histos.fill(HIST("chisquare"), collision.chi2());
     if (collision.chi2() / collision.numContrib() > 4)
@@ -196,8 +179,8 @@ struct lumiTask {
     histos.fill(HIST("vertexy_timestamp"), bc.timestamp() - ftts, collision.posY());
 
     if (nContrib > nContribMin && nContrib < nContribMax && (chi2 / nContrib) < 4.0 && chi2 > 0) {
-      histos.fill(HIST("vertexx_Refitted_vertexx"), collision.posX(), PVbase_recalculated.getX());
-      histos.fill(HIST("vertexy_Refitted_vertexy"), collision.posY(), PVbase_recalculated.getY());
+      histos.fill(HIST("vertexx_Refitted_vertexx"), collision.posX(), refitX);
+      histos.fill(HIST("vertexy_Refitted_vertexy"), collision.posY(), refitY);
     }
 
   } // need selections

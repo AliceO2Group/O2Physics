@@ -17,6 +17,11 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::soa;
+
 namespace o2::aod
 {
 namespace hash
@@ -25,65 +30,29 @@ DECLARE_SOA_COLUMN(Bin, bin, int);
 } // namespace hash
 DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
 
-using Hash = Hashes::iterator;
 } // namespace o2::aod
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::soa;
-
-struct HashTask {
-  // NOTE: The bins need to be ordered for the hash calculations to make sense
-  std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072f};
-  std::vector<float> yBins{-0.320f, -0.301f, -0.300f, 0.330f, 0.340f, 0.350f, 0.360f};
-  Produces<aod::Hashes> hashes;
-
-  // Calculate hash for an element based on 2 properties and their bins.
-  int getHash(std::vector<float> const& xBins, std::vector<float> const& yBins, float colX, float colY)
-  {
-    if (colX < xBins[0] || colY < yBins[0]) {
-      return -1;
-    }
-    for (unsigned int i = 1; i < xBins.size(); i++) {
-      if (colX < xBins[i]) {
-        for (unsigned int j = 1; j < yBins.size(); j++) {
-          if (colY < yBins[j]) {
-            return i + j * (xBins.size() + 1);
-          }
-        }
-        return -1;
-      }
-    }
-    return -1;
-  }
-
-  void process(aod::Collisions const& collisions)
-  {
-    for (auto& collision : collisions) {
-      int hash = getHash(xBins, yBins, collision.posX(), collision.posY());
-      LOGF(info, "Collision: %d (%f, %f, %f) hash: %d", collision.index(), collision.posX(), collision.posY(), collision.posZ(), hash);
-      hashes(hash);
-    }
-  }
-};
-
 struct MixedEventsPartitionedTracks {
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+  BinningPolicy<aod::collision::PosX, aod::collision::PosY> binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
+
   Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < 0.8f) && (aod::track::y > 1.0f);
   using myTracks = soa::Filtered<aod::Tracks>;
 
   Configurable<float> philow{"phiLow", 1.0f, "lowest phi"};
   Configurable<float> phiup{"phiUp", 2.0f, "highest phi"};
 
-  void process(aod::Hashes const& hashes, aod::Collisions& collisions, myTracks& tracks)
+  void process(aod::Collisions& collisions, myTracks& tracks)
   {
     collisions.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
     GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions
-    for (auto& [c1, c2] : selfCombinations("fBin", 5, -1, join(hashes, collisions), join(hashes, collisions))) {
-      // LOGF(info, "Collisions bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", c1.bin(), c1.index(), c1.posX(), c1.posY(), c1.posZ(), c2.index(), c2.posX(), c2.posY(), c2.posZ());
+    for (auto& [c1, c2] : selfCombinations(binningOnPositions, 5, -1, collisions, collisions)) {
+      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
+      LOGF(info, "Collisions bin: %d pair: %d (%f, %f, %f), %d (%f, %f, %f)", bin, c1.index(), c1.posX(), c1.posY(), c1.posZ(), c2.index(), c2.posX(), c2.posY(), c2.posZ());
 
       auto it1 = slicer.begin();
       auto it2 = slicer.begin();
@@ -127,46 +96,113 @@ struct MixedEventsPartitionedTracks {
   }
 };
 
-struct MixedEvents {
-  SameKindPair<aod::Hashes, aod::Collisions, aod::Tracks> pair{"fBin", 5, -1};
+// struct MixedEvents {
+//   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+//   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+//   BinningPolicy<aod::collision::PosX, aod::collision::PosY> binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
+//   SameKindPair<aod::Collisions, aod::Tracks> pair{binningOnPositions, 5, -1};
+//
+//   // Collisions must be first, not hashes!
+//   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
+//   {
+//     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+//
+//     for (auto& [c1, tracks1, c2, tracks2] : pair) {
+//       int bin = binningOnPositions.getBin({c1.posX(), c1.posY()};
+//       LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+//       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+//         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+//       }
+//     }
+//   }
+// };
+//
+// struct MixedEventsInsideProcess {
+//   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+//   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+//   BinningPolicy<aod::collision::PosX, aod::collision::PosY> binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
+//
+//   void process(aod::Collisions& collisions, aod::Tracks& tracks)
+//   {
+//     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+//
+//     auto tracksTuple = std::make_tuple(tracks);
+//     SameKindPair<aod::Collisions, aod::Tracks> pair{binningOnPositions, 5, -1, collisions, tracksTuple};
+//
+//     for (auto& [c1, tracks1, c2, tracks2] : pair) {
+//       int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
+//       LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+//       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+//         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.globalIndex(), t2.globalIndex(), c1.globalIndex(), c2.globalIndex());
+//       }
+//     }
+//   }
+// };
 
-  // Collisions must be first, not hashes!
-  void process(aod::Collisions const& collisions, aod::Hashes const& hashes, aod::Tracks const& tracks)
+struct HashTask {
+  std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072};
+  std::vector<float> yBins{-0.320f, -0.301f, -0.300f, 0.330f, 0.340f, 0.350f, 0.360};
+  Produces<aod::Hashes> hashes;
+
+  // Calculate hash for an element based on 2 properties and their bins.
+  int getHash(const std::vector<float>& xBins, const std::vector<float>& yBins, float colX, float colY)
   {
-    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+    // underflow
+    if (colX < xBins[0] || colY < yBins[0])
+      return -1;
 
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", c1.bin(), c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+    for (unsigned int i = 1; i < xBins.size(); i++) {
+      if (colX < xBins[i]) {
+        for (unsigned int j = 1; j < yBins.size(); j++) {
+          if (colY < yBins[j]) {
+            return i + j * (xBins.size() + 1);
+          }
+        }
+        // overflow for yBins only
+        return -1;
       }
+    }
+
+    // overflow
+    return -1;
+  }
+
+  void process(aod::Tracks const& tracks)
+  {
+    for (auto& track : tracks) {
+      int hash = getHash(xBins, yBins, track.x(), track.y());
+      LOGF(info, "Track: %d (%f, %f, %f) hash: %d", track.index(), track.x(), track.y(), track.z(), hash);
+      hashes(hash);
     }
   }
 };
 
-struct MixedEventsInsideProcess {
-  void process(aod::Collisions& collisions, aod::Hashes& hashes, aod::Tracks& tracks)
-  {
-    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
-
-    auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aod::Hashes, aod::Collisions, aod::Tracks> pair{"fBin", 5, -1, hashes, collisions, tracksTuple};
-
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", c1.bin(), c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.globalIndex(), t2.globalIndex(), c1.globalIndex(), c2.globalIndex());
-      }
-    }
-  }
-};
+//struct MixedEventsWithHashTask {
+//  NoBinningPolicy<aod::hash::Bin> hashBin;
+//  SameKindPair<aod::Collisions, aod::Tracks> pair{hashBin, 5, -1};
+//
+//  void process(aod::Collisions& collisions, aod::Tracks& tracks)
+//  {
+//    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+//
+//    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+//      int bin = hashBin.getBin({c1.posX(), c1.posY()});
+//      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+//      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+//        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.globalIndex(), t2.globalIndex(), c1.globalIndex(), c2.globalIndex());
+//      }
+//    }
+//  }
+//};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HashTask>(cfgc),
-    adaptAnalysisTask<MixedEvents>(cfgc),
-    adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
+    // To be enabled once new event mixing interface will be merged in O2
+    // adaptAnalysisTask<MixedEvents>(cfgc),
+    // adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
+    //adaptAnalysisTask<HashTask>(cfgc),
+    // adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
   };
 }

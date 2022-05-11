@@ -89,6 +89,28 @@ static const std::vector<std::string> pTBinLabelsTrack{};
 static const std::vector<std::string> cutVarLabelsTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
 } // namespace hf_cuts_single_track
 
+namespace hf_cuts_bdt_multiclass
+{
+static constexpr int npTBins = 1;
+static constexpr int nCutBDTScores = 3;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// common for any charm candidate
+// offset by 1 from the bin numbers in cuts array
+constexpr double pTBins[npTBins + 1] = {
+  0.,
+  1000.0};
+auto pTBinsVec = std::vector<double>{pTBins, pTBins + npTBins + 1};
+
+// default values for the cuts
+constexpr double cutsBDT[npTBins][nCutBDTScores] = {{0.1, 0.5, 0.5}};
+
+// row labels
+static const std::vector<std::string> pTBinLabels{};
+
+// column labels
+static const std::vector<std::string> cutBDTLabels = {"BDTbkg", "BDTprompt", "BDTnonprompt"};
+} // namespace hf_cuts_bdt_multiclass
+
 namespace hf_cuts_presel_2prong
 {
 static constexpr int npTBins = 2;

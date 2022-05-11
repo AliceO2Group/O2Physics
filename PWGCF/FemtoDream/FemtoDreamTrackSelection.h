@@ -160,7 +160,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   static int findSelectionIndex(const std::string_view& obs, std::string_view prefix = "")
   {
     for (int index = 0; index < kNtrackSelection; index++) {
-      std::string_view cmp{static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index])};
+      std::string comp = static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index]);
+      std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
     }
@@ -283,14 +284,14 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
     mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
     mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    mHistogramRegistry->add((folderName + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+    mHistogramRegistry->add((folderName + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
     mHistogramRegistry->add((folderName + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
     mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, 0, 10}});
-    mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+    mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
+    mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
     mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     mHistogramRegistry->add((folderName + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
@@ -344,63 +345,18 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* registry, const std::stri
 template <typename T>
 auto FemtoDreamTrackSelection::getNsigmaTPC(T const& track, o2::track::PID pid)
 {
-  switch (pid) {
-    case o2::track::PID::Electron:
-      return track.tpcNSigmaEl();
-      break;
-    case o2::track::PID::Muon:
-      return track.tpcNSigmaMu();
-      break;
-    case o2::track::PID::Pion:
-      return track.tpcNSigmaPi();
-      break;
-    case o2::track::PID::Kaon:
-      return track.tpcNSigmaKa();
-      break;
-    case o2::track::PID::Proton:
-      return track.tpcNSigmaPr();
-      break;
-    case o2::track::PID::Deuteron:
-      return track.tpcNSigmaDe();
-      break;
-    default:
-      return 999.f;
-      break;
-  }
+  return o2::aod::pidutils::tpcNSigma(pid, track);
 }
 
 template <typename T>
 auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
 {
   /// skip tracks without TOF signal
-  /// \todo not sure what the error flags mean...
-  if (track.tofSignal() <= 0.f || std::abs(track.tofSignal() - 99998) < 0.01 || std::abs(track.tofSignal() - 99999) < 0.01) {
+  if (!track.hasTOF()) {
     return 999.f;
   }
 
-  switch (pid) {
-    case o2::track::PID::Electron:
-      return track.tofNSigmaEl();
-      break;
-    case o2::track::PID::Muon:
-      return track.tofNSigmaMu();
-      break;
-    case o2::track::PID::Pion:
-      return track.tofNSigmaPi();
-      break;
-    case o2::track::PID::Kaon:
-      return track.tofNSigmaKa();
-      break;
-    case o2::track::PID::Proton:
-      return track.tofNSigmaPr();
-      break;
-    case o2::track::PID::Deuteron:
-      return track.tofNSigmaDe();
-      break;
-    default:
-      return 999.f;
-      break;
-  }
+  return o2::aod::pidutils::tofNSigma(pid, track);
 }
 
 template <typename T>
@@ -582,12 +538,12 @@ void FemtoDreamTrackSelection::fillQA(T const& track, std::string_view WhichDaug
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCdEdX"), track.tpcInnerParam(), track.tpcSignal());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_el"), track.tpcInnerParam(), track.tpcNSigmaEl());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_pi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_K"), track.tpcInnerParam(), track.tpcNSigmaKa());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_p"), track.tpcInnerParam(), track.tpcNSigmaPr());
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_d"), track.tpcInnerParam(), track.tpcNSigmaDe());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_K"), track.p(), track.tpcNSigmaKa());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_p"), track.p(), track.tpcNSigmaPr());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_pi"), track.p(), track.tofNSigmaPi());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/nSigmaTOF_K"), track.p(), track.tofNSigmaKa());

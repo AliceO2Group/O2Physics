@@ -104,6 +104,8 @@ struct strangenessFilter {
   Configurable<float> nsigmatof{"nsigmatof", 5, "N Sigmas TOF (OOB condition)"};
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
+  Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> globaltrk{"globaltrk", 1, "Apply global track selection"};
 
   // Selections criteria for tracks
   Configurable<float> hEta{"hEta", 0.8f, "Eta range for trigger particles"};
@@ -150,23 +152,20 @@ struct strangenessFilter {
   }
 
   // Filters
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cutzvertex);
-  Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (aod::track::isGlobalTrack == static_cast<uint8_t>(1u));
-  // Filter preFilterCasc = nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
+  Filter trackFilter = (nabs(aod::track::eta) < hEta) && (aod::track::pt > hMinPt) && (!globaltrk || requireGlobalTrackInFilter());
 
   // Tables
-  using CollisionCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator;
-  using MCCollisionCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
+  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr>;
-  using MCDaughterTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::McTrackLabels>;
   using Cascades = aod::CascDataExt;
 
   ////////////////////////////////////////////////////////
   ////////// Strangeness Filter - Run 2 conv /////////////
   ////////////////////////////////////////////////////////
 
-  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, DaughterTracks& dtracks)
+  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
     if (kint7 && !collision.alias()[kINT7]) {
       return;
@@ -174,10 +173,16 @@ struct strangenessFilter {
     if (sel7 && !collision.sel7()) {
       return;
     }
+    if (sel8 && !collision.sel8()) {
+      return;
+    }
+
+    if (TMath::Abs(collision.posZ()) > cutzvertex)
+      return;
 
     QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
-    QAHistos.fill(HIST("hCentrality"), collision.centV0M());
-    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centV0M());
+    QAHistos.fill(HIST("hCentrality"), collision.centRun2V0M());
+    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centRun2V0M());
     hProcessedEvents->Fill(0.5);
 
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi
@@ -198,10 +203,14 @@ struct strangenessFilter {
 
     for (auto& casc : fullCasc) { // loop over cascades
 
-      /*auto v0 = casc.v0_as<aod::V0Datas>();
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0index.has_v0Data())) {
+        continue; // skip those cascades for which V0 doesn't exist
+      }
+      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachelor = casc.bachelor_as<DaughterTracks>();
       auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();*/
+      auto negdau = v0.negTrack_as<DaughterTracks>();
 
       bool isXi = false;
       bool isXiYN = false;
@@ -226,7 +235,7 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
         };
-        /*if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
+        if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
@@ -241,7 +250,7 @@ struct strangenessFilter {
           continue;
         };
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());*/
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());
       } else {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
@@ -249,7 +258,7 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
           continue;
         };
-        /*if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
+        if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
           continue;
         };
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpc) {
@@ -264,10 +273,10 @@ struct strangenessFilter {
           continue;
         };
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());*/
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());
       }
       // this selection differes for Xi and Omegas:
-      /*if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
+      if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
         continue;
       };
       if (TMath::Abs(posdau.eta()) > etadau) {
@@ -278,7 +287,7 @@ struct strangenessFilter {
       };
       if (TMath::Abs(bachelor.eta()) > etadau) {
         continue;
-      };*/
+      };
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
       };
@@ -378,47 +387,47 @@ struct strangenessFilter {
     // Fill centrality dependent histos
     if (keepEvent[0]) {
       hProcessedEvents->Fill(1.5);
-      EventsvsMultiplicity.fill(HIST("OmegaEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("OmegaEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[1]) {
       hProcessedEvents->Fill(2.5);
-      EventsvsMultiplicity.fill(HIST("hXiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("hXiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[2]) {
       hProcessedEvents->Fill(3.5);
-      EventsvsMultiplicity.fill(HIST("2XiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("2XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[3]) {
       hProcessedEvents->Fill(4.5);
-      EventsvsMultiplicity.fill(HIST("3XiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("3XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[4]) {
       hProcessedEvents->Fill(5.5);
-      EventsvsMultiplicity.fill(HIST("4XiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("4XiEventsvsMultiplicity"), collision.centRun2V0M());
     }
     if (keepEvent[5]) {
       hProcessedEvents->Fill(6.5);
-      EventsvsMultiplicity.fill(HIST("SingleXiEventsvsMultiplicity"), collision.centV0M());
+      EventsvsMultiplicity.fill(HIST("SingleXiEventsvsMultiplicity"), collision.centRun2V0M());
     }
 
     // Filling the table
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
   }
   //
-  PROCESS_SWITCH(strangenessFilter, processRun2, "Process data", true);
+  PROCESS_SWITCH(strangenessFilter, processRun2, "Process data Run2", true);
 
   //////////////////////////////////////////////////////
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3MC(MCCollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0Datas const& V0s, MCDaughterTracks& dtracks)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, aod::V0sLinked const&, aod::V0Datas const& v0data, DaughterTracks& dtracks)
   {
-    if (kint7 && !collision.alias()[kINT7]) {
+    if (sel8 && !collision.sel8()) {
       return;
     }
-    if (sel7 && !collision.sel7()) {
+
+    if (TMath::Abs(collision.posZ()) > cutzvertex)
       return;
-    }
 
     QAHistos.fill(HIST("hVtxZAfterSel"), collision.posZ());
     hProcessedEvents->Fill(0.5);
@@ -441,10 +450,14 @@ struct strangenessFilter {
 
     for (auto& casc : fullCasc) { // loop over cascades
 
-      /*auto v0 = casc.v0_as<aod::V0Datas>();
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0index.has_v0Data())) {
+        continue; // skip those cascades for which V0 doesn't exist
+      }
+      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachelor = casc.bachelor_as<DaughterTracks>();
       auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();*/
+      auto negdau = v0.negTrack_as<DaughterTracks>();
 
       bool isXi = false;
       bool isXiYN = false;
@@ -469,7 +482,7 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
           continue;
         };
-        /*if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
+        if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpc) {
           continue;
         };
         if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpc) {
@@ -484,7 +497,7 @@ struct strangenessFilter {
           continue;
         };
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), negdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());*/
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), posdau.tofNSigmaPi());
       } else {
         if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
           continue;
@@ -492,7 +505,7 @@ struct strangenessFilter {
         if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
           continue;
         };
-        /*if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
+        if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpc) {
           continue;
         };
         if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpc) {
@@ -507,10 +520,10 @@ struct strangenessFilter {
           continue;
         };
         QAHistos.fill(HIST("hTOFnsigmaPrAfterSel"), posdau.tofNSigmaPr());
-        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());*/
+        QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());
       }
       // this selection differes for Xi and Omegas:
-      /*if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
+      if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
         continue;
       };
       if (TMath::Abs(posdau.eta()) > etadau) {
@@ -521,7 +534,7 @@ struct strangenessFilter {
       };
       if (TMath::Abs(bachelor.eta()) > etadau) {
         continue;
-      };*/
+      };
       if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
         continue;
       };
@@ -642,7 +655,7 @@ struct strangenessFilter {
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
   }
   //
-  PROCESS_SWITCH(strangenessFilter, processRun3MC, "Process Run3 MC", true);
+  PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
