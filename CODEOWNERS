@@ -13,6 +13,7 @@
 
 * @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
+/Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
 /DPG @alibuild @mario-krueger
 /EventFiltering @alibuild @mpuccio
@@ -28,5 +29,3 @@
 /PWGLF @alibuild @njacazio
 /PWGMM @alibuild @aalkin
 /Tools/PIDML @alibuild @saganatt
-/Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
-
