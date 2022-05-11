@@ -41,14 +41,14 @@ struct HfCandidateCreatorDstar {
   double massD0 = RecoDecay::getMassPDG(pdg::Code::kD0);
 
   void process(aod::Collisions const&,
-               aod::HfDstar const& rowsTrackIndexDstar,
+               aod::HfDstars const& rowsTrackIndexDstar,
                aod::BigTracks const&,
-               aod::Hf2Prong const&)
+               aod::Hf2Prongs const&)
   {
     // loop over pairs of prong indices
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
       auto trackPi = rowTrackIndexDstar.index0_as<aod::BigTracks>();
-      auto prongD0 = rowTrackIndexDstar.indexD0_as<aod::Hf2Prong>();
+      auto prongD0 = rowTrackIndexDstar.indexD0_as<aod::Hf2Prongs>();
       auto trackD0Prong0 = prongD0.index0_as<aod::BigTracks>();
       auto trackD0Prong1 = prongD0.index1_as<aod::BigTracks>();
       // auto collisionPiId = trackPi.collisionId();

@@ -232,8 +232,8 @@ struct AddCollisionId {
   Produces<o2::aod::Colls2Prong> colls2Prong;
   Produces<o2::aod::Colls3Prong> colls3Prong;
 
-  void process(aod::Hf2Prong const& cand2Prongs,
-               aod::Hf3Prong const& cand3Prongs,
+  void process(aod::Hf2Prongs const& cand2Prongs,
+               aod::Hf3Prongs const& cand3Prongs,
                aod::Tracks const&)
   {
     for (const auto& cand2Prong : cand2Prongs) {
@@ -660,8 +660,8 @@ struct HfFilter { // Main struct for HF triggers
     return kStar;
   } // float computeRelativeMomentum(const T& track, const std::array<float, 3>& CharmCandMomentum, const float& CharmMass)
 
-  using HfTrackIndexProng2withColl = soa::Join<aod::Hf2Prong, aod::Colls2Prong>;
-  using HfTrackIndexProng3withColl = soa::Join<aod::Hf3Prong, aod::Colls3Prong>;
+  using HfTrackIndexProng2withColl = soa::Join<aod::Hf2Prongs, aod::Colls2Prong>;
+  using HfTrackIndexProng3withColl = soa::Join<aod::Hf3Prongs, aod::Colls3Prong>;
   using BigTracksWithProtonPID = soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using BigTracksMCPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::BigTracksMC>;
 
@@ -960,8 +960,8 @@ struct HfFilter { // Main struct for HF triggers
   }
 
   void
-    processTraining(aod::Hf2Prong const& cand2Prongs,
-                    aod::Hf3Prong const& cand3Prongs,
+    processTraining(aod::Hf2Prongs const& cand2Prongs,
+                    aod::Hf3Prongs const& cand3Prongs,
                     aod::McParticles const& particlesMC,
                     BigTracksMCPID const&)
   {
