@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Example task for event mixing.
+/// \brief Example tasks for event mixing.
 /// \author
 /// \since
 
@@ -39,8 +39,8 @@ struct MixedEvents {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins}, true};                                    // true is for 'ignore overflows' (true by default)
+  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
@@ -48,12 +48,12 @@ struct MixedEvents {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d) / %d, tracks: (%d, %d) / %d", bin, c1.globalIndex(), c2.globalIndex(), collisions.size(), tracks1.size(), tracks2.size(), tracks.size());
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
       if (count == 100)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
@@ -76,16 +76,16 @@ struct MixedEventsInsideProcess {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
 
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, collisions, tracksTuple};
+    SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, collisions, tracksTuple}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
       if (count == 10)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
@@ -104,8 +104,8 @@ struct MixedEventsFilteredTracks {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins}, true};                                 // true is for 'ignore overflows' (true by default)
+  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, myTracks const& tracks)
   {
@@ -113,49 +113,15 @@ struct MixedEventsFilteredTracks {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
       if (count == 100)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) (%.2f, %.2f) < 1.0f from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), t1.eta(), t2.eta(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
-        trackCount++;
-        if (trackCount == 10)
-          break;
-      }
-    }
-  }
-};
-
-struct MixedEventsEmptyTables {
-  // Dummy filter to enforce empty tables
-  Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < -0.8f);
-  using myTracks = soa::Filtered<aod::Tracks>;
-
-  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-  using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1};
-
-  void process(aod::Collisions const& collisions, myTracks const& tracks)
-  {
-    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
-
-    int count = 0;
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
-      count++;
-      if (count == 10)
-        break;
-
-      int trackCount = 0;
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
         trackCount++;
         if (trackCount == 10)
           break;
@@ -169,8 +135,8 @@ struct MixedEventsJoinedCollisions {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins}, true};                                  // true is for 'ignore overflows' (true by default)
+  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aodCollisions& collisions, aod::Tracks const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -178,42 +144,12 @@ struct MixedEventsJoinedCollisions {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
       if (count == 10)
         break;
 
-      int trackCount = 0;
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
-        trackCount++;
-        if (trackCount == 10)
-          break;
-      }
-    }
-  }
-};
-
-struct MixedEventsJoinedTracks {
-  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-  using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, aod::FullTracks, BinningType> pair{binningOnPositions, 5, -1};
-
-  void process(aod::Collisions const& collisions, aod::FullTracks const& tracks)
-  {
-    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
-
-    int count = 0;
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d) / %d, tracks: (%d, %d) / %d", bin, c1.globalIndex(), c2.globalIndex(), collisions.size(), tracks1.size(), tracks2.size(), tracks.size());
-      count++;
-      if (count == 100)
-        break;
-
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
@@ -238,12 +174,12 @@ struct MixedEventsVariousKinds {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d) / %d, tracks: (%d, %d) / (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), collisions.size(), tracks1.size(), tracks2.size(), tracks.size(), v0s.size());
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
       if (count == 100)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
@@ -269,12 +205,12 @@ struct MixedEventsTriple {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2, c3, tracks3] : triple) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY(), c1.posZ()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d, %d) / %d, tracks: (%d, %d, %d) / %d", bin, c1.globalIndex(), c2.globalIndex(), c3.globalIndex(), collisions.size(), tracks1.size(), tracks2.size(), tracks3.size(), tracks.size());
+      LOGF(info, "Mixed event collisions: (%d, %d, %d)", c1.globalIndex(), c2.globalIndex(), c3.globalIndex());
       count++;
       if (count == 100)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2, t3] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2, tracks3))) {
         LOGF(info, "Mixed event tracks triple: (%d, %d, %d) from events (%d, %d, %d), track event: (%d, %d, %d)", t1.index(), t2.index(), t3.index(), c1.index(), c2.index(), c3.index(), t1.collision().index(), t2.collision().index(), t3.collision().index());
@@ -300,12 +236,12 @@ struct MixedEventsTripleVariousKinds {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2, c3, tracks3] : triple) {
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY(), c1.posZ()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d, %d) / %d, tracks: (%d, %d, %d) / (%d, %d, %d)", bin, c1.globalIndex(), c2.globalIndex(), c3.globalIndex(), collisions.size(), tracks1.size(), tracks2.size(), tracks3.size(), tracks.size(), v0s.size(), tracks.size());
+      LOGF(info, "Mixed event collisions: (%d, %d, %d)", c1.globalIndex(), c2.globalIndex(), c3.globalIndex());
       count++;
       if (count == 100)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2, t3] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2, tracks3))) {
         LOGF(info, "Mixed event tracks triple: (%d, %d, %d) from events (%d, %d, %d), track event: (%d, %d, %d)", t1.index(), t2.index(), t3.index(), c1.index(), c2.index(), c3.index(), t1.collision().index(), t2.collision().index(), t3.collision().index());
@@ -316,35 +252,6 @@ struct MixedEventsTripleVariousKinds {
     }
   }
 };
-
-// It should not compile
-// struct MixedEventsBadSubscription {
-//  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-//  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-//  using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-//  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-//  SameKindPair<aod::Collisions, aod::Cascades, BinningType> pair{binningOnPositions, 5, -1};
-//
-//  void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
-//  {
-//    int count = 0;
-//    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-//      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-//      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
-//      count++;
-//      if (count == 10)
-//        break;
-//
-//      int trackCount = 0;
-//      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-//        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
-//        trackCount++;
-//        if (trackCount == 10)
-//          break;
-//      }
-//    }
-//  }
-//};
 
 struct HashTask {
   std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072};
@@ -387,7 +294,7 @@ struct HashTask {
 struct MixedEventsWithHashTask {
   using myCollisions = soa::Join<aod::Hashes, aod::Collisions>;
   NoBinningPolicy<aod::hash::Bin> hashBin;
-  SameKindPair<myCollisions, aod::Tracks, NoBinningPolicy<aod::hash::Bin>> pair{hashBin, 5, -1};
+  SameKindPair<myCollisions, aod::Tracks, NoBinningPolicy<aod::hash::Bin>> pair{hashBin, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(myCollisions& collisions, aod::Tracks& tracks)
   {
@@ -395,12 +302,12 @@ struct MixedEventsWithHashTask {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      int bin = hashBin.getBin({c1.bin()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size());
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
       count++;
       if (count == 10)
         break;
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
       int trackCount = 0;
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.globalIndex(), t2.globalIndex(), c1.globalIndex(), c2.globalIndex());
@@ -423,8 +330,8 @@ struct MixedEventsPartitionedTracks {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = BinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1};
+  BinningType binningOnPositions{{xBins, yBins}, true};                                 // true is for 'ignore overflows' (true by default)
+  SameKindPair<aod::Collisions, myTracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, myTracks const& tracks)
   {
@@ -440,9 +347,9 @@ struct MixedEventsPartitionedTracks {
       rightPhi1.bindTable(tracks1);
       rightPhi2.bindTable(tracks2);
 
-      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
-      LOGF(info, "Mixed event bin: %d collisions: (%d, %d), tracks: (%d, %d), left phis: (%d, %d), right phis: (%d, %d)", bin, c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), leftPhi1.size(), leftPhi2.size(), rightPhi1.size(), rightPhi2.size());
+      LOGF(info, "Mixed event collisions: (%d, %d), tracks: (%d, %d), left phis: (%d, %d), right phis: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), leftPhi1.size(), leftPhi2.size(), rightPhi1.size(), rightPhi2.size());
 
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two partitions from two collisions
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(leftPhi1, leftPhi2))) {
         if (t1.phi() >= (float)philow || t2.phi() >= (float)philow) {
           LOGF(info, "WRONG Mixed event left tracks pair: (%d, %d) from events (%d, %d), phi: (%.3f. %.3f) < %.3f", t1.index(), t2.index(), c1.index(), c2.index(), t1.phi(), t2.phi(), (float)philow);
@@ -463,13 +370,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<MixedEvents>(cfgc),
     adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
     adaptAnalysisTask<MixedEventsFilteredTracks>(cfgc),
-    adaptAnalysisTask<MixedEventsEmptyTables>(cfgc),
     adaptAnalysisTask<MixedEventsJoinedCollisions>(cfgc),
-    adaptAnalysisTask<MixedEventsJoinedTracks>(cfgc),
     adaptAnalysisTask<MixedEventsVariousKinds>(cfgc),
     adaptAnalysisTask<MixedEventsTriple>(cfgc),
     adaptAnalysisTask<MixedEventsTripleVariousKinds>(cfgc),
-    // adaptAnalysisTask<MixedEventsBadSubscription>(cfgc), // Should not compile
     adaptAnalysisTask<HashTask>(cfgc),
     adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
