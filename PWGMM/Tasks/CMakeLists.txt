@@ -47,8 +47,6 @@ o2physics_add_dpl_workflow(lumi
                                           O2::DetectorsBase
                                           O2::DetectorsCommonDataFormats
                                           O2::DetectorsVertexing
-<<<<<<< HEAD
-=======
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(assessment-mft
