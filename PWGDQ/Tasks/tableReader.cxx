@@ -363,7 +363,7 @@ struct AnalysisEventMixing {
   std::vector<std::vector<TString>> fMuonHistNames;
   std::vector<std::vector<TString>> fTrackMuonHistNames;
 
-  NoBinningPolicy<aod::reducedevent::MixingHash> hashBin;
+  NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
 
   void init(o2::framework::InitContext& context)
   {
