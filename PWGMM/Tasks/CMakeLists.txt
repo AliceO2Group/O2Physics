@@ -52,5 +52,4 @@ o2physics_add_dpl_workflow(lumi
 o2physics_add_dpl_workflow(assessment-mft
                     SOURCES assessment-mft.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
->>>>>>> fc7f171e63b127a9a19223976e0edd7dae36f9c1
                     COMPONENT_NAME Analysis)
