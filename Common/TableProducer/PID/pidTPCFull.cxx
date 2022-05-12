@@ -260,8 +260,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tpcPidFull>(cfgc)};
   if (cfgc.options().get<int>("add-qa")) {
-    workflow.push_back(adaptAnalysisTask<tpcPidFullQa>(cfgc));
-    workflow.push_back(adaptAnalysisTask<tpcPidFullQaWTof>(cfgc));
+    workflow.push_back(adaptAnalysisTask<tpcPidQa>(cfgc));
   }
   return workflow;
 }

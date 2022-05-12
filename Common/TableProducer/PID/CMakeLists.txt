@@ -53,6 +53,11 @@ o2physics_add_dpl_workflow(pid-tpc-full
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-tpc-qa
+                    SOURCES qaTPCMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tpc-qa-mc
                     SOURCES qaTPCMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
