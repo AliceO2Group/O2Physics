@@ -12,11 +12,19 @@
 ///
 /// \file   qaTOF.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Header file for QA tasks of the TOF
+/// \brief  Header file for QA tasks of the TOF PID quantities
 ///
 
+#include "Common/Core/PID/PIDResponse.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::track;
 
 /// Task to produce the TOF QA plots
 struct tofPidQa {
@@ -114,11 +122,12 @@ struct tofPidQa {
     h->GetXaxis()->SetBinLabel(3, "Passed mult.");
     h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
 
-    h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0, 10, "Selection passed"}});
+    h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "isGlobalTrack");
     h->GetXaxis()->SetBinLabel(3, "hasITS");
-    h->GetXaxis()->SetBinLabel(4, "hasTOF");
+    h->GetXaxis()->SetBinLabel(4, "hasTPC");
+    h->GetXaxis()->SetBinLabel(5, "hasTOF");
 
     histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
     h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
@@ -148,8 +157,7 @@ struct tofPidQa {
   void fillParticleHistos(const T& t, const float& tof)
   {
     if (applyRapidityCut) {
-      const float y = TMath::ASinH(t.pt() / TMath::Sqrt(PID::getMass2(id) + t.pt() * t.pt()) * TMath::SinH(t.eta()));
-      if (abs(y) > 0.5) {
+      if (abs(t.rapidity(PID::getMass(id))) > 0.5) {
         return;
       }
     }
@@ -221,11 +229,57 @@ struct tofPidQa {
     return true;
   }
 
+  template <typename CollisionType, typename TrackType>
+  bool isTrackSelected(const CollisionType& collision, const TrackType& track, const bool fillHistograms = false)
+  {
+    if (fillHistograms) {
+      histos.fill(HIST("event/trackselection"), 1.f);
+    }
+    if (!track.isGlobalTrack()) { // Skipping non global tracks
+      return false;
+    }
+    if (fillHistograms) {
+      histos.fill(HIST("event/trackselection"), 2.f);
+    }
+    if (!track.hasITS()) { // Skipping tracks without ITS
+      return false;
+    }
+    if (fillHistograms) {
+      histos.fill(HIST("event/trackselection"), 3.f);
+    }
+    if (!track.hasTPC()) { // Skipping tracks without TPC
+      return false;
+    }
+    if (fillHistograms) {
+      histos.fill(HIST("event/trackselection"), 4.f);
+    }
+    if (!track.hasTOF()) { // Skipping tracks without TOF
+      return false;
+    }
+    if (fillHistograms) {
+      histos.fill(HIST("event/trackselection"), 5.f);
+      histos.fill(HIST("event/particlehypo"), track.pidForTracking());
+      histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
+      histos.fill(HIST("event/pexp"), track.p(), track.tofExpMom());
+      histos.fill(HIST("event/eta"), track.eta());
+      histos.fill(HIST("event/phi"), track.phi());
+      histos.fill(HIST("event/etaphi"), track.eta(), track.phi());
+      histos.fill(HIST("event/length"), track.length());
+      histos.fill(HIST("event/pt"), track.pt());
+      histos.fill(HIST("event/p"), track.p());
+      // histos.fill(HIST("event/ptreso"), track.p(), track.sigma1Pt() * track.pt() * track.pt());
+    }
+    return true;
+  }
+
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   void process(CollisionCandidate const& collision,
                soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks)
   {
     isEventSelected(collision, tracks, true);
+    for (auto t : tracks) {
+      isTrackSelected(collision, t, true);
+    }
   }
 
   template <o2::track::PID::ID id, typename TrackType>
@@ -238,32 +292,11 @@ struct tofPidQa {
     const float collisionTime_ps = collision.collisionTime() * 1000.f;
 
     for (auto t : tracks) {
-      histos.fill(HIST("event/trackselection"), 0.5f);
-      if (!t.isGlobalTrack()) { // Skipping non global tracks
+      if (!isTrackSelected(collision, t)) {
         continue;
       }
-      histos.fill(HIST("event/trackselection"), 1.5f);
-      if (!t.hasITS()) { // Skipping tracks without ITS
-        continue;
-      }
-      histos.fill(HIST("event/trackselection"), 2.5f);
-      if (!t.hasTOF()) { // Skipping tracks without TOF
-        continue;
-      }
-      histos.fill(HIST("event/trackselection"), 3.5f);
 
       const float tof = t.tofSignal() - collisionTime_ps;
-      histos.fill(HIST("event/particlehypo"), t.pidForTracking());
-      histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
-      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom());
-      histos.fill(HIST("event/eta"), t.eta());
-      histos.fill(HIST("event/phi"), t.phi());
-      histos.fill(HIST("event/etaphi"), t.eta(), t.phi());
-      histos.fill(HIST("event/length"), t.length());
-      histos.fill(HIST("event/pt"), t.pt());
-      histos.fill(HIST("event/p"), t.p());
-      // histos.fill(HIST("event/ptreso"), t.p(), t.sigma1Pt() * t.pt() * t.pt());
-      //
       fillParticleHistos<id>(t, tof);
     }
   }

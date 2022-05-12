@@ -13,23 +13,18 @@
 /// \file   pidTOFFull.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TOF split for each particle.
-///         The event time maker can be used to produce event TOF times.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 #include "qaTOF.h"
-#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
