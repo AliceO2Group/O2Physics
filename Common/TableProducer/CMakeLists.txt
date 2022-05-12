@@ -74,8 +74,3 @@ o2physics_add_dpl_workflow(calo-clusters
                     SOURCES caloClusterProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsPHOS O2::PHOSBase O2::PHOSReconstruction                                     
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(particles-to-tracks
-                    SOURCES particles2tracks.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)

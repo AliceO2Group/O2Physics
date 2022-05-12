@@ -20,7 +20,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 
-#include "Common/DataModel/Index.h"
+#include "Index.h"
 
 using namespace o2;
 using namespace o2::framework;

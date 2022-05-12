@@ -24,7 +24,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/MathConstants.h"
-#include "Common/DataModel/Index.h"
+#include "Index.h"
 #include "TDatabasePDG.h"
 
 using namespace o2;
