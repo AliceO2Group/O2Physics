@@ -274,7 +274,7 @@ struct tofPidQa {
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks)
+               soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection> const& tracks)
   {
     isEventSelected(collision, tracks, true);
     for (auto t : tracks) {
