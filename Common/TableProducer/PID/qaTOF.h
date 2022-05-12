@@ -176,11 +176,11 @@ struct tofPidQa {
     }
   }
 
-  template <typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& tracks, const bool fillHistograms = false)
+  template <bool fillHistograms, typename CollisionType, typename TrackType>
+  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
   {
 
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/evsel"), 1);
     }
     if (applyEvSel == 1) {
@@ -193,14 +193,14 @@ struct tofPidQa {
       }
     }
 
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/evsel"), 2);
     }
 
     // Computing Multiplicity first
     float ntracks = 0;
     int tofmult = 0;
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       for (auto t : tracks) {
         if (applyTrackCut && !t.isGlobalTrack()) {
           continue;
@@ -216,7 +216,7 @@ struct tofPidQa {
     if (abs(collision.posZ()) > 10.f) {
       return false;
     }
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/evsel"), 4);
       histos.fill(HIST("event/vertexz"), collision.posZ());
       histos.fill(HIST("event/trackmultiplicity"), ntracks);
@@ -229,34 +229,34 @@ struct tofPidQa {
     return true;
   }
 
-  template <typename CollisionType, typename TrackType>
-  bool isTrackSelected(const CollisionType& collision, const TrackType& track, const bool fillHistograms = false)
+  template <bool fillHistograms, typename CollisionType, typename TrackType>
+  bool isTrackSelected(const CollisionType& collision, const TrackType& track)
   {
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 1.f);
     }
     if (!track.isGlobalTrack()) { // Skipping non global tracks
       return false;
     }
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 2.f);
     }
     if (!track.hasITS()) { // Skipping tracks without ITS
       return false;
     }
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 3.f);
     }
     if (!track.hasTPC()) { // Skipping tracks without TPC
       return false;
     }
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 4.f);
     }
     if (!track.hasTOF()) { // Skipping tracks without TOF
       return false;
     }
-    if (fillHistograms) {
+    if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 5.f);
       histos.fill(HIST("event/particlehypo"), track.pidForTracking());
       histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
@@ -276,9 +276,9 @@ struct tofPidQa {
   void process(CollisionCandidate const& collision,
                soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection> const& tracks)
   {
-    isEventSelected(collision, tracks, true);
+    isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
-      isTrackSelected(collision, t, true);
+      isTrackSelected<true>(collision, t);
     }
   }
 
@@ -286,13 +286,13 @@ struct tofPidQa {
   void processSingleParticle(CollisionCandidate const& collision,
                              TrackType const& tracks)
   {
-    if (!isEventSelected(collision, tracks)) {
+    if (!isEventSelected<false>(collision, tracks)) {
       return;
     }
     const float collisionTime_ps = collision.collisionTime() * 1000.f;
 
     for (auto t : tracks) {
-      if (!isTrackSelected(collision, t)) {
+      if (!isTrackSelected<false>(collision, t)) {
         continue;
       }
 
