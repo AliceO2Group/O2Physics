@@ -73,7 +73,9 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
                             CPAV0Min(9999999.),
                             TranRadV0Min(9999999.),
                             TranRadV0Max(-9999999.),
-                            DecVtxMax(-9999999.){};
+                            DecVtxMax(-9999999.),
+                            fInvMassLowLimit(1.10),
+                            fInvMassUpLimit(1.13){};
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -150,6 +152,15 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
     return outString;
   }
 
+  /// Set limit for the selection on the invariant mass
+  /// \param lowLimit Lower limit for the invariant mass distribution
+  /// \param upLimit Upper limit for the invariant mass distribution
+  void setInvMassLimits(float lowLimit, float upLimit)
+  {
+    fInvMassLowLimit = lowLimit;
+    fInvMassUpLimit = upLimit;
+  }
+
  private:
   int nPtV0MinSel;
   int nPtV0MaxSel;
@@ -165,6 +176,10 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
   float TranRadV0Min;
   float TranRadV0Max;
   float DecVtxMax;
+
+  float fInvMassLowLimit;
+  float fInvMassUpLimit;
+
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
 
@@ -263,6 +278,13 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   const float tranRad = v0.v0radius();
   const float dcaDaughv0 = v0.dcaV0daughters();
   const float cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+
+  const float invMassLambda = v0.mLambda();
+  const float invMassAntiLambda = v0.mAntiLambda();
+
+  if ((invMassLambda < fInvMassLowLimit and invMassLambda > fInvMassUpLimit) and (invMassAntiLambda < fInvMassLowLimit and invMassAntiLambda > fInvMassUpLimit)) {
+    return false;
+  }
 
   if (nPtV0MinSel > 0 && pT < pTV0Min) {
     return false;
