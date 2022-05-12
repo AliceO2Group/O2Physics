@@ -12,7 +12,7 @@
 ///
 /// \file   qaTOF.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Header file for QA tasks of the TOF
+/// \brief  Implementation for QA tasks of the TOF PID quantities
 ///
 
 #include "Framework/AnalysisTask.h"

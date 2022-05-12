@@ -71,28 +71,28 @@ struct tofPidQa {
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
-  template <uint8_t i>
+  template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
     // Exp signal
-    const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s) (ps)", pT[i])};
-    histos.add(hexpected[i].data(), "", kTH2F, {pAxis, expAxis});
+    const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s) (ps)", pT[id])};
+    histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
 
     // Signal - Expected signal
-    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("t-t_{ev}-t_{exp}(%s) (ps)", pT[i])};
-    histos.add(hexpected_diff[i].data(), "", kTH2F, {pAxis, deltaAxis});
+    const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("t-t_{ev}-t_{exp}(%s) (ps)", pT[id])};
+    histos.add(hexpected_diff[id].data(), "", kTH2F, {pAxis, deltaAxis});
 
     // Exp Sigma
-    const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TOF}(%s) (ps)", pT[i])};
-    histos.add(hexpsigma[i].data(), "", kTH2F, {pAxis, expSigmaAxis});
+    const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TOF}(%s) (ps)", pT[id])};
+    histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
 
     // NSigma
-    const char* axisTitle = Form("N_{#sigma}^{TOF}(%s)", pT[i]);
+    const char* axisTitle = Form("N_{#sigma}^{TOF}(%s)", pT[id]);
     const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
-    histos.add(hnsigma[i].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigmapt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmapospt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmanegpt[i].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
