@@ -9,49 +9,43 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 // O2 includes
-///
-/// \brief A filter task for diffractive events
-///        requires: Timestamps, o2-analysis-timestamp
-///                  EvSels, o2-analysis-event-selection
-///                  TracksExtended, o2-analysis-trackextension
-///                  TrackSelection, o2-analysis-trackselection
-///                  pidTPC*, o2-analysis-pid-tpc
-///                  pidTOF*, o2-analysis-pid-tof
-///
-///        options:  X in [2pi, 4pi, 2K, 4K]
-///
-///                  DiffCutsX.mNDtcoll(4)
-///                  DiffCutsX.mMinNTracks(0)
-///                  DiffCutsX.mMaxNTracks(10000)
-///                  DiffCutsX.mMinNetCharge(0)
-///                  DiffCutsX.mMaxNetCharge(0)
-///                  DiffCutsX.mPidHypo(211)
-///                  DiffCutsX.mMinPosz(-1000.)
-///                  DiffCutsX.mMaxPosz(1000.)
-///                  DiffCutsX.mMinPt(0.)
-///                  DiffCutsX.mMaxPt(1000.)
-///                  DiffCutsX.mMinEta(-1.)
-///                  DiffCutsX.mMaxEta(1.)
-///                  DiffCutsX.mMinIVM(0.)
-///                  DiffCutsX.mMaxIVM(1000.)
-///                  DiffCutsX.mMaxnSigmaTPC(1000.)
-///                  DiffCutsX.mMaxnSigmaTOF(1000.)
-///
-///        usage: copts="--configuration json://DiffFilterConfig.json -b"
-///               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
-///
-///               o2-analysis-timestamp $copts | \
-///               o2-analysis-track-propagation $copts | \
-///               o2-analysis-event-selection $copts | \
-///               o2-analysis-multiplicity-table $copts | \
-///               o2-analysis-trackextension $copts | \
-///               o2-analysis-trackselection $copts | \
-///               o2-analysis-pid-tpc $copts | \
-///               o2-analysis-pid-tof $copts | \
-///               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
-///
-/// \author P. Buehler , paul.buehler@oeaw.ac.at
-/// \since June 1, 2021
+//
+// \brief A filter task for diffractive events
+//
+//        options:  X in [2pi, 4pi, 2K, 4K]
+//
+//                  DiffCutsX.mNDtcoll(4)
+//                  DiffCutsX.mMinNTracks(0)
+//                  DiffCutsX.mMaxNTracks(10000)
+//                  DiffCutsX.mMinNetCharge(0)
+//                  DiffCutsX.mMaxNetCharge(0)
+//                  DiffCutsX.mPidHypo(211)
+//                  DiffCutsX.mMinPosz(-1000.)
+//                  DiffCutsX.mMaxPosz(1000.)
+//                  DiffCutsX.mMinPt(0.)
+//                  DiffCutsX.mMaxPt(1000.)
+//                  DiffCutsX.mMinEta(-1.)
+//                  DiffCutsX.mMaxEta(1.)
+//                  DiffCutsX.mMinIVM(0.)
+//                  DiffCutsX.mMaxIVM(1000.)
+//                  DiffCutsX.mMaxnSigmaTPC(1000.)
+//                  DiffCutsX.mMaxnSigmaTOF(1000.)
+//
+//        usage: copts="--configuration json://DiffFilterConfig.json -b"
+//               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
+//
+//               o2-analysis-timestamp $copts | \
+//               o2-analysis-track-propagation $copts | \
+//               o2-analysis-event-selection $copts | \
+//               o2-analysis-multiplicity-table $copts | \
+//               o2-analysis-trackextension $copts | \
+//               o2-analysis-trackselection $copts | \
+//               o2-analysis-pid-tpc $copts | \
+//               o2-analysis-pid-tof $copts | \
+//               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
+//
+// \author P. Buehler , paul.buehler@oeaw.ac.at
+// \since June 1, 2021
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -102,7 +96,8 @@ struct DGFilterRun3 {
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                        aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+                        aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                        aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 
