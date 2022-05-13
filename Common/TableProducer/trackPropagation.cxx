@@ -55,8 +55,9 @@ struct TrackPropagation {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   bool fillTracksExtended = false;
+  int runNumber = -1;
 
-  o2::base::Propagator::MatCorrType matCorr;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   const o2::dataformats::MeanVertexObject* mVtx = nullptr;
   o2::parameters::GRPObject* grpo = nullptr;
@@ -89,17 +90,22 @@ struct TrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-
-    matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(geoPath);
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
-    mVtx = ccdb->get<o2::dataformats::MeanVertexObject>(mVtxPath);
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (runNumber == bc.runNumber()) {
+      return;
+    }
+    grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, bc.timestamp());
+    LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+    o2::base::Propagator::initFieldFromGRP(grpo);
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+    mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+    runNumber = bc.runNumber();
   }
 
   template <typename TTrack, typename TTrackPar>
@@ -109,8 +115,13 @@ struct TrackPropagation {
     tracksParExtensionPropagated(trackPar.getPt(), trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
   }
 
-  void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const&)
+  void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const& bcs)
   {
+    if (bcs.size() == 0) {
+      return;
+    }
+    initCCDB(bcs.begin());
+
     gpu::gpustd::array<float, 2> dcaInfo;
     o2::dataformats::VertexBase vtx;
 
@@ -133,8 +144,13 @@ struct TrackPropagation {
   }
   PROCESS_SWITCH(TrackPropagation, processStandard, "Process without covariance", true);
 
-  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const&)
+  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const& bcs)
   {
+    if (bcs.size() == 0) {
+      return;
+    }
+    initCCDB(bcs.begin());
+
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
     for (auto& track : tracks) {
@@ -149,7 +165,7 @@ struct TrackPropagation {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         } else {
           vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
-          vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); // TODO this doesnt exist for the meanvertexobject
+          vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         }
       }
