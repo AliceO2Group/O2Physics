@@ -34,15 +34,15 @@
 //        usage: copts="--configuration json://DiffFilterConfig.json -b"
 //               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
 //
-//               o2-analysis-timestamp $copts | \
-                 o2-analysis-track-propagation $copts | \
-                 o2-analysis-event-selection $copts | \
-                 o2-analysis-multiplicity-table $copts | \
-                 o2-analysis-trackextension $copts | \
-                 o2-analysis-trackselection $copts | \
-                 o2-analysis-pid-tpc $copts | \
-                 o2-analysis-pid-tof $copts | \
-                 o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
+//               o2-analysis-timestamp $copts |
+//               o2-analysis-track-propagation $copts |
+//               o2-analysis-event-selection $copts |
+//               o2-analysis-multiplicity-table $copts |
+//               o2-analysis-trackextension $copts |
+//               o2-analysis-trackselection $copts |
+//               o2-analysis-pid-tpc $copts |
+//               o2-analysis-pid-tof $copts |
+//               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
 
 // \author P. Buehler , paul.buehler@oeaw.ac.at
 // \since June 1, 2021
