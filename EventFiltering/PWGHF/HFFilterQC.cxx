@@ -115,7 +115,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
         hPtDistr[0]->Fill(I, particle.pt());
         for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
           if (triggerDecision[iTrig]) {
-            hPtDistr[iTrig + 1]->Fill(I, particle.pt());
+            hPtDistr[iTrig + 1]->Fill(static_cast<double>(I), static_cast<double>(particle.pt()));
           }
         }
       }
