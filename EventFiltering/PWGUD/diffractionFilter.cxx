@@ -39,7 +39,7 @@
 ///
 ///        usage: copts="--configuration json://DiffFilterConfig.json -b"
 ///               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
-///               
+///
 ///               o2-analysis-timestamp $copts | \
 ///               o2-analysis-track-propagation $copts | \
 ///               o2-analysis-event-selection $copts | \
@@ -90,8 +90,7 @@ struct DGFilterRun3 {
       {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
       {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
       {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-    }
-  };
+    }};
 
   void init(InitContext&)
   {
@@ -123,8 +122,8 @@ struct DGFilterRun3 {
 
     // loop over 4 cases
     bool ccs[4]{false};
-    for (int ii=0; ii<4; ii++) {
-    
+    for (int ii = 0; ii < 4; ii++) {
+
       // different cases
       switch (ii) {
         case 0:
@@ -142,7 +141,7 @@ struct DGFilterRun3 {
         default:
           continue;
       }
-    
+
       // obtain slice of compatible BCs
       auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs);
       LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts.NDtcoll(), bcRange.size());
@@ -155,7 +154,7 @@ struct DGFilterRun3 {
         LOGF(debug, "This collision is a DG candidate!");
       }
       ccs[ii] = (isDGEvent == 0);
-      
+
       // update after cut histogram
       // different cases
       switch (ii) {
@@ -175,7 +174,7 @@ struct DGFilterRun3 {
           continue;
       }
     }
-    
+
     // update filterTable
     filterTable(ccs[0], ccs[1], ccs[2], ccs[3]);
   }
