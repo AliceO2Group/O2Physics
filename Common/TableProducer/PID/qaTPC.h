@@ -80,7 +80,7 @@ struct tpcPidQa {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     switch (id) { // Skipping disabled particles
       case PID::Electron:
-        if (!doprocessElectron && doprocessFullElectron && !doprocessWithTOFcessFullElectron) {
+        if (!doprocessElectron && doprocessFullElectron && !doprocessFullWithTOFElectron) {
           return;
         }
       case PID::Muon:
