@@ -74,6 +74,45 @@ struct tofPidQa {
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
+    static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
+    switch (id) { // Skipping disabled particles
+      case PID::Electron:
+        if (!doprocessElectron && !doprocessFullElectron) {
+          return;
+        }
+      case PID::Muon:
+        if (!doprocessMuon && !doprocessFullMuon) {
+          return;
+        }
+      case PID::Pion:
+        if (!doprocessPion && !doprocessFullPion) {
+          return;
+        }
+      case PID::Kaon:
+        if (!doprocessKaon && !doprocessFullKaon) {
+          return;
+        }
+      case PID::Proton:
+        if (!doprocessProton && !doprocessFullProton) {
+          return;
+        }
+      case PID::Deuteron:
+        if (!doprocessDeuteron && !doprocessFullDeuteron) {
+          return;
+        }
+      case PID::Triton:
+        if (!doprocessTriton && !doprocessFullTriton) {
+          return;
+        }
+      case PID::Helium3:
+        if (!doprocessHelium3 && !doprocessFullHelium3) {
+          return;
+        }
+      case PID::Alpha:
+        if (!doprocessAlpha && !doprocessFullAlpha) {
+          return;
+        }
+    }
     // Exp signal
     const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s) (ps)", pT[id])};
     histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
