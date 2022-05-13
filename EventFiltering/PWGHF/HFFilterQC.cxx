@@ -112,7 +112,7 @@ struct HfFilterQc { // Main struct for HF trigger QC
       int8_t sign = 0;
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodes[I], std::get<I>(pdgDau), true, &sign)) {
         nParticles[I]++;
-        hPtDistr[0]->Fill(I, particle.pt());
+        hPtDistr[0]->Fill(static_cast<double>(I), static_cast<double>(particle.pt()));
         for (auto iTrig = 0; iTrig < kNtriggersHF; ++iTrig) {
           if (triggerDecision[iTrig]) {
             hPtDistr[iTrig + 1]->Fill(static_cast<double>(I), static_cast<double>(particle.pt()));
