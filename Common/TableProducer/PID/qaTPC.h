@@ -126,6 +126,12 @@ struct tpcPidQa {
     h->GetXaxis()->SetBinLabel(3, "Passed mult.");
     h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
 
+    h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "isGlobalTrack");
+    h->GetXaxis()->SetBinLabel(3, "hasITS");
+    h->GetXaxis()->SetBinLabel(4, "hasTPC");
+
     histos.add("event/vertexz", "", kTH1F, {vtxZAxis});
     h = histos.add<TH1>("event/particlehypo", "", kTH1F, {{10, 0, 10, "PID in tracking"}});
     for (int i = 0; i < 9; i++) {
