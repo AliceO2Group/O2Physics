@@ -285,12 +285,10 @@ struct tpcPidQa {
     }
   }
 
-  template <typename pidhypothesis>
-  using TrackCandidate = soa::Join<aod::Tracks, aod::TracksExtra, pidhypothesis, aod::TrackSelection>;
 
   // QA of nsigma only tables
 #define makeProcessFunction(inputPid, particleId)                                                       \
-  void process##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
+  void process##particleId(CollisionCandidate const& collision, soa::Join<aod::Tracks, aod::TracksExtra, inputPid, aod::TrackSelection> const& tracks) \
   {                                                                                                     \
     processSingleParticle<PID::particleId, false, false>(collision, tracks);                            \
   }                                                                                                     \
@@ -309,7 +307,7 @@ struct tpcPidQa {
 
 // QA of full tables
 #define makeProcessFunction(inputPid, particleId)                                                           \
-  void processFull##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
+  void processFull##particleId(CollisionCandidate const& collision, soa::Join<aod::Tracks, aod::TracksExtra, inputPid, aod::TrackSelection> const& tracks) \
   {                                                                                                         \
     processSingleParticle<PID::particleId, true, false>(collision, tracks);                                 \
   }                                                                                                         \
@@ -327,21 +325,21 @@ struct tpcPidQa {
 #undef makeProcessFunction
 
   // QA of full tables with TOF information
-#define makeProcessFunction(inputPid, particleId)                                                                  \
-  void processFullWithTOF##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
+#define makeProcessFunction(inputPid,inputPidTOF, particleId)                                                                  \
+  void processFullWithTOF##particleId(CollisionCandidate const& collision, soa::Join<aod::Tracks, aod::TracksExtra, inputPid, inputPidTOF, aod::TrackSelection> const& tracks) \
   {                                                                                                                \
     processSingleParticle<PID::particleId, true, true>(collision, tracks);                                         \
   }                                                                                                                \
   PROCESS_SWITCH(tpcPidQa, processFullWithTOF##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
 
-  makeProcessFunction(soa::Join<aod::pidTPCFullEl, aod::pidTOFFullEl>, Electron);
-  makeProcessFunction(soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>, Muon);
-  makeProcessFunction(soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>, Pion);
-  makeProcessFunction(soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>, Kaon);
-  makeProcessFunction(soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>, Proton);
-  makeProcessFunction(soa::Join<aod::pidTPCFullDe, aod::pidTOFFullDe>, Deuteron);
-  makeProcessFunction(soa::Join<aod::pidTPCFullTr, aod::pidTOFFullTr>, Triton);
-  makeProcessFunction(soa::Join<aod::pidTPCFullHe, aod::pidTOFFullHe>, Helium3);
-  makeProcessFunction(soa::Join<aod::pidTPCFullAl, aod::pidTOFFullAl>, Alpha);
+  makeProcessFunction(aod::pidTPCFullEl, aod::pidTOFFullEl, Electron);
+  makeProcessFunction(aod::pidTPCFullMu, aod::pidTOFFullMu, Muon);
+  makeProcessFunction(aod::pidTPCFullPi, aod::pidTOFFullPi, Pion);
+  makeProcessFunction(aod::pidTPCFullKa, aod::pidTOFFullKa, Kaon);
+  makeProcessFunction(aod::pidTPCFullPr, aod::pidTOFFullPr, Proton);
+  makeProcessFunction(aod::pidTPCFullDe, aod::pidTOFFullDe, Deuteron);
+  makeProcessFunction(aod::pidTPCFullTr, aod::pidTOFFullTr, Triton);
+  makeProcessFunction(aod::pidTPCFullHe, aod::pidTOFFullHe, Helium3);
+  makeProcessFunction(aod::pidTPCFullAl, aod::pidTOFFullAl, Alpha);
 #undef makeProcessFunction
 };
