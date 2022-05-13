@@ -289,194 +289,59 @@ struct tpcPidQa {
   using TrackCandidate = soa::Join<aod::Tracks, aod::TracksExtra, pidhypothesis, aod::TrackSelection>;
 
   // QA of nsigma only tables
-  void processElectron(CollisionCandidate const& collision,
-                       TrackCandidate<aod::pidTPCEl> const& tracks)
-  {
-    processSingleParticle<PID::Electron, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processElectron, "Process for the Electron hypothesis", false);
+#define makeProcessFunction(inputPid, particleId)                                                       \
+  void process##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
+  {                                                                                                     \
+    processSingleParticle<PID::particleId, false, false>(collision, tracks);                            \
+  }                                                                                                     \
+  PROCESS_SWITCH(tpcPidQa, process##particleId, Form("Process for the %s hypothesis for TPC NSigma QA", #particleId), false);
 
-  void processMuon(CollisionCandidate const& collision,
-                   TrackCandidate<aod::pidTPCMu> const& tracks)
-  {
-    processSingleParticle<PID::Muon, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processMuon, "Process for the Muon hypothesis", false);
+  makeProcessFunction(aod::pidTPCEl, Electron);
+  makeProcessFunction(aod::pidTPCMu, Muon);
+  makeProcessFunction(aod::pidTPCPi, Pion);
+  makeProcessFunction(aod::pidTPCKa, Kaon);
+  makeProcessFunction(aod::pidTPCPr, Proton);
+  makeProcessFunction(aod::pidTPCDe, Deuteron);
+  makeProcessFunction(aod::pidTPCTr, Triton);
+  makeProcessFunction(aod::pidTPCHe, Helium3);
+  makeProcessFunction(aod::pidTPCAl, Alpha);
+#undef makeProcessFunction
 
-  void processPion(CollisionCandidate const& collision,
-                   TrackCandidate<aod::pidTPCPi> const& tracks)
-  {
-    processSingleParticle<PID::Pion, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processPion, "Process for the Pion hypothesis", false);
+// QA of full tables
+#define makeProcessFunction(inputPid, particleId)                                                           \
+  void processFull##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
+  {                                                                                                         \
+    processSingleParticle<PID::particleId, true, false>(collision, tracks);                                 \
+  }                                                                                                         \
+  PROCESS_SWITCH(tpcPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
 
-  void processKaon(CollisionCandidate const& collision,
-                   TrackCandidate<aod::pidTPCKa> const& tracks)
-  {
-    processSingleParticle<PID::Kaon, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processKaon, "Process for the Kaon hypothesis", false);
-
-  void processProton(CollisionCandidate const& collision,
-                     TrackCandidate<aod::pidTPCPr> const& tracks)
-  {
-    processSingleParticle<PID::Proton, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processProton, "Process for the Proton hypothesis", false);
-
-  void processDeuteron(CollisionCandidate const& collision,
-                       TrackCandidate<aod::pidTPCDe> const& tracks)
-  {
-    processSingleParticle<PID::Deuteron, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processDeuteron, "Process for the Deuteron hypothesis", false);
-
-  void processTriton(CollisionCandidate const& collision,
-                     TrackCandidate<aod::pidTPCTr> const& tracks)
-  {
-    processSingleParticle<PID::Triton, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processTriton, "Process for the Triton hypothesis", false);
-
-  void processHelium3(CollisionCandidate const& collision,
-                      TrackCandidate<aod::pidTPCHe> const& tracks)
-  {
-    processSingleParticle<PID::Helium3, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processHelium3, "Process for the Helium3 hypothesis", false);
-
-  void processAlpha(CollisionCandidate const& collision,
-                    TrackCandidate<aod::pidTPCAl> const& tracks)
-  {
-    processSingleParticle<PID::Alpha, false, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processAlpha, "Process for the Alpha hypothesis", false);
-
-  // QA of full tables
-  void processFullElectron(CollisionCandidate const& collision,
-                           TrackCandidate<aod::pidTPCFullEl> const& tracks)
-  {
-    processSingleParticle<PID::Electron, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullElectron, "Process for the Electron hypothesis for full PID information", false);
-
-  void processFullMuon(CollisionCandidate const& collision,
-                       TrackCandidate<aod::pidTPCFullMu> const& tracks)
-  {
-    processSingleParticle<PID::Muon, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullMuon, "Process for the Muon hypothesis for full PID information", false);
-
-  void processFullPion(CollisionCandidate const& collision,
-                       TrackCandidate<aod::pidTPCFullPi> const& tracks)
-  {
-    processSingleParticle<PID::Pion, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullPion, "Process for the Pion hypothesis for full PID information", false);
-
-  void processFullKaon(CollisionCandidate const& collision,
-                       TrackCandidate<aod::pidTPCFullKa> const& tracks)
-  {
-    processSingleParticle<PID::Kaon, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullKaon, "Process for the Kaon hypothesis for full PID information", false);
-
-  void processFullProton(CollisionCandidate const& collision,
-                         TrackCandidate<aod::pidTPCFullPr> const& tracks)
-  {
-    processSingleParticle<PID::Proton, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullProton, "Process for the Proton hypothesis for full PID information", false);
-
-  void processFullDeuteron(CollisionCandidate const& collision,
-                           TrackCandidate<aod::pidTPCFullDe> const& tracks)
-  {
-    processSingleParticle<PID::Deuteron, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullDeuteron, "Process for the Deuteron hypothesis for full PID information", false);
-
-  void processFullTriton(CollisionCandidate const& collision,
-                         TrackCandidate<aod::pidTPCFullTr> const& tracks)
-  {
-    processSingleParticle<PID::Triton, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullTriton, "Process for the Triton hypothesis for full PID information", false);
-
-  void processFullHelium3(CollisionCandidate const& collision,
-                          TrackCandidate<aod::pidTPCFullHe> const& tracks)
-  {
-    processSingleParticle<PID::Helium3, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullHelium3, "Process for the Helium3 hypothesis for full PID information", false);
-
-  void processFullAlpha(CollisionCandidate const& collision,
-                        TrackCandidate<aod::pidTPCFullAl> const& tracks)
-  {
-    processSingleParticle<PID::Alpha, true, false>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullAlpha, "Process for the Alpha hypothesis for full PID information", false);
+  makeProcessFunction(aod::pidTPCFullEl, Electron);
+  makeProcessFunction(aod::pidTPCFullMu, Muon);
+  makeProcessFunction(aod::pidTPCFullPi, Pion);
+  makeProcessFunction(aod::pidTPCFullKa, Kaon);
+  makeProcessFunction(aod::pidTPCFullPr, Proton);
+  makeProcessFunction(aod::pidTPCFullDe, Deuteron);
+  makeProcessFunction(aod::pidTPCFullTr, Triton);
+  makeProcessFunction(aod::pidTPCFullHe, Helium3);
+  makeProcessFunction(aod::pidTPCFullAl, Alpha);
+#undef makeProcessFunction
 
   // QA of full tables with TOF information
-  void processFullWithTOFElectron(CollisionCandidate const& collision,
-                                  TrackCandidate<soa::Join<aod::pidTOFFullEl, aod::pidTPCFullEl>> const& tracks)
-  {
-    processSingleParticle<PID::Electron, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFElectron, "Process for the Electron hypothesis for full PID information", false);
+#define makeProcessFunction(inputPid, particleId)                                                                  \
+  void processFullWithTOF##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
+  {                                                                                                                \
+    processSingleParticle<PID::particleId, true, true>(collision, tracks);                                         \
+  }                                                                                                                \
+  PROCESS_SWITCH(tpcPidQa, processFullWithTOF##particleId, Form("Process for the %s hypothesis for full TPC PID QA", #particleId), false);
 
-  void processFullWithTOFMuon(CollisionCandidate const& collision,
-                              TrackCandidate<soa::Join<aod::pidTOFFullMu, aod::pidTPCFullMu>> const& tracks)
-  {
-    processSingleParticle<PID::Muon, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFMuon, "Process for the Muon hypothesis for full PID information", false);
-
-  void processFullWithTOFPion(CollisionCandidate const& collision,
-                              TrackCandidate<soa::Join<aod::pidTOFFullPi, aod::pidTPCFullPi>> const& tracks)
-  {
-    processSingleParticle<PID::Pion, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFPion, "Process for the Pion hypothesis for full PID information", false);
-
-  void processFullWithTOFKaon(CollisionCandidate const& collision,
-                              TrackCandidate<soa::Join<aod::pidTOFFullKa, aod::pidTPCFullKa>> const& tracks)
-  {
-    processSingleParticle<PID::Kaon, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFKaon, "Process for the Kaon hypothesis for full PID information", false);
-
-  void processFullWithTOFProton(CollisionCandidate const& collision,
-                                TrackCandidate<soa::Join<aod::pidTOFFullPr, aod::pidTPCFullPr>> const& tracks)
-  {
-    processSingleParticle<PID::Proton, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFProton, "Process for the Proton hypothesis for full PID information", false);
-
-  void processFullWithTOFDeuteron(CollisionCandidate const& collision,
-                                  TrackCandidate<soa::Join<aod::pidTOFFullDe, aod::pidTPCFullDe>> const& tracks)
-  {
-    processSingleParticle<PID::Deuteron, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFDeuteron, "Process for the Deuteron hypothesis for full PID information", false);
-
-  void processFullWithTOFTriton(CollisionCandidate const& collision,
-                                TrackCandidate<soa::Join<aod::pidTOFFullTr, aod::pidTPCFullTr>> const& tracks)
-  {
-    processSingleParticle<PID::Triton, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFTriton, "Process for the Triton hypothesis for full PID information", false);
-
-  void processFullWithTOFHelium3(CollisionCandidate const& collision,
-                                 TrackCandidate<soa::Join<aod::pidTOFFullHe, aod::pidTPCFullHe>> const& tracks)
-  {
-    processSingleParticle<PID::Helium3, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFHelium3, "Process for the Helium3 hypothesis for full PID information", false);
-
-  void processFullWithTOFAlpha(CollisionCandidate const& collision,
-                               TrackCandidate<soa::Join<aod::pidTOFFullAl, aod::pidTPCFullAl>> const& tracks)
-  {
-    processSingleParticle<PID::Alpha, true, true>(collision, tracks);
-  }
-  PROCESS_SWITCH(tpcPidQa, processFullWithTOFAlpha, "Process for the Alpha hypothesis for full PID information", false);
+  makeProcessFunction(soa::Join<aod::pidTPCFullEl, aod::pidTOFFullEl>, Electron);
+  makeProcessFunction(soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>, Muon);
+  makeProcessFunction(soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>, Pion);
+  makeProcessFunction(soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>, Kaon);
+  makeProcessFunction(soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>, Proton);
+  makeProcessFunction(soa::Join<aod::pidTPCFullDe, aod::pidTOFFullDe>, Deuteron);
+  makeProcessFunction(soa::Join<aod::pidTPCFullTr, aod::pidTOFFullTr>, Triton);
+  makeProcessFunction(soa::Join<aod::pidTPCFullHe, aod::pidTOFFullHe>, Helium3);
+  makeProcessFunction(soa::Join<aod::pidTPCFullAl, aod::pidTOFFullAl>, Alpha);
+#undef makeProcessFunction
 };
