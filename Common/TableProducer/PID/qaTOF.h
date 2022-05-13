@@ -297,15 +297,13 @@ struct tofPidQa {
     }
   }
 
-  template <typename pidhypothesis>
-  using TrackCandidate = soa::Join<aod::Tracks, aod::TracksExtra, pidhypothesis, aod::TOFSignal, aod::TrackSelection>;
-
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                                       \
-  void process##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
-  {                                                                                                     \
-    processSingleParticle<PID::particleId, false>(collision, tracks);                                   \
-  }                                                                                                     \
+#define makeProcessFunction(inputPid, particleId)                                                                                 \
+  void process##particleId(CollisionCandidate const& collision,                                                                   \
+                           soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, inputPid> const& tracks) \
+  {                                                                                                                               \
+    processSingleParticle<PID::particleId, false>(collision, tracks);                                                             \
+  }                                                                                                                               \
   PROCESS_SWITCH(tofPidQa, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
   makeProcessFunction(aod::pidTOFEl, Electron);
@@ -320,11 +318,12 @@ struct tofPidQa {
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                                       \
-  void processFull##particleId(CollisionCandidate const& collision, TrackCandidate<inputPid> const& tracks) \
-  {                                                                                                     \
-    processSingleParticle<PID::particleId, true>(collision, tracks);                                    \
-  }                                                                                                     \
+#define makeProcessFunction(inputPid, particleId)                                                                                     \
+  void processFull##particleId(CollisionCandidate const& collision,                                                                   \
+                               soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, inputPid> const& tracks) \
+  {                                                                                                                                   \
+    processSingleParticle<PID::particleId, true>(collision, tracks);                                                                  \
+  }                                                                                                                                   \
   PROCESS_SWITCH(tofPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
 
   makeProcessFunction(aod::pidTOFFullEl, Electron);
