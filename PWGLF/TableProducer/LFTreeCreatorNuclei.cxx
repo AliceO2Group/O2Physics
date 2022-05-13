@@ -80,7 +80,8 @@ struct LfTreeCreatorNuclei {
                TrackCandidates const& tracks,
                aod::BCs const&)
   {
-    if(useEvsel && !collision.sel8()) return;
+    if (useEvsel && !collision.sel8())
+      return;
     // Filling event properties
     rowCandidateFullEvents(
       collision.bcId(),
