@@ -18,30 +18,37 @@
 ///                  pidTPC*, o2-analysis-pid-tpc
 ///                  pidTOF*, o2-analysis-pid-tof
 ///
-///        options:  DiffCuts.mNDtcoll(4)
-///                  DiffCuts.mMinNTracks(0)
-///                  DiffCuts.mMaxNTracks(10000)
-///                  DiffCuts.mMinNetCharge(0)
-///                  DiffCuts.mMaxNetCharge(0)
-///                  DiffCuts.mPidHypo(211)
-///                  DiffCuts.mMinPosz(-1000.)
-///                  DiffCuts.mMaxPosz(1000.)
-///                  DiffCuts.mMinPt(0.)
-///                  DiffCuts.mMaxPt(1000.)
-///                  DiffCuts.mMinEta(-1.)
-///                  DiffCuts.mMaxEta(1.)
-///                  DiffCuts.mMinIVM(0.)
-///                  DiffCuts.mMaxIVM(1000.)
-///                  DiffCuts.mMaxnSigmaTPC(1000.)
-///                  DiffCuts.mMaxnSigmaTOF(1000.)
+///        options:  X in [2pi, 4pi, 2K, 4K]
 ///
-///        usage: o2-analysis-timestamp --aod-file AO2D.root |
-///               o2-analysis-event-selection --processRun3 1 --isMC 1 |
-///               o2-analysis-trackextension --processRun3 1 |
-///               o2-analysis-trackselection --isRun3 |
-///               o2-analysis-pid-tof |
-///               o2-analysis-pid-tpc |
-///               o2-analysis-diffraction-filter
+///                  DiffCutsX.mNDtcoll(4)
+///                  DiffCutsX.mMinNTracks(0)
+///                  DiffCutsX.mMaxNTracks(10000)
+///                  DiffCutsX.mMinNetCharge(0)
+///                  DiffCutsX.mMaxNetCharge(0)
+///                  DiffCutsX.mPidHypo(211)
+///                  DiffCutsX.mMinPosz(-1000.)
+///                  DiffCutsX.mMaxPosz(1000.)
+///                  DiffCutsX.mMinPt(0.)
+///                  DiffCutsX.mMaxPt(1000.)
+///                  DiffCutsX.mMinEta(-1.)
+///                  DiffCutsX.mMaxEta(1.)
+///                  DiffCutsX.mMinIVM(0.)
+///                  DiffCutsX.mMaxIVM(1000.)
+///                  DiffCutsX.mMaxnSigmaTPC(1000.)
+///                  DiffCutsX.mMaxnSigmaTOF(1000.)
+///
+///        usage: copts="--configuration json://DiffFilterConfig.json -b"
+///               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
+///               
+///               o2-analysis-timestamp $copts | \
+///               o2-analysis-track-propagation $copts | \
+///               o2-analysis-event-selection $copts | \
+///               o2-analysis-multiplicity-table $copts | \
+///               o2-analysis-trackextension $copts | \
+///               o2-analysis-trackselection $copts | \
+///               o2-analysis-pid-tpc $copts | \
+///               o2-analysis-pid-tof $copts | \
+///               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
 ///
 /// \author P. Buehler , paul.buehler@oeaw.ac.at
 /// \since June 1, 2021
@@ -63,24 +70,31 @@ struct DGFilterRun3 {
   // Productions
   Produces<aod::DiffractionFilters> filterTable;
 
-  // configurable cutHolder
-  MutableConfigurable<cutHolder> diffCuts{"DiffCuts", {}, "Diffractive events cuts"};
+  // cutHolders
+  cutHolder diffCuts = cutHolder();
+  static constexpr std::string_view cutNames[4] = {"DiffCuts2pi", "DiffCuts4pi", "DiffCuts2K", "DiffCuts4K"};
+  MutableConfigurable<cutHolder> diffCuts2pi{cutNames[0].data(), {}, "Diffractive 2pi events cuts"};
+  MutableConfigurable<cutHolder> diffCuts4pi{cutNames[1].data(), {}, "Diffractive 4pi events cuts"};
+  MutableConfigurable<cutHolder> diffCuts2K{cutNames[2].data(), {}, "Diffractive 2K events cuts"};
+  MutableConfigurable<cutHolder> diffCuts4K{cutNames[3].data(), {}, "Diffractive 4K events cuts"};
 
   // DG selector
   DGSelector dgSelector;
 
+  // histograms with cut statistics
+  static constexpr std::string_view histNames[4] = {"aftercut2pi", "aftercut4pi", "aftercut2K", "aftercut4K"};
   HistogramRegistry registry{
     "registry",
     {
-      {"aftercut", "#aftercut", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-    }};
+      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+    }
+  };
 
   void init(InitContext&)
   {
-    // 4 cases are knwon
-    if (diffCuts->cc() < 1 || diffCuts->cc() > 4) {
-      throw std::runtime_error("The cc value of cutHolder is out of bounds!");
-    }
   }
 
   // some general Collisions and Tracks filter
@@ -103,27 +117,67 @@ struct DGFilterRun3 {
                aod::FV0As& fv0as,
                aod::FDDs& fdds)
   {
-    bool ccs[4]{false};
 
     // nominal BC
     auto bc = collision.bc_as<BCs>();
 
-    // obtain slice of compatible BCs
-    auto bcRange = compatibleBCs(collision, diffCuts->NDtcoll(), bcs);
-    LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts->NDtcoll(), bcRange.size());
+    // loop over 4 cases
+    bool ccs[4]{false};
+    for (int ii=0; ii<4; ii++) {
+    
+      // different cases
+      switch (ii) {
+        case 0:
+          diffCuts = (cutHolder)diffCuts2pi;
+          break;
+        case 1:
+          diffCuts = (cutHolder)diffCuts4pi;
+          break;
+        case 2:
+          diffCuts = (cutHolder)diffCuts2K;
+          break;
+        case 3:
+          diffCuts = (cutHolder)diffCuts4K;
+          break;
+        default:
+          continue;
+      }
+    
+      // obtain slice of compatible BCs
+      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs);
+      LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts.NDtcoll(), bcRange.size());
 
-    // apply DG selection
-    auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
+      // apply DG selection
+      auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
 
-    // fill filterTable
-    if (isDGEvent == 0) {
-      LOGF(debug, "This collision is a DG candidate!");
+      // save decision
+      if (isDGEvent == 0) {
+        LOGF(debug, "This collision is a DG candidate!");
+      }
+      ccs[ii] = (isDGEvent == 0);
+      
+      // update after cut histogram
+      // different cases
+      switch (ii) {
+        case 0:
+          registry.fill(HIST(histNames[0]), isDGEvent);
+          break;
+        case 1:
+          registry.fill(HIST(histNames[1]), isDGEvent);
+          break;
+        case 2:
+          registry.fill(HIST(histNames[2]), isDGEvent);
+          break;
+        case 3:
+          registry.fill(HIST(histNames[3]), isDGEvent);
+          break;
+        default:
+          continue;
+      }
     }
-    ccs[diffCuts->cc() - 1] = (isDGEvent == 0);
+    
+    // update filterTable
     filterTable(ccs[0], ccs[1], ccs[2], ccs[3]);
-
-    // update histogram
-    registry.get<TH1>(HIST("aftercut"))->Fill(isDGEvent);
   }
 };
 
