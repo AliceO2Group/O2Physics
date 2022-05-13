@@ -165,7 +165,7 @@ struct TrackPropagation {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         } else {
           vtx.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
-          vtx.setCov(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); // TODO this doesnt exist for the meanvertexobject
+          vtx.setCov(mVtx->getSigmaX() * mVtx->getSigmaX(), 0.0f, mVtx->getSigmaY() * mVtx->getSigmaY(), 0.0f, 0.0f, mVtx->getSigmaZ() * mVtx->getSigmaZ());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(vtx, trackParCov, 2.f, matCorr, &dcaInfoCov);
         }
       }
