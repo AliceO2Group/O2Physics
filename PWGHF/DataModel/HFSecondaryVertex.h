@@ -80,33 +80,37 @@ DECLARE_SOA_COLUMN(DsKKPiFlag, dsKKPiFlag, uint8_t);         //!
 DECLARE_SOA_COLUMN(XicToPKPiFlag, xicToPKPiFlag, uint8_t);   //!
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(Hf2Prong, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates
+DECLARE_SOA_TABLE(Hf2Prongs, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
                   hf_track_index::Index1Id,
                   hf_track_index::HFflag);
+using Hf2Prong = Hf2Prongs::iterator;
 
-DECLARE_SOA_TABLE(HfCascade, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
+DECLARE_SOA_TABLE(HfCascades, "AOD", "HFCASCADE", //! Table for HF candidates with a V0
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
                   hf_track_index::V0Id);
+using HfCascade = HfCascades::iterator;
 
-DECLARE_SOA_TABLE(Hf3Prong, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
+DECLARE_SOA_TABLE(Hf3Prongs, "AOD", "HF3PRONG", //! Table for HF 3 prong candidates
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
                   hf_track_index::Index1Id,
                   hf_track_index::Index2Id,
                   hf_track_index::HFflag);
+using Hf3Prong = Hf3Prongs::iterator;
 
 namespace hf_track_index
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(IndexD0, indexD0, int, Hf2Prong, ""); //! Index to a D0 prong
+DECLARE_SOA_INDEX_COLUMN_FULL(IndexD0, indexD0, int, Hf2Prongs, ""); //! Index to a D0 prong
 } // namespace hf_track_index
 
-DECLARE_SOA_TABLE(HfDstar, "AOD", "HFDSTAR", //! D* -> D0pi candidates
+DECLARE_SOA_TABLE(HfDstars, "AOD", "HFDSTAR", //! D* -> D0pi candidates
                   o2::soa::Index<>,
                   hf_track_index::Index0Id,
                   hf_track_index::IndexD0Id);
+using HfDstar = HfDstars::iterator;
 
 DECLARE_SOA_TABLE(HfCutStatusProng2, "AOD", "HFCUTSTATUSP2", //!
                   hf_track_index::D0ToKPiFlag,

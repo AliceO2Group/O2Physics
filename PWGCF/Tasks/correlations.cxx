@@ -327,6 +327,7 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
+  NoBinningPolicy<aod::hash::Bin> hashBin;
   void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentRun2V0Ms>>& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
@@ -336,7 +337,7 @@ struct CorrelationTask {
     GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : selfCombinations(hashBin, cfgNoMixedEvents, -1, collisions, collisions)) {
 
       LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
@@ -386,7 +387,7 @@ struct CorrelationTask {
     GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : selfCombinations(hashBin, cfgNoMixedEvents, -1, collisions, collisions)) {
 
       LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 

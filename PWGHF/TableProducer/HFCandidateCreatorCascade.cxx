@@ -27,7 +27,7 @@ using namespace o2::aod::hf_cand_prong2;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -76,7 +76,7 @@ struct HFCandidateCreatorCascade {
   double mass2K0sP{0.};
 
   void process(aod::Collisions const&,
-               aod::HfCascade const& rowsTrackIndexCasc,
+               aod::HfCascades const& rowsTrackIndexCasc,
                MyBigTracks const&,
                aod::V0sLinked const&,
                aod::V0Datas const&
@@ -100,10 +100,16 @@ struct HFCandidateCreatorCascade {
     for (const auto& casc : rowsTrackIndexCasc) {
 
       const auto& bach = casc.index0_as<MyBigTracks>();
+      LOGF(debug, "V0 %d in HF cascade %d.", casc.v0Id(), casc.globalIndex());
+      if (!casc.has_v0()) {
+        LOGF(error, "V0 not there for HF cascade %d. Skipping candidate.", casc.globalIndex());
+        continue;
+      }
       if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) {
         LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
         continue;
       }
+      LOGF(debug, "V0Data ID: %d", casc.v0_as<aod::V0sLinked>().v0DataId());
       const auto& v0 = casc.v0_as<aod::V0sLinked>().v0Data();
       const auto& trackV0DaughPos = v0.posTrack_as<MyBigTracks>();
       const auto& trackV0DaughNeg = v0.negTrack_as<MyBigTracks>();

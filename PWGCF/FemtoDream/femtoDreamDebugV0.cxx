@@ -67,6 +67,7 @@ struct femtoDreamDebugV0 {
     FullQaRegistry.add("FullV0QA/hDecayVtxZ", "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
     FullQaRegistry.add("FullV0QA/hCPA", "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
     FullQaRegistry.add("FullV0QA/hCPAvsPt", "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
+    FullQaRegistry.add("FullV0QA/hInvMass", "; #it{m}_{#Lambda} (GeV/#it{c}^{2}); #it{m}_{#bar{#Lambda}} (GeV/#it{c}^{2})", kTH2F, {{150, 0.5, 2}, {150, 0.5, 2}});
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
@@ -88,6 +89,7 @@ struct femtoDreamDebugV0 {
       FullQaRegistry.fill(HIST("FullV0QA/hDecayVtxZ"), part.decayVtxZ());
       FullQaRegistry.fill(HIST("FullV0QA/hCPA"), part.tempFitVar());
       FullQaRegistry.fill(HIST("FullV0QA/hCPAvsPt"), part.pt(), part.tempFitVar());
+      FullQaRegistry.fill(HIST("FullV0QA/hInvMass"), part.mLambda(), part.mAntiLambda());
     }
   }
 };
