@@ -77,6 +77,10 @@ struct tofPidFull {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Check that both processes are not enabled
+    if (doprocessNoEvTime == true && doprocessEvTime == true) {
+      LOGF(fatal, "Cannot enable processNoEvTime and processEvTime at the same time. Please choose one.");
+    }
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
       const std::string table = "pidTOFFull" + particle;
