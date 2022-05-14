@@ -79,42 +79,24 @@ struct tpcPidQa {
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     switch (id) { // Skipping disabled particles
-      case PID::Electron:
-        if (!doprocessElectron && doprocessFullElectron && !doprocessFullWithTOFElectron) {
-          return;
-        }
-      case PID::Muon:
-        if (!doprocessMuon && !doprocessFullMuon && !doprocessFullWithTOFMuon) {
-          return;
-        }
-      case PID::Pion:
-        if (!doprocessPion && !doprocessFullPion && !doprocessFullWithTOFPion) {
-          return;
-        }
-      case PID::Kaon:
-        if (!doprocessKaon && !doprocessFullKaon && !doprocessFullWithTOFKaon) {
-          return;
-        }
-      case PID::Proton:
-        if (!doprocessProton && !doprocessFullProton && !doprocessFullWithTOFProton) {
-          return;
-        }
-      case PID::Deuteron:
-        if (!doprocessDeuteron && !doprocessFullDeuteron && !doprocessFullWithTOFDeuteron) {
-          return;
-        }
-      case PID::Triton:
-        if (!doprocessTriton && !doprocessFullTriton && !doprocessFullWithTOFTriton) {
-          return;
-        }
-      case PID::Helium3:
-        if (!doprocessHelium3 && !doprocessFullHelium3 && !doprocessFullWithTOFHelium3) {
-          return;
-        }
-      case PID::Alpha:
-        if (!doprocessAlpha && !doprocessFullAlpha && !doprocessFullWithTOFAlpha) {
-          return;
-        }
+#define particleCase(particleId)                                                                    \
+  case PID::particleId:                                                                             \
+    if (!doprocess##particleId && !doprocessFull##particleId && doprocessFullWithTOF##particleId) { \
+      return;                                                                                       \
+    }                                                                                               \
+    LOGF(info, "Enabled TPC QA for %s", #particleId);                                               \
+    break;
+
+      particleCase(Electron);
+      particleCase(Muon);
+      particleCase(Pion);
+      particleCase(Kaon);
+      particleCase(Proton);
+      particleCase(Deuteron);
+      particleCase(Triton);
+      particleCase(Helium3);
+      particleCase(Alpha);
+#undef particleCase
     }
     // Exp signal
     const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[id])};

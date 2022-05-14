@@ -76,43 +76,26 @@ struct tofPidQa {
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     switch (id) { // Skipping disabled particles
-      case PID::Electron:
-        if (!doprocessElectron && !doprocessFullElectron) {
-          return;
-        }
-      case PID::Muon:
-        if (!doprocessMuon && !doprocessFullMuon) {
-          return;
-        }
-      case PID::Pion:
-        if (!doprocessPion && !doprocessFullPion) {
-          return;
-        }
-      case PID::Kaon:
-        if (!doprocessKaon && !doprocessFullKaon) {
-          return;
-        }
-      case PID::Proton:
-        if (!doprocessProton && !doprocessFullProton) {
-          return;
-        }
-      case PID::Deuteron:
-        if (!doprocessDeuteron && !doprocessFullDeuteron) {
-          return;
-        }
-      case PID::Triton:
-        if (!doprocessTriton && !doprocessFullTriton) {
-          return;
-        }
-      case PID::Helium3:
-        if (!doprocessHelium3 && !doprocessFullHelium3) {
-          return;
-        }
-      case PID::Alpha:
-        if (!doprocessAlpha && !doprocessFullAlpha) {
-          return;
-        }
+#define particleCase(particleId)                                \
+  case PID::particleId:                                         \
+    if (!doprocess##particleId && !doprocessFull##particleId) { \
+      return;                                                   \
+    }                                                           \
+    LOGF(info, "Enabled TOF QA for %s", #particleId);           \
+    break;
+
+      particleCase(Electron);
+      particleCase(Muon);
+      particleCase(Pion);
+      particleCase(Kaon);
+      particleCase(Proton);
+      particleCase(Deuteron);
+      particleCase(Triton);
+      particleCase(Helium3);
+      particleCase(Alpha);
+#undef particleCase
     }
+
     // Exp signal
     const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s) (ps)", pT[id])};
     histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
