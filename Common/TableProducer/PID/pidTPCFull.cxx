@@ -18,6 +18,7 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+// ROOT includes
 #include "TFile.h"
 
 // O2 includes
@@ -29,9 +30,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
-#include "Framework/StaticFor.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "qaTPC.h"
+#include "DPG/Tasks/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;

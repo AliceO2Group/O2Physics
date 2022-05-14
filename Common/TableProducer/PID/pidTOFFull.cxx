@@ -24,7 +24,7 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "TableHelper.h"
 #include "pidTOFBase.h"
-#include "qaTOF.h"
+#include "DPG/Tasks/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::framework;
