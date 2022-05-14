@@ -79,12 +79,12 @@ struct tpcPidQa {
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     switch (id) { // Skipping disabled particles
-#define particleCase(particleId)                                                                    \
-  case PID::particleId:                                                                             \
-    if (!doprocess##particleId && !doprocessFull##particleId && doprocessFullWithTOF##particleId) { \
-      return;                                                                                       \
-    }                                                                                               \
-    LOGF(info, "Enabled TPC QA for %s", #particleId);                                               \
+#define particleCase(particleId)                                                                     \
+  case PID::particleId:                                                                              \
+    if (!doprocess##particleId && !doprocessFull##particleId && !doprocessFullWithTOF##particleId) { \
+      return;                                                                                        \
+    }                                                                                                \
+    LOGF(info, "Enabled TPC QA for %s %s", #particleId, pT[id]);                                     \
     break;
 
       particleCase(Electron);
