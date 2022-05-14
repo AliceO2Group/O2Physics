@@ -10,13 +10,13 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaTPC.cxx
+/// \file   qaPIDTPC.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Implementation for QA tasks of the TPC PID quantities
 ///
 
 #include "Framework/AnalysisTask.h"
-#include "qaTOF.h"
+#include "qaPIDTPC.h"
 #include "Framework/runDataProcessing.h"
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

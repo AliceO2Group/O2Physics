@@ -10,13 +10,13 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaTOF.cxx
+/// \file   qaPIDTOF.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Implementation for QA tasks of the TOF PID quantities
 ///
 
 #include "Framework/AnalysisTask.h"
-#include "qaTOF.h"
+#include "qaPIDTOF.h"
 #include "Framework/runDataProcessing.h"
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
