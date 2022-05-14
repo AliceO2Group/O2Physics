@@ -31,11 +31,6 @@ o2physics_add_dpl_workflow(pid-tof-full
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-tof-qa
-                    SOURCES qaTOF.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(pid-tof-qa-mc
                     SOURCES qaTOFMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
@@ -51,11 +46,6 @@ o2physics_add_dpl_workflow(pid-tpc
 o2physics_add_dpl_workflow(pid-tpc-full
                     SOURCES pidTPCFull.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(pid-tpc-qa
-                    SOURCES qaTPCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-tpc-qa-mc

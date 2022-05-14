@@ -14,6 +14,7 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to produce PID tables for TOF split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+///         QA histograms for the TOF PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
 // O2 includes

@@ -28,3 +28,16 @@ o2physics_add_dpl_workflow(qa-impact-parameter
                                           O2::DetectorsCommonDataFormats
                                           O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
+
+# PID QA
+
+## TOF
+o2physics_add_dpl_workflow(pid-tof-qa
+                    SOURCES qaPIDTOF.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+## TPC
+o2physics_add_dpl_workflow(pid-tpc-qa
+                    SOURCES qaPIDTPC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
