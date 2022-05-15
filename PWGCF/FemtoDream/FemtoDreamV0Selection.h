@@ -74,8 +74,8 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
                             TranRadV0Min(9999999.),
                             TranRadV0Max(-9999999.),
                             DecVtxMax(-9999999.),
-                            fInvMassLowLimit(1.10),
-                            fInvMassUpLimit(1.13){};
+                            fInvMassLowLimit(1.05),
+                            fInvMassUpLimit(1.3){};
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -225,6 +225,9 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
+    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
+    AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f, "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
+
     /// \todo this should be an automatic check in the parent class, and the return type should be templated
     size_t nSelections = getNSelections();
     if (nSelections > 8 * sizeof(cutContainerType)) {
@@ -242,7 +245,9 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
     mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
     mHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
-    mHistogramRegistry->add((folderName + "/hInvMass").c_str(), "; #it{m}_{#Lambda} (GeV/#it{c}^{2}); #it{m}_{#bar{#Lambda}} (GeV/#it{c}^{2})", kTH2F, {{150, 0.5, 2}, {150, 0.5, 2}});
+    mHistogramRegistry->add((folderName + "/hInvMassLambda").c_str(), "", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add((folderName + "/hInvMassAntiLambda").c_str(), "", kTH1F, {massAxisAntiLambda});
+    mHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(), "", kTH2F, {massAxisLambda, massAxisAntiLambda});
 
     PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry, "Pos");
     NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry, "Neg");
@@ -406,7 +411,9 @@ void FemtoDreamV0Selection::fillQA(C const& col, V const& v0, T const& posTrack,
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDecayVtxZ"), v0.z());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hCPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hCPAvsPt"), v0.pt(), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
-    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMass"), v0.mLambda(), v0.mAntiLambda());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMassLambda"), v0.mLambda());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMassAntiLambda"), v0.mAntiLambda());
+    mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMassLambdaAntiLambda"), v0.mLambda(), v0.mAntiLambda());
   }
   /// \TODO to add possibility to write to Daughters folders
   // PosDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child>(posTrack, "Pos");
