@@ -26,16 +26,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  std::vector<ConfigParamSpec> options{
-    {"qa-el", VariantType::Int, 0, {"Produce PID information for the electron mass hypothesis"}},
-    {"qa-mu", VariantType::Int, 0, {"Produce PID information for the muon mass hypothesis"}},
-    {"qa-pikapr", VariantType::Int, 1, {"Produce PID information for the Pion, Kaon, Proton mass hypothesis"}},
-    {"qa-nuclei", VariantType::Int, 0, {"Produce PID information for the Deuteron, Triton, Alpha mass hypothesis"}}};
-  std::swap(workflowOptions, options);
-}
-
 #include "Framework/runDataProcessing.h"
 
 /// Task to produce the TPC QA plots
@@ -89,165 +79,156 @@ struct pidTPCTaskQA {
       ptAxis.makeLogarithmic();
     }
 
-    // NSigma
-    histos.add(hnsigmaMC[i].data(), Form("True %s", pT[i]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    if (!checkPrimaries) {
-      return;
-    }
-    histos.add(hnsigmaMCprm[i].data(), Form("True Primary %s", pT[i]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaMCsec[i].data(), Form("True Secondary %s", pT[i]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-  }
+    void init(o2::framework::InitContext&)
+    {
+      AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
+      AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+      if (logAxis) {
+        pAxis.makeLogarithmic();
+        ptAxis.makeLogarithmic();
+      }
+      const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[pid_type])};
+      const AxisSpec signalAxis{6000, 0, 2000, "TPC d#it{E}/d#it{x} A.U."};
 
-  void init(o2::framework::InitContext&)
-  {
-    AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
-    if (logAxis) {
-      pAxis.makeLogarithmic();
-      ptAxis.makeLogarithmic();
-    }
-    const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[pid_type])};
-    const AxisSpec signalAxis{6000, 0, 2000, "TPC d#it{E}/d#it{x} A.U."};
+      histos.add(hnsigma[pid_type].data(), pT[pid_type], HistType::kTH2F, {ptAxis, nSigmaAxis});
+      if (checkPrimaries) {
+        histos.add(hnsigmaprm[pid_type].data(), Form("Primary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+        histos.add(hnsigmasec[pid_type].data(), Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+      }
+      const AxisSpec lengthAxis{1000, 0, 3000, "Track length (cm)"};
+      const AxisSpec etaAxis{100, -4, 4, "#it{#eta}"};
 
-    histos.add(hnsigma[pid_type].data(), pT[pid_type], HistType::kTH2F, {ptAxis, nSigmaAxis});
-    if (checkPrimaries) {
-      histos.add(hnsigmaprm[pid_type].data(), Form("Primary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigmasec[pid_type].data(), Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    }
-    const AxisSpec lengthAxis{1000, 0, 3000, "Track length (cm)"};
-    const AxisSpec etaAxis{100, -4, 4, "#it{#eta}"};
+      histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
+      histos.add("particle/p", "", kTH1F, {pAxis});
+      histos.add("particle/pt", "", kTH1F, {ptAxis});
+      histos.add("particle/eta", "", kTH1F, {etaAxis});
+      histos.add("tracks/p", "", kTH1F, {pAxis});
+      histos.add("tracks/pt", "", kTH1F, {ptAxis});
+      histos.add("tracks/eta", "", kTH1F, {etaAxis});
+      histos.add("tracks/length", "", kTH1F, {lengthAxis});
 
-    histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
-    histos.add("particle/p", "", kTH1F, {pAxis});
-    histos.add("particle/pt", "", kTH1F, {ptAxis});
-    histos.add("particle/eta", "", kTH1F, {etaAxis});
-    histos.add("tracks/p", "", kTH1F, {pAxis});
-    histos.add("tracks/pt", "", kTH1F, {ptAxis});
-    histos.add("tracks/eta", "", kTH1F, {etaAxis});
-    histos.add("tracks/length", "", kTH1F, {lengthAxis});
+      static_for<0, 8>([&](auto i) {
+        addParticleHistos<i>();
+      });
 
-    static_for<0, 8>([&](auto i) {
-      addParticleHistos<i>();
-    });
-
-    histos.add("event/tpcsignal", "All", HistType::kTH2F, {pAxis, signalAxis});
-    histos.add("event/tpcsignalMC", pT[pid_type], HistType::kTH2F, {pAxis, signalAxis});
-    if (checkPrimaries) {
-      histos.add("event/tpcsignalPrm", "Primaries", HistType::kTH2F, {pAxis, signalAxis});
-      histos.add("event/tpcsignalSec", "Secondaries", HistType::kTH2F, {pAxis, signalAxis});
-      histos.add("event/tpcsignalMCPrm", Form("Primary %s", pT[pid_type]), HistType::kTH2F, {pAxis, signalAxis});
-      histos.add("event/tpcsignalMCSec", Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {pAxis, signalAxis});
-    }
-  }
-
-  template <uint8_t pidIndex, typename T>
-  void fillNsigmaForPdg(const T& track, const float& nsigma)
-  {
-    if (!track.has_mcParticle()) {
-      return;
-    }
-    const auto& particle = track.mcParticle();
-    if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
-
-      histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
-
-      if (particle.isPhysicalPrimary()) { // Selecting primaries
-        histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
-      } else {
-        histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
+      histos.add("event/tpcsignal", "All", HistType::kTH2F, {pAxis, signalAxis});
+      histos.add("event/tpcsignalMC", pT[pid_type], HistType::kTH2F, {pAxis, signalAxis});
+      if (checkPrimaries) {
+        histos.add("event/tpcsignalPrm", "Primaries", HistType::kTH2F, {pAxis, signalAxis});
+        histos.add("event/tpcsignalSec", "Secondaries", HistType::kTH2F, {pAxis, signalAxis});
+        histos.add("event/tpcsignalMCPrm", Form("Primary %s", pT[pid_type]), HistType::kTH2F, {pAxis, signalAxis});
+        histos.add("event/tpcsignalMCSec", Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {pAxis, signalAxis});
       }
     }
-  }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
-               soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                         aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                         aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                         aod::McTrackLabels>& tracks,
-               aod::McParticles& mcParticles,
-               aod::McCollisions&)
-  {
-    for (const auto& collision : collisions) {
-      if (collision.numContrib() < nMinNumberOfContributors) {
+    template <uint8_t pidIndex, typename T>
+    void fillNsigmaForPdg(const T& track, const float& nsigma)
+    {
+      if (!track.has_mcParticle()) {
         return;
       }
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-      const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.mcCollision().globalIndex());
-      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      const auto& particle = track.mcParticle();
+      if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
-      for (const auto& p : particlesInCollision) {
-        histos.fill(HIST("particle/p"), p.p());
-        histos.fill(HIST("particle/pt"), p.pt());
-        histos.fill(HIST("particle/eta"), p.eta());
-      }
+        histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
 
-      for (const auto& t : tracksInCollision) {
-        //
-        if (t.eta() < minEta || t.eta() > maxEta) {
-          continue;
-        }
-
-        histos.fill(HIST("tracks/p"), t.p());
-        histos.fill(HIST("tracks/pt"), t.pt());
-        histos.fill(HIST("tracks/eta"), t.eta());
-        histos.fill(HIST("tracks/length"), t.length());
-
-        const float nsigma = o2::aod::pidutils::tpcNSigma<pid_type>(t);
-
-        // Fill for all
-        histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
-        if (!t.has_mcParticle()) {
-          continue;
-        }
-        const auto& particle = t.mcParticle();
         if (particle.isPhysicalPrimary()) { // Selecting primaries
-          histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
-          histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
+          histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
         } else {
-          histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
-          histos.fill(HIST("event/tpcsignalSec"), t.p(), t.tpcSignal());
+          histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
         }
-        if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
-          histos.fill(HIST("event/tpcsignalMC"), t.pt(), t.tpcSignal());
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("event/tpcsignalMCPrm"), t.pt(), t.tpcSignal());
-          } else {
-            histos.fill(HIST("event/tpcsignalMCSec"), t.pt(), t.tpcSignal());
-          }
-        }
-        // Fill with PDG codes
-        static_for<0, 8>([&](auto i) {
-          fillNsigmaForPdg<i>(t, nsigma);
-        });
       }
-      histos.fill(HIST("event/vertexz"), collision.posZ());
     }
-  }
-};
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  auto workflow = WorkflowSpec{};
-  if (cfgc.options().get<int>("qa-el")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Electron>>(cfgc, TaskName{"pidTPC-qa-mc-El"}));
+    void process(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
+                 soa::Join<aod::Tracks, aod::TracksExtra,
+                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                           aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                           aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
+                           aod::McTrackLabels>& tracks,
+                 aod::McParticles& mcParticles,
+                 aod::McCollisions&)
+    {
+      for (const auto& collision : collisions) {
+        if (collision.numContrib() < nMinNumberOfContributors) {
+          return;
+        }
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.mcCollision().globalIndex());
+        const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+
+        for (const auto& p : particlesInCollision) {
+          histos.fill(HIST("particle/p"), p.p());
+          histos.fill(HIST("particle/pt"), p.pt());
+          histos.fill(HIST("particle/eta"), p.eta());
+        }
+
+        for (const auto& t : tracksInCollision) {
+          //
+          if (t.eta() < minEta || t.eta() > maxEta) {
+            continue;
+          }
+
+          histos.fill(HIST("tracks/p"), t.p());
+          histos.fill(HIST("tracks/pt"), t.pt());
+          histos.fill(HIST("tracks/eta"), t.eta());
+          histos.fill(HIST("tracks/length"), t.length());
+
+          const float nsigma = o2::aod::pidutils::tpcNSigma<pid_type>(t);
+
+          // Fill for all
+          histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
+          histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
+          if (!t.has_mcParticle()) {
+            continue;
+          }
+          const auto& particle = t.mcParticle();
+          if (particle.isPhysicalPrimary()) { // Selecting primaries
+            histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
+            histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
+          } else {
+            histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
+            histos.fill(HIST("event/tpcsignalSec"), t.p(), t.tpcSignal());
+          }
+          if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
+            histos.fill(HIST("event/tpcsignalMC"), t.pt(), t.tpcSignal());
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("event/tpcsignalMCPrm"), t.pt(), t.tpcSignal());
+            } else {
+              histos.fill(HIST("event/tpcsignalMCSec"), t.pt(), t.tpcSignal());
+            }
+          }
+          // Fill with PDG codes
+          static_for<0, 8>([&](auto i) {
+            fillNsigmaForPdg<i>(t, nsigma);
+          });
+        }
+        histos.fill(HIST("event/vertexz"), collision.posZ());
+      }
+    }
+  };
+
+  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+  {
+    auto workflow = WorkflowSpec{};
+    if (cfgc.options().get<int>("qa-el")) {
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Electron>>(cfgc, TaskName{"pidTPC-qa-mc-El"}));
+    }
+    if (cfgc.options().get<int>("qa-mu")) {
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Muon>>(cfgc, TaskName{"pidTPC-qa-mc-Mu"}));
+    }
+    if (cfgc.options().get<int>("qa-pikapr")) {
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Pion>>(cfgc, TaskName{"pidTPC-qa-mc-Pi"}));
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Kaon>>(cfgc, TaskName{"pidTPC-qa-mc-Ka"}));
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Proton>>(cfgc, TaskName{"pidTPC-qa-mc-Pr"}));
+    }
+    if (cfgc.options().get<int>("qa-nuclei")) {
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Deuteron>>(cfgc, TaskName{"pidTPC-qa-mc-De"}));
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Triton>>(cfgc, TaskName{"pidTPC-qa-mc-Tr"}));
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Helium3>>(cfgc, TaskName{"pidTPC-qa-mc-He"}));
+      workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Alpha>>(cfgc, TaskName{"pidTPC-qa-mc-Al"}));
+    }
+    return workflow;
   }
-  if (cfgc.options().get<int>("qa-mu")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Muon>>(cfgc, TaskName{"pidTPC-qa-mc-Mu"}));
-  }
-  if (cfgc.options().get<int>("qa-pikapr")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Pion>>(cfgc, TaskName{"pidTPC-qa-mc-Pi"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Kaon>>(cfgc, TaskName{"pidTPC-qa-mc-Ka"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Proton>>(cfgc, TaskName{"pidTPC-qa-mc-Pr"}));
-  }
-  if (cfgc.options().get<int>("qa-nuclei")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Deuteron>>(cfgc, TaskName{"pidTPC-qa-mc-De"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Triton>>(cfgc, TaskName{"pidTPC-qa-mc-Tr"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Helium3>>(cfgc, TaskName{"pidTPC-qa-mc-He"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Alpha>>(cfgc, TaskName{"pidTPC-qa-mc-Al"}));
-  }
-  return workflow;
-}

@@ -12,7 +12,7 @@
 ///
 /// \file   qaPIDTPC.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Header file for QA tasks of the TPC PID quantities
+/// \brief  Header file for QA tasks of the TPC PID quantities, including MC
 ///
 
 #include "Framework/HistogramRegistry.h"
@@ -30,6 +30,7 @@ using namespace o2::track;
 struct tpcPidQa {
   static constexpr int Np = 9;
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+  static constexpr int PDGs[Np] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030};
   static constexpr std::string_view hexpected[Np] = {"expected/El", "expected/Mu", "expected/Pi",
                                                      "expected/Ka", "expected/Pr", "expected/De",
                                                      "expected/Tr", "expected/He", "expected/Al"};
@@ -90,8 +91,29 @@ struct tpcPidQa {
                                                         "wTOF/signal/Ka", "wTOF/signal/Pr", "wTOF/signal/De",
                                                         "wTOF/signal/Tr", "wTOF/signal/He", "wTOF/signal/Al"};
 
+  // MC histograms
+  static constexpr std::string_view hnsigma_mc_prm[Np] = {"MC/nsigma/prm/El", "MC/nsigma/prm/Mu", "MC/nsigma/prm/Pi",
+                                                          "MC/nsigma/prm/Ka", "MC/nsigma/prm/Pr", "MC/nsigma/prm/De",
+                                                          "MC/nsigma/prm/Tr", "MC/nsigma/prm/He", "MC/nsigma/prm/Al"};
+  static constexpr std::string_view hnsigma_mc_str[Np] = {"MC/nsigma/str/El", "MC/nsigma/str/Mu", "MC/nsigma/str/Pi",
+                                                          "MC/nsigma/str/Ka", "MC/nsigma/str/Pr", "MC/nsigma/str/De",
+                                                          "MC/nsigma/str/Tr", "MC/nsigma/str/He", "MC/nsigma/str/Al"};
+  static constexpr std::string_view hnsigma_mc_mat[Np] = {"MC/nsigma/mat/El", "MC/nsigma/mat/Mu", "MC/nsigma/mat/Pi",
+                                                          "MC/nsigma/mat/Ka", "MC/nsigma/mat/Pr", "MC/nsigma/mat/De",
+                                                          "MC/nsigma/mat/Tr", "MC/nsigma/mat/He", "MC/nsigma/mat/Al"};
+  static constexpr std::string_view hnsigma_mc_prm_pdg[Np] = {"MC/nsigma/prm/pdg/El", "MC/nsigma/prm/pdg/Mu", "MC/nsigma/prm/pdg/Pi",
+                                                              "MC/nsigma/prm/pdg/Ka", "MC/nsigma/prm/pdg/Pr", "MC/nsigma/prm/pdg/De",
+                                                              "MC/nsigma/prm/pdg/Tr", "MC/nsigma/prm/pdg/He", "MC/nsigma/prm/pdg/Al"};
+  static constexpr std::string_view hnsigma_mc_str_pdg[Np] = {"MC/nsigma/str/pdg/El", "MC/nsigma/str/pdg/Mu", "MC/nsigma/str/pdg/Pi",
+                                                              "MC/nsigma/str/pdg/Ka", "MC/nsigma/str/pdg/Pr", "MC/nsigma/str/pdg/De",
+                                                              "MC/nsigma/str/pdg/Tr", "MC/nsigma/str/pdg/He", "MC/nsigma/str/pdg/Al"};
+  static constexpr std::string_view hnsigma_mc_mat_pdg[Np] = {"MC/nsigma/mat/pdg/El", "MC/nsigma/mat/pdg/Mu", "MC/nsigma/mat/pdg/Pi",
+                                                              "MC/nsigma/mat/pdg/Ka", "MC/nsigma/mat/pdg/Pr", "MC/nsigma/mat/pdg/De",
+                                                              "MC/nsigma/mat/pdg/Tr", "MC/nsigma/mat/pdg/He", "MC/nsigma/mat/pdg/Al"};
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // Configurables
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
