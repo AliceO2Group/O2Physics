@@ -47,13 +47,11 @@ DECLARE_SOA_COLUMN(V0M, v0m, int);
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLEvent",
                   o2::soa::Index<>,
-                  //collision::BCId,
                   fullEvent::BCId,
-                  //collision::NumContrib,
-                  //collision::PosX,
-                  //collision::PosY,
-                  //collision::PosZ,
-                  fullEvent::Vz,
+                  collision::NumContrib,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
                   fullEvent::V0M,
                   fullEvent::IsEventReject,
                   fullEvent::RunNumber);
@@ -80,7 +78,7 @@ DECLARE_SOA_COLUMN(NSigTOFKa, nsigTOFKa, float);
 DECLARE_SOA_COLUMN(NSigTOFPr, nsigTOFPr, float);
 DECLARE_SOA_COLUMN(NSigTOFDe, nsigTOFD, float);
 DECLARE_SOA_COLUMN(NSigTOF3He, nsigTOF3He, float);
-DECLARE_SOA_COLUMN(TOFmatch, tofMatch, bool);
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
 DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
@@ -96,20 +94,13 @@ DECLARE_SOA_COLUMN(Chi2ITS, chi2ITS, float);
 DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   o2::soa::Index<>,
                   full::LfCandNucleusFullEventId,
-                  //collision::BCId,
                   full::DCAxy,
                   full::DCAz,
-                  full::NSigTPCPi,
-                  full::NSigTPCKa,
-                  full::NSigTPCPr,
-                  full::NSigTPCDe,
-                  full::NSigTPC3He,
-                  full::NSigTOFPi,
-                  full::NSigTOFKa,
-                  full::NSigTOFPr,
-                  full::NSigTOFDe,
-                  full::NSigTOF3He,
-                  full::TOFmatch,
+                  full::NSigTPCPi, full::NSigTPCKa, full::NSigTPCPr,
+                  full::NSigTPCDe, full::NSigTPC3He,
+                  full::NSigTOFPi, full::NSigTOFKa, full::NSigTOFPr,
+                  full::NSigTOFDe, full::NSigTOF3He,
+                  full::HasTOF,
                   full::TPCInnerParam,
                   full::TPCSignal,
                   full::Beta,

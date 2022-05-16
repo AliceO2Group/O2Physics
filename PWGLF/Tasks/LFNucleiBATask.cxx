@@ -78,7 +78,7 @@ struct LFNucleiDeuteronTask {
   {
 
     //for(auto& coll:events)
-    h1VtxZ->Fill(event.vz());
+    h1VtxZ->Fill(event.posZ());
     h1CentV0M->Fill(event.v0m());
     for (auto& track : tracks) {
       //LOG(info)<<"\n collisionId ============>"<<track.collisionId();
@@ -105,7 +105,7 @@ struct LFNucleiDeuteronTask {
       //if(std::abs(track.nsigTPCD()) < 5. && std::abs(track.nsigTOFD()) < 3.)
       h2TPCsignVsTPCmomentum->Fill(track.tpcInnerParam(), track.tpcSignal());
 
-      if (track.tofMatch()) {
+      if (track.hasTOF()) {
         h2TOFbetaVsP->Fill(track.p(), track.beta());
         float gamma = 0., massTOF = 0.;
         if ((track.beta() * track.beta()) < 1.) {
