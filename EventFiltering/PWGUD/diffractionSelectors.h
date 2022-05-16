@@ -70,7 +70,6 @@ struct DGSelector {
 
     // number of vertex tracks
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      LOGF(info, "  Number of vertex tracks %i", collision.numContrib());
       return 4;
     }
 
