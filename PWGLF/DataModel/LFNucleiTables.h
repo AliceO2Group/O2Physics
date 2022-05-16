@@ -15,20 +15,8 @@
 /// \author Rutuparna Rath <rutuparna.rath@cern.ch> and Giovanni Malfattore <giovanni.malfattore@cern.ch>
 ///
 
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/PID/PIDResponse.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
 
 #ifndef O2_ANALYSIS_LFNUCLEITABLES_H_
 #define O2_ANALYSIS_LFNUCLEITABLES_H_
