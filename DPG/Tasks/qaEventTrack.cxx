@@ -189,14 +189,14 @@ struct qaEventTrackLite {
     histos.add("Tracks/TOF/tofChi2", "chi2 in TOF", kTH1D, {{100, 0, 10, "chi2 / cluster TOF"}});
   }
 
-  void process(DPGTracks const& tracks)
+  void process(aod::DPGTracks const& tracks)
   {
     for (const auto& track : tracks) {
       histos.fill(HIST("Tracks/Kine/pt"), track.pt());
       histos.fill(HIST("Tracks/Kine/eta"), track.eta());
       histos.fill(HIST("Tracks/Kine/phi"), track.phi());
-      histos.fill(HIST("Tracks/dcaxy"), track.dcaxy());
-      histos.fill(HIST("Tracks/dcaz"), track.dcaz());
+      histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
+      histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
       histos.fill(HIST("Tracks/length"), track.length());
       histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
       histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
@@ -207,10 +207,9 @@ struct qaEventTrackLite {
       histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
     }
   }
-}
+};
 
-WorkflowSpec
-  defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
   if (cfgc.options().get<int>("lite")) {
