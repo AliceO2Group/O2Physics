@@ -138,8 +138,8 @@ struct DGFilterRun3 {
       }
 
       // obtain slice of compatible BCs
-      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs);
-      LOGF(debug, "  Number of compatible BCs in +- %i dtcoll: %i", diffCuts.NDtcoll(), bcRange.size());
+      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.NMinBCs());
+      LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.NMinBCs(), bcRange.size());
 
       // apply DG selection
       auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
