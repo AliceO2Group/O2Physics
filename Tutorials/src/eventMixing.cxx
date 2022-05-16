@@ -161,6 +161,37 @@ struct MixedEventsJoinedCollisions {
   }
 };
 
+struct MixedEventsDynamicColumns {
+  using aodCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  std::vector<double> zBins{7, -7, 7};
+  std::vector<double> multBins{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1};
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
+  BinningType corrBinning{{zBins, multBins}, true};                               // true is for 'ignore overflows' (true by default)
+  SameKindPair<aodCollisions, aod::Tracks, BinningType> pair{corrBinning, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+  void process(aodCollisions& collisions, aod::Tracks const& tracks)
+  {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+
+    int count = 0;
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      count++;
+      if (count == 10)
+        break;
+
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
+      int trackCount = 0;
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+        trackCount++;
+        if (trackCount == 10)
+          break;
+      }
+    }
+  }
+};
+
 struct MixedEventsVariousKinds {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
@@ -376,6 +407,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
     adaptAnalysisTask<MixedEventsFilteredTracks>(cfgc),
     adaptAnalysisTask<MixedEventsJoinedCollisions>(cfgc),
+    adaptAnalysisTask<MixedEventsDynamicColumns>(cfgc),
     adaptAnalysisTask<MixedEventsVariousKinds>(cfgc),
     adaptAnalysisTask<MixedEventsTriple>(cfgc),
     adaptAnalysisTask<MixedEventsTripleVariousKinds>(cfgc),
