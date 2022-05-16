@@ -69,7 +69,7 @@ class cutHolder
   // number of collision time resolutions to consider
   int mNDtcoll;
   int mNMinBCs;
-  
+
   // number of tracks
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
 
