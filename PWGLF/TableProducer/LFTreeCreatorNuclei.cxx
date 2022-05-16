@@ -69,6 +69,7 @@ struct LfTreeCreatorNuclei {
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+                                                  aod::pidTOFbeta, aod::TOFSignal,
                                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                   aod::pidTPCFullPr, aod::pidTOFFullPr,
@@ -85,9 +86,9 @@ struct LfTreeCreatorNuclei {
     // Filling event properties
     rowCandidateFullEvents(
       collision.bcId(),
-      collision.numContrib(),
-      collision.posX(),
-      collision.posY(),
+      //collision.numContrib(),
+      //collision.posX(),
+      //collision.posY(),
       collision.posZ(),
       collision.multFV0M(),
       collision.sel8(),
@@ -97,8 +98,9 @@ struct LfTreeCreatorNuclei {
     rowCandidateFull.reserve(tracks.size());
     for (auto& track : tracks) {
       rowCandidateFull(
-        track.collisionId(),
-        collision.bcId(),
+        rowCandidateFullEvents.lastIndex(),
+        //track.collisionId(),
+        //collision.bcId(),
         track.dcaXY(),
         track.dcaZ(),
         track.tpcNSigmaPi(),
@@ -112,6 +114,9 @@ struct LfTreeCreatorNuclei {
         track.tofNSigmaDe(),
         track.tofNSigmaHe(),
         track.hasTOF(),
+        track.tpcInnerParam(),
+        track.tpcSignal(),
+        track.beta(),
         track.px(),
         track.py(),
         track.pz(),
@@ -119,7 +124,11 @@ struct LfTreeCreatorNuclei {
         track.p(),
         track.eta(),
         track.phi(),
-        track.sign());
+        track.sign(),
+        track.tpcNClsCrossedRows(),
+        track.tpcCrossedRowsOverFindableCls(),
+        track.tpcChi2NCl(),
+        track.itsChi2NCl());
     }
   }
 };
