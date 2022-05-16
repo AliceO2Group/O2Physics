@@ -81,7 +81,7 @@ struct LfTreeCreatorNuclei {
                TrackCandidates const& tracks,
                aod::BCs const&)
   {
-    if (useEvsel && !collision.sel8()){
+    if (useEvsel && !collision.sel8()) {
       return;
     }
     // Filling event properties
@@ -104,7 +104,7 @@ struct LfTreeCreatorNuclei {
         track.dcaZ(),
         track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
         track.tpcNSigmaDe(), track.tpcNSigmaHe(),
-        track.tofNSigmaPi(), track.tofNSigmaKa(),track.tofNSigmaPr(),
+        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
         track.tofNSigmaDe(), track.tofNSigmaHe(),
         track.hasTOF(),
         track.tpcInnerParam(),
