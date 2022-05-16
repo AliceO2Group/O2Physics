@@ -39,6 +39,7 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
@@ -69,6 +70,7 @@ DECLARE_SOA_COLUMN(V0M, v0m, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
+                  full::CollisionId,
                   collision::BCId,
                   full::DCAxy,
                   full::DCAz,

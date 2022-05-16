@@ -47,6 +47,7 @@ struct LFNucleiDeuteronTask {
   OutputObj<TH2F> h2DeuteronVspNSigmaTOF{TH2F(" h2DeuteronVspNSigmaTOF", "NSigmaTOF(D) vs p; Momentum(p) in GeV; NSigmaTOF", 200, 0, 20., 200, -10, 10.)};
   OutputObj<TH2F> h2HeliumVspNSigmaTOF{TH2F(" h2HeliumVspNSigmaTOF", "NSigmaTOF(He) vs p; Momentum(p) in GeV; NSigmaTOF", 200, 0, 20., 200, -10, 10.)};
   OutputObj<TH1F> h1DeuteronSpectra{TH1F("h1DeuteronSpectra", "pT; counts", 200, 0, 20)};
+  OutputObj<TH1F> h1DeuteronSpectra2{TH1F("h1DeuteronSpectra2", "pT; counts", 200, 0, 20)};
 
   void init(o2::framework::InitContext&)
   {
@@ -59,6 +60,7 @@ struct LFNucleiDeuteronTask {
     h1VtxZ->Fill(event.vz());
     h1CentV0M->Fill(event.v0m());
     for (auto& track : tracks) {
+      LOG(info)<<"\n collisionId ============>"<<track.collisionId();
       h2PionVspNSigmaTPC->Fill(track.p(), track.nsigTPCPi());
       h2KaonVspNSigmaTPC->Fill(track.p(), track.nsigTPCKa());
       h2ProtonVspNSigmaTPC->Fill(track.p(), track.nsigTPCPr());
@@ -72,6 +74,7 @@ struct LFNucleiDeuteronTask {
       //if(std::abs(track.nsigTPCD()) < 5. && std::abs(track.nsigTOFD()) < 3.)
       if (std::abs(track.nsigTPCD()) < 5.)
         h1DeuteronSpectra->Fill(track.pt());
+        h1DeuteronSpectra2->Fill(track.pt());
     }
     //LOG(info)<<"Vertex Z ==="<<coll.posZ();
   }

@@ -97,6 +97,7 @@ struct LfTreeCreatorNuclei {
     rowCandidateFull.reserve(tracks.size());
     for (auto& track : tracks) {
       rowCandidateFull(
+        track.collisionId(),
         collision.bcId(),
         track.dcaXY(),
         track.dcaZ(),
