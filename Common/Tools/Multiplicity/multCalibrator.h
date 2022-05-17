@@ -55,12 +55,31 @@ class multCalibrator : public TNamed
   }
 
   void SetStandardAdaptiveBoundaries(); //standard adaptive (pp-like)
+  void SetStandardOnePercentBoundaries(); //standard 1% (Pb-Pb like)
 
   //Master Function in this Class: To be called once filenames are set
   Bool_t Calibrate();
+  
+  //Aux function. Keep public, accessible outside as rather useful utility
+  TH1F* GetCalibrationHistogram(TH1D *histoRaw, TString lHistoName = "hCalib");
 
   //Auxiliary functions
   Double_t GetBoundaryForPercentile(TH1D* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate);
+  
+  //Aliases for centrality estimators
+  enum fCentEstim {
+    kCentRawV0M = 0,
+    kCentRawT0M,
+    kCentRawFDD,
+    kCentRawNTracks,
+    kCentZeqV0M,
+    kCentZeqT0M,
+    kCentZeqFDD,
+    kCentZeqNTracks,
+    kNCentEstim
+  };
+  
+  static const TString fCentEstimName[kNCentEstim]; //! name (internal)
 
  private:
   //Calibration Boundaries to locate
