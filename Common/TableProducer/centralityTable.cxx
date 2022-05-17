@@ -34,7 +34,7 @@ struct CentralityTable {
   Produces<aod::CentRun3V0Ms> centRun3V0M;
   Produces<aod::CentRun3FT0Ms> centRun3FT0M;
   Produces<aod::CentRun3FDDMs> centRun3FDDM;
-  Produces<aod::CentRun3NTPVs> centRun3NTPVs;
+  Produces<aod::CentRun3NTPVs> centRun3NTPV;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<int> estRun2V0M{"estRun2V0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -277,7 +277,7 @@ struct CentralityTable {
       centRun2CL1(cCL1);
     }
   }
-  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
+  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", false);
 
   using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
@@ -286,7 +286,7 @@ struct CentralityTable {
     /* check the previous run number */
     auto bc = collision.bc_as<BCsWithTimestamps>();
     if (bc.runNumber() != mRunNumber) {
-      LOGF(debug, "timestamp=%llu", bc.timestamp());
+      LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
       TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
 
       Run3V0MInfo.mCalibrationStored = false;
@@ -303,7 +303,7 @@ struct CentralityTable {
           return f;
         };
         if (estRun3V0M == 1) {
-          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run3V0MInfo.mhMultSelCalib = getccdb("hCalibZeqV0");
           Run3V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0", genName->c_str()).Data());
           if (Run3V0MInfo.mhMultSelCalib != nullptr) {
@@ -322,7 +322,7 @@ struct CentralityTable {
           }
         }
         if (estRun3FT0M == 1) {
-          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run3FT0MInfo.mhMultSelCalib = getccdb("hCalibZeqT0");
           if (Run3FT0MInfo.mhMultSelCalib != nullptr) {
             Run3FT0MInfo.mCalibrationStored = true;
@@ -331,7 +331,7 @@ struct CentralityTable {
           }
         }
         if (estRun3FDDM == 1) {
-          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run3FDDMInfo.mhMultSelCalib = getccdb("hCalibZeqFDD");
           if (Run3FDDMInfo.mhMultSelCalib != nullptr) {
             Run3FDDMInfo.mCalibrationStored = true;
@@ -340,7 +340,7 @@ struct CentralityTable {
           }
         }
         if (estRun3NTPV == 1) {
-          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run3NTPVInfo.mhMultSelCalib = getccdb("hCalibZeqNTracks");
           if (Run3NTPVInfo.mhMultSelCalib != nullptr) {
             Run3NTPVInfo.mCalibrationStored = true;
@@ -362,8 +362,8 @@ struct CentralityTable {
 
     if (estRun3V0M == 1) {
       float cV0M = 105.0f;
+      float v0m;
       if (Run3V0MInfo.mCalibrationStored) {
-        float v0m;
         if (Run3V0MInfo.mMCScale != nullptr) {
           v0m = scaleMC(collision.multFV0M(), Run2V0MInfo.mMCScalePars);
           LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", collision.multFV0M(), v0m);
@@ -372,39 +372,42 @@ struct CentralityTable {
         }
         cV0M = Run3V0MInfo.mhMultSelCalib->GetBinContent(Run3V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
-      LOGF(debug, "centRun2V0M=%.0f", cV0M);
+      LOGF(debug, "centRun3V0M=%.0f for a zvtx eq FV0A value %.0f", cV0M, v0m);
       // fill centrality columns
       centRun3V0M(cV0M);
     }
     if (estRun3FT0M == 1) {
       float cFT0 = 105.0f;
+      float cft0m;
       if (Run3FT0MInfo.mCalibrationStored) {
-        float cft0m = collision.multZeqFT0A() + collision.multZeqFT0C();
+        cft0m = collision.multZeqFT0A() + collision.multZeqFT0C();
         cFT0 = Run3FT0MInfo.mhMultSelCalib->GetBinContent(Run3FT0MInfo.mhMultSelCalib->FindFixBin(cft0m));
       }
-      LOGF(debug, "centRun3FT0M=%.0f", cFT0);
+      LOGF(debug, "centRun3FT0M=%.0f for a zvtx eq FT0M value %.0f", cFT0, cft0m);
       centRun3FT0M(cFT0);
     }
     if (estRun3FDDM == 1) {
       float cFDD = 105.0f;
+      float cfddm;
       if (Run3FDDMInfo.mCalibrationStored) {
-        float cfddm = collision.multZeqFDDA() + collision.multZeqFDDC();
+        cfddm = collision.multZeqFDDA() + collision.multZeqFDDC();
         cFDD = Run3FDDMInfo.mhMultSelCalib->GetBinContent(Run3FDDMInfo.mhMultSelCalib->FindFixBin(cfddm));
       }
-      LOGF(debug, "centRun3FDDM=%.0f", cFDD);
+      LOGF(debug, "centRun3FDDM=%.0f for a zvtx eq FDDM value %.0f", cFDD, cfddm);
       centRun3FDDM(cFDD);
     }
     if (estRun3NTPV == 1) {
       float cNTPV = 105.0f;
+      float cntv;
       if (Run3NTPVInfo.mCalibrationStored) {
-        float cntv = collision.multZeqNTracksPV();
+        cntv = collision.multZeqNTracksPV();
         cNTPV = Run3NTPVInfo.mhMultSelCalib->GetBinContent(Run3NTPVInfo.mhMultSelCalib->FindFixBin(cntv));
       }
-      LOGF(debug, "centRun3NTPV=%.0f", cNTPV);
-      centRun3FT0M(cNTPV);
+      LOGF(debug, "centRun3NTPV=%.0f for a zvtx eq NTPV value %.0f", cNTPV, cntv);
+      centRun3NTPV(cNTPV);
     }
   }
-  PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", true);
+  PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
