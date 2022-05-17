@@ -110,21 +110,32 @@ struct PidONNXModel {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
 
+    char* mlmodelsDir = getenv("MLMODELS_ROOT");
+    if (mlmodelsDir == NULL) {
+      LOG(fatal) << "Path to ML models undefined, did you load MLModels environment?";
+    }
+
     std::string modelSubdir = useTOF ? "All" : "TPC";
     std::ostringstream tmp;
+    tmp << mlmodelsDir << "/models/";
     tmp << modelDir << "/" << modelSubdir << "/simple_model_" << pid << ".onnx";
     modelFile = tmp.str();
     tmp.str("");
     tmp.clear();
+    tmp << mlmodelsDir << "/models/";
     tmp << modelDir << "/" << modelSubdir << "/columns_for_training.json";
     std::string trainColumnsFile = tmp.str();
+    tmp.str("");
+    tmp.clear();
+    tmp << mlmodelsDir << "/" << scalingParamsFile;
+    std::string scalingParamsFilePath = tmp.str();
 
     if (readJsonFile(trainColumnsFile, trainColumnsDoc)) {
       for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
         mTrainColumns.emplace_back(param.GetString());
       }
     }
-    if (readJsonFile(scalingParamsFile, scalingParamsDoc)) {
+    if (readJsonFile(scalingParamsFilePath, scalingParamsDoc)) {
       for (auto& param : scalingParamsDoc["data"].GetArray()) {
         mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
       }
