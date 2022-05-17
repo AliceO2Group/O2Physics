@@ -159,7 +159,7 @@ struct femtoDreamProducerTask {
     trackCuts.setSelection(ConfTrkDCAzMax, femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(ConfTrkTPIDspecies);
-    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
 
     /// \todo fix how to pass array to setSelection, getRow() passing a different type!
     // v0Cuts.setSelection(ConfV0Selection->getRow(0), femtoDreamV0Selection::kDecVtxMax, femtoDreamSelection::kAbsUpperLimit);
@@ -221,7 +221,7 @@ struct femtoDreamProducerTask {
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
       }
-      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack>(track);
+      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track);
 
@@ -273,6 +273,8 @@ struct femtoDreamProducerTask {
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
+        v0Cuts.fillLambdaQA(col, v0, postrack, negtrack);
+
         if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
           continue;
         }
