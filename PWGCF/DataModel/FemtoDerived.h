@@ -44,16 +44,26 @@ namespace femtodreamparticle
 {
 /// Distinuishes the different particle types
 enum ParticleType {
-  kTrack,          //! Track
-  kV0,             //! V0
-  kV0Child,        //! Child track of a V0
-  kCascade,        //! Cascade
-  kCascadeBachelor //! Bachelor track of a cascade
+  kTrack,           //! Track
+  kV0,              //! V0
+  kV0Child,         //! Child track of a V0
+  kCascade,         //! Cascade
+  kCascadeBachelor, //! Bachelor track of a cascade
+  kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[5] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
+
+enum TrackType {
+  kNoChild,    //! Not a V0 child
+  kPosChild,   //! Positive V0 child
+  kNegChild,   //! Negative V0 child
+  kNTrackTypes //! Number of child types
+};
+
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                    //! p_T (GeV/c)

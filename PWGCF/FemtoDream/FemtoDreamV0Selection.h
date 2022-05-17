@@ -83,6 +83,9 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
   template <typename C, typename V, typename T>
   bool isSelectedMinimal(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
+  template <typename C, typename V, typename T>
+  void fillLambdaQA(C const& col, V const& v0, T const& posTrack, T const& negTrack);
+
   /// \todo for the moment the PID of the tracks is factored out into a separate field, hence 5 values in total \\ASK: what does it mean?
   template <typename cutContainerType, typename C, typename V, typename T>
   std::array<cutContainerType, 5> getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack);
@@ -249,8 +252,18 @@ void FemtoDreamV0Selection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/hInvMassAntiLambda").c_str(), "", kTH1F, {massAxisAntiLambda});
     mHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(), "", kTH2F, {massAxisLambda, massAxisAntiLambda});
 
-    PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry, "Pos");
-    NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry, "Neg");
+    PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::TrackType::kPosChild, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry);
+    NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::TrackType::kNegChild, aod::femtodreamparticle::cutContainerType>(mHistogramRegistry);
+
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaInvMassCut", "Invariant mass cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMin", "Minumum Pt cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMax", "Maximum Pt cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaDCAV0Daugh", "V0-daughters DCA cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaCPA", "CPA cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaTranRadMin", "Minimum transverse radius cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaTranRadMax", "Maximum transverse radius cut", kTH1F, {massAxisLambda});
+    mHistogramRegistry->add("LambdaQA/hInvMassLambdaDecVtxMax", "Maximum distance on  decay vertex cut", kTH1F, {massAxisLambda});
   }
   /// check whether the most open cuts are fulfilled - most of this should have already be done by the filters
   nPtV0MinSel = getNSelections(femtoDreamV0Selection::kpTV0Min);
@@ -325,6 +338,56 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
     return false;
   }
   return true;
+}
+
+template <typename C, typename V, typename T>
+void FemtoDreamV0Selection::fillLambdaQA(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+{
+  const auto signPos = posTrack.sign();
+  const auto signNeg = negTrack.sign();
+  if (signPos < 0 || signNeg > 0) {
+    printf("-Something wrong in isSelectedMinimal--\n");
+    printf("ERROR - Wrong sign for V0 daughters\n");
+  }
+  const float pT = v0.pt();
+  const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
+  const float tranRad = v0.v0radius();
+  const float dcaDaughv0 = v0.dcaV0daughters();
+  const float cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+
+  const float invMassLambda = v0.mLambda();
+
+  mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaNoCuts"), v0.mLambda());
+
+  if (invMassLambda > fInvMassLowLimit and invMassLambda < fInvMassUpLimit) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"), v0.mLambda());
+  }
+
+  if (pT > pTV0Min) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMin"), v0.mLambda());
+  }
+  if (pT < pTV0Max) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMax"), v0.mLambda());
+  }
+  if (dcaDaughv0 < DCAV0DaughMax) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDCAV0Daugh"), v0.mLambda());
+  }
+  if (cpav0 > CPAV0Min) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaCPA"), v0.mLambda());
+  }
+  if (tranRad > TranRadV0Min) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMin"), v0.mLambda());
+  }
+  if (tranRad < TranRadV0Max) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMax"), v0.mLambda());
+  }
+  bool write = true;
+  for (size_t i = 0; i < decVtx.size(); i++) {
+    write = write && (decVtx.at(i) < DecVtxMax);
+  }
+  if (write) {
+    mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDecVtxMax"), v0.mLambda());
+  }
 }
 
 /// the CosPA of V0 needs as argument the posXYZ of collisions vertex so we need to pass the collsion as well
@@ -415,9 +478,9 @@ void FemtoDreamV0Selection::fillQA(C const& col, V const& v0, T const& posTrack,
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMassAntiLambda"), v0.mAntiLambda());
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMassLambdaAntiLambda"), v0.mLambda(), v0.mAntiLambda());
   }
-  /// \TODO to add possibility to write to Daughters folders
-  // PosDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child>(posTrack, "Pos");
-  // NegDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child>(negTrack, "Neg");
+
+  PosDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::TrackType::kPosChild>(posTrack);
+  NegDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::TrackType::kNegChild>(negTrack);
 }
 
 } // namespace o2::analysis::femtoDream
