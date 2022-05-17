@@ -160,8 +160,15 @@ struct qaEventTrack {
 
 struct qaEventTrackLite {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis binsImpPar{"binsImpPar", {200, -0.15, 0.15}, "Impact parameter binning (cm)"};
 
   HistogramRegistry histos;
+
+  Configurable<bool> b_itsStandalone{"b_itsStandalone", false, "Select only ITS standalone DPG tracks"};
+  Configurable<bool> b_tpcOnly{"b_tpcOnly", false, "Select only TPC only DPG tracks"};
+  Configurable<bool> b_itstpcMatched{"b_itstpcMatched", false, "Select ITS-TPC matched DPG tracks"};
+  Configurable<float> etaMin{"etaMin", -10., "Minimum eta for DPG tracks"};
+  Configurable<float> etaMax{"etaMax", 10., "Maximum eta for DPG tracks"};
 
   void init(InitContext const&)
   {
@@ -169,27 +176,45 @@ struct qaEventTrackLite {
 
     // kine histograms
     histos.add("Tracks/Kine/pt", "#it{p}_{T};#it{p}_{T} [GeV/c]", kTH1D, {{axisPt}});
-    histos.add("Tracks/Kine/eta", "#eta;#eta", kTH1D, {{180, -0.9, 0.9}});
+    histos.add("Tracks/Kine/eta", "#eta;#eta", kTH1D, {{800, -2., 2.}});
     histos.add("Tracks/Kine/phi", "#phi;#phi [rad]", kTH1D, {{180, 0., 2 * M_PI}});
-    histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("Tracks/dcaZ", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("Tracks/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
+    const AxisSpec axisImpParRPhi{binsImpPar, "#it{d}_{r#it{#varphi}} (#cm)"};
+    const AxisSpec axisImpParZAxis{binsImpPar, "#it{d}_{z} (#cm)"};
+    histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane", kTH1D, {axisImpParRPhi});
+    histos.add("Tracks/dcaZ", "distance of closest approach in #it{z}", kTH1D, {axisImpParZAxis});
+    histos.add("Tracks/dcaXYvsPt", "d_#it{xy} vs. #it{p}_{T}", kTH2D, {axisPt, axisImpParRPhi});
+    histos.add("Tracks/dcaZvsPt", "d_#it{z} vs. #it{p}_{T}", kTH2D, {axisPt, axisImpParRPhi});
 
     // its histograms
     histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
-
     // tpc histograms
     histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
     histos.add("Tracks/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
     histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
+    histos.add("Tracks/TPC/tpcNClsFoundvsPt", "", kTH2D, {axisPt, {165, -0.5, 164.5, "# clusters TPC"}});
+    histos.add("Tracks/TPC/tpcCrossedRowsvsPt", "", kTH2D, {axisPt, {165, -0.5, 164.5, "# crossed rows TPC"}});
+    histos.add("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt", "", kTH2D, {axisPt, {60, 0.7, 1.3, "crossed rows / findable clusters TPC"}});
     // trd histograms
     histos.add("Tracks/TRD/trdChi2", "chi2 in TRD", kTH1D, {{100, 0, 10, "chi2 / cluster TRD"}});
     // tof histograms
     histos.add("Tracks/TOF/tofChi2", "chi2 in TOF", kTH1D, {{100, 0, 10, "chi2 / cluster TOF"}});
+    // matching histogram
+    histos.add("Tracks/matchedDet", "matched detectors", kTH1D, {{4, 0.5, 4.5, ""}});
+    histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(1, "hasTPC");
+    histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(2, "hasITS");
+    histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(3, "hasTRD");
+    histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(4, "hasTOF");
   }
 
-  void process(aod::DPGTracks const& tracks)
+  /// Filters
+  Filter etaCut = etaMin < o2::aod::dpgtrack::eta && o2::aod::dpgtrack::eta < etaMax;
+  Filter itsStandalone_tracks = (b_itsStandalone.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == false);
+  Filter tpcOnly_tracks = (b_tpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
+  Filter itstpcMatched_tracks = (b_itstpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
+
+  void process(o2::soa::Filtered<aod::DPGTracks> const& tracks)
   {
     for (const auto& track : tracks) {
       histos.fill(HIST("Tracks/Kine/pt"), track.pt());
@@ -197,14 +222,31 @@ struct qaEventTrackLite {
       histos.fill(HIST("Tracks/Kine/phi"), track.phi());
       histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
       histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
+      histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
+      histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
       histos.fill(HIST("Tracks/length"), track.length());
       histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
       histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
       histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
       histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
       histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
+      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
+      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
       histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
+      if (track.hasTPC()) {
+        histos.fill(HIST("Tracks/matchedDet"), 1);
+      }
+      if (track.hasITS()) {
+        histos.fill(HIST("Tracks/matchedDet"), 2);
+      }
+      if (track.hasTRD()) {
+        histos.fill(HIST("Tracks/matchedDet"), 3);
+      }
+      if (track.hasTOF()) {
+        histos.fill(HIST("Tracks/matchedDet"), 4);
+      }
     }
   }
 };
