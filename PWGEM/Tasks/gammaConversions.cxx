@@ -36,7 +36,8 @@ struct GammaConversions {
   */
 
   // track cuts
-  Configurable<float> fTrackEtaMax{"fTrackEtaMax", 0.8, "accepted eta range"};
+  Configurable<float> fTrackEtaMax{"fTrackEtaMax", 0.8, "accepted track eta range"};
+  Configurable<float> fTruePhotonEtaMax{"fTruePhotonEtaMax", 0.8, "eta range for true mc photons that serve for validation"};
   Configurable<float> fTrackPtMin{"fTrackPtMin", 0.04, "minimum daughter track pt"};
   Configurable<float> fPIDnSigmaElectronMin{"fPIDnSigmaElectronMin", -3., "minimum sigma electron PID for V0 daughter tracks. Set 0 to disable."};
   Configurable<float> fPIDnSigmaElectronMax{"fPIDnSigmaElectronMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
@@ -145,6 +146,12 @@ struct GammaConversions {
     {"kCosinePA", 11},
     {"kPhotonOut", 12}};
 
+  std::map<std::string, size_t> fMcPhotonCutIndeces{
+    {"kMcPhotonIn", 0},
+    {"kMcPhysicalPrimary", 1},
+    {"kMcEta", 2},
+    {"kMcPhotonOut", 12}};
+
   // helper function for init::addHistosToRegistry. Can't be a lambda itself because it's templated. (possible in c++20)
   template <typename T>
   void appendSuffixToTitle(HistPtr& theHistPtr, std::string* theSuffix)
@@ -223,8 +230,12 @@ struct GammaConversions {
       }
     }
 
+    // add single histograms
+    fHistogramRegistry.add("MCinformationNeeded/hCutsOnMcTruthInfo", "hCutsOnMcTruthInfo",
+                           {HistType::kTH1F, {{13, -0.0f, 12.5f}}});
+
+    // do some labeling
     {
-      // do some labeling
       auto lIsPhotonSelectedHisto = fRecTrueV0Histos[kRec].find(fFullNameIsPhotonSelectedHisto);
       if (lIsPhotonSelectedHisto != fRecTrueV0Histos[kRec].end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lIsPhotonSelectedHisto->second)->GetXaxis();
@@ -233,14 +244,22 @@ struct GammaConversions {
         }
       }
     }
+
+    {
+      TAxis* lXaxis = fHistogramRegistry.get<TH1>(HIST("MCinformationNeeded/hCutsOnMcTruthInfo"))->GetXaxis();
+      for (auto& lPairIt : fMcPhotonCutIndeces) {
+        lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
+      }
+    }
   }
 
   // SFS todo: think about if this is actually too expensive. Going the other way round with the indices as keys wouldnt require lookups at inserting but pbly produce a but of code duplication at the definition of the cut names
   size_t gMax_size = (size_t)-1;
-  size_t getPhotonCutIndex(std::string const& theKey)
+  size_t getPhotonCutIndex(std::string const& theKey, bool theMcCuts = false)
   {
-    auto lPairIt = fPhotonCutIndeces.find(theKey);
-    if (lPairIt != fPhotonCutIndeces.end()) {
+    auto const& lMap = theMcCuts ? fMcPhotonCutIndeces : fPhotonCutIndeces;
+    auto lPairIt = lMap.find(theKey);
+    if (lPairIt != lMap.end()) {
       return lPairIt->second;
     }
     return gMax_size;
@@ -275,25 +294,51 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMATABLE>
-  void fillTruePhotonHistograms(std::string theBAC, TV0 const& theV0, float const& theV0CosinePA, TMCGAMMATABLE const& theMcPhotonForThisV0AsTable)
+  bool processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable, TV0 const& theV0, float const& theV0CosinePA)
   {
-    if (!theMcPhotonForThisV0AsTable.size()) {
-      return;
+    // is a table that might be empty
+    if (theMcPhotonForThisV0AsTable.begin() == theMcPhotonForThisV0AsTable.end()) {
+      return false;
     }
-    auto lMcPhoton = theMcPhotonForThisV0AsTable.begin();
 
-    fillV0HistogramsMcGamma(kMCTrue, theBAC, lMcPhoton);
+    std::shared_ptr<TH1> hCutsOnMcTruthInfo = fHistogramRegistry.get<TH1>(HIST("MCinformationNeeded/hCutsOnMcTruthInfo"));
+
+    auto const lMcPhoton = theMcPhotonForThisV0AsTable.begin();
+    hCutsOnMcTruthInfo->Fill(getPhotonCutIndex("kMcPhotonIn", true /*theMcCuts*/));
+
+    if (!lMcPhoton.isPhysicalPrimary()) {
+      hCutsOnMcTruthInfo->Fill(getPhotonCutIndex("kMcPhysicalPrimary", true /*theMcCuts*/));
+      return false;
+    }
+
+    if (std::abs(lMcPhoton.eta()) > fTruePhotonEtaMax) {
+      hCutsOnMcTruthInfo->Fill(getPhotonCutIndex("kMcEta", true /*theMcCuts*/));
+      return false;
+    }
+    hCutsOnMcTruthInfo->Fill(getPhotonCutIndex("kMcPhotonOut", true /*theMcCuts*/));
+
+    fillTruePhotonHistograms(lMcPhoton,
+                             theV0,
+                             theV0CosinePA,
+                             "beforeCuts/");
+    return true;
+  }
+
+  template <typename TV0, typename TMCGAMMA>
+  void fillTruePhotonHistograms(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, std::string theBAC)
+  {
+    fillV0HistogramsMcGamma(kMCTrue, theBAC, theMcPhoton);
     fillV0Histograms(kMCVal, theBAC, theV0, theV0CosinePA);
 
     // v0 resolution histos
     {
       TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
-      TVector3 lConvPointTrue(lMcPhoton.conversionX(), lMcPhoton.conversionY(), lMcPhoton.conversionZ());
+      TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
 
       std::string lPath(fPrefixResolutions + theBAC);
-      fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - lMcPhoton.pt());
-      fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - lMcPhoton.eta());
-      fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - lMcPhoton.phi());
+      fillTH1(fV0ResolutionHistos, lPath + "hPtRes", theV0.pt() - theMcPhoton.pt());
+      fillTH1(fV0ResolutionHistos, lPath + "hEtaRes", theV0.eta() - theMcPhoton.eta());
+      fillTH1(fV0ResolutionHistos, lPath + "hPhiRes", theV0.phi() - theMcPhoton.phi());
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
       fillTH1(fV0ResolutionHistos, lPath + "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
     }
@@ -326,21 +371,21 @@ struct GammaConversions {
     for (auto& lV0 : theV0s) {
 
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
-      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id()); // is a table that might be empty
 
-      fillTruePhotonHistograms("beforeCuts/",
-                               lV0,
-                               lV0CosinePA,
-                               lMcPhotonForThisV0AsTable);
+      // is a table that might be empty
+      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
+      bool lComesFromMcPhotonInAcceptance = processMcPhoton(lMcPhotonForThisV0AsTable, lV0, lV0CosinePA);
 
       if (!processPhoton(lV0, lV0CosinePA, theTracks)) {
         continue;
       }
 
-      fillTruePhotonHistograms("afterCuts/",
-                               lV0,
-                               lV0CosinePA,
-                               lMcPhotonForThisV0AsTable);
+      if (lComesFromMcPhotonInAcceptance) {
+        fillTruePhotonHistograms(lMcPhotonForThisV0AsTable.begin(),
+                                 lV0,
+                                 lV0CosinePA,
+                                 "afterCuts/");
+      }
     }
   }
   PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
