@@ -44,16 +44,26 @@ namespace femtodreamparticle
 {
 /// Distinuishes the different particle types
 enum ParticleType {
-  kTrack,          //! Track
-  kV0,             //! V0
-  kV0Child,        //! Child track of a V0
-  kCascade,        //! Cascade
-  kCascadeBachelor //! Bachelor track of a cascade
+  kTrack,           //! Track
+  kV0,              //! V0
+  kV0Child,         //! Child track of a V0
+  kCascade,         //! Cascade
+  kCascadeBachelor, //! Bachelor track of a cascade
+  kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[5] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
+
+enum TrackType {
+  kNoChild,    //! Not a V0 child
+  kPosChild,   //! Positive V0 child
+  kNegChild,   //! Negative V0 child
+  kNTrackTypes //! Number of child types
+};
+
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                    //! p_T (GeV/c)
@@ -64,6 +74,8 @@ DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);       //! Bit-wise container for
 DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType); //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);    //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);         //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);          //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);  //! The invariant mass of V0 candidate, assuming antilambda
 
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            [](float eta) -> float {
@@ -95,13 +107,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
-DECLARE_SOA_COLUMN(PosDCAptoVtx, posDCAtoVtx, float); //! Positive daughter DCA from the decay vertex
-DECLARE_SOA_COLUMN(NegDCAptoVtx, negDCAtoVtx, float); //! Negative daughter DCA from the decay vertex
-DECLARE_SOA_COLUMN(TransRadius, transRadius, float);  //! Transverse radius of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);      //! X position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);      //! Y position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);      //! Z position of the decay vertex
-DECLARE_SOA_COLUMN(CPA, cpa, float);                  //! Cosine of pointing angle
+DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 
 } // namespace femtodreamparticle
 DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
@@ -115,6 +125,8 @@ DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
                   femtodreamparticle::PIDCut,
                   femtodreamparticle::TempFitVar,
                   femtodreamparticle::Indices,
+                  femtodreamparticle::MLambda,
+                  femtodreamparticle::MAntiLambda,
                   femtodreamparticle::Theta<femtodreamparticle::Eta>,
                   femtodreamparticle::Px<femtodreamparticle::Pt, femtodreamparticle::Phi>,
                   femtodreamparticle::Py<femtodreamparticle::Pt, femtodreamparticle::Phi>,
@@ -122,7 +134,7 @@ DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
                   femtodreamparticle::P<femtodreamparticle::Pt, femtodreamparticle::Eta>);
 using FemtoDreamParticle = FemtoDreamParticles::iterator;
 
-DECLARE_SOA_TABLE(FemtoDreamDebugTracks, "AOD", "FDDEBUGTRACKS",
+DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
                   femtodreamparticle::Sign,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
@@ -144,6 +156,11 @@ DECLARE_SOA_TABLE(FemtoDreamDebugTracks, "AOD", "FDDEBUGTRACKS",
                   pidtof_tiny::TOFNSigmaStoreKa,
                   pidtof_tiny::TOFNSigmaStorePr,
                   pidtof_tiny::TOFNSigmaStoreDe,
+                  femtodreamparticle::DaughDCA,
+                  femtodreamparticle::TransRadius,
+                  femtodreamparticle::DecayVtxX,
+                  femtodreamparticle::DecayVtxY,
+                  femtodreamparticle::DecayVtxZ,
                   femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>,
                   pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
                   pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
@@ -155,17 +172,7 @@ DECLARE_SOA_TABLE(FemtoDreamDebugTracks, "AOD", "FDDEBUGTRACKS",
                   pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
-using FemtoDreamDebugTrack = FemtoDreamDebugTracks::iterator;
-
-DECLARE_SOA_TABLE(FemtoDreamDebugV0s, "AOD", "FDDEBUGV0S",
-                  femtodreamparticle::PosDCAptoVtx,
-                  femtodreamparticle::NegDCAptoVtx,
-                  femtodreamparticle::TransRadius,
-                  femtodreamparticle::DecayVtxX,
-                  femtodreamparticle::DecayVtxY,
-                  femtodreamparticle::DecayVtxZ,
-                  femtodreamparticle::CPA);
-using FemtoDreamDebugV0 = FemtoDreamDebugV0s::iterator;
+using FemtoDreamDebugParticle = FemtoDreamDebugParticles::iterator;
 
 /// Hash
 namespace hash

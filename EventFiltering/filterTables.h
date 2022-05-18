@@ -24,7 +24,10 @@ DECLARE_SOA_COLUMN(He3, hasHe3, bool); //!
 DECLARE_SOA_COLUMN(He4, hasHe4, bool); //!
 
 // diffraction
-DECLARE_SOA_COLUMN(DG, hasDG, bool); //! Double Gap events, DG
+DECLARE_SOA_COLUMN(TwoPi, has2pi, bool);  //! Double Gap events, DG, 2 pion
+DECLARE_SOA_COLUMN(FourPi, has4pi, bool); //! 4 pion
+DECLARE_SOA_COLUMN(TwoK, has2K, bool);    //! 2 K
+DECLARE_SOA_COLUMN(FourK, has4K, bool);   //! 4 K
 
 // Dileptons & Quarkonia
 DECLARE_SOA_COLUMN(SingleE, hasSingleE, bool);           //! single electron trigger
@@ -60,10 +63,17 @@ DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R 
 DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);         //! event contains leading track
 DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);               //! high FV0 muliplicity
 DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);           //! high muliplicity collision
-DECLARE_SOA_COLUMN(HighTrackMultTrans, hasHighTrackMultTrans, bool); //! high muliplicity collision based on activity in TS
-DECLARE_SOA_COLUMN(HighTrackMultOverlap, hasHighTrackMultOverlap, bool); //! high trk mult and high transverse act
 
 } // namespace filtering
+
+namespace decision
+{
+
+DECLARE_SOA_COLUMN(BCId, hasBCId, int);                     //! Bunch crossing Id
+DECLARE_SOA_COLUMN(CollisionTime, hasCollisionTime, float); //! Collision time
+DECLARE_SOA_COLUMN(CefpSelected, hasCefpSelected, bool);    //! CEFP decision
+
+} // namespace decision
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
@@ -72,7 +82,7 @@ using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
 DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters
-                  filtering::DG);
+                  filtering::TwoPi, filtering::FourPi, filtering::TwoK, filtering::FourK);
 using DiffractionFilter = DiffractionFilters::iterator;
 
 // Dileptons & Quarkonia
@@ -105,8 +115,13 @@ using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
-                  filtering::LeadingPtTrack, filtering::HighMultFv0, filtering::HighTrackMult, filtering::HighTrackMultTrans, filtering::HighTrackMultOverlap);
+                  filtering::LeadingPtTrack, filtering::HighMultFv0, filtering::HighTrackMult);
 using MultFilter = MultFilters::iterator;
+
+// cefp decision
+DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
+                  decision::BCId, decision::CollisionTime, decision::CefpSelected);
+using CefpDecision = CefpDecisions::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{8};

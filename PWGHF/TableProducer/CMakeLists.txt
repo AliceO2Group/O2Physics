@@ -19,6 +19,11 @@ o2physics_add_dpl_workflow(candidate-creator-2prong
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-dstar
+                    SOURCES candidateCreatorDstar.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tree-creator-d0-tokpi
                     SOURCES HFTreeCreatorD0ToKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ROOT::EG
@@ -163,4 +168,3 @@ o2physics_add_dpl_workflow(chic-tojpsigamma-candidate-selector
                     SOURCES HFChicToJpsiGammaCandidateSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
-

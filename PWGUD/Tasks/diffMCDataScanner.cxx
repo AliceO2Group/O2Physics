@@ -121,7 +121,7 @@ struct collisionsInfo {
     }
 
     // global tracks
-    Partition<TCs> goodTracks = aod::track::isGlobalTrack > uint8_t(0);
+    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);
     int cntGlobal = goodTracks.size();
 

@@ -92,7 +92,7 @@ struct CorrelationTask {
   Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((aod::track::isGlobalTrack == (uint8_t) true) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt);
 
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -112,6 +112,10 @@ struct CorrelationTask {
   PairCuts mPairCuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
+  using derivedCollisions = soa::Filtered<aod::CFCollisions>;
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
 
   void init(o2::framework::InitContext&)
   {
@@ -277,7 +281,7 @@ struct CorrelationTask {
   }
 
   // Version with explicit nested loop
-  void processSameAOD(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void processSameAOD(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     // TODO will go to CCDBConfigurable
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -297,9 +301,9 @@ struct CorrelationTask {
       LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
     }
 
-    LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
+    LOGF(info, "processSameAOD: Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centRun2V0M());
 
-    const auto centrality = collision.centV0M();
+    const auto centrality = collision.centRun2V0M();
 
     if (fillCollisionAOD(same, collision, centrality) == false) {
       return;
@@ -310,11 +314,11 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
-  void processSameDerived(soa::Filtered<aod::CFCollisions>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  void processSameDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
-    LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centV0M());
+    LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centRun2V0M());
 
-    const auto centrality = collision.centV0M();
+    const auto centrality = collision.centRun2V0M();
 
     same->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
     registry.fill(HIST("eventcount"), -2);
@@ -323,7 +327,8 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
-  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentV0Ms>>& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  NoBinningPolicy<aod::hash::Bin> hashBin;
+  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentRun2V0Ms>>& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
@@ -332,13 +337,13 @@ struct CorrelationTask {
     GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : selfCombinations(hashBin, cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
+      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
       // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
-      if (fillCollisionAOD(mixed, collision1, collision1.centV0M()) == false) {
+      if (fillCollisionAOD(mixed, collision1, collision1.centRun2V0M()) == false) {
         continue;
       }
       registry.fill(HIST("eventcount"), collision1.bin());
@@ -368,7 +373,7 @@ struct CorrelationTask {
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
       // TODO mixed event weight missing
-      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", true);
@@ -382,12 +387,12 @@ struct CorrelationTask {
     GroupSlicer slicer(collisions, tracksTuple);
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& [collision1, collision2] : selfCombinations("fBin", cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (auto& [collision1, collision2] : selfCombinations(hashBin, cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%f), %d (%f)", collision1.bin(), collision1.index(), collision1.posZ(), collision2.index(), collision2.posZ());
+      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
       registry.fill(HIST("eventcount"), collision1.bin());
-      mixed->fillEvent(collision1.centV0M(), CorrelationContainer::kCFStepReconstructed);
+      mixed->fillEvent(collision1.centRun2V0M(), CorrelationContainer::kCFStepReconstructed);
 
       auto it1 = slicer.begin();
       auto it2 = slicer.begin();
@@ -411,20 +416,78 @@ struct CorrelationTask {
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
-      fillCorrelations(mixed, tracks1, tracks2, collision1.centV0M(), collision1.posZ(), getMagneticField(collision1.timestamp()));
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(collision1.timestamp()));
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
 
+  BinningType pairBinning{{axisVertex, axisMultiplicity}, true};                               // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+  SameKindPair<aodCollisions, aodTracks, BinningType> pair{pairBinning, cfgNoMixedEvents, -1}; // -1 is the number of the bin to skip
+  void processMixedAODNoHash(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  {
+    // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
+
+    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      int bin = pairBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
+      LOGF(info, "processMixedAODNoHash: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
+
+      // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
+      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
+      if (fillCollisionAOD(mixed, collision1, collision1.centRun2V0M()) == false) {
+        continue;
+      }
+      registry.fill(HIST("eventcount"), bin);
+
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+
+      // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
+
+      // TODO mixed event weight missing
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixedAODNoHash, "Process mixed events on AOD", false);
+
+  void processMixedAODNoHashInProcess(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  {
+    // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
+
+    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    BinningType configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<aodCollisions, aodTracks, BinningType> pairInProcess{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairInProcess) {
+      int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
+      LOGF(info, "processMixedAODNoHashInProcess: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
+
+      // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
+      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
+      if (fillCollisionAOD(mixed, collision1, collision1.centRun2V0M()) == false) {
+        continue;
+      }
+      registry.fill(HIST("eventcount"), bin);
+
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+
+      // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
+
+      // TODO mixed event weight missing
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixedAODNoHashInProcess, "Process mixed events on AOD", false);
+
   // Version with combinations
-  void processWithCombinations(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::Tracks> const& tracks)
+  void processWithCombinations(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::Tracks> const& tracks)
   {
     LOGF(info, "Tracks for collision (Combination run): %d", tracks.size());
 
     // TODO will go to CCDBConfigurable
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-    const auto centrality = collision.centV0M();
+    const auto centrality = collision.centRun2V0M();
 
     for (auto track1 = tracks.begin(); track1 != tracks.end(); ++track1) {
 
@@ -435,11 +498,11 @@ struct CorrelationTask {
       //       LOGF(info, "TRACK %f %f | %f %f | %f %f", track1.eta(), track1.eta(), track1.phi(), track1.phi2(), track1.pt(), track1.pt());
 
       same->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), centrality, collision.posZ());
-      //mixed->getTriggerHist()->Fill(eventValues, CorrelationContainer::kCFStepReconstructed);
+      // mixed->getTriggerHist()->Fill(eventValues, CorrelationContainer::kCFStepReconstructed);
     }
 
     for (auto& [track1, track2] : combinations(tracks, tracks)) {
-      //LOGF(info, "Combination %d %d", track1.index(), track2.index());
+      // LOGF(info, "Combination %d %d", track1.index(), track2.index());
 
       if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
         continue;
@@ -469,7 +532,7 @@ struct CorrelationTask {
 
       same->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                 track1.eta() - track2.eta(), track2.pt(), track1.pt(), centrality, deltaPhi, collision.posZ());
-      //mixed->getPairHist()->Fill(values, CorrelationContainer::kCFStepReconstructed);
+      // mixed->getPairHist()->Fill(values, CorrelationContainer::kCFStepReconstructed);
     }
   }
 
@@ -564,11 +627,11 @@ struct CorrelationHashTask {
     return -1;
   }
 
-  void processAOD(soa::Join<aod::Collisions, aod::CentV0Ms> const& collisions)
+  void processAOD(soa::Join<aod::Collisions, aod::CentRun2V0Ms> const& collisions)
   {
     for (auto& collision : collisions) {
-      int hash = getHash(collision.posZ(), collision.centV0M());
-      LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centV0M(), hash);
+      int hash = getHash(collision.posZ(), collision.centRun2V0M());
+      // LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centRun2V0M(), hash);
       hashes(hash);
     }
   }
@@ -577,8 +640,8 @@ struct CorrelationHashTask {
   void processDerived(aod::CFCollisions const& collisions)
   {
     for (auto& collision : collisions) {
-      int hash = getHash(collision.posZ(), collision.centV0M());
-      LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centV0M(), hash);
+      int hash = getHash(collision.posZ(), collision.centRun2V0M());
+      // LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centRun2V0M(), hash);
       hashes(hash);
     }
   }

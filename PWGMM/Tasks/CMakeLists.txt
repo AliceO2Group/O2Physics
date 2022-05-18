@@ -29,6 +29,17 @@ o2physics_add_dpl_workflow(ue-charged
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flatenicity-fv0
+                    SOURCES flatenicityFV0.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(vertexing-fwd
+                    SOURCES vertexing-fwd.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                                          O2::ReconstructionDataFormats
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lumi
                     SOURCES lumi.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -40,5 +51,10 @@ o2physics_add_dpl_workflow(lumi
 
 o2physics_add_dpl_workflow(assessment-mft
                     SOURCES assessment-mft.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(particles-to-tracks
+                    SOURCES particles2tracks.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

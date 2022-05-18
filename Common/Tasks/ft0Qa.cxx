@@ -97,7 +97,7 @@ struct FT0Qa {
         hNcontribC->Fill(nContrib);
       }
       if (col.t0CCorrectedValid() && col.t0ACorrectedValid()) {
-        LOGF(debug, "multV0A=%f;  multT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f; ColTime=%f", col.multV0A(), col.multT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
+        LOGF(debug, "multFV0A=%f;  multFT0A=%f; PV=%f; T0vertex=%f; T0A=%f; T0C=%f; T0AC=%f; ColTime=%f", col.multFV0A(), col.multFT0A(), col.posZ(), ft0.posZ(), col.t0ACorrected(), col.t0CCorrected(), col.t0AC(), colTime);
         hT0AC->Fill(col.t0AC());
         hT0Vertex->Fill(ft0.posZ());
         hVertex_T0_PV->Fill(ft0.posZ(), col.posZ());

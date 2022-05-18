@@ -369,7 +369,7 @@ struct pidml {
     model321TPC = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, 321, false);
   }
 
-  Filter trackFilter = aod::track::isGlobalTrack == static_cast<uint8_t>(true);
+  Filter trackFilter = requireGlobalTrackInFilter();
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
   void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
   {

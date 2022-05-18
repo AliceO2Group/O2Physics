@@ -10,12 +10,15 @@
 // or submit itself to any jurisdiction.
 /// \author Antonio Ortiz (antonio.ortiz.velasquez@cern.ch)
 /// \since November 2021
+/// \last update: May 2022
 
+#include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -37,8 +40,9 @@ using namespace o2::framework::expressions;
 
 struct ueCharged {
 
-  TrackSelection globalTrackswoPrim; // Track without cut for primaries
-  TrackSelection globalTracks;       // Track with cut for primaries
+  // acceptance cuts
+  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f, "Eta range for tracks"};
+  Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
 
   HistogramRegistry ue{"ue", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   static constexpr std::string_view pNumDenMeasuredPS[3] = {"pNumDenMeasuredPS_NS", "pNumDenMeasuredPS_AS", "pNumDenMeasuredPS_TS"};
@@ -58,13 +62,6 @@ struct ueCharged {
 
   void init(o2::framework::InitContext&)
   {
-    // primaries w/o golden cut
-    globalTracks = getGlobalTrackSelection();
-    globalTracks.SetRequireGoldenChi2(false);
-    // all w/o golden cuts
-    globalTrackswoPrim = getGlobalTrackSelection();
-    globalTrackswoPrim.SetMaxDcaXYPtDep([](float pt) { return 3.f + pt; });
-    globalTrackswoPrim.SetRequireGoldenChi2(false);
 
     ConfigurableAxis ptBinningt{"ptBinningt", {0, 0.15, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTtrig bin limits"};
     AxisSpec ptAxist = {ptBinningt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
@@ -104,6 +101,8 @@ struct ueCharged {
     ue.add("hPtLeadingData", " ", HistType::kTH1D, {{ptAxist}});
     ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
   }
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
 
   float DeltaPhi(float phia, float phib,
                  float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)
@@ -129,20 +128,14 @@ struct ueCharged {
 
     return dphi;
   }
-
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::FT0sCorrected, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks)
   {
 
     ue.fill(HIST("hCounter"), 0);
-    //check if your trigger alias is fired
-    if (!collision.alias()[kINT7]) {
-      return;
-    }
 
     ue.fill(HIST("hCounter"), 1);
 
     ue.fill(HIST("hStat"), collision.size());
-    //hStat->Fill(collision.size());
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
@@ -156,8 +149,7 @@ struct ueCharged {
     double flPhi = 0;
     int flIndex = 0;
     for (auto& track : tracks) {
-
-      if (!globalTracks.IsSelected(track)) {
+      if (!track.isGlobalTrack()) {
         continue;
       }
 
@@ -165,9 +157,6 @@ struct ueCharged {
       ue.fill(HIST("vtxZEta"), track.eta(), vtxZ);
       ue.fill(HIST("phiEta"), track.eta(), track.phi());
 
-      if (track.pt() < 0.15) {
-        continue;
-      }
       if (flPt < track.pt()) {
         flPt = track.pt();
         flPhi = track.phi();
@@ -183,22 +172,17 @@ struct ueCharged {
       nchm_top[i] = 0;
       sumptm_top[i] = 0;
     }
-    //LOGF(info, "--------------------   FLAG 0!!!!!!!!!!!");
+    // LOGF(info, "--------------------   FLAG 0!!!!!!!!!!!");
     std::vector<Float_t> ptArray;
     std::vector<Float_t> phiArray;
     std::vector<int> indexArray;
 
     for (auto& track : tracks) {
 
-      if (track.pt() < 0.15) {
-        continue;
-      }
-
-      if (globalTrackswoPrim.IsSelected(track)) {
+      if (track.isGlobalTrack()) { // TODO: set cuts w/o DCA cut
         ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
       }
-
-      if (!globalTracks.IsSelected(track)) {
+      if (!track.isGlobalTrack()) {
         continue;
       }
 

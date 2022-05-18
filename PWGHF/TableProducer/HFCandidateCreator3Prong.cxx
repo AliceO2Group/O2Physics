@@ -55,7 +55,7 @@ struct HFCandidateCreator3Prong {
   double massPiKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::Hf3Prong const& rowsTrackIndexProng3,
+               aod::Hf3Prongs const& rowsTrackIndexProng3,
                aod::BigTracks const& tracks)
   {
     // 3-prong vertex fitter
@@ -195,7 +195,7 @@ struct HFCandidateCreator3ProngExpressions {
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
-          RecoDecay::getDaughters(particlesMC, particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
+          RecoDecay::getDaughters(particlesMC.rawIteratorAt(indexRec), &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = particlesMC.rawIteratorAt(arrDaughIndex[iProng]);
@@ -224,7 +224,7 @@ struct HFCandidateCreator3ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
       rowMCMatchRec(flag, origin, swapping, channel);
@@ -251,7 +251,7 @@ struct HFCandidateCreator3ProngExpressions {
           flag = sign * (1 << DecayType::LcToPKPi);
 
           //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
-          RecoDecay::getDaughters(particlesMC, particle, &arrDaughIndex, array{0}, 1);
+          RecoDecay::getDaughters(particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
               auto daughJ = particlesMC.rawIteratorAt(arrDaughIndex[jProng]);
@@ -278,7 +278,7 @@ struct HFCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
       rowMCMatchGen(flag, origin, channel);

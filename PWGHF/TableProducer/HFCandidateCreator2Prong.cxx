@@ -50,7 +50,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::Hf2Prong const& rowsTrackIndexProng2,
+               aod::Hf2Prongs const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -185,7 +185,7 @@ struct HFCandidateCreator2ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
       rowMCMatchRec(flag, origin);
@@ -221,7 +221,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
       }
 
       rowMCMatchGen(flag, origin);

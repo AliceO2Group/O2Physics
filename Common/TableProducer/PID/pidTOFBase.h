@@ -15,58 +15,25 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include <CCDB/BasicCCDBManager.h>
-#include "TableHelper.h"
 
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-/// Task to produce the TOF signal from the trackTime information
-struct tofSignal {
-  o2::framework::Produces<o2::aod::TOFSignal> table;
-  bool enableTable = false;
-
-  void init(o2::framework::InitContext& initContext)
-  {
-    // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
-  }
-  using Trks = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
-  void process(Trks const& tracks)
-  {
-    if (!enableTable) {
-      return;
-    }
-    table.reserve(tracks.size());
-    for (auto& t : tracks) {
-      table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
-    }
-  }
-};
-
-/// Selection criteria for tracks used for TOF event time
-template <typename trackType>
-bool filterForTOFEventTime(const trackType& tr)
+namespace o2::aod
 {
-  return (tr.hasTOF() && tr.p() > 0.5f && tr.p() < 2.f && tr.trackType() == o2::aod::track::TrackTypeEnum::Track);
-} // accept all
 
-/// Specialization of TOF event time maker
-template <typename trackType,
-          bool (*trackFilter)(const trackType&),
-          template <typename T, o2::track::PID::ID> typename response,
-          typename trackTypeContainer,
-          typename responseParametersType>
-o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& tracks,
-                                                 const responseParametersType& responseParameters)
+namespace pidtofevtime
 {
-  return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters);
-}
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);       //! TOF event time
+DECLARE_SOA_COLUMN(TOFEvTimeErr, tofEvTimeErr, float); //! TOF event time error
+DECLARE_SOA_COLUMN(TOFEvTimeMult, tofEvTimeMult, int); //! TOF event time multiplicity
+} // namespace pidtofevtime
+
+DECLARE_SOA_TABLE(TOFEvTime, "AOD", "TOFEvTime", //! Table of the TOF event time
+                  pidtofevtime::TOFEvTime,
+                  pidtofevtime::TOFEvTimeErr,
+                  pidtofevtime::TOFEvTimeMult);
+} // namespace o2::aod

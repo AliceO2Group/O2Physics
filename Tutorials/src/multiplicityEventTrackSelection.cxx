@@ -32,7 +32,7 @@ struct MultiplicityEventTrackSelection {
   OutputObj<TH1F> multiplicity{TH1F("multiplicity", "multiplicity", 5000, -0.5, 4999.5)};
 
   Filter collisionZFilter = nabs(aod::collision::posZ) < 10.0f;
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > 0.15f) && (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > 0.15f) && (requireGlobalTrackInFilter());
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)

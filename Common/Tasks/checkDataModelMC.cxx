@@ -49,6 +49,12 @@ void checkDaughters(const T& particlesMC,
       } else {
         LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with index " << idxDau << " > MC particle table size (+ offset) (" << particlesMC.size() + offset << ")";
       }
+    } else if (idxDau < -1 * std::numeric_limits<int>::max() / 2) {
+      if (debugMode) {
+        debugHisto->Fill(2);
+      } else {
+        LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has daughter with too negative index " << idxDau;
+      }
     }
   }
 }
@@ -73,9 +79,10 @@ struct CheckMcParticlesIndices {
 
   void init(o2::framework::InitContext&)
   {
-    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{2, -0.5, 1.5}});
+    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{3, -0.5, 2.5}});
     hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
     hDebug->GetXaxis()->SetBinLabel(2, "out of range");
+    hDebug->GetXaxis()->SetBinLabel(3, "#minus max integer");
   }
 
   void process(aod::McParticles const& particlesMC)
@@ -96,9 +103,10 @@ struct CheckMcParticlesIndicesGrouped {
 
   void init(o2::framework::InitContext&)
   {
-    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{2, -0.5, 1.5}});
+    hDebug = registry.add<TH1>("hDebug", "debug histo;;counts", HistType::kTH1F, {{3, -0.5, 2.5}});
     hDebug->GetXaxis()->SetBinLabel(1, "(-X, Y) or (X, -Y)");
     hDebug->GetXaxis()->SetBinLabel(2, "out of range");
+    hDebug->GetXaxis()->SetBinLabel(3, "#minus max integer");
   }
 
   void process(aod::McCollision const& collision,

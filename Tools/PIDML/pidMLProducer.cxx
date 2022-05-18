@@ -30,18 +30,18 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
-  Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = requireGlobalTrackInFilter();
   using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
-  using MyCollision = soa::Join<aod::Collisions, aod::CentV0Ms, aod::Mults>::iterator;
+  using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
   void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles_000 const& mctracks)
   {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
-      pidTracksTable(collision.centV0M(),
-                     collision.multV0A(), collision.multV0C(), collision.multV0M(),
-                     collision.multT0A(), collision.multT0C(), collision.multT0M(),
+      pidTracksTable(collision.centRun2V0M(),
+                     collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+                     collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                      collision.multZNA(), collision.multZNC(),
                      collision.multTracklets(), collision.multTPC(),
                      track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),
@@ -72,16 +72,16 @@ struct CreateTableMc {
 struct CreateTableReal {
   Produces<aod::PidTracksReal> pidTracksTable;
 
-  Filter trackFilter = aod::track::isGlobalTrack == (uint8_t) true;
+  Filter trackFilter = requireGlobalTrackInFilter();
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
-  using MyCollision = soa::Join<aod::Collisions, aod::CentV0Ms, aod::Mults>::iterator;
+  using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
 
   void process(MyCollision const& collision, BigTracks const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTable(collision.centV0M(),
-                     collision.multV0A(), collision.multV0C(), collision.multV0M(),
-                     collision.multT0A(), collision.multT0C(), collision.multT0M(),
+      pidTracksTable(collision.centRun2V0M(),
+                     collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+                     collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                      collision.multZNA(), collision.multZNC(),
                      collision.multTracklets(), collision.multTPC(),
                      track.tpcSignal(), track.trdSignal(), track.trackEtaEmcal(), track.trackPhiEmcal(),

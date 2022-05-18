@@ -313,6 +313,9 @@ int main(int argc, char* argv[])
         int minIndexOffset = unassignedIndexOffset[treeName];
         auto newMinIndexOffset = minIndexOffset;
         for (int i = 0; i < entries; i++) {
+          for (auto& index : indexList) {
+            *(index.first) = 0; // Any positive number will do, in any case it will not be filled in the output. Otherwise the previous entry is used and manipulated in the following.
+          }
           inputTree->GetEntry(i);
           // shift index columns by offset
           for (const auto& idx : indexList) {
