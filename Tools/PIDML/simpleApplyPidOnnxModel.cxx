@@ -43,14 +43,13 @@ struct SimpleApplyOnnxModelTask {
 
   // TODO: CCDB does not support ROOT files yet. Temporary solution: git repository with ML models
   // Paths given here are relative to the main models directory $MLMODELS_ROOT
-  Configurable<std::string> cfgModelDir{"model-dir", "PID_ML", "relative path to the directory with ONNX models"};
   Configurable<std::string> cfgScalingParamsFile{"scaling-params", "train_208_mc_with_beta_and_sigmas_scaling_params.json", "JSON file with scaling parameters from training"};
 
-  //Configurable<std::string> cfgModelDir{"model-dir", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models", "base path to the directory with ONNX models"};
-  //Configurable<std::string> cfgScalingParamsFile{"scaling-params", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
-  // Paths to local files
-  // Configurable<std::string> cfgModelDir{"model-dir", "/home/maja/CERN_part/CERN/PIDML/onnx_models", "base path to the directory with ONNX models"};
-  // Configurable<std::string> cfgScalingParamsFile{"scaling-params", "/home/maja/CERN_part/CERN/PIDML/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "JSON file with scaling parameters from training"};
+  // Configurable<std::string> cfgModelDir{"model-dir", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models", "base path to the directory with ONNX models"};
+  // Configurable<std::string> cfgScalingParamsFile{"scaling-params", "http://alice-ccdb.cern.ch/Users/m/mkabus/pidml/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "base path to the ccdb JSON file with scaling parameters from training"};
+  //  Paths to local files
+  //  Configurable<std::string> cfgModelDir{"model-dir", "/home/maja/CERN_part/CERN/PIDML/onnx_models", "base path to the directory with ONNX models"};
+  //  Configurable<std::string> cfgScalingParamsFile{"scaling-params", "/home/maja/CERN_part/CERN/PIDML/onnx_models/train_208_mc_with_beta_and_sigmas_scaling_params.json", "JSON file with scaling parameters from training"};
 
   Produces<o2::aod::MlPidResults> pidMLResults;
 
@@ -62,7 +61,7 @@ struct SimpleApplyOnnxModelTask {
 
   void init(InitContext const&)
   {
-    pidModel = PidONNXModel(cfgModelDir.value, cfgScalingParamsFile.value, cfgPid.value, cfgUseTOF.value);
+    pidModel = PidONNXModel(cfgScalingParamsFile.value, cfgPid.value, cfgUseTOF.value);
   }
 
   void process(BigTracks const& tracks)

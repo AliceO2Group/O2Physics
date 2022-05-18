@@ -29,7 +29,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 {
   FILE* fp = fopen(config.data(), "rb");
   if (!fp) {
-    LOG(warning) << "Missing configuration json file: " << config;
+    LOG(error) << "Missing configuration json file: " << config;
     return false;
   }
 
@@ -44,10 +44,10 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(const std::string& modelDir, const std::string& scalingParamsFile, int pid = 211, bool useTOF = false)
+  PidONNXModel(const std::string& scalingParamsFile, int pid = 211, bool useTOF = false)
   {
     std::string modelFile;
-    loadInputFiles(modelDir, scalingParamsFile, useTOF, pid, modelFile);
+    loadInputFiles(scalingParamsFile, useTOF, pid, modelFile);
 
     Ort::SessionOptions sessionOptions;
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
@@ -105,7 +105,7 @@ struct PidONNXModel {
   }
 
  private:
-  void loadInputFiles(const std::string& modelDir, const std::string& scalingParamsFile, bool useTOF, int pid, std::string& modelFile)
+  void loadInputFiles(const std::string& scalingParamsFile, bool useTOF, int pid, std::string& modelFile)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
@@ -117,17 +117,18 @@ struct PidONNXModel {
 
     std::string modelSubdir = useTOF ? "All" : "TPC";
     std::ostringstream tmp;
-    tmp << mlmodelsDir << "/models/";
-    tmp << modelDir << "/" << modelSubdir << "/simple_model_" << pid << ".onnx";
+    tmp << mlmodelsDir << "/models/PID_ML/";
+    tmp << modelSubdir << "/simple_model_" << pid << ".onnx";
     modelFile = tmp.str();
     tmp.str("");
     tmp.clear();
-    tmp << mlmodelsDir << "/models/";
-    tmp << modelDir << "/" << modelSubdir << "/columns_for_training.json";
+    tmp << mlmodelsDir << "/models/PID_ML/";
+    tmp << modelSubdir << "/columns_for_training.json";
     std::string trainColumnsFile = tmp.str();
     tmp.str("");
     tmp.clear();
-    tmp << mlmodelsDir << "/" << scalingParamsFile;
+    tmp << mlmodelsDir << "/models/PID_ML/";
+    tmp << scalingParamsFile;
     std::string scalingParamsFilePath = tmp.str();
 
     if (readJsonFile(trainColumnsFile, trainColumnsDoc)) {
