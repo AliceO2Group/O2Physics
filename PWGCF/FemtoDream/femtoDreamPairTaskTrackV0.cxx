@@ -85,7 +85,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis CfgmTBins{"CfgmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
-  Configurable<float> ConfBField{"ConfBField", +0.5, "Magnetic Field"};
+  Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -109,7 +109,7 @@ struct femtoDreamPairTaskTrackV0 {
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, false); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii); /// \todo add config for Δη and ΔΦ cut values
     }
 
     vPIDPartOne = ConfPIDPartOne;
