@@ -55,7 +55,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf2Prong, aod::HfPvRefitProng2> const& rowsTrackIndexProng2,
+               soa::Join<aod::Hf2Prongs, aod::HfPvRefitProng2> const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter

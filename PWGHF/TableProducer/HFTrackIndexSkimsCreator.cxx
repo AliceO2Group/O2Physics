@@ -827,7 +827,7 @@ struct HfTrackIndexSkimsCreator {
   Produces<aod::Hf2Prongs> rowTrackIndexProng2;
   Produces<aod::HfCutStatusProng2> rowProng2CutStatus;
   Produces<aod::HfPvRefitProng2> rowProng2PVrefit;
-  Produces<aod::Hf3Prong> rowTrackIndexProng3;
+  Produces<aod::Hf3Prongs> rowTrackIndexProng3;
   Produces<aod::HfCutStatusProng3> rowProng3CutStatus;
   Produces<aod::HfPvRefitProng3> rowProng3PVrefit;
 
