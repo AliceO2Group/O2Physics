@@ -74,7 +74,7 @@ struct tofSpectraTiny {
                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                     aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl,
-                                    aod::TOFSignal, aod::TrackSelection>;
+                                    aod::pidEvTimeFlags, aod::TOFSignal, aod::TrackSelection>;
   void process(aod::Collision const& collision,
                TrackCandidates const& tracks)
   {

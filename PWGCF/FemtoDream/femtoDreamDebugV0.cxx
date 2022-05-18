@@ -57,6 +57,9 @@ struct femtoDreamDebugV0 {
   {
     eventHisto.init(&qaRegistry);
 
+    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};
+    AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f, "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
+
     FullQaRegistry.add("FullV0QA/hPt", "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     FullQaRegistry.add("FullV0QA/hEta", "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
     FullQaRegistry.add("FullV0QA/hPhi", "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
@@ -67,6 +70,9 @@ struct femtoDreamDebugV0 {
     FullQaRegistry.add("FullV0QA/hDecayVtxZ", "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
     FullQaRegistry.add("FullV0QA/hCPA", "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
     FullQaRegistry.add("FullV0QA/hCPAvsPt", "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
+    FullQaRegistry.add("FullV0QA/hInvMassLambda", "", kTH1F, {massAxisLambda});
+    FullQaRegistry.add("FullV0QA/hInvMassAntiLambda", "", kTH1F, {massAxisAntiLambda});
+    FullQaRegistry.add("FullV0QA/hInvMassLambdaAntiLambda", "", kTH2F, {massAxisLambda, massAxisAntiLambda});
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
@@ -88,6 +94,9 @@ struct femtoDreamDebugV0 {
       FullQaRegistry.fill(HIST("FullV0QA/hDecayVtxZ"), part.decayVtxZ());
       FullQaRegistry.fill(HIST("FullV0QA/hCPA"), part.tempFitVar());
       FullQaRegistry.fill(HIST("FullV0QA/hCPAvsPt"), part.pt(), part.tempFitVar());
+      FullQaRegistry.fill(HIST("FullV0QA/hInvMassLambda"), part.mLambda());
+      FullQaRegistry.fill(HIST("FullV0QA/hInvMassAntiLambda"), part.mAntiLambda());
+      FullQaRegistry.fill(HIST("FullV0QA/hInvMassLambdaAntiLambda"), part.mLambda(), part.mAntiLambda());
     }
   }
 };

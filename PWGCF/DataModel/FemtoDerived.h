@@ -44,28 +44,38 @@ namespace femtodreamparticle
 {
 /// Distinuishes the different particle types
 enum ParticleType {
-  kTrack,          //! Track
-  kV0,             //! V0
-  kV0Child,        //! Child track of a V0
-  kCascade,        //! Cascade
-  kCascadeBachelor //! Bachelor track of a cascade
+  kTrack,           //! Track
+  kV0,              //! V0
+  kV0Child,         //! Child track of a V0
+  kCascade,         //! Cascade
+  kCascadeBachelor, //! Bachelor track of a cascade
+  kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[5] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
+enum TrackType {
+  kNoChild,    //! Not a V0 child
+  kPosChild,   //! Positive V0 child
+  kNegChild,   //! Negative V0 child
+  kNTrackTypes //! Number of child types
+};
+
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
+
 DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);                         //! p_T (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);                       //! Eta
-DECLARE_SOA_COLUMN(Phi, phi, float);                       //! Phi
-DECLARE_SOA_COLUMN(PartType, partType, uint8_t);           //! Type of the particle, according to femtodreamparticle::ParticleType
-DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);            //! Bit-wise container for the different selection criteria
-DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType);      //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
-DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);         //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
-DECLARE_SOA_COLUMN(Indices, indices, int[2]);              //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(MinvLambda, minvLambda, float);         //! The invariant mass of V0 candidate, assuming lambda  // TEMPORARY
-DECLARE_SOA_COLUMN(MinvAntiLambda, minvAntiLambda, float); //! The invariant mass of V0 candidate, assuming antilambda   // TEMPORARY
+DECLARE_SOA_COLUMN(Pt, pt, float);                    //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);                  //! Phi
+DECLARE_SOA_COLUMN(PartType, partType, uint8_t);      //! Type of the particle, according to femtodreamparticle::ParticleType
+DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);       //! Bit-wise container for the different selection criteria
+DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType); //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
+DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);    //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
+DECLARE_SOA_COLUMN(Indices, indices, int[2]);         //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);          //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);  //! The invariant mass of V0 candidate, assuming antilambda
 
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            [](float eta) -> float {
@@ -115,8 +125,8 @@ DECLARE_SOA_TABLE(FemtoDreamParticles, "AOD", "FEMTODREAMPARTS",
                   femtodreamparticle::PIDCut,
                   femtodreamparticle::TempFitVar,
                   femtodreamparticle::Indices,
-                  femtodreamparticle::MinvLambda,     // TEMPORARY
-                  femtodreamparticle::MinvAntiLambda, // TEMPORARY
+                  femtodreamparticle::MLambda,
+                  femtodreamparticle::MAntiLambda,
                   femtodreamparticle::Theta<femtodreamparticle::Eta>,
                   femtodreamparticle::Px<femtodreamparticle::Pt, femtodreamparticle::Phi>,
                   femtodreamparticle::Py<femtodreamparticle::Pt, femtodreamparticle::Phi>,

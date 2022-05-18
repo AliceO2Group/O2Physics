@@ -36,8 +36,9 @@ struct skimmerGammaConversions {
   HistogramRegistry registry{
     "registry",
     {
-      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
-      {"hMcCollisionZ", "hMcCollisionZ", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
+      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -10.f, 10.f}}}},
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
       {"hMotherSameNess", "hMotherSameNess", {HistType::kTH1F, {{13, 0.f, 14.f}}}},
     },
@@ -47,7 +48,6 @@ struct skimmerGammaConversions {
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
 
   // ============================ FUNCTION DEFINITIONS ====================================================
-  // SFS todo: don't use implicit grouping so sliceByCached will be fast. See skimmerGammaConversionsTruthOnlyMc
   void processRec(aod::Collisions::iterator const& theCollision,
                   aod::V0s,
                   aod::V0Datas const& theV0s,
@@ -84,13 +84,13 @@ struct skimmerGammaConversions {
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
 
-  void processMc(soa::Join<aod::Collisions,
-                           aod::McCollisionLabels>::iterator const& theCollision,
+  void processMc(aod::McCollision const& theMcCollision,
+                 soa::SmallGroups<soa::Join<aod::McCollisionLabels,
+                                            aod::Collisions>> const& theCollisions,
                  aod::V0s,
                  aod::V0Datas const& theV0s,
                  tracksAndTPCInfoMC const& theTracks,
-                 aod::McCollisions const& theMcCollisions,
-                 aod::McParticles& theMcParticles)
+                 aod::McParticles const& theMcParticles)
   {
     auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
       fFuncTableV0DaughterTracks(
@@ -110,26 +110,31 @@ struct skimmerGammaConversions {
         theTrack.tpcSignal());
     };
 
-    {
-      auto lMCParticlesForCollision = theMcParticles.sliceByCached(aod::mcparticle::mcCollisionId,
-                                                                   theCollision.mcCollision().globalIndex());
-      lMCParticlesForCollision.bindInternalIndicesTo(&theMcParticles);
-      registry.fill(HIST("hCollisionZ"), theCollision.posZ());
-      registry.fill(HIST("hMcCollisionZ"), theCollision.mcCollision().posZ());
-      registry.fill(HIST("hMcParticlesSize"), lMCParticlesForCollision.size());
+    registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
+    if (theCollisions.size() == 0) {
+      return;
     }
 
-    for (auto& lV0 : theV0s) {
+    registry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
+    registry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
 
-      auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
-      auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+    for (auto& lCollision : theCollisions) {
+      registry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
 
-      bool lIsConversionPhoton = isConversionPhoton(lV0,
-                                                    lTrackPos,
-                                                    lTrackNeg);
+      // todo: replace by sliceByCached
+      auto lGroupedV0s = theV0s.sliceBy(aod::v0data::collisionId, lCollision.globalIndex());
+      for (auto& lV0 : lGroupedV0s) {
 
-      fillTrackTable(lV0, lTrackPos, true, lIsConversionPhoton);
-      fillTrackTable(lV0, lTrackNeg, false, lIsConversionPhoton);
+        auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
+        auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
+
+        bool lIsConversionPhoton = isConversionPhoton(lV0,
+                                                      lTrackPos,
+                                                      lTrackNeg);
+
+        fillTrackTable(lV0, lTrackPos, true, lIsConversionPhoton);
+        fillTrackTable(lV0, lTrackNeg, false, lIsConversionPhoton);
+      }
     }
   }
   PROCESS_SWITCH(skimmerGammaConversions, processMc, "process reconstructed and mc info ", false);
