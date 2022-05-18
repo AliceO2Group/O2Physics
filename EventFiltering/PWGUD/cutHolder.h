@@ -21,8 +21,7 @@ class cutHolder
 {
  public:
   // constructor
-  cutHolder(int cc = 1,
-            int ndtcoll = 4,
+  cutHolder(int ndtcoll = 4, int nMinBCs = 7,
             int MinNTracks = 0, int MaxNTracks = 10000,
             int MinNetCharge = 0, int MaxNetCharge = 0,
             int pidHypo = 211,
@@ -30,13 +29,13 @@ class cutHolder
             float minPt = 0., float maxPt = 1000.,
             float minEta = -1.0, float maxEta = 1.0,
             float minIVM = 0.0, float maxIVM = 1000.,
-            float maxnSigmaTPC = 1000., float maxnSigmaTOF = 1000.) : mcase{cc}, mNDtcoll{ndtcoll}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
+            float maxnSigmaTPC = 1000., float maxnSigmaTOF = 1000.) : mNDtcoll{ndtcoll}, mNMinBCs{nMinBCs}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
   {
   }
 
   // setter
-  void Setcc(int);
   void SetNDtcoll(int);
+  void SetNMinBCs(int);
   void SetNTracks(int MinNTracks, int MaxNTracks);
   void SetNetCharge(int minNetCharge, int maxNetCharge);
   void SetPidHypothesis(int pidHypo);
@@ -48,8 +47,8 @@ class cutHolder
   void SetMaxnSigmaTOF(float maxnSigma);
 
   // getter
-  int cc() const;
   int NDtcoll() const;
+  int NMinBCs() const;
   int minNTracks() const;
   int maxNTracks() const;
   int minNetCharge() const;
@@ -67,15 +66,9 @@ class cutHolder
   float maxnSigmaTOF() const;
 
  private:
-  // decay channel
-  //  1: 2 pion
-  //  2: 4 pion
-  //  3: 2 kaon
-  //  4: 4 kaon
-  int mcase;
-
   // number of collision time resolutions to consider
   int mNDtcoll;
+  int mNMinBCs;
 
   // number of tracks
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
