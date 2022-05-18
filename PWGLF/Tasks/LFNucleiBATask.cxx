@@ -12,6 +12,8 @@
 ///
 /// \file LFNucleiBATask.cxx
 ///
+/// \brief  Analysis task for the measurement of the coalescence parameter
+///
 /// \author Rutuparna Rath <rutuparna.rath@cern.ch> and Giovanni Malfattore <giovanni.malfattore@cern.ch>
 ///
 
@@ -73,17 +75,19 @@ struct LFNucleiDeuteronTask {
   OutputObj<TH2F> h2TOFmass2ProtonVsPt{TH2F("h2TOFmass2ProtonVsPt", "#Delta M^{2} (p) vs #it{p}_{T}; #Delta M^{2} (p); #it{p}_{T} (GeV/#it{c})", 600, -3., 3., 800, 0., 8.)};
   OutputObj<TH2F> h2TOFmass2DeuteronVsPt{TH2F("h2TOFmass2DeuteronVsPt", "#Delta M^{2} (d) vs #it{p}_{T}; #Delta M^{2} (d); #it{p}_{T} (GeV/#it{c})", 1000, -5., 5., 800, 0., 8.)};
   OutputObj<TH2F> h2TOFmass2HeliumVsPt{TH2F("h2TOFmass2HeliumVsPt", "#Delta M^{2} (He) vs #it{p}_{T}; #Delta M^{2} (He); #it{p}_{T} (GeV/#it{c})", 1800, -9., 9., 800, 0., 8.)};
+  Configurable<float> nsigmaTPCcut{"nsigmaTPCcut", 5.f, "Value of the Nsigma TPC cut"};
+  Configurable<float> nsigmaTOFcut{"nsigmaTOFcut", 5.f, "Value of the Nsigma TOF cut"};
 
   void init(o2::framework::InitContext&)
   {
   }
-  // void process(soa::Join<o2::aod::Collisions, o2::aod::LfCandNucleusFullEvents>::iterator const& events)
-  // void process(soa::Join<o2::aod::Collisions, o2::aod::LfCandNucleusFullEvents>::iterator const& event, o2::aod::LfCandNucleusFull const& tracks)
+
   void process(o2::aod::LfCandNucleusFullEvents::iterator const& event, o2::aod::LfCandNucleusFull const& tracks)
   {
-    const Double_t fMassProton = 0.938272088;
-    const Double_t fMassDeuteron = 1.87561;
-    const Double_t fMassHelium = 2.80839;
+    constexpr float fMassProton = 0.938272088f;
+    constexpr float fMassDeuteron = 1.87561f;
+    constexpr float fMassHelium = 2.80839f;
+    float gamma = 0., massTOF = 0.;
 
     // for(auto& coll:events)
     h1VtxZ->Fill(event.posZ());
@@ -115,12 +119,11 @@ struct LFNucleiDeuteronTask {
 
       if (track.hasTOF()) {
         h2TOFbetaVsP->Fill(track.p(), track.beta());
-        float gamma = 0., massTOF = 0.;
         if ((track.beta() * track.beta()) < 1.) {
-          gamma = 1. / TMath::Sqrt(1. - (track.beta() * track.beta()));
-          massTOF = track.p() / TMath::Sqrt(gamma * gamma - 1);
+          gamma = 1.f / TMath::Sqrt(1.f - (track.beta() * track.beta()));
+          massTOF = track.p() / TMath::Sqrt(gamma * gamma - 1.f);
         } else {
-          massTOF = -99;
+          massTOF = -99.f;
         }
         h2TOFmassVsPt->Fill(massTOF, track.pt());
         h2TOFmass2ProtonVsPt->Fill(massTOF * massTOF - fMassProton * fMassProton, track.pt());
@@ -128,19 +131,19 @@ struct LFNucleiDeuteronTask {
         h2TOFmass2HeliumVsPt->Fill(massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
       }
 
-      if (std::abs(track.nsigTPCPr()) < 5.)
+      if (std::abs(track.nsigTPCPr()) < nsigmaTPCcut)
         h1ProtonSpectra->Fill(track.pt());
 
-      if (std::abs(track.nsigTPCD()) < 5.)
+      if (std::abs(track.nsigTPCD()) < nsigmaTPCcut)
         h1DeuteronSpectra->Fill(track.pt());
 
-      if (std::abs(track.nsigTPC3He()) < 5.)
+      if (std::abs(track.nsigTPC3He()) < nsigmaTPCcut)
         h1HeliumSpectra->Fill(track.pt());
-      // h1DeuteronSpectra2->Fill(track.pt());
     }
     // LOG(info)<<"Vertex Z ==="<<coll.posZ();
   }
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<LFNucleiDeuteronTask>(cfgc)};
