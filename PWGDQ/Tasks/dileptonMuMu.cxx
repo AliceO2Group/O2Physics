@@ -232,6 +232,8 @@ struct DQEventMixing {
   Filter filterMuonTrackSelected = aod::reducedtrack::isMuonSelected > uint8_t(0);
   std::vector<TString> fCentBinNames;
 
+  NoBinningPolicy<aod::reducedevent::MixingHash> hashBin;
+
   void init(o2::framework::InitContext&)
   {
     fValues = new float[VarManager::kNVars];
@@ -257,7 +259,7 @@ struct DQEventMixing {
     GroupSlicer slicerMuons(events, muonsTuple);
 
     // Strictly upper categorised collisions, for 100 combinations per bin, skipping those in entry -1
-    for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
+    for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
 
       // event informaiton is required to fill histograms where both event and pair information is required (e.g. inv.mass vs centrality)
       VarManager::ResetValues(0, VarManager::kNVars, fValues);

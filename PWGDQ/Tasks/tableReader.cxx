@@ -83,7 +83,7 @@ using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuo
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
-//constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
+// constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 
@@ -363,6 +363,8 @@ struct AnalysisEventMixing {
   std::vector<std::vector<TString>> fMuonHistNames;
   std::vector<std::vector<TString>> fTrackMuonHistNames;
 
+  NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
+
   void init(o2::framework::InitContext& context)
   {
     VarManager::SetDefaultVarNames();
@@ -485,7 +487,7 @@ struct AnalysisEventMixing {
     events.bindExternalIndices(&tracks);
     auto tracksTuple = std::make_tuple(tracks);
     GroupSlicer slicerTracks(events, tracksTuple);
-    for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
+    for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
       auto it1 = slicerTracks.begin();
@@ -520,7 +522,7 @@ struct AnalysisEventMixing {
     auto muonsTuple = std::make_tuple(muons);
     GroupSlicer slicerTracks(events, tracksTuple);
     GroupSlicer slicerMuons(events, muonsTuple);
-    for (auto& [event1, event2] : selfCombinations("fMixingHash", 100, -1, events, events)) {
+    for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
       auto it1 = slicerTracks.begin();

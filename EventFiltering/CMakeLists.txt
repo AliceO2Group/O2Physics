@@ -15,6 +15,12 @@ o2physics_add_dpl_workflow(central-event-filter-task
                            COMPONENT_NAME Analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
+o2physics_add_dpl_workflow(selected-bc-range-task
+                           SOURCES selectBCRange.cxx
+                           COMPONENT_NAME Analysis
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(nuclei-filter
                            SOURCES PWGLF/nucleiFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
@@ -35,7 +41,7 @@ o2physics_add_dpl_workflow(diffraction-filter
 
 o2physics_add_dpl_workflow(hf-filter
                            SOURCES PWGHF/HFFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing ONNXRuntime::ONNXRuntime
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ONNXRuntime::ONNXRuntime
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-threebodyfemto-filter
@@ -56,4 +62,9 @@ o2physics_add_dpl_workflow(lf-strangeness-filter
 o2physics_add_dpl_workflow(mult-filter
                            SOURCES PWGMM/multFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hf-filter-qc
+                           SOURCES PWGHF/HFFilterQC.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                            COMPONENT_NAME Analysis)

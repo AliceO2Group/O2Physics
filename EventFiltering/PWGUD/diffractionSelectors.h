@@ -18,6 +18,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
+#include "PWGUD/cutHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -27,7 +28,7 @@ template <typename TC>
 bool hasGoodPID(cutHolder diffCuts, TC track);
 
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs);
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBSs = 7);
 
 // -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events
@@ -127,10 +128,11 @@ struct DGSelector {
 // The collision time t_coll is determined by the tracks which are used to
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
-// around t_coll could potentially be the true BC. ndt is typically 4.
+// around t_coll could potentially be the true BC. ndt is typically 4. The
+// total width of the time window is required to be at least 2*nMinBSs* LHCBunchSpacingNS
 
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs)
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBSs)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
@@ -139,7 +141,13 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
   // due to the filling scheme the most probably BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
   uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBSs) {
+    deltaBC = nMinBSs;
+  }
+
   int64_t minBC = meanBC - deltaBC;
   uint64_t maxBC = meanBC + deltaBC;
   if (minBC < 0) {

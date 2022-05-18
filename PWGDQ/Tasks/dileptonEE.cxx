@@ -225,7 +225,7 @@ struct DileptonEE {
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fPairCuts;
-  //NOTE: one could define also a dilepton cut, but for now basic selections can be supported using Partition
+  // NOTE: one could define also a dilepton cut, but for now basic selections can be supported using Partition
 
   float* fValues;
 
@@ -348,11 +348,13 @@ struct DQEventMixing {
   float* fValues;
   std::vector<TString> fCutNames;
 
-  //Configurable<std::string> fConfigElectronCuts{"cfgElectronCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  // Configurable<std::string> fConfigElectronCuts{"cfgElectronCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigElectronCuts{"cfgElectronCuts", "lmeePID_TPChadrej,lmeePID_TOFrec,lmeePID_TPChadrejTOFrec", "Comma separated list of barrel track cuts"};
 
   Filter filterEventSelected = aod::reducedevent::isEventSelected == 1;
   Filter filterTrackSelected = aod::reducedtrack::isBarrelSelected > uint8_t(0);
+
+  NoBinningPolicy<aod::reducedevent::MixingHash> hashBin;
 
   void init(o2::framework::InitContext&)
   {
@@ -387,7 +389,7 @@ struct DQEventMixing {
     GroupSlicer slicerTracks(events, tracksTuple);
 
     // Strictly upper categorised collisions, for 100 combinations per bin, skipping those in entry -1
-    for (auto& [event1, event2] : selfCombinations("fMixingHash", 10, -1, events, events)) {
+    for (auto& [event1, event2] : selfCombinations(hashBin, 10, -1, events, events)) {
 
       // event informaiton is required to fill histograms where both event and pair information is required (e.g. inv.mass vs centrality)
       VarManager::ResetValues(0, VarManager::kNVars, fValues);

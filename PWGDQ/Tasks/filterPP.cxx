@@ -408,9 +408,10 @@ struct DQFilterPPTask {
           fBarrelRunPairing.push_back(true);
           fBarrelNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
           fBarrelPairHistNames[icut] = Form("PairsBarrelSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
+        } else {
+          fBarrelNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
+          fBarrelRunPairing.push_back(false);
         }
-        fBarrelNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
-        fBarrelRunPairing.push_back(false);
       }
     }
     TString muonSelsStr = fConfigMuonSelections.value;
@@ -429,9 +430,10 @@ struct DQFilterPPTask {
           fMuonRunPairing.push_back(true);
           fMuonNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
           fMuonPairHistNames[icut] = Form("PairsMuonSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
+        } else {
+          fMuonNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
+          fMuonRunPairing.push_back(false);
         }
-        fMuonNreqObjs.push_back(std::atoi(sel->At(1)->GetName()));
-        fMuonRunPairing.push_back(false);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);

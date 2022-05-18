@@ -7,15 +7,16 @@
 
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence.
-# **DO NOT USE** @AliceO2Group/core for anything else. 
+# **DO NOT USE** @AliceO2Group/core for anything else.
 
 # @alibuild has to be in each line to allow self approval of PRs
 
-* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf 
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
-/ALICE3 @alibuild @njacazio @ginnocen @vkucera 
+/Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
+/ALICE3 @alibuild @njacazio @ginnocen @vkucera
 /DPG @alibuild @mario-krueger
-/EventFiltering @alibuild @mpuccio 
+/EventFiltering @alibuild @mpuccio
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera
 /EventFiltering/PWGUD @alibuild @pbuehler
 /EventFiltering/PWGLF @alibuild @mpuccio @ercolessi
@@ -25,6 +26,10 @@
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
 /PWGDQ @alibuild @iarsene
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @cterrevo @xinyepeng @lvermunt
+/PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
+/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh
+/PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo
 /PWGLF @alibuild @njacazio
 /PWGMM @alibuild @aalkin
 /Tools/PIDML @alibuild @saganatt

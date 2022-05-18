@@ -31,7 +31,7 @@ struct UPCAnalysis {
   OutputObj<TH1D> hPt{TH1D("hPt", ";#it{p_{T}}, GeV/c;", 500, 0., 1.)};
   OutputObj<TH2D> hSignalTPC1vsSignalTPC2{TH2D("hSignalTPC1vsSignalTPC2", ";TPC Signal 1;TPC Signal 2", 1000, 0., 200., 1000, 0., 200.)};
 
-  Filter trackFilter = (aod::track::isGlobalTrack == (uint8_t) true);
+  Filter trackFilter = (requireGlobalTrackInFilter());
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& col, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {

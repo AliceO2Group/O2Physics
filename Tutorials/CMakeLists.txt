@@ -90,6 +90,11 @@ o2physics_add_dpl_workflow(event-mixing
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
+o2physics_add_dpl_workflow(event-mixing-validation
+                  SOURCES src/eventMixingValidation.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
 o2physics_add_dpl_workflow(mc-histograms
                   SOURCES src/mcHistograms.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

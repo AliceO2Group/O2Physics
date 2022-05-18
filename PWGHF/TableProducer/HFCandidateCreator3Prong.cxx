@@ -60,7 +60,7 @@ struct HFCandidateCreator3Prong {
   double massPiKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf3Prong, aod::HfPVrefitProng3> const& rowsTrackIndexProng3,
+               soa::Join<aod::Hf3Prong, aod::HfPvRefitProng3> const& rowsTrackIndexProng3,
                aod::BigTracks const& tracks)
   {
     // 3-prong vertex fitter
@@ -111,16 +111,16 @@ struct HFCandidateCreator3Prong {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
-        primaryVertex.setX(rowTrackIndexProng3.pvrefitX_noProngs());
-        primaryVertex.setY(rowTrackIndexProng3.pvrefitY_noProngs());
-        primaryVertex.setZ(rowTrackIndexProng3.pvrefitZ_noProngs());
+        primaryVertex.setX(rowTrackIndexProng3.pvRefitX());
+        primaryVertex.setY(rowTrackIndexProng3.pvRefitY());
+        primaryVertex.setZ(rowTrackIndexProng3.pvRefitZ());
         // covariance matrix
-        primaryVertex.setSigmaX2(rowTrackIndexProng3.pvrefitSigmaX2_noProngs());
-        primaryVertex.setSigmaXY(rowTrackIndexProng3.pvrefitSigmaXY_noProngs());
-        primaryVertex.setSigmaY2(rowTrackIndexProng3.pvrefitSigmaY2_noProngs());
-        primaryVertex.setSigmaXZ(rowTrackIndexProng3.pvrefitSigmaXZ_noProngs());
-        primaryVertex.setSigmaYZ(rowTrackIndexProng3.pvrefitSigmaYZ_noProngs());
-        primaryVertex.setSigmaZ2(rowTrackIndexProng3.pvrefitSigmaZ2_noProngs());
+        primaryVertex.setSigmaX2(rowTrackIndexProng3.pvRefitSigmaX2());
+        primaryVertex.setSigmaXY(rowTrackIndexProng3.pvRefitSigmaXY());
+        primaryVertex.setSigmaY2(rowTrackIndexProng3.pvRefitSigmaY2());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng3.pvRefitSigmaXZ());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng3.pvRefitSigmaYZ());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng3.pvRefitSigmaZ2());
         covMatrixPV = primaryVertex.getCov();
       }
       hCovPVXX->Fill(covMatrixPV[0]);
@@ -277,7 +277,7 @@ struct HFCandidateCreator3ProngExpressions {
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
           RecoDecay::getDaughters(particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {

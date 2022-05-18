@@ -55,7 +55,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               soa::Join<aod::Hf2Prong, aod::HfPVrefitProng2> const& rowsTrackIndexProng2,
+               soa::Join<aod::Hf2Prong, aod::HfPvRefitProng2> const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -101,16 +101,16 @@ struct HFCandidateCreator2Prong {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates
-        primaryVertex.setX(rowTrackIndexProng2.pvrefitX_noProngs());
-        primaryVertex.setY(rowTrackIndexProng2.pvrefitY_noProngs());
-        primaryVertex.setZ(rowTrackIndexProng2.pvrefitZ_noProngs());
+        primaryVertex.setX(rowTrackIndexProng2.pvRefitX());
+        primaryVertex.setY(rowTrackIndexProng2.pvRefitY());
+        primaryVertex.setZ(rowTrackIndexProng2.pvRefitZ());
         // covariance matrix
-        primaryVertex.setSigmaX2(rowTrackIndexProng2.pvrefitSigmaX2_noProngs());
-        primaryVertex.setSigmaXY(rowTrackIndexProng2.pvrefitSigmaXY_noProngs());
-        primaryVertex.setSigmaY2(rowTrackIndexProng2.pvrefitSigmaY2_noProngs());
-        primaryVertex.setSigmaXZ(rowTrackIndexProng2.pvrefitSigmaXZ_noProngs());
-        primaryVertex.setSigmaYZ(rowTrackIndexProng2.pvrefitSigmaYZ_noProngs());
-        primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvrefitSigmaZ2_noProngs());
+        primaryVertex.setSigmaX2(rowTrackIndexProng2.pvRefitSigmaX2());
+        primaryVertex.setSigmaXY(rowTrackIndexProng2.pvRefitSigmaXY());
+        primaryVertex.setSigmaY2(rowTrackIndexProng2.pvRefitSigmaY2());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng2.pvRefitSigmaXZ());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng2.pvRefitSigmaYZ());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvRefitSigmaZ2());
         covMatrixPV = primaryVertex.getCov();
       }
       hCovPVXX->Fill(covMatrixPV[0]);

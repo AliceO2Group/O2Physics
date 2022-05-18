@@ -71,7 +71,7 @@ struct Alice3TrackSelectionTask {
         histos.fill(HIST("eta/selected"), track.eta());
       }
 
-      filterTable(sel, sel);
+      filterTable(sel, 1);
     }
   }
 };
