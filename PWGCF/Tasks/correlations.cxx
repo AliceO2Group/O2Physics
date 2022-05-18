@@ -32,17 +32,6 @@
 #include <TDirectory.h>
 #include <THn.h>
 
-namespace o2::aod
-{
-namespace hash
-{
-DECLARE_SOA_COLUMN(Bin, bin, int);
-} // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-
-using Hash = Hashes::iterator;
-} // namespace o2::aod
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -314,6 +303,36 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
+  void processMixedAOD(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  {
+    // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
+
+    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    BinningType configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<aodCollisions, aodTracks, BinningType> pairInProcess{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairInProcess) {
+      int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
+      LOGF(info, "processMixedAODNoHashInProcess: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
+
+      // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
+      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
+      if (fillCollisionAOD(mixed, collision1, collision1.centRun2V0M()) == false) {
+        continue;
+      }
+      registry.fill(HIST("eventcount"), bin);
+
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+
+      // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
+
+      // TODO mixed event weight missing
+      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", true);
+
   void processSameDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     LOGF(info, "processSameDerived: Tracks for collision: %d | Vertex: %.1f | V0M: %.1f", tracks.size(), collision.posZ(), collision.centRun2V0M());
@@ -327,92 +346,21 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
-  NoBinningPolicy<aod::hash::Bin> hashBin;
-  void processMixedAOD(soa::Filtered<soa::Join<aod::Collisions, aod::Hashes, aod::EvSels, aod::CentRun2V0Ms>>& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processMixedDerived(derivedCollisions& collisions, derivedTracks const& tracks)
   {
     // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
 
-    collisions.bindExternalIndices(&tracks);
-    auto tracksTuple = std::make_tuple(tracks);
-    GroupSlicer slicer(collisions, tracksTuple);
-
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& [collision1, collision2] : selfCombinations(hashBin, cfgNoMixedEvents, -1, collisions, collisions)) {
-
-      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
-
-      // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
-      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
-      if (fillCollisionAOD(mixed, collision1, collision1.centRun2V0M()) == false) {
-        continue;
-      }
-      registry.fill(HIST("eventcount"), collision1.bin());
-
-      auto it1 = slicer.begin();
-      auto it2 = slicer.begin();
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
-
-      auto tracks1 = std::get<aodTracks>(it1.associatedTables());
-      tracks1.bindExternalIndices(&collisions);
-      auto tracks2 = std::get<aodTracks>(it2.associatedTables());
-      tracks2.bindExternalIndices(&collisions);
-
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-
-      // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
-
-      // TODO mixed event weight missing
-      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
-    }
-  }
-  PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", true);
-
-  void processMixedDerived(soa::Filtered<soa::Join<aod::CFCollisions, aod::Hashes>>& collisions, derivedTracks const& tracks)
-  {
-    // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
-
-    collisions.bindExternalIndices(&tracks);
+    BinningType configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tracksTuple = std::make_tuple(tracks);
-    GroupSlicer slicer(collisions, tracksTuple);
+    SameKindPair<derivedCollisions, derivedTracks, BinningType> pairInProcess{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
 
-    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    for (auto& [collision1, collision2] : selfCombinations(hashBin, cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairInProcess) {
+      int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
+      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
-      LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", collision1.bin(), collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
-
-      registry.fill(HIST("eventcount"), collision1.bin());
+      registry.fill(HIST("eventcount"), bin);
       mixed->fillEvent(collision1.centRun2V0M(), CorrelationContainer::kCFStepReconstructed);
-
-      auto it1 = slicer.begin();
-      auto it2 = slicer.begin();
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision1.index()) {
-          it1 = slice;
-          break;
-        }
-      }
-      for (auto& slice : slicer) {
-        if (slice.groupingElement().index() == collision2.index()) {
-          it2 = slice;
-          break;
-        }
-      }
-
-      auto tracks1 = std::get<derivedTracks>(it1.associatedTables());
-      tracks1.bindExternalIndices(&collisions);
-      auto tracks2 = std::get<derivedTracks>(it2.associatedTables());
-      tracks2.bindExternalIndices(&collisions);
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
@@ -448,36 +396,6 @@ struct CorrelationTask {
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedAODNoHash, "Process mixed events on AOD", false);
-
-  void processMixedAODNoHashInProcess(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
-  {
-    // TODO loading of efficiency histogram missing here, because it will happen somehow in the CCDBConfigurable
-
-    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    BinningType configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-    auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aodCollisions, aodTracks, BinningType> pairInProcess{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple}; // -1 is the number of the bin to skip
-
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairInProcess) {
-      int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
-      LOGF(info, "processMixedAODNoHashInProcess: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
-
-      // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
-      // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
-      if (fillCollisionAOD(mixed, collision1, collision1.centRun2V0M()) == false) {
-        continue;
-      }
-      registry.fill(HIST("eventcount"), bin);
-
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-
-      // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
-
-      // TODO mixed event weight missing
-      fillCorrelations(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
-    }
-  }
-  PROCESS_SWITCH(CorrelationTask, processMixedAODNoHashInProcess, "Process mixed events on AOD", false);
 
   // Version with combinations
   void processWithCombinations(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::Tracks> const& tracks)
@@ -549,108 +467,8 @@ struct CorrelationTask {
   }
 };
 
-struct CorrelationHashTask {
-  std::vector<float> vtxBins;
-  std::vector<float> multBins;
-
-  Produces<aod::Hashes> hashes;
-
-  void fillArray(int length, double* source, std::vector<float>& target)
-  {
-    // Expand binning from Configurable. Can we let some code in AxisSpec do this?
-
-    target.clear();
-    if (source[0] == VARIABLE_WIDTH) {
-      for (int i = 1; i < length; i++) {
-        target.push_back(source[i]);
-      }
-    } else {
-      for (int i = 0; i <= source[0]; i++) {
-        target.push_back(source[1] + (source[2] - source[1]) / source[0] * i);
-      }
-    }
-  }
-
-  void init(o2::framework::InitContext& initContext)
-  {
-    // get own suffix. Is there a better way?
-    auto& deviceSpec = initContext.services().get<DeviceSpec const>();
-    std::string suffix(deviceSpec.name);
-    suffix.replace(0, strlen("correlation-hash-task"), "");
-
-    // get axis config from CorrelationTask
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-    for (DeviceSpec device : workflows.devices) {
-      if (device.name == "correlation-task" + suffix) {
-        for (auto option : device.options) {
-          if (option.name == "axisVertex") {
-            fillArray(option.defaultValue.size(), option.defaultValue.get<double*>(), vtxBins);
-            LOGF(info, "Initialized vertex binning for mixing from configurable %s", option.name);
-          }
-          if (option.name == "axisMultiplicity") {
-            fillArray(option.defaultValue.size(), option.defaultValue.get<double*>(), multBins);
-            LOGF(info, "Initialized multiplicity binning for mixing from configurable %s", option.name);
-          }
-        }
-      }
-    }
-
-    if (vtxBins.size() == 0) {
-      LOGF(fatal, "vtxBins not configured. Check configuration.");
-    }
-    if (multBins.size() == 0) {
-      LOGF(fatal, "multBins not configured. Check configuration.");
-    }
-  }
-
-  // Calculate hash for an element based on 2 properties and their bins.
-  int getHash(float vtx, float mult)
-  {
-    // underflow
-    if (vtx < vtxBins[0]) {
-      return -1;
-    }
-    if (mult < multBins[0]) {
-      return -1;
-    }
-
-    for (unsigned int i = 1; i < vtxBins.size(); i++) {
-      if (vtx < vtxBins[i]) {
-        for (unsigned int j = 1; j < multBins.size(); j++) {
-          if (mult < multBins[j]) {
-            return i + j * (vtxBins.size() + 1);
-          }
-        }
-      }
-    }
-    // overflow
-    return -1;
-  }
-
-  void processAOD(soa::Join<aod::Collisions, aod::CentRun2V0Ms> const& collisions)
-  {
-    for (auto& collision : collisions) {
-      int hash = getHash(collision.posZ(), collision.centRun2V0M());
-      // LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centRun2V0M(), hash);
-      hashes(hash);
-    }
-  }
-  PROCESS_SWITCH(CorrelationHashTask, processAOD, "Create hashes for mixing on AOD", true);
-
-  void processDerived(aod::CFCollisions const& collisions)
-  {
-    for (auto& collision : collisions) {
-      int hash = getHash(collision.posZ(), collision.centRun2V0M());
-      // LOGF(info, "Collision: %d (%f, %f) hash: %d", collision.index(), collision.posZ(), collision.centRun2V0M(), hash);
-      hashes(hash);
-    }
-  }
-  PROCESS_SWITCH(CorrelationHashTask, processDerived, "Create hashes for mixing on AOD", false);
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CorrelationHashTask>(cfgc),
     adaptAnalysisTask<CorrelationTask>(cfgc)};
 }
