@@ -314,7 +314,7 @@ struct CorrelationTask {
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairInProcess) {
       int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
-      LOGF(info, "processMixedAODNoHashInProcess: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
+      LOGF(info, "processMixedAOD: Mixed collisions bin: %d pair: %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, collision1.globalIndex(), collision1.posZ(), collision1.centRun2V0M(), collision2.globalIndex(), collision2.posZ(), collision2.centRun2V0M());
 
       // TODO in principle these should be already checked on hash level, because in this way we don't check collision 2
       // TODO not correct because event-level histograms on collision1 are filled for each pair (important :))
