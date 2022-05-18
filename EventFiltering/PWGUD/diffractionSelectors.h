@@ -28,7 +28,7 @@ template <typename TC>
 bool hasGoodPID(cutHolder diffCuts, TC track);
 
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBSs = 7);
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7);
 
 // -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events
@@ -129,10 +129,10 @@ struct DGSelector {
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
 // around t_coll could potentially be the true BC. ndt is typically 4. The
-// total width of the time window is required to be at least 2*nMinBSs* LHCBunchSpacingNS
+// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS
 
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBSs)
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
@@ -144,8 +144,8 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 
   // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  if (deltaBC < nMinBSs) {
-    deltaBC = nMinBSs;
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
   }
 
   int64_t minBC = meanBC - deltaBC;
