@@ -320,8 +320,29 @@ struct hypertritonAnalysisMc {
   PROCESS_SWITCH(hypertritonAnalysisMc, processRun2, "Process Run 2 data", false);
 };
 
+
+
+namespace o2::aod
+{
+  namespace mcparticleidcheck{
+    DECLARE_SOA_COLUMN(HypertritonDaughterPdgCode, hypertritonDaughterPdgCode, int);
+    DECLARE_SOA_COLUMN(Helium3DaughterPdgCode, helium3DaughterPdgCode, int);
+    DECLARE_SOA_COLUMN(Helium3MontherPdgCode, helium3MontherPdgCode, int);
+  }
+  DECLARE_SOA_TABLE(McHypertritonCheck, "AOD", "HypCheck", 
+      mcparticleidcheck::HypertritonDaughterPdgCode 
+      )
+    DECLARE_SOA_TABLE(McHelium3Check, "AOD", "Helium3Check", 
+        mcparticleidcheck::Helium3MontherPdgCode,
+        mcparticleidcheck::Helium3DaughterPdgCode
+        )
+}
+
+
 struct hypertritonParticleCountMc {
   //Basic checks
+  Produces<aod::McHypertritonCheck> hypertrtitonCheckTable;
+  Produces<aod::McHelium3Check> helium3CheckTable;
   HistogramRegistry registry{
     "registry",
       {
@@ -334,6 +355,12 @@ struct hypertritonParticleCountMc {
         {"hSelAndRecoMcCollCounter", "hSelAndRecoMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
         {"hTotalMcCollCounter", "hTotalMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
 
+        {"hHypertritonCheck", "hHypertritonCheck", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+        {"hHelium3Check", "hHelium3Check", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
+
+        {"hHypertritonPt", "hHypertritonPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hHelium3Pt", "hHelium3Pt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hPionPt", "hPionPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       },
   };
 
@@ -375,48 +402,129 @@ struct hypertritonParticleCountMc {
     registry.fill(HIST("hSelAndRecoMcCollCounter"), 0.5);
 
     for (auto& mcparticle : mcParticles) {
-      registry.fill(HIST("hMcParticleCount"), 0.5);
-      if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
-        registry.fill(HIST("hMcParticleCount"), 1.5);
-        if (mcparticle.isPhysicalPrimary()) {
-          registry.fill(HIST("hMcParticleCount"), 2.5);
-        }
-          if (mcparticle.pdgCode() == 1000020030 || mcparticle.pdgCode() == -1000020030) {
-            registry.fill(HIST("hMcParticleCount"), 3.5);
-          }
-          if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
-            registry.fill(HIST("hMcParticleCount"), 4.5);
-          }
-          if (!mcparticle.has_daughters()) {
-            continue;
-          }
-          registry.fill(HIST("hMcParticleCount"), 5.5);
 
-          if (mcparticle.pdgCode() == 1010010030) {
-            registry.fill(HIST("hHypertritonCount"), 0.5);
-            for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
-              for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
-                if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 10000200030) {
-                  registry.fill(HIST("hHypertritonCount"), 1.5);
-                  registry.fill(HIST("hHypertritonCount_PtDiff"), mcparticle.pt());
-                }
-              }
+      if (mcparticle.pdgCode() == 1000020030 || mcparticle.pdgCode() == -1000020030) {
+        registry.fill(HIST("hHelium3Check"), 0.5);
+        registry.fill(HIST("hHelium3Pt"), mcparticle.pt());
+        if (mcparticle.has_mothers()){
+          registry.fill(HIST("hHelium3Check"), 1.5);
+        }
+        if (mcparticle.has_daughters()){
+          registry.fill(HIST("hHelium3Check"), 2.5);
+        }
+        if (mcparticle.has_mothers() && mcparticle.has_daughters()){
+            registry.fill(HIST("hHelium3Check"), 3.5);
+        }
+        for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+          for (auto& mcparticleMonther : mcparticle.mothers_as<aod::McParticles>()) {
+            registry.fill(HIST("hHelium3Check"), 4.5);
+            helium3CheckTable(mcparticleMonther.pdgCode(),mcparticleDaughter.pdgCode());
+          }
+        }
+      }
+
+      if (mcparticle.pdgCode() == 211 || mcparticle.pdgCode() == -211) {
+        registry.fill(HIST("hPionPt"), mcparticle.pt());
+      }
+      if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
+        registry.fill(HIST("hHypertritonCheck"), 0.5);
+        registry.fill(HIST("hHypertritonPt"), mcparticle.pt());
+        for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+          hypertrtitonCheckTable(mcparticleDaughter.pdgCode());
+          registry.fill(HIST("hHypertritonCheck"), 1.5);
+        }
+      }
+
+      registry.fill(HIST("hMcParticleCount"), 0.5);
+      if (TMath::Abs(mcparticle.y()) > rapidityMCcut) {continue;}
+      registry.fill(HIST("hMcParticleCount"), 1.5);
+      if (mcparticle.isPhysicalPrimary()) {
+        registry.fill(HIST("hMcParticleCount"), 2.5);
+      }
+      if (mcparticle.pdgCode() == 1000020030 || mcparticle.pdgCode() == -1000020030) {
+        registry.fill(HIST("hMcParticleCount"), 3.5);
+      }
+      if (mcparticle.pdgCode() == 1010010030 || mcparticle.pdgCode() == -1010010030) {
+        registry.fill(HIST("hMcParticleCount"), 4.5);
+      }
+      if (!mcparticle.has_daughters()) {
+        continue;
+      }
+      registry.fill(HIST("hMcParticleCount"), 5.5);
+
+      if (mcparticle.pdgCode() == 1010010030) {
+        registry.fill(HIST("hHypertritonCount"), 0.5);
+        for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+          for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+            if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 1000020030) {
+              registry.fill(HIST("hHypertritonCount"), 1.5);
+              registry.fill(HIST("hHypertritonCount_PtDiff"), mcparticle.pt());
             }
           }
-          if (mcparticle.pdgCode() == -1010010030) {
-            registry.fill(HIST("hAntiHypertritonCount"), 0.5);
-            for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
-              for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
-                if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -1000020030) {
-                  registry.fill(HIST("hAntiHypertritonCount"), 1.5);
-                  registry.fill(HIST("hAntiHypertritonCount_PtDiff"), mcparticle.pt());
-                }
-              }
+        }
+      }
+      if (mcparticle.pdgCode() == -1010010030) {
+        registry.fill(HIST("hAntiHypertritonCount"), 0.5);
+        for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+          for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+            if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -1000020030) {
+              registry.fill(HIST("hAntiHypertritonCount"), 1.5);
+              registry.fill(HIST("hAntiHypertritonCount_PtDiff"), mcparticle.pt());
             }
           }
+        }
       }
     }
   }
+};
+
+namespace o2::aod
+{
+  namespace v0mc{
+    DECLARE_SOA_COLUMN(PosTrackPdgCode, posTrackPdgCode, int);
+    DECLARE_SOA_COLUMN(NegTrackPdgCode, negTrackPdgCode, int);
+  }
+  DECLARE_SOA_TABLE(V0Mc, "AOD", "v0mc", v0mc::PosTrackPdgCode, v0mc::NegTrackPdgCode);
+
+}
+
+struct V0McCheck {
+  Produces<aod::V0Mc> v0mcinfo;
+  HistogramRegistry registry{
+    "registry",
+      {
+        {"hV0McCheckCounter", "hV0McCheckCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      },
+  };
+
+  void init(InitContext&)
+  {
+    registry.get<TH1>(HIST("hV0McCheckCounter"))->GetXaxis()->SetBinLabel(1, "Readin");
+    registry.get<TH1>(HIST("hV0McCheckCounter"))->GetXaxis()->SetBinLabel(2, "DauhasMc");
+  }
+
+  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks , aod::McParticles const& mcparticles){
+
+    for ( auto& v0 : V0s ){
+      registry.fill(HIST("hV0McCheckCounter"), 0.5);
+      auto recopostrack = v0.posTrack_as<MyTracks>();
+      auto reconegtrack = v0.negTrack_as<MyTracks>();
+      if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle()) {
+        continue;
+      }
+      registry.fill(HIST("hV0McCheckCounter"), 1.5);
+      auto mcpostrack = recopostrack.mcParticle_as<aod::McParticles>();
+      auto mcnegtrack = reconegtrack.mcParticle_as<aod::McParticles>();
+
+      v0mcinfo( mcpostrack.pdgCode(), mcnegtrack.pdgCode());
+
+    }
+  }
+};
+
+struct V0DataInitializer {
+  Spawns<aod::V0Datas> v0datas;
+  void init(InitContext const&) {}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -424,5 +532,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<hypertritonAnalysisMc>(cfgc),
       adaptAnalysisTask<hypertritonQa>(cfgc),
-      adaptAnalysisTask<hypertritonParticleCountMc>(cfgc)};
+      adaptAnalysisTask<hypertritonParticleCountMc>(cfgc),
+      adaptAnalysisTask<V0DataInitializer>(cfgc),
+      adaptAnalysisTask<V0McCheck>(cfgc)};
 }
