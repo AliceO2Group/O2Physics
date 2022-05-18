@@ -24,6 +24,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/MathConstants.h"
+#include "Index.h"
 #include "TDatabasePDG.h"
 
 using namespace o2;
@@ -196,40 +197,51 @@ struct PseudorapidityDensity {
   }
 
   using Particles = soa::Filtered<aod::McParticles>;
-  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra>;
+  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TracksExtended>;
+  using Particle = Particles::iterator;
+  using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
+  Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) &&
+                                     (nabs(aod::mcparticle::eta) < estimatorEta);
 
-  void processTrackEfficiency(aod::McParticles const& particles, LabeledTracksEx const& tracks)
+  void processTrackEfficiency(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+                              aod::McCollisions const&,
+                              ParticlesI const&,
+                              soa::Filtered<LabeledTracksEx> const& tracks)
   {
-    auto p2t = o2::framework::IndexSparse::makeIndex<aod::Particles2Tracks>(particles, std::tie(particles, tracks));
-    for (auto& row : p2t) {
-      auto particle = row.mcparticle();
-      if (!particle.isPhysicalPrimary()) {
+    for (auto& collision : collisions) {
+      if (useEvSel && !collision.sel8()) {
         continue;
       }
-      if (std::abs(particle.eta()) >= 0.8f) {
+      if (!collision.has_mcCollision()) {
         continue;
       }
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
-        continue;
-      }
-      registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
-      if (row.has_track()) {
-        auto track = row.track_as<LabeledTracksEx>();
-        if (track.hasITS() && std::abs(track.eta()) < 0.8f) {
-          registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+      auto mcCollision = collision.mcCollision();
+      auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+      particlesI.bindExternalIndices(&tracks);
+
+      for (auto& particle : particlesI) {
+        auto charge = 0.;
+        auto p = pdg->GetParticle(particle.pdgCode());
+        if (p != nullptr) {
+          charge = p->Charge();
+        }
+        if (std::abs(charge) < 3.) {
+          continue;
+        }
+        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+        if (particle.has_tracks()) {
+          for (auto& track : particle.tracks_as<soa::Filtered<LabeledTracksEx>>()) {
+            if (std::abs(track.eta()) < estimatorEta) {
+              registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+            }
+          }
         }
       }
     }
   }
-
-  PROCESS_SWITCH(PseudorapidityDensity, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
+  PROCESS_SWITCH(PseudorapidityDensity, processTrackEfficiency, "Calculate tracking efficiency vs pt (indexed)", false);
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, FiTracks const& /*tracks*/)
   {

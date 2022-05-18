@@ -22,7 +22,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "../filterTables.h"
+#include "EventFiltering/filterTables.h"
 
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
@@ -35,7 +35,6 @@
 
 // ML application
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -340,9 +339,9 @@ struct HfFilter { // Main struct for HF triggers
   {
     cutsSingleTrackBeauty = {cutsTrackBeauty3Prong, cutsTrackBeauty4Prong};
 
-    hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{6, -0.5, 5.5}});
-    std::array<std::string, 6> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} candidate", "w/ beauty candidate", "w/ femto candidate", "w/ double charm"};
-    for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
+    hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
+    std::array<std::string, kNtriggersHF + 2> eventTitles = {"all", "rejected", "w/ high-#it{p}_{T} candidate", "w/ beauty candidate", "w/ femto candidate", "w/ double charm"};
+    for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
       hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
 
