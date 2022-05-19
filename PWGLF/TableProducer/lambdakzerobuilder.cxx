@@ -110,8 +110,8 @@ struct lambdakzeroBuilder {
   };
 
   // Configurables
-  Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
   // Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", 1, "Use Abs DCAs"}; uncomment this once we want to use the weighted DCA
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -148,13 +148,38 @@ struct lambdakzeroBuilder {
     }
   }
 
-  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks
+  float getMagneticField(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = grpo->getNominalL3Field();
+    return output;
+  }
+
+  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
                ,
                aod::McParticles const& particlesMC
 #endif
   )
   {
+
+    float d_bz;
+    if (d_bz_input < -990) {
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
+    } else {
+      d_bz = d_bz_input;
+    }
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
