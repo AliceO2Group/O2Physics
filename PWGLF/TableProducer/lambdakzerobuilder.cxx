@@ -278,14 +278,15 @@ struct lambdakzeroBuilder {
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
 
-      uint32_t pTrackPID = V0.posTrack_as<MyTracks>().pidForTracking();
+      // PID doesn't work well, modified the StoredV0Datas Table to make invariant mass correct temporarily, need to fix
+      /*uint32_t pTrackPID = V0.posTrack_as<MyTracks>().pidForTracking();
       uint32_t nTrackPID = V0.negTrack_as<MyTracks>().pidForTracking();
       int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
       int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];
       for (int i=0; i<3; i++){
         pvec0[i] = pvec0[i] * pTrackCharge;
         pvec1[i] = pvec1[i] * nTrackCharge;
-      }
+      }*/
 
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
