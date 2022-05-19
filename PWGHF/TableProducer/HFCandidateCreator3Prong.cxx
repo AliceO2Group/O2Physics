@@ -38,7 +38,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HFCandidateCreator3Prong {
   Produces<aod::HfCandProng3Base> rowCandidateBase;
 
-  Configurable<bool> doPVrefit{"doPVrefit", false, "do PV refit excluding the candidate daughters, if contributors"};
+  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
   Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
@@ -107,7 +107,7 @@ struct HFCandidateCreator3Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
-      if (doPVrefit) {
+      if (doPvRefit) {
         /// use PV refit
         /// Using it in the rowCandidateBase all dynamic columns shall take it into account
         // coordinates

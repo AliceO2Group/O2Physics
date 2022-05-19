@@ -57,12 +57,12 @@ namespace hf_pvrefit_track
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
 DECLARE_SOA_COLUMN(PvRefitY, pvRefitY, float);             //!
 DECLARE_SOA_COLUMN(PvRefitZ, pvRefitZ, float);             //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAX2, pvRefitSigmaX2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAXY, pvRefitSigmaXY, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAY2, pvRefitSigmaY2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAXZ, pvRefitSigmaXZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAYZ, pvRefitSigmaYZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAZ2, pvRefitSigmaZ2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaX2, pvRefitSigmaX2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaXY, pvRefitSigmaXY, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
 DECLARE_SOA_COLUMN(PvRefitDCAXY, pvRefitDcaXY, float);     //!
 DECLARE_SOA_COLUMN(PvRefitDCAZ, pvRefitDcaZ, float);       //!
 } // namespace hf_pvrefit_track
@@ -71,12 +71,12 @@ DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
                   hf_pvrefit_track::PvRefitX,
                   hf_pvrefit_track::PvRefitY,
                   hf_pvrefit_track::PvRefitZ,
-                  hf_pvrefit_track::PvRefitSIGMAX2,
-                  hf_pvrefit_track::PvRefitSIGMAXY,
-                  hf_pvrefit_track::PvRefitSIGMAY2,
-                  hf_pvrefit_track::PvRefitSIGMAXZ,
-                  hf_pvrefit_track::PvRefitSIGMAYZ,
-                  hf_pvrefit_track::PvRefitSIGMAZ2,
+                  hf_pvrefit_track::PvRefitSigmaX2,
+                  hf_pvrefit_track::PvRefitSigmaXY,
+                  hf_pvrefit_track::PvRefitSigmaY2,
+                  hf_pvrefit_track::PvRefitSigmaXZ,
+                  hf_pvrefit_track::PvRefitSigmaYZ,
+                  hf_pvrefit_track::PvRefitSigmaZ2,
                   hf_pvrefit_track::PvRefitDCAXY,
                   hf_pvrefit_track::PvRefitDCAZ);
 
@@ -156,48 +156,48 @@ namespace hf_pvrefit_cand_prong2
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
 DECLARE_SOA_COLUMN(PvRefitY, pvRefitY, float);             //!
 DECLARE_SOA_COLUMN(PvRefitZ, pvRefitZ, float);             //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAX2, pvRefitSigmaX2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAXY, pvRefitSigmaXY, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAY2, pvRefitSigmaY2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAXZ, pvRefitSigmaXZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAYZ, pvRefitSigmaYZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAZ2, pvRefitSigmaZ2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaX2, pvRefitSigmaX2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaXY, pvRefitSigmaXY, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
 } // namespace hf_pvrefit_cand_prong2
 
 DECLARE_SOA_TABLE(HfPvRefitProng2, "AOD", "HFPVREFITPRONG2", //!
                   hf_pvrefit_cand_prong2::PvRefitX,
                   hf_pvrefit_cand_prong2::PvRefitY,
                   hf_pvrefit_cand_prong2::PvRefitZ,
-                  hf_pvrefit_cand_prong2::PvRefitSIGMAX2,
-                  hf_pvrefit_cand_prong2::PvRefitSIGMAXY,
-                  hf_pvrefit_cand_prong2::PvRefitSIGMAY2,
-                  hf_pvrefit_cand_prong2::PvRefitSIGMAXZ,
-                  hf_pvrefit_cand_prong2::PvRefitSIGMAYZ,
-                  hf_pvrefit_cand_prong2::PvRefitSIGMAZ2);
+                  hf_pvrefit_cand_prong2::PvRefitSigmaX2,
+                  hf_pvrefit_cand_prong2::PvRefitSigmaXY,
+                  hf_pvrefit_cand_prong2::PvRefitSigmaY2,
+                  hf_pvrefit_cand_prong2::PvRefitSigmaXZ,
+                  hf_pvrefit_cand_prong2::PvRefitSigmaYZ,
+                  hf_pvrefit_cand_prong2::PvRefitSigmaZ2);
 
 namespace hf_pvrefit_cand_prong3
 {
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
 DECLARE_SOA_COLUMN(PvRefitY, pvRefitY, float);             //!
 DECLARE_SOA_COLUMN(PvRefitZ, pvRefitZ, float);             //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAX2, pvRefitSigmaX2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAXY, pvRefitSigmaXY, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAY2, pvRefitSigmaY2, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAXZ, pvRefitSigmaXZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAYZ, pvRefitSigmaYZ, float); //!
-DECLARE_SOA_COLUMN(PvRefitSIGMAZ2, pvRefitSigmaZ2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaX2, pvRefitSigmaX2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaXY, pvRefitSigmaXY, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
+DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
 } // namespace hf_pvrefit_cand_prong3
 
 DECLARE_SOA_TABLE(HfPvRefitProng3, "AOD", "HFPVREFITPRONG3", //!
                   hf_pvrefit_cand_prong3::PvRefitX,
                   hf_pvrefit_cand_prong3::PvRefitY,
                   hf_pvrefit_cand_prong3::PvRefitZ,
-                  hf_pvrefit_cand_prong3::PvRefitSIGMAX2,
-                  hf_pvrefit_cand_prong3::PvRefitSIGMAXY,
-                  hf_pvrefit_cand_prong3::PvRefitSIGMAY2,
-                  hf_pvrefit_cand_prong3::PvRefitSIGMAXZ,
-                  hf_pvrefit_cand_prong3::PvRefitSIGMAYZ,
-                  hf_pvrefit_cand_prong3::PvRefitSIGMAZ2);
+                  hf_pvrefit_cand_prong3::PvRefitSigmaX2,
+                  hf_pvrefit_cand_prong3::PvRefitSigmaXY,
+                  hf_pvrefit_cand_prong3::PvRefitSigmaY2,
+                  hf_pvrefit_cand_prong3::PvRefitSigmaXZ,
+                  hf_pvrefit_cand_prong3::PvRefitSigmaYZ,
+                  hf_pvrefit_cand_prong3::PvRefitSigmaZ2);
 
 // general decay properties
 namespace hf_cand
