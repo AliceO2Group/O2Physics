@@ -59,11 +59,12 @@ struct GammaConversions {
 
   // define this in order to have a constructor of the HistogramSpec which copies the name into the title
   struct MyHistogramSpec {
-    MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false)
-      : m{name_, title_, config_, callSumw2_} {}
-    MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false)
-      : m{name_, name_, config_, callSumw2_} {}
+    MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
+      : m{name_, title_, config_, callSumw2_}, fDataOnly{dataOnly_} {}
+    MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
+      : m{name_, name_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
     HistogramSpec m{};
+    bool fDataOnly{false};
   };
 
   // collision histograms
@@ -132,7 +133,7 @@ struct GammaConversions {
   // think of better name
   std::vector<MyHistogramSpec> fSpecialHistoDefinitions{
     {fFullNameIsPhotonSelectedHisto.data(), "hIsPhotonSelected;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}},
-    {fFullNameCutsOnMcTruthInfoHisto.data(), "hCutsOnMcTruthInfo;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}}};
+    {fFullNameCutsOnMcTruthInfoHisto.data(), "hCutsOnMcTruthInfo;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
 
   HistogramRegistry fHistogramRegistry{"fHistogramRegistry"};
 
@@ -172,13 +173,13 @@ struct GammaConversions {
 
   void init(InitContext const&)
   {
-    auto addHistosToRegistry = [&](auto& theContainer, auto const& theHistoDefinitions, std::string const& thePath, std::string* theSuffix = nullptr, bool theSkipIsPhotonSelected = false) {
+    auto addHistosToRegistry = [&](auto& theContainer, auto const& theHistoDefinitions, std::string const& thePath, std::string* theSuffix = nullptr) {
       for (auto& tHisto : theHistoDefinitions) {
-        if (theSkipIsPhotonSelected && tHisto.m.name == "IsPhotonSelected") {
+        if (!doprocessMc && tHisto.fDataOnly) {
           continue;
         }
         std::string lFullName(thePath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
-        LOGF(info, "adding %s", lFullName);
+        LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
         HistPtr lHistPtr = fHistogramRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
         theContainer.insert(std::pair{lFullName, lHistPtr});
 
@@ -192,12 +193,29 @@ struct GammaConversions {
       }
     };
 
+    auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
+      auto lHisto = theContainer.find(theHistoName);
+      if (lHisto != theContainer.end()) {
+        TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lHisto->second)->GetXaxis();
+        for (auto& lPairIt : theLables) {
+          lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
+        }
+      }
+    };
+
     // todo: clean up
     if (doprocessRec) {
       for (auto& lString : fRecTrueStrings) {
         lString.replace(1, 2, std::string("")); // remove 'MC' in '_MC*'
       }
     }
+
+    // add single Histograms
+    addHistosToRegistry(fSpecialHistos, fSpecialHistoDefinitions, std::string(""));
+
+    // do some labeling
+    addLablesToHisto(fSpecialHistos, fFullNameIsPhotonSelectedHisto, fPhotonCutIndeces);
+
 
     for (auto bac : std::vector<std::string>{"beforeRecCuts/", "afterRecCuts/"}) {
 
@@ -223,34 +241,16 @@ struct GammaConversions {
         addHistosToRegistry(fV0ResolutionHistos,
                             fV0ResolutionHistoDefinitions,
                             fPathResolutions + bac);
+
+        addLablesToHisto(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, fMcPhotonCutIndeces);
       }
 
       for (auto iRecTrue : lRecTrue) {
         addHistosToRegistry(fRecTrueV0Histos[iRecTrue],
                             fV0HistoDefinitions,
                             fPathsV0Histos[iRecTrue] + bac,
-                            &fRecTrueStrings[iRecTrue],
-                            (iRecTrue != kRec || bac == "beforeRecCuts/"));
+                            &fRecTrueStrings[iRecTrue]);
       }
-    }
-
-    // add single Histograms
-    addHistosToRegistry(fSpecialHistos, fSpecialHistoDefinitions, std::string(""));
-
-    // do some labeling
-    {
-      auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
-        auto lHisto = theContainer.find(theHistoName);
-        if (lHisto != theContainer.end()) {
-          TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lHisto->second)->GetXaxis();
-          for (auto& lPairIt : theLables) {
-            lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
-          }
-        }
-      };
-
-      addLablesToHisto(fSpecialHistos, fFullNameIsPhotonSelectedHisto, fPhotonCutIndeces);
-      addLablesToHisto(fSpecialHistos, fFullNameCutsOnMcTruthInfoHisto, fMcPhotonCutIndeces);
     }
   }
 
