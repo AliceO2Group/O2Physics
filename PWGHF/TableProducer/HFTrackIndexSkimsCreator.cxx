@@ -535,11 +535,8 @@ struct HfTagSelTracks {
       //   dcaXYdcaZ[1] = impactParameter.getZ();    // [cm]
       //   // TODO: add DCAxy and DCAz uncertainties?
       // }
-      return;
-    } else {
-      /// return, so that default values are not touched
-      return;
     }
+    
     return;
   } /// end of performPvRefitTrack function
 
