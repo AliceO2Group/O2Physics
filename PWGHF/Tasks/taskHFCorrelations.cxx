@@ -89,13 +89,13 @@ struct TaskHfCorrelations {
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
-  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M>;
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0A>;
 
   //  Charged track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) &&
                        (aod::track::pt > cfgCutPt) &&
-                       ((aod::track::isGlobalTrack == (uint8_t) true) ||
-                        (aod::track::isGlobalTrackSDD == (uint8_t) true));
+                       (requireGlobalTrackInFilter() ||
+                       (aod::track::isGlobalTrackSDD == (uint8_t) true));
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>>;
 
   //  HF candidate filter
@@ -179,10 +179,6 @@ struct TaskHfCorrelations {
   void fillQA(float multiplicity, TTracks tracks)
   {
     for (auto& track1 : tracks) {
-      //  Temporary track selection here, until mixing is solved for filtered tables
-      if (isAcceptedTrack(track1) == false) {
-        continue;
-      }
       registry.fill(HIST("pT"), track1.pt());
       registry.fill(HIST("eta"), track1.eta());
       registry.fill(HIST("phi"), track1.phi());
@@ -304,7 +300,7 @@ struct TaskHfCorrelations {
                    aod::MFTTracks const& mfttracks,
                    hfCandidates const& candidates)
   {
-    const auto multiplicity = collision.multFV0M(); //  multV0M ? (work on adding centrality selection for Run3 ongoing)
+    const auto multiplicity = collision.multFV0A(); //  multV0M ? (work on adding centrality selection for Run3 ongoing)
     registry.fill(HIST("hMultiplicity"), multiplicity);
 
     registry.fill(HIST("eventCounter"), 1);
@@ -349,7 +345,7 @@ struct TaskHfCorrelations {
         continue;
       }
 
-      const auto multiplicity = collision1.multFV0M();
+      const auto multiplicity = collision1.multFV0A();
 
       int bin = pairBinning.getBin({collision1.posZ(), multiplicity});
       registry.fill(HIST("eventcount"), bin);
