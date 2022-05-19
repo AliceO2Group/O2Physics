@@ -536,7 +536,7 @@ struct HfTagSelTracks {
       //   // TODO: add DCAxy and DCAz uncertainties?
       // }
     }
-    
+
     return;
   } /// end of performPvRefitTrack function
 
