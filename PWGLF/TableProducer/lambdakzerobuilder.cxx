@@ -178,8 +178,8 @@ struct lambdakzeroBuilder {
 
   void processRun2(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
-               ,
-               aod::McParticles const& particlesMC
+                   ,
+                   aod::McParticles const& particlesMC
 #endif
   )
   {
@@ -362,11 +362,11 @@ struct lambdakzeroBuilder {
     }
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 multiplicity tables", true);
-  
+
   void processRun3(aod::Collision const& collision, aod::V0s const& V0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
-               ,
-               aod::McParticles const& particlesMC
+                   ,
+                   aod::McParticles const& particlesMC
 #endif
   )
   {
