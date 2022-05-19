@@ -9,8 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#pragma once
-
 #ifndef O2_ANALYSIS_INDEX_H_
 #define O2_ANALYSIS_INDEX_H_
 

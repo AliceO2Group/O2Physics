@@ -7,6 +7,7 @@
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
 
 #include <cmath>
 #include "Framework/Configurable.h"
@@ -37,9 +38,9 @@ AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 
-	using LabeledTracks = soa::Join<aod::Tracks,
+// Empty comment
 
-aod::McTrackLabels>;    
+using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 namespace o2::aod
 {
