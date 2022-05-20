@@ -216,7 +216,6 @@ struct GammaConversions {
     // do some labeling
     addLablesToHisto(fSpecialHistos, fFullNameIsPhotonSelectedHisto, fPhotonCutIndeces);
 
-
     for (auto bac : std::vector<std::string>{"beforeRecCuts/", "afterRecCuts/"}) {
 
       // collision histograms
