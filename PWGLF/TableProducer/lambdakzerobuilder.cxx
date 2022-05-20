@@ -66,12 +66,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// custom configurable for switching between run2 and run3 track storing models
-void customize(std::vector<ConfigParamSpec>& workflowOptions)
-{
-  workflowOptions.push_back(ConfigParamSpec{"selection-run", VariantType::Int, 2, {"selection type: 2 - run 2, 3 - run 3"}});
-}
-
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended>;
 using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels>;
@@ -101,6 +95,11 @@ struct lambdakzeroBuilder {
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<int> isRun2{"isRun2", 0, "if Run2: demand TPC refit"};
+
+  int mRunNumber;
+  float d_bz;
+  float maxSnp;  //max sine phi for propagation
+  float maxStep; //max step size (cm) for propagation
 
   // for debugging
 #ifdef MY_DEBUG
@@ -141,6 +140,10 @@ struct lambdakzeroBuilder {
   void init(InitContext& context)
   {
     // using namespace analysis::lambdakzerobuilder;
+    mRunNumber = 0;
+    d_bz = 0;
+    maxSnp = 0.85f;  //could be changed later
+    maxStep = 2.00f; //could be changed later
 
     ccdb->setURL("https://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -184,12 +187,16 @@ struct lambdakzeroBuilder {
   )
   {
 
-    float d_bz;
-    if (d_bz_input < -990) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-    } else {
-      d_bz = d_bz_input;
+    /* check the previous run number */
+    auto bc = collision.bc();
+    if (bc.runNumber() != mRunNumber) {
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
+      } else {
+        d_bz = d_bz_input;
+      }
+      mRunNumber = bc.runNumber();
     }
 
     // Define o2 fitter, 2-prong
@@ -303,8 +310,8 @@ struct lambdakzeroBuilder {
       if (useMatCorrType == 2)
         matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, 0.85f, 2.0f, matCorr);
-      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
 
       nCand = fitter.process(pTrack, nTrack);
       if (nCand == 0) {
@@ -371,12 +378,16 @@ struct lambdakzeroBuilder {
   )
   {
 
-    float d_bz;
-    if (d_bz_input < -990) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-    } else {
-      d_bz = d_bz_input;
+    /* check the previous run number */
+    auto bc = collision.bc();
+    if (bc.runNumber() != mRunNumber) {
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
+      } else {
+        d_bz = d_bz_input;
+      }
+      mRunNumber = bc.runNumber();
     }
 
     // Define o2 fitter, 2-prong
@@ -490,8 +501,8 @@ struct lambdakzeroBuilder {
       if (useMatCorrType == 2)
         matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, 0.85f, 2.0f, matCorr);
-      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, 0.85f, 2.0f, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
 
       nCand = fitter.process(pTrack, nTrack);
       if (nCand == 0) {
