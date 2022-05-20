@@ -65,17 +65,17 @@ struct DGSelector {
     // check that there are no FIT signals in any of the compatible BCs
     // Double Gap (DG) condition
     auto lims = diffCuts.FITAmpLimits();
-    
+
     for (auto& bc : bcRange) {
       LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
-        bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : 0.,
-        bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : 0.,
-        bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : 0.,
-        bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : 0,
-        bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : 0);
-      LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", cleanFV0(bc,lims[0]), cleanFT0(bc,lims[1],lims[2]), cleanFDD(bc,lims[3],lims[4]));
-      
-      if (!cleanFIT(bc,diffCuts.FITAmpLimits())) {
+           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : 0.,
+           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : 0.,
+           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : 0.,
+           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : 0,
+           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : 0);
+      LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", cleanFV0(bc, lims[0]), cleanFT0(bc, lims[1], lims[2]), cleanFDD(bc, lims[3], lims[4]));
+
+      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
         return 1;
       }
     }
@@ -270,7 +270,7 @@ float FV0AmplitudeA(aod::FV0A fv0)
   for (auto amp : fv0.amplitude()) {
     totAmplitude += amp;
   }
-  
+
   return totAmplitude;
 }
 
@@ -281,7 +281,7 @@ float FT0AmplitudeA(aod::FT0 ft0)
   for (auto amp : ft0.amplitudeA()) {
     totAmplitude += amp;
   }
-  
+
   return totAmplitude;
 }
 
@@ -292,7 +292,7 @@ float FT0AmplitudeC(aod::FT0 ft0)
   for (auto amp : ft0.amplitudeC()) {
     totAmplitude += amp;
   }
-  
+
   return totAmplitude;
 }
 
@@ -303,7 +303,7 @@ int16_t FDDAmplitudeA(aod::FDD fdd)
   for (auto amp : fdd.chargeA()) {
     totAmplitude += amp;
   }
-  
+
   return totAmplitude;
 }
 
@@ -314,7 +314,7 @@ int16_t FDDAmplitudeC(aod::FDD fdd)
   for (auto amp : fdd.chargeC()) {
     totAmplitude += amp;
   }
-  
+
   return totAmplitude;
 }
 
@@ -323,7 +323,7 @@ template <typename T>
 bool cleanFV0(T bc, float limitA)
 {
   if (bc.has_foundFV0()) {
-    return (FV0AmplitudeA(bc.foundFV0())<limitA);
+    return (FV0AmplitudeA(bc.foundFV0()) < limitA);
   } else {
     return true;
   }
@@ -334,7 +334,7 @@ template <typename T>
 bool cleanFT0(T bc, float limitA, float limitC)
 {
   if (bc.has_foundFT0()) {
-    return (FT0AmplitudeA(bc.foundFT0())<limitA) && (FT0AmplitudeC(bc.foundFT0())<limitC);
+    return (FT0AmplitudeA(bc.foundFT0()) < limitA) && (FT0AmplitudeC(bc.foundFT0()) < limitC);
   } else {
     return true;
   }
@@ -345,7 +345,7 @@ template <typename T>
 bool cleanFDD(T bc, float limitA, float limitC)
 {
   if (bc.has_foundFDD()) {
-    return (FDDAmplitudeA(bc.foundFDD())<limitA) && (FDDAmplitudeC(bc.foundFDD())<limitC);
+    return (FDDAmplitudeA(bc.foundFDD()) < limitA) && (FDDAmplitudeC(bc.foundFDD()) < limitC);
   } else {
     return true;
   }

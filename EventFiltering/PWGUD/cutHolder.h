@@ -30,8 +30,7 @@ class cutHolder
             float minEta = -1.0, float maxEta = 1.0,
             float minIVM = 0.0, float maxIVM = 1000.,
             float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-            std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF},
-mFITAmpLimits{FITAmpLimits}
+            std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
@@ -95,7 +94,7 @@ mFITAmpLimits{FITAmpLimits}
   // maximum nSigma for PID
   float mMaxNSigmaTPC; // maximum nSigma TPC
   float mMaxNSigmaTOF; // maximum nSigma TOF
-  
+
   // lower limits for FIT signals
   std::vector<float> mFITAmpLimits;
 

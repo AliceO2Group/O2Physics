@@ -141,7 +141,7 @@ struct DiffMCQA {
 
     // no FIT signal in compatible BCs
     for (auto& bc : bcSlice) {
-      if (!cleanFIT(bc,diffCuts.FITAmpLimits())) {
+      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
         continue;
       }

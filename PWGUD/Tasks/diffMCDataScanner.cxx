@@ -372,13 +372,13 @@ struct MCTracks {
 
         // retrieve mothers
         auto mothers = mcpart.mothers_as<aod::McParticles>();
-        
+
         LOGF(info, "Mothers %i", mothers.size());
-        //for (auto mother : mothers) {
-        //  LOGF(info, "  %i %i %i", mother.globalIndex(), mother.pdgCode(), mother.getGenStatusCode());
-        //}
-          
-        if (hasDiff && mothers.size()>1) {
+        // for (auto mother : mothers) {
+        //   LOGF(info, "  %i %i %i", mother.globalIndex(), mother.pdgCode(), mother.getGenStatusCode());
+        // }
+
+        if (hasDiff && mothers.size() > 1) {
           auto mom1 = mothers[0];
           auto mom2 = mothers[1];
           if (mcpart.isPhysicalPrimary() &&

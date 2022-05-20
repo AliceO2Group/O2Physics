@@ -66,7 +66,7 @@ void cutHolder::SetMaxNSigmaTOF(float maxnSigma)
 
 void cutHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 {
-  mFITAmpLimits= FITAmpLimits;
+  mFITAmpLimits = FITAmpLimits;
 }
 
 // getter
