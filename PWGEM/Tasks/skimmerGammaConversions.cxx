@@ -36,6 +36,7 @@ struct skimmerGammaConversions {
   HistogramRegistry registry{
     "registry",
     {
+      {"hCollisionZ_Rec", "hCollisionZ_Rec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
@@ -71,7 +72,7 @@ struct skimmerGammaConversions {
         theTrack.tpcSignal());
     };
 
-    registry.fill(HIST("hCollisionZ"), theCollision.posZ());
+    registry.fill(HIST("hCollisionZ_Rec"), theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
 
