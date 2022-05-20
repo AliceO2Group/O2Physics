@@ -1027,9 +1027,9 @@ struct AnalysisDileptonTrack {
         }
 
         if (fConfigFlatTables.value) {
-          dqcandidatesList(mcDecision,fValuesTrack[VarManager::kPairMass],fValuesTrack[VarManager::kPairPt],fValuesTrack[VarManager::kPairEta],fValuesTrack[VarManager::kVertexingTauz],fValuesTrack[VarManager::kVertexingTauxy],fValuesTrack[VarManager::kVertexingLz],fValuesTrack[VarManager::kVertexingLxy]);
+          dqcandidatesList(mcDecision, fValuesTrack[VarManager::kPairMass], fValuesTrack[VarManager::kPairPt], fValuesTrack[VarManager::kPairEta], fValuesTrack[VarManager::kVertexingTauz], fValuesTrack[VarManager::kVertexingTauxy], fValuesTrack[VarManager::kVertexingLz], fValuesTrack[VarManager::kVertexingLxy]);
         }
-        
+
         for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
           if (mcDecision & (uint32_t(1) << isig)) {
             fHistMan->FillHistClass(Form("DileptonTrackInvMass_matchedMC_%s", fRecMCSignalsNames[isig].Data()), fValuesTrack);
