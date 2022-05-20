@@ -30,7 +30,7 @@ struct DiffQA {
   MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // define histograms
-  HistogramRegistry registry {
+  HistogramRegistry registry{
     "registry",
     {
       {"Stat", "#Stat", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
@@ -59,7 +59,7 @@ struct DiffQA {
 
     // test influence of BCrange width
     bool isDGcandidate;
-    for (int NDtcoll=0; NDtcoll<10; NDtcoll++) {
+    for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
       auto bcSlice = compatibleBCs(collision, NDtcoll, bct0s, 0);
       isDGcandidate = true;
       for (auto& bc : bcSlice) {
@@ -67,7 +67,7 @@ struct DiffQA {
       }
       registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
     }
-    
+
     // get BCrange to test for FIT signals
     auto bcSlice = compatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
 
@@ -89,7 +89,7 @@ struct DiffQA {
     }
     LOGF(debug, "<DiffQA> Good tracks with TOF: %f [1]", rgtrwTOF);
     registry.get<TH2>(HIST("tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
-    
+
     // is it a DG candidate?
     // DG = no FIT signal in compatible BCs
     //    & number of forward tracks = 0
@@ -142,7 +142,7 @@ struct DiffQA {
       if (diffCuts.pidHypothesis() == 321) {
         mass2Use = constants::physics::MassKaonCharged;
       }
-      
+
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
           LOGF(info, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
@@ -150,7 +150,7 @@ struct DiffQA {
           if (track.hasTOF()) {
             registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
           }
-          
+
           lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
           if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
             goodpts = false;
@@ -175,7 +175,7 @@ struct DiffQA {
     registry.get<TH1>(HIST("Stat"))->Fill(10., isDGcandidate * 1.);
     isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
     registry.get<TH1>(HIST("Stat"))->Fill(11., isDGcandidate * 1.);
-      
+
     LOGF(debug, "<DiffQA> End");
   };
 };
