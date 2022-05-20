@@ -86,7 +86,7 @@ struct DiffMCQA {
     auto isGraniittiDiff = isGraniittiCDE(MCPartSlice);
 
     // obtain slice of compatible BCs
-    auto bcSlice = getMCCompatibleBCs(collision, 4, bct0s, diffCuts.minNBCs());
+    auto bcSlice = getMCCompatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
     LOGF(debug, "<DiffMCQA> Number of compatible BCs: %i", bcSlice.size());
 
     // global tracks

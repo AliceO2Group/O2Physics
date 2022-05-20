@@ -24,6 +24,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, else - tree"}});
 }
 
+#include "EventFiltering/PWGUD/diffHelpers.h"
 #include "PWGUD/Tasks/diffMCHelpers.h"
 
 using namespace o2::framework::expressions;
@@ -96,7 +97,7 @@ struct collisionsInfo {
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
+  using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TCs = soa::Join<aod::Tracks, aod::TrackSelection>;
   using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
@@ -112,9 +113,10 @@ struct collisionsInfo {
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
     // check that there are no FIT signals in any of the compatible BCs
+    std::vector<float> lims = {0., 0., 0., 100., 100.}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
-      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
+      if (!cleanFIT(bc, lims)) {
         isDGcandidate = false;
         break;
       }
