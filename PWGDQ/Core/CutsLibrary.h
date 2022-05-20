@@ -378,7 +378,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -0.8, 0.8);
     return cut;
   }
-  
+
   if (!nameStr.compare("PIDStandardKine")) {
     cut->AddCut(VarManager::kPt, 0.1, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
