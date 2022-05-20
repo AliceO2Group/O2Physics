@@ -49,9 +49,8 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "CommonConstants/LHCConstants.h"
 
-#include "diffractionSelectors.h"
+#include "diffHelpers.h"
 #include "../filterTables.h"
 
 using namespace o2;
@@ -138,8 +137,8 @@ struct DGFilterRun3 {
       }
 
       // obtain slice of compatible BCs
-      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.NMinBCs());
-      LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.NMinBCs(), bcRange.size());
+      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+      LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
       // apply DG selection
       auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
