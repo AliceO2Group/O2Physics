@@ -130,7 +130,8 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
   static int findSelectionIndex(const std::string_view& obs, std::string_view prefix = "")
   {
     for (int index = 0; index < kNv0Selection; index++) {
-      std::string_view cmp{static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index])};
+      std::string comp = static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index]);
+      std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
     }
