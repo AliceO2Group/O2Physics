@@ -9,7 +9,38 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief
+/// \brief A QA task for DG events events
+///
+///     options:
+///           DiffCuts.mNDtcoll(4)
+///           DiffCuts.mMinNBCs(7)
+///           DiffCuts.mMinNTracks(0)
+///           DiffCuts.mMaxNTracks(10000)
+///           DiffCuts.mMinNetCharge(0)
+///           DiffCuts.mMaxNetCharge(0)
+///           DiffCuts.mPidHypo(211)
+///           DiffCuts.mMinPosz(-1000.)
+///           DiffCuts.mMaxPosz(1000.)
+///           DiffCuts.mMinPt(0.)
+///           DiffCuts.mMaxPt(1000.)
+///           DiffCuts.mMinEta(-1.)
+///           DiffCuts.mMaxEta(1.)
+///           DiffCuts.mMinIVM(0.)
+///           DiffCuts.mMaxIVM(1000.)
+///           DiffCuts.mMaxnSigmaTPC(1000.)
+///           DiffCuts.mMaxnSigmaTOF(1000.)
+///           DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
+///
+///     usage: copts="--configuration json://DiffQAConfig.json -b"
+///
+///           o2-analysis-timestamp $copts |
+///           o2-analysis-track-propagation $copts |
+///           o2-analysis-event-selection $copts |
+///           o2-analysis-ft0-corrected-table $copts |
+///           o2-analysis-trackextension $copts |
+///           o2-analysis-trackselection $copts |
+///           o2-analysis-ud-diff-mcqa $copts > diffQA.log
+///
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  20.05.2022
 
