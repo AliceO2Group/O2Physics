@@ -16,3 +16,11 @@ o2physics_add_library(multCalibrator
 o2physics_target_root_dictionary(multCalibrator
                       HEADERS multCalibrator.h
                       LINKDEF multCalibratorLinkDef.h)
+
+o2physics_add_library(multGlauberNBDFitter
+                      SOURCES multGlauberNBDFitter.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+
+o2physics_target_root_dictionary(multGlauberNBDFitter
+                      HEADERS multGlauberNBDFitter.h
+                      LINKDEF multGlauberNBDFitterLinkDef.h)
