@@ -39,6 +39,7 @@ struct MultiplicityQa {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int> selection{"sel", 7, "trigger: 7 - sel7, 8 - sel8"};
   Configurable<float> vtxZsel{"vtxZsel", 10, "max vertex Z (cm)"};
+  Configurable<bool> INELgtZERO{"INELgtZERO", 1, "0 - no, 1 - yes"};
 
   Configurable<int> NBinsMultFV0{"NBinsMultFV0", 1000, "N bins FV0"};
   Configurable<int> NBinsMultFT0{"NBinsMultFT0", 1000, "N bins FT0"};
@@ -93,6 +94,10 @@ struct MultiplicityQa {
       LOGF(fatal, "Unknown selection type! Use `--sel 7` or `--sel 8`");
     }
     histos.fill(HIST("multiplicityQa/hEventCounter"), 1.5);
+    if (INELgtZERO && col.multNTracksPVeta1() < 1) {
+      return;
+    }
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 2.5);
 
     //Vertex-Z dependencies, necessary for CCDB objects
     histos.fill(HIST("multiplicityQa/hVtxZFV0A"), col.posZ(), col.multFV0A());
@@ -106,7 +111,7 @@ struct MultiplicityQa {
       return;
     }
 
-    histos.fill(HIST("multiplicityQa/hEventCounter"), 2.5);
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 3.5);
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFV0M=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFT0M=%5.0f multFDDA=%5.0f multFDDC=%5.0f", col.multFV0A(), col.multFV0C(), col.multFV0M(), col.multFT0A(), col.multFT0C(), col.multFT0M(), col.multFDDA(), col.multFDDC());
 
