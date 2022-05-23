@@ -214,13 +214,13 @@ struct CandidateTreeWriter {
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
-                           //int FunctionSelection,
+                           // int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (std::abs(candidate.flagMCMatchRec()) >= isSignal&& pseudoRndm < donwSampleBkgFactor) {
+        if (std::abs(candidate.flagMCMatchRec()) >= isSignal && pseudoRndm < donwSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -296,7 +296,7 @@ struct CandidateTreeWriter {
         }
       };
 
-      //fillTable(0, InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      // fillTable(0, InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
       fillTable(1, InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
     }
 
@@ -341,13 +341,13 @@ struct CandidateTreeWriter {
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
-                           //int FunctionSelection,
+                           // int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if ( pseudoRndm < donwSampleBkgFactor) {
+        if (pseudoRndm < donwSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -423,7 +423,7 @@ struct CandidateTreeWriter {
         }
       };
 
-      //fillTable(0, candidate.isSelLcpKpi(), InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      // fillTable(0, candidate.isSelLcpKpi(), InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
       fillTable(1, InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
     }
   }
