@@ -377,6 +377,8 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
   histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
   histos.add("Tracks/ITS/itsHits", "No. of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+  histos.add("Tracks/ITS/hasITS", "pt distribution of tracks crossing ITS", kTH1D, {axisPt});
+  histos.add("Tracks/ITS/hasITSANDhasTPC", "pt distribution of tracks crossing both ITS and TPC", kTH1D, {axisPt});
 
   // tpc histograms
   histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
@@ -386,6 +388,7 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
   histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
   histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
+  histos.add("Tracks/TPC/hasTPC", "pt distribution of tracks crossing TPC", kTH1D, {axisPt});
 }
 
 //**************************************************************************************************
@@ -548,6 +551,17 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
       }
+    }
+
+    // ITS-TPC matching pt-distributions
+    if (track.hasITS()) {
+      histos.fill(HIST("Tracks/ITS/hasITS"), track.pt());
+    }
+    if (track.hasTPC()) {
+      histos.fill(HIST("Tracks/TPC/hasTPC"), track.pt());
+    }
+    if (track.hasITS() && track.hasTPC()) {
+      histos.fill(HIST("Tracks/ITS/hasITSANDhasTPC"), track.pt());
     }
   }
 }
