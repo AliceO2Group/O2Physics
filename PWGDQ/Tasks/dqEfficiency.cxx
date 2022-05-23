@@ -841,7 +841,7 @@ struct AnalysisDileptonTrack {
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
-  Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information dilepton-track candidates"};
+  Configurable<bool> fConfigFillCandidateTable{"cfgFillCandidateTable", false, "Produce a single flat tables with all relevant information dilepton-track candidates"};
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
   //Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
   //Filter dileptonFilter = aod::reducedpair::mass > 2.6f && aod::reducedpair::mass < 3.5f && aod::reducedpair::sign == 0;
@@ -1001,7 +1001,7 @@ struct AnalysisDileptonTrack {
         }
       }
 
-      if (fConfigFlatTables.value) {
+      if (fConfigFillCandidateTable.value) {
         dqcandidatesList.reserve(1);
       }
       for (auto& track : tracks) {
@@ -1026,7 +1026,7 @@ struct AnalysisDileptonTrack {
           }
         }
 
-        if (fConfigFlatTables.value) {
+        if (fConfigFillCandidateTable.value) {
           dqcandidatesList(mcDecision, fValuesTrack[VarManager::kPairMass], fValuesTrack[VarManager::kPairPt], fValuesTrack[VarManager::kPairEta], fValuesTrack[VarManager::kVertexingTauz], fValuesTrack[VarManager::kVertexingTauxy], fValuesTrack[VarManager::kVertexingLz], fValuesTrack[VarManager::kVertexingLxy]);
         }
 

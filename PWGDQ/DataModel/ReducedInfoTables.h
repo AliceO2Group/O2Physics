@@ -402,7 +402,7 @@ using DileptonExtra = DileptonsExtra::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
 // candidate information
-namespace reducedcandidate
+namespace dileptonTrackCandidate
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
@@ -413,17 +413,17 @@ DECLARE_SOA_COLUMN(Tauz, tauz, float);                //!
 DECLARE_SOA_COLUMN(Tauxy, tauxy, float);              //!
 DECLARE_SOA_COLUMN(Lz, lz, float);                    //! Longitudinal projection of decay length
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //! Transverse projection of decay length
-} // namespace reducedcandidate
+} // namespace dileptonTrackCandidate
 
 DECLARE_SOA_TABLE(DQcandidates, "AOD", "RTDQCANDIDATE", //!
-                  reducedcandidate::McDecision,
-                  reducedcandidate::Mass,
-                  reducedcandidate::Pt,
-                  reducedcandidate::Eta,
-                  reducedcandidate::Tauz,
-                  reducedcandidate::Tauxy,
-                  reducedcandidate::Lz,
-                  reducedcandidate::Lxy);
+                  dileptonTrackCandidate::McDecision,
+                  dileptonTrackCandidate::Mass,
+                  dileptonTrackCandidate::Pt,
+                  dileptonTrackCandidate::Eta,
+                  dileptonTrackCandidate::Tauz,
+                  dileptonTrackCandidate::Tauxy,
+                  dileptonTrackCandidate::Lz,
+                  dileptonTrackCandidate::Lxy);
 
 using DQcandidate = DQcandidates::iterator;
 
