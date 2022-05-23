@@ -133,7 +133,7 @@ struct TaskHfCorrelations {
     //  histograms for MFT tracks
     registry.add("etaphiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
     registry.add("etaMFT", "etaMFT", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
-    registry.add("phiMFT", "phiMFT", {HistType::kTH1F, {{100, -1 * M_PI, M_PI, "#varphi"}}});
+    registry.add("phiMFT", "phiMFT", {HistType::kTH1F, {{100, 0, 2 * M_PI, "#varphi"}}});
 
     //  histograms for candidates
     auto vbins = (std::vector<double>)bins;
@@ -192,8 +192,10 @@ struct TaskHfCorrelations {
   {
     for (auto& track1 : tracks) {
       registry.fill(HIST("etaMFT"), track1.eta());
-      registry.fill(HIST("phiMFT"), track1.phi());
-      registry.fill(HIST("etaphiMFT"), multiplicity, track1.eta(), track1.phi());
+      float phi = track1.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      registry.fill(HIST("phiMFT"), phi);
+      registry.fill(HIST("etaphiMFT"), multiplicity, track1.eta(), phi);
     }
   }
 
@@ -255,6 +257,13 @@ struct TaskHfCorrelations {
     auto associatedWeight = 1;
 
     for (auto& track1 : tracks1) {
+      float eta1 = track1.eta();
+      float pt1 = track1.pt();
+      float phi1 = track1.phi();
+      if constexpr (std::is_same_v<aod::MFTTracks, TTracksTrig>) {
+        o2::math_utils::bringTo02Pi(phi1);
+      }
+
       //  TODO: add getter for NUE trigger efficiency here
 
       //  TODO: Check how to put this into a Filter
@@ -264,7 +273,7 @@ struct TaskHfCorrelations {
         }
       }
 
-      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, triggerWeight);
+      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
 
       for (auto& track2 : tracks2) {
         if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) { // case of h-h correlations where the two types of tracks are the same
@@ -273,11 +282,18 @@ struct TaskHfCorrelations {
           }
         }
 
+        float eta2 = track2.eta();
+        float pt2 = track2.pt();
+        float phi2 = track2.phi();
+        if constexpr (std::is_same_v<aod::MFTTracks, TTracksAssoc>) {
+          o2::math_utils::bringTo02Pi(phi2);
+        }
+
         //  TODO: add getter for NUE associated efficiency here
 
         //  TODO: add pair cuts on phi*
 
-        float deltaPhi = track1.phi() - track2.phi();
+        float deltaPhi = phi1 - phi2;
         if (deltaPhi > 1.5f * PI) {
           deltaPhi -= TwoPI;
         }
@@ -286,7 +302,7 @@ struct TaskHfCorrelations {
         }
 
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ,
+                                    eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                     triggerWeight * associatedWeight);
       }
     }
