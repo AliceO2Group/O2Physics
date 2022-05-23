@@ -234,7 +234,6 @@ struct qaEventTrackLite {
   Filter tpcNclusters = o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin;
   Filter tpcNcrossedRows = o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin;
   Filter tpcNcrossedRowsOverFindableClusters = o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin;
-  
 
   void process(o2::soa::Filtered<aod::DPGTracks> const& tracks)
   {
