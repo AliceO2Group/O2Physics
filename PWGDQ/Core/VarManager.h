@@ -384,6 +384,7 @@ class VarManager : public TObject
 
   static float fgValues[kNVars]; // array holding all variables computed during analysis
   static void ResetValues(int startValue = 0, int endValue = kNVars, float* values = nullptr);
+  static void ResetQvector();
 
  private:
   static bool fgUsedVars[kNVars];        // holds flags for when the corresponding variable is needed (e.g., in the histogram manager, in cuts, mixing handler, etc.)

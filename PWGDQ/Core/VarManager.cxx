@@ -65,6 +65,19 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
 }
 
 //__________________________________________________________________
+void VarManager::ResetQvector()
+{
+  // Reset all Q-vector components to zero before starting a new event.
+  for (Int_t h = 0; h < maxHarmonic; h++) {
+    for (Int_t p = 0; p < maxPower; p++) {
+      Qvector[h][p] = TComplex(0., 0.);
+      QvectorPos[h][p] = TComplex(0., 0.);
+      QvectorNeg[h][p] = TComplex(0., 0.);
+    }
+  }
+}
+
+//__________________________________________________________________
 void VarManager::SetRunNumbers(int n, int* runs)
 {
   //
