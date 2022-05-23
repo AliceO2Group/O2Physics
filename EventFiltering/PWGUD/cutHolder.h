@@ -29,13 +29,14 @@ class cutHolder
             float minPt = 0., float maxPt = 1000.,
             float minEta = -1.0, float maxEta = 1.0,
             float minIVM = 0.0, float maxIVM = 1000.,
-            float maxnSigmaTPC = 1000., float maxnSigmaTOF = 1000.) : mNDtcoll{ndtcoll}, mNMinBCs{nMinBCs}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxnSigmaTPC{maxnSigmaTPC}, mMaxnSigmaTOF{maxnSigmaTOF}
+            float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
+            std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
   // setter
   void SetNDtcoll(int);
-  void SetNMinBCs(int);
+  void SetMinNBCs(int);
   void SetNTracks(int MinNTracks, int MaxNTracks);
   void SetNetCharge(int minNetCharge, int maxNetCharge);
   void SetPidHypothesis(int pidHypo);
@@ -43,12 +44,13 @@ class cutHolder
   void SetPtRange(float minPt, float maxPt);
   void SetEtaRange(float minEta, float maxEta);
   void SetIVMRange(float minIVM, float maxIVM);
-  void SetMaxnSigmaTPC(float maxnSigma);
-  void SetMaxnSigmaTOF(float maxnSigma);
+  void SetMaxNSigmaTPC(float maxnSigma);
+  void SetMaxNSigmaTOF(float maxnSigma);
+  void SetFITAmpLimits(std::vector<float> FITAmpLimits);
 
   // getter
   int NDtcoll() const;
-  int NMinBCs() const;
+  int minNBCs() const;
   int minNTracks() const;
   int maxNTracks() const;
   int minNetCharge() const;
@@ -62,13 +64,14 @@ class cutHolder
   float maxEta() const;
   float minIVM() const;
   float maxIVM() const;
-  float maxnSigmaTPC() const;
-  float maxnSigmaTOF() const;
+  float maxNSigmaTPC() const;
+  float maxNSigmaTOF() const;
+  std::vector<float> FITAmpLimits() const;
 
  private:
   // number of collision time resolutions to consider
   int mNDtcoll;
-  int mNMinBCs;
+  int mMinNBCs;
 
   // number of tracks
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
@@ -89,8 +92,11 @@ class cutHolder
   float mMinIVM, mMaxIVM; // range of invariant mass
 
   // maximum nSigma for PID
-  float mMaxnSigmaTPC; // maximum nSigma TPC
-  float mMaxnSigmaTOF; // maximum nSigma TOF
+  float mMaxNSigmaTPC; // maximum nSigma TPC
+  float mMaxNSigmaTOF; // maximum nSigma TOF
+
+  // lower limits for FIT signals
+  std::vector<float> mFITAmpLimits;
 
   ClassDefNV(cutHolder, 1);
 };

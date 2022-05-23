@@ -24,6 +24,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, else - tree"}});
 }
 
+#include "EventFiltering/PWGUD/diffHelpers.h"
 #include "PWGUD/Tasks/diffMCHelpers.h"
 
 using namespace o2::framework::expressions;
@@ -96,14 +97,14 @@ struct collisionsInfo {
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
+  using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TCs = soa::Join<aod::Tracks, aod::TrackSelection>;
   using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, /* MFs& mfttracks,*/ FWs& fwdtracks, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-               aod::McCollisions& McCols, aod::McParticles_000& McParts)
+               aod::McCollisions& McCols, aod::McParticles& McParts)
   {
 
     // obtain slice of compatible BCs
@@ -112,9 +113,10 @@ struct collisionsInfo {
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
     // check that there are no FIT signals in any of the compatible BCs
+    std::vector<float> lims = {0., 0., 0., 100., 100.}; // amplitude thresholds: FV0A, FT0A, FT0C, FDDA, FDDC
     auto isDGcandidate = true;
     for (auto& bc : bcSlice) {
-      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
+      if (!cleanFIT(bc, lims)) {
         isDGcandidate = false;
         break;
       }
@@ -342,11 +344,10 @@ struct MCTracks {
   using CCs = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using CC = CCs::iterator;
 
-  void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles_000& McParts)
+  void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles& McParts)
   {
 
     for (auto collision : collisions) {
-      LOGF(info, "Start of loop");
 
       // get McCollision which belongs to collision
       auto MCCol = collision.mcCollision();
@@ -365,17 +366,27 @@ struct MCTracks {
       int prongs = 0;
 
       for (auto mcpart : MCPartSlice) {
-        LOGF(info, " MCPart: %i %i %i %i %i - %i %i %i", mcpart.mcCollisionId(), mcpart.isPhysicalPrimary(), mcpart.getProcess(), mcpart.getGenStatusCode(), mcpart.globalIndex(), mcpart.pdgCode(), mcpart.mother0Id(), mcpart.mother1Id());
+        LOGF(info, " MCPart: %i %i %i %i %i - %i", mcpart.mcCollisionId(), mcpart.isPhysicalPrimary(), mcpart.getProcess(), mcpart.getGenStatusCode(), mcpart.globalIndex(), mcpart.pdgCode());
         if (mcpart.pdgCode() == 9900110) {
           LOGF(info, "  rho_diff0 energy: %f", mcpart.e());
           hasDiff = true;
         }
 
-        if (hasDiff) {
+        // retrieve mothers
+        auto mothers = mcpart.mothers_as<aod::McParticles>();
+
+        LOGF(info, "Mothers %i", mothers.size());
+        // for (auto mother : mothers) {
+        //   LOGF(info, "  %i %i %i", mother.globalIndex(), mother.pdgCode(), mother.getGenStatusCode());
+        // }
+
+        if (hasDiff && mothers.size() > 1) {
+          auto mom1 = mothers[0];
+          auto mom2 = mothers[1];
           if (mcpart.isPhysicalPrimary() &&
               (mcpart.getGenStatusCode() == 1 || mcpart.getGenStatusCode() == 2) &&
-              mcpart.mother0Id() != mcpart.mother1Id() &&
-              mcpart.mother1Id() > 0) {
+              mom1.globalIndex() != mom2.globalIndex() &&
+              mom2.globalIndex() > 0) {
 
             prongs++;
             etot += mcpart.e();
@@ -389,8 +400,6 @@ struct MCTracks {
         auto mass = TMath::Sqrt(etot * etot - (px * px + py * py + pz * pz));
         LOGF(info, "  mass of X: %f, prongs: %i", mass, prongs);
       }
-
-      LOGF(info, "End of loop");
     }
   }
 };
@@ -403,11 +412,11 @@ struct TPCnSigma {
   using TCs = soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels>;
   using TCwPIDs = soa::Join<TCs, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-  void process(TCwPIDs& tracks, aod::McParticles_000 const& mcParticles)
+  void process(TCwPIDs& tracks, aod::McParticles const& mcParticles)
   {
     for (auto track : tracks) {
       if (track.isGlobalTrack()) {
-        nSigmas(track.mcParticle_as<aod::McParticles_000>().pdgCode(), track.mcParticle_as<aod::McParticles_000>().pt(),
+        nSigmas(track.mcParticle_as<aod::McParticles>().pdgCode(), track.mcParticle_as<aod::McParticles>().pt(),
                 track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(), track.tpcNSigmaPr());
       }
