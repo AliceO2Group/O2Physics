@@ -14,22 +14,23 @@
 //
 //        options:  X in [2pi, 4pi, 2K, 4K]
 //
-//                  DiffCutsX.mNDtcoll(4)
-//                  DiffCutsX.mMinNTracks(0)
-//                  DiffCutsX.mMaxNTracks(10000)
-//                  DiffCutsX.mMinNetCharge(0)
-//                  DiffCutsX.mMaxNetCharge(0)
-//                  DiffCutsX.mPidHypo(211)
-//                  DiffCutsX.mMinPosz(-1000.)
-//                  DiffCutsX.mMaxPosz(1000.)
-//                  DiffCutsX.mMinPt(0.)
-//                  DiffCutsX.mMaxPt(1000.)
-//                  DiffCutsX.mMinEta(-1.)
-//                  DiffCutsX.mMaxEta(1.)
-//                  DiffCutsX.mMinIVM(0.)
-//                  DiffCutsX.mMaxIVM(1000.)
-//                  DiffCutsX.mMaxnSigmaTPC(1000.)
-//                  DiffCutsX.mMaxnSigmaTOF(1000.)
+//               DiffCutsX.mNDtcoll(4)
+//               DiffCutsX.mMinNTracks(0)
+//               DiffCutsX.mMaxNTracks(10000)
+//               DiffCutsX.mMinNetCharge(0)
+//               DiffCutsX.mMaxNetCharge(0)
+//               DiffCutsX.mPidHypo(211)
+//               DiffCutsX.mMinPosz(-1000.)
+//               DiffCutsX.mMaxPosz(1000.)
+//               DiffCutsX.mMinPt(0.)
+//               DiffCutsX.mMaxPt(1000.)
+//               DiffCutsX.mMinEta(-1.)
+//               DiffCutsX.mMaxEta(1.)
+//               DiffCutsX.mMinIVM(0.)
+//               DiffCutsX.mMaxIVM(1000.)
+//               DiffCutsX.mMaxnSigmaTPC(1000.)
+//               DiffCutsX.mMaxnSigmaTOF(1000.)
+//               DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
 //
 //        usage: copts="--configuration json://DiffFilterConfig.json -b"
 //               kopts="--aod-writer-keep dangling --aod-writer-resfile DiffSelection"
@@ -49,9 +50,8 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "CommonConstants/LHCConstants.h"
 
-#include "diffractionSelectors.h"
+#include "diffHelpers.h"
 #include "../filterTables.h"
 
 using namespace o2;
@@ -138,8 +138,8 @@ struct DGFilterRun3 {
       }
 
       // obtain slice of compatible BCs
-      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.NMinBCs());
-      LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.NMinBCs(), bcRange.size());
+      auto bcRange = compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
+      LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
       // apply DG selection
       auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);

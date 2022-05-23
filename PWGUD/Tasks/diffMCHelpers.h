@@ -37,7 +37,7 @@ using namespace o2::framework;
 // around t_coll could potentially be the true BC. ndt is typically 4.
 
 template <typename T>
-T getMCCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, int ndt, T const& bcs)
+T getMCCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
@@ -47,6 +47,10 @@ T getMCCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLab
   uint64_t mostProbableBC = bcIter.globalBC();
   uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
+  }
+
   int64_t minBC = meanBC - deltaBC;
   uint64_t maxBC = meanBC + deltaBC;
   if (minBC < 0) {
