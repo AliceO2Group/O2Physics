@@ -164,11 +164,20 @@ struct qaEventTrackLite {
 
   HistogramRegistry histos;
 
-  Configurable<bool> b_itsStandalone{"b_itsStandalone", false, "Select only ITS standalone DPG tracks"};
-  Configurable<bool> b_tpcOnly{"b_tpcOnly", false, "Select only TPC only DPG tracks"};
-  Configurable<bool> b_itstpcMatched{"b_itstpcMatched", false, "Select ITS-TPC matched DPG tracks"};
+  Configurable<bool> bItsStandalone{"bItsStandalone", false, "Select only ITS standalone DPG tracks"};
+  Configurable<bool> bTpcOnly{"bTpcOnly", false, "Select only TPC only DPG tracks"};
+  Configurable<bool> bItsTpcMatched{"bItsTpcMatched", false, "Select ITS-TPC matched DPG tracks"};
+  // Kinematic selections
+  Configurable<float> ptMin{"ptMin", 0., "Minimum track pt"};
   Configurable<float> etaMin{"etaMin", -10., "Minimum eta for DPG tracks"};
   Configurable<float> etaMax{"etaMax", 10., "Maximum eta for DPG tracks"};
+  // ITS selections
+  Configurable<float> chi2ItsMax{"chi2ItsMax", 1000.f, "Max ITS chi2"};
+  // TPC selections
+  Configurable<int> nClusterTpcMin{"nClusterTpcMin", -1001, "Minimum number of TPC clusters"};
+  Configurable<int> nCrossedRowsTpcMin{"nCrossedRowsTpcMin", -1001, "Minimum number of TPC crossed rows"};
+  Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMin{"nCrossedRowsTpcOverFindableClustersTpcMin", -1, "Minimum ratio between TPC crossed rows and findable clusters"};
+  Configurable<float> chi2TpcMax{"chi2TpcMax", 1000.f, "Max TPC chi2"};
 
   void init(InitContext const&)
   {
@@ -208,11 +217,23 @@ struct qaEventTrackLite {
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(4, "hasTOF");
   }
 
-  /// Filters
+  ///////////////
+  /// Filters ///
+  ///////////////
+  // Kinematics
+  Filter ptCut = o2::aod::dpgtrack::pt > ptMin;
   Filter etaCut = etaMin < o2::aod::dpgtrack::eta && o2::aod::dpgtrack::eta < etaMax;
-  Filter itsStandalone_tracks = (b_itsStandalone.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == false);
-  Filter tpcOnly_tracks = (b_tpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
-  Filter itstpcMatched_tracks = (b_itstpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
+  // Detector matching
+  Filter itsStandaloneTracks = (bItsStandalone.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == false);
+  Filter tpcOnlyTracks = (bTpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
+  Filter itsTpcMatchedTracks = (bItsTpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
+  // ITS
+  Filter itsChi2 = o2::aod::track::itsChi2NCl < chi2ItsMax;
+  // TPC
+  Filter tpcChi2s = o2::aod::track::tpcChi2NCl < chi2TpcMax;
+  Filter tpcNclusters = o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin;
+  Filter tpcNcrossedRows = o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin;
+  Filter tpcNcrossedRowsOverFindableClusters = o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin;
 
   void process(o2::soa::Filtered<aod::DPGTracks> const& tracks)
   {
