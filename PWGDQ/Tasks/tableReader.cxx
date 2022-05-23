@@ -796,7 +796,7 @@ struct AnalysisSameEventPairing {
 
 struct AnalysisQvector {
 
-  // TODO: Provide a computation of the Q vector for basics DQ flow related analyses (to be adapted)
+  // TODO: Provide an access to the Q vector for basics dilepton flow related analyses (to be adapted)
   OutputObj<THashList> fOutputList{"output"};
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};

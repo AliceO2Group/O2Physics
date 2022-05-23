@@ -297,6 +297,10 @@ class VarManager : public TObject
   static TString fgVariableUnits[kNVars]; // variable units
   static void SetDefaultVarNames();
 
+  static const int fmaxHarmonic = 3;                // max harmonic
+  static const int fmaxPower = 3;                   // max power
+  static TComplex Qvector[fmaxHarmonic][fmaxPower]; // Q-vector components
+
   static void SetUseVariable(int var)
   {
     if (var >= 0 && var < kNVars) {
