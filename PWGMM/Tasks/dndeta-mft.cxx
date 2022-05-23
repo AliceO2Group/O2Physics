@@ -132,20 +132,6 @@ struct PseudorapidityDensityMFT {
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, soa::Filtered<Particles> const& particles, aod::MFTTracks const& tracks)
   {
-    auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
-    auto nCharged = 0;
-    for (auto& particle : perCollisionMCSample) {
-      auto charge = 0.;
-      auto p = pdg->GetParticle(particle.pdgCode());
-      if (p != nullptr) {
-        charge = p->Charge();
-      }
-      if (std::abs(charge) < 3.) {
-        continue;
-      }
-      nCharged++;
-    }
-    registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
     registry.fill(HIST("EventEfficiency"), 1.);
 
     bool atLeastOne = false;
@@ -165,20 +151,23 @@ struct PseudorapidityDensityMFT {
     if (collisions.size() == 0) {
       registry.fill(HIST("NotFoundEventZvtx"), mcCollision.posZ());
     }
+    auto nCharged = 0;
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
         charge = (int)p->Charge();
       }
-      if (charge != 0) {
+      if (std::abs(charge) > 3.) {
         registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
         if (atLeastOne) {
           registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
         }
         registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+        nCharged++;
       }
     }
+    registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGen, "Process generator-level info", false);
