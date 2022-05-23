@@ -837,7 +837,7 @@ struct AnalysisSameEventPairing {
 };
 
 struct AnalysisDileptonTrack {
-  Produces<aod::DQcandidates> dqcandidatesList;
+  Produces<aod::DileptonTrackCandidates> dileptontrackcandidatesList;
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
@@ -1002,7 +1002,7 @@ struct AnalysisDileptonTrack {
       }
 
       if (fConfigFillCandidateTable.value) {
-        dqcandidatesList.reserve(1);
+        dileptontrackcandidatesList.reserve(1);
       }
       for (auto& track : tracks) {
         auto trackMC = track.reducedMCTrack();
@@ -1027,7 +1027,7 @@ struct AnalysisDileptonTrack {
         }
 
         if (fConfigFillCandidateTable.value) {
-          dqcandidatesList(mcDecision, fValuesTrack[VarManager::kPairMass], fValuesTrack[VarManager::kPairPt], fValuesTrack[VarManager::kPairEta], fValuesTrack[VarManager::kVertexingTauz], fValuesTrack[VarManager::kVertexingTauxy], fValuesTrack[VarManager::kVertexingLz], fValuesTrack[VarManager::kVertexingLxy]);
+          dileptontrackcandidatesList(mcDecision, fValuesTrack[VarManager::kPairMass], fValuesTrack[VarManager::kPairPt], fValuesTrack[VarManager::kPairEta], fValuesTrack[VarManager::kVertexingTauz], fValuesTrack[VarManager::kVertexingTauxy], fValuesTrack[VarManager::kVertexingLz], fValuesTrack[VarManager::kVertexingLxy]);
         }
 
         for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {

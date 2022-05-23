@@ -415,7 +415,7 @@ DECLARE_SOA_COLUMN(Lz, lz, float);                    //! Longitudinal projectio
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //! Transverse projection of decay length
 } // namespace dileptonTrackCandidate
 
-DECLARE_SOA_TABLE(DQcandidates, "AOD", "RTDQCANDIDATE", //!
+DECLARE_SOA_TABLE(DileptonTrackCandidates, "AOD", "RTDQCANDIDATE", //!
                   dileptonTrackCandidate::McDecision,
                   dileptonTrackCandidate::Mass,
                   dileptonTrackCandidate::Pt,
@@ -425,7 +425,7 @@ DECLARE_SOA_TABLE(DQcandidates, "AOD", "RTDQCANDIDATE", //!
                   dileptonTrackCandidate::Lz,
                   dileptonTrackCandidate::Lxy);
 
-using DQcandidate = DQcandidates::iterator;
+using DQcandidate = DileptonTrackCandidates::iterator;
 
 namespace v0bits
 {
