@@ -69,8 +69,8 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
 void VarManager::ResetQvector()
 {
   // Reset all Q-vector components to zero before starting a new collision.
-  for (Int_t h = 0; h < maxHarmonic; h++) {
-    for (Int_t p = 0; p < maxPower; p++) {
+  for (Int_t h = 0; h < VarManager::fmaxHarmonic; h++) {
+    for (Int_t p = 0; p < VarManager::fmaxPower; p++) {
       Qvector[h][p] = TComplex(0., 0.);
     }
   }

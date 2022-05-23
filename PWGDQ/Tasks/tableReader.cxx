@@ -794,89 +794,6 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
-struct AnalysisQvector {
-
-  // TODO: Provide an access to the Q vector for basics dilepton flow related analyses (to be adapted)
-  OutputObj<THashList> fOutputList{"output"};
-
-  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
-  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
-  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-
-  Configurable<float> fVtxCut{"VtxCut", 14.0, "Z vertex cut"};
-  Configurable<bool> bUseWeights{"UseWeights", true, "If true, fill Q vectors with weights for phi and p_T"};
-  Configurable<bool> bSubEvents{"SubEvents", true, "If true, fill use sub-events methods with different detector gaps"};
-  Configurable<float> fEtaLimit{"EtaLimit", 0.0, "Eta gap separation (e.g ITS=0.0, MFT=-3.05,...), only if subEvents=true"};
-  Configurable<int> nHarm{"nHarm", 2, "Harmonic number of Q vector"};
-  Configurable<int> nPow{"nPow", 0, "Power of weights for Q vector"};
-
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-
-  HistogramManager* fHistMan = nullptr;
-  AnalysisCompositeCut* fEventCut;
-
-  // Initialize histograms, vectors, functions in order to fill Q vectors
-  void init(o2::framework::InitContext&)
-  {
-    // TODO: initialize
-  }
-
-  // Template function to run fill Q vector (alltracks-barrel, alltracks-muon)
-  template <uint32_t TEventFillMap, typename TEvent, typename TCollision, typename TTracks1, typename TTracks2>
-  void runFillQvector(TEvent const& event, TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
-  {
-    // TODO: implement function to fill Q vector with corrections for selected tracks
-  }
-
-  // Process Q vector for Barrel tracks related analyses
-  void processQvectorBarrelSkimmed(MyEvents::iterator const& event, aod::Collisions const& collision, aod::Tracks const& tracks, soa::Filtered<MyBarrelTracksSelected> const& barreltracks)
-  {
-    // Reset the fValues and Qn vector array
-    VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::ResetQvector();
-
-    // TODO: fill Q vector with corrections on selected tracks for barrel analysis
-    runFillQvector<gkEventFillMap>(event, collision, tracks, barreltracks);
-  }
-
-  // Process Q vector for Muon tracks related analyses
-  void processQvectorMuonsSkimmed(MyEvents::iterator const& event, aod::Collisions const& collision, aod::Tracks const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
-  {
-    // Reset the fValues and Qn vector array
-    VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::ResetQvector();
-
-    // TODO: fill Q vector with corrections on selected tracks for muon analysis
-    runFillQvector<gkEventFillMap>(event, collision, tracks, muons);
-  }
-
-  // Process Q vector for Barrel and Muon tracks related analyses
-  void processQvectorSkimmed(MyEvents::iterator const& event, aod::Collisions const& collision, aod::Tracks const& tracks)
-  {
-    // Reset the fValues and Qn vector array
-    VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::ResetQvector();
-
-    // TODO: fill Q vector with corrections on selected tracks for barrel/muon analysis
-    runFillQvector<gkEventFillMap>(event, collision, tracks, tracks);
-  }
-
-  // Dummy function for the case when no process function is enabled
-  void processDummy(MyEvents&)
-  {
-    // do nothing
-  }
-
-  PROCESS_SWITCH(AnalysisQvector, processQvectorBarrelSkimmed, "Fill Q vectors for selected events and tracks, for ee flow analyses", false);
-  PROCESS_SWITCH(AnalysisQvector, processQvectorMuonsSkimmed, "Fill Q vectors for selected events and tracks, for mumu flow analyses", false);
-  PROCESS_SWITCH(AnalysisQvector, processQvectorSkimmed, "Fill Q vectors for selected events and tracks", false);
-  PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
-
-}
-
 struct AnalysisDileptonHadron {
   //
   // This task combines dilepton candidates with a track and could be used for example
@@ -982,7 +899,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
     adaptAnalysisTask<AnalysisEventMixing>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-    adaptAnalysisTask<AnalysisQvector>(cfgc),
     adaptAnalysisTask<AnalysisDileptonHadron>(cfgc)};
 }
 
