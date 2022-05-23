@@ -158,14 +158,17 @@ struct PseudorapidityDensityMFT {
       if (p != nullptr) {
         charge = (int)p->Charge();
       }
-      if (std::abs(charge) > 3.) {
-        registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-        if (atLeastOne) {
-          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
-        }
-        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
-        nCharged++;
+      if (std::abs(charge) < 3.) {
+        continue;
       }
+
+      registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+      if (atLeastOne) {
+        registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
+      }
+      registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+
+      nCharged++;
     }
     registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
   }
