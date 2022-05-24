@@ -245,7 +245,7 @@ struct v0selector {
   // void process(aod::Collisions const& collision, FullTracksExt const& tracks, aod::V0s const& V0s)
   // void process(FullTracksExt const& tracks, aod::Collisions const& collision, aod::V0s const& V0s)
   // void process(FullTracksExt const& tracks, aod::Collisions const&, aod::V0s const& V0s)
-  void process(aod::Collisions const&, FullTracksExt const& tracks, aod::V0s const& V0s)
+  void process(aod::Collisions const&, FullTracksExt const& tracks, aod::V0s const& V0s, aod::Cascades const& Cascades)
   // void process(FullTracksExt const& tracks, soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s)
   {
     registry.fill(HIST("hEventCounter"), 0.5);
@@ -309,7 +309,7 @@ struct v0selector {
         continue;
       }
 
-      if (!V0.posTrack_as<FullTracksExt>().has_collision() && !V0.negTrack_as<FullTracksExt>().has_collision()) {
+      if (!V0.posTrack_as<FullTracksExt>().has_collision() || !V0.negTrack_as<FullTracksExt>().has_collision()) {
         continue;
       }
       auto const& collision = V0.posTrack_as<FullTracksExt>().collision();
@@ -422,7 +422,187 @@ struct v0selector {
         pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
         // printf("This is Anti-Lambda candidate.\n");
       }
+
+      // printf("posTrackId = %d\n",V0.posTrackId());
+      // printf("negTrackId = %d\n",V0.negTrackId());
+
     } // end of V0 loop
+
+    // next, cascade, Omega -> LK
+    o2::vertexing::DCAFitterN<2> fitterCasc;
+    fitterCasc.setBz(d_bz);
+    fitterCasc.setPropagateToPCA(true);
+    fitterCasc.setMaxR(200.);
+    fitterCasc.setMinParamChange(1e-3);
+    fitterCasc.setMinRelChi2Change(0.9);
+    fitterCasc.setMaxDZIni(1e9);
+    fitterCasc.setMaxChi2(1e9);
+    fitterCasc.setUseAbsDCA(true);
+
+    // cascade loop
+    for (auto& casc : Cascades) {
+      registry.fill(HIST("hCascCandidate"), 0.5);
+      auto v0 = casc.v0_as<aod::V0s>();
+      if (v0.posTrack_as<FullTracksExt>().sign() * v0.negTrack_as<FullTracksExt>().sign() > 0) { // reject same sign pair
+        continue;
+      }
+      if (v0.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+        continue;
+      }
+      if (v0.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+        continue;
+      }
+      if (casc.bachelor_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+        continue;
+      }
+      if (v0.collisionId() != casc.collisionId()) {
+        continue;
+      }
+
+      if (!v0.posTrack_as<FullTracksExt>().has_collision() || !v0.negTrack_as<FullTracksExt>().has_collision() || !casc.bachelor_as<FullTracksExt>().has_collision()) {
+        continue;
+      }
+
+      auto const& collision = casc.bachelor_as<FullTracksExt>().collision();
+      if (casc.collisionId() != collision.globalIndex()) {
+        continue;
+      }
+
+      std::array<float, 3> pos = {0.};
+      std::array<float, 3> pvecpos = {0.};
+      std::array<float, 3> pvecneg = {0.};
+      std::array<float, 3> pvecbach = {0.};
+
+      int cpos = casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().sign();
+      int cneg = casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().sign();
+
+      auto pTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
+      auto nTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
+      auto bTrack = getTrackParCov(casc.bachelor_as<FullTracksExt>());
+
+      if (cpos < 0) { // swap charge
+        pTrack = getTrackParCov(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>());
+        nTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
+      }
+
+      int nCand = fitter.process(pTrack, nTrack);
+      if (nCand != 0) {
+        fitter.propagateTracksToVertex();
+      } else {
+        continue;
+      }
+      const auto& v0vtx = fitter.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        pos[i] = v0vtx[i];
+      }
+
+      auto V0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+      registry.fill(HIST("hDCAV0Dau_Casc"), V0dca);
+      // if (V0dca > 1.0) {
+      //   continue;
+      // }
+
+      registry.fill(HIST("hCascCandidate"), 1.5);
+      std::array<float, 21> cov0 = {0};
+      std::array<float, 21> cov1 = {0};
+      std::array<float, 21> covV0 = {0};
+
+      // Covariance matrix calculation
+      const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+      fitter.getTrack(0).getPxPyPzGlo(pvecpos);
+      fitter.getTrack(1).getPxPyPzGlo(pvecneg);
+      fitter.getTrack(0).getCovXYZPxPyPzGlo(cov0);
+      fitter.getTrack(1).getCovXYZPxPyPzGlo(cov1);
+
+      for (int i = 0; i < 6; i++) {
+        int j = momInd[i];
+        covV0[j] = cov0[j] + cov1[j];
+      }
+      auto covVtxV0 = fitter.calcPCACovMatrix();
+      covV0[0] = covVtxV0(0, 0);
+      covV0[1] = covVtxV0(1, 0);
+      covV0[2] = covVtxV0(1, 1);
+      covV0[3] = covVtxV0(2, 0);
+      covV0[4] = covVtxV0(2, 1);
+      covV0[5] = covVtxV0(2, 2);
+
+      std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
+      const std::array<float, 3> vertex = {(float)v0vtx[0], (float)v0vtx[1], (float)v0vtx[2]};
+      const std::array<float, 3> pvecv0 = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
+      auto V0CosinePA = RecoDecay::CPA(pVtx, array{pos[0], pos[1], pos[2]}, pvecv0);
+      registry.fill(HIST("hV0CosPA_Casc"), V0CosinePA);
+      // if (V0CosinePA < 0.97) {
+      //   continue;
+      // }
+
+      auto tV0 = o2::track::TrackParCov(vertex, pvecv0, covV0, 0);
+      tV0.setQ2Pt(0); // No bending, please
+      int nCand2 = fitterCasc.process(tV0, bTrack);
+      if (nCand2 != 0) {
+        fitterCasc.propagateTracksToVertex();
+        fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
+      } else {
+        continue;
+      }
+      registry.fill(HIST("hCascCandidate"), 2.5);
+
+      auto Cascdca = fitterCasc.getChi2AtPCACandidate(); // distance between V0 and bachelor
+      registry.fill(HIST("hDCACascDau"), Cascdca);
+      // if (Cascdca > 1.0) {
+      //   continue;
+      // }
+
+      const auto& cascvtx = fitterCasc.getPCACandidate();
+      auto CascCosinePA = RecoDecay::CPA(pVtx, array{cascvtx[0], cascvtx[1], cascvtx[2]}, pvecbach);
+      registry.fill(HIST("hCascCosPA"), CascCosinePA);
+      // if(CascCosinePA < 0.998){
+      //   continue;
+      // }
+
+      float mLambda = RecoDecay::M(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
+      float mAntiLambda = RecoDecay::M(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
+      float mXi = RecoDecay::M(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kPiPlus)});
+      float mOmega = RecoDecay::M(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kKPlus)});
+      registry.fill(HIST("hMassLambda_Casc"), mLambda);
+      registry.fill(HIST("hMassAntiLambda_Casc"), mAntiLambda);
+
+      // for Lambda->p + pi-
+      if (cpos > 0 && cneg < 0 && (1.112 < mLambda && mLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 10 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10) {
+
+        if (casc.bachelor_as<FullTracksExt>().sign() < 0) {
+
+          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 10) {
+            registry.fill(HIST("hMassXiMinus"), mXi);
+          }
+
+          if (TMath::Abs(mXi - 1.321) > 0.006) {
+            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 10) {
+              registry.fill(HIST("hMassOmegaMinus"), mOmega);
+              if (TMath::Abs(mOmega - 1.672) < 0.006) {
+                pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+              }
+            }
+          }
+        }
+      }
+
+      // for AntiLambda->pbar + pi+
+      if (cpos > 0 && cneg < 0 && (1.112 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 10 && TMath::Abs(casc.v0_as<aod::V0s>().negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 10) {
+        if (casc.bachelor_as<FullTracksExt>().sign() > 0) {
+          if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaPi()) < 10) {
+            registry.fill(HIST("hMassXiPlus"), mXi);
+          }
+          if (TMath::Abs(mXi - 1.321) > 0.006) {
+            if (TMath::Abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < 10) {
+              registry.fill(HIST("hMassOmegaPlus"), mOmega);
+              if (TMath::Abs(mOmega - 1.672) < 0.006) {
+                pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+              }
+            }
+          }
+        }
+      }
+    } // end of cascades loop
 
     for (auto& track : tracks) {
       // printf("setting pidmap[%lld] = %d\n",track.globalIndex(),pidmap[track.globalIndex()]);
@@ -441,6 +621,8 @@ struct trackPIDQA {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
       {"hTrackPt_all", "pT", {HistType::kTH1F, {{100, 0.0, 10}}}},
       {"hTrackEtaPhi_all", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
+      {"h2TPCdEdx_Pin_all", "TPC dEdx vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {200, 0.0, 200.}}}},
+      {"h2TOFbeta_Pin_all", "TOF #beta vs. p_{in}", {HistType::kTH2F, {{1000, 0.0, 10}, {120, 0.0, 1.2}}}},
 
       {"hTrackPt", "pT", {HistType::kTH1F, {{100, 0.0, 10}}}},
       {"hTrackEtaPhi", "#eta vs. #varphi", {HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}}}},
@@ -470,15 +652,8 @@ struct trackPIDQA {
     },
   };
 
-  // aod::Collision  gives you tracks matched with collision.
-  // aod::Collisions gives you all tracks.
-  // void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, FullTracksExt const& tracks, aod::V0Bits const& v0bits)
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks)
-  // void process(aod::Collisions const& collision, soa::Join<aod::V0Bits, FullTracksExt> const& tracks)
-  // void process(aod::Collisions const& collision, aod::V0Bits const& v0bits, FullTracksExt const& tracks)
   {
-    // printf("tracks.size() = %lld , v0bits.size() = %lld\n",tracks.size(),v0bits.size());
-    // return;
 
     registry.fill(HIST("hEventCounter"), 1.0); // all
     // if (!collision.alias()[kINT7]) {
@@ -496,8 +671,14 @@ struct trackPIDQA {
     registry.fill(HIST("hEventCounter"), 4.0); // accepted
 
     for (auto& track : tracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
+
       registry.fill(HIST("hTrackPt_all"), track.pt());
       registry.fill(HIST("hTrackEtaPhi_all"), track.phi(), track.eta());
+      registry.fill(HIST("h2TPCdEdx_Pin_all"), track.tpcInnerParam(), track.tpcSignal());
+      registry.fill(HIST("h2TOFbeta_Pin_all"), track.tpcInnerParam(), track.beta());
       if (track.pidbit() > 0) {
         registry.fill(HIST("hTrackPt"), track.pt());
         registry.fill(HIST("hTrackEtaPhi"), track.phi(), track.eta());
@@ -558,5 +739,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<v0selector>(cfgc, TaskName{"v0-selector"}), adaptAnalysisTask<trackPIDQA>(cfgc, TaskName{"track-pid-qa"})};
-  // adaptAnalysisTask<v0selector>(cfgc, TaskName{"v0-selector"})  };
 }
