@@ -561,13 +561,14 @@ struct QaEfficiency {
           listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
         }
       };
-      makeEfficiency("efficiencyVsPt", "Efficiency in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
-      makeEfficiency("efficiencyVsP", "Efficiency in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
-      makeEfficiency("efficiencyVsEta", "Efficiency in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/sum/eta/its_tpc_tof"));
-      makeEfficiency("efficiencyVsPhi", "Efficiency in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/sum/phi/its_tpc_tof"));
+      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/sum/eta/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/sum/phi/its_tpc_tof"));
 
-      makeEfficiency2D("efficiencyVsPtVsEta", Form("Efficiency in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/eta/its_tpc_tof"));
-      makeEfficiency2D("efficiencyVsPtVsPhi", Form("Efficiency in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/phi/its_tpc_tof"));
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta", Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/eta/its_tpc_tof"));
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi", Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/phi/its_tpc_tof"));
     }
   }
 
@@ -1115,12 +1116,17 @@ struct QaEfficiency {
       }
 
       if (makeEff) {
-        static_cast<TEfficiency*>(listEfficiencyData->At(0))->Fill(track.hasTOF(), track.pt());
-        static_cast<TEfficiency*>(listEfficiencyData->At(1))->Fill(track.hasTOF(), track.p());
-        static_cast<TEfficiency*>(listEfficiencyData->At(2))->Fill(track.hasTOF(), track.eta());
-        static_cast<TEfficiency*>(listEfficiencyData->At(3))->Fill(track.hasTOF(), track.phi());
-        static_cast<TEfficiency*>(listEfficiencyData->At(4))->Fill(track.hasTOF(), track.pt(), track.eta());
-        static_cast<TEfficiency*>(listEfficiencyData->At(5))->Fill(track.hasTOF(), track.pt(), track.phi());
+        if (passedITSCuts) {
+          static_cast<TEfficiency*>(listEfficiencyData->At(0))->Fill(passedTPCCuts, track.pt());
+        }
+        if (passedITSCuts && passedTPCCuts) {
+          static_cast<TEfficiency*>(listEfficiencyData->At(1))->Fill(track.hasTOF(), track.pt());
+          static_cast<TEfficiency*>(listEfficiencyData->At(2))->Fill(track.hasTOF(), track.p());
+          static_cast<TEfficiency*>(listEfficiencyData->At(3))->Fill(track.hasTOF(), track.eta());
+          static_cast<TEfficiency*>(listEfficiencyData->At(4))->Fill(track.hasTOF(), track.phi());
+          static_cast<TEfficiency*>(listEfficiencyData->At(5))->Fill(track.hasTOF(), track.pt(), track.eta());
+          static_cast<TEfficiency*>(listEfficiencyData->At(6))->Fill(track.hasTOF(), track.pt(), track.phi());
+        }
       }
     }
   }
