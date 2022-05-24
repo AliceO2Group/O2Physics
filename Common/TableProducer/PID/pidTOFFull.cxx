@@ -187,10 +187,6 @@ struct tofPidFull {
         }
       };
 
-      uint8_t flags = 0;
-      if (trk.tofEvTimeErr() > 199.f) {
-        flags |= o2::aod::pidflags::enums::PIDFlags::T0TOF;
-      }
       makeTable(pidEl, tablePIDEl, responseEl);
       makeTable(pidMu, tablePIDMu, responseMu);
       makeTable(pidPi, tablePIDPi, responsePi);

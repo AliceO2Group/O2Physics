@@ -12,13 +12,13 @@
 #include "cutHolder.h"
 
 // setter
-void cutHolder::Setcc(int cc)
-{
-  mcase = cc;
-}
 void cutHolder::SetNDtcoll(int ndtcoll)
 {
   mNDtcoll = ndtcoll;
+}
+void cutHolder::SetMinNBCs(int nminbcs)
+{
+  mMinNBCs = nminbcs;
 }
 void cutHolder::SetNTracks(int MinNTracks, int MaxNTracks)
 {
@@ -55,18 +55,23 @@ void cutHolder::SetIVMRange(float minIVM, float maxIVM)
   mMinIVM = minIVM;
   mMaxIVM = maxIVM;
 }
-void cutHolder::SetMaxnSigmaTPC(float maxnSigma)
+void cutHolder::SetMaxNSigmaTPC(float maxnSigma)
 {
-  mMaxnSigmaTPC = maxnSigma;
+  mMaxNSigmaTPC = maxnSigma;
 }
-void cutHolder::SetMaxnSigmaTOF(float maxnSigma)
+void cutHolder::SetMaxNSigmaTOF(float maxnSigma)
 {
-  mMaxnSigmaTOF = maxnSigma;
+  mMaxNSigmaTOF = maxnSigma;
+}
+
+void cutHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
+{
+  mFITAmpLimits = FITAmpLimits;
 }
 
 // getter
-int cutHolder::cc() const { return mcase; }
 int cutHolder::NDtcoll() const { return mNDtcoll; }
+int cutHolder::minNBCs() const { return mMinNBCs; }
 int cutHolder::minNTracks() const { return mMinNTracks; }
 int cutHolder::maxNTracks() const { return mMaxNTracks; }
 int cutHolder::minNetCharge() const { return mMinNetCharge; }
@@ -80,5 +85,6 @@ float cutHolder::minEta() const { return mMinEta; }
 float cutHolder::maxEta() const { return mMaxEta; }
 float cutHolder::minIVM() const { return mMinIVM; }
 float cutHolder::maxIVM() const { return mMaxIVM; }
-float cutHolder::maxnSigmaTPC() const { return mMaxnSigmaTPC; };
-float cutHolder::maxnSigmaTOF() const { return mMaxnSigmaTOF; };
+float cutHolder::maxNSigmaTPC() const { return mMaxNSigmaTPC; };
+float cutHolder::maxNSigmaTOF() const { return mMaxNSigmaTOF; };
+std::vector<float> cutHolder::FITAmpLimits() const { return mFITAmpLimits; };

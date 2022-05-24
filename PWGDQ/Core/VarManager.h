@@ -205,6 +205,9 @@ class VarManager : public TObject
     kTOFnSigmaPi,
     kTOFnSigmaKa,
     kTOFnSigmaPr,
+    kTrackTimeResIsRange, // Gaussian or range (see Framework/DataTypes)
+    kPVContributor,       // This track has contributed to the collision vertex fit (see Framework/DataTypes)
+    kOrphanTrack,         // Track has no association with any collision vertex (see Framework/DataTypes)
     kIsLegFromGamma,
     kIsLegFromK0S,
     kIsLegFromLambda,
@@ -611,13 +614,22 @@ void VarManager::FillTrack(T const& track, float* values)
   if constexpr ((fillMap & TrackExtra) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
     values[kPin] = track.tpcInnerParam();
     if (fgUsedVars[kIsITSrefit]) {
-      values[kIsITSrefit] = (track.flags() & o2::aod::track::ITSrefit) > 0;
+      values[kIsITSrefit] = (track.flags() & o2::aod::track::ITSrefit) > 0; // NOTE: This is just for Run-2
+    }
+    if (fgUsedVars[kTrackTimeResIsRange]) {
+      values[kTrackTimeResIsRange] = (track.flags() & o2::aod::track::TrackTimeResIsRange) > 0; // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsTPCrefit]) {
-      values[kIsTPCrefit] = (track.flags() & o2::aod::track::TPCrefit) > 0;
+      values[kIsTPCrefit] = (track.flags() & o2::aod::track::TPCrefit) > 0; // NOTE: This is just for Run-2
+    }
+    if (fgUsedVars[kPVContributor]) {
+      values[kPVContributor] = (track.flags() & o2::aod::track::PVContributor) > 0; // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsGoldenChi2]) {
-      values[kIsGoldenChi2] = (track.flags() & o2::aod::track::GoldenChi2) > 0;
+      values[kIsGoldenChi2] = (track.flags() & o2::aod::track::GoldenChi2) > 0; // NOTE: This is just for Run-2
+    }
+    if (fgUsedVars[kOrphanTrack]) {
+      values[kOrphanTrack] = (track.flags() & o2::aod::track::OrphanTrack) > 0; // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsSPDfirst]) {
       values[kIsSPDfirst] = (track.itsClusterMap() & uint8_t(1)) > 0;

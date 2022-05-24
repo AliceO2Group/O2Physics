@@ -164,11 +164,20 @@ struct qaEventTrackLite {
 
   HistogramRegistry histos;
 
-  Configurable<bool> b_itsStandalone{"b_itsStandalone", false, "Select only ITS standalone DPG tracks"};
-  Configurable<bool> b_tpcOnly{"b_tpcOnly", false, "Select only TPC only DPG tracks"};
-  Configurable<bool> b_itstpcMatched{"b_itstpcMatched", false, "Select ITS-TPC matched DPG tracks"};
+  Configurable<bool> bItsStandalone{"bItsStandalone", false, "Select only ITS standalone DPG tracks"};
+  Configurable<bool> bTpcOnly{"bTpcOnly", false, "Select only TPC only DPG tracks"};
+  Configurable<bool> bItsTpcMatched{"bItsTpcMatched", false, "Select ITS-TPC matched DPG tracks"};
+  // Kinematic selections
+  Configurable<float> ptMin{"ptMin", 0., "Minimum track pt"};
   Configurable<float> etaMin{"etaMin", -10., "Minimum eta for DPG tracks"};
   Configurable<float> etaMax{"etaMax", 10., "Maximum eta for DPG tracks"};
+  // ITS selections
+  Configurable<float> chi2ItsMax{"chi2ItsMax", 1000.f, "Max ITS chi2"};
+  // TPC selections
+  Configurable<int> nClusterTpcMin{"nClusterTpcMin", -1001, "Minimum number of TPC clusters"};
+  Configurable<int> nCrossedRowsTpcMin{"nCrossedRowsTpcMin", -1001, "Minimum number of TPC crossed rows"};
+  Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMin{"nCrossedRowsTpcOverFindableClustersTpcMin", -1, "Minimum ratio between TPC crossed rows and findable clusters"};
+  Configurable<float> chi2TpcMax{"chi2TpcMax", 1000.f, "Max TPC chi2"};
 
   void init(InitContext const&)
   {
@@ -208,11 +217,23 @@ struct qaEventTrackLite {
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(4, "hasTOF");
   }
 
-  /// Filters
+  ///////////////
+  /// Filters ///
+  ///////////////
+  // Kinematics
+  Filter ptCut = o2::aod::dpgtrack::pt > ptMin;
   Filter etaCut = etaMin < o2::aod::dpgtrack::eta && o2::aod::dpgtrack::eta < etaMax;
-  Filter itsStandalone_tracks = (b_itsStandalone.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == false);
-  Filter tpcOnly_tracks = (b_tpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
-  Filter itstpcMatched_tracks = (b_itstpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
+  // Detector matching
+  Filter itsStandaloneTracks = (bItsStandalone.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == false);
+  Filter tpcOnlyTracks = (bTpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
+  Filter itsTpcMatchedTracks = (bItsTpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
+  // ITS
+  Filter itsChi2 = o2::aod::track::itsChi2NCl < chi2ItsMax;
+  // TPC
+  Filter tpcChi2s = o2::aod::track::tpcChi2NCl < chi2TpcMax;
+  Filter tpcNclusters = o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin;
+  Filter tpcNcrossedRows = o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin;
+  Filter tpcNcrossedRowsOverFindableClusters = o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin;
 
   void process(o2::soa::Filtered<aod::DPGTracks> const& tracks)
   {
@@ -356,6 +377,8 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
   histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
   histos.add("Tracks/ITS/itsHits", "No. of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+  histos.add("Tracks/ITS/hasITS", "pt distribution of tracks crossing ITS", kTH1D, {axisPt});
+  histos.add("Tracks/ITS/hasITSANDhasTPC", "pt distribution of tracks crossing both ITS and TPC", kTH1D, {axisPt});
 
   // tpc histograms
   histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
@@ -365,6 +388,7 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
   histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
   histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
+  histos.add("Tracks/TPC/hasTPC", "pt distribution of tracks crossing TPC", kTH1D, {axisPt});
 }
 
 //**************************************************************************************************
@@ -527,6 +551,17 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
       }
+    }
+
+    // ITS-TPC matching pt-distributions
+    if (track.hasITS()) {
+      histos.fill(HIST("Tracks/ITS/hasITS"), track.pt());
+    }
+    if (track.hasTPC()) {
+      histos.fill(HIST("Tracks/TPC/hasTPC"), track.pt());
+    }
+    if (track.hasITS() && track.hasTPC()) {
+      histos.fill(HIST("Tracks/ITS/hasITSANDhasTPC"), track.pt());
     }
   }
 }
