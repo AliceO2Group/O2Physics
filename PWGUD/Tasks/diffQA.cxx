@@ -63,6 +63,7 @@ struct DiffQA {
 
   // a structure to hold information about the possible BCs the ambiguous tracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
+  o2::dataformats::bcRanges afbcrs = o2::dataformats::bcRanges("ambiguous_fwdtracks");
 
   // define histograms
   // Stat:
@@ -75,18 +76,19 @@ struct DiffQA {
   //  bin  6: no FWD tracks
   //  bin  7: no global tracks which are no vtx tracks
   //  bin  8: possible ambiguous tracks
-  //  bin  9: number of tracks >= minimum number
-  //  bin 10: number of tracks <= maximum number
-  //  bin 11: minimum pt <= pt of vtx tracks <= maximum pt
-  //  bin 12: minimum eta <= eta of vtx tracks <= maximum eta
-  //  bin 13: net charge >= minimum net charge
-  //  bin 14: net charge <= maximum net charge
-  //  bin 15: IVM >= minimum IVM
-  //  bin 16: IVM <= maximum IVM
+  //  bin  9: possible ambiguous FwdTracks
+  //  bin 10: number of tracks >= minimum number
+  //  bin 11: number of tracks <= maximum number
+  //  bin 12: minimum pt <= pt of vtx tracks <= maximum pt
+  //  bin 13: minimum eta <= eta of vtx tracks <= maximum eta
+  //  bin 14: net charge >= minimum net charge
+  //  bin 15: net charge <= maximum net charge
+  //  bin 16: IVM >= minimum IVM
+  //  bin 17: IVM <= maximum IVM
   HistogramRegistry registry{
     "registry",
     {
-      {"Stat", "#Stat", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
+      {"Stat", "#Stat", {HistType::kTH1F, {{18, -0.5, 17.5}}}},
       {"cleanFIT", "#cleanFIT", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
       {"Tracks", "#Tracks", {HistType::kTH1F, {{51, 0.5, 50.5}}}},
       {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{51, 0.5, 50.5}}}},
@@ -107,6 +109,7 @@ struct DiffQA {
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal>;
   using FWs = aod::FwdTracks;
   using ATs = aod::AmbiguousTracks;
+  using AFTs = aod::AmbiguousFwdTracks;
 
   void init(InitContext&)
   {
@@ -133,10 +136,25 @@ struct DiffQA {
       abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
     }
     abcrs.merge();
+
+   // get ambiguous FwdTracks table
+   auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
+   auto ambfwdtracks = AFTs({t5});
+   ambfwdtracks.bindExternalIndices(&bcs);
+
+    // make sorted list of BC ranges, this is used to efficiently check whether a given BC
+    // is contained in one of these ranges
+    afbcrs.reset();
+    for (auto ambfwdtrack : ambfwdtracks) {
+      auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
+      auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
+      afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+    }
+    afbcrs.merge();
   }
 
   void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, FWs& fwdtracks, ATs& ambtracks,
+               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtarcks,
                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
                aod::Zdcs& zdcs, aod::Calos& calos,
                aod::V0s& v0s, aod::Cascades& cascades)
@@ -251,7 +269,7 @@ struct DiffQA {
     }
     registry.get<TH1>(HIST("Stat"))->Fill(7., isDGcandidate * 1.);
 
-    // check a given bc for possible ambiguous tracks
+    // check a given bc for possible ambiguous Tracks
     auto withAmbTracks = isDGcandidate;
     for (auto& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
@@ -261,12 +279,22 @@ struct DiffQA {
     }
     registry.get<TH1>(HIST("Stat"))->Fill(8., withAmbTracks * 1.);
 
+    // check a given bc for possible ambiguous FwdTracks
+    auto withAmbFwdTracks = isDGcandidate;
+    for (auto& bc : bcSlice) {
+      if (afbcrs.isInRange(bc.globalIndex())) {
+        withAmbFwdTracks = false;
+        break;
+      }
+    }
+    registry.get<TH1>(HIST("Stat"))->Fill(9., withAmbFwdTracks * 1.);
+
     // number of vertex tracks <= n
     registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
-    registry.get<TH1>(HIST("Stat"))->Fill(9., isDGcandidate * 1.);
-    isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
     registry.get<TH1>(HIST("Stat"))->Fill(10., isDGcandidate * 1.);
+    isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
+    registry.get<TH1>(HIST("Stat"))->Fill(11., isDGcandidate * 1.);
 
     // net charge and invariant mass
     bool goodetas = true;
@@ -296,17 +324,17 @@ struct DiffQA {
       }
     }
     isDGcandidate &= goodpts;
-    registry.get<TH1>(HIST("Stat"))->Fill(11., isDGcandidate * 1.);
-    isDGcandidate &= goodetas;
     registry.get<TH1>(HIST("Stat"))->Fill(12., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
+    isDGcandidate &= goodetas;
     registry.get<TH1>(HIST("Stat"))->Fill(13., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
+    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(14., isDGcandidate * 1.);
-    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
-    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
     registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
+    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    registry.get<TH1>(HIST("Stat"))->Fill(17., isDGcandidate * 1.);
 
     // update some DG histograms
     if (isDGcandidate) {
