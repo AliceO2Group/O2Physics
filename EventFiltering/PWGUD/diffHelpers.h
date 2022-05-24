@@ -42,6 +42,12 @@ bool cleanFDD(T bc, float limitA, float limitC);
 template <typename T>
 bool cleanFIT(T bc, std::vector<float> lims);
 
+template <typename T>
+bool cleanZDC(T bc, aod::Zdcs zdcs, std::vector<float> lims);
+
+template <typename T>
+bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims);
+
 template <typename TC>
 bool hasGoodPID(cutHolder diffCuts, TC track);
 
@@ -356,6 +362,22 @@ template <typename T>
 bool cleanFIT(T bc, std::vector<float> lims)
 {
   return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanZDC(T bc, aod::Zdcs zdcs, std::vector<float> lims)
+{
+  const auto& ZdcBC = zdcs.sliceBy(aod::zdc::bcId, bc.globalIndex());
+  return (ZdcBC.size() == 0);
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims)
+{
+  const auto& CaloBC = calos.sliceBy(aod::calo::bcId, bc.globalIndex());
+  return (CaloBC.size() == 0);
 }
 
 // -----------------------------------------------------------------------------

@@ -68,23 +68,25 @@ struct DiffQA {
   // Stat:
   //  bin  0: all collisions
   //  bin  1: clean FIT
-  //  bin  2: no V0s
-  //  bin  3: no Cascades
-  //  bin  4: no FWD tracks
-  //  bin  5: no global tracks which are no vtx tracks
-  //  bin  6: possible ambiguous tracks
-  //  bin  7: number of tracks >= minimum number
-  //  bin  8: number of tracks <= maximum number
-  //  bin  9: minimum pt <= pt of vtx tracks <= maximum pt
-  //  bin 10: minimum eta <= eta of vtx tracks <= maximum eta
-  //  bin 11: net charge >= minimum net charge
-  //  bin 12: net charge <= maximum net charge
-  //  bin 13: IVM >= minimum IVM
-  //  bin 14: IVM <= maximum IVM
+  //  bin  2: clean ZDC
+  //  bin  3: clean Calo
+  //  bin  4: no V0s
+  //  bin  5: no Cascades
+  //  bin  6: no FWD tracks
+  //  bin  7: no global tracks which are no vtx tracks
+  //  bin  8: possible ambiguous tracks
+  //  bin  9: number of tracks >= minimum number
+  //  bin 10: number of tracks <= maximum number
+  //  bin 11: minimum pt <= pt of vtx tracks <= maximum pt
+  //  bin 12: minimum eta <= eta of vtx tracks <= maximum eta
+  //  bin 13: net charge >= minimum net charge
+  //  bin 14: net charge <= maximum net charge
+  //  bin 15: IVM >= minimum IVM
+  //  bin 16: IVM <= maximum IVM
   HistogramRegistry registry{
     "registry",
     {
-      {"Stat", "#Stat", {HistType::kTH1F, {{15, -0.5, 14.5}}}},
+      {"Stat", "#Stat", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
       {"cleanFIT", "#cleanFIT", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
       {"Tracks", "#Tracks", {HistType::kTH1F, {{51, 0.5, 50.5}}}},
       {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{51, 0.5, 50.5}}}},
@@ -136,6 +138,7 @@ struct DiffQA {
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, FWs& fwdtracks, ATs& ambtracks,
                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+               aod::Zdcs& zdcs, aod::Calos& calos,
                aod::V0s& v0s, aod::Cascades& cascades)
   {
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
@@ -184,6 +187,8 @@ struct DiffQA {
 
     // is it a DG candidate?
     // DG = no FIT signal in compatible BCs
+    //    & no ZDC signal in compatible BCs
+    //    & no Calo signal in compatible BCs
     //    & no V0s
     //    & no Cascades
     //    & number of forward tracks = 0
@@ -203,20 +208,39 @@ struct DiffQA {
     }
     registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
 
+    // no Zdc signal in bcSlice
+    std::vector<float> lims(10, 0.);
+    for (auto& bc : bcSlice) {
+      if (!cleanZDC(bc, zdcs, lims)) {
+        isDGcandidate = false;
+        break;
+      }
+    }
+    registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
+
+    // no Calo signal in bcSlice
+    for (auto& bc : bcSlice) {
+      if (!cleanCalo(bc, calos, lims)) {
+        isDGcandidate = false;
+        break;
+      }
+    }
+    registry.get<TH1>(HIST("Stat"))->Fill(3., isDGcandidate * 1.);
+
     // no V0s
     auto colId = collision.globalIndex();
     const auto& V0Collision = v0s.sliceBy(aod::v0::collisionId, colId);
     isDGcandidate &= (V0Collision.size() == 0);
-    registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(4., isDGcandidate * 1.);
 
     // no Cascades
     const auto& CascadeCollision = cascades.sliceBy(aod::cascade::collisionId, colId);
     isDGcandidate &= (CascadeCollision.size() == 0);
-    registry.get<TH1>(HIST("Stat"))->Fill(3., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(5., isDGcandidate * 1.);
 
     // number of forward tracks = 0
     isDGcandidate &= (fwdtracks.size() == 0);
-    registry.get<TH1>(HIST("Stat"))->Fill(4., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(6., isDGcandidate * 1.);
 
     // no global tracks which are no vtx tracks
     for (auto& track : tracks) {
@@ -225,7 +249,7 @@ struct DiffQA {
         break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(5., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(7., isDGcandidate * 1.);
 
     // check a given bc for possible ambiguous tracks
     auto withAmbTracks = isDGcandidate;
@@ -235,14 +259,14 @@ struct DiffQA {
         break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(6., withAmbTracks * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(8., withAmbTracks * 1.);
 
     // number of vertex tracks <= n
     registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
-    registry.get<TH1>(HIST("Stat"))->Fill(7., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(9., isDGcandidate * 1.);
     isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
-    registry.get<TH1>(HIST("Stat"))->Fill(8., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(10., isDGcandidate * 1.);
 
     // net charge and invariant mass
     bool goodetas = true;
@@ -272,17 +296,17 @@ struct DiffQA {
       }
     }
     isDGcandidate &= goodpts;
-    registry.get<TH1>(HIST("Stat"))->Fill(9., isDGcandidate * 1.);
-    isDGcandidate &= goodetas;
-    registry.get<TH1>(HIST("Stat"))->Fill(10., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(11., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
+    isDGcandidate &= goodetas;
     registry.get<TH1>(HIST("Stat"))->Fill(12., isDGcandidate * 1.);
-    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(13., isDGcandidate * 1.);
-    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(14., isDGcandidate * 1.);
+    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+    registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
+    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
 
     // update some DG histograms
     if (isDGcandidate) {
