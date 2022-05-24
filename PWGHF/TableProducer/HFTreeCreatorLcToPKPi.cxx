@@ -185,7 +185,7 @@ struct CandidateTreeWriter {
   }
 
   Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
-  Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+  Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   void processMC(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
@@ -214,13 +214,13 @@ struct CandidateTreeWriter {
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
-                           // int FunctionSelection,
+                           int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (std::abs(candidate.flagMCMatchRec()) >= isSignal && pseudoRndm < donwSampleBkgFactor) {
+        if (FunctionSelection >= 1 && std::abs(candidate.flagMCMatchRec()) >= isSignal && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -296,8 +296,8 @@ struct CandidateTreeWriter {
         }
       };
 
-      // fillTable(0, InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
-      fillTable(1, InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(0, candidate.isSelLcpKpi(), InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(1, candidate.isSelLcpiKp(), InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
     }
 
     // Filling particle properties
@@ -341,13 +341,13 @@ struct CandidateTreeWriter {
       auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag,
-                           // int FunctionSelection,
+                           int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (pseudoRndm < donwSampleBkgFactor) {
+        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -423,8 +423,8 @@ struct CandidateTreeWriter {
         }
       };
 
-      // fillTable(0, candidate.isSelLcpKpi(), InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
-      fillTable(1, InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(0, candidate.isSelLcpKpi(), InvMassLcpKpi(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
+      fillTable(1, candidate.isSelLcpiKp(), InvMassLcpiKp(candidate), CtLc(candidate), YLc(candidate), ELc(candidate));
     }
   }
   PROCESS_SWITCH(CandidateTreeWriter, processData, "Process data tree writer", false);
