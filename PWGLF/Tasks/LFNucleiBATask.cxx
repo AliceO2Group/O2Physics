@@ -111,7 +111,7 @@ struct LFNucleiDeuteronTask {
       // Tracks histos fill
       htracks.fill(HIST("tracks/h1Eta"), track.eta());
       htracks.fill(HIST("tracks/h1VarPhi"), track.phi());
-      htracks.fill(HIST("tracks/h2EtaVsPhi"), track.eta(), track.phi()); 
+      htracks.fill(HIST("tracks/h2EtaVsPhi"), track.eta(), track.phi());
       htracks.fill(HIST("tracks/h1pT"), track.pt());
       htracks.fill(HIST("tracks/h1p"), track.p());
 
