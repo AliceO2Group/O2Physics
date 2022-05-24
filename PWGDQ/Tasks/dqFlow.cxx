@@ -57,6 +57,8 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExten
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
+using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
@@ -79,7 +81,9 @@ struct AnalysisQvector {
   Configurable<float> fEtaLimit{"EtaLimit", 0.0, "Eta gap separation (e.g ITS=0.0, MFT=-3.05,...), only if subEvents=true"};
   Configurable<int> nHarm{"nHarm", 2, "Harmonic number of Q vector"};
   Configurable<int> nPow{"nPow", 0, "Power of weights for Q vector"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
+  Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
+  Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0f, "Maximal pT for tracks"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
 
   // TODO: Obtain efficiencies and acceptances from CCDB
   Configurable<std::string> fcfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency object"};
@@ -89,7 +93,14 @@ struct AnalysisQvector {
   Configurable<std::string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
+  ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
+  ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
+  AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
+
   Filter collisionFilter = nabs(aod::collision::posZ) < fVtxCut;
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
@@ -102,7 +113,7 @@ struct AnalysisQvector {
   // Define output
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // define global variables
   GFW* fGFW = new GFW();
@@ -110,7 +121,6 @@ struct AnalysisQvector {
   TRandom3* fRndm = new TRandom3(0);
 
   // Initialize CCDB, efficiencies and acceptances from CCDB, histograms, GFW, FlowContainer
-  // in order to fill Q vector with or without corrections
   void init(o2::framework::InitContext&)
   {
     // TODO: initialize
@@ -139,6 +149,11 @@ struct AnalysisQvector {
     fFC->Initialize(oba, axisMultiplicity, 10);
     delete oba;
 
+    registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
+    registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
+    registry.add("dnx", "centrality percentile vs dnx", kTProfile, {axisCentBins});
+    registry.add("CorrValues", "CorrValues", kTProfile, {axisCentBins});
+
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
     fGFW->AddRegion("refN", 7, pows, -0.8, -0.4, 1, 1);
@@ -160,10 +175,13 @@ struct AnalysisQvector {
     if (dnx == 0) {
       return;
     }
+    registry.fill(HIST("dnx"), cent, dnx);
+
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
       if (TMath::Abs(val) < 1) {
         fFC->FillProfile(corrconf.Head.Data(), cent, val, 1, rndm);
+        registry.fill(HIST("CorrValues"), cent, val);
       }
       return;
     }
@@ -172,7 +190,7 @@ struct AnalysisQvector {
   // Template function to run fill Q vector (alltracks-barrel, alltracks-muon)
   //  template <typename TCollision, typename BC, typename TTracks1, typename TTracks2 >
   //  void runFillQvector(TCollision const& collision, BC const& bcs, TTracks1 const& tracks1)
-  void process(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks1, MyBarrelTracks const& barreltracks)
+  void process(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks1)
   {
     // Reset the fValues and Qn vector array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -180,10 +198,10 @@ struct AnalysisQvector {
 
     // TODO: implement main functions to fill Q vector with corrections for selected tracks
 
-    // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
     if (fcfgAcceptance.value.empty() == false) {
-      // cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fcfgAcceptance.value, bc.timestamp());
+      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fcfgAcceptance.value, bc.timestamp());
       if (cfg.mAcceptance) {
         LOGF(info, "Loaded acceptance histogram from %s (%p)", fcfgAcceptance.value.c_str(), (void*)cfg.mAcceptance);
       } else {
@@ -225,6 +243,8 @@ struct AnalysisQvector {
         wacc = 1;
       }
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
+      registry.fill(HIST("hPhi"), track.phi());
+      registry.fill(HIST("hEta"), track.eta());
     }
     for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       FillFC(corrconfigs.at(l_ind), centrality, l_Random);
@@ -232,29 +252,29 @@ struct AnalysisQvector {
   }
 
   //  // Process Q vector for Barrel tracks related analyses
-  //  void processQvectorBarrelSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks, MyBarrelTracks const& barreltracks)
-  //  {
-  //
-  //    // TODO: fill Q vector with corrections on selected tracks for barrel analysis
-  //    runFillQvector(collision, bcs, tracks, barreltracks);
-  //  }
-  //
+  void processQvectorBarrelSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks, MyBarrelTracks const& barreltracks)
+  {
+
+    // TODO: fill Q vector with corrections on selected tracks for barrel analysis
+    // runFillQvector(collision, bcs, tracks, barreltracks);
+  }
+
   //  // Process Q vector for Muon tracks related analyses
-  //  void processQvectorMuonsSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks, MyMuons const& muons)
-  //  {
-  //
-  //    // TODO: fill Q vector with corrections on selected tracks for muon analysis
-  //    runFillQvector(collision, bcs, tracks, muons);
-  //  }
+  void processQvectorMuonsSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks, MyMuons const& muons)
+  {
+
+    // TODO: fill Q vector with corrections on selected tracks for muon analysis
+    // runFillQvector(collision, bcs, tracks, muons);
+  }
 
   // Dummy function for the case when no process function is enabled
-  //  void processDummy()
-  //  {
-  //    // do nothing
-  //  }
+  void processDummy()
+  {
+    // do nothing
+  }
 
   // PROCESS_SWITCH(AnalysisQvector, processQvectorBarrelSkimmed, "Fill Q vectors for selected events and tracks, for ee flow analyses", false);
-  // PROCESS_SWITCH(AnalysisQvector, processQvectorMuonsSkimmed, "Fill Q vectors for selected events and tracks, for mumu flow analyses", false);
+  // PROCESS_SWITCH(AnalysisQvector, processQvectorMuonSkimmed, "Fill Q vectors for selected events and tracks, for mumu flow analyses", false);
   // PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
