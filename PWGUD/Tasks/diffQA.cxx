@@ -137,10 +137,10 @@ struct DiffQA {
     }
     abcrs.merge();
 
-   // get ambiguous FwdTracks table
-   auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
-   auto ambfwdtracks = AFTs({t5});
-   ambfwdtracks.bindExternalIndices(&bcs);
+    // get ambiguous FwdTracks table
+    auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
+    auto ambfwdtracks = AFTs({t5});
+    ambfwdtracks.bindExternalIndices(&bcs);
 
     // make sorted list of BC ranges, this is used to efficiently check whether a given BC
     // is contained in one of these ranges
