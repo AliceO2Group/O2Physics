@@ -251,6 +251,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+    if (!nameStr.compare("lmee_GlobalTrackRun3_TPC_ePID_lowPt")) {
+    cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("tpc_electron"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
