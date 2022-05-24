@@ -81,7 +81,7 @@ struct DiffQA {
   //  bin 12: net charge <= maximum net charge
   //  bin 13: IVM >= minimum IVM
   //  bin 14: IVM <= maximum IVM
-  HistogramRegistry registry {
+  HistogramRegistry registry{
     "registry",
     {
       {"Stat", "#Stat", {HistType::kTH1F, {{15, -0.5, 14.5}}}},
@@ -121,18 +121,18 @@ struct DiffQA {
     auto bcs = BCs({t1, t2, t3});
     auto ambtracks = ATs({t4});
     ambtracks.bindExternalIndices(&bcs);
-    
+
     // make sorted list of BC ranges, this is used to efficiently check whether a given BC
     // is contained in one of these ranges
     abcrs.reset();
     for (auto ambtrack : ambtracks) {
       auto bcfirst = ambtrack.bc().rawIteratorAt(0);
-      auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size()-1);
+      auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
       abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
     }
     abcrs.merge();
   }
-  
+
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, FWs& fwdtracks, ATs& ambtracks,
                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
@@ -202,18 +202,18 @@ struct DiffQA {
       }
     }
     registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
-    
+
     // no V0s
     auto colId = collision.globalIndex();
     const auto& V0Collision = v0s.sliceBy(aod::v0::collisionId, colId);
     isDGcandidate &= (V0Collision.size() == 0);
     registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
-    
+
     // no Cascades
     const auto& CascadeCollision = cascades.sliceBy(aod::cascade::collisionId, colId);
     isDGcandidate &= (CascadeCollision.size() == 0);
     registry.get<TH1>(HIST("Stat"))->Fill(3., isDGcandidate * 1.);
-    
+
     // number of forward tracks = 0
     isDGcandidate &= (fwdtracks.size() == 0);
     registry.get<TH1>(HIST("Stat"))->Fill(4., isDGcandidate * 1.);
@@ -229,14 +229,14 @@ struct DiffQA {
 
     // check a given bc for possible ambiguous tracks
     auto withAmbTracks = isDGcandidate;
-    for (auto& bc : bcSlice) {      
+    for (auto& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
         withAmbTracks = false;
         break;
       }
     }
     registry.get<TH1>(HIST("Stat"))->Fill(6., withAmbTracks * 1.);
-    
+
     // number of vertex tracks <= n
     registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
@@ -301,7 +301,7 @@ struct DiffQA {
         }
       }
     }
-    
+
     LOGF(debug, "<DiffQA> End");
   };
 };
