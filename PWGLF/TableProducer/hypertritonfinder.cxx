@@ -90,8 +90,9 @@ struct hypertritonprefilter {
       },
   };
 
-  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
+  //change the dca cut for helium3
+  Configurable<float> dcanegtopv{"dcanegtopv", 1, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 

@@ -353,6 +353,8 @@ struct hypertritonTrackCount {
 
         {"hHelimu3TPCNClsCrossedRows", "hHelimu3TPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
         {"hPionTPCNClsCrossedRows", "hPionTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
+
+        {"hTPCBB", "hTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal" }}}},
       },
   };
 
@@ -380,6 +382,7 @@ struct hypertritonTrackCount {
       }
       registry.fill(HIST("hParticleCount"), 1.5);
       auto mcparticle = track.mcParticle_as<aod::McParticles>();
+      registry.fill(HIST("hTPCBB"), track.p()*track.sign(), track.tpcSignal());
 
       if (TMath::Abs(mcparticle.y()) > 0.9) {continue;}
       registry.fill(HIST("hParticleCount"), 2.5);
@@ -648,6 +651,7 @@ struct V0McCheck {
         {"hNSigmaTritonNeg", "hNSigmaTritonNeg", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
         //{"hV0McPostrackDcatoPv", "hV0McPostrackDcatoPv", {HistType::kTH1F, {{10, 0.0f, 1.0f}}}},
         //{"hV0McNegtrackDcatoPv", "hV0McNegtrackDcatoPv", {HistType::kTH1F, {{10, 0.0f, 1.0f}}}},
+        {"hV0DausTPCBB", "hV0DausTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal" }}}},
       },
   };
 
@@ -679,6 +683,9 @@ struct V0McCheck {
       registry.fill(HIST("hV0NegtrackTPCNClus"), v0.negTrack_as<MyTracks>().tpcNClsCrossedRows());
       registry.fill(HIST("hV0PostrackDcatoPv"), v0.posTrack_as<MyTracks>().dcaXY());
       registry.fill(HIST("hV0NegtrackDcatoPv"), v0.negTrack_as<MyTracks>().dcaXY());
+
+      registry.fill(HIST("hV0DausTPCBB"), v0.posTrack_as<MyTracks>().p()*v0.posTrack_as<MyTracks>().sign(), v0.posTrack_as<MyTracks>().tpcSignal());
+      registry.fill(HIST("hV0DausTPCBB"), v0.negTrack_as<MyTracks>().p()*v0.negTrack_as<MyTracks>().sign(), v0.negTrack_as<MyTracks>().tpcSignal());
 
       uint32_t pTrackPID = v0.posTrack_as<MyTracks>().pidForTracking();
       uint32_t nTrackPID = v0.negTrack_as<MyTracks>().pidForTracking();
