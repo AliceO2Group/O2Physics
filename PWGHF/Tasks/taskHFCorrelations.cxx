@@ -89,7 +89,8 @@ struct TaskHfCorrelations {
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
-  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0A>;
+  //  TODO: doesn't work with derived tables, e.g. cannot use FV0M
+  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
 
   //  Charged track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) &&
@@ -117,7 +118,8 @@ struct TaskHfCorrelations {
     for (int iBin = 0; iBin < nBins; iBin++) {
       registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
-    registry.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{200, 0, 200}}});
+    registry.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     //  histograms for event mixing
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
@@ -178,13 +180,16 @@ struct TaskHfCorrelations {
   template <typename TTracks>
   void fillQA(float multiplicity, TTracks tracks)
   {
+    int Ntracks = 0;
     for (auto& track1 : tracks) {
+      Ntracks++;
       registry.fill(HIST("pT"), track1.pt());
       registry.fill(HIST("eta"), track1.eta());
       registry.fill(HIST("phi"), track1.phi());
       registry.fill(HIST("yields"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphi"), multiplicity, track1.eta(), track1.phi());
     }
+    registry.fill(HIST("hNtracks"), Ntracks);
   }
 
   template <typename TTracks>
@@ -316,7 +321,7 @@ struct TaskHfCorrelations {
                    aod::MFTTracks const& mfttracks,
                    hfCandidates const& candidates)
   {
-    const auto multiplicity = collision.multFV0A(); //  multV0M ? (work on adding centrality selection for Run3 ongoing)
+    const auto multiplicity = collision.multTPC(); //  multV0M ? (work on adding centrality selection for Run3 ongoing)
     registry.fill(HIST("hMultiplicity"), multiplicity);
 
     registry.fill(HIST("eventCounter"), 1);
@@ -361,7 +366,7 @@ struct TaskHfCorrelations {
         continue;
       }
 
-      const auto multiplicity = collision1.multFV0A();
+      const auto multiplicity = collision1.multTPC();
 
       int bin = pairBinning.getBin({collision1.posZ(), multiplicity});
       registry.fill(HIST("eventcount"), bin);
