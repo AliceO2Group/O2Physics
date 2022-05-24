@@ -270,12 +270,12 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
   Filter tpcOnlyTracks = (bTpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
   Filter itsTpcMatchedTracks = (bItsTpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
   // ITS
-  Filter itsChi2 = o2::aod::track::itsChi2NCl < chi2ItsMax;
+  Filter itsChi2 = (bTpcOnly.node() == true) || (o2::aod::track::itsChi2NCl < chi2ItsMax);
   // TPC
-  Filter tpcChi2s = o2::aod::track::tpcChi2NCl < chi2TpcMax;
-  Filter tpcNclusters = o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin;
-  Filter tpcNcrossedRows = o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin;
-  Filter tpcNcrossedRowsOverFindableClusters = o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin;
+  Filter tpcChi2s = (bItsStandalone.node() == true) || (o2::aod::track::tpcChi2NCl < chi2TpcMax);
+  Filter tpcNclusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin);
+  Filter tpcNcrossedRows = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin);
+  Filter tpcNcrossedRowsOverFindableClusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin);
 
   // Process data
   void processDataLite(o2::soa::Filtered<aod::DPGTracks> const& tracks, aod::DPGCollisions const&)
