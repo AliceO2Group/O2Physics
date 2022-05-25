@@ -32,6 +32,12 @@ using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 using FullBCs = soa::Join<aod::BCs, aod::MatchedBCCollisionsSparse>;
 using FullCollision = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(AmbiguousTracksMFT, "AOD", "AMBIGUOUSTRMFT", //! Table for MFT tracks which are not uniquely associated with a collision
+                  o2::soa::Index<>, o2::aod::ambiguous::MFTTrackId, o2::aod::ambiguous::BCIdSlice, o2::soa::Marker<2>);
+}
+
 struct vertexingfwd {
 
   /// Could be TEMPORARY: store the vertex, collision, dca, and ambiguous tracks information
