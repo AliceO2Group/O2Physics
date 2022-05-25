@@ -368,7 +368,7 @@ struct FV0Signals {
   void process(aod::FV0A fv0)
   {
     // side A
-    for (auto ind = 0; ind < fv0.channel().size(); ind++) {
+    for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
       registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
     }
   };
@@ -386,12 +386,12 @@ struct FT0Signals {
   void process(aod::FT0 ft0)
   {
     // side A
-    for (auto ind = 0; ind < ft0.channelA().size(); ind++) {
+    for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
       registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
     }
 
     // side C
-    for (auto ind = 0; ind < ft0.channelC().size(); ind++) {
+    for (size_t ind = 0; ind < ft0.channelC().size(); ind++) {
       registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
     }
   };
