@@ -184,7 +184,6 @@ struct CandidateTreeWriter {
   {
   }
 
-  Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   void processMC(aod::Collisions const& collisions,
@@ -220,7 +219,7 @@ struct CandidateTreeWriter {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && std::abs(candidate.flagMCMatchRec()) >= isSignal && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1 && std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
