@@ -55,6 +55,9 @@ struct TaskHfCorrelations {
   OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
 
   //  configurables for processing options
+  Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
+  Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
+
   Configurable<bool> processTPCTPChh{"processTPCTPChh", "true", "Flag to process TPC-TPC h-h correlations"};
   Configurable<bool> processTPCMFThh{"processTPCMFThh", "true", "Flag to process TPC-MFT h-h correlations"};
   Configurable<bool> processHFHadrons{"processHFHadrons", "false", "Flag to process HF-h correlations"};
@@ -114,7 +117,7 @@ struct TaskHfCorrelations {
     const int nBins = 2;
     std::string labels[nBins];
     labels[0] = "all";
-    labels[1] = "after sel8";
+    labels[1] = "after selection";
     for (int iBin = 0; iBin < nBins; iBin++) {
       registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
@@ -207,8 +210,21 @@ struct TaskHfCorrelations {
   template <typename TCollision>
   bool isCollisionSelected(TCollision collision)
   {
-    if (!collision.sel8()) {
-      return false;
+    if (processRun2 == true) {
+      //  Run 2: trigger selection
+      if (!collision.alias()[kINT7]) {
+        return false;
+      }
+      //  Run 2: further offline selection
+      if (!collision.sel7()) {
+        return false;
+      }
+    }
+    else {
+      //  Run 3: selection
+      if (!collision.sel8()) {
+        return false;
+      }
     }
     return true;
   }
@@ -316,7 +332,7 @@ struct TaskHfCorrelations {
   // =====================================
   //    process same event correlations
   // =====================================
-  void processSame(aodCollisions::iterator const& collision,
+  void processSameRun3(aodCollisions::iterator const& collision,
                    aodTracks const& tracks,
                    aod::MFTTracks const& mfttracks,
                    hfCandidates const& candidates)
@@ -345,12 +361,41 @@ struct TaskHfCorrelations {
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
-  PROCESS_SWITCH(TaskHfCorrelations, processSame, "Process same event", true);
+  PROCESS_SWITCH(TaskHfCorrelations, processSameRun3, "Process same event for Run 3", true);
+
+  // =====================================
+  //    process same event correlations
+  // =====================================
+  void processSameRun2(aodCollisions::iterator const& collision,
+                      aodTracks const& tracks,
+                      hfCandidates const& candidates)
+  {
+    const auto multiplicity = collision.multTPC(); //  multV0M ? (work on adding centrality selection for Run3 ongoing)
+    registry.fill(HIST("hMultiplicity"), multiplicity);
+
+    registry.fill(HIST("eventCounter"), 1);
+    if (isCollisionSelected(collision) == false) {
+      return;
+    }
+    registry.fill(HIST("eventCounter"), 2);
+
+    if (processTPCTPChh == true) {
+      fillQA(multiplicity, tracks);
+      fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
+    }
+
+    if (processHFHadrons == true) {
+      fillCandidateQA(multiplicity, candidates);
+      fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
+    }
+  }
+  PROCESS_SWITCH(TaskHfCorrelations, processSameRun2, "Process same event for Run 2", false);
 
   // =====================================
   //    process mixed event correlations
   // =====================================
   //  TODO: these collisions do not contain trigger selection, because SameKindPair needs table, not iterator -> check if it can be solved
+  //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3
   void processMixed(aodCollisions& collisions,
                     aodTracks const& tracks)
   {
