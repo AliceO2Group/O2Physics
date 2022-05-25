@@ -10,9 +10,9 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(multTools
-                      SOURCES multCalibrator.cxx multGlauberNBDFitter.cxx
+                      SOURCES multCalibrator.cxx multMCCalibrator.cxx multGlauberNBDFitter.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(multTools
-                      HEADERS multCalibrator.h multGlauberNBDFitter.h
+                      HEADERS multCalibrator.h multMCCalibrator.h multGlauberNBDFitter.h
                       LINKDEF multToolsLinkDef.h)

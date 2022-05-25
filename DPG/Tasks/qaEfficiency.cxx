@@ -35,10 +35,9 @@ using namespace o2::framework;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{
-    {"eff-data", VariantType::Int, 1, {"Efficiency for the data"}},
-    {"eff-mc", VariantType::Int, 0, {"Efficiency for the MC"}},
-    {"eff-mc-pos", VariantType::Int, 0, {"Efficiency for the Electron Positive PDG code"}},
-    {"eff-mc-neg", VariantType::Int, 0, {"Efficiency for the Electron Negative PDG code"}}};
+    {"eff", VariantType::Int, 1, {"Efficiency for the sum"}},
+    {"eff-pos", VariantType::Int, 0, {"Efficiency for the Positive"}},
+    {"eff-neg", VariantType::Int, 0, {"Efficiency for the Negative"}}};
   std::swap(workflowOptions, options);
 }
 
@@ -46,11 +45,12 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Task to QA the efficiency of a particular particle defined by its pdg code
 template <int pdgSign>
-struct QaEfficiencyMc {
+struct QaEfficiency {
+  // Particle information
   static constexpr int nSpecies = o2::track::PID::NIDs + 1;
   static constexpr const char* particleTitle[nSpecies] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha", "All"};
   static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040, 0};
-  // Particle selection
+  // Track/particle selection
   Configurable<float> etaMin{"eta-min", -3.f, "Lower limit in eta"};
   Configurable<float> etaMax{"eta-max", 3.f, "Upper limit in eta"};
   Configurable<float> phiMin{"phi-min", 0.f, "Lower limit in phi"};
@@ -59,6 +59,7 @@ struct QaEfficiencyMc {
   Configurable<float> yMax{"y-max", 0.5f, "Upper limit in y"};
   Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
+  // Particle only selection
   Configurable<bool> noFakes{"noFakes", false, "Flag to reject tracks that have fake hits"};
   Configurable<bool> doUnId{"do-un-id", true, "Flag to run without PDG code"};
   Configurable<bool> doEl{"do-el", false, "Flag to run with the PDG code of pions"};
@@ -70,6 +71,8 @@ struct QaEfficiencyMc {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
+  // Track only selection
+  Configurable<bool> applyTrackSelection{"applyTrackSelection", false, "Flag to use the standard track selection when selecting numerator and denominator"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
@@ -82,8 +85,10 @@ struct QaEfficiencyMc {
   Configurable<int> phiBins{"phi-bins", 500, "Number of phi bins"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
+  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
 
-  OutputObj<TList> listEfficiency{"Efficiency"};
+  OutputObj<TList> listEfficiencyMC{"EfficiencyMC"};
+  OutputObj<TList> listEfficiencyData{"EfficiencyData"};
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // Pt
@@ -229,7 +234,7 @@ struct QaEfficiencyMc {
                                                            "all/pteta/den"};
 
   template <o2::track::PID::ID id>
-  void makeHistograms()
+  void makeMCHistograms()
   {
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, ptMin, ptMax, "#it{p} (GeV/#it{c})"};
@@ -311,10 +316,10 @@ struct QaEfficiencyMc {
     histos.add(hPtEtaDen[id].data(), "Denominator " + tagPtEta, kTH2D, {axisPt, axisEta});
 
     if (makeEff) {
-      LOG(debug) << "Making TEfficiency";
+      LOG(debug) << "Making TEfficiency for MC";
       TList* subList = new TList();
       subList->SetName(partName);
-      listEfficiency->Add(subList);
+      listEfficiencyMC->Add(subList);
       auto makeEfficiency = [&](TString effname, auto templateHisto) {
         effname = partName + effname;
         LOG(debug) << " - " << effname;
@@ -357,76 +362,227 @@ struct QaEfficiencyMc {
     LOG(debug) << "Done with particle: " << partName;
   }
 
+  void initMC(const AxisSpec& axisSel)
+  {
+    if (!doprocessMC) {
+      return;
+    }
+
+    auto h = histos.add<TH1>("MC/trackSelection", "Track Selection", kTH1D, {axisSel});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "Passed has MC part.");
+    h->GetXaxis()->SetBinLabel(3, "Passed Ev. Reco.");
+    h->GetXaxis()->SetBinLabel(4, "Passed #it{p}_{T}");
+    h->GetXaxis()->SetBinLabel(5, "Passed #it{#eta}");
+    h->GetXaxis()->SetBinLabel(6, "Passed #it{#varphi}");
+    h->GetXaxis()->SetBinLabel(7, "Passed y");
+    h->GetXaxis()->SetBinLabel(8, "Passed Fake");
+    h->GetXaxis()->SetBinLabel(9, "Passed standard quality cuts");
+    h->GetXaxis()->SetBinLabel(10, "Passed has collision");
+    for (int i = 0; i < nSpecies; i++) {
+      h->GetXaxis()->SetBinLabel(11 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
+    }
+    histos.add("MC/fakeTrackNoiseHits", "Fake tracks from noise hits", kTH1D, {{1, 0, 1}});
+
+    h = histos.add<TH1>("MC/particleSelection", "Particle Selection", kTH1D, {axisSel});
+    h->GetXaxis()->SetBinLabel(1, "Particles read");
+    h->GetXaxis()->SetBinLabel(2, "Passed Ev. Reco.");
+    h->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
+    h->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
+    h->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
+    h->GetXaxis()->SetBinLabel(6, "Passed y");
+    for (int i = 0; i < nSpecies; i++) {
+      h->GetXaxis()->SetBinLabel(7 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
+    }
+    histos.add("MC/eventMultiplicity", "Event Selection", kTH1D, {{1000, 0, 5000}});
+
+    histos.add("MC/trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
+
+    listEfficiencyMC.setObject(new TList);
+    if (doEl) {
+      makeMCHistograms<o2::track::PID::Electron>();
+    }
+    if (doMu) {
+      makeMCHistograms<o2::track::PID::Muon>();
+    }
+    if (doPi) {
+      makeMCHistograms<o2::track::PID::Pion>();
+    }
+    if (doKa) {
+      makeMCHistograms<o2::track::PID::Kaon>();
+    }
+    if (doPr) {
+      makeMCHistograms<o2::track::PID::Proton>();
+    }
+    if (doDe) {
+      makeMCHistograms<o2::track::PID::Deuteron>();
+    }
+    if (doTr) {
+      makeMCHistograms<o2::track::PID::Triton>();
+    }
+    if (doHe) {
+      makeMCHistograms<o2::track::PID::Helium3>();
+    }
+    if (doAl) {
+      makeMCHistograms<o2::track::PID::Alpha>();
+    }
+    if (doUnId) {
+      makeMCHistograms<o2::track::PID::NIDs>();
+    }
+  }
+
+  void initData(const AxisSpec& axisSel)
+  {
+    if (!doprocessData) {
+      return;
+    }
+
+    auto h = histos.add<TH1>("Data/trackSelection", "Track Selection", kTH1D, {axisSel});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
+    h->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
+    h->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
+    h->GetXaxis()->SetBinLabel(5, "Passed TrackType");
+    h->GetXaxis()->SetBinLabel(6, "Passed PtRange");
+    h->GetXaxis()->SetBinLabel(7, "Passed EtaRange");
+    h->GetXaxis()->SetBinLabel(8, "Passed DCAxy");
+    h->GetXaxis()->SetBinLabel(9, "Passed DCAz");
+    h->GetXaxis()->SetBinLabel(10, "Passed GoldenChi2");
+    h->GetXaxis()->SetBinLabel(11, "Passed quality cuts");
+
+    const TString tagPt = Form("#it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
+                               etaMin.value, etaMax.value,
+                               phiMin.value, phiMax.value);
+    AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
+    if (logPt) {
+      axisPt.makeLogaritmic();
+    }
+
+    const TString tagEta = Form("#it{p}_{T} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
+                                ptMin.value, ptMax.value,
+                                phiMin.value, phiMax.value);
+    const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
+
+    const TString tagPhi = Form("#it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f]",
+                                etaMin.value, etaMax.value,
+                                ptMin.value, ptMax.value);
+    const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
+
+    const TString tagEtaPhi = Form("#it{p}_{T} [%.2f,%.2f]",
+                                   ptMin.value, ptMax.value);
+
+    histos.add("Data/trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
+
+    // ITS-TPC-TOF
+    histos.add("Data/sum/pt/its_tpc_tof", "ITS-TPC-TOF " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/pos/pt/its_tpc_tof", "ITS-TPC-TOF Positive " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/neg/pt/its_tpc_tof", "ITS-TPC-TOF Negative " + tagPt, kTH1D, {axisPt});
+
+    histos.add("Data/sum/eta/its_tpc_tof", "ITS-TPC-TOF " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/pos/eta/its_tpc_tof", "ITS-TPC-TOF Positive " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/neg/eta/its_tpc_tof", "ITS-TPC-TOF Negative " + tagEta, kTH1D, {axisEta});
+
+    histos.add("Data/sum/phi/its_tpc_tof", "ITS-TPC-TOF " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/pos/phi/its_tpc_tof", "ITS-TPC-TOF Positive " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/neg/phi/its_tpc_tof", "ITS-TPC-TOF Negative " + tagPhi, kTH1D, {axisPhi});
+
+    histos.add("Data/sum/etaphi/its_tpc_tof", "ITS-TPC-TOF " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/pos/etaphi/its_tpc_tof", "ITS-TPC-TOF Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/neg/etaphi/its_tpc_tof", "ITS-TPC-TOF Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+
+    // ITS-TPC
+    histos.add("Data/sum/pt/its_tpc", "ITS-TPC " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/pos/pt/its_tpc", "ITS-TPC Positive " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/neg/pt/its_tpc", "ITS-TPC Negative " + tagPt, kTH1D, {axisPt});
+
+    histos.add("Data/sum/eta/its_tpc", "ITS-TPC " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/pos/eta/its_tpc", "ITS-TPC Positive " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/neg/eta/its_tpc", "ITS-TPC Negative " + tagEta, kTH1D, {axisEta});
+
+    histos.add("Data/sum/phi/its_tpc", "ITS-TPC " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/pos/phi/its_tpc", "ITS-TPC Positive " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/neg/phi/its_tpc", "ITS-TPC Negative " + tagPhi, kTH1D, {axisPhi});
+
+    histos.add("Data/sum/etaphi/its_tpc", "ITS-TPC " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/pos/etaphi/its_tpc", "ITS-TPC Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/neg/etaphi/its_tpc", "ITS-TPC Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+
+    // TPC
+    histos.add("Data/sum/pt/tpc", "TPC " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/pos/pt/tpc", "TPC Positive " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/neg/pt/tpc", "TPC Negative " + tagPt, kTH1D, {axisPt});
+
+    histos.add("Data/sum/eta/tpc", "TPC " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/pos/eta/tpc", "TPC Positive " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/neg/eta/tpc", "TPC Negative " + tagEta, kTH1D, {axisEta});
+
+    histos.add("Data/sum/phi/tpc", "TPC " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/pos/phi/tpc", "TPC Positive " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/neg/phi/tpc", "TPC Negative " + tagPhi, kTH1D, {axisPhi});
+
+    histos.add("Data/sum/etaphi/tpc", "TPC " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/pos/etaphi/tpc", "TPC Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/neg/etaphi/tpc", "TPC Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+
+    // ITS
+    histos.add("Data/sum/pt/its", "ITS " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/pos/pt/its", "ITS Positive " + tagPt, kTH1D, {axisPt});
+    histos.add("Data/neg/pt/its", "ITS Negative " + tagPt, kTH1D, {axisPt});
+
+    histos.add("Data/sum/eta/its", "ITS " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/pos/eta/its", "ITS Positive " + tagEta, kTH1D, {axisEta});
+    histos.add("Data/neg/eta/its", "ITS Negative " + tagEta, kTH1D, {axisEta});
+
+    histos.add("Data/sum/phi/its", "ITS " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/pos/phi/its", "ITS Positive " + tagPhi, kTH1D, {axisPhi});
+    histos.add("Data/neg/phi/its", "ITS Negative " + tagPhi, kTH1D, {axisPhi});
+
+    histos.add("Data/sum/etaphi/its", "ITS " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/pos/etaphi/its", "ITS Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+    histos.add("Data/neg/etaphi/its", "ITS Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+
+    listEfficiencyData.setObject(new TList);
+    if (makeEff) {
+      LOG(debug) << "Making TEfficiency for Data";
+      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
+        TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
+        if (axis->IsVariableBinSize()) {
+          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
+        } else {
+          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
+        }
+      };
+      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY) {
+        TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
+        TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
+        if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
+          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
+        } else {
+          listEfficiencyData->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
+        }
+      };
+      makeEfficiency("ITSTPCMatchingEfficiencyVsPt", "ITS-TPC M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPt", "TPC-TOF M.E. in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsP", "TPC-TOF M.E. in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("Data/sum/pt/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsEta", "TPC-TOF M.E. in data " + tagEta + ";#it{#eta};Efficiency", HIST("Data/sum/eta/its_tpc_tof"));
+      makeEfficiency("TPCTOFMatchingEfficiencyVsPhi", "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/sum/phi/its_tpc_tof"));
+
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsEta", Form("TPC-TOF M.E. in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/eta/its_tpc_tof"));
+      makeEfficiency2D("TPCTOFMatchingEfficiencyVsPtVsPhi", Form("TPC-TOF M.E. in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("Data/sum/pt/its_tpc_tof"), HIST("Data/sum/phi/its_tpc_tof"));
+    }
+  }
+
   void init(InitContext&)
   {
     const AxisSpec axisSel{30, 0.5, 30.5, "Selection"};
     histos.add("eventSelection", "Event Selection", kTH1D, {axisSel});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Contrib.");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Position");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Ev. Sel.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
 
-    histos.add("trackSelection", "Track Selection", kTH1D, {axisSel});
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(2, "Passed has MC part.");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(3, "Passed Ev. Reco.");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{p}_{T}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#eta}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(6, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(7, "Passed y");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(8, "Passed Fake");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(9, "Passed standard quality cuts");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(10, "Passed has collision");
-    for (int i = 0; i < nSpecies; i++) {
-      histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(11 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
-    }
-    histos.add("fakeTrackNoiseHits", "Fake tracks from noise hits", kTH1D, {{1, 0, 1}});
-
-    histos.add("partSelection", "Particle Selection", kTH1D, {axisSel});
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(1, "Particles read");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Reco.");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{p}_{T}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#eta}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(5, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(6, "Passed y");
-    for (int i = 0; i < nSpecies; i++) {
-      histos.get<TH1>(HIST("partSelection"))->GetXaxis()->SetBinLabel(7 + i, Form("Passed PDG %i %s", PDGs[i], particleTitle[i]));
-    }
-
-    histos.add("eventMultiplicity", "Event Selection", kTH1D, {{1000, 0, 5000}});
-    histos.add("trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
-
-    listEfficiency.setObject(new TList);
-    if (doEl) {
-      makeHistograms<o2::track::PID::Electron>();
-    }
-    if (doMu) {
-      makeHistograms<o2::track::PID::Muon>();
-    }
-    if (doPi) {
-      makeHistograms<o2::track::PID::Pion>();
-    }
-    if (doKa) {
-      makeHistograms<o2::track::PID::Kaon>();
-    }
-    if (doPr) {
-      makeHistograms<o2::track::PID::Proton>();
-    }
-    if (doDe) {
-      makeHistograms<o2::track::PID::Deuteron>();
-    }
-    if (doTr) {
-      makeHistograms<o2::track::PID::Triton>();
-    }
-    if (doHe) {
-      makeHistograms<o2::track::PID::Helium3>();
-    }
-    if (doAl) {
-      makeHistograms<o2::track::PID::Alpha>();
-    }
-    if (doUnId) {
-      makeHistograms<o2::track::PID::NIDs>();
-    }
+    initData(axisSel);
+    initMC(axisSel);
   }
 
   template <o2::track::PID::ID id, typename particleType>
@@ -460,7 +616,7 @@ struct QaEfficiencyMc {
   }
 
   template <o2::track::PID::ID id, typename trackType>
-  void fillTrackHistograms(const trackType& track)
+  void fillMCTrackHistograms(const trackType& track)
   {
     LOG(debug) << "Filling track histograms for id " << static_cast<int>(id);
     const auto mcParticle = track.mcParticle();
@@ -469,7 +625,7 @@ struct QaEfficiencyMc {
       return;
     }
 
-    histos.fill(HIST("trackSelection"), 11 + id);
+    histos.fill(HIST("MC/trackSelection"), 11 + id);
 
     histos.fill(HIST(hPNum[id]), mcParticle.p());
     histos.fill(HIST(hPtNum[id]), mcParticle.pt());
@@ -515,13 +671,13 @@ struct QaEfficiencyMc {
   }
 
   template <o2::track::PID::ID id, typename particleType>
-  void fillParticleHistograms(const particleType& mcParticle)
+  void fillMCParticleHistograms(const particleType& mcParticle)
   {
     LOG(debug) << "Filling particle histograms for id " << static_cast<int>(id);
     if (!isPdgSelected<id>(mcParticle)) { // Selecting PDG code
       return;
     }
-    histos.fill(HIST("partSelection"), 7 + id);
+    histos.fill(HIST("MC/particleSelection"), 7 + id);
 
     histos.fill(HIST(hPDen[id]), mcParticle.p());
     histos.fill(HIST(hPtDen[id]), mcParticle.pt());
@@ -543,14 +699,14 @@ struct QaEfficiencyMc {
   }
 
   template <o2::track::PID::ID id>
-  void fillEfficiency()
+  void fillMCEfficiency()
   {
     if (!makeEff) {
       return;
     }
     const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
-    TList* subList = static_cast<TList*>(listEfficiency->FindObject(partName));
+    TList* subList = static_cast<TList*>(listEfficiencyMC->FindObject(partName));
     if (!subList) {
       LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
@@ -587,30 +743,55 @@ struct QaEfficiencyMc {
     fillEfficiency2D("efficiencyVsPtVsEta", HIST(hPtEtaNum[id]), HIST(hPtEtaDen[id]));
   }
 
-  void process(const o2::aod::McParticles& mcParticles,
-               const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>& tracks,
-               const o2::aod::McCollisions&)
+  template <bool doFillHistograms, typename CollType>
+  bool isCollisionSelected(const CollType& collision)
+  {
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 1);
+    }
+    if (applyEvSel == 1 && !collision.sel7()) {
+      return false;
+    } else if (applyEvSel == 2 && !collision.sel8()) {
+      return false;
+    }
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 2);
+    }
+    if (collision.numContrib() < nMinNumberOfContributors) {
+      return false;
+    }
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 3);
+    }
+    if ((collision.posZ() < vertexZMin || collision.posZ() > vertexZMax)) {
+      return false;
+    }
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 4);
+    }
+    return true;
+  }
+  // Global process
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
+  {
+    isCollisionSelected<true>(collision);
+  }
+
+  // MC process
+  void processMC(const o2::aod::McParticles& mcParticles,
+                 const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
+                 const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>& tracks,
+                 const o2::aod::McCollisions&)
   {
 
     std::vector<int64_t> recoEvt(collisions.size());
     int nevts = 0;
     for (const auto& collision : collisions) {
-      histos.fill(HIST("eventSelection"), 1);
-      if (collision.numContrib() < nMinNumberOfContributors) {
+      if (!isCollisionSelected<false>(collision)) {
         continue;
       }
-      histos.fill(HIST("eventSelection"), 2);
-      const auto mcCollision = collision.mcCollision();
-      if ((mcCollision.posZ() < vertexZMin || mcCollision.posZ() > vertexZMax)) {
-        continue;
-      }
-      histos.fill(HIST("eventSelection"), 3);
-      if (!collision.sel8()) {
-        continue;
-      }
-      histos.fill(HIST("eventSelection"), 4);
-      recoEvt[nevts++] = mcCollision.globalIndex();
+      recoEvt[nevts++] = collision.mcCollision().globalIndex();
     }
     recoEvt.resize(nevts);
 
@@ -644,13 +825,13 @@ struct QaEfficiencyMc {
 
     // Track loop
     for (const auto& track : tracks) {
-      histos.fill(HIST("trackSelection"), 1);
+      histos.fill(HIST("MC/trackSelection"), 1);
       if (!track.has_mcParticle()) {
-        histos.fill(HIST("fakeTrackNoiseHits"), 0.5);
+        histos.fill(HIST("MC/fakeTrackNoiseHits"), 0.5);
         continue;
       }
       const auto mcParticle = track.mcParticle();
-      if (rejectParticle(mcParticle, HIST("trackSelection"), 1)) {
+      if (rejectParticle(mcParticle, HIST("MC/trackSelection"), 1)) {
         continue;
       }
 
@@ -667,46 +848,46 @@ struct QaEfficiencyMc {
         }
       }
 
-      histos.fill(HIST("trackSelection"), 10);
-      if (!track.isGlobalTrack()) { // Check general cuts
+      histos.fill(HIST("MC/trackSelection"), 10);
+      if (applyTrackSelection && !track.isGlobalTrack()) { // Check general cuts
         continue;
       }
-      histos.fill(HIST("trackSelection"), 11);
+      histos.fill(HIST("MC/trackSelection"), 11);
       if (!track.has_collision()) {
         continue;
       }
-      histos.fill(HIST("trackSelection"), 12);
+      histos.fill(HIST("MC/trackSelection"), 12);
       // Filling variable histograms
-      histos.fill(HIST("trackLength"), track.length());
+      histos.fill(HIST("MC/trackLength"), track.length());
       if (doEl) {
-        fillTrackHistograms<o2::track::PID::Electron>(track);
+        fillMCTrackHistograms<o2::track::PID::Electron>(track);
       }
       if (doMu) {
-        fillTrackHistograms<o2::track::PID::Muon>(track);
+        fillMCTrackHistograms<o2::track::PID::Muon>(track);
       }
       if (doPi) {
-        fillTrackHistograms<o2::track::PID::Pion>(track);
+        fillMCTrackHistograms<o2::track::PID::Pion>(track);
       }
       if (doKa) {
-        fillTrackHistograms<o2::track::PID::Kaon>(track);
+        fillMCTrackHistograms<o2::track::PID::Kaon>(track);
       }
       if (doPr) {
-        fillTrackHistograms<o2::track::PID::Proton>(track);
+        fillMCTrackHistograms<o2::track::PID::Proton>(track);
       }
       if (doDe) {
-        fillTrackHistograms<o2::track::PID::Deuteron>(track);
+        fillMCTrackHistograms<o2::track::PID::Deuteron>(track);
       }
       if (doTr) {
-        fillTrackHistograms<o2::track::PID::Triton>(track);
+        fillMCTrackHistograms<o2::track::PID::Triton>(track);
       }
       if (doHe) {
-        fillTrackHistograms<o2::track::PID::Helium3>(track);
+        fillMCTrackHistograms<o2::track::PID::Helium3>(track);
       }
       if (doAl) {
-        fillTrackHistograms<o2::track::PID::Alpha>(track);
+        fillMCTrackHistograms<o2::track::PID::Alpha>(track);
       }
       if (doUnId) {
-        fillTrackHistograms<o2::track::PID::NIDs>(track);
+        fillMCTrackHistograms<o2::track::PID::NIDs>(track);
       }
     }
 
@@ -715,310 +896,255 @@ struct QaEfficiencyMc {
       if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
         dNdEta += 1.f;
       }
-      if (rejectParticle(mcParticle, HIST("partSelection"))) {
+      if (rejectParticle(mcParticle, HIST("MC/particleSelection"))) {
         continue;
       }
 
       if (doEl) {
-        fillParticleHistograms<o2::track::PID::Electron>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Electron>(mcParticle);
       }
       if (doMu) {
-        fillParticleHistograms<o2::track::PID::Muon>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Muon>(mcParticle);
       }
       if (doPi) {
-        fillParticleHistograms<o2::track::PID::Pion>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Pion>(mcParticle);
       }
       if (doKa) {
-        fillParticleHistograms<o2::track::PID::Kaon>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Kaon>(mcParticle);
       }
       if (doPr) {
-        fillParticleHistograms<o2::track::PID::Proton>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Proton>(mcParticle);
       }
       if (doDe) {
-        fillParticleHistograms<o2::track::PID::Deuteron>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Deuteron>(mcParticle);
       }
       if (doTr) {
-        fillParticleHistograms<o2::track::PID::Triton>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Triton>(mcParticle);
       }
       if (doHe) {
-        fillParticleHistograms<o2::track::PID::Helium3>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Helium3>(mcParticle);
       }
       if (doAl) {
-        fillParticleHistograms<o2::track::PID::Alpha>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::Alpha>(mcParticle);
       }
       if (doUnId) {
-        fillParticleHistograms<o2::track::PID::NIDs>(mcParticle);
+        fillMCParticleHistograms<o2::track::PID::NIDs>(mcParticle);
       }
     }
-    histos.fill(HIST("eventMultiplicity"), dNdEta * 0.5f / 2.f);
+    histos.fill(HIST("MC/eventMultiplicity"), dNdEta * 0.5f / 2.f);
 
     // Fill TEfficiencies
     if (doEl) {
-      fillEfficiency<o2::track::PID::Electron>();
+      fillMCEfficiency<o2::track::PID::Electron>();
     }
     if (doMu) {
-      fillEfficiency<o2::track::PID::Muon>();
+      fillMCEfficiency<o2::track::PID::Muon>();
     }
     if (doPi) {
-      fillEfficiency<o2::track::PID::Pion>();
+      fillMCEfficiency<o2::track::PID::Pion>();
     }
     if (doKa) {
-      fillEfficiency<o2::track::PID::Kaon>();
+      fillMCEfficiency<o2::track::PID::Kaon>();
     }
     if (doPr) {
-      fillEfficiency<o2::track::PID::Proton>();
+      fillMCEfficiency<o2::track::PID::Proton>();
     }
     if (doDe) {
-      fillEfficiency<o2::track::PID::Deuteron>();
+      fillMCEfficiency<o2::track::PID::Deuteron>();
     }
     if (doTr) {
-      fillEfficiency<o2::track::PID::Triton>();
+      fillMCEfficiency<o2::track::PID::Triton>();
     }
     if (doHe) {
-      fillEfficiency<o2::track::PID::Helium3>();
+      fillMCEfficiency<o2::track::PID::Helium3>();
     }
     if (doAl) {
-      fillEfficiency<o2::track::PID::Alpha>();
+      fillMCEfficiency<o2::track::PID::Alpha>();
     }
     if (doUnId) {
-      fillEfficiency<o2::track::PID::NIDs>();
+      fillMCEfficiency<o2::track::PID::NIDs>();
     }
   }
-};
+  PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
-/// Task to QA the efficiency of a particular particle defined by its pdg code
-struct QaEfficiencyData {
-  // Track selection
-  Configurable<float> etaMin{"eta-min", -3.f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 3.f, "Upper limit in eta"};
-  Configurable<float> phiMin{"phi-min", 0.f, "Lower limit in phi"};
-  Configurable<float> phiMax{"phi-max", 6.284f, "Upper limit in phi"};
-  Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
-  Configurable<bool> trackSelection{"track-sel", false, "Flag to use the standard track selection when selecting numerator and denominator"};
-  // Event selection
-  Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
-  Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
-  Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the generated vertez in Z (cm)"};
-  // Histogram configuration
-  Configurable<int> ptBins{"pt-bins", 500, "Number of pT bins"};
-  Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis"};
-  Configurable<int> etaBins{"eta-bins", 500, "Number of eta bins"};
-  Configurable<int> phiBins{"phi-bins", 500, "Number of phi bins"};
-  // Task configuration
-  Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
-  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-
-  OutputObj<TList> listEfficiency{"Efficiency"};
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  void init(InitContext&)
-  {
-    const TString tagPt = Form("#it{#eta} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
-                               etaMin.value, etaMax.value,
-                               phiMin.value, phiMax.value);
-    AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
-    if (logPt) {
-      axisPt.makeLogaritmic();
-    }
-
-    const TString tagEta = Form("#it{p}_{T} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",
-                                ptMin.value, ptMax.value,
-                                phiMin.value, phiMax.value);
-    const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
-
-    const TString tagPhi = Form("#it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f]",
-                                etaMin.value, etaMax.value,
-                                ptMin.value, ptMax.value);
-    const AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
-
-    const TString tagEtaPhi = Form("#it{p}_{T} [%.2f,%.2f]",
-                                   ptMin.value, ptMax.value);
-
-    const AxisSpec axisSel{9, 0.5, 9.5, "Selection"};
-    histos.add("eventSelection", "Event Selection", kTH1D, {axisSel});
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel.");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
-    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
-
-    histos.add("trackSelection", "Track Selection", kTH1D, {axisSel});
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(2, "Passed #it{p}_{T}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(3, "Passed #it{#eta}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(4, "Passed #it{#varphi}");
-    histos.get<TH1>(HIST("trackSelection"))->GetXaxis()->SetBinLabel(5, "Passed quality cuts");
-
-    histos.add("trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
-
-    // Sum
-    histos.add("sum/pt/num", "Numerator " + tagPt, kTH1D, {axisPt});
-    histos.add("sum/pt/den", "Denominator " + tagPt, kTH1D, {axisPt});
-
-    histos.add("sum/eta/num", "Numerator " + tagEta, kTH1D, {axisEta});
-    histos.add("sum/eta/den", "Denominator " + tagEta, kTH1D, {axisEta});
-
-    histos.add("sum/phi/num", "Numerator " + tagPhi, kTH1D, {axisPhi});
-    histos.add("sum/phi/den", "Denominator " + tagPhi, kTH1D, {axisPhi});
-
-    histos.add("sum/etaphi/num", "Numerator " + tagPhi, kTH2D, {axisEta, axisPhi});
-    histos.add("sum/etaphi/den", "Denominator " + tagPhi, kTH2D, {axisEta, axisPhi});
-
-    // Pos
-    histos.add("pos/pt/num", "Numerator Positve " + tagPt, kTH1D, {axisPt});
-    histos.add("pos/pt/den", "Denominator Positve " + tagPt, kTH1D, {axisPt});
-
-    histos.add("pos/eta/num", "Numerator Positve " + tagEta, kTH1D, {axisEta});
-    histos.add("pos/eta/den", "Denominator Positve " + tagEta, kTH1D, {axisEta});
-
-    histos.add("pos/phi/num", "Numerator Positve " + tagPhi, kTH1D, {axisPhi});
-    histos.add("pos/phi/den", "Denominator Positve " + tagPhi, kTH1D, {axisPhi});
-
-    histos.add("pos/etaphi/num", "Numerator Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-    histos.add("pos/etaphi/den", "Denominator Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-
-    // Neg
-    histos.add("neg/pt/num", "Numerator Negative " + tagPt, kTH1D, {axisPt});
-    histos.add("neg/pt/den", "Denominator Negative " + tagPt, kTH1D, {axisPt});
-
-    histos.add("neg/eta/num", "Numerator Negative " + tagEta, kTH1D, {axisEta});
-    histos.add("neg/eta/den", "Denominator Negative " + tagEta, kTH1D, {axisEta});
-
-    histos.add("neg/phi/num", "Numerator Negative " + tagPhi, kTH1D, {axisPhi});
-    histos.add("neg/phi/den", "Denominator Negative " + tagPhi, kTH1D, {axisPhi});
-
-    histos.add("neg/etaphi/num", "Numerator Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-    histos.add("neg/etaphi/den", "Denominator Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-
-    listEfficiency.setObject(new TList);
-    if (makeEff) {
-      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto) {
-        TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
-        if (axis->IsVariableBinSize()) {
-          listEfficiency->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
-        } else {
-          listEfficiency->Add(new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXmin(), axis->GetXmax()));
-        }
-      };
-      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY) {
-        TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
-        TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
-        if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
-          listEfficiency->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXbins()->GetArray(), axisY->GetNbins(), axisY->GetXbins()->GetArray()));
-        } else {
-          listEfficiency->Add(new TEfficiency(effname, efftitle, axisX->GetNbins(), axisX->GetXmin(), axisX->GetXmax(), axisY->GetNbins(), axisY->GetXmin(), axisY->GetXmax()));
-        }
-      };
-      makeEfficiency("efficiencyVsPt", "Efficiency in data " + tagPt + ";#it{p}_{T} (GeV/#it{c});Efficiency", HIST("sum/pt/num"));
-      makeEfficiency("efficiencyVsP", "Efficiency in data " + tagPt + ";#it{p} (GeV/#it{c});Efficiency", HIST("sum/pt/num"));
-      makeEfficiency("efficiencyVsEta", "Efficiency in data " + tagEta + ";#it{#eta};Efficiency", HIST("sum/eta/num"));
-      makeEfficiency("efficiencyVsPhi", "Efficiency in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("sum/phi/num"));
-
-      makeEfficiency2D("efficiencyVsPtVsEta", Form("Efficiency in data #it{#varphi} [%.2f,%.2f];%s;%s;Efficiency", phiMin.value, phiMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("sum/pt/num"), HIST("sum/eta/num"));
-      makeEfficiency2D("efficiencyVsPtVsPhi", Form("Efficiency in data #it{#eta} [%.2f,%.2f];%s;%s;Efficiency", etaMin.value, etaMax.value, "#it{p}_{T} (GeV/#it{c})", "#it{#varphi} (rad)"), HIST("sum/pt/num"), HIST("sum/phi/num"));
-    }
-  }
-
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
+  void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+                   const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
   {
 
-    histos.fill(HIST("eventSelection"), 1);
-    if (applyEvSel == 1 && !collision.sel7()) {
-      return;
-    } else if (applyEvSel == 2 && !collision.sel8()) {
+    if (!isCollisionSelected<false>(collision)) {
       return;
     }
-    histos.fill(HIST("eventSelection"), 2);
-    if (collision.numContrib() < nMinNumberOfContributors) {
-      return;
-    }
-    histos.fill(HIST("eventSelection"), 3);
-    if ((collision.posZ() < vertexZMin || collision.posZ() > vertexZMax)) {
-      return;
-    }
-    histos.fill(HIST("eventSelection"), 4);
 
+    bool passedITSCuts = true;
+    bool passedTPCCuts = true;
     for (const auto& track : tracks) {
-      histos.fill(HIST("trackSelection"), 1);
+      histos.fill(HIST("Data/trackSelection"), 1);
       if ((track.pt() < ptMin || track.pt() > ptMax)) { // Check pt
         continue;
       }
-      histos.fill(HIST("trackSelection"), 2);
+      histos.fill(HIST("Data/trackSelection"), 2);
       if ((track.eta() < etaMin || track.eta() > etaMax)) { // Check eta
         continue;
       }
-      histos.fill(HIST("trackSelection"), 3);
+      histos.fill(HIST("Data/trackSelection"), 3);
       if ((track.phi() < phiMin || track.phi() > phiMax)) { // Check phi
         continue;
       }
-      histos.fill(HIST("trackSelection"), 4);
-      if (!track.isGlobalTrack()) { // Check general cuts
-        continue;
-      }
-      histos.fill(HIST("trackSelection"), 5);
+      histos.fill(HIST("Data/trackSelection"), 4);
+      if (applyTrackSelection) { // Check general cuts
+        if (!track.passedTrackType()) {
+          continue;
+        }
+        histos.fill(HIST("Data/trackSelection"), 5);
+        if (!track.passedPtRange()) {
+          continue;
+        }
+        histos.fill(HIST("Data/trackSelection"), 6);
+        if (!track.passedEtaRange()) {
+          continue;
+        }
+        histos.fill(HIST("Data/trackSelection"), 7);
+        if (!track.passedDCAxy()) {
+          continue;
+        }
+        histos.fill(HIST("Data/trackSelection"), 8);
+        if (!track.passedDCAz()) {
+          continue;
+        }
+        histos.fill(HIST("Data/trackSelection"), 9);
+        if (!track.passedGoldenChi2()) {
+          continue;
+        }
+        histos.fill(HIST("Data/trackSelection"), 10);
 
-      histos.fill(HIST("trackLength"), track.length());
-      histos.fill(HIST("sum/pt/den"), track.pt());
-      histos.fill(HIST("sum/eta/den"), track.eta());
-      histos.fill(HIST("sum/phi/den"), track.phi());
-      histos.fill(HIST("sum/etaphi/den"), track.eta(), track.phi());
-      if (track.sign() > 0) {
-        histos.fill(HIST("pos/pt/den"), track.pt());
-        histos.fill(HIST("pos/eta/den"), track.eta());
-        histos.fill(HIST("pos/phi/den"), track.phi());
-        histos.fill(HIST("pos/etaphi/den"), track.eta(), track.phi());
+        passedITSCuts = track.passedITSNCls() &&
+                        track.passedITSChi2NDF() &&
+                        track.passedITSRefit() &&
+                        track.passedITSHits() &&
+                        track.hasITS();
+
+        passedTPCCuts = track.passedTPCNCls() &&
+                        track.passedTPCCrossedRows() &&
+                        track.passedTPCCrossedRowsOverNCls() &&
+                        track.passedTPCChi2NDF() &&
+                        track.passedTPCRefit() &&
+                        track.hasTPC();
       } else {
-        histos.fill(HIST("neg/pt/den"), track.pt());
-        histos.fill(HIST("neg/eta/den"), track.eta());
-        histos.fill(HIST("neg/phi/den"), track.phi());
-        histos.fill(HIST("neg/etaphi/den"), track.eta(), track.phi());
+        passedITSCuts = track.hasITS();
+        passedTPCCuts = track.hasTPC();
       }
-      if (track.hasTOF()) {
-        histos.fill(HIST("sum/pt/num"), track.pt());
-        histos.fill(HIST("sum/eta/num"), track.eta());
-        histos.fill(HIST("sum/phi/num"), track.phi());
-        histos.fill(HIST("sum/etaphi/num"), track.eta(), track.phi());
-        if (track.sign() > 0) {
-          histos.fill(HIST("pos/pt/num"), track.pt());
-          histos.fill(HIST("pos/eta/num"), track.eta());
-          histos.fill(HIST("pos/phi/num"), track.phi());
-          histos.fill(HIST("pos/etaphi/num"), track.eta(), track.phi());
-        } else {
-          histos.fill(HIST("neg/pt/num"), track.pt());
-          histos.fill(HIST("neg/eta/num"), track.eta());
-          histos.fill(HIST("neg/phi/num"), track.phi());
-          histos.fill(HIST("neg/etaphi/num"), track.eta(), track.phi());
+
+      histos.fill(HIST("Data/trackSelection"), 11);
+
+      histos.fill(HIST("Data/trackLength"), track.length());
+
+      if (passedITSCuts) {
+        histos.fill(HIST("Data/sum/pt/its"), track.pt());
+        histos.fill(HIST("Data/sum/eta/its"), track.eta());
+        histos.fill(HIST("Data/sum/phi/its"), track.phi());
+        histos.fill(HIST("Data/sum/etaphi/its"), track.eta(), track.phi());
+      }
+      if (passedTPCCuts) {
+        histos.fill(HIST("Data/sum/pt/tpc"), track.pt());
+        histos.fill(HIST("Data/sum/eta/tpc"), track.eta());
+        histos.fill(HIST("Data/sum/phi/tpc"), track.phi());
+        histos.fill(HIST("Data/sum/etaphi/tpc"), track.eta(), track.phi());
+      }
+      if (passedITSCuts && passedTPCCuts) {
+        histos.fill(HIST("Data/sum/pt/its_tpc"), track.pt());
+        histos.fill(HIST("Data/sum/eta/its_tpc"), track.eta());
+        histos.fill(HIST("Data/sum/phi/its_tpc"), track.phi());
+        histos.fill(HIST("Data/sum/etaphi/its_tpc"), track.eta(), track.phi());
+      }
+      if (passedITSCuts && passedTPCCuts && track.hasTOF()) {
+        histos.fill(HIST("Data/sum/pt/its_tpc_tof"), track.pt());
+        histos.fill(HIST("Data/sum/eta/its_tpc_tof"), track.eta());
+        histos.fill(HIST("Data/sum/phi/its_tpc_tof"), track.phi());
+        histos.fill(HIST("Data/sum/etaphi/its_tpc_tof"), track.eta(), track.phi());
+      }
+
+      if (track.sign() > 0) {
+        if (passedITSCuts) {
+          histos.fill(HIST("Data/pos/pt/its"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its"), track.eta(), track.phi());
+        }
+        if (passedTPCCuts) {
+          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
+          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
+          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
+        }
+        if (passedITSCuts && passedTPCCuts) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+        }
+        if (track.hasITS() && passedTPCCuts && track.hasTOF()) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        }
+      } else {
+        if (passedITSCuts) {
+          histos.fill(HIST("Data/neg/pt/its"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
+        }
+        if (passedTPCCuts) {
+          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
+          histos.fill(HIST("Data/neg/eta/tpc"), track.eta());
+          histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
+        }
+        if (passedITSCuts && passedTPCCuts) {
+          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+        }
+        if (passedITSCuts && passedTPCCuts && track.hasTOF()) {
+          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
         }
       }
 
       if (makeEff) {
-        static_cast<TEfficiency*>(listEfficiency->At(0))->Fill(track.hasTOF(), track.pt());
-        static_cast<TEfficiency*>(listEfficiency->At(1))->Fill(track.hasTOF(), track.p());
-        static_cast<TEfficiency*>(listEfficiency->At(2))->Fill(track.hasTOF(), track.eta());
-        static_cast<TEfficiency*>(listEfficiency->At(3))->Fill(track.hasTOF(), track.phi());
-        static_cast<TEfficiency*>(listEfficiency->At(4))->Fill(track.hasTOF(), track.pt(), track.eta());
-        static_cast<TEfficiency*>(listEfficiency->At(5))->Fill(track.hasTOF(), track.pt(), track.phi());
+        if (passedITSCuts) {
+          static_cast<TEfficiency*>(listEfficiencyData->At(0))->Fill(passedTPCCuts, track.pt());
+        }
+        if (passedITSCuts && passedTPCCuts) {
+          static_cast<TEfficiency*>(listEfficiencyData->At(1))->Fill(track.hasTOF(), track.pt());
+          static_cast<TEfficiency*>(listEfficiencyData->At(2))->Fill(track.hasTOF(), track.p());
+          static_cast<TEfficiency*>(listEfficiencyData->At(3))->Fill(track.hasTOF(), track.eta());
+          static_cast<TEfficiency*>(listEfficiencyData->At(4))->Fill(track.hasTOF(), track.phi());
+          static_cast<TEfficiency*>(listEfficiencyData->At(5))->Fill(track.hasTOF(), track.pt(), track.eta());
+          static_cast<TEfficiency*>(listEfficiencyData->At(6))->Fill(track.hasTOF(), track.pt(), track.phi());
+        }
       }
     }
   }
+  PROCESS_SWITCH(QaEfficiency, processData, "process data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w;
   // Data
-  if (cfgc.options().get<int>("eff-data")) {
-    w.push_back(adaptAnalysisTask<QaEfficiencyData>(cfgc));
+  if (cfgc.options().get<int>("eff")) { // Sign blind
+    w.push_back(adaptAnalysisTask<QaEfficiency<0>>(cfgc, TaskName{"qa-efficiency"}));
   }
-  if (cfgc.options().get<int>("eff-mc")) { // Sign blind
-    w.push_back(adaptAnalysisTask<QaEfficiencyMc<0>>(cfgc, TaskName{"qa-efficiency-mc"}));
+  if (cfgc.options().get<int>("eff-pos")) { // Pos
+    w.push_back(adaptAnalysisTask<QaEfficiency<1>>(cfgc, TaskName{"qa-efficiency-pos"}));
   }
-  if (cfgc.options().get<int>("eff-mc-pos")) { // Pos
-    w.push_back(adaptAnalysisTask<QaEfficiencyMc<1>>(cfgc, TaskName{"qa-efficiency-mc-pos"}));
-  }
-  if (cfgc.options().get<int>("eff-mc-neg")) { // Neg
-    w.push_back(adaptAnalysisTask<QaEfficiencyMc<-1>>(cfgc, TaskName{"qa-efficiency-mc-neg"}));
+  if (cfgc.options().get<int>("eff-neg")) { // Neg
+    w.push_back(adaptAnalysisTask<QaEfficiency<-1>>(cfgc, TaskName{"qa-efficiency-neg"}));
   }
   return w;
 }

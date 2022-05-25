@@ -14,6 +14,7 @@
 /// \author Peter Hristov <Peter.Hristov@cern.ch>, CERN
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
+/// \author Mario Krüger <mario.kruger@cern.ch>
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \brief  Task to produce QA objects for the track and the event properties in the AOD.
 ///         This task can also be configured to produce a table with reduced information used for correlation studies for track selection
@@ -55,8 +56,21 @@ using namespace o2::dataformats;
 namespace o2::aod
 {
 
+namespace dpgcollision
+{
+DECLARE_SOA_INDEX_COLUMN(BC, bc);
+DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+} // namespace dpgcollision
+
+DECLARE_SOA_TABLE(DPGCollisions, "AOD", "DPGCollisions", //! Table of the DPG collisions
+                  collision::PosZ,
+                  dpgcollision::IsEventReject,
+                  dpgcollision::RunNumber);
+
 namespace dpgtrack
 {
+DECLARE_SOA_INDEX_COLUMN(DPGCollision, dpgCollision);                                    //! Index to move from track to collision
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //! Pt
 DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Phi
@@ -77,6 +91,7 @@ DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);            
 } // namespace dpgtrack
 
 DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
+                  dpgtrack::DPGCollisionId,
                   dpgtrack::Pt, dpgtrack::Eta, dpgtrack::Phi, dpgtrack::PtReso,
                   track::Flags, dpgtrack::Sign,
                   track::DcaXY, track::DcaZ, track::Length,
@@ -86,6 +101,19 @@ DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
                   dpgtrack::TPCNClsFound, dpgtrack::TPCNClsCrossedRows,
                   dpgtrack::TPCCrossedRowsOverFindableCls, dpgtrack::TPCFoundOverFindableCls, dpgtrack::TPCFractionSharedCls,
                   dpgtrack::ITSNCls, dpgtrack::ITSNClsInnerBarrel);
+
+namespace dpgparticles
+{
+DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! Pt MC
+DECLARE_SOA_COLUMN(EtaMC, etaMC, float);                 //! Eta MC
+DECLARE_SOA_COLUMN(PhiMC, phiMC, float);                 //! Phi MC
+DECLARE_SOA_COLUMN(ProductionMode, productionMode, int); //! ProductionMode i.e. non matched (-1), physical primary (0), weak decay product (1) or material (2)
+
+} // namespace dpgparticles
+
+DECLARE_SOA_TABLE(DPGParticles, "AOD", "DPGParticles", //! Table of the DPG particles
+                  dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
+                  mcparticle::PdgCode, dpgparticles::ProductionMode);
 } // namespace o2::aod
 
 //--------------------------------------------------------------------------------------------------
@@ -95,7 +123,9 @@ DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
 //--------------------------------------------------------------------------------------------------
 struct qaEventTrack {
   // Tables to produce
+  Produces<o2::aod::DPGCollisions> tableCollisions;
   Produces<o2::aod::DPGTracks> tableTracks;
+  Produces<o2::aod::DPGParticles> tableParticles;
 
   // general steering settings
   Configurable<bool> isMC{"isMC", true, "Is MC dataset"};        // TODO: derive this from metadata once possible to get rid of the flag
@@ -147,18 +177,24 @@ struct qaEventTrack {
   template <bool IS_MC, typename C, typename T>
   void processReco(const C& collision, const T& tracks);
 
-  void processTableData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
+  // Process functions for skimming data
+  void processTableData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::BCs const& bcs)
   {
-    processRecoTable<false>(collision, tracks);
+    processRecoTable<false>(collision, tracks, bcs);
   };
-
   PROCESS_SWITCH(qaEventTrack, processTableData, "Process data for table producing", false);
 
+  void processTableMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCs const& bcs)
+  {
+    processRecoTable<true>(collision, tracks, bcs);
+  };
+  PROCESS_SWITCH(qaEventTrack, processTableMC, "Process MC for table producing", false);
+
   template <bool IS_MC, typename C, typename T>
-  void processRecoTable(const C& collision, const T& tracks);
+  void processRecoTable(const C& collision, const T& tracks, const aod::BCs&);
 };
 
-struct qaEventTrackLite {
+struct qaEventTrackLite { // Lite version of the QA task to run on skimmed dataset
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsImpPar{"binsImpPar", {200, -0.15, 0.15}, "Impact parameter binning (cm)"};
 
@@ -184,6 +220,7 @@ struct qaEventTrackLite {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
 
     // kine histograms
+    histos.add("Tracks/VertexPositionZ", "", kTH1D, {{100, -20.f, 20.f, "Vertex Z [cm]"}});
     histos.add("Tracks/Kine/pt", "#it{p}_{T};#it{p}_{T} [GeV/c]", kTH1D, {{axisPt}});
     histos.add("Tracks/Kine/eta", "#eta;#eta", kTH1D, {{800, -2., 2.}});
     histos.add("Tracks/Kine/phi", "#phi;#phi [rad]", kTH1D, {{180, 0., 2 * M_PI}});
@@ -215,6 +252,11 @@ struct qaEventTrackLite {
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(2, "hasITS");
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(3, "hasTRD");
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(4, "hasTOF");
+
+    // MC histograms
+    if (doprocessMCLite) {
+      histos.add("Particle/PDGs", "Particle PDGs;PDG Code", kTH1D, {{100, 0.f, 100.f}});
+    }
   }
 
   ///////////////
@@ -228,16 +270,18 @@ struct qaEventTrackLite {
   Filter tpcOnlyTracks = (bTpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
   Filter itsTpcMatchedTracks = (bItsTpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
   // ITS
-  Filter itsChi2 = o2::aod::track::itsChi2NCl < chi2ItsMax;
+  Filter itsChi2 = (bTpcOnly.node() == true) || (o2::aod::track::itsChi2NCl < chi2ItsMax);
   // TPC
-  Filter tpcChi2s = o2::aod::track::tpcChi2NCl < chi2TpcMax;
-  Filter tpcNclusters = o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin;
-  Filter tpcNcrossedRows = o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin;
-  Filter tpcNcrossedRowsOverFindableClusters = o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin;
+  Filter tpcChi2s = (bItsStandalone.node() == true) || (o2::aod::track::tpcChi2NCl < chi2TpcMax);
+  Filter tpcNclusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin);
+  Filter tpcNcrossedRows = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin);
+  Filter tpcNcrossedRowsOverFindableClusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin);
 
-  void process(o2::soa::Filtered<aod::DPGTracks> const& tracks)
+  // Process data
+  void processDataLite(o2::soa::Filtered<aod::DPGTracks> const& tracks, aod::DPGCollisions const&)
   {
     for (const auto& track : tracks) {
+      histos.fill(HIST("Tracks/VertexPositionZ"), track.dpgCollision().posZ());
       histos.fill(HIST("Tracks/Kine/pt"), track.pt());
       histos.fill(HIST("Tracks/Kine/eta"), track.eta());
       histos.fill(HIST("Tracks/Kine/phi"), track.phi());
@@ -270,6 +314,49 @@ struct qaEventTrackLite {
       }
     }
   }
+  PROCESS_SWITCH(qaEventTrackLite, processDataLite, "process data lite", true);
+
+  // Process MC
+  void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGParticles>> const& tracks, aod::DPGCollisions const&)
+  {
+    for (const auto& track : tracks) {
+      if (track.productionMode() == 0) {
+        histos.get<TH1>(HIST("Particle/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
+      }
+
+      histos.fill(HIST("Tracks/Kine/pt"), track.pt());
+      histos.fill(HIST("Tracks/Kine/eta"), track.eta());
+      histos.fill(HIST("Tracks/Kine/phi"), track.phi());
+      histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
+      histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
+      histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
+      histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
+      histos.fill(HIST("Tracks/length"), track.length());
+      histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
+      histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
+      histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
+      histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
+      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
+      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
+      histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
+      if (track.hasTPC()) {
+        histos.fill(HIST("Tracks/matchedDet"), 1);
+      }
+      if (track.hasITS()) {
+        histos.fill(HIST("Tracks/matchedDet"), 2);
+      }
+      if (track.hasTRD()) {
+        histos.fill(HIST("Tracks/matchedDet"), 3);
+      }
+      if (track.hasTOF()) {
+        histos.fill(HIST("Tracks/matchedDet"), 4);
+      }
+    }
+  }
+  PROCESS_SWITCH(qaEventTrackLite, processMCLite, "process MC lite", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -296,6 +383,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 //**************************************************************************************************
 void qaEventTrack::init(InitContext const&)
 {
+  if (doprocessTableData == true && doprocessTableMC == true) {
+    LOGF(fatal, "Cannot enable processTableData and processTableMC at the same time. Please choose one.");
+  }
+
   const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
   const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
   const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
@@ -377,6 +468,8 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
   histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
   histos.add("Tracks/ITS/itsHits", "No. of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+  histos.add("Tracks/ITS/hasITS", "pt distribution of tracks crossing ITS", kTH1D, {axisPt});
+  histos.add("Tracks/ITS/hasITSANDhasTPC", "pt distribution of tracks crossing both ITS and TPC", kTH1D, {axisPt});
 
   // tpc histograms
   histos.add("Tracks/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
@@ -386,6 +479,7 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH1D, {{100, 0., 1.}});
   histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
   histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
+  histos.add("Tracks/TPC/hasTPC", "pt distribution of tracks crossing TPC", kTH1D, {axisPt});
 }
 
 //**************************************************************************************************
@@ -549,6 +643,17 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
       }
     }
+
+    // ITS-TPC matching pt-distributions
+    if (track.hasITS()) {
+      histos.fill(HIST("Tracks/ITS/hasITS"), track.pt());
+    }
+    if (track.hasTPC()) {
+      histos.fill(HIST("Tracks/TPC/hasTPC"), track.pt());
+    }
+    if (track.hasITS() && track.hasTPC()) {
+      histos.fill(HIST("Tracks/ITS/hasITSANDhasTPC"), track.pt());
+    }
   }
 }
 
@@ -558,12 +663,18 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
  */
 //**************************************************************************************************
 template <bool IS_MC, typename C, typename T>
-void qaEventTrack::processRecoTable(const C& collision, const T& tracks)
+void qaEventTrack::processRecoTable(const C& collision, const T& tracks, const aod::BCs&)
 {
   if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
     return;
   }
+
+  tableCollisions(collision.posZ(),
+                  (isRun3 ? collision.sel8() : collision.sel7()),
+                  collision.bc().runNumber());
   int nTracks = 0;
+  int particleProduction = 0;
+
   for (const auto& track : tracks) {
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
@@ -571,12 +682,16 @@ void qaEventTrack::processRecoTable(const C& collision, const T& tracks)
     ++nTracks;
   }
   tableTracks.reserve(nTracks);
+  if constexpr (IS_MC) { // Running only on MC
+    tableParticles.reserve(nTracks);
+  }
 
   for (const auto& track : tracks) {
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
-    tableTracks(track.pt(), track.eta(), track.phi(), track.pt() * std::sqrt(track.c1Pt21Pt2()),
+    tableTracks(tableCollisions.lastIndex(),
+                track.pt(), track.eta(), track.phi(), track.pt() * std::sqrt(track.c1Pt21Pt2()),
                 track.flags(), track.sign(),
                 track.dcaXY(), track.dcaZ(), track.length(),
                 track.itsClusterMap(),
@@ -585,5 +700,21 @@ void qaEventTrack::processRecoTable(const C& collision, const T& tracks)
                 track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                 track.tpcCrossedRowsOverFindableCls(), track.tpcFoundOverFindableCls(), track.tpcFractionSharedCls(),
                 track.itsNCls(), track.itsNClsInnerBarrel());
+
+    if constexpr (IS_MC) { // Running only on MC
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (particle.isPhysicalPrimary()) {
+          particleProduction = 0;
+        } else if (particle.getProcess() == 4) {
+          particleProduction = 1;
+        } else {
+          particleProduction = 2;
+        }
+        tableParticles(particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particleProduction);
+      } else { // If it does not have the particle we fill with the track values and tag it with -1 in the production
+        tableParticles(track.pt(), track.eta(), track.phi(), 0, -1);
+      }
+    }
   }
 }
