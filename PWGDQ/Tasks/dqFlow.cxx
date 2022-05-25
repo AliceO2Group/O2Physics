@@ -9,7 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-//
+///       Task to compute Q vectors, m-particle correlations from the generic framework
+///       Generic framework O2 version is a port of the AliPhysics version
+///       To be used in the DQ analyses aiming flow measurments
+///       Run the task with:
+///       o2-analysis-timestamp --aod-file AO2D.root -b | o2-analysis-event-selection -b | o2-analysis-multiplicity-table -b | o2-analysis-centrality-table -b | o2-analysis-fdd-converter -b | o2-analysis-trackselection -b | o2-analysis-trackextension -b |  o2-analysis-dq-flow -b
+///       (tested on AO2D.root files from train production 242)
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -68,7 +74,7 @@ using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 struct AnalysisQvector {
 
-  // TODO: Provide an access to the Q vector for basics dilepton flow related analyses (to be adapted)
+  // TODO: Provide an access to the Q vector for basic dilepton flow related analyses (to be adapted)
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
@@ -115,7 +121,7 @@ struct AnalysisQvector {
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // define global variables
+  // define global variables for generic framework
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
@@ -156,6 +162,7 @@ struct AnalysisQvector {
 
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
+    // Define regions of positive and negative eta in order to create gaps
     fGFW->AddRegion("refN", 7, pows, -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP", 7, pows, 0.4, 0.8, 1, 1);
     fGFW->AddRegion("full", 7, powsFull, -0.8, 0.8, 1, 2);
@@ -182,6 +189,19 @@ struct AnalysisQvector {
       if (TMath::Abs(val) < 1) {
         fFC->FillProfile(corrconf.Head.Data(), cent, val, 1, rndm);
         registry.fill(HIST("CorrValues"), cent, val);
+      }
+      return;
+    }
+    bool DisableOverlap = kFALSE;
+    int nAxisPtBins = 31;
+    for (int i = 1; i <= nAxisPtBins; i++) {
+      dnx = fGFW->Calculate(corrconf, 0, kTRUE, DisableOverlap).Re();
+      if (dnx == 0) {
+        return;
+      }
+      val = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
+      if (TMath::Abs(val) < 1) {
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, val, dnx, rndm);
       }
       return;
     }
