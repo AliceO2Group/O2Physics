@@ -211,10 +211,10 @@ struct TaskHfCorrelations {
   bool isCollisionSelected(TCollision collision)
   {
     if (processRun2 == true) {
-      //  Run 2: trigger selection
-      if (!collision.alias()[kINT7]) {
-        return false;
-      }
+      //  Run 2: trigger selection for data case
+      //if (!collision.alias()[kINT7]) {
+      //  return false;
+      //}
       //  Run 2: further offline selection
       if (!collision.sel7()) {
         return false;
