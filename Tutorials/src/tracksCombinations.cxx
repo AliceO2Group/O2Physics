@@ -73,13 +73,14 @@ struct ConfigurableBinnedCollisionCombinations {
 
   void process(soa::Join<aod::Collisions, aod::Mults> const& collisions)
   {
-    // MultFV0M cannot be used as it is a dynamic column
-    BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0A> colBinning{{axisVertex, axisMultiplicity}, true};
+    using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
+    BinningType colBinning{{axisVertex, axisMultiplicity}, true};
+
     int count = 0;
     // Strictly upper tracks binned by x and y position
     for (auto& [c0, c1] : selfCombinations(colBinning, 5, -1, collisions, collisions)) {
-      int bin = colBinning.getBin({c0.posZ(), c0.multFV0A()});
-      LOGF(info, "Collision bin: %d pair: %d (%f, %f), %d (%f, %f)", bin, c0.index(), c0.posZ(), c0.multFV0A(), c1.index(), c1.posZ(), c1.multFV0A());
+      int bin = colBinning.getBin({c0.posZ(), c0.multFV0M()});
+      LOGF(info, "Collision bin: %d pair: %d (%f, %f), %d (%f, %f)", bin, c0.index(), c0.posZ(), c0.multFV0M(), c1.index(), c1.posZ(), c1.multFV0A());
       count++;
       if (count > 100)
         break;

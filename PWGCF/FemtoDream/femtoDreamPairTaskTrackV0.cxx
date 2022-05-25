@@ -13,18 +13,21 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include <CCDB/BasicCCDBManager.h>
+#include "DataFormatsParameters/GRPObject.h"
+
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamParticleHisto.h"
 #include "FemtoDreamEventHisto.h"
 #include "FemtoDreamPairCleaner.h"
 #include "FemtoDreamContainer.h"
 #include "FemtoDreamDetaDphiStar.h"
-#include <CCDB/BasicCCDBManager.h>
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
 #include "FemtoUtils.h"
 
 using namespace o2;
@@ -35,9 +38,13 @@ using namespace o2::soa;
 
 namespace
 {
-static constexpr int nCuts = 4;
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF"};
-static const float cutsArray[nCuts] = {4.05f, 0.75f, 3.f, 3.f};
+static constexpr int nPart = 2;
+static constexpr int nCuts = 5;
+static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
+static const float cutsTable[nPart][nCuts]{
+  {4.05f, 1.f, 3.f, 3.f, 100.f},
+  {4.05f, 1.f, 5.f, 5.f, 100.f}};
 
 static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
@@ -45,17 +52,19 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
 struct femtoDreamPairTaskTrackV0 {
 
-  /// Particle 1 (track)
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542986, "Particle 1 - Selection bit from cutCulator"};
-  Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
-  Configurable<LabeledArray<float>> cfgCutArray{"cfgCutArray", {cutsArray, nCuts, cutNames}, "Particle selections"};
+  /// Particle selection part
+
+  /// Table for both particles
+  Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
   Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
+  /// Particle 1 (track)
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 5542474, "Particle 1 - Selection bit from cutCulator"};
+  Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
+
   /// Partition for particle 1
-  Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                 (aod::femtodreamparticle::pt < cfgCutArray->get("MaxPt")) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
+  Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -65,8 +74,7 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
 
   /// Partition for particle 2
-  Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                                 ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
+  Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
   /// Histogramming for particle 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 2> trackHistoPartTwo;
@@ -85,7 +93,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis CfgmTBins{"CfgmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
-  Configurable<float> ConfBField{"ConfBField", +0.5, "Magnetic Field"};
+  Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -109,7 +117,7 @@ struct femtoDreamPairTaskTrackV0 {
     mixedEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, false); /// \todo add config for Δη and ΔΦ cut values
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii); /// \todo add config for Δη and ΔΦ cut values
     }
 
     vPIDPartOne = ConfPIDPartOne;
@@ -137,7 +145,10 @@ struct femtoDreamPairTaskTrackV0 {
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutArray->get("PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutArray->get("nSigmaTPC"), cfgCutArray->get("nSigmaTPCTOF"))) {
+      if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        continue;
+      }
+      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
@@ -147,7 +158,10 @@ struct femtoDreamPairTaskTrackV0 {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutArray->get("PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutArray->get("nSigmaTPC"), cfgCutArray->get("nSigmaTPCTOF"))) {
+      if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+        continue;
+      }
+      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
 
@@ -190,7 +204,10 @@ struct femtoDreamPairTaskTrackV0 {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutArray->get("PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutArray->get("nSigmaTPC"), cfgCutArray->get("nSigmaTPCTOF"))) {
+        if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+          continue;
+        }
+        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
           continue;
         }
         if (ConfIsCPR) {

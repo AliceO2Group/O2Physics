@@ -18,7 +18,7 @@
 #include "ReconstructionDataFormats/BCRange.h"
 
 #include "filterTables.h"
-#include "PWGUD/diffractionSelectors.h"
+#include "PWGUD/diffHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -28,38 +28,37 @@ using namespace o2::framework::expressions;
 
 struct gammaConversionsTruthOnlyMc {
 
-  Configurable<bool> fOnlyPrimary{"fOnlyPrimary", true, "fOnlyPrimary"};
+  Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
   Configurable<float> fEtaMax{"fEtaMax", 0.8, "aMaximum photon eta"};
 
   HistogramRegistry registry{
     "registry",
     {
-      {"hMcCollisionZ_MCTrue", "hMcCollisionZ_MCTrue", {HistType::kTH1F, {{400, -50.f, 50.f}}}},
-      {"hEtaDiff_MCTrue", "hEtaDiff_MCTrue", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
+      {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
 
-      {"hNDaughters_MCTrue", "hNDaughters_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hPdgCodeDaughters_MCTrue", "hPdgCodeDaughters_MCTrue", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
-      {"hNElectrons_MCTrue", "hNElectrons_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hGammaProdAfterCutsP_MCTrue", "hGammaProdAfterCutsP_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaProdAfterCutsPt_MCTrue", "hGammaProdAfterCutsPt_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
 
-      {"hGammaProdAfterCutsP_MCTrue", "hGammaProdAfterCutsP_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedP_Rsel_MCTrue", "hGammaConvertedP_Rsel_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedPt_Rsel_MCTrue", "hGammaConvertedPt_Rsel_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue;conversion radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
 
-      {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
-      {"hGammaConvertedRselP_MCTrue", "hGammaConvertedRselP_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue;#eta;p (GeV/c)", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue;#eta;conversion radius (cm)", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 250.f}}}},
+      {"hGammaConvertedEtaZ_MCTrue", "hGammaConvertedEtaZ_MCTrue;#eta;conversion z (cm)", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, -250.f, 250.f}}}},
+      {"hGammaConvertedRP_MCTrue", "hGammaConvertedRP_MCTrue;conversion radius (cm);conversion z (cm)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedRZ_MCTrue", "hGammaConvertedRZ_MCTrue;conversion radius (cm);conversion z (cm)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
+      {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue;conversion radius (cm);p_T (GeV/c)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedXY_MCTrue", "hGammaConvertedXY_MCTrue;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, -250.f, 250.f}}}},
+      {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, 0.f, 25.f}}}},
 
-      {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 250.f}}}},
-      {"hGammaConvertedEtaZ_MCTrue", "hGammaConvertedEtaZ_MCTrue", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, -250.f, 250.f}}}},
-
-      {"hGammaConvertedRP_MCTrue", "hGammaConvertedRP_MCTrue", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedRZ_MCTrue", "hGammaConvertedRZ_MCTrue", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
-
-      {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, 0.f, 25.f}}}},
-
-      {"hGammaProdAfterCutsPt_MCTrue", "hGammaProdAfterCutsPt_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-
-      {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedRselPt_MCTrue", "hGammaConvertedRselPt_MCTrue", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      // debugging histograms
       {"hPeculiarOccurences_MCTrue", "hPeculiarOccurences_MCTrue", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
+      {"hNElectrons_MCTrue", "hNElectrons_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hNDaughters_MCTrue", "hNDaughters_MCTrue;nDaughters;counts", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
+      {"hPdgCodeDaughters_MCTrue", "hPdgCodeDaughters_MCTrue;pdg code;counts", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
     },
   };
 
@@ -68,6 +67,7 @@ struct gammaConversionsTruthOnlyMc {
   {
     // this produces another convpoint r distribution than the uncommend version below. why?
     // access first daughter to get conversion point
+
     /*auto const &lDaughter0 = lDaughters.begin();
     float lConversionRadius = std::sqrt(std::pow(lDaughter0.vx(), 2) + std::pow(lDaughter0.vy(), 2));
     registry.fill(HIST("hGammaConvertedEtaP"), lMcGamma.eta(), lMcGamma.p());
@@ -83,34 +83,33 @@ struct gammaConversionsTruthOnlyMc {
     registry.fill(HIST("hEtaDiff"), lEtaDiff);*/
 
     float lConversionRadius = theMcConvGamma.v0Radius();
+    // 1d histos
+    registry.fill(HIST("hGammaConvertedR_MCTrue"), lConversionRadius);
+    // 2d histos
     registry.fill(HIST("hGammaConvertedEtaP_MCTrue"), theMcConvGamma.eta(), theMcConvGamma.p());
     registry.fill(HIST("hGammaConvertedEtaR_MCTrue"), theMcConvGamma.eta(), lConversionRadius);
     registry.fill(HIST("hGammaConvertedEtaZ_MCTrue"), theMcConvGamma.eta(), theMcConvGamma.conversionZ());
-    registry.fill(HIST("hGammaConvertedR_MCTrue"), lConversionRadius);
     registry.fill(HIST("hGammaConvertedRP_MCTrue"), lConversionRadius, theMcConvGamma.p());
     registry.fill(HIST("hGammaConvertedRPt_MCTrue"), lConversionRadius, theMcConvGamma.pt());
     registry.fill(HIST("hGammaConvertedRZ_MCTrue"), lConversionRadius, theMcConvGamma.conversionZ());
+    registry.fill(HIST("hGammaConvertedXY_MCTrue"), theMcConvGamma.conversionX(), theMcConvGamma.conversionY());
     registry.fill(HIST("hGammaConvertedZP_MCTrue"), theMcConvGamma.conversionZ(), theMcConvGamma.p());
 
-    TVector3 lDaughter0Vtx(theMcConvGamma.conversionX(), theMcConvGamma.conversionY(), theMcConvGamma.conversionZ());
-    float_t lEtaDiff = lDaughter0Vtx.Eta() - theMcConvGamma.eta();
-    registry.fill(HIST("hEtaDiff_MCTrue"), lEtaDiff);
-
     if (lConversionRadius > 5. && lConversionRadius < 180.) {
-      registry.fill(HIST("hGammaConvertedRselP_MCTrue"), theMcConvGamma.p());
-      registry.fill(HIST("hGammaConvertedRselPt_MCTrue"), theMcConvGamma.pt());
+      registry.fill(HIST("hGammaConvertedP_Rsel_MCTrue"), theMcConvGamma.p());
+      registry.fill(HIST("hGammaConvertedPt_Rsel_MCTrue"), theMcConvGamma.pt());
     }
   }
 
   template <typename MCGAMMA>
   bool photonPassesCuts(MCGAMMA const& theMcGamma)
   {
-    if (fOnlyPrimary && !theMcGamma.isPhysicalPrimary()) {
+    if (fPhysicalPrimaryOnly && !theMcGamma.isPhysicalPrimary()) {
       // fill histo
       return false;
     }
 
-    if (std::abs(theMcGamma.eta()) >= fEtaMax) { // SFS todo: track v0 eta??
+    if (std::abs(theMcGamma.eta()) > fEtaMax) {
       // fill histo
       return false;
     }
@@ -119,10 +118,20 @@ struct gammaConversionsTruthOnlyMc {
 
   // loop over MC truth McCollisions
   void process(aod::McCollision const& theMcCollision,
+               soa::SmallGroups<soa::Join<aod::McCollisionLabels,
+                                          aod::Collisions>> const& theCollisions,
                aod::McGammasTrue const& theMcGammas,
                aod::McGammaDaughtersTrue const& theMcGammaDaughters)
   {
-    registry.fill(HIST("hMcCollisionZ_MCTrue"), theMcCollision.posZ());
+    registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
+    if (theCollisions.size() == 0) {
+      return;
+    }
+    registry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
+
+    for (auto& lCollision : theCollisions) {
+      registry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
+    }
 
     for (auto& lMcGamma : theMcGammas) {
 

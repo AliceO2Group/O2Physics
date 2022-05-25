@@ -401,6 +401,32 @@ using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
+// candidate information
+namespace dileptonTrackCandidate
+{
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
+DECLARE_SOA_COLUMN(Mass, mass, float);                //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                    //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
+DECLARE_SOA_COLUMN(Tauz, tauz, float);                //!
+DECLARE_SOA_COLUMN(Tauxy, tauxy, float);              //!
+DECLARE_SOA_COLUMN(Lz, lz, float);                    //! Longitudinal projection of decay length
+DECLARE_SOA_COLUMN(Lxy, lxy, float);                  //! Transverse projection of decay length
+} // namespace dileptonTrackCandidate
+
+DECLARE_SOA_TABLE(DileptonTrackCandidates, "AOD", "RTDILEPTONTRACK", //!
+                  dileptonTrackCandidate::McDecision,
+                  dileptonTrackCandidate::Mass,
+                  dileptonTrackCandidate::Pt,
+                  dileptonTrackCandidate::Eta,
+                  dileptonTrackCandidate::Tauz,
+                  dileptonTrackCandidate::Tauxy,
+                  dileptonTrackCandidate::Lz,
+                  dileptonTrackCandidate::Lxy);
+
+using DileptonTrackCandidate = DileptonTrackCandidates::iterator;
+
 namespace v0bits
 {
 DECLARE_SOA_COLUMN(PIDBit, pidbit, uint8_t); //!

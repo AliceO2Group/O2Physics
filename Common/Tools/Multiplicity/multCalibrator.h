@@ -64,7 +64,12 @@ class multCalibrator : public TNamed
   TH1F* GetCalibrationHistogram(TH1D* histoRaw, TString lHistoName = "hCalib");
 
   //Auxiliary functions
+  Double_t GetRawMax(TH1D* histo);
   Double_t GetBoundaryForPercentile(TH1D* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate);
+
+  //Precision bookkeeping
+  TH1D* GetPrecisionHistogram() { return fPrecisionHistogram; }; //gets precision histogram from current object
+  void ResetPrecisionHistogram();                                //Reset precision histogram, if it exists
 
   //Aliases for centrality estimators
   enum fCentEstim {
@@ -93,6 +98,8 @@ class multCalibrator : public TNamed
 
   // TList object for storing histograms
   TList* fCalibHists;
+
+  TH1D* fPrecisionHistogram; //for bookkeeping of precision report
 
   ClassDef(multCalibrator, 1);
   //(this classdef is only for bookkeeping, class will not usually
