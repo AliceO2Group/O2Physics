@@ -61,7 +61,7 @@ struct DiffQA {
   cutHolder diffCuts = cutHolder();
   MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
-  // a structure to hold information about the possible BCs the ambiguous tracks belong to
+  // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
   o2::dataformats::bcRanges afbcrs = o2::dataformats::bcRanges("ambiguous_fwdtracks");
 
@@ -127,8 +127,8 @@ struct DiffQA {
     auto ambtracks = ATs({t4});
     ambtracks.bindExternalIndices(&bcs);
 
-    // make sorted list of BC ranges, this is used to efficiently check whether a given BC
-    // is contained in one of these ranges
+    // make sorted list of BC ranges which are associated with an ambiguous track.
+    // This is used to efficiently check whether a given BC is contained in one of these ranges
     abcrs.reset();
     for (auto ambtrack : ambtracks) {
       auto bcfirst = ambtrack.bc().rawIteratorAt(0);
@@ -142,8 +142,7 @@ struct DiffQA {
     auto ambfwdtracks = AFTs({t5});
     ambfwdtracks.bindExternalIndices(&bcs);
 
-    // make sorted list of BC ranges, this is used to efficiently check whether a given BC
-    // is contained in one of these ranges
+    // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
     afbcrs.reset();
     for (auto ambfwdtrack : ambfwdtracks) {
       auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
