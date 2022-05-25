@@ -54,6 +54,21 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
+// namespace o2::aod
+//{
+// namespace dqflow
+//{
+// DECLARE_SOA_COLUMN(IsDQEventSelected, isDQEventSelected, int);
+// DECLARE_SOA_COLUMN(IsDQBarrelSelected, isDQBarrelSelected, uint32_t);
+// DECLARE_SOA_COLUMN(IsDQMuonSelected, isDQMuonSelected, uint32_t);
+// } // namespace dqflow
+//
+// DECLARE_SOA_TABLE(DQEventQvectors, "AOD", "DQEVENTQVECTORS", o2::soa::Index<>, o2::aod::dqflow::EventQvector);
+// DECLARE_SOA_TABLE(DQEventCuts, "AOD", "DQEVENTCUTS", dqflow::IsDQEventSelected);
+// DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqflow::IsDQBarrelSelected);
+// DECLARE_SOA_TABLE(DQMuonsCuts, "AOD", "DQMUONCUTS", dqflow::IsDQMuonSelected);
+// } // namespace o2::aod
+
 // Declarations of various short names
 using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
 
@@ -73,6 +88,8 @@ using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 struct AnalysisQvector {
+
+  // Produces<aod::DQEventQvector> eventQvector;
 
   // TODO: Provide an access to the Q vector for basic dilepton flow related analyses (to be adapted)
 
@@ -119,7 +136,7 @@ struct AnalysisQvector {
   // Define output
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // define global variables for generic framework
   GFW* fGFW = new GFW();
@@ -155,10 +172,10 @@ struct AnalysisQvector {
     fFC->Initialize(oba, axisMultiplicity, 10);
     delete oba;
 
-    registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
-    registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
-    registry.add("dnx", "centrality percentile vs dnx", kTProfile, {axisCentBins});
-    registry.add("CorrValues", "CorrValues", kTProfile, {axisCentBins});
+    // registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
+    // registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
+    // registry.add("dnx", "centrality percentile vs dnx", kTProfile, {axisCentBins});
+    // registry.add("CorrValues", "CorrValues", kTProfile, {axisCentBins});
 
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
@@ -174,7 +191,7 @@ struct AnalysisQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
   }
 
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool flag)
   {
     // Calculate the correlations from the GFW
     double dnx, val;
@@ -182,13 +199,13 @@ struct AnalysisQvector {
     if (dnx == 0) {
       return;
     }
-    registry.fill(HIST("dnx"), cent, dnx);
+    // registry.fill(HIST("dnx"), cent, dnx);
 
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
       if (TMath::Abs(val) < 1) {
         fFC->FillProfile(corrconf.Head.Data(), cent, val, 1, rndm);
-        registry.fill(HIST("CorrValues"), cent, val);
+        // registry.fill(HIST("CorrValues"), cent, val);
       }
       return;
     }
@@ -202,14 +219,15 @@ struct AnalysisQvector {
       val = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
       if (TMath::Abs(val) < 1) {
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, val, dnx, rndm);
+        // if (flag){ eventQvector(val);}
       }
       return;
     }
   }
 
   // Template function to run fill Q vector (alltracks-barrel, alltracks-muon)
-  //  template <typename TCollision, typename BC, typename TTracks1, typename TTracks2 >
-  //  void runFillQvector(TCollision const& collision, BC const& bcs, TTracks1 const& tracks1)
+  // template <typename TCollision, typename BC, typename TTracks1 >
+  // void runFillQvector(TCollision const& collision, BC const& bcs, TTracks1 const& tracks1)
   void process(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks1)
   {
     // Reset the fValues and Qn vector array
@@ -234,7 +252,7 @@ struct AnalysisQvector {
     if (!collision.sel7()) {
       return;
     }
-    // LOGF(info, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks.size(), collision.posZ(), collision.sel7(), collision.centV0M());
+    // LOGF(info, "Tracks for collision: %d | Vertex: %.1f | INT7: %d | V0M: %.1f", tracks1.size(), collision.posZ(), collision.sel7(), collision.centV0M());
     float vtxz = collision.posZ();
 
     fGFW->Clear();
@@ -263,32 +281,36 @@ struct AnalysisQvector {
         wacc = 1;
       }
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
-      registry.fill(HIST("hPhi"), track.phi());
-      registry.fill(HIST("hEta"), track.eta());
+      // registry.fill(HIST("hPhi"), track.phi());
+      // registry.fill(HIST("hEta"), track.eta());
     }
+    bool DQEventFlag = kFALSE;
+    //      if (collision.isDQEventSelected()) {
+    //          DQEventFlag=kTRUE;
+    //      }
     for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), centrality, l_Random);
+      FillFC(corrconfigs.at(l_ind), centrality, l_Random, DQEventFlag);
     };
   }
 
   //  // Process Q vector for Barrel tracks related analyses
-  void processQvectorBarrelSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks, MyBarrelTracks const& barreltracks)
+  void processQvectorBarrelSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, MyBarrelTracks const& barreltracks)
   {
 
     // TODO: fill Q vector with corrections on selected tracks for barrel analysis
-    // runFillQvector(collision, bcs, tracks, barreltracks);
+    // runFillQvector(collision, bcs, tracks);
   }
 
   //  // Process Q vector for Muon tracks related analyses
-  void processQvectorMuonsSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, aod::Tracks const& tracks, MyMuons const& muons)
+  void processQvectorMuonSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, MyMuons const& muons)
   {
 
     // TODO: fill Q vector with corrections on selected tracks for muon analysis
-    // runFillQvector(collision, bcs, tracks, muons);
+    // runFillQvector(collision, bcs, tracks);
   }
 
   // Dummy function for the case when no process function is enabled
-  void processDummy()
+  void processDummy(MyEvents&)
   {
     // do nothing
   }
