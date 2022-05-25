@@ -360,67 +360,64 @@ struct DiffQA {
 struct FV0Signals {
 
   HistogramRegistry registry{
-  "registry",
-  {
-    {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
-  }};
+    "registry",
+    {
+      {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
+    }};
 
   void process(aod::FV0A fv0)
   {
     // side A
-    for (auto ind=0; ind < fv0.channel().size(); ind++) {
+    for (auto ind = 0; ind < fv0.channel().size(); ind++) {
       registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
     }
   };
-
 };
 
 struct FT0Signals {
 
   HistogramRegistry registry{
-  "registry",
-  {
-    {"FT0A", "#FT0A", {HistType::kTH2F, {{96, -0.5, 95.5}, {100, 0., 200.}}}},
-    {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
-  }};
+    "registry",
+    {
+      {"FT0A", "#FT0A", {HistType::kTH2F, {{96, -0.5, 95.5}, {100, 0., 200.}}}},
+      {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
+    }};
 
   void process(aod::FT0 ft0)
   {
     // side A
-    for (auto ind=0; ind < ft0.channelA().size(); ind++) {
+    for (auto ind = 0; ind < ft0.channelA().size(); ind++) {
       registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
     }
-    
+
     // side C
-    for (auto ind=0; ind < ft0.channelC().size(); ind++) {
+    for (auto ind = 0; ind < ft0.channelC().size(); ind++) {
       registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
     }
   };
-
 };
 
 struct FDDSignals {
 
   HistogramRegistry registry{
-  "registry",
-  {
-    {"FDDA", "#FDDA", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
-    {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
-  }};
+    "registry",
+    {
+      {"FDDA", "#FDDA", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
+      {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
+    }};
 
   void process(aod::FDD fdd)
   {
     // side A
-    for (auto ind=0; ind < 8; ind++) {
+    for (auto ind = 0; ind < 8; ind++) {
       registry.get<TH2>(HIST("FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
     }
-    
+
     // side C
-    for (auto ind=0; ind < 8; ind++) {
+    for (auto ind = 0; ind < 8; ind++) {
       registry.get<TH2>(HIST("FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
     }
   };
-
 };
 
 struct ZDCSignals {
@@ -449,10 +446,10 @@ struct ZDCSignals {
   // 20: energySectorZPC[2]
   // 21: energySectorZPC[3]
   HistogramRegistry registry{
-  "registry",
-  {
-    {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
-  }};
+    "registry",
+    {
+      {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
+    }};
 
   void process(aod::Zdc zdc)
   {
@@ -480,17 +477,16 @@ struct ZDCSignals {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(20., (zdc.energySectorZPC())[2]);
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
   };
-
 };
 
 struct CaloSignals {
 
   HistogramRegistry registry{
-  "registry",
-  {
-    {"CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}}},
-    {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
-  }};
+    "registry",
+    {
+      {"CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}}},
+      {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
+    }};
 
   void process(aod::Calo calo)
   {
@@ -500,7 +496,6 @@ struct CaloSignals {
     // amplitude
     registry.get<TH1>(HIST("CaloAmplitude"))->Fill(calo.amplitude());
   };
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
