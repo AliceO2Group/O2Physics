@@ -36,12 +36,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct LFNucleiDeuteronTask {
-  // HistogramRegistry hevents{"HistosEvents", {}, OutputObjHandlingPolicy::AnalysisObject};
-  // HistogramRegistry hqa{"HistosQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry spectraGen{"spectraGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   Configurable<float> nsigmaTPCcut{"nsigmaTPCcut", 5.f, "Value of the Nsigma TPC cut"};
   Configurable<float> nsigmaTOFcut{"nsigmaTOFcut", 5.f, "Value of the Nsigma TOF cut"};
+  Configurable<float> etaCut{"etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
+  Configurable<float> cfgCutVertex{"cfgCutVSertex", 10.0f, "Accepted z-vertex range"};
 
   void init(o2::framework::InitContext&)
   {
@@ -86,9 +87,20 @@ struct LFNucleiDeuteronTask {
     histos.add<TH2>("tracks/proton/h2TOFmass2ProtonVsPt", "#Delta M^{2} (p) vs #it{p}_{T}; #Delta M^{2} (p); #it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{600, -3., 3.}, {800, 0., 8.}});
     histos.add<TH2>("tracks/deuteron/h2TOFmass2DeuteronVsPt", "#Delta M^{2} (d) vs #it{p}_{T}; #Delta M^{2} (d); #it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{1000, -5., 5.}, {800, 0., 8.}});
     histos.add<TH2>("tracks/helium/h2TOFmass2HeliumVsPt", "#Delta M^{2} (He) vs #it{p}_{T}; #Delta M^{2} (He); #it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{1800, -9., 9.}, {800, 0., 8.}});
+
+    // MC histograms
+    AxisSpec ptAxis = {2000, 0.f, 20.f, "#it{p}_{T} (GeV/#it{c})"};
+    spectraGen.add("histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{2000, -20.f, 20.f, "Vertex Z (cm)"}});
+    spectraGen.add("histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("histGenPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("histGenPtHe", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("histGenPtantiHe", "generated particles", HistType::kTH1F, {ptAxis});
   }
 
-  void process(o2::aod::LfCandNucleusFullEvents::iterator const& event, o2::aod::LfCandNucleusFull const& tracks)
+  void processData(o2::aod::LfCandNucleusFullEvents::iterator const& event, o2::aod::LfCandNucleusFull const& tracks)
   {
     constexpr float fMassProton = 0.938272088f;
     constexpr float fMassDeuteron = 1.87561f;
@@ -163,7 +175,50 @@ struct LFNucleiDeuteronTask {
       }
     }
     // LOG(info)<<"Vertex Z ==="<<coll.posZ();
+  } // CLOSING PROCESS DATA
+
+  PROCESS_SWITCH(LFNucleiDeuteronTask, processData, "process data", true);
+  Int_t nCount = 0;
+
+  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles_001& mcParticles)
+  {
+    nCount++;
+    spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
+    for (auto& mcParticleGen : mcParticles) {
+      if (abs(mcParticleGen.y()) > std::abs(etaCut)) {
+        continue;
+      }
+
+      if (std::abs(mcParticleGen.pdgCode()) == 211) {
+        spectraGen.fill(HIST("histGenPtPion"), mcParticleGen.pt());
+      }
+
+      if (std::abs(mcParticleGen.pdgCode()) == 321) {
+        spectraGen.fill(HIST("histGenPtKaon"), mcParticleGen.pt());
+      }
+
+      if (std::abs(mcParticleGen.pdgCode()) == 2212) {
+        spectraGen.fill(HIST("histGenPtProton"), mcParticleGen.pt());
+      }
+
+      if (mcParticleGen.pdgCode() == 1000010020) {
+        spectraGen.fill(HIST("histGenPtD"), mcParticleGen.pt());
+      }
+
+      if (mcParticleGen.pdgCode() == -1000010020) {
+        spectraGen.fill(HIST("histGenPtantiD"), mcParticleGen.pt());
+      }
+
+      if (mcParticleGen.pdgCode() == 1000020030) {
+        spectraGen.fill(HIST("histGenPtHe"), mcParticleGen.pt());
+      }
+
+      if (mcParticleGen.pdgCode() == -1000020030) {
+        spectraGen.fill(HIST("histGenPtantiHe"), mcParticleGen.pt());
+      }
+    }
   }
+  PROCESS_SWITCH(LFNucleiDeuteronTask, processMCGen, "process MC Generated", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
