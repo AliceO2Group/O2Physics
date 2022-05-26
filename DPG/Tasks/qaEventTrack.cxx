@@ -386,7 +386,10 @@ void qaEventTrack::init(InitContext const&)
   if (doprocessTableData == true && doprocessTableMC == true) {
     LOGF(fatal, "Cannot enable processTableData and processTableMC at the same time. Please choose one.");
   }
-
+  if (!doprocessData && !doprocessMC) {
+    LOGF(info, "No enabled QA, all histograms are disabled");
+    return;
+  }
   const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
   const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
   const AxisSpec axisVertexPosX{binsVertexPosXY, "X [cm]"};
