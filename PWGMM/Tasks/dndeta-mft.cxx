@@ -59,6 +59,7 @@ struct PseudorapidityDensityMFT {
 
     if (doprocessGen) {
       registry.add({"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}});
+      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}});
       registry.add({"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}});
       registry.add({"TracksEtaZvtxGen_t", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {18, -4.6, -1.}}}});
@@ -131,7 +132,6 @@ struct PseudorapidityDensityMFT {
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, soa::Filtered<Particles> const& particles, aod::MFTTracks const& tracks)
   {
-
     registry.fill(HIST("EventEfficiency"), 1.);
 
     bool atLeastOne = false;
@@ -151,20 +151,26 @@ struct PseudorapidityDensityMFT {
     if (collisions.size() == 0) {
       registry.fill(HIST("NotFoundEventZvtx"), mcCollision.posZ());
     }
+    auto nCharged = 0;
     for (auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
         charge = (int)p->Charge();
       }
-      if (charge != 0) {
-        registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
-        if (atLeastOne) {
-          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
-        }
-        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+      if (std::abs(charge) < 3.) {
+        continue;
       }
+
+      registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(), mcCollision.posZ());
+      if (atLeastOne) {
+        registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(), mcCollision.posZ());
+      }
+      registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+
+      nCharged++;
     }
+    registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGen, "Process generator-level info", false);

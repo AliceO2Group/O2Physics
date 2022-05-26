@@ -15,31 +15,24 @@
 
 #include "TLorentzVector.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "EventFiltering/PWGUD/diffHelpers.h"
 #include "PWGUD/Tasks/diffMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct DiffQA {
+struct DiffMCQA {
 
-  Configurable<int> ntrMin{"minNumberTracks", 2, "Minimum number of tracks"};
-  Configurable<int> ntrMax{"maxNumberTracks", 2, "Maximum number of tracks"};
-  Configurable<int> nchMin{"minNetCharge", 0, "Minimum net charge"};
-  Configurable<int> nchMax{"maxNetCharge", 0, "Maximum net charge"};
-  Configurable<float> ptMin{"minpt", 0., "Minimum pt of particles"};
-  Configurable<float> ptMax{"maxpt", 3., "Maximum pt of particles"};
-  Configurable<float> etaMin{"minEta", -1.5, "Minimum eta of particles"};
-  Configurable<float> etaMax{"maxEta", 1.5, "Maximum eta of particles"};
-  Configurable<float> massMin{"minMass", 0., "Minimum invariant mass"};
-  Configurable<float> massMax{"maxMass", 3., "Maximum invariant mass"};
-  Configurable<int> pidHypo{"pidHypoyhesis", 211, "PID of decay particles"};
+  // get a cutHolder
+  cutHolder diffCuts = cutHolder();
+  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // define histograms
   HistogramRegistry registry{
     "registry",
     {
-      {"timeResolution", "#timeResolution", {HistType::kTH1F, {{200, 0., 1.E3}}}},
+      {"timeResolution", "#timeResolution", {HistType::kTH1F, {{1000, 0., 1.E3}}}},
       {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{200, 0., 1.E3}, {101, -0.01, 1.01}}}},
       {"numberBCs", "#numberBCs", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"numberTracks", "#numberTracks", {HistType::kTH1F, {{3001, -0.5, 3000.5}}}},
@@ -47,7 +40,7 @@ struct DiffQA {
       {"numberGlobalTracks", "#numberGlobalTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
       {"numberFWDTracks", "#numberFWDTracks", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
       {"VtxvsGlobalTracks", "#VtxvsGlobalTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}}},
-      {"TCH", "#CDETCH", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
+      {"TCH", "#TCH", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
       {"IVM", "#IVM", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
       {"pt", "#pt", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
       {"eta", "#eta", {HistType::kTH2F, {{150, -1.5, 1.5}, {7, -0.5, 6.5}}}},
@@ -69,9 +62,14 @@ struct DiffQA {
       {"Efficiency", "#Efficiency", {HistType::kTH2F, {{3, -0.5, 2.5}, {2, -0.5, 1.5}}}},
     }};
 
+  void init(InitContext&)
+  {
+    diffCuts = (cutHolder)DGCuts;
+  }
+
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
+  using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels>;
   using FWs = aod::FwdTracks;
 
@@ -79,7 +77,7 @@ struct DiffQA {
                TCs& tracks, FWs& fwdtracks, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
                aod::McCollisions& McCols, aod::McParticles const& McParts)
   {
-    LOGF(debug, "<DiffQA> Start");
+    LOGF(debug, "<DiffMCQA> Start");
 
     // is this a central diffractive event?
     auto MCCol = collision.mcCollision();
@@ -88,18 +86,18 @@ struct DiffQA {
     auto isGraniittiDiff = isGraniittiCDE(MCPartSlice);
 
     // obtain slice of compatible BCs
-    auto bcSlice = getMCCompatibleBCs(collision, 4, bct0s);
-    LOGF(debug, "<DiffQA> Number of compatible BCs: %i", bcSlice.size());
+    auto bcSlice = getMCCompatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
+    LOGF(debug, "<DiffMCQA> Number of compatible BCs: %i", bcSlice.size());
 
     // global tracks
     Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);
-    LOGF(debug, "<DiffQA> Number of good tracks: %i", goodTracks.size());
+    LOGF(debug, "<DiffMCQA> Number of good tracks: %i", goodTracks.size());
 
     // PV tracks
     // Partition<TCs> vtxTracks = aod::track::isPVContributor == true;
     // vtxTracks.bindTable(tracks);
-    // LOGF(debug, "<DiffQA> Number of vtx tracks: %i", vtxTracks.size());
+    // LOGF(debug, "<DiffMCQA> Number of vtx tracks: %i", vtxTracks.size());
 
     // number of gobal tracks with TOF hit
     float rgtrwTOF = 0.;
@@ -111,7 +109,7 @@ struct DiffQA {
       }
       rgtrwTOF /= goodTracks.size();
     }
-    LOGF(debug, "<DiffQA> Good tracks with TOF: %f [1]", rgtrwTOF);
+    LOGF(debug, "<DiffMCQA> Good tracks with TOF: %f [1]", rgtrwTOF);
 
     // update histograms
     if (isGraniittiDiff) {
@@ -143,7 +141,7 @@ struct DiffQA {
 
     // no FIT signal in compatible BCs
     for (auto& bc : bcSlice) {
-      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
+      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
         continue;
       }
@@ -162,21 +160,21 @@ struct DiffQA {
       }
     }
     registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
-    LOGF(debug, "<DiffQA> isDGcandidate: %i / %i", isPythiaDiff || isGraniittiDiff, isDGcandidate);
+    LOGF(debug, "<DiffMCQA> isDGcandidate: %i / %i", isPythiaDiff || isGraniittiDiff, isDGcandidate);
 
     // number of vertex tracks <= n
     for (int ii = 2; ii <= 10; ii++) {
       registry.get<TH1>(HIST("Stat"))->Fill(ii + 1, isDGcandidate * (collision.numContrib() <= (12 - ii)) * 1.);
     }
-    isDGcandidate &= (collision.numContrib() >= ntrMin);
-    isDGcandidate &= (collision.numContrib() <= ntrMax);
+    isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
+    isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
 
     // invariant mass
     if (isDGcandidate) {
 
       // which particle hypothesis?
       auto mass2Use = constants::physics::MassPionCharged;
-      if (pidHypo == 321) {
+      if (diffCuts.pidHypothesis() == 321) {
         mass2Use = constants::physics::MassKaonCharged;
       }
 
@@ -186,11 +184,11 @@ struct DiffQA {
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
           lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
-          if (lvtmp.Perp() < ptMin || lvtmp.Perp() > ptMax) {
+          if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
             isDGcandidate = false;
             break;
           }
-          if (lvtmp.Eta() < etaMin || lvtmp.Eta() > etaMax) {
+          if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
             isDGcandidate = false;
             break;
           }
@@ -204,13 +202,13 @@ struct DiffQA {
           // ivm += plv;
         }
       }
-      isDGcandidate &= (netCharge >= nchMin);
-      isDGcandidate &= (netCharge <= nchMax);
-      isDGcandidate &= (ivm.M() >= massMin);
-      isDGcandidate &= (ivm.M() <= massMax);
+      isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
+      isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
+      isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+      isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
 
       if (isDGcandidate) {
-        LOGF(debug, "<DiffQA> Invariant mass: %f", ivm.M());
+        LOGF(debug, "<DiffMCQA> Invariant mass: %f", ivm.M());
 
         // invariant mass
         if (!isGraniittiDiff) {
@@ -240,13 +238,13 @@ struct DiffQA {
     // update Efficiency
     registry.get<TH2>(HIST("Efficiency"))->Fill(0. + isPythiaDiff * 1. + isGraniittiDiff * 2., 0. + isDGcandidate * 1.);
 
-    LOGF(debug, "<DiffQA> End");
+    LOGF(debug, "<DiffMCQA> End");
   };
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiffQA>(cfgc, TaskName{"diffqa"}),
+    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffmcqa"}),
   };
 }

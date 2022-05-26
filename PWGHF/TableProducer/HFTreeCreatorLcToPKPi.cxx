@@ -184,6 +184,8 @@ struct CandidateTreeWriter {
   {
   }
 
+  Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+
   void processMC(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
                  soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& candidates,
@@ -216,7 +218,8 @@ struct CandidateTreeWriter {
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        if (FunctionSelection >= 1) {
+        double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
+        if (FunctionSelection >= 1 && std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::LcToPKPi && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),
@@ -342,7 +345,8 @@ struct CandidateTreeWriter {
                            float FunctionCt,
                            float FunctionY,
                            float FunctionE) {
-        if (FunctionSelection >= 1) {
+        double pseudoRndm = trackPos1.pt() * 1000. - (long)(trackPos1.pt() * 1000);
+        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           rowCandidateFull(
             trackPos1.collision().bcId(),
             trackPos1.collision().numContrib(),

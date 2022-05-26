@@ -37,7 +37,8 @@ multCalibrator::multCalibrator() : TNamed(),
                                    fkPrecisionWarningThreshold(1.0),
                                    fInputFileName("AnalysisResults.root"),
                                    fOutputFileName("CCDB-objects.root"),
-                                   fCalibHists(0x0)
+                                   fCalibHists(0x0),
+                                   fPrecisionHistogram(0x0)
 {
   // Constructor
   // Make sure the TList owns its objects
@@ -51,7 +52,8 @@ multCalibrator::multCalibrator(const char* name, const char* title) : TNamed(nam
                                                                       fkPrecisionWarningThreshold(1.0),
                                                                       fInputFileName("AnalysisResults.root"),
                                                                       fOutputFileName("CCDB-objects.root"),
-                                                                      fCalibHists(0x0)
+                                                                      fCalibHists(0x0),
+                                                                      fPrecisionHistogram(0x0)
 {
   // Named Constructor
   // Make sure the TList owns its objects
@@ -65,6 +67,10 @@ multCalibrator::~multCalibrator()
   if (fCalibHists) {
     delete fCalibHists;
     fCalibHists = 0x0;
+  }
+  if (fPrecisionHistogram) {
+    delete fPrecisionHistogram;
+    fPrecisionHistogram = 0x0;
   }
 }
 
@@ -115,6 +121,16 @@ Bool_t multCalibrator::Calibrate()
   return kTRUE;
 }
 
+Double_t multCalibrator::GetRawMax(TH1D* histo)
+{
+  //This function gets the max X value (right edge) which is filled.
+  for (Int_t ii = histo->GetNbinsX(); ii > 0; ii--) {
+    if (histo->GetBinContent(ii) < 1e-10)
+      return histo->GetBinLowEdge(ii + 1);
+  }
+  return 1e+6;
+}
+
 Double_t multCalibrator::GetBoundaryForPercentile(TH1D* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate)
 {
   //This function returns the boundary for a specific percentile.
@@ -127,7 +143,12 @@ Double_t multCalibrator::GetBoundaryForPercentile(TH1D* histo, Double_t lPercent
   //that corresponds to those bins. If this percentage is O(percentile bin
   //width requested), then the user should worry and we print out a warning.
 
-  //if( lPercentileRequested < 1e-7 ) return 1e+6; //safeguard
+  const Double_t lPrecisionConstant = 2.0;
+
+  Double_t lRawMax = GetRawMax(histo);
+
+  if (lPercentileRequested < 1e-7)
+    return lRawMax; //safeguard
   if (lPercentileRequested > 100 - 1e-7)
     return 0.0; //safeguard
 
@@ -145,7 +166,7 @@ Double_t multCalibrator::GetBoundaryForPercentile(TH1D* histo, Double_t lPercent
       Double_t lWidth = histo->GetBinWidth(ibin);
       Double_t lLeftPercentile = 100. * (lCount - histo->GetBinContent(ibin)) / histo->GetEntries();
       Double_t lRightPercentile = 100. * lCount / histo->GetEntries();
-      lPrecisionEstimate = (lRightPercentile - lLeftPercentile) / 2;
+      lPrecisionEstimate = (lRightPercentile - lLeftPercentile) / lPrecisionConstant;
 
       Double_t lProportion = (lPercentile - lLeftPercentile) / (lRightPercentile - lLeftPercentile);
 
@@ -182,7 +203,7 @@ void multCalibrator::SetStandardAdaptiveBoundaries()
     lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.001;
   }
   lNDesiredBoundaries++;
-  lDesiredBoundaries[lNDesiredBoundaries - 1] = 0;
+  cout << "Set standard adaptive percentile boundaries! Nboundaries: " << lNDesiredBoundaries << endl;
 }
 
 //________________________________________________________________
@@ -190,14 +211,13 @@ void multCalibrator::SetStandardOnePercentBoundaries()
 {
   //Function to set standard adaptive boundaries
   //Typically used in pp, goes to 0.001% binning for highest multiplicity
-  lNDesiredBoundaries = 0;
-  lDesiredBoundaries = new Double_t[110];
+  lNDesiredBoundaries = 101;
+  lDesiredBoundaries = new Double_t[101];
   lDesiredBoundaries[0] = 100;
   //From Low To High Multiplicity
-  for (Int_t ib = 1; ib < 102; ib++) {
-    lNDesiredBoundaries++;
-    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 1.0;
-  }
+  for (Int_t ib = 1; ib < 101; ib++)
+    lDesiredBoundaries[ib] = lDesiredBoundaries[ib - 1] - 1.0;
+  cout << "Set standard 1%-wide percentile boundaries! Nboundaries: " << lNDesiredBoundaries << endl;
 }
 
 //________________________________________________________________
@@ -206,6 +226,9 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1D* histoRaw, TString lHistoName
   //This function returns a calibration histogram
   //(pp or p-Pb like, no anchor point considered)
 
+  //Reset + recreate precision histogram
+  ResetPrecisionHistogram();
+
   //Aux vars
   Double_t lMiddleOfBins[1000];
   for (Long_t lB = 1; lB < lNDesiredBoundaries; lB++) {
@@ -213,24 +236,43 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1D* histoRaw, TString lHistoName
     lMiddleOfBins[lB - 1] = 0.5 * (lDesiredBoundaries[lB] + lDesiredBoundaries[lB - 1]);
   }
   Double_t lBounds[lNDesiredBoundaries];
+  Double_t lPrecision[lNDesiredBoundaries];
   for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lBounds[ii] = GetBoundaryForPercentile(histoRaw, lDesiredBoundaries[ii], lPrecision);
+    lBounds[ii] = GetBoundaryForPercentile(histoRaw, lDesiredBoundaries[ii], lPrecision[ii]);
     TString lPrecisionString = "(Precision OK)";
     if (ii != 0 && ii != lNDesiredBoundaries - 1) {
       //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
+      if (lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
         lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
+      if (lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
         lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
     }
-    cout << histoRaw->GetName() << " bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
+    cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[ii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
   }
   TH1F* hCalib = new TH1F(lHistoName.Data(), "", lNDesiredBoundaries - 1, lBounds);
   hCalib->SetDirectory(0);
   hCalib->SetBinContent(0, 100.5);
   for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
     hCalib->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
+    fPrecisionHistogram->SetBinContent(lNDesiredBoundaries - ibin + 1, std::hypot(lPrecision[ibin - 1], lPrecision[ibin]));
   }
   return hCalib;
+}
+
+//________________________________________________________________
+void multCalibrator::ResetPrecisionHistogram()
+{
+  if (fPrecisionHistogram) {
+    delete fPrecisionHistogram;
+    fPrecisionHistogram = 0x0;
+  }
+  if (lNDesiredBoundaries > 0) { //only if initialized
+    //invert boundaries, please
+    Double_t lInverseDesiredBoundaries[1100];
+    for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
+      lInverseDesiredBoundaries[ii] = lDesiredBoundaries[lNDesiredBoundaries - (ii + 1)];
+      cout << "Boundary " << ii << " is " << lInverseDesiredBoundaries[ii] << endl;
+    }
+    fPrecisionHistogram = new TH1D("hPrecisionHistogram", "", lNDesiredBoundaries - 1, lInverseDesiredBoundaries);
+  }
 }
