@@ -208,12 +208,17 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
   Configurable<float> etaMin{"etaMin", -10., "Minimum eta for DPG tracks"};
   Configurable<float> etaMax{"etaMax", 10., "Maximum eta for DPG tracks"};
   // ITS selections
+  Configurable<float> chi2ItsMin{"chi2ItsMin", -1001.f, "Max ITS chi2"};
   Configurable<float> chi2ItsMax{"chi2ItsMax", 1000.f, "Max ITS chi2"};
   // TPC selections
   Configurable<int> nClusterTpcMin{"nClusterTpcMin", -1001, "Minimum number of TPC clusters"};
   Configurable<int> nCrossedRowsTpcMin{"nCrossedRowsTpcMin", -1001, "Minimum number of TPC crossed rows"};
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMin{"nCrossedRowsTpcOverFindableClustersTpcMin", -1, "Minimum ratio between TPC crossed rows and findable clusters"};
+  Configurable<float> chi2TpcMin{"chi2TpcMin", -1001.f, "Max TPC chi2"};
   Configurable<float> chi2TpcMax{"chi2TpcMax", 1000.f, "Max TPC chi2"};
+  // TOF selections
+  Configurable<float> chi2TofMin{"chi2TofMin", -1001.f, "Max TOF chi2"};
+  Configurable<float> lengthMin{"lengthMin", -1001.f, "Min length"};
 
   void init(InitContext const&)
   {
@@ -234,6 +239,8 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
 
     // its histograms
     histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
+    histos.add("Tracks/ITS/itsNCl", "ITS number of clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
+    histos.add("Tracks/ITS/itsNClvsItsHitmap", "ITS number of clusters vs. ITS hitmap;# clusters ITS; ITS hitmap", kTH2D, {{8, -0.5, 7.5, "# clusters ITS"}, {128, 0, 128, "ITS hitmap"}});
     // tpc histograms
     histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
     histos.add("Tracks/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
@@ -252,6 +259,9 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(2, "hasITS");
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(3, "hasTRD");
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(4, "hasTOF");
+    // kinematics
+    histos.add("Tracks/relativeResoPt", "relative #it{p}_{T} resolution;#sigma(#it{p}_{T})/#it{p}_{T};#it{p}_{T};", kTH2D, {{axisPt, {500, 0., 1, "#sigma{#it{p}}/#it{p}_{T}"}}});
+    histos.add("Tracks/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT(#it{p}_{T})/#it{p}_{T}#GT;#it{p}_{T};", kTProfile, {axisPt});
 
     // MC histograms
     if (doprocessMCLite) {
@@ -270,12 +280,15 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
   Filter tpcOnlyTracks = (bTpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
   Filter itsTpcMatchedTracks = (bItsTpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
   // ITS
-  Filter itsChi2 = (bTpcOnly.node() == true) || (o2::aod::track::itsChi2NCl < chi2ItsMax);
+  Filter itsChi2 = (bTpcOnly.node() == true) || (chi2ItsMin < o2::aod::track::itsChi2NCl && o2::aod::track::itsChi2NCl < chi2ItsMax);
   // TPC
-  Filter tpcChi2s = (bItsStandalone.node() == true) || (o2::aod::track::tpcChi2NCl < chi2TpcMax);
+  Filter tpcChi2s = (bItsStandalone.node() == true) || (chi2TpcMin < o2::aod::track::tpcChi2NCl && o2::aod::track::tpcChi2NCl < chi2TpcMax);
   Filter tpcNclusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin);
   Filter tpcNcrossedRows = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin);
   Filter tpcNcrossedRowsOverFindableClusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin);
+  // TOF
+  Filter tofChi = o2::aod::track::tofChi2 > chi2TofMin;
+  Filter length = o2::aod::track::length > lengthMin;
 
   // Process data
   void processDataLite(o2::soa::Filtered<aod::DPGTracks> const& tracks, aod::DPGCollisions const&)
@@ -291,6 +304,8 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
       histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
       histos.fill(HIST("Tracks/length"), track.length());
       histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
+      histos.fill(HIST("Tracks/ITS/itsNCl"), track.itsNCls());
+      histos.fill(HIST("Tracks/ITS/itsNClvsItsHitmap"), track.itsNCls(), track.itsClusterMap());
       histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
       histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
       histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
@@ -312,6 +327,8 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
       if (track.hasTOF()) {
         histos.fill(HIST("Tracks/matchedDet"), 4);
       }
+      histos.fill(HIST("Tracks/relativeResoPt"), track.pt(), track.ptReso());
+      histos.fill(HIST("Tracks/relativeResoPtMean"), track.pt(), track.ptReso());
     }
   }
   PROCESS_SWITCH(qaEventTrackLite, processDataLite, "process data lite", true);
