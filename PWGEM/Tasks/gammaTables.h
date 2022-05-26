@@ -19,7 +19,6 @@ namespace o2::aod
 {
 namespace gammatrackreco
 {
-DECLARE_SOA_COLUMN(IsFromConversionPhoton, isFromConversionPhoton, bool);                //! Whether this track is from a MC confirmed photon
 DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity
 DECLARE_SOA_COLUMN(P, p, float);                                                         //! Total momentum in GeV/c
 DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Azimuthal angle
@@ -33,7 +32,6 @@ DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);              
 DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
                   o2::soa::Index<>,
                   v0data::V0Id,
-                  gammatrackreco::IsFromConversionPhoton,
                   track::DcaXY,
                   gammatrackreco::Eta,
                   gammatrackreco::P,
@@ -68,8 +66,7 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   mcparticle::McCollisionId,
                   gammamctrue::Gamma,
                   v0data::V0Id, // reference to reconstructed v0 (if its a task with reconstucted info)
-                  mcparticle::StatusCode,
-                  mcparticle::Flags,
+                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
                   gammamctrue::NDaughters,

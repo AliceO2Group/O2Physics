@@ -108,6 +108,7 @@ struct GammaConversions {
     {"hIsPhotonSelected", "hIsPhotonSelected;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}},
     {"hTruePhotonSelection", "hTruePhotonSelection;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
 
+  // todo: change this into map<enum,string> as I did in skimmerGammaConversions
   std::map<std::string, size_t> fPhotonCutIndeces{
     {"kV0In", 0},
     {"kTrackEta", 1},
@@ -128,7 +129,7 @@ struct GammaConversions {
     {"kFakeV0", 1},
     {"kMcMotherIn", 2},
     {"kNoPhysicalPrimary", 3},
-    {"kNoGammaMother", 4},
+    {"kNoPhoton", 4},
     {"kOutsideMCEtaAcc", 5},
     {"kGoodMcPhotonOut", 12}};
 
@@ -231,6 +232,10 @@ struct GammaConversions {
         }
       }
     };
+
+    if (doprocessRec && doprocessMc) {
+      LOGF(fatal, "Cannot enable doprocessRec and doprocessMc at the same time. Please choose one.");
+    }
 
     if (doprocessRec) {
       fHistoSuffixes[0] = "Rec";
@@ -368,6 +373,11 @@ struct GammaConversions {
     if (!theMcPhoton.isPhysicalPrimary()) {
       fillTruePhotonSelection("kNoPhysicalPrimary");
       fillRejectionHistos(kNoPhysicalPrimary);
+      return false;
+    }
+
+    if (theMcPhoton.pdgCode() != 22) {
+      fillTruePhotonSelection("kNoPhoton");
       return false;
     }
 
