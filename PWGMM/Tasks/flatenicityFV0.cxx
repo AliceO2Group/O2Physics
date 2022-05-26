@@ -37,25 +37,24 @@ using namespace o2::framework::expressions;
 
 struct flatenictyFV0 {
 
+  Configurable<bool> isMC{"isMC", false, "option to flag mc"};
+  Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum  pT"};
-  // flatenicity cuts
-  Configurable<float> cfgRhoMinEtaCut{"cfgRhoMinEtaCut", 2.2f, "min eta for fv0 cells"};
-  Configurable<float> cfgRhoMaxEtaCut{"cfgRhoMaxEtaCut", 5.1f, "max eta for fv0 cells"};
-  Configurable<float> cfgRhoMinMult{"cfgRhoMinMult", 50.0f, "max eta for fv0 cells"};
 
   HistogramRegistry flatenicity{"flatenicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  static constexpr std::string_view nMultSect[48] = {"hCh0", "hCh1", "hCh2", "hCh3", "hCh4", "hCh5", "hCh6", "hCh7", "hCh8", "hCh9", "hCh10", "hCh11", "hCh12", "hCh13", "hCh14", "hCh15", "hCh16", "hCh17", "hCh18", "hCh19", "hCh20", "hCh21", "hCh22", "hCh23", "hCh24", "hCh25", "hCh26", "hCh27", "hCh28", "hCh29", "hCh30", "hCh31", "hCh32", "hCh33", "hCh34", "hCh35", "hCh36", "hCh37", "hCh38", "hCh39", "hCh40", "hCh41", "hCh42", "hCh43", "hCh44", "hCh45", "hCh46", "hCh47"};
+  static constexpr std::string_view nhEst[10] = {"eGlobaltrack", "eFDDAFDDCFT0CFV0MFT", "eFDDAFDDCFV0MFT", "eFV0MFT", "eFV0", "eMFTmult", "e1flatencityFV0", "e1flatencitytrkMFT", "e1flatencitytrkMFTFV0", "e1flatencityMFTFV0"};
+  static constexpr std::string_view nhPtEst[10] = {"ptVsGlobaltrack", "ptVsFDDAFDDCFT0CFV0MFT", "ptVsFDDAFDDCFV0MFT", "ptVsFV0MFT", "ptVsFV0", "ptVsMFTmult", "ptVs1flatencityFV0", "ptVs1flatencitytrkMFT", "ptVs1flatencitytrkMFTFV0", "ptVs1flatencityMFTFV0"};
 
   void init(o2::framework::InitContext&)
   {
+    int nBinsEst[10] = {100, 400, 400, 400, 1000, 200, 102, 102, 102, 102};
+    float lowEdgeEst[10] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.01, -0.01, -0.01, -0.01};
+    float upEdgeEst[10] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5, 1.01, 1.01, 1.01, 1.01};
 
     ConfigurableAxis ptBinning{"ptBinning", {0, 0.0, 0.1, 0.15, 0.3, 0.6, 1.0, 2.0, 4.0, 6.0, 10.0, 20.0, 50.0}, "pTassoc bin limits"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-
-    ConfigurableAxis etaBinning{"etaBinning", {0, -7.00, -6.90, -4.90, -3.60, -3.40, -2.30, +2.20, +4.52, +4.70, +6.30, +7.00}, "eta bin limits"};
-    AxisSpec etaAxis = {etaBinning, "#eta"};
 
     flatenicity.add("hEv", "Ev", HistType::kTH1F, {{6, -0.5, 5.5, "index activated detector"}});
     flatenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F, {{1000, -0.5, +39999.5, "FV0 amplitude"}});
@@ -70,45 +69,23 @@ struct flatenictyFV0 {
 
     flatenicity.add("hMFTmultAll", "", HistType::kTH1F, {{200, -0.5, +199.5, "MFT mult (-3.6<#eta<-2.5)"}});
     // estimators
-    flatenicity.add("hOpt0", "", HistType::kTH2F, {{100, -0.5, +99.5, "Global track"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt1", "", HistType::kTH2F, {{400, -0.5, +399.5, "Combined FDDA+FDDC+FT0C+FV0+MFT"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt2", "", HistType::kTH2F, {{400, -0.5, +399.5, "Combined FDDA+FDDC+FV0+MFT"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt3", "", HistType::kTH2F, {{400, -0.5, +399.5, "Combined FV0+MFT"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt4", "", HistType::kTH2F, {{1000, -0.5, +39999.5, "FV0"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt5", "", HistType::kTH2F, {{200, -0.5, +199.5, "MFT mult (-3.6<#eta<-3.4)"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt6", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (FV0)"}, {100, -0.5, +99.5, "Global track"}});
+    for (int i_e = 0; i_e < 10; ++i_e) {
+      flatenicity.add(nhEst[i_e].data(), "", HistType::kTH2F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], nhEst[i_e].data()}, {100, -0.5, +99.5, "Global track"}});
+    }
 
-    flatenicity.add("hOpt7", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (trk+MFT)"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt8", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (trk+MFT+FV0)"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt9", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (MFT+FV0)"}, {100, -0.5, +99.5, "Global track"}});
     // vs pT
-    flatenicity.add("hpTVsOpt0", "", HistType::kTH2F, {{100, -0.5, +99.5, "Global mult"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt1", "", HistType::kTH2F, {{400, -0.5, +399.5, "Combined FDDA+FDDC+FT0C+FV0+MFT"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt2", "", HistType::kTH2F, {{400, -0.5, +399.5, "Combined FDDA+FDDC+FV0+MFT"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt3", "", HistType::kTH2F, {{400, -0.5, +399.5, "Combined FV0+MFT"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt4", "", HistType::kTH2F, {{1000, -0.5, +39999.5, "FV0"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt5", "", HistType::kTH2F, {{200, -0.5, +199.5, "MFT mult (-3.6<#eta<-3.4)"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt6", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (FV0)"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt7", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (trk+MFT)"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt8", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (trk+MFT+FV0)"}, {ptAxis}});
-    flatenicity.add("hpTVsOpt9", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (MFT+FV0)"}, {ptAxis}});
-
-    flatenicity.add("hOpt7b", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (ftrk<0.9&fMFT<0.9)"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt8b", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (ftrk<0.9&fMFT<0.9&&FV0<0.9)"}, {100, -0.5, +99.5, "Global track"}});
-    flatenicity.add("hOpt9b", "", HistType::kTH2F, {{102, -0.01, +1.01, "1-flatencity (fMFT<0.9&fFV0<0.9)"}, {100, -0.5, +99.5, "Global track"}});
+    for (int i_e = 0; i_e < 10; ++i_e) {
+      flatenicity.add(nhPtEst[i_e].data(), "", HistType::kTH2F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], nhEst[i_e].data()}, {ptAxis}});
+    }
 
     flatenicity.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
     flatenicity.add("vtxZEta", ";#eta;vtxZ", HistType::kTH2F, {{50, -2.5, 2.5, " "}, {60, -30, 30, " "}});
     flatenicity.add("phiEta", ";#eta;#varphi", HistType::kTH2F, {{50, -2.5, 2.5}, {200, 0., 2 * M_PI, " "}});
     flatenicity.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
-    flatenicity.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{3, 0, 3, " "}});
     // QA flatenicity
     flatenicity.add("fMultFv0", "FV0 amp", HistType::kTH1F, {{1000, -0.5, +39999.5, "FV0 amplitude"}});
-    flatenicity.add("fMultFv0Sect", "FV0 amp sectors", HistType::kTProfile, {{48, -0.5, +47.5, "sectors"}});
     flatenicity.add("fMultFv0Check", "FV0 amp", HistType::kTH1F, {{1000, -0.5, +39999.5, "FV0 amplitude"}});
-    for (int iCh = 0; iCh < 48; ++iCh) {
-      flatenicity.add(nMultSect[iCh].data(), "", HistType::kTH1F, {{500, -0.5, +19999.5, "FV0 amplitude"}});
-    }
+    flatenicity.add("hAmpVsCh", "", HistType::kTH2F, {{48, -0.5, 47.5, "channel"}, {500, -0.5, +19999.5, "FV0 amplitude"}});
     flatenicity.add("fFlatenicityVsFV0", "", HistType::kTH2F, {{1000, -0.5, +9.5, "flatenicity"}, {1000, -0.5, +39999.5, "FV0 amplitude"}});
     flatenicity.add("hFlatMFTvsFlatGlob", "", HistType::kTH2F, {{102, -0.01, +1.01, "flatenicity (Glob)"}, {102, -0.01, +1.01, "flatenicity (MFT)"}});
     flatenicity.add("hFlatMFTvsFlatFV0", "", HistType::kTH2F, {{102, -0.01, +1.01, "flatenicity (FV0)"}, {102, -0.01, +1.01, "flatenicity (MFT)"}});
@@ -116,7 +93,6 @@ struct flatenictyFV0 {
     flatenicity.add("fMultGlobVsFV0", "", HistType::kTH2F, {{100, -0.5, +99.5, "Trk mult"}, {1000, -0.5, +39999.5, "FV0 amplitude"}});
     flatenicity.add("fEtaPhiFv0", "eta vs phi", HistType::kTH2F, {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
     flatenicity.add("fFlatenicityBefore", "flatenicity (before vtx cut)", HistType::kTH1F, {{1000, -0.5, +9.5, "flatenicity"}});
-    flatenicity.add("fFlatenicityAfter", "flatenicity (after vtx cut)", HistType::kTH1F, {{1000, -0.5, +9.5, "flatenicity"}});
   }
   int getFV0Ring(int i_ch)
   {
@@ -229,23 +205,61 @@ struct flatenictyFV0 {
     }
     return i_ring;
   }
+  float GetFlatenicity(float signals[], int entries)
+  {
+    float flat = 9999;
+    float mRho = 0;
+    for (int iCell = 0; iCell < entries; ++iCell) {
+      mRho += 1.0 * signals[iCell];
+    }
+    // average activity per cell
+    mRho /= (1.0 * entries);
+    // get sigma
+    float sRho_tmp = 0;
+    for (int iCell = 0; iCell < entries; ++iCell) {
+      sRho_tmp += TMath::Power(1.0 * signals[iCell] - mRho, 2);
+    }
+    sRho_tmp /= (1.0 * entries * entries);
+    float sRho = TMath::Sqrt(sRho_tmp);
+    if (mRho > 0) {
+      flat = sRho / mRho;
+    }
+    return flat;
+  }
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
-  void process(soa::Join<aod::Collisions, aod::FT0sCorrected, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::MFTTracks const& mfttracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::FDDs_001 const& fdds_001)
+  using CollisionTableData = soa::Join<aod::Collisions, aod::FT0sCorrected, aod::EvSels>;
+
+  void process(CollisionTableData::iterator const& collision, TrackCandidates const& tracks, aod::MFTTracks const& mfttracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::FDDs_001 const& fdds_001)
   {
+
+    auto vtxZ = collision.posZ();
+    flatenicity.fill(HIST("hEv"), 0);
+    flatenicity.fill(HIST("hvtxZ"), vtxZ);
+
+    bool isGoodEvent = true;
+    if (vtxZ < -10.f || vtxZ > 10.0f) {
+      isGoodEvent = false;
+    }
+    if (!isGoodEvent) {
+      return;
+    }
+
+    flatenicity.fill(HIST("hEv"), 1);
+
     const int nEta1 = 5;
-    float weigthsEta1[nEta1] = {0.0115, 1.4991, 0.1104, 0.0023, 0.0037};
+    float weigthsEta1[nEta1] = {0.0114503, 1.5442, 0.0673108, 0.00230771, 0.00368587};
     float deltaEeta1[nEta1] = {2.0, 0.2, 1.1, 2.32, 1.6};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
 
     const int nEta2 = 4;
-    float weigthsEta2[nEta2] = {0.0115, 1.07908, 0.0023, 0.0037};
+    float weigthsEta2[nEta2] = {0.0114503, 1.09612, 0.00230771, 0.00368587};
     float deltaEeta2[nEta2] = {2.0, 1.1, 2.32, 1.6};
     float ampl2[nEta2] = {0, 0, 0, 0};
 
     const int nEta3 = 2;
-    float weigthsEta3[nEta3] = {1.07908, 0.002322};
+    float weigthsEta3[nEta3] = {1.09612, 0.00229031};
     float deltaEeta3[nEta3] = {1.1, 2.9};
     float ampl3[nEta3] = {0, 0};
 
@@ -256,10 +270,12 @@ struct flatenictyFV0 {
     float sumAmpFV01to4Ch = 0;
     int innerFV0 = 32;
     bool hasValidV0 = false;
-    float detaFV0 = (cfgRhoMaxEtaCut - cfgRhoMinEtaCut) / 5.0;
+    float maxEtaFV0 = 5.1;
+    float minEtaFV0 = 2.2;
+    float detaFV0 = (maxEtaFV0 - minEtaFV0) / 5.0;
 
     const int nCells = 48; // 48 sectors in FV0
-    double amp_channel[nCells];
+    float amp_channel[nCells];
     for (int iCell = 0; iCell < nCells; ++iCell) {
       amp_channel[iCell] = 0.0;
     }
@@ -275,15 +291,15 @@ struct flatenictyFV0 {
       // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
       for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
         sumAmpFV0 += fv0.amplitude()[ich];
-        double phiv0 = -999.0;
-        double etav0 = -999.0;
+        float phiv0 = -999.0;
+        float etav0 = -999.0;
         int channelv0 = fv0.channel()[ich];
         if (channelv0 >= 8) { // exclude the first channel, eta coverage 2.2,4.52
           sumAmpFV01to4Ch += fv0.amplitude()[ich];
         }
         int ringindex = getFV0Ring(channelv0);
         int channelv0phi = getFV0IndexPhi(channelv0);
-        etav0 = cfgRhoMaxEtaCut - (detaFV0 / 2.0) * (2.0 * ringindex + 1);
+        etav0 = maxEtaFV0 - (detaFV0 / 2.0) * (2.0 * ringindex + 1);
         if (channelv0 < innerFV0) {
           phiv0 = (2.0 * (channelv0phi - 8 * ringindex) + 1) * M_PI / (8.0);
         } else {
@@ -297,25 +313,9 @@ struct flatenictyFV0 {
           RhoLattice[channelv0phi] = fv0.amplitude()[ich] / 2.0; // two channels per bin
         }
       }
-
-      double mRho = 0;
-      for (int iCell = 0; iCell < nCells; ++iCell) {
-        mRho += 1.0 * RhoLattice[iCell];
-      }
-      // average activity per cell
-      mRho /= (1.0 * nCells);
-      // get sigma
-      double sRho_tmp = 0;
-      for (int iCell = 0; iCell < nCells; ++iCell) {
-        sRho_tmp += TMath::Power(1.0 * RhoLattice[iCell] - mRho, 2);
-      }
-      sRho_tmp /= (1.0 * nCells * nCells);
-      double sRho = TMath::Sqrt(sRho_tmp);
-      flatenicity_fv0 = 9999;
-      if (mRho > 0) {
-        flatenicity_fv0 = sRho / mRho;
-      }
+      flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
       flatenicity.fill(HIST("fFlatenicityBefore"), flatenicity_fv0);
+      // LOGP(info, "----- after flat={}", flatenicity_fv0);
     }
 
     // MFTtracks + flatenicity
@@ -364,24 +364,9 @@ struct flatenictyFV0 {
       }
       multMFTTrackParc++;
     }
-
-    double mRho_mft = 0;
-    for (int iCell = 0; iCell < nCells1; ++iCell) {
-      mRho_mft += 1.0 * RhoLattice1[iCell];
-    }
-    // average activity per cell
-    mRho_mft /= (1.0 * nCells1);
-    // get sigma
-    double sRho_mft_tmp = 0;
-    for (int iCell = 0; iCell < nCells1; ++iCell) {
-      sRho_mft_tmp += TMath::Power(1.0 * RhoLattice1[iCell] - mRho_mft, 2);
-    }
-    sRho_mft_tmp /= (1.0 * nCells1 * nCells1);
-    double sRho_mft = TMath::Sqrt(sRho_mft_tmp);
     float flatenicity_mft = 9999;
-    if (mRho_mft > 0) {
-      flatenicity_mft = sRho_mft / mRho_mft;
-    }
+    flatenicity_mft = GetFlatenicity(RhoLattice1, nCells1);
+
     // global tracks + flatenicity
     const int nRings2 = 4;
     const int nSectors2 = 8;
@@ -394,7 +379,6 @@ struct flatenictyFV0 {
     for (int iCh = 0; iCh < nCells2; iCh++) {
       RhoLattice2[iCh] = 0.0;
     }
-
     int multGlob = 0;
     for (auto& track : tracks) {
       if (!track.isGlobalTrack()) {
@@ -402,7 +386,11 @@ struct flatenictyFV0 {
       }
       float eta_a = track.eta();
       float phi_a = track.phi();
+      flatenicity.fill(HIST("hdNdeta"), eta_a);
+      flatenicity.fill(HIST("vtxZEta"), eta_a, vtxZ);
+      flatenicity.fill(HIST("phiEta"), eta_a, phi_a);
       multGlob++;
+
       int i_ch = 0;
       for (int ir = 0; ir < nRings2; ir++) {
         for (int is = 0; is < nSectors2; is++) {
@@ -415,23 +403,10 @@ struct flatenictyFV0 {
         }
       }
     }
-    double mRho_glob = 0;
-    for (int iCell = 0; iCell < nCells2; ++iCell) {
-      mRho_glob += 1.0 * RhoLattice2[iCell];
-    }
-    // average activity per cell
-    mRho_glob /= (1.0 * nCells2);
-    // get sigma
-    double sRho_glob_tmp = 0;
-    for (int iCell = 0; iCell < nCells2; ++iCell) {
-      sRho_glob_tmp += TMath::Power(1.0 * RhoLattice2[iCell] - mRho_glob, 2);
-    }
-    sRho_glob_tmp /= (1.0 * nCells2 * nCells2);
-    double sRho_glob = TMath::Sqrt(sRho_glob_tmp);
+
     float flatenicity_glob = 9999;
-    if (mRho_glob > 0) {
-      flatenicity_glob = sRho_glob / mRho_glob;
-    }
+    flatenicity_glob = GetFlatenicity(RhoLattice2, nCells2);
+
     // FT0
     float sumAmpFT0A = 0;
     float sumAmpFT0C = 0;
@@ -463,15 +438,14 @@ struct flatenictyFV0 {
       }
     }
 
-    flatenicity.fill(HIST("hCounter"), 0);
-
-    if (TMath::Abs(collision.posZ()) > 10.0) {
-      return;
-    }
-
     float combined_estimator1 = -1;
     float combined_estimator2 = -1;
     float combined_estimator3 = -1;
+    float estimator[10];
+    for (int i_e = 0; i_e < 10; ++i_e) {
+      estimator[i_e] = 0;
+    }
+
     if (collision.has_foundFDD() && collision.has_foundFT0() && collision.has_foundFV0()) {
       // option 1
       ampl1[0] = sumAmpFDDC;
@@ -508,95 +482,57 @@ struct flatenictyFV0 {
 
       flatenicity.fill(HIST("hMFTmult"), multMFTTrackParc);
       flatenicity.fill(HIST("hMFTmultAll"), multMFTTrack);
-      flatenicity.fill(HIST("hEv"), 2);
       flatenicity.fill(HIST("hFDDAampl"), sumAmpFDDA);
       flatenicity.fill(HIST("hFDDCampl"), sumAmpFDDC);
-      flatenicity.fill(HIST("hEv"), 1);
-      flatenicity.fill(HIST("hEv"), 4);
       flatenicity.fill(HIST("hFT0Aampl"), sumAmpFT0A);
       flatenicity.fill(HIST("hFT0Campl"), sumAmpFT0C);
-      flatenicity.fill(HIST("hEv"), 5);
       flatenicity.fill(HIST("hFV0amplRing1to4"), sumAmpFV01to4Ch);
-      flatenicity.fill(HIST("hEv"), 3);
-      flatenicity.fill(HIST("hOpt0"), multGlob, multGlob);
-      flatenicity.fill(HIST("hOpt1"), combined_estimator1, multGlob);
-      flatenicity.fill(HIST("hOpt2"), combined_estimator2, multGlob);
-      flatenicity.fill(HIST("hOpt3"), combined_estimator3, multGlob);
-      flatenicity.fill(HIST("hOpt4"), sumAmpFV0, multGlob);
-      flatenicity.fill(HIST("hOpt5"), multMFTTrack, multGlob);
-      flatenicity.fill(HIST("hOpt6"), 1.0 - flatenicity_fv0, multGlob);
-      flatenicity.fill(HIST("hFlatMFTvsFlatGlob"), flatenicity_mft, flatenicity_glob);
-      flatenicity.fill(HIST("hFlatMFTvsFlatFV0"), flatenicity_mft, flatenicity_fv0);
+      flatenicity.fill(HIST("hEv"), 2);
       float flatenicity_mft_glob = (flatenicity_mft + flatenicity_glob) / 2.0;
       float flatenicity_mft_fv0 = (flatenicity_mft + flatenicity_fv0) / 2.0;
       float flatenicity_mft_glob_fv0 = (flatenicity_mft + flatenicity_glob + flatenicity_fv0) / 3.0;
-      flatenicity.fill(HIST("hOpt7"), 1.0 - flatenicity_mft_glob, multGlob);
-      flatenicity.fill(HIST("hOpt8"), 1.0 - flatenicity_mft_glob_fv0, multGlob);
-      flatenicity.fill(HIST("hOpt9"), 1.0 - flatenicity_mft_fv0, multGlob);
-      if (flatenicity_mft < 0.9 && flatenicity_glob < 0.9) {
-        flatenicity.fill(HIST("hOpt7b"), 1.0 - flatenicity_mft_glob, multGlob);
-      }
-      if (flatenicity_mft < 0.9 && flatenicity_fv0 < 0.9) {
-        flatenicity.fill(HIST("hOpt9b"), 1.0 - flatenicity_mft_glob, multGlob);
-      }
-      if (flatenicity_mft < 0.9 && flatenicity_fv0 < 0.9 && flatenicity_glob < 0.9) {
-        flatenicity.fill(HIST("hOpt8b"), 1.0 - flatenicity_mft_glob_fv0, multGlob);
-      }
+      estimator[0] = multGlob;
+      estimator[1] = combined_estimator1;
+      estimator[2] = combined_estimator2;
+      estimator[3] = combined_estimator3;
+      estimator[4] = sumAmpFV0;
+      estimator[5] = multMFTTrack;
+      estimator[6] = 1.0 - flatenicity_fv0;
+      estimator[7] = 1.0 - flatenicity_mft_glob;
+      estimator[8] = 1.0 - flatenicity_mft_glob_fv0;
+      estimator[9] = 1.0 - flatenicity_mft_fv0;
+      static_for<0, 9>([&](auto i) {
+        constexpr int index = i.value;
+        flatenicity.fill(HIST(nhEst[index]), estimator[index], estimator[0]);
+      });
+      flatenicity.fill(HIST("hFlatMFTvsFlatGlob"), flatenicity_mft, flatenicity_glob);
+      flatenicity.fill(HIST("hFlatMFTvsFlatFV0"), flatenicity_mft, flatenicity_fv0);
       // plot pt vs estimators
       for (auto& track : tracks) {
         if (!track.isGlobalTrack()) {
           continue;
         }
         float pt = track.pt();
-        flatenicity.fill(HIST("hpTVsOpt0"), multGlob, pt);
-        flatenicity.fill(HIST("hpTVsOpt1"), combined_estimator1, pt);
-        flatenicity.fill(HIST("hpTVsOpt2"), combined_estimator2, pt);
-        flatenicity.fill(HIST("hpTVsOpt3"), combined_estimator3, pt);
-        flatenicity.fill(HIST("hpTVsOpt4"), sumAmpFV0, pt);
-        flatenicity.fill(HIST("hpTVsOpt5"), multMFTTrack, pt);
-        flatenicity.fill(HIST("hpTVsOpt6"), 1.0 - flatenicity_fv0, pt);
-        flatenicity.fill(HIST("hpTVsOpt7"), 1.0 - flatenicity_mft_glob, pt);
-        flatenicity.fill(HIST("hpTVsOpt8"), 1.0 - flatenicity_mft_glob_fv0, pt);
-        flatenicity.fill(HIST("hpTVsOpt9"), 1.0 - flatenicity_mft_fv0, pt);
+        static_for<0, 9>([&](auto i) {
+          constexpr int index = i.value;
+          flatenicity.fill(HIST(nhPtEst[index]), estimator[index], pt);
+        });
       }
     }
 
     if (hasValidV0) {
-      double multcheck = 0;
-      static_for<0, 47>([&](auto i) {
-        constexpr int index = i.value;
-        flatenicity.fill(HIST(nMultSect[index]), amp_channel[index]);
-        flatenicity.fill(HIST("fMultFv0Sect"), index, amp_channel[index]);
-        multcheck += amp_channel[index];
-      });
-
+      float multcheck = 0;
+      for (int iCh = 0; iCh < 48; ++iCh) {
+        flatenicity.fill(HIST("hAmpVsCh"), iCh, amp_channel[iCh]);
+        multcheck += amp_channel[iCh];
+      }
       flatenicity.fill(HIST("fMultFv0Check"), multcheck);
       flatenicity.fill(HIST("fMultFv0"), sumAmpFV0);
       flatenicity.fill(HIST("fFlatenicityVsFV0"), flatenicity_fv0, sumAmpFV0);
       flatenicity.fill(HIST("fMultGlobVsFV0"), multGlob, sumAmpFV0);
     }
-    if (hasValidV0 && sumAmpFV0 > cfgRhoMinMult) {
-      flatenicity.fill(HIST("fFlatenicityAfter"), flatenicity_fv0);
-    }
-
-    auto vtxZ = collision.posZ();
-
-    flatenicity.fill(HIST("hCounter"), 1);
-
-    flatenicity.fill(HIST("hvtxZ"), vtxZ);
-    // loop over selected tracks
-    for (auto& track : tracks) {
-      if (!track.isGlobalTrack()) {
-        continue;
-      }
-
-      flatenicity.fill(HIST("hdNdeta"), track.eta());
-      flatenicity.fill(HIST("vtxZEta"), track.eta(), vtxZ);
-      flatenicity.fill(HIST("phiEta"), track.eta(), track.phi());
-    }
   }
 };
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
