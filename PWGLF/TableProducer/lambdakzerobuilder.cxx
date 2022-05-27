@@ -188,7 +188,7 @@ struct lambdakzeroBuilder {
   {
 
     /* check the previous run number */
-    auto bc = collision.bc();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (bc.runNumber() != mRunNumber) {
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
@@ -379,7 +379,7 @@ struct lambdakzeroBuilder {
   {
 
     /* check the previous run number */
-    auto bc = collision.bc();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (bc.runNumber() != mRunNumber) {
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
