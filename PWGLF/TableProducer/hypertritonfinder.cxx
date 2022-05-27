@@ -42,6 +42,13 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "../Hypv0Table.h"
+//------------------copy from lamdakzerobuilder---------------------
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
+//------------------copy from lamdakzerobuilder---------------------
 
 #include <TFile.h>
 #include <TLorentzVector.h>
@@ -91,46 +98,42 @@ struct hypertritonprefilter {
   };
 
   //change the dca cut for helium3
-  Configurable<float> dcanegtopv{"dcanegtopv", 1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", 1, "DCA Pos To PV"};
+  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 
   Produces<aod::V0GoodPosTracks> v0GoodPosTracks;
   Produces<aod::V0GoodNegTracks> v0GoodNegTracks;
 
-  // still exhibiting issues? To be checked
-  // Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodPosTracks = aod::track::signed1Pt > 0.0f && aod::track::dcaXY > dcapostopv;
-  // Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodNegTracks = aod::track::signed1Pt < 0.0f && aod::track::dcaXY < -dcanegtopv;
-
   void process(aod::Collision const& collision,
       soa::Join<aod::FullTracks, aod::TracksExtended> const& tracks)
   {
     for (auto& t0 : tracks) {
-        registry.fill(HIST("hGoodTrackCount"), 0.5);
+      registry.fill(HIST("hGoodTrackCount"), 0.5);
       registry.fill(HIST("hCrossedRows"), t0.tpcNClsCrossedRows());
       if (tpcrefit) {
         if (!(t0.trackType() & o2::aod::track::TPCrefit)) {
           continue; // TPC refit
         }
       }
-        registry.fill(HIST("hGoodTrackCount"), 1.5);
+      registry.fill(HIST("hGoodTrackCount"), 1.5);
       if (t0.tpcNClsCrossedRows() < mincrossedrows) {
         continue;
       }
-        registry.fill(HIST("hGoodTrackCount"), 2.5);
+      registry.fill(HIST("hGoodTrackCount"), 2.5);
       if (t0.signed1Pt() > 0.0f) {
-        if (fabs(t0.dcaXY()) < dcapostopv) {
+        /*if (fabs(t0.dcaXY()) < dcapostopv) {
           continue;
-        }
+          }*/
         v0GoodPosTracks(t0.globalIndex(), t0.collisionId(), t0.dcaXY());
         registry.fill(HIST("hGoodPosTrackCount"), 0.5);
         registry.fill(HIST("hGoodTrackCount"), 3.5);
       }
       if (t0.signed1Pt() < 0.0f) {
-        if (fabs(t0.dcaXY()) < dcanegtopv) {
+        /*if (fabs(t0.dcaXY()) < dcanegtopv) {
           continue;
-        }
+          }*/
         v0GoodNegTracks(t0.globalIndex(), t0.collisionId(), -t0.dcaXY());
         registry.fill(HIST("hGoodNegTrackCount"), 0.5);
         registry.fill(HIST("hGoodTrackCount"), 3.5);
@@ -140,9 +143,9 @@ struct hypertritonprefilter {
 };
 
 struct hypertritonfinder {
-  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::HypStoredV0Datas> v0data;
   Produces<aod::V0s> v0;
-  Produces<aod::V0DataLink> v0datalink;
+  //Produces<aod::V0DataLink> v0datalink;
 
   HistogramRegistry registry{
     "registry",
@@ -159,6 +162,38 @@ struct hypertritonfinder {
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+
+//------------------copy from lamdakzerobuilder---------------------
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  float maxSnp;  //max sine phi for propagation
+  float maxStep; //max step size (cm) for propagation
+  void init(InitContext& context)
+  {
+    // using namespace analysis::lambdakzerobuilder;
+    maxSnp = 0.85f;  //could be changed later
+    maxStep = 2.00f; //could be changed later
+
+    ccdb->setURL("https://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>("GLO/Config/Geometry");
+      /* it seems this is needed at this level for the material LUT to work properly */
+      /* but what happens if the run changes while doing the processing?             */
+      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
+
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+  }
+
+//------------------copy from lamdakzerobuilder---------------------
 
   void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
       aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks)
@@ -177,19 +212,50 @@ struct hypertritonfinder {
     Long_t lNCand = 0;
 
     for (auto& t0id : ptracks) { // FIXME: turn into combination(...)
-      auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
-      auto Track1 = getTrackParCov(t0);
       for (auto& t1id : ntracks) {
+
+        if (t0id.collisionId() != t1id.collisionId()) {
+          continue;
+        }
+        auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
         auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
+        auto Track1 = getTrackParCov(t0);
         auto Track2 = getTrackParCov(t1);
+        auto pTrack = getTrackParCov(t0);
+        auto nTrack = getTrackParCov(t1);
 
         // Try to progate to dca
         int nCand = fitter.process(Track1, Track2);
         if (nCand == 0) {
           continue;
         }
-        const auto& vtx = fitter.getPCACandidate();
 
+//------------------copy from lamdakzerobuilder---------------------
+      double finalXpos = fitter.getTrack(0).getX();
+      double finalXneg = fitter.getTrack(1).getX();
+
+      // Rotate to desired alpha
+      pTrack.rotateParam(fitter.getTrack(0).getAlpha());
+      nTrack.rotateParam(fitter.getTrack(1).getAlpha());
+
+      // Retry closer to minimum with material corrections
+      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+      if (useMatCorrType == 1)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+      if (useMatCorrType == 2)
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
+
+      nCand = fitter.process(pTrack, nTrack);
+      if (nCand == 0) {
+        continue;
+      }
+
+//------------------copy from lamdakzerobuilder---------------------
+        
+        const auto& vtx = fitter.getPCACandidate();
         // Fiducial: min radius
         auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
         if (thisv0radius < v0radius) {
@@ -211,14 +277,23 @@ struct hypertritonfinder {
         fitter.getTrack(0).getPxPyPzGlo(pvec0);
         fitter.getTrack(1).getPxPyPzGlo(pvec1);
 
+//------------------copy from lamdakzerobuilder---------------------
+      pTrack.getPxPyPzGlo(pvec0);
+      nTrack.getPxPyPzGlo(pvec1);
+//------------------copy from lamdakzerobuilder---------------------
+
+        for (int i = 0; i < 3; i++) {
+          pvec0[i] = pvec0[i]*2;
+        }
+
         /*uint32_t pTrackPID = t0.pidForTracking();
-        uint32_t nTrackPID = t1.pidForTracking();
-        int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
-        int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];
-        for (int i=0; i<3; i++){
+          uint32_t nTrackPID = t1.pidForTracking();
+          int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
+          int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];
+          for (int i=0; i<3; i++){
           pvec0[i] = pvec0[i] * pTrackCharge;
           pvec1[i] = pvec1[i] * nTrackCharge;
-        }*/
+          }*/
 
         auto thisv0cospa = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()},
             array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
@@ -228,6 +303,7 @@ struct hypertritonfinder {
 
         lNCand++;
         v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
+        //there is a change in the position of "0" compared with lambdakzerofinder.cxx
         v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),0,
             fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
             pos[0], pos[1], pos[2],
@@ -235,7 +311,7 @@ struct hypertritonfinder {
             pvec1[0], pvec1[1], pvec1[2],
             fitter.getChi2AtPCACandidate(),
             t0id.dcaXY(), t1id.dcaXY());
-        v0datalink(v0data.lastIndex());
+        //v0datalink(v0data.lastIndex());
       }
     }
     registry.fill(HIST("hCandPerEvent"), lNCand);
@@ -306,7 +382,7 @@ registry.fill(HIST("hCandPerEvent"), lNCand);
 
 /// Extends the v0data table with expression columns
 struct hypertritoninitializer {
-  Spawns<aod::V0Datas> v0datas;
+  Spawns<aod::HypV0Datas> v0datas;
   void init(InitContext const&) {}
 };
 

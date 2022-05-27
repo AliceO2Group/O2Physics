@@ -35,6 +35,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "PID/PIDResponse.h"
+#include "../Hypv0Table.h"
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -79,7 +80,7 @@ struct hypertritonQa {
     registry.add("hMassAntiHypertriton", "hMassAntiHypertriton", {HistType::kTH1F, {massAxisHypertriton}});
   }
 
-  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void process(aod::Collision const& collision, aod::HypV0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     for (auto& v0 : fullV0s) {
       registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
@@ -161,7 +162,7 @@ struct hypertritonAnalysisMc {
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.9, "rapidity"};
   Configurable<int> saveDcaHist{"saveDcaHist", 0, "saveDcaHist"};
-  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 3, "TpcPidNsigmaCut"};
+  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   //Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
   //Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
@@ -171,10 +172,10 @@ struct hypertritonAnalysisMc {
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutHypertriton", "lifetimecutK0S"}}, "lifetimecut"};
 
-  Filter preFilterV0 = aod::v0data::dcaV0daughters < dcav0dau;
+  Filter preFilterV0 = aod::hypv0data::dcaV0daughters < dcav0dau;
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
-    // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+    // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     /*if (eventSelection && !collision.sel8()) {
       return;
@@ -263,7 +264,7 @@ struct hypertritonAnalysisMc {
   }
   PROCESS_SWITCH(hypertritonAnalysisMc, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::HypV0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     if (!collision.alias()[kINT7]) {
       return;
@@ -711,7 +712,7 @@ struct V0McCheck {
 };
 
 struct V0DataInitializer {
-  Spawns<aod::V0Datas> v0datas;
+  Spawns<aod::HypV0Datas> v0datas;
   void init(InitContext const&) {}
 };
 
