@@ -157,7 +157,7 @@ struct hypertritonAnalysisMc {
 
   //Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
+  Configurable<float> dcav0dau{"dcav0dau", 1., "DCA V0 Daughters"};//loose cut here
   Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.9, "rapidity"};
@@ -169,7 +169,7 @@ struct hypertritonAnalysisMc {
 
   //Configurable<bool> hasItsTest{"hasItsTest", false, "hasItsTest"};
 
-  static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
+  static constexpr float defaultLifetimeCuts[1][2] = {{40., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutHypertriton", "lifetimecutK0S"}}, "lifetimecut"};
 
   Filter preFilterV0 = aod::hypv0data::dcaV0daughters < dcav0dau;

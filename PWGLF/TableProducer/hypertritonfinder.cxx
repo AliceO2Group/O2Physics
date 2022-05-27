@@ -193,7 +193,7 @@ struct hypertritonfinder {
     }
   }
 
-//------------------copy from lamdakzerobuilder---------------------
+//------------------------------------------------------------------
 
   void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
       aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks)
@@ -253,7 +253,7 @@ struct hypertritonfinder {
         continue;
       }
 
-//------------------copy from lamdakzerobuilder---------------------
+//------------------------------------------------------------------
         
         const auto& vtx = fitter.getPCACandidate();
         // Fiducial: min radius
@@ -274,13 +274,13 @@ struct hypertritonfinder {
         for (int i = 0; i < 3; i++) {
           pos[i] = vtx[i];
         }
-        fitter.getTrack(0).getPxPyPzGlo(pvec0);
-        fitter.getTrack(1).getPxPyPzGlo(pvec1);
+        //fitter.getTrack(0).getPxPyPzGlo(pvec0);
+        //fitter.getTrack(1).getPxPyPzGlo(pvec1);
 
 //------------------copy from lamdakzerobuilder---------------------
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
-//------------------copy from lamdakzerobuilder---------------------
+//------------------------------------------------------------------
 
         for (int i = 0; i < 3; i++) {
           pvec0[i] = pvec0[i]*2;
@@ -304,8 +304,8 @@ struct hypertritonfinder {
         lNCand++;
         v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
         //there is a change in the position of "0" compared with lambdakzerofinder.cxx
-        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),0,
-            fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),
+            fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),0,
             pos[0], pos[1], pos[2],
             pvec0[0], pvec0[1], pvec0[2],
             pvec1[0], pvec1[1], pvec1[2],

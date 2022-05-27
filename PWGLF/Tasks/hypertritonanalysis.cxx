@@ -145,7 +145,7 @@ struct hypertritonAnalysis {
   Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.9, "rapidity"};
-  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 3, "TpcPidNsigmaCut"};
+  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};//unknown
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};//unknown
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
