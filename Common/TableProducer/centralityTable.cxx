@@ -31,10 +31,10 @@ struct CentralityTable {
   Produces<aod::CentRun2SPDClss> centRun2SPDClusters;
   Produces<aod::CentRun2CL0s> centRun2CL0;
   Produces<aod::CentRun2CL1s> centRun2CL1;
-  Produces<aod::CentRun3V0Ms> centRun3V0M;
-  Produces<aod::CentRun3FT0Ms> centRun3FT0M;
-  Produces<aod::CentRun3FDDMs> centRun3FDDM;
-  Produces<aod::CentRun3NTPVs> centRun3NTPV;
+  Produces<aod::CentFV0As> centFV0A;
+  Produces<aod::CentFT0Ms> centFT0M;
+  Produces<aod::CentFDDMs> centFDDM;
+  Produces<aod::CentNTPVs> centNTPV;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<int> estRun2V0M{"estRun2V0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
@@ -42,10 +42,10 @@ struct CentralityTable {
   Configurable<int> estRun2SPDClusters{"estRun2SPDcls", -1, {"Produces Run2 centrality percentiles using SPD clusters multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2CL0{"estRun2CL0", -1, {"Produces Run2 centrality percentiles using CL0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> estRun2CL1{"estRun2CL1", -1, {"Produces Run2 centrality percentiles using CL1 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estRun3V0M{"estRun3V0M", -1, {"Produces centrality percentiles using V0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estRun3FT0M{"estRun3FT0M", -1, {"Produces centrality percentiles using FT0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estRun3FDDM{"estRun3FDDM", -1, {"Produces centrality percentiles using FDD multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
-  Configurable<int> estRun3NTPV{"estRun3NTPV", -1, {"Produces centrality percentiles using number of tracks contributing to the PV. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estFV0A{"estFV0A", -1, {"Produces centrality percentiles using FV0A multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estFT0M{"estFT0M", -1, {"Produces centrality percentiles using FT0 multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estFDDM{"estFDDM", -1, {"Produces centrality percentiles using FDD multiplicity. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> estNTPV{"estNTPV", -1, {"Produces centrality percentiles using number of tracks contributing to the PV. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
@@ -80,12 +80,25 @@ struct CentralityTable {
     TH1* mhVtxAmpCorr = nullptr;
     TH1* mhMultSelCalib = nullptr;
   } Run2CL1Info;
-  struct tagRun3Calibration {
+  struct calibrationInfo {
+    std::string name = "";
     bool mCalibrationStored = false;
     TH1* mhMultSelCalib = nullptr;
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
-  } Run3V0MInfo, Run3FT0MInfo, Run3FDDMInfo, Run3NTPVInfo;
+    calibrationInfo(std::string name)
+      : name(name),
+        mCalibrationStored(false),
+        mhMultSelCalib(nullptr),
+        mMCScalePars{0.0},
+        mMCScale(nullptr)
+    {
+    }
+  };
+  calibrationInfo FV0AInfo = calibrationInfo("V0");
+  calibrationInfo FT0MInfo = calibrationInfo("T0");
+  calibrationInfo FDDMInfo = calibrationInfo("FDD");
+  calibrationInfo NTPVInfo = calibrationInfo("NTracks");
 
   void init(InitContext& context)
   {
@@ -112,10 +125,10 @@ struct CentralityTable {
         enable("Run2SPDCls", estRun2SPDClusters);
         enable("Run2CL0", estRun2CL0);
         enable("Run2CL1", estRun2CL1);
-        enable("Run3V0M", estRun3V0M);
-        enable("Run3FT0M", estRun3FT0M);
-        enable("Run3FDDM", estRun3FDDM);
-        enable("Run3NTPV", estRun3NTPV);
+        enable("FV0A", estFV0A);
+        enable("FT0M", estFT0M);
+        enable("FDDM", estFDDM);
+        enable("NTPV", estNTPV);
       }
     }
     ccdb->setURL(ccdbUrl);
@@ -289,66 +302,43 @@ struct CentralityTable {
       LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
       TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
 
-      Run3V0MInfo.mCalibrationStored = false;
-      Run3FT0MInfo.mCalibrationStored = false;
-      Run3FDDMInfo.mCalibrationStored = false;
-      Run3NTPVInfo.mCalibrationStored = false;
+      FV0AInfo.mCalibrationStored = false;
+      FT0MInfo.mCalibrationStored = false;
+      FDDMInfo.mCalibrationStored = false;
+      NTPVInfo.mCalibrationStored = false;
       if (callst != nullptr) {
-        auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = (TH1*)callst->FindObject(ccdbhname);
-          return h;
-        };
-        auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = (TFormula*)callst->FindObject(ccdbhname);
-          return f;
-        };
-        if (estRun3V0M == 1) {
-          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-          Run3V0MInfo.mhMultSelCalib = getccdb("hCalibZeqV0");
-          Run3V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0", genName->c_str()).Data());
-          if (Run3V0MInfo.mhMultSelCalib != nullptr) {
-            if (genName->length() != 0) {
-              if (Run3V0MInfo.mMCScale != nullptr) {
+        LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+        auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = (TH1*)callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data());
+          estimator.mMCScale = (TFormula*)callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data());
+          if (estimator.mhMultSelCalib != nullptr) {
+            if (generatorName->length() != 0) {
+              if (estimator.mMCScale != nullptr) {
                 for (int ixpar = 0; ixpar < 6; ++ixpar) {
-                  Run3V0MInfo.mMCScalePars[ixpar] = Run3V0MInfo.mMCScale->GetParameter(ixpar);
+                  estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
                 }
               } else {
-                LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
+                LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
               }
             }
-            Run3V0MInfo.mCalibrationStored = true;
+            estimator.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
+            LOGF(fatal, "Calibration information from %s for run %d corrupted", estimator.name.c_str(), bc.runNumber());
           }
+        };
+        if (estFV0A == 1) {
+          getccdb(FV0AInfo, genName);
         }
-        if (estRun3FT0M == 1) {
-          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-          Run3FT0MInfo.mhMultSelCalib = getccdb("hCalibZeqT0");
-          if (Run3FT0MInfo.mhMultSelCalib != nullptr) {
-            Run3FT0MInfo.mCalibrationStored = true;
-          } else {
-            LOGF(fatal, "Calibration information from FT0 for run %d corrupted", bc.runNumber());
-          }
+        if (estFT0M == 1) {
+          getccdb(FT0MInfo, genName);
         }
-        if (estRun3FDDM == 1) {
-          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-          Run3FDDMInfo.mhMultSelCalib = getccdb("hCalibZeqFDD");
-          if (Run3FDDMInfo.mhMultSelCalib != nullptr) {
-            Run3FDDMInfo.mCalibrationStored = true;
-          } else {
-            LOGF(fatal, "Calibration information from FDD for run %d corrupted", bc.runNumber());
-          }
+        if (estFDDM == 1) {
+          getccdb(FDDMInfo, genName);
         }
-        if (estRun3NTPV == 1) {
-          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-          Run3NTPVInfo.mhMultSelCalib = getccdb("hCalibZeqNTracks");
-          if (Run3NTPVInfo.mhMultSelCalib != nullptr) {
-            Run3NTPVInfo.mCalibrationStored = true;
-          } else {
-            LOGF(fatal, "Calibration information from NTPV for run %d corrupted", bc.runNumber());
-          }
+        if (estNTPV == 1) {
+          getccdb(NTPVInfo, genName);
         }
-        if (Run3V0MInfo.mCalibrationStored or Run3FT0MInfo.mCalibrationStored or Run3FDDMInfo.mCalibrationStored or Run3NTPVInfo.mCalibrationStored) {
+        if (FV0AInfo.mCalibrationStored or FT0MInfo.mCalibrationStored or FDDMInfo.mCalibrationStored or NTPVInfo.mCalibrationStored) {
           mRunNumber = bc.runNumber();
         }
       } else {
@@ -356,55 +346,35 @@ struct CentralityTable {
       }
     }
 
-    auto scaleMC = [](float x, float pars[6]) {
-      return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+    auto populateTable = [](auto& table, struct calibrationInfo& estimator, float multiplicity) {
+      auto scaleMC = [](float x, float pars[6]) {
+        return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      };
+    
+      float percentile = 105.0f;
+      float scaledMultiplicity = multiplicity;
+      if (estimator.mCalibrationStored) {
+        if (estimator.mMCScale != nullptr) {
+          scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
+          LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
+        }
+        percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+      }
+      LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
+      table(percentile);
     };
 
-    if (estRun3V0M == 1) {
-      float cV0M = 105.0f;
-      float v0m;
-      if (Run3V0MInfo.mCalibrationStored) {
-        if (Run3V0MInfo.mMCScale != nullptr) {
-          v0m = scaleMC(collision.multFV0M(), Run2V0MInfo.mMCScalePars);
-          LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", collision.multFV0M(), v0m);
-        } else {
-          v0m = collision.multZeqFV0A();
-        }
-        cV0M = Run3V0MInfo.mhMultSelCalib->GetBinContent(Run3V0MInfo.mhMultSelCalib->FindFixBin(v0m));
-      }
-      LOGF(debug, "centRun3V0M=%.0f for a zvtx eq FV0A value %.0f", cV0M, v0m);
-      // fill centrality columns
-      centRun3V0M(cV0M);
+    if (estFV0A == 1) {
+      populateTable(centFV0A, FV0AInfo, collision.multZeqFV0A());
     }
-    if (estRun3FT0M == 1) {
-      float cFT0 = 105.0f;
-      float cft0m;
-      if (Run3FT0MInfo.mCalibrationStored) {
-        cft0m = collision.multZeqFT0A() + collision.multZeqFT0C();
-        cFT0 = Run3FT0MInfo.mhMultSelCalib->GetBinContent(Run3FT0MInfo.mhMultSelCalib->FindFixBin(cft0m));
-      }
-      LOGF(debug, "centRun3FT0M=%.0f for a zvtx eq FT0M value %.0f", cFT0, cft0m);
-      centRun3FT0M(cFT0);
+    if (estFT0M == 1) {
+      populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
     }
-    if (estRun3FDDM == 1) {
-      float cFDD = 105.0f;
-      float cfddm;
-      if (Run3FDDMInfo.mCalibrationStored) {
-        cfddm = collision.multZeqFDDA() + collision.multZeqFDDC();
-        cFDD = Run3FDDMInfo.mhMultSelCalib->GetBinContent(Run3FDDMInfo.mhMultSelCalib->FindFixBin(cfddm));
-      }
-      LOGF(debug, "centRun3FDDM=%.0f for a zvtx eq FDDM value %.0f", cFDD, cfddm);
-      centRun3FDDM(cFDD);
+    if (estFDDM == 1) {
+      populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
     }
-    if (estRun3NTPV == 1) {
-      float cNTPV = 105.0f;
-      float cntv;
-      if (Run3NTPVInfo.mCalibrationStored) {
-        cntv = collision.multZeqNTracksPV();
-        cNTPV = Run3NTPVInfo.mhMultSelCalib->GetBinContent(Run3NTPVInfo.mhMultSelCalib->FindFixBin(cntv));
-      }
-      LOGF(debug, "centRun3NTPV=%.0f for a zvtx eq NTPV value %.0f", cNTPV, cntv);
-      centRun3NTPV(cNTPV);
+    if (estNTPV == 1) {
+      populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
     }
   }
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);

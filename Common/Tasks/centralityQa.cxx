@@ -24,10 +24,10 @@ struct CentralityQa {
   OutputObj<TH1F> hCentRun2SPDCls{TH1F("hCentRun2SPDCls", "SPD Clusters", 21, 0, 105.)};
   OutputObj<TH1F> hCentRun2CL0{TH1F("hCentRun2CL0", "CL0", 21, 0, 105.)};
   OutputObj<TH1F> hCentRun2CL1{TH1F("hCentRun2CL1", "CL1", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun3V0M{TH1F("hCentRun3V0M", "V0M", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun3FT0M{TH1F("hCentRun3FT0M", "FT0M", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun3FDDM{TH1F("hCentRun3FDDM", "FDDM", 21, 0, 105.)};
-  OutputObj<TH1F> hCentRun3NTPV{TH1F("hCentRun3NTPV", "NTPV", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFV0A{TH1F("hCentFV0A", "FV0A", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFT0M{TH1F("hCentFT0M", "FT0M", 21, 0, 105.)};
+  OutputObj<TH1F> hCentFDDM{TH1F("hCentFDDM", "FDDM", 21, 0, 105.)};
+  OutputObj<TH1F> hCentNTPV{TH1F("hCentNTPV", "NTPV", 21, 0, 105.)};
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss>::iterator const& col)
   {
     if (!col.alias()[kINT7]) {
@@ -68,21 +68,21 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun2PbPb, "Process with Run2 CL0 and CL1 multiplicities centrality/multiplicity  estimation", false);
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun3V0Ms, aod::CentRun3FT0Ms, aod::CentRun3FDDMs, aod::CentRun3NTPVs>::iterator const& col)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFDDMs, aod::CentNTPVs>::iterator const& col)
   {
     if (!col.sel8()) {
       return;
     }
 
-    LOGF(debug, "centV0M=%.0f", col.centRun3V0M());
-    LOGF(debug, "centFT0M=%.0f", col.centRun3FT0M());
-    LOGF(debug, "centFDDM=%.0f", col.centRun3FDDM());
-    LOGF(debug, "centNTPV=%.0f", col.centRun3NTPV());
+    LOGF(debug, "centV0M=%.0f", col.centFV0A());
+    LOGF(debug, "centFT0M=%.0f", col.centFT0M());
+    LOGF(debug, "centFDDM=%.0f", col.centFDDM());
+    LOGF(debug, "centNTPV=%.0f", col.centNTPV());
     // fill centrality histos
-    hCentRun3V0M->Fill(col.centRun3V0M());
-    hCentRun3FT0M->Fill(col.centRun3FT0M());
-    hCentRun3FDDM->Fill(col.centRun3FDDM());
-    hCentRun3NTPV->Fill(col.centRun3NTPV());
+    hCentFV0A->Fill(col.centFV0A());
+    hCentFT0M->Fill(col.centFT0M());
+    hCentFDDM->Fill(col.centFDDM());
+    hCentNTPV->Fill(col.centNTPV());
   }
   PROCESS_SWITCH(CentralityQa, processRun3, "Process with Run3 centrality/multiplicity estimators", false);
 };
