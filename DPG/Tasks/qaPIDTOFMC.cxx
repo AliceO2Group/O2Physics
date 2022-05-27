@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaTPCMC.cxx
+/// \file   qaPIDTOFMC.cxx
 /// \author Nicolò Jacazio
-/// \brief  Task to produce QA output of the PID with TPC running on the MC.
+/// \brief  Task to produce QA output of the PID with TOF running on the MC.
 ///
 
 // O2 includes
@@ -23,9 +23,11 @@
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/PID/PIDResponse.h"
+#include "Common/Core/PID/PIDTOF.h"
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
@@ -42,7 +44,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 template <o2::track::PID::ID pid_type>
-struct pidTPCTaskQA {
+struct pidTOFTaskQA {
 
   static constexpr int Np = 9;
   static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
@@ -69,23 +71,23 @@ struct pidTPCTaskQA {
 
   Configurable<int> checkPrimaries{"checkPrimaries", 1,
                                    "Whether to check physical primary and secondaries particles for the resolution."};
-  Configurable<int> nBinsP{"nBinsP", 2000, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0.f, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 20.f, "Maximum momentum in range"};
+  Configurable<int> nBinsP{"nBinsP", 400, "Number of bins for the momentum"};
+  Configurable<float> minP{"minP", 0.1, "Minimum momentum in range"};
+  Configurable<float> maxP{"maxP", 5, "Maximum momentum in range"};
   Configurable<int> nBinsNsigma{"nBinsNsigma", 2000, "Number of bins for the momentum"};
   Configurable<float> minNsigma{"minNsigma", -30.f, "Minimum momentum in range"};
   Configurable<float> maxNsigma{"maxNsigma", 30.f, "Maximum momentum in range"};
   Configurable<float> minEta{"minEta", -0.8, "Minimum eta in range"};
   Configurable<float> maxEta{"maxEta", 0.8, "Maximum eta in range"};
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the vertex"};
-  Configurable<int> logAxis{"logAxis", 0, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
+  Configurable<int> logAxis{"logAxis", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
 
   template <uint8_t i>
   void addParticleHistos()
   {
 
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[pid_type])};
+    const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[pid_type])};
     if (logAxis) {
       ptAxis.makeLogaritmic();
     }
@@ -107,9 +109,10 @@ struct pidTPCTaskQA {
       pAxis.makeLogaritmic();
       ptAxis.makeLogaritmic();
     }
-    const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[pid_type])};
-    const AxisSpec signalAxis{6000, 0, 2000, "TPC d#it{E}/d#it{x} A.U."};
+    const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[pid_type])};
+    const AxisSpec betaAxis{1000, 0, 1.2, "TOF #beta"};
 
+    histos.add("event/T0", ";Tracks with TOF;T0 (ps);Counts", HistType::kTH2F, {{1000, 0, 1000}, {1000, -1000, 1000}});
     histos.add(hnsigma[pid_type].data(), pT[pid_type], HistType::kTH2F, {ptAxis, nSigmaAxis});
     if (checkPrimaries) {
       histos.add(hnsigmaprm[pid_type].data(), Form("Primary %s", pT[pid_type]), HistType::kTH2F, {ptAxis, nSigmaAxis});
@@ -136,20 +139,20 @@ struct pidTPCTaskQA {
     addParticleHistos<6>();
     addParticleHistos<7>();
     addParticleHistos<8>();
-    histos.add("event/tpcsignal", "All", HistType::kTH2F, {pAxis, signalAxis});
-    histos.add("event/tpcsignalMC", pT[pid_type], HistType::kTH2F, {pAxis, signalAxis});
+    histos.add("event/tofbeta", "All", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("event/tofbetaMC", pT[pid_type], HistType::kTH2F, {pAxis, betaAxis});
     if (checkPrimaries) {
-      histos.add("event/tpcsignalPrm", "Primaries", HistType::kTH2F, {pAxis, signalAxis});
-      histos.add("event/tpcsignalSec", "Secondaries", HistType::kTH2F, {pAxis, signalAxis});
-      histos.add("event/tpcsignalMCPrm", Form("Primary %s", pT[pid_type]), HistType::kTH2F, {pAxis, signalAxis});
-      histos.add("event/tpcsignalMCSec", Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {pAxis, signalAxis});
+      histos.add("event/tofbetaPrm", "Primaries", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("event/tofbetaSec", "Secondaries", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("event/tofbetaMCPrm", Form("Primary %s", pT[pid_type]), HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("event/tofbetaMCSec", Form("Secondary %s", pT[pid_type]), HistType::kTH2F, {pAxis, betaAxis});
     }
   }
 
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.template mcParticle_as<o2::aod::McParticles_000>();
+    const auto particle = track.template mcParticle_as<aod::McParticles_000>();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
@@ -164,25 +167,30 @@ struct pidTPCTaskQA {
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
                soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                         aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                         aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                         aod::McTrackLabels> const& tracks,
-               aod::McParticles_000& mcParticles)
+                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
+                         aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                         aod::McTrackLabels, aod::pidTOFbeta> const& tracks,
+               aod::McParticles& mcParticles)
   {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
     }
-    // const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+    const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
 
-    // for (const auto& p : particlesInCollision) {
-    //   histos.fill(HIST("particle/p"), p.p());
-    //   histos.fill(HIST("particle/pt"), p.pt());
-    //   histos.fill(HIST("particle/eta"), p.eta());
-    // }
+    for (const auto& p : particlesInCollision) {
+      histos.fill(HIST("particle/p"), p.p());
+      histos.fill(HIST("particle/pt"), p.pt());
+      histos.fill(HIST("particle/eta"), p.eta());
+    }
 
+    const float collisionTime_ps = collision.collisionTime() * 1000.f;
+    unsigned int nTracksWithTOF = 0;
     for (const auto& t : tracks) {
       //
+      if (!t.hasTOF()) { // Skipping tracks without TOF
+        continue;
+      }
       if (t.eta() < minEta || t.eta() > maxEta) {
         continue;
       }
@@ -192,44 +200,45 @@ struct pidTPCTaskQA {
       histos.fill(HIST("tracks/eta"), t.eta());
       histos.fill(HIST("tracks/length"), t.length());
 
+      nTracksWithTOF++;
       float nsigma = -999.f;
       if constexpr (pid_type == 0) {
-        nsigma = t.tpcNSigmaEl();
+        nsigma = t.tofNSigmaEl();
       } else if constexpr (pid_type == 1) {
-        nsigma = t.tpcNSigmaMu();
+        nsigma = t.tofNSigmaMu();
       } else if constexpr (pid_type == 2) {
-        nsigma = t.tpcNSigmaPi();
+        nsigma = t.tofNSigmaPi();
       } else if constexpr (pid_type == 3) {
-        nsigma = t.tpcNSigmaKa();
+        nsigma = t.tofNSigmaKa();
       } else if constexpr (pid_type == 4) {
-        nsigma = t.tpcNSigmaPr();
+        nsigma = t.tofNSigmaPr();
       } else if constexpr (pid_type == 5) {
-        nsigma = t.tpcNSigmaDe();
+        nsigma = t.tofNSigmaDe();
       } else if constexpr (pid_type == 6) {
-        nsigma = t.tpcNSigmaTr();
+        nsigma = t.tofNSigmaTr();
       } else if constexpr (pid_type == 7) {
-        nsigma = t.tpcNSigmaHe();
+        nsigma = t.tofNSigmaHe();
       } else if constexpr (pid_type == 8) {
-        nsigma = t.tpcNSigmaAl();
+        nsigma = t.tofNSigmaAl();
       }
 
       // Fill for all
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
-      histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
+      histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
       const auto particle = t.mcParticle_as<aod::McParticles_000>();
       if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
+        histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
       } else {
         histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tpcsignalSec"), t.p(), t.tpcSignal());
+        histos.fill(HIST("event/tofbetaSec"), t.p(), t.beta());
       }
       if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
-        histos.fill(HIST("event/tpcsignalMC"), t.pt(), t.tpcSignal());
+        histos.fill(HIST("event/tofbetaMC"), t.pt(), t.beta());
         if (particle.isPhysicalPrimary()) {
-          histos.fill(HIST("event/tpcsignalMCPrm"), t.pt(), t.tpcSignal());
+          histos.fill(HIST("event/tofbetaMCPrm"), t.pt(), t.beta());
         } else {
-          histos.fill(HIST("event/tpcsignalMCSec"), t.pt(), t.tpcSignal());
+          histos.fill(HIST("event/tofbetaMCSec"), t.pt(), t.beta());
         }
       }
       // Fill with PDG codes
@@ -243,6 +252,7 @@ struct pidTPCTaskQA {
       fillNsigma<7>(t, nsigma);
       fillNsigma<8>(t, nsigma);
     }
+    histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
     histos.fill(HIST("event/vertexz"), collision.posZ());
   }
 };
@@ -251,21 +261,21 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{};
   if (cfgc.options().get<int>("qa-el")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Electron>>(cfgc, TaskName{"pidTPC-qa-El"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Electron>>(cfgc, TaskName{"pidTOF-qa-El"}));
   }
   if (cfgc.options().get<int>("qa-mu")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Muon>>(cfgc, TaskName{"pidTPC-qa-Mu"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Muon>>(cfgc, TaskName{"pidTOF-qa-Mu"}));
   }
   if (cfgc.options().get<int>("qa-pikapr")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Pion>>(cfgc, TaskName{"pidTPC-qa-Pi"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Kaon>>(cfgc, TaskName{"pidTPC-qa-Ka"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Proton>>(cfgc, TaskName{"pidTPC-qa-Pr"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Pion>>(cfgc, TaskName{"pidTOF-qa-Pi"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Kaon>>(cfgc, TaskName{"pidTOF-qa-Ka"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Proton>>(cfgc, TaskName{"pidTOF-qa-Pr"}));
   }
   if (cfgc.options().get<int>("qa-nuclei")) {
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Deuteron>>(cfgc, TaskName{"pidTPC-qa-De"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Triton>>(cfgc, TaskName{"pidTPC-qa-Tr"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Helium3>>(cfgc, TaskName{"pidTPC-qa-He"}));
-    workflow.push_back(adaptAnalysisTask<pidTPCTaskQA<PID::Alpha>>(cfgc, TaskName{"pidTPC-qa-Al"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Deuteron>>(cfgc, TaskName{"pidTOF-qa-De"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Triton>>(cfgc, TaskName{"pidTOF-qa-Tr"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Helium3>>(cfgc, TaskName{"pidTOF-qa-He"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Alpha>>(cfgc, TaskName{"pidTOF-qa-Al"}));
   }
   return workflow;
 }
