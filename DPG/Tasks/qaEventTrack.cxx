@@ -111,9 +111,14 @@ DECLARE_SOA_COLUMN(ProductionMode, productionMode, int); //! ProductionMode i.e.
 
 } // namespace dpgparticles
 
-DECLARE_SOA_TABLE(DPGParticles, "AOD", "DPGParticles", //! Table of the DPG particles
+DECLARE_SOA_TABLE(DPGRecoParticles, "AOD", "DPGRecoPart", //! Table of the DPG reconstructed particles
                   dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
                   mcparticle::PdgCode, dpgparticles::ProductionMode);
+
+DECLARE_SOA_TABLE(DPGNonRecoParticles, "AOD", "DPGNonRecoPart", //! Table of the DPG particles
+                  dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
+                  mcparticle::PdgCode, dpgparticles::ProductionMode,
+                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz);
 } // namespace o2::aod
 
 //--------------------------------------------------------------------------------------------------
@@ -125,7 +130,8 @@ struct qaEventTrack {
   // Tables to produce
   Produces<o2::aod::DPGCollisions> tableCollisions;
   Produces<o2::aod::DPGTracks> tableTracks;
-  Produces<o2::aod::DPGParticles> tableParticles;
+  Produces<o2::aod::DPGRecoParticles> tableRecoParticles;
+  Produces<o2::aod::DPGNonRecoParticles> tableNonRecoParticles;
 
   // general steering settings
   Configurable<bool> isMC{"isMC", true, "Is MC dataset"};        // TODO: derive this from metadata once possible to get rid of the flag
@@ -178,20 +184,115 @@ struct qaEventTrack {
   void processReco(const C& collision, const T& tracks);
 
   // Process functions for skimming data
-  void processTableData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::BCs const& bcs)
+  void processTableData(CollisionTableData::iterator const& collision,
+                        TrackTableData const& tracks,
+                        aod::BCs const& bcs)
   {
-    processRecoTable<false>(collision, tracks, bcs);
+    processRecoTable<false>(collision, tracks, 0, bcs);
   };
   PROCESS_SWITCH(qaEventTrack, processTableData, "Process data for table producing", false);
 
-  void processTableMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCs const& bcs)
+  void processTableMC(CollisionTableMC::iterator const& collision,
+                      TrackTableMC const& tracks,
+                      aod::McParticles const& mcParticles,
+                      aod::McCollisions const& mcCollisions,
+                      aod::BCs const& bcs)
   {
-    processRecoTable<true>(collision, tracks, bcs);
+    processRecoTable<true>(collision, tracks, mcParticles, bcs);
   };
   PROCESS_SWITCH(qaEventTrack, processTableMC, "Process MC for table producing", false);
 
-  template <bool IS_MC, typename C, typename T>
-  void processRecoTable(const C& collision, const T& tracks, const aod::BCs&);
+  //**************************************************************************************************
+  /**
+ * Fill reco level tables.
+ */
+  //**************************************************************************************************
+  template <bool IS_MC, typename C, typename T, typename P>
+  void processRecoTable(const C& collision, const T& tracks, const P& particles, const aod::BCs&)
+  {
+    if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return;
+    }
+
+    tableCollisions(collision.posZ(),
+                    (isRun3 ? collision.sel8() : collision.sel7()),
+                    collision.bc().runNumber());
+    int nTracks = 0;
+    int particleProduction = 0;
+
+    for (const auto& track : tracks) {
+      if (!isSelectedTrack<IS_MC>(track)) {
+        continue;
+      }
+      ++nTracks;
+    }
+    tableTracks.reserve(nTracks);
+    std::vector<int64_t> recoPartIndices(IS_MC ? nTracks : 0);
+
+    if constexpr (IS_MC) { // Running only on MC
+      tableRecoParticles.reserve(nTracks);
+    }
+    int64_t iTrack = 0;
+    for (const auto& track : tracks) {
+      if (!isSelectedTrack<IS_MC>(track)) {
+        continue;
+      }
+      tableTracks(tableCollisions.lastIndex(),
+                  track.pt(), track.eta(), track.phi(), track.pt() * std::sqrt(track.c1Pt21Pt2()),
+                  track.flags(), track.sign(),
+                  track.dcaXY(), track.dcaZ(), track.length(),
+                  track.itsClusterMap(),
+                  track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
+                  track.hasITS(), track.hasTPC(), track.hasTRD(), track.hasTOF(),
+                  track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                  track.tpcCrossedRowsOverFindableCls(), track.tpcFoundOverFindableCls(), track.tpcFractionSharedCls(),
+                  track.itsNCls(), track.itsNClsInnerBarrel());
+
+      if constexpr (IS_MC) { // Running only on MC
+        if (track.has_mcParticle()) {
+          auto particle = track.mcParticle();
+          recoPartIndices[iTrack++] = particle.globalIndex();
+          if (particle.isPhysicalPrimary()) {
+            particleProduction = 0;
+          } else if (particle.getProcess() == 4) {
+            particleProduction = 1;
+          } else {
+            particleProduction = 2;
+          }
+          tableRecoParticles(particle.pt(), particle.eta(), particle.phi(),
+                             particle.pdgCode(), particleProduction);
+        } else { // If it does not have the particle we fill with the track values and tag it with -1 in the production
+          tableRecoParticles(track.pt(), track.eta(), track.phi(),
+                             0, -1);
+        }
+      }
+    }
+
+    // Running only on MC
+    if constexpr (IS_MC) {
+      if (!collision.has_mcCollision()) {
+        return;
+      }
+      const auto particlesInCollision = particles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      tableNonRecoParticles.reserve(particlesInCollision.size() - nTracks);
+      for (const auto& particle : particlesInCollision) {
+        const auto partReconstructed = std::find(recoPartIndices.begin(), recoPartIndices.end(), particle.globalIndex()) != recoPartIndices.end();
+        if (partReconstructed) {
+          continue;
+        }
+        if (particle.isPhysicalPrimary()) {
+          particleProduction = 0;
+        } else if (particle.getProcess() == 4) {
+          particleProduction = 1;
+        } else {
+          particleProduction = 2;
+        }
+        tableNonRecoParticles(particle.pt(), particle.eta(), particle.phi(),
+                              particle.pdgCode(), particleProduction,
+                              particle.vx(), particle.vy(), particle.vz());
+      }
+    }
+  }
 };
 
 struct qaEventTrackLite { // Lite version of the QA task to run on skimmed dataset
@@ -334,7 +435,7 @@ struct qaEventTrackLite { // Lite version of the QA task to run on skimmed datas
   PROCESS_SWITCH(qaEventTrackLite, processDataLite, "process data lite", true);
 
   // Process MC
-  void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGParticles>> const& tracks, aod::DPGCollisions const&)
+  void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGNonRecoParticles>> const& tracks, aod::DPGCollisions const&)
   {
     for (const auto& track : tracks) {
       if (track.productionMode() == 0) {
@@ -673,68 +774,6 @@ void qaEventTrack::processReco(const C& collision, const T& tracks)
     }
     if (track.hasITS() && track.hasTPC()) {
       histos.fill(HIST("Tracks/ITS/hasITSANDhasTPC"), track.pt());
-    }
-  }
-}
-
-//**************************************************************************************************
-/**
- * Fill reco level tables.
- */
-//**************************************************************************************************
-template <bool IS_MC, typename C, typename T>
-void qaEventTrack::processRecoTable(const C& collision, const T& tracks, const aod::BCs&)
-{
-  if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
-    return;
-  }
-
-  tableCollisions(collision.posZ(),
-                  (isRun3 ? collision.sel8() : collision.sel7()),
-                  collision.bc().runNumber());
-  int nTracks = 0;
-  int particleProduction = 0;
-
-  for (const auto& track : tracks) {
-    if (!isSelectedTrack<IS_MC>(track)) {
-      continue;
-    }
-    ++nTracks;
-  }
-  tableTracks.reserve(nTracks);
-  if constexpr (IS_MC) { // Running only on MC
-    tableParticles.reserve(nTracks);
-  }
-
-  for (const auto& track : tracks) {
-    if (!isSelectedTrack<IS_MC>(track)) {
-      continue;
-    }
-    tableTracks(tableCollisions.lastIndex(),
-                track.pt(), track.eta(), track.phi(), track.pt() * std::sqrt(track.c1Pt21Pt2()),
-                track.flags(), track.sign(),
-                track.dcaXY(), track.dcaZ(), track.length(),
-                track.itsClusterMap(),
-                track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
-                track.hasITS(), track.hasTPC(), track.hasTRD(), track.hasTOF(),
-                track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                track.tpcCrossedRowsOverFindableCls(), track.tpcFoundOverFindableCls(), track.tpcFractionSharedCls(),
-                track.itsNCls(), track.itsNClsInnerBarrel());
-
-    if constexpr (IS_MC) { // Running only on MC
-      if (track.has_mcParticle()) {
-        auto particle = track.mcParticle();
-        if (particle.isPhysicalPrimary()) {
-          particleProduction = 0;
-        } else if (particle.getProcess() == 4) {
-          particleProduction = 1;
-        } else {
-          particleProduction = 2;
-        }
-        tableParticles(particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), particleProduction);
-      } else { // If it does not have the particle we fill with the track values and tag it with -1 in the production
-        tableParticles(track.pt(), track.eta(), track.phi(), 0, -1);
-      }
     }
   }
 }
