@@ -350,7 +350,7 @@ struct CentralityTable {
       auto scaleMC = [](float x, float pars[6]) {
         return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
       };
-    
+
       float percentile = 105.0f;
       float scaledMultiplicity = multiplicity;
       if (estimator.mCalibrationStored) {
