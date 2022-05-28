@@ -168,7 +168,7 @@ struct DiffQA {
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
     bool isDGcandidate = true;
     registry.get<TH1>(HIST("Stat"))->Fill(0., isDGcandidate * 1.);
-    
+
     // update collision histograms
     // vertex position
     registry.get<TH2>(HIST("vtxPosxy"))->Fill(collision.posX(), collision.posY());
@@ -199,11 +199,11 @@ struct DiffQA {
       registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
       // update dEdx histograms
       registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
-      
+
       // TOF hit?
       if (track.hasTOF()) {
         registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
-      
+
         // vertex track with TOF hit?
         if (track.isPVContributor()) {
           rgtrwTOF += 1.;
@@ -287,10 +287,10 @@ struct DiffQA {
     registry.get<TH1>(HIST("Stat"))->Fill(7., globalAndVtx * 1.);
     registry.get<TH1>(HIST("Stat"))->Fill(8., vtxAndGlobal * 1.);
     isDGcandidate &= globalAndVtx;
-    
+
     // at least one vtx track with TOF hit
     registry.get<TH1>(HIST("Stat"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
-    
+
     // check a given bc for possible ambiguous Tracks
     auto withAmbTracks = isDGcandidate;
     for (auto& bc : bcSlice) {
@@ -336,7 +336,7 @@ struct DiffQA {
         if (!track.isPVContributor()) {
           continue;
         }
-        
+
         lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mass2Use);
         LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
         if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
