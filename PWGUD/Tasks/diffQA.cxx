@@ -75,32 +75,39 @@ struct DiffQA {
   //  bin  5: no Cascades
   //  bin  6: no FWD tracks
   //  bin  7: no global tracks which are no vtx tracks
-  //  bin  8: possible ambiguous tracks
-  //  bin  9: possible ambiguous FwdTracks
-  //  bin 10: number of tracks >= minimum number
-  //  bin 11: number of tracks <= maximum number
-  //  bin 12: minimum pt <= pt of vtx tracks <= maximum pt
-  //  bin 13: minimum eta <= eta of vtx tracks <= maximum eta
-  //  bin 14: net charge >= minimum net charge
-  //  bin 15: net charge <= maximum net charge
-  //  bin 16: IVM >= minimum IVM
-  //  bin 17: IVM <= maximum IVM
+  //  bin  8: no vtx tracks which are no global tracks
+  //  bin  9: at least one vtx tracks with TOF hit
+  //  bin 10: possible ambiguous tracks
+  //  bin 11: possible ambiguous FwdTracks
+  //  bin 12: number of tracks >= minimum number
+  //  bin 13: number of tracks <= maximum number
+  //  bin 14: minimum pt <= pt of vtx tracks <= maximum pt
+  //  bin 15: minimum eta <= eta of vtx tracks <= maximum eta
+  //  bin 16: net charge >= minimum net charge
+  //  bin 17: net charge <= maximum net charge
+  //  bin 18: IVM >= minimum IVM
+  //  bin 19: IVM <= maximum IVM
   HistogramRegistry registry{
     "registry",
     {
-      {"Stat", "#Stat", {HistType::kTH1F, {{18, -0.5, 17.5}}}},
+      {"Stat", "#Stat", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
       {"cleanFIT", "#cleanFIT", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
       {"Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
       {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
-      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {300, 0., 300.}}}},
-      {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {100, 0., 50000.}}}},
-      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {300, 0., 300.}}}},
-      {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {100, 0., 50000.}}}},
+      {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
       {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{100, -10., 10.}, {100, -10., 10.}}}},
       {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
     }};
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -162,6 +169,19 @@ struct DiffQA {
     bool isDGcandidate = true;
     registry.get<TH1>(HIST("Stat"))->Fill(0., isDGcandidate * 1.);
 
+    // update collision histograms
+    // vertex position
+    registry.get<TH2>(HIST("vtxPosxy"))->Fill(collision.posX(), collision.posY());
+    registry.get<TH1>(HIST("vtxPosz"))->Fill(collision.posZ());
+    // tracks
+    registry.get<TH1>(HIST("Tracks"))->Fill(tracks.size());
+    // vertex tracks
+    registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
+    // global tracks
+    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+    goodTracks.bindTable(tracks);
+    registry.get<TH1>(HIST("globalTracks"))->Fill(goodTracks.size());
+
     // test influence of BCrange width
     for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
       auto bcSlice = compatibleBCs(collision, NDtcoll, bct0s, 0);
@@ -172,34 +192,28 @@ struct DiffQA {
       registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
     }
 
-    // vertex position
-    registry.get<TH2>(HIST("vtxPosxy"))->Fill(collision.posX(), collision.posY());
-    registry.get<TH1>(HIST("vtxPosz"))->Fill(collision.posZ());
-
-    // check tracks
-    registry.get<TH1>(HIST("Tracks"))->Fill(tracks.size());
-
-    // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    goodTracks.bindTable(tracks);
-    LOGF(debug, "<DiffQA> Number of good tracks: %i", goodTracks.size());
-
-    // number of gobal tracks with TOF hit
+    // number of vertex tracks with TOF hit
     float rgtrwTOF = 0.;
-    if (goodTracks.size() > 0) {
-      for (auto& track : goodTracks) {
-        // update dEdx histograms
-        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
-        if (track.hasTOF()) {
-          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
+    for (auto& track : tracks) {
+      // update eta vs pt histogram
+      registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
+      // update dEdx histograms
+      registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
 
-          // number of global tracks with TOF hit
+      // TOF hit?
+      if (track.hasTOF()) {
+        registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
+
+        // vertex track with TOF hit?
+        if (track.isPVContributor()) {
           rgtrwTOF += 1.;
         }
       }
-      rgtrwTOF /= goodTracks.size();
     }
-    LOGF(debug, "<DiffQA> Good tracks with TOF: %f [1]", rgtrwTOF);
+    if (collision.numContrib() > 0) {
+      rgtrwTOF /= collision.numContrib();
+    }
+    LOGF(debug, "<DiffQA> Vertex tracks with TOF: %f [1]", rgtrwTOF);
     registry.get<TH2>(HIST("tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
 
     // is it a DG candidate?
@@ -260,13 +274,22 @@ struct DiffQA {
     registry.get<TH1>(HIST("Stat"))->Fill(6., isDGcandidate * 1.);
 
     // no global tracks which are no vtx tracks
+    bool globalAndVtx = isDGcandidate;
+    bool vtxAndGlobal = isDGcandidate;
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
-        isDGcandidate = false;
-        break;
+        globalAndVtx = false;
+      }
+      if (track.isPVContributor() && !track.isGlobalTrack()) {
+        vtxAndGlobal = false;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(7., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(7., globalAndVtx * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(8., vtxAndGlobal * 1.);
+    isDGcandidate &= globalAndVtx;
+
+    // at least one vtx track with TOF hit
+    registry.get<TH1>(HIST("Stat"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
 
     // check a given bc for possible ambiguous Tracks
     auto withAmbTracks = isDGcandidate;
@@ -276,7 +299,7 @@ struct DiffQA {
         break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(8., withAmbTracks * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(10., withAmbTracks * 1.);
 
     // check a given bc for possible ambiguous FwdTracks
     auto withAmbFwdTracks = isDGcandidate;
@@ -286,14 +309,13 @@ struct DiffQA {
         break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(9., withAmbFwdTracks * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(11., withAmbFwdTracks * 1.);
 
     // number of vertex tracks <= n
-    registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
-    registry.get<TH1>(HIST("Stat"))->Fill(10., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(12., isDGcandidate * 1.);
     isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
-    registry.get<TH1>(HIST("Stat"))->Fill(11., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(13., isDGcandidate * 1.);
 
     // net charge and invariant mass
     bool goodetas = true;
@@ -311,11 +333,16 @@ struct DiffQA {
 
       // check also pt and eta of tracks
       for (auto& track : tracks) {
-        lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
-        if (lvtmp.Perp() <= diffCuts.minPt() || lvtmp.Perp() >= diffCuts.maxPt()) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+
+        lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mass2Use);
+        LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
+        if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
           goodpts = false;
         }
-        if (lvtmp.Eta() <= diffCuts.minEta() || lvtmp.Eta() >= diffCuts.maxEta()) {
+        if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
           goodetas = false;
         }
         netCharge += track.sign();
@@ -323,29 +350,32 @@ struct DiffQA {
       }
     }
     isDGcandidate &= goodpts;
-    registry.get<TH1>(HIST("Stat"))->Fill(12., isDGcandidate * 1.);
-    isDGcandidate &= goodetas;
-    registry.get<TH1>(HIST("Stat"))->Fill(13., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(14., isDGcandidate * 1.);
-    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
+    isDGcandidate &= goodetas;
     registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
-    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
-    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
     registry.get<TH1>(HIST("Stat"))->Fill(17., isDGcandidate * 1.);
+    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+    registry.get<TH1>(HIST("Stat"))->Fill(18., isDGcandidate * 1.);
+    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    registry.get<TH1>(HIST("Stat"))->Fill(19., isDGcandidate * 1.);
 
     // update some DG histograms
     if (isDGcandidate) {
       // vertex position of DG events
-      registry.get<TH2>(HIST("vtxPosxy"))->Fill(collision.posX(), collision.posY());
-      registry.get<TH1>(HIST("vtxPosz"))->Fill(collision.posZ());
+      registry.get<TH2>(HIST("vtxPosxyDG"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("vtxPoszDG"))->Fill(collision.posZ());
+      registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
 
       // fill dEdx of DG event tracks
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
           LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
           registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.pt(), track.tpcSignal());
+          registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
+          registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           if (track.hasTOF()) {
             registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.pt(), track.tofSignal());
           }
