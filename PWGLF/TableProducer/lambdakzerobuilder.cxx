@@ -407,44 +407,44 @@ struct lambdakzeroBuilder {
 
       // Track preselection part
 #ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracks>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
+      auto labelPos = V0.posTrack_as<MyTracksIU>().mcParticleId();
+      auto labelNeg = V0.negTrack_as<MyTracksIU>().mcParticleId();
       bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
       registry.fill(HIST("hGoodIndices"), 0.5);
       if (isRun2) {
-        if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
+        if (!(V0.posTrack_as<MyTracksIU>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
           v0dataLink(-1);
           continue; // TPC refit
         }
-        if (!(V0.negTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
+        if (!(V0.negTrack_as<MyTracksIU>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
           v0dataLink(-1);
           continue; // TPC refit
         }
       }
       registry.fill(HIST("hGoodIndices"), 1.5);
-      if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
+      if (V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() < mincrossedrows) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
         continue;
       }
-      if (V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
+      if (V0.negTrack_as<MyTracksIU>().tpcNClsCrossedRows() < mincrossedrows) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracksIU>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
         continue;
       }
       registry.fill(HIST("hGoodIndices"), 2.5);
-      if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+      if (fabs(V0.posTrack_as<MyTracksIU>().dcaXY()) < dcapostopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
         continue;
       }
-      if (fabs(V0.negTrack_as<MyTracks>().dcaXY()) < dcanegtopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+      if (fabs(V0.negTrack_as<MyTracksIU>().dcaXY()) < dcanegtopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
         continue;
       }
@@ -457,8 +457,8 @@ struct lambdakzeroBuilder {
       std::array<float, 3> pvec1 = {0.};
 
 #ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracks>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
+      auto labelPos = V0.posTrack_as<MyTracksIU>().mcParticleId();
+      auto labelNeg = V0.negTrack_as<MyTracksIU>().mcParticleId();
       bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
 #endif
 
@@ -466,11 +466,11 @@ struct lambdakzeroBuilder {
 
       registry.fill(HIST("hV0Candidate"), 0.5);
 
-      auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
-      auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
+      auto pTrack = getTrackParCov(V0.posTrack_as<MyTracksIU>());
+      auto nTrack = getTrackParCov(V0.negTrack_as<MyTracksIU>());
 
       // Require collision-ID
-      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks) {
+      if (V0.posTrack_as<MyTracksIU>().collisionId() != V0.negTrack_as<MyTracksIU>().collisionId() && rejDiffCollTracks) {
         v0dataLink(-1);
         continue;
       }
@@ -554,8 +554,8 @@ struct lambdakzeroBuilder {
         pvec0[0], pvec0[1], pvec0[2],
         pvec1[0], pvec1[1], pvec1[2],
         fitter.getChi2AtPCACandidate(),
-        V0.posTrack_as<MyTracks>().dcaXY(),
-        V0.negTrack_as<MyTracks>().dcaXY());
+        V0.posTrack_as<MyTracksIU>().dcaXY(),
+        V0.negTrack_as<MyTracksIU>().dcaXY());
       v0dataLink(v0data.lastIndex());
     }
   }
