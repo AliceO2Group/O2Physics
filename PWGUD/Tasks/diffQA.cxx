@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief A QA task for DG events events
+/// \brief A QA task for DG events
 ///
 ///     options:
 ///           DiffCuts.mNDtcoll(4)
@@ -39,7 +39,7 @@
 ///           o2-analysis-ft0-corrected-table $copts |
 ///           o2-analysis-trackextension $copts |
 ///           o2-analysis-trackselection $copts |
-///           o2-analysis-ud-diff-mcqa $copts > diffQA.log
+///           o2-analysis-ud-diff-qa $copts > diffQA.log
 ///
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  20.05.2022
@@ -56,6 +56,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DiffQA {
+
+  float maxdEdxTPC;
+  float maxdEdxTOF;
 
   // get a cutHolder
   cutHolder diffCuts = cutHolder();
@@ -101,11 +104,11 @@ struct DiffQA {
       {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
       {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
       {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{100, -10., 10.}, {100, -10., 10.}}}},
+      {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
       {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
       {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
       {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
-      {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{100, -10., 10.}, {100, -10., 10.}}}},
-      {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
       {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
     }};
@@ -120,6 +123,8 @@ struct DiffQA {
 
   void init(InitContext&)
   {
+    maxdEdxTPC = 0.;
+    maxdEdxTOF = 0.;
     diffCuts = (cutHolder)DGCuts;
   }
 
@@ -199,10 +204,18 @@ struct DiffQA {
       registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
       // update dEdx histograms
       registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
+      if (track.tpcSignal() > maxdEdxTPC) {
+        maxdEdxTPC = track.tpcSignal();
+        LOGF(info, "<DiffQA> New maxdEdx TPC %f", maxdEdxTPC);
+      }
 
       // TOF hit?
       if (track.hasTOF()) {
         registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
+        if (track.tofSignal() > maxdEdxTOF) {
+          maxdEdxTOF = track.tofSignal();
+          LOGF(info, "<DiffQA> New maxdEdx tOF %f", maxdEdxTOF);
+        }
 
         // vertex track with TOF hit?
         if (track.isPVContributor()) {
@@ -382,8 +395,6 @@ struct DiffQA {
         }
       }
     }
-
-    LOGF(debug, "<DiffQA> End");
   };
 };
 
