@@ -50,8 +50,8 @@ struct HFCandidateCreator3Prong {
   OutputObj<TH1F> hmass3{TH1F("hmass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH2F> hDCAxyProngs{TH2F("hDCAxyProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH2F> hDCAzProngs{TH2F("hDCAzProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
 
   float toMicrometers = 10000.; // from cm to µm
 
@@ -130,12 +130,12 @@ struct HFCandidateCreator3Prong {
       trackParVar0.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
       trackParVar2.propagateToDCA(primaryVertex, magneticField, &impactParameter2);
-      hDCAxyProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
-      hDCAxyProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
-      hDCAxyProngs->Fill(track2.pt(), impactParameter2.getY() * toMicrometers);
-      hDCAzProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
-      hDCAzProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
-      hDCAzProngs->Fill(track2.pt(), impactParameter2.getZ() * toMicrometers);
+      hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
+      hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
+      hDcaXYProngs->Fill(track2.pt(), impactParameter2.getY() * toMicrometers);
+      hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
+      hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
+      hDcaZProngs->Fill(track2.pt(), impactParameter2.getZ() * toMicrometers);
 
       // get uncertainty of the decay length
       double phi, theta;

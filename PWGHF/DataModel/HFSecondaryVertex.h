@@ -63,8 +63,8 @@ DECLARE_SOA_COLUMN(PvRefitSigmaY2, pvRefitSigmaY2, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaXZ, pvRefitSigmaXZ, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaYZ, pvRefitSigmaYZ, float); //!
 DECLARE_SOA_COLUMN(PvRefitSigmaZ2, pvRefitSigmaZ2, float); //!
-DECLARE_SOA_COLUMN(PvRefitDCAXY, pvRefitDcaXY, float);     //!
-DECLARE_SOA_COLUMN(PvRefitDCAZ, pvRefitDcaZ, float);       //!
+DECLARE_SOA_COLUMN(PvRefitDcaXY, pvRefitDcaXY, float);     //!
+DECLARE_SOA_COLUMN(PvRefitDcaZ, pvRefitDcaZ, float);       //!
 } // namespace hf_pvrefit_track
 
 DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
@@ -77,8 +77,8 @@ DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
                   hf_pvrefit_track::PvRefitSigmaXZ,
                   hf_pvrefit_track::PvRefitSigmaYZ,
                   hf_pvrefit_track::PvRefitSigmaZ2,
-                  hf_pvrefit_track::PvRefitDCAXY,
-                  hf_pvrefit_track::PvRefitDCAZ);
+                  hf_pvrefit_track::PvRefitDcaXY,
+                  hf_pvrefit_track::PvRefitDcaZ);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
 using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;

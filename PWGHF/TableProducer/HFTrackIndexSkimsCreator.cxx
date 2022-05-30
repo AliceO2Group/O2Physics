@@ -35,7 +35,6 @@
 #include "DetectorsBase/GeometryManager.h"    // for PV refit
 
 #include <algorithm>
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -279,10 +278,10 @@ struct HfTagSelTracks {
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbpath_lut = "GLO/Param/MatLUT";
-  const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
-  const char* ccdbpath_grp = "GLO/GRP/GRP";
-  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  const char* ccdbPathLut = "GLO/Param/MatLUT";
+  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
+  const char* ccdbPathGrp = "GLO/GRP/GRP";
+  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -324,34 +323,34 @@ struct HfTagSelTracks {
       AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
       AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
       AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
-      AxisSpec axisCollisionXoriginal{1000, -20.f, 20.f, "X original PV (cm)"};
-      AxisSpec axisCollisionYoriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
-      AxisSpec axisCollisionZoriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
-      AxisSpec axisCollisionNcontrib{1000, 0, 1000, "Number of contributors"};
+      AxisSpec axisCollisionXOriginal{1000, -20.f, 20.f, "X original PV (cm)"};
+      AxisSpec axisCollisionYOriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
+      AxisSpec axisCollisionZOriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
+      AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
       AxisSpec axisCollisionDeltaX{axisPvRefitDeltaX, "#Delta x_{PV} (cm)"};
       AxisSpec axisCollisionDeltaY{axisPvRefitDeltaY, "#Delta y_{PV} (cm)"};
       AxisSpec axisCollisionDeltaZ{axisPvRefitDeltaZ, "#Delta z_{PV} (cm)"};
 
-      registry.add("PVrefit/hVerticesPerTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
-      registry.get<TH1>(HIST("PVrefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(1, "All PV");
-      registry.get<TH1>(HIST("PVrefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
-      registry.get<TH1>(HIST("PVrefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
-      registry.add("PVrefit/hPvDeltaXvsNcontrib", "", kTH2D, {axisCollisionNcontrib, axisCollisionDeltaX});
-      registry.add("PVrefit/hPvDeltaYvsNcontrib", "", kTH2D, {axisCollisionNcontrib, axisCollisionDeltaY});
-      registry.add("PVrefit/hPvDeltaZvsNcontrib", "", kTH2D, {axisCollisionNcontrib, axisCollisionDeltaZ});
-      registry.add("PVrefit/hChi2vsNcontrib", "", kTH2D, {axisCollisionNcontrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
-      registry.add("PVrefit/hPvRefitXchi2Minus1", "PV refit with #chi^{2}==-1", kTH2D, {axisCollisionX, axisCollisionXoriginal});
-      registry.add("PVrefit/hPvRefitYchi2Minus1", "PV refit with #chi^{2}==-1", kTH2D, {axisCollisionY, axisCollisionYoriginal});
-      registry.add("PVrefit/hPvRefitZchi2Minus1", "PV refit with #chi^{2}==-1", kTH2D, {axisCollisionZ, axisCollisionZoriginal});
-      registry.add("PVrefit/hNcontribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNcontrib});
-      registry.add("PVrefit/hNContribPvRefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {axisCollisionNcontrib});
+      registry.add("PvRefit/hVerticesPerTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
+      registry.get<TH1>(HIST("PvRefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(1, "All PV");
+      registry.get<TH1>(HIST("PvRefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
+      registry.get<TH1>(HIST("PvRefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
+      registry.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaX});
+      registry.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaY});
+      registry.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaZ});
+      registry.add("PvRefit/hChi2vsNContrib", "", kTH2D, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+      registry.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionX, axisCollisionXOriginal});
+      registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionY, axisCollisionYOriginal});
+      registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
+      registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
+      registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors orginal PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
 
-      ccdb->setURL(ccdburl);
+      ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(ccdbpath_geo);
+        ccdb->get<TGeoManager>(ccdbPathGeo);
       }
       mRunNumber = 0;
     }
@@ -403,7 +402,7 @@ struct HfTagSelTracks {
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
         o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -428,16 +427,16 @@ struct HfTagSelTracks {
     if (!pvRefitDoable) {
       LOG(info) << "Not enough tracks accepted for the refit";
       if (doPvRefit) {
-        registry.fill(HIST("PVrefit/hNcontribPvRefitNotDoable"), collision.numContrib());
+        registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
     if (debug) {
       LOG(info) << "prepareVertexRefit = " << pvRefitDoable << " Ncontrib= " << vecPvContributorTrackParCov.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << primVtx.asString();
     }
 
-    registry.fill(HIST("PVrefit/hVerticesPerTrack"), 1);
+    registry.fill(HIST("PvRefit/hVerticesPerTrack"), 1);
     if (pvRefitDoable) {
-      registry.fill(HIST("PVrefit/hVerticesPerTrack"), 2);
+      registry.fill(HIST("PvRefit/hVerticesPerTrack"), 2);
     }
     /// PV refitting, if the tracks contributed to this at the beginning
     o2::dataformats::VertexBase primVtxBaseRecalc;
@@ -461,15 +460,15 @@ struct HfTagSelTracks {
           if (debug) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
           }
-          registry.fill(HIST("PVrefit/hPvRefitXchi2Minus1"), primVtxRefitted.getX(), collision.posX());
-          registry.fill(HIST("PVrefit/hPvRefitYchi2Minus1"), primVtxRefitted.getY(), collision.posY());
-          registry.fill(HIST("PVrefit/hPvRefitZchi2Minus1"), primVtxRefitted.getZ(), collision.posZ());
-          registry.fill(HIST("PVrefit/hNContribPvRefitChi2minus1"), collision.numContrib());
+          registry.fill(HIST("PvRefit/hPvRefitXChi2Minus1"), primVtxRefitted.getX(), collision.posX());
+          registry.fill(HIST("PvRefit/hPvRefitYChi2Minus1"), primVtxRefitted.getY(), collision.posY());
+          registry.fill(HIST("PvRefit/hPvRefitZChi2Minus1"), primVtxRefitted.getZ(), collision.posZ());
+          registry.fill(HIST("PvRefit/hNContribPvRefitChi2Minus1"), collision.numContrib());
           recalcImpPar = false;
         } else {
-          registry.fill(HIST("PVrefit/hVerticesPerTrack"), 3);
+          registry.fill(HIST("PvRefit/hVerticesPerTrack"), 3);
         }
-        registry.fill(HIST("PVrefit/hChi2vsNcontrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
+        registry.fill(HIST("PvRefit/hChi2vsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
 
         vecPvRefitContributorUsed[entry] = true; /// restore the track for the next PV refitting (probably not necessary here)
 
@@ -478,9 +477,9 @@ struct HfTagSelTracks {
           const double deltaX = primVtx.getX() - primVtxRefitted.getX();
           const double deltaY = primVtx.getY() - primVtxRefitted.getY();
           const double deltaZ = primVtx.getZ() - primVtxRefitted.getZ();
-          registry.fill(HIST("PVrefit/hPvDeltaXvsNcontrib"), primVtxRefitted.getNContributors(), deltaX);
-          registry.fill(HIST("PVrefit/hPvDeltaYvsNcontrib"), primVtxRefitted.getNContributors(), deltaY);
-          registry.fill(HIST("PVrefit/hPvDeltaZvsNcontrib"), primVtxRefitted.getNContributors(), deltaZ);
+          registry.fill(HIST("PvRefit/hPvDeltaXvsNContrib"), primVtxRefitted.getNContributors(), deltaX);
+          registry.fill(HIST("PvRefit/hPvDeltaYvsNContrib"), primVtxRefitted.getNContributors(), deltaY);
+          registry.fill(HIST("PvRefit/hPvDeltaZvsNContrib"), primVtxRefitted.getNContributors(), deltaZ);
 
           // fill the newly calculated PV
           primVtxBaseRecalc.setX(primVtxRefitted.getX());
@@ -849,10 +848,10 @@ struct HfTrackIndexSkimsCreator {
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  const char* ccdbpath_lut = "GLO/Param/MatLUT";
-  const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
-  const char* ccdbpath_grp = "GLO/GRP/GRP";
-  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  const char* ccdbPathLut = "GLO/Param/MatLUT";
+  const char* ccdbPathGeo = "GLO/Config/GeometryAligned";
+  const char* ccdbPathGrp = "GLO/GRP/GRP";
+  const char* ccdbUrl = "http://alice-ccdb.cern.ch";
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -928,36 +927,36 @@ struct HfTrackIndexSkimsCreator {
       AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
       AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
       AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
-      AxisSpec axisCollisionXoriginal{1000, -20.f, 20.f, "X original PV (cm)"};
-      AxisSpec axisCollisionYoriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
-      AxisSpec axisCollisionZoriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
-      AxisSpec axisCollisionNcontrib{1000, 0, 1000, "Number of contributors"};
+      AxisSpec axisCollisionXOriginal{1000, -20.f, 20.f, "X original PV (cm)"};
+      AxisSpec axisCollisionYOriginal{1000, -20.f, 20.f, "Y original PV (cm)"};
+      AxisSpec axisCollisionZOriginal{1000, -20.f, 20.f, "Z original PV (cm)"};
+      AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
       AxisSpec axisCollisionDeltaX{axisPvRefitDeltaX, "#Delta x_{PV} (cm)"};
       AxisSpec axisCollisionDeltaY{axisPvRefitDeltaY, "#Delta y_{PV} (cm)"};
       AxisSpec axisCollisionDeltaZ{axisPvRefitDeltaZ, "#Delta z_{PV} (cm)"};
-      registry.add("PVrefit/vertices_perCandidate", "", kTH1D, {{6, 0.5f, 6.5f, ""}});
-      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(1, "All PV");
-      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
-      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
-      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(4, "PV refit #chi^{2}==-1");
-      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(5, "1 daughter contr.");
-      registry.get<TH1>(HIST("PVrefit/vertices_perCandidate"))->GetXaxis()->SetBinLabel(6, "no PV refit");
-      registry.add("PVrefit/hPvDeltaXvsNcontrib", "", kTH2D, {axisCollisionNcontrib, axisCollisionDeltaX});
-      registry.add("PVrefit/hPvDeltaYvsNcontrib", "", kTH2D, {axisCollisionNcontrib, axisCollisionDeltaY});
-      registry.add("PVrefit/hPvDeltaZvsNcontrib", "", kTH2D, {axisCollisionNcontrib, axisCollisionDeltaZ});
-      registry.add("PVrefit/hChi2vsNcontrib", "", kTH2D, {axisCollisionNcontrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
-      registry.add("PVrefit/hPvRefitXchi2Minus1", "PV refit with #chi^{2}==-1", kTH2D, {axisCollisionX, axisCollisionXoriginal});
-      registry.add("PVrefit/hPvRefitYchi2Minus1", "PV refit with #chi^{2}==-1", kTH2D, {axisCollisionY, axisCollisionYoriginal});
-      registry.add("PVrefit/hPvRefitZchi2Minus1", "PV refit with #chi^{2}==-1", kTH2D, {axisCollisionZ, axisCollisionZoriginal});
-      registry.add("PVrefit/hNcontribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNcontrib});
-      registry.add("PVrefit/hNContribPvRefitChi2minus1", "N. contributors orginal PV for PV refit #chi^{2}==-1", kTH1D, {axisCollisionNcontrib});
+      registry.add("PvRefit/verticesPerCandidate", "", kTH1D, {{6, 0.5f, 6.5f, ""}});
+      registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(1, "All PV");
+      registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
+      registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
+      registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(4, "PV refit #it{#chi}^{2}==#minus1");
+      registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(5, "1 daughter contr.");
+      registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(6, "no PV refit");
+      registry.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaX});
+      registry.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaY});
+      registry.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaZ});
+      registry.add("PvRefit/hChi2vsNContrib", "", kTH2D, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+      registry.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionX, axisCollisionXOriginal});
+      registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionY, axisCollisionYOriginal});
+      registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
+      registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
+      registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors orginal PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
 
-      ccdb->setURL(ccdburl);
+      ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(ccdbpath_geo);
+        ccdb->get<TGeoManager>(ccdbPathGeo);
       }
       mRunNumber = 0;
     }
@@ -1249,7 +1248,7 @@ struct HfTrackIndexSkimsCreator {
     // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbPathGrp, bc.timestamp());
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
         o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -1274,16 +1273,16 @@ struct HfTrackIndexSkimsCreator {
     if (!pvRefitDoable) {
       LOG(info) << "Not enough tracks accepted for the refit";
       if (doPvRefit) {
-        registry.fill(HIST("PVrefit/hNcontribPvRefitNotDoable"), collision.numContrib());
+        registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
     if (debug) {
       LOG(info) << "prepareVertexRefit = " << pvRefitDoable << " Ncontrib= " << vecPvContributorTrackParCov.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << primVtx.asString();
     }
 
-    // registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
+    // registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
     if (pvRefitDoable) {
-      registry.fill(HIST("PVrefit/vertices_perCandidate"), 2);
+      registry.fill(HIST("PvRefit/verticesPerCandidate"), 2);
     }
     /// PV refitting, if the tracks contributed to this at the beginning
     o2::dataformats::VertexBase primVtxBaseRecalc;
@@ -1312,16 +1311,16 @@ struct HfTrackIndexSkimsCreator {
         if (debug) {
           LOG(info) << "---> Refitted vertex has bad chi2 = " << primVtxRefitted.getChi2();
         }
-        registry.fill(HIST("PVrefit/vertices_perCandidate"), 4);
-        registry.fill(HIST("PVrefit/hPvRefitXchi2Minus1"), primVtxRefitted.getX(), collision.posX());
-        registry.fill(HIST("PVrefit/hPvRefitYchi2Minus1"), primVtxRefitted.getY(), collision.posY());
-        registry.fill(HIST("PVrefit/hPvRefitZchi2Minus1"), primVtxRefitted.getZ(), collision.posZ());
-        registry.fill(HIST("PVrefit/hNContribPvRefitChi2minus1"), collision.numContrib());
+        registry.fill(HIST("PvRefit/verticesPerCandidate"), 4);
+        registry.fill(HIST("PvRefit/hPvRefitXChi2Minus1"), primVtxRefitted.getX(), collision.posX());
+        registry.fill(HIST("PvRefit/hPvRefitYChi2Minus1"), primVtxRefitted.getY(), collision.posY());
+        registry.fill(HIST("PvRefit/hPvRefitZChi2Minus1"), primVtxRefitted.getZ(), collision.posZ());
+        registry.fill(HIST("PvRefit/hNContribPvRefitChi2Minus1"), collision.numContrib());
         recalcPvRefit = false;
       } else {
-        registry.fill(HIST("PVrefit/vertices_perCandidate"), 3);
+        registry.fill(HIST("PvRefit/verticesPerCandidate"), 3);
       }
-      registry.fill(HIST("PVrefit/hChi2vsNcontrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
+      registry.fill(HIST("PvRefit/hChi2vsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
 
       for (int i = 0; i < (int)vecPvContributorGlobId.size(); i++) {
         vecPvRefitContributorUsed[i] = true; /// restore the tracks for the next PV refitting (probably not necessary here)
@@ -1332,9 +1331,9 @@ struct HfTrackIndexSkimsCreator {
         const double deltaX = primVtx.getX() - primVtxRefitted.getX();
         const double deltaY = primVtx.getY() - primVtxRefitted.getY();
         const double deltaZ = primVtx.getZ() - primVtxRefitted.getZ();
-        registry.fill(HIST("PVrefit/hPvDeltaXvsNcontrib"), primVtxRefitted.getNContributors(), deltaX);
-        registry.fill(HIST("PVrefit/hPvDeltaYvsNcontrib"), primVtxRefitted.getNContributors(), deltaY);
-        registry.fill(HIST("PVrefit/hPvDeltaZvsNcontrib"), primVtxRefitted.getNContributors(), deltaZ);
+        registry.fill(HIST("PvRefit/hPvDeltaXvsNContrib"), primVtxRefitted.getNContributors(), deltaX);
+        registry.fill(HIST("PvRefit/hPvDeltaYvsNContrib"), primVtxRefitted.getNContributors(), deltaY);
+        registry.fill(HIST("PvRefit/hPvDeltaZvsNContrib"), primVtxRefitted.getNContributors(), deltaZ);
 
         // fill the newly calculated PV
         primVtxBaseRecalc.setX(primVtxRefitted.getX());
@@ -1532,7 +1531,7 @@ struct HfTrackIndexSkimsCreator {
             array<float, 3> pvRefitCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
             array<float, 6> pvRefitCovMatrix2Prong = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
             if (doPvRefit) {
-              registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
+              registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
               int nCandContr = 2;
               auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
               auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
@@ -1565,7 +1564,7 @@ struct HfTrackIndexSkimsCreator {
                 if (debug) {
                   LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
                 }
-                registry.fill(HIST("PVrefit/vertices_perCandidate"), 5);
+                registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
                 if (isTrackFirstContr && !isTrackSecondContr) {
                   /// the first daughter is contributor, the second is not
                   pvRefitCoord2Prong = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
@@ -1577,7 +1576,7 @@ struct HfTrackIndexSkimsCreator {
                 }
               } else {
                 /// 0 contributors among the HF candidate daughters
-                registry.fill(HIST("PVrefit/vertices_perCandidate"), 6);
+                registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
                 if (debug) {
                   LOG(info) << "####### [2 Prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                 }
@@ -1704,7 +1703,7 @@ struct HfTrackIndexSkimsCreator {
             array<float, 3> pvRefitCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
             array<float, 6> pvRefitCovMatrix3Prong2Pos1Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
             if (doPvRefit) {
-              registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
+              registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
               int nCandContr = 3;
               auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
               auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
@@ -1760,7 +1759,7 @@ struct HfTrackIndexSkimsCreator {
                 if (debug) {
                   LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
                 }
-                registry.fill(HIST("PVrefit/vertices_perCandidate"), 5);
+                registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
                 if (isTrackFirstContr && !isTrackSecondContr && !isTrackThirdContr) {
                   /// the first daughter is contributor, the second and the third are not
                   pvRefitCoord3Prong2Pos1Neg = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
@@ -1776,7 +1775,7 @@ struct HfTrackIndexSkimsCreator {
                 }
               } else {
                 /// 0 contributors among the HF candidate daughters
-                registry.fill(HIST("PVrefit/vertices_perCandidate"), 6);
+                registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
                 if (debug) {
                   LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                 }
@@ -1907,7 +1906,7 @@ struct HfTrackIndexSkimsCreator {
             array<float, 3> pvRefitCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
             array<float, 6> pvRefitCovMatrix3Prong1Pos2Neg = getPrimaryVertex(collision).getCov();               /// initialize to the original PV
             if (doPvRefit) {
-              registry.fill(HIST("PVrefit/vertices_perCandidate"), 1);
+              registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
               int nCandContr = 3;
               auto trackFirstIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackPos1.globalIndex());
               auto trackSecondIt = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), trackNeg1.globalIndex());
@@ -1963,7 +1962,7 @@ struct HfTrackIndexSkimsCreator {
                 if (debug) {
                   LOG(info) << "####### [3 Prong] nCandContr==" << nCandContr << " ---> just 1 contributor!";
                 }
-                registry.fill(HIST("PVrefit/vertices_perCandidate"), 5);
+                registry.fill(HIST("PvRefit/verticesPerCandidate"), 5);
                 if (isTrackFirstContr && !isTrackSecondContr && !isTrackThirdContr) {
                   /// the first daughter is contributor, the second and the third are not
                   pvRefitCoord3Prong1Pos2Neg = {trackPos1.pvRefitX(), trackPos1.pvRefitY(), trackPos1.pvRefitZ()};
@@ -1979,7 +1978,7 @@ struct HfTrackIndexSkimsCreator {
                 }
               } else {
                 /// 0 contributors among the HF candidate daughters
-                registry.fill(HIST("PVrefit/vertices_perCandidate"), 6);
+                registry.fill(HIST("PvRefit/verticesPerCandidate"), 6);
                 if (debug) {
                   LOG(info) << "####### [3 prong] nCandContr==" << nCandContr << " ---> some of the candidate daughters did not contribute to the original PV fit, PV refit not redone";
                 }
