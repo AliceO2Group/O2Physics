@@ -436,6 +436,9 @@ struct QaEfficiency {
     if (!doprocessData) {
       return;
     }
+    if constexpr (pdgSign != 0) {
+      return;
+    }
 
     auto h = histos.add<TH1>("Data/trackSelection", "Track Selection", kTH1D, {axisSel});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -971,6 +974,9 @@ struct QaEfficiency {
                    const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
   {
 
+    if constexpr (pdgSign != 0) {
+      return;
+    }
     if (!isCollisionSelected<false>(collision)) {
       return;
     }
