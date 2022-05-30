@@ -276,6 +276,10 @@ class VarManager : public TObject
     kDCATrackProd,
     kDCATrackVtxProd,
 
+    // Qn vector variables
+    kQ2X0,
+    kQ2Y0,
+
     // Candidate-track correlation variables
     kPairMass,
     kPairMassDau,
@@ -298,9 +302,9 @@ class VarManager : public TObject
   static TString fgVariableUnits[kNVars]; // variable units
   static void SetDefaultVarNames();
 
-  static const int fmaxHarmonic = 3;                // max harmonic
-  static const int fmaxPower = 3;                   // max power
-  static TComplex Qvector[fmaxHarmonic][fmaxPower]; // Q-vector components
+  //  static const int fmaxHarmonic = 3;                // max harmonic
+  //  static const int fmaxPower = 3;                   // max power
+  //  static TComplex Qvector[fmaxHarmonic][fmaxPower]; // Q-vector components
 
   static void SetUseVariable(int var)
   {
@@ -382,6 +386,8 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
+  template <typename T1>
+  static void FillQVector(T1 const& t1, float* values = nullptr, float weight = 1.0);
 
  public:
   VarManager();
@@ -389,7 +395,7 @@ class VarManager : public TObject
 
   static float fgValues[kNVars]; // array holding all variables computed during analysis
   static void ResetValues(int startValue = 0, int endValue = kNVars, float* values = nullptr);
-  static void ResetQvector();
+  // static void ResetQvector();
 
  private:
   static bool fgUsedVars[kNVars];        // holds flags for when the corresponding variable is needed (e.g., in the histogram manager, in cuts, mixing handler, etc.)
@@ -1211,6 +1217,20 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
                                              (collision.posY() - secondaryVertex[1]) * v123.Py() +
                                              (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
                                             (v123.P() * values[VarManager::kVertexingLxyz]);
+  }
+}
+
+template <typename T1>
+void VarManager::FillQVector(T1 const& track, float* values, float weight)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  // TODO: to be implemented
+  if (fgUsedVars[kQ2X0] || fgUsedVars[kQ2Y0]) {
+    int harm = 2;
+    values[kQ2X0] = weight * std::cos(harm * track.phi());
+    values[kQ2Y0] = weight * std::sin(harm * track.phi());
   }
 }
 

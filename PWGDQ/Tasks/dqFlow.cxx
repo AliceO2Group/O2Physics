@@ -70,7 +70,6 @@ using namespace o2::aod;
 // } // namespace o2::aod
 
 // Declarations of various short names
-using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -86,6 +85,11 @@ using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0
 
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
+
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+
+void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
 struct AnalysisQvector {
 
@@ -127,6 +131,8 @@ struct AnalysisQvector {
 
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
+  std::vector<TString> fTrackHistNames;
+  float* fValuesQn;
 
   struct Config {
     TH1D* mEfficiency = nullptr;
@@ -148,9 +154,44 @@ struct AnalysisQvector {
   {
     // TODO: initialize
 
+    fEventCut = new AnalysisCompositeCut(true);
+    TString eventCutStr = fConfigEventCuts.value;
+    fValuesQn = new float[VarManager::kNVars];
+
+    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
+
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
+
+    TString histNames = "";
+    VarManager::SetDefaultVarNames();
+
+    int h = nHarm;
+    int p = nPow;
+
+    if (fConfigQA) {
+      fHistMan = new HistogramManager("analysisHistos", "", VarManager::kNVars);
+      fHistMan->SetUseDefaultVariableNames(kTRUE);
+      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+      std::vector<TString> names = {
+        Form("hQ%dX%d", h, p),
+        Form("hQ%dY%d", h, p),
+        Form("hQ%dX%dvsZvtx", h, p),
+        Form("hQ%dY%dvsZvtx", h, p),
+        Form("hQ%dX%dvsCent", h, p),
+        Form("hQ%dY%dvsCent", h, p)};
+      histNames += Form("%s;%s;%s;%s;%s;%s", names[0].Data(), names[1].Data(), names[2].Data(), names[3].Data(), names[4].Data(), names[5].Data());
+      for (int i = 0; i < names.size(); i++) {
+        fTrackHistNames.push_back(names[i]);
+      }
+
+      DefineHistograms(fHistMan, histNames.Data());    // define all histograms
+      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      fOutputList.setObject(fHistMan->GetMainHistogramList());
+    }
 
     // Global effiencies
     if (fcfgEfficiency.value.empty() == false) {
@@ -194,18 +235,24 @@ struct AnalysisQvector {
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool flag)
   {
     // Calculate the correlations from the GFW
-    double dnx, val;
+    double dnx, dny, valx, valy;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
+    dny = fGFW->Calculate(corrconf, 0, kTRUE).Im();
     if (dnx == 0) {
       return;
     }
     // registry.fill(HIST("dnx"), cent, dnx);
 
     if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
-      if (TMath::Abs(val) < 1) {
-        fFC->FillProfile(corrconf.Head.Data(), cent, val, 1, rndm);
+      valx = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
+      if (TMath::Abs(valx) < 1) {
+        fFC->FillProfile(corrconf.Head.Data(), cent, valx, 1, rndm);
         // registry.fill(HIST("CorrValues"), cent, val);
+        if (dny == 0) {
+          return;
+        }
+        valy = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dny;
+        // VarManager::Qvector[nHarm][nPow] += TComplex(valx, valy);
       }
       return;
     }
@@ -216,9 +263,9 @@ struct AnalysisQvector {
       if (dnx == 0) {
         return;
       }
-      val = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
-      if (TMath::Abs(val) < 1) {
-        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, val, dnx, rndm);
+      valx = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
+      if (TMath::Abs(valx) < 1) {
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, valx, 1., rndm);
         // if (flag){ eventQvector(val);}
       }
       return;
@@ -226,20 +273,24 @@ struct AnalysisQvector {
   }
 
   // Template function to run fill Q vector (alltracks-barrel, alltracks-muon)
-  // template <typename TCollision, typename BC, typename TTracks1 >
-  // void runFillQvector(TCollision const& collision, BC const& bcs, TTracks1 const& tracks1)
-  void process(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks1)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
+  void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const& bcs, TTracks const& tracks1)
+  // void process(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks1)
   {
     // Reset the fValues and Qn vector array
     VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::ResetQvector();
+    // VarManager::ResetQvector();
+
+    VarManager::FillEvent<TEventFillMap>(collision);
 
     // TODO: implement main functions to fill Q vector with corrections for selected tracks
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
     if (fcfgAcceptance.value.empty() == false) {
-      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fcfgAcceptance.value, bc.timestamp());
+      //      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fcfgAcceptance.value, bc.timestamp());
+      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fcfgAcceptance.value, 0);
       if (cfg.mAcceptance) {
         LOGF(info, "Loaded acceptance histogram from %s (%p)", fcfgAcceptance.value.c_str(), (void*)cfg.mAcceptance);
       } else {
@@ -283,6 +334,12 @@ struct AnalysisQvector {
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 3);
       // registry.fill(HIST("hPhi"), track.phi());
       // registry.fill(HIST("hEta"), track.eta());
+      VarManager::FillQVector(track, fValuesQn, wacc * weff); // To be implemented
+      for (int i = 0; i < fTrackHistNames.size(); ++i) {
+        if (fConfigQA) {
+          fHistMan->FillHistClass(fTrackHistNames[i].Data(), VarManager::fgValues);
+        }
+      }
     }
     bool DQEventFlag = kFALSE;
     //      if (collision.isDQEventSelected()) {
@@ -294,19 +351,19 @@ struct AnalysisQvector {
   }
 
   //  // Process Q vector for Barrel tracks related analyses
-  void processQvectorBarrelSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, MyBarrelTracks const& barreltracks)
+  void processQvectorBarrelSkimmed(MyEventsWithCent::iterator const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, MyBarrelTracks const& barreltracks)
   {
 
     // TODO: fill Q vector with corrections on selected tracks for barrel analysis
-    // runFillQvector(collision, bcs, tracks);
+    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   //  // Process Q vector for Muon tracks related analyses
-  void processQvectorMuonSkimmed(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, MyMuons const& muons)
+  void processQvectorMuonSkimmed(MyEventsWithCent::iterator const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, MyMuons const& muons)
   {
 
     // TODO: fill Q vector with corrections on selected tracks for muon analysis
-    // runFillQvector(collision, bcs, tracks);
+    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   // Dummy function for the case when no process function is enabled
@@ -315,13 +372,29 @@ struct AnalysisQvector {
     // do nothing
   }
 
-  // PROCESS_SWITCH(AnalysisQvector, processQvectorBarrelSkimmed, "Fill Q vectors for selected events and tracks, for ee flow analyses", false);
-  // PROCESS_SWITCH(AnalysisQvector, processQvectorMuonSkimmed, "Fill Q vectors for selected events and tracks, for mumu flow analyses", false);
-  // PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
+  PROCESS_SWITCH(AnalysisQvector, processQvectorBarrelSkimmed, "Fill Q vectors for selected events and tracks, for ee flow analyses", false);
+  PROCESS_SWITCH(AnalysisQvector, processQvectorMuonSkimmed, "Fill Q vectors for selected events and tracks, for mumu flow analyses", false);
+  PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<AnalysisQvector>(cfgc)};
+}
+
+void DefineHistograms(HistogramManager* histMan, TString histClasses)
+{
+  //
+  // Define here the histograms for all the classes required in analysis.
+  //
+  std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
+  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+    TString classStr = objArray->At(iclass)->GetName();
+    histMan->AddHistClass(classStr.Data());
+
+    if (classStr.Contains("hQ")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector");
+    }
+  }
 }
