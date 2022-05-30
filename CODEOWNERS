@@ -26,7 +26,7 @@
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
 /PWGDQ @alibuild @iarsene
 /PWGEM @alibuild @mikesas @rbailhac
-/PWGEM/Dilepton @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
+/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
 /PWGHF @alibuild @ginnocen @vkucera @fcolamar
 /PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @cterrevo @xinyepeng @lvermunt
 /PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
