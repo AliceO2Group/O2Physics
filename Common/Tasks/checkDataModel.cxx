@@ -65,8 +65,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       adaptAnalysisTask<LoadTable<aod::FT0s>>(cfgc, TaskName("FT0s")),
       adaptAnalysisTask<LoadTable<aod::FDDs>>(cfgc, TaskName("FDDs")),
 
-      adaptAnalysisTask<LoadTable<aod::V0s_000>>(cfgc, TaskName("V0s_000")),
-      adaptAnalysisTask<LoadTable<aod::Cascades_000>>(cfgc, TaskName("Cascades_000")),
+      adaptAnalysisTask<LoadTable<aod::V0s>>(cfgc, TaskName("V0s")),
+      adaptAnalysisTask<LoadTable<aod::Cascades>>(cfgc, TaskName("Cascades")),
 
       adaptAnalysisTask<LoadTable<aod::Run2BCInfos>>(cfgc, TaskName("Run2BCInfos")),
       adaptAnalysisTask<LoadTable<aod::FV0Cs>>(cfgc, TaskName("FV0Cs")),
