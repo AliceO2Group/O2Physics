@@ -52,8 +52,6 @@ CorrelationContainer::CorrelationContainer() : TNamed(),
                                                mCentralityMax(0),
                                                mZVtxMin(0),
                                                mZVtxMax(0),
-                                               mPt2Min(0),
-                                               mPt2Max(0),
                                                mTrackEtaCut(0),
                                                mWeightPerEvent(0),
                                                mSkipScaleMixedEvent(kFALSE),
@@ -64,33 +62,40 @@ CorrelationContainer::CorrelationContainer() : TNamed(),
   // Default constructor
 }
 
-CorrelationContainer::CorrelationContainer(const char* name, const char* objTitle, const std::vector<o2::framework::AxisSpec>& axisList) : TNamed(name, objTitle),
-                                                                                                                                           mPairHist(nullptr),
-                                                                                                                                           mTriggerHist(nullptr),
-                                                                                                                                           mTrackHistEfficiency(nullptr),
-                                                                                                                                           mEventCount(nullptr),
-                                                                                                                                           mEtaMin(0),
-                                                                                                                                           mEtaMax(0),
-                                                                                                                                           mPtMin(0),
-                                                                                                                                           mPtMax(0),
-                                                                                                                                           mPartSpecies(-1),
-                                                                                                                                           mCentralityMin(0),
-                                                                                                                                           mCentralityMax(0),
-                                                                                                                                           mZVtxMin(0),
-                                                                                                                                           mZVtxMax(0),
-                                                                                                                                           mPt2Min(0),
-                                                                                                                                           mPt2Max(0),
-                                                                                                                                           mTrackEtaCut(0),
-                                                                                                                                           mWeightPerEvent(0),
-                                                                                                                                           mSkipScaleMixedEvent(kFALSE),
-                                                                                                                                           mCache(nullptr),
-                                                                                                                                           mGetMultCacheOn(kFALSE),
-                                                                                                                                           mGetMultCache(nullptr)
+CorrelationContainer::CorrelationContainer(const char* name, const char* objTitle,
+                                           const std::vector<o2::framework::AxisSpec>& correlationAxis,
+                                           const std::vector<o2::framework::AxisSpec>& efficiencyAxis,
+                                           const std::vector<o2::framework::AxisSpec>& userAxis) : TNamed(name, objTitle),
+                                                                                                   mPairHist(nullptr),
+                                                                                                   mTriggerHist(nullptr),
+                                                                                                   mTrackHistEfficiency(nullptr),
+                                                                                                   mEventCount(nullptr),
+                                                                                                   mEtaMin(0),
+                                                                                                   mEtaMax(0),
+                                                                                                   mPtMin(0),
+                                                                                                   mPtMax(0),
+                                                                                                   mPartSpecies(-1),
+                                                                                                   mCentralityMin(0),
+                                                                                                   mCentralityMax(0),
+                                                                                                   mZVtxMin(0),
+                                                                                                   mZVtxMax(0),
+                                                                                                   mTrackEtaCut(0),
+                                                                                                   mWeightPerEvent(0),
+                                                                                                   mSkipScaleMixedEvent(kFALSE),
+                                                                                                   mCache(nullptr),
+                                                                                                   mGetMultCacheOn(kFALSE),
+                                                                                                   mGetMultCache(nullptr)
 {
-  // Constructor
+  // correlationAxis has to provide a 6 length list of AxisSpec which contain:
+  //   delta_eta, pt_assoc, pt_trig, multiplicity/centrality, delta_phi, vertex
+  //   Those are used for the pair histogram (all 6) and the trigger histogram (pt_trig, multiplicity/centrality, vertex)
   //
-  // axisList has to provide a 8 length list of AxisSpec which contain:
-  //    delta_eta, pt_assoc, pt_trig, multiplicity/centrality, delta_phi, vertex, eta (for efficiency), pt (for efficiency), vertex (for efficiency)
+  // efficiencyAxis has to provide a 3 length list of AxisSpec which contains:
+  //   eta (for efficiency), pt (for efficiency), vertex (for efficiency)
+  //   The third axis of correlationAxis (multiplicity/centrality) is used also for the efficiency
+  //
+  // (optional) userAxis can contain optional user axes which are added to pair and trigger histogram and are
+  // integrated out in the helper functions (e.g. getSumOfRatios). Ranges can be set on them before calling helper functions.
 
   if (strlen(name) == 0) {
     return;
@@ -98,10 +103,17 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
 
   LOGF(info, "Creating CorrelationContainer");
 
-  mPairHist = HistFactory::createHist<StepTHnF>({"mPairHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, {axisList[0], axisList[1], axisList[2], axisList[3], axisList[4], axisList[5]}, fgkCFSteps}}).release();
-  mTriggerHist = HistFactory::createHist<StepTHnF>({"mTriggerHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, {axisList[2], axisList[3], axisList[5]}, fgkCFSteps}}).release();
-  mTrackHistEfficiency = HistFactory::createHist<StepTHnD>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnD, {axisList[6], axisList[7], {4, -0.5, 3.5, "species"}, axisList[3], axisList[8]}, fgkCFSteps}}).release();
-  mEventCount = HistFactory::createHist<TH2F>({"mEventCount", ";step;centrality;count", {HistType::kTH2F, {{fgkCFSteps + 2, -2.5, -0.5 + fgkCFSteps, "step"}, axisList[3]}}}).release();
+  std::vector<o2::framework::AxisSpec> pairAxis(correlationAxis);
+  pairAxis.insert(pairAxis.end(), userAxis.begin(), userAxis.end());
+  mPairHist = HistFactory::createHist<StepTHnF>({"mPairHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, pairAxis, fgkCFSteps}}).release();
+
+  std::vector<o2::framework::AxisSpec> triggerAxis({correlationAxis[2], correlationAxis[3], correlationAxis[5]});
+  triggerAxis.insert(triggerAxis.end(), userAxis.begin(), userAxis.end());
+  mTriggerHist = HistFactory::createHist<StepTHnF>({"mTriggerHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, triggerAxis, fgkCFSteps}}).release();
+
+  mTrackHistEfficiency = HistFactory::createHist<StepTHnD>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnD, {efficiencyAxis[0], efficiencyAxis[1], {4, -0.5, 3.5, "species"}, correlationAxis[3], efficiencyAxis[2]}, fgkCFSteps}}).release();
+
+  mEventCount = HistFactory::createHist<TH2F>({"mEventCount", ";step;centrality;count", {HistType::kTH2F, {{fgkCFSteps + 2, -2.5, -0.5 + fgkCFSteps, "step"}, correlationAxis[3]}}}).release();
 }
 
 //_____________________________________________________________________________
@@ -118,8 +130,6 @@ CorrelationContainer::CorrelationContainer(const CorrelationContainer& c) : TNam
                                                                             mCentralityMax(0),
                                                                             mZVtxMin(0),
                                                                             mZVtxMax(0),
-                                                                            mPt2Min(0),
-                                                                            mPt2Max(0),
                                                                             mTrackEtaCut(0),
                                                                             mWeightPerEvent(0),
                                                                             mSkipScaleMixedEvent(kFALSE),
@@ -205,8 +215,6 @@ void CorrelationContainer::Copy(TObject& c) const
   target.mCentralityMax = mCentralityMax;
   target.mZVtxMin = mZVtxMin;
   target.mZVtxMax = mZVtxMax;
-  target.mPt2Min = mPt2Min;
-  target.mPt2Max = mPt2Max;
   target.mTrackEtaCut = mTrackEtaCut;
   target.mWeightPerEvent = mWeightPerEvent;
   target.mSkipScaleMixedEvent = mSkipScaleMixedEvent;
@@ -284,19 +292,18 @@ void CorrelationContainer::setBinLimits(THnBase* grid)
   if (mPtMax > mPtMin) {
     grid->GetAxis(1)->SetRangeUser(mPtMin, mPtMax);
   }
-  if (mPt2Min > 0 && mPt2Max > 0) {
-    grid->GetAxis(6)->SetRangeUser(mPt2Min, mPt2Max);
-  } else if (mPt2Min > 0) {
-    grid->GetAxis(6)->SetRangeUser(mPt2Min, grid->GetAxis(6)->GetXmax() - 0.01);
-  }
 }
 
 //____________________________________________________________________
-void CorrelationContainer::resetBinLimits(THnBase* grid)
+void CorrelationContainer::resetBinLimits(THnBase* grid, int max_dimension)
 {
   // resets all bin limits
 
-  for (Int_t i = 0; i < grid->GetNdimensions(); i++) {
+  if (max_dimension < 0 || max_dimension > grid->GetNdimensions()) {
+    max_dimension = grid->GetNdimensions();
+  }
+
+  for (Int_t i = 0; i < max_dimension; i++) {
     if (grid->GetAxis(i)->TestBit(TAxis::kAxisRange)) {
       grid->GetAxis(i)->SetRangeUser(0, -1);
     }
@@ -387,8 +394,8 @@ void CorrelationContainer::getHistsZVtxMult(CorrelationContainer::CFStep step, F
   }
 
   // unzoom all axes
-  resetBinLimits(sparse);
-  resetBinLimits(mTriggerHist->getTHn(step));
+  resetBinLimits(sparse, 6);
+  resetBinLimits(mTriggerHist->getTHn(step), 3);
 
   setBinLimits(sparse);
 
@@ -398,80 +405,15 @@ void CorrelationContainer::getHistsZVtxMult(CorrelationContainer::CFStep step, F
   sparse->GetAxis(2)->SetRange(firstBin, lastBin);
   mTriggerHist->getTHn(step)->GetAxis(0)->SetRange(firstBin, lastBin);
 
-  // cut on the second trigger particle if there is a minimum set
-  if (mPt2Min > 0) {
-    Int_t firstBinPt2 = sparse->GetAxis(6)->FindBin(mPt2Min);
-    Int_t lastBinPt2 = sparse->GetAxis(6)->GetNbins();
-    if (mPt2Max > 0) {
-      lastBinPt2 = sparse->GetAxis(6)->FindBin(mPt2Max);
-    }
+  Int_t dimensions[] = {4, 0, 5, 3};
+  THnBase* tmpTrackHist = sparse->ProjectionND(4, dimensions, "E");
+  *eventHist = (TH2*)mTriggerHist->getTHn(step)->Projection(2, 1);
+  // convert to THn
+  *trackHist = changeToThn(tmpTrackHist);
+  delete tmpTrackHist;
 
-    mTriggerHist->getTHn(step)->GetAxis(3)->SetRange(firstBinPt2, lastBinPt2);
-  }
-
-  Bool_t hasVertex = kTRUE;
-  if (!mPairHist->getTHn(step)->GetAxis(5)) {
-    hasVertex = kFALSE;
-  }
-
-  if (hasVertex) {
-    Int_t dimensions[] = {4, 0, 5, 3};
-    THnBase* tmpTrackHist = sparse->ProjectionND(4, dimensions, "E");
-    *eventHist = (TH2*)mTriggerHist->getTHn(step)->Projection(2, 1);
-    // convert to THn
-    *trackHist = changeToThn(tmpTrackHist);
-    delete tmpTrackHist;
-  } else {
-    Int_t dimensions[] = {4, 0, 3};
-    THnBase* tmpTrackHist = sparse->ProjectionND(3, dimensions, "E");
-
-    // add dummy vertex axis, so that the extraction code can work as usual
-    Int_t nBins[] = {tmpTrackHist->GetAxis(0)->GetNbins(), tmpTrackHist->GetAxis(1)->GetNbins(), 1, tmpTrackHist->GetAxis(2)->GetNbins()};
-    Double_t vtxAxis[] = {-100, 100};
-
-    *trackHist = new THnF(Form("%s_thn", tmpTrackHist->GetName()), tmpTrackHist->GetTitle(), 4, nBins, nullptr, nullptr);
-
-    for (int i = 0; i < 3; i++) {
-      int j = i;
-      if (i == 2) {
-        j = 3;
-      }
-
-      (*trackHist)->SetBinEdges(j, tmpTrackHist->GetAxis(i)->GetXbins()->GetArray());
-      (*trackHist)->GetAxis(j)->SetTitle(tmpTrackHist->GetAxis(i)->GetTitle());
-    }
-
-    (*trackHist)->SetBinEdges(2, vtxAxis);
-    (*trackHist)->GetAxis(2)->SetTitle("dummy z-vtx");
-
-    // bin by bin copy...
-    Int_t bins[4];
-    for (Int_t binIdx = 0; binIdx < tmpTrackHist->GetNbins(); binIdx++) {
-      Double_t value = tmpTrackHist->GetBinContent(binIdx, bins);
-      Double_t error = tmpTrackHist->GetBinError(binIdx);
-
-      // move third to fourth axis
-      bins[3] = bins[2];
-      bins[2] = 1;
-
-      (*trackHist)->SetBinContent(bins, value);
-      (*trackHist)->SetBinError(bins, error);
-    }
-
-    delete tmpTrackHist;
-
-    TH1* projEventHist = (TH1*)mTriggerHist->getTHn(step)->Projection(1);
-    *eventHist = new TH2F(Form("%s_vtx", projEventHist->GetName()), projEventHist->GetTitle(), 1, vtxAxis, projEventHist->GetNbinsX(), projEventHist->GetXaxis()->GetXbins()->GetArray());
-    for (Int_t binIdx = 1; binIdx <= projEventHist->GetNbinsX(); binIdx++) {
-      (*eventHist)->SetBinContent(1, binIdx, projEventHist->GetBinContent(binIdx));
-      (*eventHist)->SetBinError(1, binIdx, projEventHist->GetBinError(binIdx));
-    }
-
-    delete projEventHist;
-  }
-
-  resetBinLimits(sparse);
-  resetBinLimits(mTriggerHist->getTHn(step));
+  resetBinLimits(sparse, 6);
+  resetBinLimits(mTriggerHist->getTHn(step), 3);
 }
 
 TH2* CorrelationContainer::getPerTriggerYield(CorrelationContainer::CFStep step, Float_t ptTriggerMin, Float_t ptTriggerMax, Bool_t normalizePerTrigger)
@@ -831,7 +773,7 @@ TH1* CorrelationContainer::getTriggersAsFunctionOfMultiplicity(CorrelationContai
 {
   // returns the distribution of triggers as function of centrality/multiplicity
 
-  resetBinLimits(mTriggerHist->getTHn(step));
+  resetBinLimits(mTriggerHist->getTHn(step), 3);
 
   Int_t firstBin = mTriggerHist->getTHn(step)->GetAxis(0)->FindBin(ptTriggerMin);
   Int_t lastBin = mTriggerHist->getTHn(step)->GetAxis(0)->FindBin(ptTriggerMax);
@@ -845,7 +787,7 @@ TH1* CorrelationContainer::getTriggersAsFunctionOfMultiplicity(CorrelationContai
 
   TH1* eventHist = mTriggerHist->getTHn(step)->Projection(1);
 
-  resetBinLimits(mTriggerHist->getTHn(step));
+  resetBinLimits(mTriggerHist->getTHn(step), 3);
 
   return eventHist;
 }
@@ -1209,12 +1151,12 @@ TH1* CorrelationContainer::getBias(CFStep step1, CFStep step2, const char* axis,
 
   StepTHn* tmp = mPairHist;
 
-  resetBinLimits(tmp->getTHn(step1));
-  resetBinLimits(mTriggerHist->getTHn(step1));
+  resetBinLimits(tmp->getTHn(step1), 6);
+  resetBinLimits(mTriggerHist->getTHn(step1), 3);
   setBinLimits(tmp->getTHn(step1));
 
-  resetBinLimits(tmp->getTHn(step2));
-  resetBinLimits(mTriggerHist->getTHn(step2));
+  resetBinLimits(tmp->getTHn(step2), 6);
+  resetBinLimits(mTriggerHist->getTHn(step2), 3);
   setBinLimits(tmp->getTHn(step2));
 
   TH1D* events1 = (TH1D*)mTriggerHist->getTHn(step1)->Projection(0);
@@ -1264,8 +1206,8 @@ TH1* CorrelationContainer::getBias(CFStep step1, CFStep step2, const char* axis,
 
   delete generated;
 
-  resetBinLimits(tmp->getTHn(step1));
-  resetBinLimits(tmp->getTHn(step2));
+  resetBinLimits(tmp->getTHn(step1), 6);
+  resetBinLimits(tmp->getTHn(step2), 6);
 
   return measured;
 }
@@ -1478,14 +1420,9 @@ void CorrelationContainer::symmetrizepTBins()
     // for symmetric bins
     THnBase* source = (THnBase*)target->Clone();
 
-    Int_t zVtxBins = 1;
-    if (target->GetNdimensions() > 5) {
-      zVtxBins = target->GetAxis(5)->GetNbins();
-    }
-
     // axes: 0 delta eta; 1 pT,a; 2 pT,t; 3 centrality; 4 delta phi; 5 vtx-z
     for (Int_t i3 = 1; i3 <= target->GetAxis(3)->GetNbins(); i3++) {
-      for (Int_t i5 = 1; i5 <= zVtxBins; i5++) {
+      for (Int_t i5 = 1; i5 <= target->GetAxis(5)->GetNbins(); i5++) {
         for (Int_t i1 = 1; i1 <= target->GetAxis(1)->GetNbins(); i1++) {
           for (Int_t i2 = 1; i2 <= target->GetAxis(2)->GetNbins(); i2++) {
             // find source bin
@@ -1652,7 +1589,7 @@ void CorrelationContainer::extendTrackingEfficiency(Bool_t verbose)
               z2Bin++;
             }
 
-            //Printf("%d %d", z2, z2Bin);
+            // Printf("%d %d", z2, z2Bin);
 
             mTrackHistEfficiency->getTHn(0)->SetBinContent(bins, 100);
             mTrackHistEfficiency->getTHn(1)->SetBinContent(bins, 100.0 * trackingEff[z2Bin]);
