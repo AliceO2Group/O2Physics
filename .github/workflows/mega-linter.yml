@@ -23,7 +23,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       # MegaLinter
@@ -44,14 +43,15 @@ jobs:
       - name: Update cleanup branch
         if: ${{ github.event.repository.owner.login == 'AliceO2Group' }}
         env:
-          REMOTE_URL: "https://alibuild:${{ secrets.alibuild_github_token }}@\
+          REMOTE_URL: "https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@\
             github.com/alibuild/${{ github.event.repository.name }}"
-          # An empty CLEANUP_COMMIT means delete the branch.
-          CLEANUP_COMMIT: ""
         run: |
+          # An empty CLEANUP_COMMIT means delete the branch.
+          CLEANUP_COMMIT=""
           if [ "${{ steps.ml.outputs.has_updated_sources }}" = 1 ]
           then
             CLEANUP_COMMIT="HEAD"
+            git commit -am "MegaLinter fixes"
           fi
           git push -f "$REMOTE_URL" "$CLEANUP_COMMIT:refs/heads/alibot-cleanup-ml-$PR_NUMBER"
 
@@ -61,12 +61,13 @@ jobs:
         with:
           source_branch: 'alibuild:alibot-cleanup-ml-${{ env.PR_NUMBER }}'
           destination_branch: '${{ github.event.pull_request.head.label }}'
-          github_token: ${{ secrets.alibuild_github_token }}
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
           pr_title: >-
             [MegaLinter] Apply linters automatic fixes to
             #${{ env.PR_NUMBER }}
           pr_body: >-
-            This PR cannot be merged as is. You should either run MegaLinter
+            Your PR ${{ github.event.repository.full_name }}#${{ env.PR_NUMBER }}
+            cannot be merged as is. You should either run MegaLinter
             yourself and update the pull request, or merge this PR in yours.
 
             You can find how to run MegaLinter locally at
