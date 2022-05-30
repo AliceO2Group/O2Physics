@@ -1,6 +1,7 @@
+---
 name: PR self-approval
 
-on:
+'on':
   # We need pull_request_target so we can use ${{ secrets.* }}.
   pull_request_target:
     types:
@@ -62,7 +63,7 @@ jobs:
               elif owner_type == 'EMAIL':
                   # We can't resolve email addresses to GitHub usernames using
                   # GitHub's API.
-                  raise ValueError('cannot handle email addresses in CODEOWNERS')
+                  raise ValueError("can't handle email addresses in CODEOWNERS")
               else:
                   raise ValueError(f'unknown owner type {owner_type}')
 
@@ -80,7 +81,7 @@ jobs:
           # a codeowner of that file approved this PR, we'll still auto-approve.
           auto_approve = True
           for filename in (f.filename for f in pr.get_files()):
-              file_owners, line = owners.matching_line(filename)
+              file_owners, line, _ = owners.matching_line(filename)
               file_owners_names = {name.lstrip('@') for _, name in file_owners}
               if approvals_from & file_owners_names:
                   print(f'{filename}: OK: you have approval from the code'

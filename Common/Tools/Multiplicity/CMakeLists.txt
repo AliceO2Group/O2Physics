@@ -9,10 +9,10 @@
 #granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_library(multCalibrator
-                      SOURCES multCalibrator.cxx
+o2physics_add_library(multTools
+                      SOURCES multCalibrator.cxx multMCCalibrator.cxx multGlauberNBDFitter.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
-o2physics_target_root_dictionary(multCalibrator
-                      HEADERS multCalibrator.h
-                      LINKDEF multCalibratorLinkDef.h)
+o2physics_target_root_dictionary(multTools
+                      HEADERS multCalibrator.h multMCCalibrator.h multGlauberNBDFitter.h
+                      LINKDEF multToolsLinkDef.h)

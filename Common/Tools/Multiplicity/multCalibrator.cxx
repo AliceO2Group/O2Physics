@@ -27,13 +27,18 @@
 #include "TArrayF.h"
 #include "multCalibrator.h"
 
+const TString multCalibrator::fCentEstimName[kNCentEstim] = {
+  "RawV0M", "RawT0M", "RawFDD", "RawNTracks",
+  "ZeqV0M", "ZeqT0M", "ZeqFDD", "ZeqNTracks"};
+
 multCalibrator::multCalibrator() : TNamed(),
                                    lDesiredBoundaries(0),
                                    lNDesiredBoundaries(0),
                                    fkPrecisionWarningThreshold(1.0),
                                    fInputFileName("AnalysisResults.root"),
                                    fOutputFileName("CCDB-objects.root"),
-                                   fCalibHists(0x0)
+                                   fCalibHists(0x0),
+                                   fPrecisionHistogram(0x0)
 {
   // Constructor
   // Make sure the TList owns its objects
@@ -47,7 +52,8 @@ multCalibrator::multCalibrator(const char* name, const char* title) : TNamed(nam
                                                                       fkPrecisionWarningThreshold(1.0),
                                                                       fInputFileName("AnalysisResults.root"),
                                                                       fOutputFileName("CCDB-objects.root"),
-                                                                      fCalibHists(0x0)
+                                                                      fCalibHists(0x0),
+                                                                      fPrecisionHistogram(0x0)
 {
   // Named Constructor
   // Make sure the TList owns its objects
@@ -61,6 +67,10 @@ multCalibrator::~multCalibrator()
   if (fCalibHists) {
     delete fCalibHists;
     fCalibHists = 0x0;
+  }
+  if (fPrecisionHistogram) {
+    delete fPrecisionHistogram;
+    fPrecisionHistogram = 0x0;
   }
 }
 
@@ -85,223 +95,40 @@ Bool_t multCalibrator::Calibrate()
   }
 
   //Step 1: verify if input file contains desired histograms
-  TH1D* hRawV0 = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hRawV0");
-  TH1D* hRawT0 = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hRawT0");
-  TH1D* hRawFDD = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hRawFDD");
-  TH1D* hRawNTracks = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hRawNTracks");
-  TH1D* hZeqV0 = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hZeqV0");
-  TH1D* hZeqT0 = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hZeqT0");
-  TH1D* hZeqFDD = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hZeqFDD");
-  TH1D* hZeqNTracks = (TH1D*)fileInput->Get("multiplicity-qa/multiplicityQa/hZeqNTracks");
-
-  if (!hRawV0 || !hRawT0 || !hRawFDD || !hRawNTracks || !hZeqV0 || !hZeqT0 || !hZeqFDD || !hZeqNTracks) {
-    cout << "File does not contain histograms necessary for calibration!" << endl;
-    return kFALSE;
+  TH1D* hRaw[kNCentEstim];
+  for (Int_t iv = 0; iv < kNCentEstim; iv++) {
+    hRaw[iv] = (TH1D*)fileInput->Get(Form("multiplicity-qa/multiplicityQa/h%s", fCentEstimName[iv].Data()));
+    if (!hRaw[iv]) {
+      cout << Form("File does not contain histogram h%s, which is necessary for calibration!", fCentEstimName[iv].Data()) << endl;
+      return kFALSE;
+    }
   }
+
   cout << "Histograms loaded! Will now calibrate..." << endl;
-  Double_t lRawV0Bounds[lNDesiredBoundaries];
-  Double_t lRawT0Bounds[lNDesiredBoundaries];
-  Double_t lRawFDDBounds[lNDesiredBoundaries];
-  Double_t lRawNTracksBounds[lNDesiredBoundaries];
-  Double_t lZeqV0Bounds[lNDesiredBoundaries];
-  Double_t lZeqT0Bounds[lNDesiredBoundaries];
-  Double_t lZeqFDDBounds[lNDesiredBoundaries];
-  Double_t lZeqNTracksBounds[lNDesiredBoundaries];
-
-  //Aux vars
-  Double_t lMiddleOfBins[1000];
-  for (Long_t lB = 1; lB < lNDesiredBoundaries; lB++) {
-    //place squarely at the middle to ensure it's all fine
-    lMiddleOfBins[lB - 1] = 0.5 * (lDesiredBoundaries[lB] + lDesiredBoundaries[lB - 1]);
-  }
 
   //Create output file
   TFile* fOut = new TFile(fOutputFileName.Data(), "RECREATE");
-
-  //_________________________________________________________________________
-  cout << "Raw V0 calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lRawV0Bounds[ii] = GetBoundaryForPercentile(hRawV0, lDesiredBoundaries[ii], lPrecision);
-
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Raw V0 bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lRawV0Bounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
+  TH1F* hCalib[kNCentEstim];
+  for (Int_t iv = 0; iv < kNCentEstim; iv++) {
+    cout << Form("Calibrating estimator: %s", fCentEstimName[iv].Data()) << endl;
+    hCalib[iv] = GetCalibrationHistogram(hRaw[iv], Form("hCalib%s", fCentEstimName[iv].Data()));
+    hCalib[iv]->Write();
   }
-  TH1F* hCalibRawV0 = new TH1F("hCalibRawV0", "", lNDesiredBoundaries - 1, lRawV0Bounds);
-  hCalibRawV0->SetDirectory(0);
-  hCalibRawV0->SetBinContent(0, 100.5);
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibRawV0->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibRawV0->Write();
-  //_________________________________________________________________________
-  cout << "Raw T0 calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lRawT0Bounds[ii] = GetBoundaryForPercentile(hRawT0, lDesiredBoundaries[ii], lPrecision);
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Raw T0 bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lRawT0Bounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibRawT0 = new TH1F("hCalibRawT0", "", lNDesiredBoundaries - 1, lRawT0Bounds);
-  hCalibRawT0->SetDirectory(0);
-  hCalibRawT0->SetBinContent(0, 100.5);
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibRawT0->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibRawT0->Write();
-  //_________________________________________________________________________
-  cout << "Raw FDD calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lRawFDDBounds[ii] = GetBoundaryForPercentile(hRawFDD, lDesiredBoundaries[ii], lPrecision);
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Raw FDD bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lRawFDDBounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibRawFDD = new TH1F("hCalibRawFDD", "", lNDesiredBoundaries - 1, lRawFDDBounds);
-  hCalibRawFDD->SetDirectory(0);
-  hCalibRawFDD->SetBinContent(0, 100.5);
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibRawFDD->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibRawFDD->Write();
-  //_________________________________________________________________________
-  cout << "Raw NTracks calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lRawNTracksBounds[ii] = GetBoundaryForPercentile(hRawNTracks, lDesiredBoundaries[ii], lPrecision);
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Raw NTracks bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lRawNTracksBounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibRawNTracks = new TH1F("hCalibRawNTracks", "", lNDesiredBoundaries - 1, lRawNTracksBounds);
-  hCalibRawNTracks->SetDirectory(0);
-  hCalibRawNTracks->SetBinContent(0, 100.5); //Just in case correction functions screw up the values
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibRawNTracks->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibRawNTracks->Write();
-
-  //_________________________________________________________________________
-  cout << "Vertex-Z equalized V0 calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lZeqV0Bounds[ii] = GetBoundaryForPercentile(hZeqV0, lDesiredBoundaries[ii], lPrecision);
-
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Vertex-Z equalized V0 bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lZeqV0Bounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibZeqV0 = new TH1F("hCalibZeqV0", "", lNDesiredBoundaries - 1, lZeqV0Bounds);
-  hCalibZeqV0->SetDirectory(0);
-  hCalibZeqV0->SetBinContent(0, 100.5);
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibZeqV0->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibZeqV0->Write();
-  //_________________________________________________________________________
-  cout << "Vertex-Z equalized T0 calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lZeqT0Bounds[ii] = GetBoundaryForPercentile(hZeqT0, lDesiredBoundaries[ii], lPrecision);
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Vertex-Z equalized T0 bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lZeqT0Bounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibZeqT0 = new TH1F("hCalibZeqT0", "", lNDesiredBoundaries - 1, lZeqT0Bounds);
-  hCalibZeqT0->SetDirectory(0);
-  hCalibZeqT0->SetBinContent(0, 100.5);
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibZeqT0->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibZeqT0->Write();
-  //_________________________________________________________________________
-  cout << "Vertex-Z equalized FDD calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lZeqFDDBounds[ii] = GetBoundaryForPercentile(hZeqFDD, lDesiredBoundaries[ii], lPrecision);
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Vertex-Z equalized FDD bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lZeqFDDBounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibZeqFDD = new TH1F("hCalibZeqFDD", "", lNDesiredBoundaries - 1, lZeqFDDBounds);
-  hCalibZeqFDD->SetDirectory(0);
-  hCalibZeqFDD->SetBinContent(0, 100.5);
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibZeqFDD->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibZeqFDD->Write();
-  //_________________________________________________________________________
-  cout << "Vertex-Z equalized NTracks calibration" << endl;
-  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
-    Double_t lPrecision = 0;
-    lZeqNTracksBounds[ii] = GetBoundaryForPercentile(hZeqNTracks, lDesiredBoundaries[ii], lPrecision);
-    TString lPrecisionString = "(Precision OK)";
-    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
-      //check precision, please
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
-        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-    }
-    cout << "Vertex-Z equalized NTracks bound percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lZeqNTracksBounds[ii] << "\tprecision = " << lPrecision << "% " << lPrecisionString.Data() << endl;
-  }
-  TH1F* hCalibZeqNTracks = new TH1F("hCalibZeqNTracks", "", lNDesiredBoundaries - 1, lZeqNTracksBounds);
-  hCalibZeqNTracks->SetDirectory(0);
-  hCalibZeqNTracks->SetBinContent(0, 100.5); //Just in case correction functions screw up the values
-  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
-    hCalibZeqNTracks->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
-  }
-  hCalibZeqNTracks->Write();
 
   cout << "Saving calibration file..." << endl;
   fOut->Write();
   cout << "Done! Enjoy!" << endl;
   return kTRUE;
+}
+
+Double_t multCalibrator::GetRawMax(TH1D* histo)
+{
+  //This function gets the max X value (right edge) which is filled.
+  for (Int_t ii = histo->GetNbinsX(); ii > 0; ii--) {
+    if (histo->GetBinContent(ii) < 1e-10)
+      return histo->GetBinLowEdge(ii + 1);
+  }
+  return 1e+6;
 }
 
 Double_t multCalibrator::GetBoundaryForPercentile(TH1D* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate)
@@ -316,7 +143,12 @@ Double_t multCalibrator::GetBoundaryForPercentile(TH1D* histo, Double_t lPercent
   //that corresponds to those bins. If this percentage is O(percentile bin
   //width requested), then the user should worry and we print out a warning.
 
-  //if( lPercentileRequested < 1e-7 ) return 1e+6; //safeguard
+  const Double_t lPrecisionConstant = 2.0;
+
+  Double_t lRawMax = GetRawMax(histo);
+
+  if (lPercentileRequested < 1e-7)
+    return lRawMax; //safeguard
   if (lPercentileRequested > 100 - 1e-7)
     return 0.0; //safeguard
 
@@ -334,7 +166,7 @@ Double_t multCalibrator::GetBoundaryForPercentile(TH1D* histo, Double_t lPercent
       Double_t lWidth = histo->GetBinWidth(ibin);
       Double_t lLeftPercentile = 100. * (lCount - histo->GetBinContent(ibin)) / histo->GetEntries();
       Double_t lRightPercentile = 100. * lCount / histo->GetEntries();
-      lPrecisionEstimate = (lRightPercentile - lLeftPercentile) / 2;
+      lPrecisionEstimate = (lRightPercentile - lLeftPercentile) / lPrecisionConstant;
 
       Double_t lProportion = (lPercentile - lLeftPercentile) / (lRightPercentile - lLeftPercentile);
 
@@ -371,5 +203,76 @@ void multCalibrator::SetStandardAdaptiveBoundaries()
     lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.001;
   }
   lNDesiredBoundaries++;
-  lDesiredBoundaries[lNDesiredBoundaries - 1] = 0;
+  cout << "Set standard adaptive percentile boundaries! Nboundaries: " << lNDesiredBoundaries << endl;
+}
+
+//________________________________________________________________
+void multCalibrator::SetStandardOnePercentBoundaries()
+{
+  //Function to set standard adaptive boundaries
+  //Typically used in pp, goes to 0.001% binning for highest multiplicity
+  lNDesiredBoundaries = 101;
+  lDesiredBoundaries = new Double_t[101];
+  lDesiredBoundaries[0] = 100;
+  //From Low To High Multiplicity
+  for (Int_t ib = 1; ib < 101; ib++)
+    lDesiredBoundaries[ib] = lDesiredBoundaries[ib - 1] - 1.0;
+  cout << "Set standard 1%-wide percentile boundaries! Nboundaries: " << lNDesiredBoundaries << endl;
+}
+
+//________________________________________________________________
+TH1F* multCalibrator::GetCalibrationHistogram(TH1D* histoRaw, TString lHistoName)
+{
+  //This function returns a calibration histogram
+  //(pp or p-Pb like, no anchor point considered)
+
+  //Reset + recreate precision histogram
+  ResetPrecisionHistogram();
+
+  //Aux vars
+  Double_t lMiddleOfBins[1000];
+  for (Long_t lB = 1; lB < lNDesiredBoundaries; lB++) {
+    //place squarely at the middle to ensure it's all fine
+    lMiddleOfBins[lB - 1] = 0.5 * (lDesiredBoundaries[lB] + lDesiredBoundaries[lB - 1]);
+  }
+  Double_t lBounds[lNDesiredBoundaries];
+  Double_t lPrecision[lNDesiredBoundaries];
+  for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
+    lBounds[ii] = GetBoundaryForPercentile(histoRaw, lDesiredBoundaries[ii], lPrecision[ii]);
+    TString lPrecisionString = "(Precision OK)";
+    if (ii != 0 && ii != lNDesiredBoundaries - 1) {
+      //check precision, please
+      if (lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
+        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
+      if (lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
+        lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
+    }
+    cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[ii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
+  }
+  TH1F* hCalib = new TH1F(lHistoName.Data(), "", lNDesiredBoundaries - 1, lBounds);
+  hCalib->SetDirectory(0);
+  hCalib->SetBinContent(0, 100.5);
+  for (Long_t ibin = 1; ibin < lNDesiredBoundaries; ibin++) {
+    hCalib->SetBinContent(ibin, lMiddleOfBins[ibin - 1]);
+    fPrecisionHistogram->SetBinContent(lNDesiredBoundaries - ibin + 1, std::hypot(lPrecision[ibin - 1], lPrecision[ibin]));
+  }
+  return hCalib;
+}
+
+//________________________________________________________________
+void multCalibrator::ResetPrecisionHistogram()
+{
+  if (fPrecisionHistogram) {
+    delete fPrecisionHistogram;
+    fPrecisionHistogram = 0x0;
+  }
+  if (lNDesiredBoundaries > 0) { //only if initialized
+    //invert boundaries, please
+    Double_t lInverseDesiredBoundaries[1100];
+    for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
+      lInverseDesiredBoundaries[ii] = lDesiredBoundaries[lNDesiredBoundaries - (ii + 1)];
+      cout << "Boundary " << ii << " is " << lInverseDesiredBoundaries[ii] << endl;
+    }
+    fPrecisionHistogram = new TH1D("hPrecisionHistogram", "", lNDesiredBoundaries - 1, lInverseDesiredBoundaries);
+  }
 }

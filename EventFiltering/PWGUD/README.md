@@ -7,8 +7,8 @@ The diffractive event filter is contained in the following set of files:
 ### cutHolder.cxx, cutHolder.h
 `cutHolder` is a buffer for the various cut parameters. Is used to create a configurable which values can be set by command line options.
 
-### diffractionSelectors.h
-Contains the actual filter logics for the various types of events. Currently implemented are:
+### diffHelpers.h
+Contains helper functions for the diffractive event selection and the actual filter logics for the various types of events. Currently implemented are:
 
 - DGSelector: a filter for Double Gap (DG) events
 

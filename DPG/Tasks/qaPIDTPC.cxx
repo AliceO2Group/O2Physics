@@ -9,8 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+///
+/// \file   qaPIDTPC.cxx
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief  Implementation for QA tasks of the TPC PID quantities
+///
 
-#pragma link C++ class multCalibrator + ;
+#include "Framework/AnalysisTask.h"
+#include "qaPIDTPC.h"
+#include "Framework/runDataProcessing.h"
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<tpcPidQa>(cfgc)};
+}

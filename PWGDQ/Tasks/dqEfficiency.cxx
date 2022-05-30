@@ -837,9 +837,11 @@ struct AnalysisSameEventPairing {
 };
 
 struct AnalysisDileptonTrack {
+  Produces<aod::DileptonTrackCandidates> dileptontrackcandidatesList;
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
+  Configurable<bool> fConfigFillCandidateTable{"cfgFillCandidateTable", false, "Produce a single flat tables with all relevant information dilepton-track candidates"};
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
   //Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
   //Filter dileptonFilter = aod::reducedpair::mass > 2.6f && aod::reducedpair::mass < 3.5f && aod::reducedpair::sign == 0;
@@ -910,6 +912,20 @@ struct AnalysisDileptonTrack {
               histNames += Form("%s;", histName.Data());
               fRecMCSignalsNames.push_back(sig->GetName());
             }
+          }
+        }
+      }
+
+      // Add histogram classes for each specified MCsignal at the generator level
+      // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
+      TString sigGenNamesStr = fConfigMCGenSignals.value;
+      std::unique_ptr<TObjArray> objGenSigArray(sigGenNamesStr.Tokenize(","));
+      for (int isig = 0; isig < objGenSigArray->GetEntries(); isig++) {
+        MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenSigArray->At(isig)->GetName());
+        if (sig) {
+          if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
+            fGenMCSignals.push_back(*sig);
+            histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
           }
         }
       }
@@ -985,6 +1001,9 @@ struct AnalysisDileptonTrack {
         }
       }
 
+      if (fConfigFillCandidateTable.value) {
+        dileptontrackcandidatesList.reserve(1);
+      }
       for (auto& track : tracks) {
         auto trackMC = track.reducedMCTrack();
         int index = track.globalIndex();
@@ -1007,6 +1026,10 @@ struct AnalysisDileptonTrack {
           }
         }
 
+        if (fConfigFillCandidateTable.value) {
+          dileptontrackcandidatesList(mcDecision, fValuesTrack[VarManager::kPairMass], fValuesTrack[VarManager::kPairPt], fValuesTrack[VarManager::kPairEta], fValuesTrack[VarManager::kVertexingTauz], fValuesTrack[VarManager::kVertexingTauxy], fValuesTrack[VarManager::kVertexingLz], fValuesTrack[VarManager::kVertexingLxy]);
+        }
+
         for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
           if (mcDecision & (uint32_t(1) << isig)) {
             fHistMan->FillHistClass(Form("DileptonTrackInvMass_matchedMC_%s", fRecMCSignalsNames[isig].Data()), fValuesTrack);
@@ -1016,9 +1039,33 @@ struct AnalysisDileptonTrack {
     }
   }
 
+  template <typename TTracksMC>
+  void runMCGen(TTracksMC const& groupedMCTracks)
+  {
+    // loop over mc stack and fill histograms for pure MC truth signals
+    // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
+    // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    for (auto& mctrack : groupedMCTracks) {
+      VarManager::FillTrack<gkParticleMCFillMap>(mctrack);
+      // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
+      // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
+      // TODO:  Use the mcReducedFlags to select signals
+      for (auto& sig : fGenMCSignals) {
+        if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
+          continue;
+        }
+        if (sig.CheckSignal(false, groupedMCTracks, mctrack)) {
+          fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
+        }
+      }
+    }
+  }
+
   void processDimuonMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyMuonTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     runDileptonTrack<VarManager::kBcToThreeMuons, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
+    auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    runMCGen(groupedMCTracks);
   }
   void processDummy(MyEvents&)
   {

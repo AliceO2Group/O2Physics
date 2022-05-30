@@ -9,26 +9,50 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DIFFRACTION_SELECTOR_H_
-#define O2_ANALYSIS_DIFFRACTION_SELECTOR_H_
+#ifndef O2_ANALYSIS_DIFFRACTION_HELPERS_
+#define O2_ANALYSIS_DIFFRACTION_HELPERS_
 
 #include "TLorentzVector.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/DataTypes.h"
+#include "CommonConstants/LHCConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
-#include "PWGUD/cutHolder.h"
+#include "EventFiltering/PWGUD/cutHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+float FV0AmplitudeA(aod::FV0A fv0);
+template <typename T>
+bool cleanFV0(T bc, float limitA);
+
+float FT0AmplitudeA(aod::FT0 ft0);
+float FT0AmplitudeC(aod::FT0 ft0);
+template <typename T>
+bool cleanFT0(T bc, float limitA, float limitC);
+
+int16_t FDDAmplitudeA(aod::FDD fdd);
+int16_t FDDAmplitudeC(aod::FDD fdd);
+template <typename T>
+bool cleanFDD(T bc, float limitA, float limitC);
+
+template <typename T>
+bool cleanFIT(T bc, std::vector<float> lims);
+
+template <typename T>
+bool cleanZDC(T bc, aod::Zdcs zdcs, std::vector<float> lims);
+
+template <typename T>
+bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims);
+
 template <typename TC>
 bool hasGoodPID(cutHolder diffCuts, TC track);
 
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBSs = 7);
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7);
 
 // -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events
@@ -46,8 +70,18 @@ struct DGSelector {
 
     // check that there are no FIT signals in any of the compatible BCs
     // Double Gap (DG) condition
+    auto lims = diffCuts.FITAmpLimits();
+
     for (auto& bc : bcRange) {
-      if (bc.has_ft0() || bc.has_fv0a() || bc.has_fdd()) {
+      LOGF(debug, "Amplitudes FV0A %f FT0 %f / %f FDD %i / %i",
+           bc.has_foundFV0() ? FV0AmplitudeA(bc.foundFV0()) : 0.,
+           bc.has_foundFT0() ? FT0AmplitudeA(bc.foundFT0()) : 0.,
+           bc.has_foundFT0() ? FT0AmplitudeC(bc.foundFT0()) : 0.,
+           bc.has_foundFDD() ? FDDAmplitudeA(bc.foundFDD()) : 0,
+           bc.has_foundFDD() ? FDDAmplitudeC(bc.foundFDD()) : 0);
+      LOGF(debug, "  clean FV0A %i FT0 %i FDD %i", cleanFV0(bc, lims[0]), cleanFT0(bc, lims[1], lims[2]), cleanFDD(bc, lims[3], lims[4]));
+
+      if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
         return 1;
       }
     }
@@ -129,10 +163,10 @@ struct DGSelector {
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
 // around t_coll could potentially be the true BC. ndt is typically 4. The
-// total width of the time window is required to be at least 2*nMinBSs* LHCBunchSpacingNS
+// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS
 
 template <typename T>
-T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBSs)
+T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
@@ -144,8 +178,8 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 
   // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
-  if (deltaBC < nMinBSs) {
-    deltaBC = nMinBSs;
+  if (deltaBC < nMinBCs) {
+    deltaBC = nMinBCs;
   }
 
   int64_t minBC = meanBC - deltaBC;
@@ -193,19 +227,19 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
        track.tpcNSigmaPi(),
        track.tpcNSigmaKa(),
        track.tpcNSigmaPr());
-  if (TMath::Abs(track.tpcNSigmaEl()) < diffCuts.maxnSigmaTPC()) {
+  if (TMath::Abs(track.tpcNSigmaEl()) < diffCuts.maxNSigmaTPC()) {
     return true;
   }
-  if (TMath::Abs(track.tpcNSigmaMu()) < diffCuts.maxnSigmaTPC()) {
+  if (TMath::Abs(track.tpcNSigmaMu()) < diffCuts.maxNSigmaTPC()) {
     return true;
   }
-  if (TMath::Abs(track.tpcNSigmaPi()) < diffCuts.maxnSigmaTPC()) {
+  if (TMath::Abs(track.tpcNSigmaPi()) < diffCuts.maxNSigmaTPC()) {
     return true;
   }
-  if (TMath::Abs(track.tpcNSigmaKa()) < diffCuts.maxnSigmaTPC()) {
+  if (TMath::Abs(track.tpcNSigmaKa()) < diffCuts.maxNSigmaTPC()) {
     return true;
   }
-  if (TMath::Abs(track.tpcNSigmaPr()) < diffCuts.maxnSigmaTPC()) {
+  if (TMath::Abs(track.tpcNSigmaPr()) < diffCuts.maxNSigmaTPC()) {
     return true;
   }
 
@@ -216,19 +250,19 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
          track.tofNSigmaPi(),
          track.tofNSigmaKa(),
          track.tofNSigmaPr());
-    if (TMath::Abs(track.tofNSigmaEl()) < diffCuts.maxnSigmaTOF()) {
+    if (TMath::Abs(track.tofNSigmaEl()) < diffCuts.maxNSigmaTOF()) {
       return true;
     }
-    if (TMath::Abs(track.tofNSigmaMu()) < diffCuts.maxnSigmaTOF()) {
+    if (TMath::Abs(track.tofNSigmaMu()) < diffCuts.maxNSigmaTOF()) {
       return true;
     }
-    if (TMath::Abs(track.tofNSigmaPi()) < diffCuts.maxnSigmaTOF()) {
+    if (TMath::Abs(track.tofNSigmaPi()) < diffCuts.maxNSigmaTOF()) {
       return true;
     }
-    if (TMath::Abs(track.tofNSigmaKa()) < diffCuts.maxnSigmaTOF()) {
+    if (TMath::Abs(track.tofNSigmaKa()) < diffCuts.maxNSigmaTOF()) {
       return true;
     }
-    if (TMath::Abs(track.tofNSigmaPr()) < diffCuts.maxnSigmaTOF()) {
+    if (TMath::Abs(track.tofNSigmaPr()) < diffCuts.maxNSigmaTOF()) {
       return true;
     }
   }
@@ -236,5 +270,115 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
 }
 
 // -----------------------------------------------------------------------------
+float FV0AmplitudeA(aod::FV0A fv0)
+{
+  float totAmplitude = 0;
+  for (auto amp : fv0.amplitude()) {
+    totAmplitude += amp;
+  }
 
-#endif // O2_ANALYSIS_DIFFRACTION_SELECTOR_H_
+  return totAmplitude;
+}
+
+// -----------------------------------------------------------------------------
+float FT0AmplitudeA(aod::FT0 ft0)
+{
+  float totAmplitude = 0;
+  for (auto amp : ft0.amplitudeA()) {
+    totAmplitude += amp;
+  }
+
+  return totAmplitude;
+}
+
+// -----------------------------------------------------------------------------
+float FT0AmplitudeC(aod::FT0 ft0)
+{
+  float totAmplitude = 0;
+  for (auto amp : ft0.amplitudeC()) {
+    totAmplitude += amp;
+  }
+
+  return totAmplitude;
+}
+
+// -----------------------------------------------------------------------------
+int16_t FDDAmplitudeA(aod::FDD fdd)
+{
+  int16_t totAmplitude = 0;
+  for (auto amp : fdd.chargeA()) {
+    totAmplitude += amp;
+  }
+
+  return totAmplitude;
+}
+
+// -----------------------------------------------------------------------------
+int16_t FDDAmplitudeC(aod::FDD fdd)
+{
+  int16_t totAmplitude = 0;
+  for (auto amp : fdd.chargeC()) {
+    totAmplitude += amp;
+  }
+
+  return totAmplitude;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFV0(T bc, float limitA)
+{
+  if (bc.has_foundFV0()) {
+    return (FV0AmplitudeA(bc.foundFV0()) < limitA);
+  } else {
+    return true;
+  }
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFT0(T bc, float limitA, float limitC)
+{
+  if (bc.has_foundFT0()) {
+    return (FT0AmplitudeA(bc.foundFT0()) < limitA) && (FT0AmplitudeC(bc.foundFT0()) < limitC);
+  } else {
+    return true;
+  }
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFDD(T bc, float limitA, float limitC)
+{
+  if (bc.has_foundFDD()) {
+    return (FDDAmplitudeA(bc.foundFDD()) < limitA) && (FDDAmplitudeC(bc.foundFDD()) < limitC);
+  } else {
+    return true;
+  }
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFIT(T bc, std::vector<float> lims)
+{
+  return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanZDC(T bc, aod::Zdcs zdcs, std::vector<float> lims)
+{
+  const auto& ZdcBC = zdcs.sliceBy(aod::zdc::bcId, bc.globalIndex());
+  return (ZdcBC.size() == 0);
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims)
+{
+  const auto& CaloBC = calos.sliceBy(aod::calo::bcId, bc.globalIndex());
+  return (CaloBC.size() == 0);
+}
+
+// -----------------------------------------------------------------------------
+#endif // O2_ANALYSIS_DIFFRACTION_HELPERS_
