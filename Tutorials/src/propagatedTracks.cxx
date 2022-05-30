@@ -38,10 +38,10 @@ struct PropagatedTracksQa {
     {
       {"hcollx", ";collision x position (m);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}}},
       {"hpt", ";track sign*#it{p}_{T} propagated (GeV/#it{c});", {HistType::kTH1F, {{400, -20., 20.}}}},
-      {"hphi", ";track #phi propagated;entries", {HistType::kTH1F, {{140, 0., TwoPI}}}},
+      {"hphi", ";track #varphi propagated;entries", {HistType::kTH1F, {{140, 0., TwoPI}}}},
       {"heta", ";track #eta propagated;entries", {HistType::kTH1F, {{200, -2., 2.}}}},
       {"hptIU", ";track sign*#it{p}_{T} unpropagated (GeV/#it{c});entries", {HistType::kTH1F, {{400, -20., 20.}}}},
-      {"hphiIU", ";track #phi unpropagated;entries", {HistType::kTH1F, {{140, 0., TwoPI}}}},
+      {"hphiIU", ";track #varphi unpropagated;entries", {HistType::kTH1F, {{140, 0., TwoPI}}}},
       {"hetaIU", ";track #eta unpropagated;entries", {HistType::kTH1F, {{200, -2., 2.}}}},
       {"hdcaXY", ";propagated track dcaXY;entries", {HistType::kTH1F, {{160, -2., 2.}}}},
       {"hx2D", "x unpropagated vs. x propagated", {HistType::kTH2F, {{100, -10., 10.}, {100, -10., 10.}}}},
@@ -69,7 +69,7 @@ struct PropagatedTracksQa {
       registry.fill(HIST("hx2D"), tracks.iteratorAt(i).x(), tracksIU.iteratorAt(i).x());
       registry.fill(HIST("hphi2D"), tracks.iteratorAt(i).phi(), tracksIU.iteratorAt(i).phi());
       registry.fill(HIST("heta2D"), tracks.iteratorAt(i).eta(), tracksIU.iteratorAt(i).eta());
-      registry.fill(HIST("hpt2D"), tracks.iteratorAt(i).pt() * tracks.iteratorAt(i).sign(), tracksIU.iteratorAt(i).pt() * tracks.iteratorAt(i).sign());
+      registry.fill(HIST("hpt2D"), tracks.iteratorAt(i).pt() * tracks.iteratorAt(i).sign(), tracksIU.iteratorAt(i).pt() * tracksIU.iteratorAt(i).sign());
       registry.fill(HIST("hdeltaphivspT"), tracks.iteratorAt(i).pt(), tracks.iteratorAt(i).phi() - tracksIU.iteratorAt(i).phi());
     }
   }
@@ -80,7 +80,7 @@ struct PropagatedTracksExtra {
   HistogramRegistry registry{
     "registryTracks",
     {
-      {"hpt", ";track sign*#it{p}_{T} propagated (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}},
+      {"hpt", ";#it{p}_{T} propagated (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}},
       {"hcrossedrows", ";track crossed rows;entries", {HistType::kTH1F, {{160, -0.5, 159.5}}}},
     }};
 
