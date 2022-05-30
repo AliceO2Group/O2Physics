@@ -46,14 +46,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lumiTask {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
-  const char* ccdbpath_lut = "GLO/Param/MatLUT";
-  const char* ccdbpath_geo = "GLO/Config/Geometry";
-  const char* ccdbpath_grp = "GLO/GRP/GRP";
-  const char* ccdburl = "http://alice-ccdb.cern.ch";
-  int mRunNumber;
-
   Configurable<uint64_t> ftts{"ftts", 1530319778000, "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
   Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
@@ -76,18 +68,6 @@ struct lumiTask {
                                        {"vertexy_Refitted_vertexy", "", {HistType::kTH2F, {{1000, -1, 1, "y"}, {1000, -1, 1, "ry"}}}}  //
                                      }};
   bool doPVrefit = true;
-
-  void init(InitContext&)
-  {
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbpath_geo);
-    }
-    mRunNumber = 0;
-  }
 
   void process(aod::Collision const& collision,
                aod::BCsWithTimestamps const&,
@@ -117,19 +97,6 @@ struct lumiTask {
     }
 
     std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
-
-    o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-    if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
-      if (grpo != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-      }
-      mRunNumber = bc.runNumber();
-    }
 
     o2::dataformats::VertexBase Pvtx;
     Pvtx.setX(collision.posX());
