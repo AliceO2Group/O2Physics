@@ -70,12 +70,12 @@ struct LfTreeCreatorNuclei {
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
-                                                  aod::pidTOFbeta, aod::TOFSignal,
-                                                  aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                                  aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                                  aod::pidTPCFullPr, aod::pidTOFFullPr,
-                                                  aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                                  aod::pidTPCFullHe, aod::pidTOFFullHe>;
+                                    aod::pidTOFbeta, aod::TOFSignal,
+                                    aod::pidTPCFullPi, aod::pidTOFFullPi,
+                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
+                                    aod::pidTPCFullPr, aod::pidTOFFullPr,
+                                    aod::pidTPCFullDe, aod::pidTOFFullDe,
+                                    aod::pidTPCFullHe, aod::pidTOFFullHe>;
   int nevs = 0;
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>> const& collisions,
                soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)

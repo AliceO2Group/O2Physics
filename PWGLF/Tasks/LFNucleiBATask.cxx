@@ -100,7 +100,7 @@ struct LFNucleiBATask {
     histos.add("spectraGen/histGenPtantiHe", "generated particles", HistType::kTH1F, {ptAxis});
   }
 
-  template<bool IsMC, typename CollisionType, typename TracksType>
+  template <bool IsMC, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
     constexpr float fMassProton = 0.938272088f;
@@ -174,8 +174,7 @@ struct LFNucleiBATask {
         if (std::abs(track.nsigTPC3He()) < nsigmaTPCcut)
           histos.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
       }
-      if constexpr(IsMC)
-      {
+      if constexpr (IsMC) {
         track.pdgCode();
       }
     }

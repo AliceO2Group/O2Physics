@@ -72,7 +72,7 @@ DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
-//TPC and ITS QA
+// TPC and ITS QA
 DECLARE_SOA_COLUMN(NcrTPC, ncrTPC, int);
 DECLARE_SOA_COLUMN(RTPC, rTPC, float);
 DECLARE_SOA_COLUMN(Chi2TPC, chi2TPC, float);
