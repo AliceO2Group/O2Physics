@@ -32,6 +32,7 @@ using namespace o2::aod::hf_cand_prong2;
 struct HFCandidateCreator2Prong {
   Produces<aod::HfCandProng2Base> rowCandidateBase;
 
+  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
   Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
@@ -43,6 +44,10 @@ struct HFCandidateCreator2Prong {
   OutputObj<TH1F> hmass2{TH1F("hmass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+
+  float toMicrometers = 10000.; // from cm to µm
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
@@ -50,7 +55,7 @@ struct HFCandidateCreator2Prong {
   double massKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::Hf2Prongs const& rowsTrackIndexProng2,
+               soa::Join<aod::Hf2Prongs, aod::HfPvRefitProng2> const& rowsTrackIndexProng2,
                aod::BigTracks const& tracks)
   {
     // 2-prong vertex fitter
@@ -92,21 +97,41 @@ struct HFCandidateCreator2Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
+      if (doPvRefit) {
+        /// use PV refit
+        /// Using it in the rowCandidateBase all dynamic columns shall take it into account
+        // coordinates
+        primaryVertex.setX(rowTrackIndexProng2.pvRefitX());
+        primaryVertex.setY(rowTrackIndexProng2.pvRefitY());
+        primaryVertex.setZ(rowTrackIndexProng2.pvRefitZ());
+        // covariance matrix
+        primaryVertex.setSigmaX2(rowTrackIndexProng2.pvRefitSigmaX2());
+        primaryVertex.setSigmaXY(rowTrackIndexProng2.pvRefitSigmaXY());
+        primaryVertex.setSigmaY2(rowTrackIndexProng2.pvRefitSigmaY2());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng2.pvRefitSigmaXZ());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng2.pvRefitSigmaYZ());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvRefitSigmaZ2());
+        covMatrixPV = primaryVertex.getCov();
+      }
       hCovPVXX->Fill(covMatrixPV[0]);
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
       trackParVar0.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
+      hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
+      hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
+      hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
+      hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
 
       // get uncertainty of the decay length
       double phi, theta;
-      getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
+      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       // fill candidate table rows
       rowCandidateBase(collision.globalIndex(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
                        chi2PCA,
