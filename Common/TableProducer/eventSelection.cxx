@@ -180,7 +180,7 @@ struct BcSelectionTask {
             multRingV0A, multRingV0C, spdClusters, foundFT0, foundFV0, foundFDD);
     }
   }
-  PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
+  PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", false);
 
   void processRun3(BCsWithRun3Matchings const& bcs,
                    aod::Zdcs const&,
@@ -405,7 +405,7 @@ struct EventSelectionTask {
           multRingV0A, multRingV0C, spdClusters, nTkl, sel7, sel8,
           foundBC, foundFT0, foundFV0, foundFDD);
   }
-  PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
+  PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", false);
 
   void processRun3(aod::Collision const& col, BCsWithBcSels const& bcs)
   {
