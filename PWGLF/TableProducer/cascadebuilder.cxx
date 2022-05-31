@@ -107,14 +107,14 @@ struct cascadeBuilder {
     maxSnp = 0.85f;  //could be changed later
     maxStep = 2.00f; //could be changed later
 
-    ccdb->setURL("https://alice-ccdb.cern.ch");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
     auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/Geometry");
+      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
       /* it seems this is needed at this level for the material LUT to work properly */
       /* but what happens if the run changes while doing the processing?             */
       constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
