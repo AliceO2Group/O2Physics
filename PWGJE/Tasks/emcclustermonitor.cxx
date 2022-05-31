@@ -54,6 +54,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
 struct ClusterMonitor {
   HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
@@ -102,7 +103,7 @@ struct ClusterMonitor {
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
-    // cluster properties
+    // cluster properties (matched clusters)
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
@@ -135,7 +136,7 @@ struct ClusterMonitor {
     }
   }
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void process(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::BCs const& bcs)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::BCs const& bcs)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
@@ -151,25 +152,13 @@ struct ClusterMonitor {
       LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
       return;
     }
+    mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
+    if (mVertexCut > 0 && TMath::Abs(theCollision.posZ()) > mVertexCut) {
+      LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
+      return;
+    }
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
-
-    // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
-    // this can be used as alternative to event selection (e.g. for pilot beam data)
-    // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
-    for (const auto& bc : bcs) {
-      o2::InteractionRecord eventIR;
-      eventIR.setFromLong(bc.globalBC());
-      mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
-      if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
-        LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
-        continue;
-      }
-      if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
-        continue;
-      }
-      mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
-    }
 
     // loop over all clusters from accepted collision
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
@@ -193,6 +182,41 @@ struct ClusterMonitor {
       mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
     }
   }
+  PROCESS_SWITCH(ClusterMonitor, processCollisions, "Process clusters from collision", false);
+
+  /// \brief Process EMCAL clusters that are not matched to a collision
+  /// This is not needed for most users
+
+  void processAmbiguous(o2::aod::BC const bc, selectedAmbiguousClusters const& clusters)
+  {
+    // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
+    // this can be used as alternative to event selection (e.g. for pilot beam data)
+    // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
+    o2::InteractionRecord eventIR;
+    eventIR.setFromLong(bc.globalBC());
+    mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
+      LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
+      return;
+    }
+    if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+      return;
+    }
+    mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
+    // loop over ambiguous clusters
+    for (const auto& cluster : clusters) {
+      mHistManager.fill(HIST("clusterE"), cluster.energy());
+      mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
+      mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
+      mHistManager.fill(HIST("clusterM02"), cluster.m02());
+      mHistManager.fill(HIST("clusterM20"), cluster.m20());
+      mHistManager.fill(HIST("clusterTimeVsE"), cluster.time(), cluster.energy());
+      mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
+      mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
+      mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+    }
+  }
+  PROCESS_SWITCH(ClusterMonitor, processAmbiguous, "Process Ambiguous clusters", false);
 
   /// \brief Create binning for cluster energy axis (variable bin size)
   /// \return vector with bin limits
@@ -250,6 +274,8 @@ struct ClusterMonitor {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<ClusterMonitor>(cfgc)};
+  WorkflowSpec workflow{
+    adaptAnalysisTask<ClusterMonitor>(cfgc, TaskName{"EMCClusterMonitorTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
+    adaptAnalysisTask<ClusterMonitor>(cfgc, TaskName{"EMCClusterMonitorTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
+  return workflow;
 }
