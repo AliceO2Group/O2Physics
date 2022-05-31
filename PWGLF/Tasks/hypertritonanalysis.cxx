@@ -137,6 +137,7 @@ struct hypertritonAnalysis {
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(5, "Lifetime");
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(6, "DcaV0Dau");
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(7, "TPCPID");
+    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(8, "PionDcatoPV");
   }
 
   //Selection criteria
@@ -204,32 +205,40 @@ struct hypertritonAnalysis {
       registry.fill(HIST("hNSigmaProton"), v0.posTrack_as<MyTracks>().tpcNSigmaPr());
       registry.fill(HIST("hNSigmaProton"), v0.negTrack_as<MyTracks>().tpcNSigmaPr());
       // Hypertriton
-      if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(v0.dcanegtopv()) > dcapiontopv) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV;
-
+      if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        registry.fill(HIST("hPtHelium3"), v0.positivept());
-        registry.fill(HIST("hPtAntiPion"), v0.negativept());
-        registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
-        registry.fill(HIST("hMassHypertritonTotal"), v0.mHypertriton());
-        registry.fill(HIST("h3dMassHypertriton"), 0., v0.pt(), v0.mHypertriton());            //collision.centV0M() instead of 0. once available
-        registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
-        if (saveDcaHist == 1) {
-          registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
+
+        if (TMath::Abs(v0.dcanegtopv()) < dcapiontopv) {
+          registry.fill(HIST("hSelectedV0Counter"), 7.5);
+
+          registry.fill(HIST("hPtHelium3"), v0.positivept());
+          registry.fill(HIST("hPtAntiPion"), v0.negativept());
+          registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
+          registry.fill(HIST("hMassHypertritonTotal"), v0.mHypertriton());
+          registry.fill(HIST("h3dMassHypertriton"), 0., v0.pt(), v0.mHypertriton());            //collision.centV0M() instead of 0. once available
+          registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+          if (saveDcaHist == 1) {
+            registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
+          }
         }
       }
 
       // AntiHypertriton
-      if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(v0.dcapostopv()) > dcapiontopv) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S 
+      if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
 
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
-        registry.fill(HIST("hPtPion"), v0.positivept());
-        registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
-        registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
-        registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
-        registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
-        if (saveDcaHist == 1) {
-          registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
+        if (TMath::Abs(v0.dcapostopv()) < dcapiontopv) {
+          registry.fill(HIST("hSelectedV0Counter"), 7.5);
+
+          registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
+          registry.fill(HIST("hPtPion"), v0.positivept());
+          registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
+          registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
+          registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
+          registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+          if (saveDcaHist == 1) {
+            registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
+          }
         }
       }
 
@@ -281,32 +290,40 @@ struct hypertritonAnalysis {
       registry.fill(HIST("hNSigmaTriton"), v0.posTrack_as<MyTracks>().tpcNSigmaTr());
       registry.fill(HIST("hNSigmaTriton"), v0.negTrack_as<MyTracks>().tpcNSigmaTr());
       // Hypertriton
-      if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-
+      if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        registry.fill(HIST("hPtHelium3"), v0.positivept());
-        registry.fill(HIST("hPtAntiPion"), v0.negativept());
-        registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
-        registry.fill(HIST("hMassHypertritonTotal"), v0.mHypertriton());
-        registry.fill(HIST("h3dMassHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mHypertriton());
-        registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
-        if (saveDcaHist == 1) {
-          registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
+
+        if (TMath::Abs(v0.dcanegtopv()) < dcapiontopv) {
+          registry.fill(HIST("hSelectedV0Counter"), 7.5);
+
+          registry.fill(HIST("hPtHelium3"), v0.positivept());
+          registry.fill(HIST("hPtAntiPion"), v0.negativept());
+          registry.fill(HIST("hMassHypertriton"), v0.mHypertriton());
+          registry.fill(HIST("hMassHypertritonTotal"), v0.mHypertriton());
+          registry.fill(HIST("h3dMassHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mHypertriton());
+          registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+          if (saveDcaHist == 1) {
+            registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
+          }
         }
       }
 
       // AntiHypertriton
-      if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV;
+      if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
 
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
-        registry.fill(HIST("hPtPion"), v0.positivept());
-        registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
-        registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
-        registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
-        registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
-        if (saveDcaHist == 1) {
-          registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
+        if (TMath::Abs(v0.dcapostopv()) < dcapiontopv) {
+          registry.fill(HIST("hSelectedV0Counter"), 7.5);
+
+          registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
+          registry.fill(HIST("hPtPion"), v0.positivept());
+          registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
+          registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
+          registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
+          registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+          if (saveDcaHist == 1) {
+            registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
+          }
         }
       }
     }

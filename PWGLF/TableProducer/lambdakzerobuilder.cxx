@@ -46,6 +46,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "PID/PIDResponse.h"
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -67,9 +68,9 @@ using namespace o2::framework::expressions;
 using std::array;
 
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended>;
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::pidTPCFullPi, aod::pidTPCFullHe>;
 using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksExtended>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksExtended, aod::pidTPCFullPi, aod::pidTPCFullHe>;
 using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 //#define MY_DEBUG
@@ -113,11 +114,11 @@ struct lambdakzeroBuilder {
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-      {"hGoodIndices", "hGoodIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-    },
+      {
+        {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+        {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+        {"hGoodIndices", "hGoodIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+      },
   };
 
   // Configurables
@@ -181,10 +182,10 @@ struct lambdakzeroBuilder {
 
   void processRun2(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
-                   ,
-                   aod::McParticles const& particlesMC
+      ,
+      aod::McParticles const& particlesMC
 #endif
-  )
+      )
   {
 
     /* check the previous run number */
@@ -247,8 +248,8 @@ struct lambdakzeroBuilder {
         continue;
       }
       registry.fill(HIST("hGoodIndices"), 2.5);
-      if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+      /*if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcapostopv);
         v0dataLink(-1);
         continue;
       }
@@ -257,7 +258,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
+      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);*/
       registry.fill(HIST("hGoodIndices"), 3.5);
 
       // Candidate building part
@@ -322,6 +323,18 @@ struct lambdakzeroBuilder {
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
 
+      int pTrackCharge = 1, nTrackCharge = 1;
+      if (TMath::Abs(V0.posTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+        pTrackCharge = 2;
+      } 
+      if (TMath::Abs(V0.negTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+        nTrackCharge = 2;
+      } 
+      for (int i=0; i<3; i++){
+        pvec0[i] = pvec0[i] * pTrackCharge;
+        pvec1[i] = pvec1[i] * nTrackCharge;
+      }
+
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
         pos[i] = vtx[i];
@@ -354,17 +367,17 @@ struct lambdakzeroBuilder {
 
       registry.fill(HIST("hV0Candidate"), 1.5);
       v0data(
-        V0.posTrackId(),
-        V0.negTrackId(),
-        V0.collisionId(),
-        V0.globalIndex(),
-        fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-        pos[0], pos[1], pos[2],
-        pvec0[0], pvec0[1], pvec0[2],
-        pvec1[0], pvec1[1], pvec1[2],
-        fitter.getChi2AtPCACandidate(),
-        V0.posTrack_as<MyTracks>().dcaXY(),
-        V0.negTrack_as<MyTracks>().dcaXY());
+          V0.posTrackId(),
+          V0.negTrackId(),
+          V0.collisionId(),
+          V0.globalIndex(),
+          fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+          pos[0], pos[1], pos[2],
+          pvec0[0], pvec0[1], pvec0[2],
+          pvec1[0], pvec1[1], pvec1[2],
+          fitter.getChi2AtPCACandidate(),
+          V0.posTrack_as<MyTracks>().dcaXY(),
+          V0.negTrack_as<MyTracks>().dcaXY());
       v0dataLink(v0data.lastIndex());
     }
   }
@@ -372,10 +385,10 @@ struct lambdakzeroBuilder {
 
   void processRun3(aod::Collision const& collision, aod::V0s const& V0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
-                   ,
-                   aod::McParticles const& particlesMC
+      ,
+      aod::McParticles const& particlesMC
 #endif
-  )
+      )
   {
 
     /* check the previous run number */
@@ -438,8 +451,8 @@ struct lambdakzeroBuilder {
         continue;
       }
       registry.fill(HIST("hGoodIndices"), 2.5);
-      if (fabs(V0.posTrack_as<MyTracksIU>().dcaXY()) < dcapostopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcanegtopv);
+      /*if (fabs(V0.posTrack_as<MyTracksIU>().dcaXY()) < dcapostopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcapostopv);
         v0dataLink(-1);
         continue;
       }
@@ -448,7 +461,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
+      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);*/
       registry.fill(HIST("hGoodIndices"), 3.5);
 
       // Candidate building part
@@ -513,6 +526,23 @@ struct lambdakzeroBuilder {
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
 
+      // PID doesn't work well, modified the StoredV0Datas Table to make invariant mass correct temporarily, need to fix
+      /*uint32_t pTrackPID = V0.posTrack_as<MyTracks>().pidForTracking();
+        uint32_t nTrackPID = V0.negTrack_as<MyTracks>().pidForTracking();
+        int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
+        int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];*/
+      int pTrackCharge = 1, nTrackCharge = 1;
+      if (TMath::Abs(V0.posTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+        pTrackCharge = 2;
+      } 
+      if (TMath::Abs(V0.negTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+        nTrackCharge = 2;
+      } 
+      for (int i=0; i<3; i++){
+        pvec0[i] = pvec0[i] * pTrackCharge;
+        pvec1[i] = pvec1[i] * nTrackCharge;
+      }
+
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
         pos[i] = vtx[i];
@@ -545,17 +575,17 @@ struct lambdakzeroBuilder {
 
       registry.fill(HIST("hV0Candidate"), 1.5);
       v0data(
-        V0.posTrackId(),
-        V0.negTrackId(),
-        V0.collisionId(),
-        V0.globalIndex(),
-        fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-        pos[0], pos[1], pos[2],
-        pvec0[0], pvec0[1], pvec0[2],
-        pvec1[0], pvec1[1], pvec1[2],
-        fitter.getChi2AtPCACandidate(),
-        V0.posTrack_as<MyTracksIU>().dcaXY(),
-        V0.negTrack_as<MyTracksIU>().dcaXY());
+          V0.posTrackId(),
+          V0.negTrackId(),
+          V0.collisionId(),
+          V0.globalIndex(),
+          fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+          pos[0], pos[1], pos[2],
+          pvec0[0], pvec0[1], pvec0[2],
+          pvec1[0], pvec1[1], pvec1[2],
+          fitter.getChi2AtPCACandidate(),
+          V0.posTrack_as<MyTracksIU>().dcaXY(),
+          V0.negTrack_as<MyTracksIU>().dcaXY());
       v0dataLink(v0data.lastIndex());
     }
   }
@@ -572,5 +602,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
-    adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
+      adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }
