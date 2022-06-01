@@ -18,12 +18,14 @@ const char* selectionLabels[kNsel] = {
   "kIsBBV0C",
   "kIsBBFDA",
   "kIsBBFDC",
+  "kIsBBT0A",
+  "kIsBBT0C",
   "kNoBGV0A",
   "kNoBGV0C",
   "kNoBGFDA",
   "kNoBGFDC",
-  "kIsBBT0A",
-  "kIsBBT0C",
+  "kNoBGT0A",
+  "kNoBGT0C",
   "kIsBBZNA",
   "kIsBBZNC",
   "kIsBBZAC",
@@ -39,7 +41,11 @@ const char* selectionLabels[kNsel] = {
   "kNoPileupFromSPD",
   "kNoV0PFPileup",
   "kNoSPDClsVsTklBG",
-  "kNoV0C012vsTklBG"};
+  "kNoV0C012vsTklBG",
+  "kNoInconsistentVtx",
+  "kNoPileupInMultBins",
+  "kNoPilupMV",
+  "kNoPileupTPC"};
 }
 
 EventSelectionParams::EventSelectionParams(int system)
