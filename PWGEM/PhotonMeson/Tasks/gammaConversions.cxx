@@ -13,7 +13,7 @@
 /// dependencies: o2-analysis-lf-lambdakzerobuilder
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
-#include "gammaTables.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
