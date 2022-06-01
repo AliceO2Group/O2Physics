@@ -33,54 +33,91 @@ using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksE
 
 struct skimmerGammaConversions {
 
-  HistogramRegistry registry{
-    "registry",
+  HistogramRegistry fRegistry{
+    "fRegistry",
     {
-      {"hCollisionZ_Rec", "hCollisionZ_Rec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      {"hCollisionZ_MCTrue_all", "hCollisionZ_MCTrue_all;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue (at least one rec. collision);z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      {"hCollisionZ_MCRec", "hCollisionZ_MCRec;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      {"hCollisionZ_Rec", "hCollisionZ_Rec;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
-      {"hMotherSameNess", "hMotherSameNess", {HistType::kTH1F, {{13, 0.f, 14.f}}}},
+      {"hV0Confirmation", "hV0Confirmation", {HistType::kTH1F, {{10, 0.f, 10.f}}}},
     },
   };
+
+  // declare this here in order to be able to access it from a lambda
+  std::shared_ptr<TH1> fMotherSizesHisto{};
+
+  enum eV0Confirmation {
+    kV0In,
+    kNoMcParticleForTrack,
+    kNoTrackComesFromMother,
+    kOneTrackHasOneMother,
+    kNotSameMothers,
+    kMotherHasNoDaughter,
+    kGoodMcMother
+  };
+
+  std::map<size_t, std::string> fV0ConfirmationLabel{
+    {kV0In, "kV0In"},
+    {kNoMcParticleForTrack, "kNoMcParticleForTrack"},
+    {kNoTrackComesFromMother, "kNoTrackComesFromMother"},
+    {kOneTrackHasOneMother, "kOneTrackHasOneMother"},
+    {kNotSameMothers, "kNotSameMothers"},
+    {kMotherHasNoDaughter, "kMotherHasNoDaughter"},
+    {kGoodMcMother, "kGoodMcMother"}};
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
 
+  void init(InitContext const&)
+  {
+    if (doprocessRec && doprocessMc) {
+      LOGF(fatal, "Cannot enable doprocessRec and doprocessMc at the same time. Please choose one.");
+    }
+
+    fMotherSizesHisto = std::get<std::shared_ptr<TH1>>(fRegistry.add("hMotherSizes", "hMotherSizes", {HistType::kTH1F, {{10, 0.f, 10.f}}}));
+
+    // set axis lables
+    TAxis* lXaxis = fRegistry.get<TH1>(HIST("hV0Confirmation"))->GetXaxis();
+    for (auto& lPairIt : fV0ConfirmationLabel) {
+      lXaxis->SetBinLabel(lPairIt.first + 1, lPairIt.second.data());
+    }
+  }
+
+  template <typename TV0, typename TTRACK>
+  void fillTrackTable(TV0 const& theV0, TTRACK const& theTrack, bool theIsPositive)
+  {
+    fFuncTableV0DaughterTracks(
+      theV0.v0Id(),
+      theTrack.dcaXY(),
+      theTrack.eta(),
+      theTrack.p(),
+      theTrack.phi(),
+      theTrack.pt(),
+      theIsPositive,
+      theTrack.tpcCrossedRowsOverFindableCls(),
+      theTrack.tpcFoundOverFindableCls(),
+      theTrack.tpcNClsCrossedRows(),
+      theTrack.tpcNSigmaEl(),
+      theTrack.tpcNSigmaPi(),
+      theTrack.tpcSignal());
+  }
+
   // ============================ FUNCTION DEFINITIONS ====================================================
   void processRec(aod::Collisions::iterator const& theCollision,
-                  aod::V0s,
                   aod::V0Datas const& theV0s,
                   tracksAndTPCInfo const& theTracks)
   {
-    auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
-      fFuncTableV0DaughterTracks(
-        theV0.v0Id(),
-        theIsFromConversionPhoton,
-        theTrack.dcaXY(),
-        theTrack.eta(),
-        theTrack.p(),
-        theTrack.phi(),
-        theTrack.pt(),
-        theIsPositive,
-        theTrack.tpcCrossedRowsOverFindableCls(),
-        theTrack.tpcFoundOverFindableCls(),
-        theTrack.tpcNClsCrossedRows(),
-        theTrack.tpcNSigmaEl(),
-        theTrack.tpcNSigmaPi(),
-        theTrack.tpcSignal());
-    };
-
-    registry.fill(HIST("hCollisionZ_Rec"), theCollision.posZ());
+    fRegistry.fill(HIST("hCollisionZ_Rec"), theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
 
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
 
-      fillTrackTable(lV0, lTrackPos, true, false);
-      fillTrackTable(lV0, lTrackNeg, false, false);
+      fillTrackTable(lV0, lTrackPos, true);
+      fillTrackTable(lV0, lTrackNeg, false);
     }
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
@@ -88,39 +125,21 @@ struct skimmerGammaConversions {
   void processMc(aod::McCollision const& theMcCollision,
                  soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                             aod::Collisions>> const& theCollisions,
-                 aod::V0s,
                  aod::V0Datas const& theV0s,
                  tracksAndTPCInfoMC const& theTracks,
                  aod::McParticles const& theMcParticles)
   {
-    auto fillTrackTable = [&](auto& theV0, auto& theTrack, bool theIsPositive, bool theIsFromConversionPhoton) {
-      fFuncTableV0DaughterTracks(
-        theV0.v0Id(),
-        theIsFromConversionPhoton,
-        theTrack.dcaXY(),
-        theTrack.eta(),
-        theTrack.p(),
-        theTrack.phi(),
-        theTrack.pt(),
-        theIsPositive,
-        theTrack.tpcCrossedRowsOverFindableCls(),
-        theTrack.tpcFoundOverFindableCls(),
-        theTrack.tpcNClsCrossedRows(),
-        theTrack.tpcNSigmaEl(),
-        theTrack.tpcNSigmaPi(),
-        theTrack.tpcSignal());
-    };
+    fRegistry.fill(HIST("hCollisionZ_MCTrue_all"), theMcCollision.posZ());
 
-    registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
     if (theCollisions.size() == 0) {
       return;
     }
 
-    registry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
-    registry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
+    fRegistry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
+    fRegistry.fill(HIST("hMcParticlesSize"), theMcParticles.size());
 
     for (auto& lCollision : theCollisions) {
-      registry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
+      fRegistry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
 
       // todo: replace by sliceByCached
       auto lGroupedV0s = theV0s.sliceBy(aod::v0data::collisionId, lCollision.globalIndex());
@@ -129,139 +148,95 @@ struct skimmerGammaConversions {
         auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
         auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
 
-        bool lIsConversionPhoton = isConversionPhoton(lV0,
-                                                      lTrackPos,
-                                                      lTrackNeg);
+        eV0Confirmation lV0Status = isTrueV0(lV0,
+                                             lTrackPos,
+                                             lTrackNeg);
 
-        fillTrackTable(lV0, lTrackPos, true, lIsConversionPhoton);
-        fillTrackTable(lV0, lTrackNeg, false, lIsConversionPhoton);
+        fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(lV0Status);
+
+        fillTrackTable(lV0, lTrackPos, true);
+        fillTrackTable(lV0, lTrackNeg, false);
       }
     }
   }
   PROCESS_SWITCH(skimmerGammaConversions, processMc, "process reconstructed and mc info ", false);
 
-  // SFS todo: make pretty and short
   template <typename TV0, typename TTRACK>
-  bool isConversionPhoton(TV0 const& theV0,
-                          TTRACK const& theTrackPos,
-                          TTRACK const& theTrackNeg)
+  eV0Confirmation isTrueV0(TV0 const& theV0,
+                           TTRACK const& theTrackPos,
+                           TTRACK const& theTrackNeg)
   {
-    bool result = false;
-    // todo: verify it is enough to check only mother0 being equal
+    auto getMothersIndeces = [&](auto const& theMcParticle) {
+      std::vector<int> lMothersIndeces{};
+      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+        LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
+        lMothersIndeces.push_back(lMother.globalIndex());
+      }
+      fMotherSizesHisto->Fill(0.5 + (float)lMothersIndeces.size());
+      return lMothersIndeces;
+    };
 
-    /* example from https://aliceo2group.github.io/analysis-framework/docs/tutorials/indexTables.html?highlight=_as:
-     * track0.collision_as<myCol>().mult() : access multiplicity of collission associated with track0
-     */
+    fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(kV0In);
 
-    auto lMcPos = theTrackPos.template mcParticle_as<aod::McParticles>();
-    auto lMcNeg = theTrackNeg.template mcParticle_as<aod::McParticles>();
-
-    // get all mc mothers from positive and negative tracks
-    //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-    std::vector<int> lMothers;
-    // SFS todo: remove all those mothers_as<aod::McParticles_001>, are the loops even necesarry?
-    for (auto& mP : lMcPos.template mothers_as<aod::McParticles>()) {
-      LOGF(info, "   mother index mP: %d", mP.globalIndex());
-      lMothers.push_back(mP.globalIndex());
+    if (!(theTrackPos.has_mcParticle() && theTrackNeg.has_mcParticle())) {
+      return kNoMcParticleForTrack;
     }
 
-    if (lMothers.size() > 0) {
-      for (auto& mN : lMcNeg.template mothers_as<aod::McParticles>()) {
-        LOGF(info, "   mother index mN: %d", mN.globalIndex());
-        lMothers.push_back(mN.globalIndex());
-      }
+    // get mcParticles
+    auto lMcPos = theTrackPos.mcParticle();
+    auto lMcNeg = theTrackNeg.mcParticle();
+
+    // get indeces of mcMother of tracks
+    std::vector<int> lMothersIndecesPos = getMothersIndeces(lMcPos);
+    std::vector<int> lMothersIndecesNeg = getMothersIndeces(lMcNeg);
+
+    // none of tracks has a mother, has been accounted for in fMotherSizesHisto
+    if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 0) {
+      return kNoTrackComesFromMother;
     }
 
-    // SFS verify theyre all the same category and remove
-    int lMotherSameNess = 0;
-    {
-      if (lMothers.size() == 2) {
-        if (lMothers[0] == lMothers[1]) {
-          LOGF(info, "size2: 01");
-          lMotherSameNess = 1;
-        }
-      }
-
-      if (lMothers.size() == 3) {
-        if (lMothers[0] == lMothers[1]) {
-          LOGF(info, "size3: 01");
-          lMotherSameNess = 2;
-        }
-        if (lMothers[0] == lMothers[2]) {
-          LOGF(info, "size2: 02");
-          lMotherSameNess = 3;
-        }
-        if (lMothers[1] == lMothers[2]) {
-          LOGF(info, "size2: 12");
-          lMotherSameNess = 4;
-        }
-      }
-
-      if (lMothers.size() == 4) {
-        if (lMothers[0] == lMothers[2]) {
-          LOGF(info, "size4 02");
-          lMotherSameNess = 4;
-        }
-        if (lMothers[1] == lMothers[3]) {
-          LOGF(info, "size4 13");
-          lMotherSameNess = 5;
-        }
-        if (lMothers[0] == lMothers[3]) {
-          LOGF(info, "size4 03");
-          lMotherSameNess = 6;
-        }
-        if (lMothers[1] == lMothers[2]) {
-          LOGF(info, "size4 12");
-          lMotherSameNess = 7;
-        }
-        if (lMothers[0] == lMothers[1]) {
-          LOGF(info, "size4 01");
-          lMotherSameNess = 8;
-        }
-        if (lMothers[2] == lMothers[3]) {
-          LOGF(info, "size4 23");
-          lMotherSameNess = 9;
-        }
-      }
+    // exactly one track has one mother
+    if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 1) {
+      return kOneTrackHasOneMother;
     }
 
-    registry.fill(HIST("hMotherSameNess"), 0.5 + (float)lMotherSameNess);
-
-    // if both tracks have exactly one and the same mother
-    if (lMotherSameNess == 1) {
-      // SFS todo: actually no loop required here, for this
-      for (auto& lMcMother : lMcNeg.template mothers_as<aod::McParticles>()) {
-        if ((result = lMcMother.pdgCode() == 22)) {
-
-          auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
-          float lDaughter0Vx = -1.;
-          float lDaughter0Vy = -1.;
-          float lDaughter0Vz = -1.;
-          float lV0Radius = -1.;
-          if (lDaughters.size()) {
-            auto lDaughter0 = lDaughters.begin();
-            lDaughter0Vx = lDaughter0.vx();
-            lDaughter0Vy = lDaughter0.vy();
-            lDaughter0Vz = lDaughter0.vz();
-            lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
-          }
-
-          fFuncTableMcGammasFromConfirmedV0s(
-            lMcMother.mcCollisionId(),
-            lMcMother.globalIndex(),
-            theV0.v0Id(),
-            lMcMother.statusCode(),
-            lMcMother.flags(),
-            lMcMother.px(), lMcMother.py(), lMcMother.pz(),
-            lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(),
-            lDaughters.size(),
-            lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
-            lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
-            lV0Radius);
-        }
-      }
+    // we know now both tracks have at least one mother
+    // check if it is the same
+    if (lMothersIndecesPos[0] != lMothersIndecesNeg[0]) {
+      return kNotSameMothers;
     }
-    return result;
+
+    // both tracks have the same first mother
+    // SFS todo: actually no loop required here, for this. Access directly mc particle with lMothersIndecesFlags
+    for (auto& lMcMother : lMcPos.template mothers_as<aod::McParticles>()) {
+
+      // get mc daughter in order to compute true conversion point
+      auto lDaughters = lMcMother.template daughters_as<aod::McParticles>();
+      if (lDaughters.begin() == lDaughters.end()) {
+        // mc converted mother has no mc daughters, should never happen
+        return kMotherHasNoDaughter;
+      }
+      // todo: lMcPos instead here should give identical results
+      auto lDaughter0 = lDaughters.begin();
+      float lDaughter0Vx = lDaughter0.vx();
+      float lDaughter0Vy = lDaughter0.vy();
+      float lDaughter0Vz = lDaughter0.vz();
+      float lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+
+      fFuncTableMcGammasFromConfirmedV0s(
+        lMcMother.mcCollisionId(),
+        lMcMother.globalIndex(),
+        theV0.v0Id(),
+        lMcMother.pdgCode(), lMcMother.statusCode(), lMcMother.flags(),
+        lMcMother.px(), lMcMother.py(), lMcMother.pz(),
+        lMcMother.vx(), lMcMother.vy(), lMcMother.vz(), lMcMother.vt(),
+        lDaughters.size(),
+        lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
+        lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
+        lV0Radius);
+      break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
+    }
+    return kGoodMcMother;
   }
 };
 
