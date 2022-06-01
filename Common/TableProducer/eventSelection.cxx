@@ -290,8 +290,8 @@ struct EventSelectionTask {
 
   void init(InitContext&)
   {
-    ccdb->setURL("http://ccdb-test.cern.ch:8080");
-    //    ccdb->setURL("http://alice-ccdb.cern.ch");
+    //ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
