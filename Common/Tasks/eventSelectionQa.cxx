@@ -406,8 +406,6 @@ struct EventSelectionQaTask {
     // background studies
     for (auto& bc : bcs) {
       int localBC = bc.globalBC() % nBCsPerOrbit;
-      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
-      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
       float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
       float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
