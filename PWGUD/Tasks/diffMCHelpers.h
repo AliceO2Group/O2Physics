@@ -37,7 +37,7 @@ using namespace o2::framework;
 // around t_coll could potentially be the true BC. ndt is typically 4.
 
 template <typename T>
-T getMCCompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 

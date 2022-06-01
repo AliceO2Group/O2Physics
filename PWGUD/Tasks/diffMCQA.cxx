@@ -9,14 +9,48 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief
+/// \brief A QA task for DG events
+///
+///     options:
+///           DiffCuts.mNDtcoll(4)
+///           DiffCuts.mMinNBCs(7)
+///           DiffCuts.mMinNTracks(0)
+///           DiffCuts.mMaxNTracks(10000)
+///           DiffCuts.mMinNetCharge(0)
+///           DiffCuts.mMaxNetCharge(0)
+///           DiffCuts.mPidHypo(211)
+///           DiffCuts.mMinPosz(-1000.)
+///           DiffCuts.mMaxPosz(1000.)
+///           DiffCuts.mMinPt(0.)
+///           DiffCuts.mMaxPt(1000.)
+///           DiffCuts.mMinEta(-1.)
+///           DiffCuts.mMaxEta(1.)
+///           DiffCuts.mMinIVM(0.)
+///           DiffCuts.mMaxIVM(1000.)
+///           DiffCuts.mMaxnSigmaTPC(1000.)
+///           DiffCuts.mMaxnSigmaTOF(1000.)
+///           DiffCutsX.mFITAmpLimits({0., 0., 0., 0., 0.})
+///
+///     usage: copts="--configuration json://DiffQAConfig.json -b"
+///
+///           o2-analysis-timestamp $copts |
+///           o2-analysis-track-propagation $copts |
+///           o2-analysis-event-selection $copts |
+///           o2-analysis-ft0-corrected-table $copts |
+///           o2-analysis-trackextension $copts |
+///           o2-analysis-trackselection $copts |
+///           o2-analysis-ud-diff-mcqa $copts > diffQA.log
+///
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
 #include "TLorentzVector.h"
+#include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "EventFiltering/PWGUD/diffHelpers.h"
 #include "PWGUD/Tasks/diffMCHelpers.h"
+#include "EventFiltering/PWGUD/diffHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,60 +58,167 @@ using namespace o2::framework::expressions;
 
 struct DiffMCQA {
 
+  float maxdEdxTPC;
+  float maxdEdxTOF;
+
   // get a cutHolder
   cutHolder diffCuts = cutHolder();
   MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
+  // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
+  o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
+  o2::dataformats::bcRanges afbcrs = o2::dataformats::bcRanges("ambiguous_fwdtracks");
+
   // define histograms
+  // Stat:
+  //  bin  0: all collisions
+  //  bin  1: clean FIT
+  //  bin  2: clean ZDC
+  //  bin  3: clean Calo
+  //  bin  4: no V0s
+  //  bin  5: no Cascades
+  //  bin  6: no FWD tracks
+  //  bin  7: no global tracks which are no vtx tracks
+  //  bin  8: no vtx tracks which are no global tracks
+  //  bin  9: at least one vtx tracks with TOF hit
+  //  bin 10: possible ambiguous tracks
+  //  bin 11: possible ambiguous FwdTracks
+  //  bin 12: number of tracks >= minimum number
+  //  bin 13: number of tracks <= maximum number
+  //  bin 14: minimum pt <= pt of vtx tracks <= maximum pt
+  //  bin 15: minimum eta <= eta of vtx tracks <= maximum eta
+  //  bin 16: net charge >= minimum net charge
+  //  bin 17: net charge <= maximum net charge
+  //  bin 18: IVM >= minimum IVM
+  //  bin 19: IVM <= maximum IVM
+  //
+  // 3 diverent versions of histograms:
+  //  Diff1: Pythia MBR
+  //  Diff2: GRANIITTI
+  //       : Rest (Pythia MB)
+  //
   HistogramRegistry registry{
     "registry",
     {
-      {"timeResolution", "#timeResolution", {HistType::kTH1F, {{1000, 0., 1.E3}}}},
-      {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{200, 0., 1.E3}, {101, -0.01, 1.01}}}},
-      {"numberBCs", "#numberBCs", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
-      {"numberTracks", "#numberTracks", {HistType::kTH1F, {{3001, -0.5, 3000.5}}}},
-      {"numberVtxTracks", "#numberVtxTracks", {HistType::kTH1F, {{151, -0.5, 150.5}}}},
-      {"numberGlobalTracks", "#numberGlobalTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
-      {"numberFWDTracks", "#numberFWDTracks", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
-      {"VtxvsGlobalTracks", "#VtxvsGlobalTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}}},
-      {"TCH", "#TCH", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
-      {"IVM", "#IVM", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
-      {"pt", "#pt", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
-      {"eta", "#eta", {HistType::kTH2F, {{150, -1.5, 1.5}, {7, -0.5, 6.5}}}},
-
-      {"CDEtimeResolution", "#CDEtimeResolution", {HistType::kTH1F, {{200, 0., 1.E3}}}},
-      {"CDEtResvsrTOFTracks", "#CDEtResvsrTOFTracks", {HistType::kTH2F, {{200, 0., 1.E3}, {101, -0.01, 1.01}}}},
-      {"CDEnumberBCs", "#CDEnumberBCs", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
-      {"CDEnumberTracks", "#CDEnumberTracks", {HistType::kTH1F, {{3001, -0.5, 3000.5}}}},
-      {"CDEnumberVtxTracks", "#CDEnumberVtxTracks", {HistType::kTH1F, {{151, -0.5, 150.5}}}},
-      {"CDEnumberGlobalTracks", "#CDEnumberGlobalTracks", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
-      {"CDEnumberFWDTracks", "#CDEnumberFWDTracks", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
-      {"CDEVtxvsGlobalTracks", "#CDEVtxvsGlobalTracks", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}}},
-      {"CDETCH", "#CDETCH", {HistType::kTH1F, {{21, -10.5, 10.5}}}},
-      {"CDEIVM", "#CDEIVM", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
-      {"CDEpt", "#CDEpt", {HistType::kTH2F, {{150, 0., 3.0}, {7, -0.5, 6.5}}}},
-      {"CDEeta", "#CDEeta", {HistType::kTH2F, {{150, -1.5, 1.5}, {7, -0.5, 6.5}}}},
-
-      {"Stat", "#Stat", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {"Efficiency", "#Efficiency", {HistType::kTH2F, {{3, -0.5, 2.5}, {2, -0.5, 1.5}}}},
+      // non diffractive events
+      {"Stat", "#Stat", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
+      {"cleanFIT", "#cleanFIT", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
+      {"Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
+      {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
+      {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"etapt", "#etapt", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPC", "#dEdxTPC", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOF", "#dEdxTOF", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"vtxPosxyDG", "#vtxPosxyDG", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
+      {"vtxPoszDG", "#vtxPoszDG", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"etaptDG", "#etaptDG", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPCDG", "#dEdxTPCDG", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOFDG", "#dEdxTOFDG", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      // PYTHIA8 diffractive events
+      {"StatDiff1", "#StatDiff1", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
+      {"cleanFITDiff1", "#cleanFITDiff1", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
+      {"TracksDiff1", "#TracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"vtxTracksDiff1", "#vtxTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"globalTracksDiff1", "#globalTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"tResvsrTOFTracksDiff1", "#tResvsrTOFTracksDiff1", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
+      {"vtxPosxyDiff1", "#vtxPosxyDiff1", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
+      {"vtxPoszDiff1", "#vtxPoszDiff1", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"etaptDiff1", "#etaptDiff1", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPCDiff1", "#dEdxTPCDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOFDiff1", "#dEdxTOFDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"vtxPosxyDGDiff1", "#vtxPosxyDGDiff1", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
+      {"vtxPoszDGDiff1", "#vtxPoszDGDiff1", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"etaptDGDiff1", "#etaptDGDiff1", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPCDGDiff1", "#dEdxTPCDGDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOFDGDiff1", "#dEdxTOFDGDiff1", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"IVMptSysDGDiff1", "#IVMptSysDGDiff1", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      {"IVMptTrkDGDiff1", "#IVMptTrkDGDiff1", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      // GRANIITTI diffractive events
+      {"StatDiff2", "#StatDiff2", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
+      {"cleanFITDiff2", "#cleanFITDiff2", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
+      {"TracksDiff2", "#TracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"vtxTracksDiff2", "#vtxTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"globalTracksDiff2", "#globalTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"tResvsrTOFTracksDiff2", "#tResvsrTOFTracksDiff2", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
+      {"vtxPosxyDiff2", "#vtxPosxyDiff2", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
+      {"vtxPoszDiff2", "#vtxPoszDiff2", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"etaptDiff2", "#etaptDiff2", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPCDiff2", "#dEdxTPCDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOFDiff2", "#dEdxTOFDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"vtxPosxyDGDiff2", "#vtxPosxyDGDiff2", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
+      {"vtxPoszDGDiff2", "#vtxPoszDGDiff2", {HistType::kTH1F, {{1000, -100., 100.}}}},
+      {"etaptDGDiff2", "#etaptDGDiff2", {HistType::kTH2F, {{80, -2., 2.}, {100, 0., 5.}}}},
+      {"dEdxTPCDGDiff2", "#dEdxTPCDGDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}}},
+      {"dEdxTOFDGDiff2", "#dEdxTOFDGDiff2", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}}},
+      {"IVMptSysDGDiff2", "#IVMptSysDGDiff2", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
+      {"IVMptTrkDGDiff2", "#IVMptTrkDGDiff2", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
     }};
-
-  void init(InitContext&)
-  {
-    diffCuts = (cutHolder)DGCuts;
-  }
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels>;
-  using FWs = aod::FwdTracks;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal>;
+  using FWs = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
+  using ATs = aod::AmbiguousTracks;
+  using AFTs = aod::AmbiguousFwdTracks;
+
+  void init(InitContext&)
+  {
+    maxdEdxTPC = 0.;
+    maxdEdxTOF = 0.;
+    diffCuts = (cutHolder)DGCuts;
+  }
+
+  void run(ProcessingContext& pc)
+  {
+    // get ambiguous tracks table
+    auto t1 = pc.inputs().get<TableConsumer>("BCs")->asArrowTable();
+    auto t2 = pc.inputs().get<TableConsumer>("BcSels")->asArrowTable();
+    auto t3 = pc.inputs().get<TableConsumer>("Run3MatchedToBCSparse")->asArrowTable();
+    auto t4 = pc.inputs().get<TableConsumer>("AmbiguousTracks")->asArrowTable();
+    auto bcs = BCs({t1, t2, t3});
+    auto ambtracks = ATs({t4});
+    ambtracks.bindExternalIndices(&bcs);
+
+    // make sorted list of BC ranges which are associated with an ambiguous track.
+    // This is used to efficiently check whether a given BC is contained in one of these ranges
+    abcrs.reset();
+    for (auto ambtrack : ambtracks) {
+      auto bcfirst = ambtrack.bc().rawIteratorAt(0);
+      auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
+      abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+    }
+    abcrs.merge();
+
+    // get ambiguous FwdTracks table
+    auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
+    auto ambfwdtracks = AFTs({t5});
+    ambfwdtracks.bindExternalIndices(&bcs);
+
+    // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
+    afbcrs.reset();
+    for (auto ambfwdtrack : ambfwdtracks) {
+      auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
+      auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
+      afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+    }
+    afbcrs.merge();
+  }
 
   void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, FWs& fwdtracks, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+               TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtarcks,
+               aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+               aod::Zdcs& zdcs, aod::Calos& calos,
+               aod::V0s& v0s, aod::Cascades& cascades,
                aod::McCollisions& McCols, aod::McParticles const& McParts)
   {
-    LOGF(debug, "<DiffMCQA> Start");
+    LOGF(debug, "<DiffMCQA> Start %i", abcrs.size());
+    bool isDGcandidate = true;
 
     // is this a central diffractive event?
     auto MCCol = collision.mcCollision();
@@ -85,91 +226,282 @@ struct DiffMCQA {
     auto isPythiaDiff = isPythiaCDE(MCPartSlice);
     auto isGraniittiDiff = isGraniittiCDE(MCPartSlice);
 
-    // obtain slice of compatible BCs
-    auto bcSlice = getMCCompatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
-    LOGF(debug, "<DiffMCQA> Number of compatible BCs: %i", bcSlice.size());
-
     // global tracks
     Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);
-    LOGF(debug, "<DiffMCQA> Number of good tracks: %i", goodTracks.size());
 
-    // PV tracks
-    // Partition<TCs> vtxTracks = aod::track::isPVContributor == true;
-    // vtxTracks.bindTable(tracks);
-    // LOGF(debug, "<DiffMCQA> Number of vtx tracks: %i", vtxTracks.size());
+    // update collision histograms
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(0., 1.);
+      registry.get<TH2>(HIST("vtxPosxyDiff1"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("vtxPoszDiff1"))->Fill(collision.posZ());
+      registry.get<TH1>(HIST("TracksDiff1"))->Fill(tracks.size());
+      registry.get<TH1>(HIST("vtxTracksDiff1"))->Fill(collision.numContrib());
+      registry.get<TH1>(HIST("globalTracksDiff1"))->Fill(goodTracks.size());
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(0., 1.);
+      registry.get<TH2>(HIST("vtxPosxyDiff2"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("vtxPoszDiff2"))->Fill(collision.posZ());
+      registry.get<TH1>(HIST("TracksDiff2"))->Fill(tracks.size());
+      registry.get<TH1>(HIST("vtxTracksDiff2"))->Fill(collision.numContrib());
+      registry.get<TH1>(HIST("globalTracksDiff2"))->Fill(goodTracks.size());
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(0., 1.);
+      registry.get<TH2>(HIST("vtxPosxy"))->Fill(collision.posX(), collision.posY());
+      registry.get<TH1>(HIST("vtxPosz"))->Fill(collision.posZ());
+      registry.get<TH1>(HIST("Tracks"))->Fill(tracks.size());
+      registry.get<TH1>(HIST("vtxTracks"))->Fill(collision.numContrib());
+      registry.get<TH1>(HIST("globalTracks"))->Fill(goodTracks.size());
+    }
 
-    // number of gobal tracks with TOF hit
+    // test influence of BCrange width
+    for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
+      auto bcSlice = MCcompatibleBCs(collision, NDtcoll, bct0s, 0);
+      isDGcandidate = true;
+      for (auto& bc : bcSlice) {
+        isDGcandidate &= cleanFIT(bc, diffCuts.FITAmpLimits());
+      }
+      if (isPythiaDiff) {
+        registry.get<TH2>(HIST("cleanFITDiff1"))->Fill(NDtcoll, isDGcandidate * 1.);
+      } else if (isGraniittiDiff) {
+        registry.get<TH2>(HIST("cleanFITDiff2"))->Fill(NDtcoll, isDGcandidate * 1.);
+      } else {
+        registry.get<TH2>(HIST("cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
+      }
+    }
+
+    // number of vertex tracks with TOF hit
     float rgtrwTOF = 0.;
-    if (goodTracks.size() > 0) {
-      for (auto& track : goodTracks) {
-        if (track.hasTOF()) {
+    for (auto& track : tracks) {
+      // update eta vs pt and dEdx histograms histogram
+      if (isPythiaDiff) {
+        registry.get<TH2>(HIST("etaptDiff1"))->Fill(track.eta(), track.pt());
+        registry.get<TH2>(HIST("dEdxTPCDiff1"))->Fill(track.pt(), track.tpcSignal());
+      } else if (isGraniittiDiff) {
+        registry.get<TH2>(HIST("etaptDiff2"))->Fill(track.eta(), track.pt());
+        registry.get<TH2>(HIST("dEdxTPCDiff2"))->Fill(track.pt(), track.tpcSignal());
+      } else {
+        registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
+        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
+      }
+      if (track.tpcSignal() > maxdEdxTPC) {
+        maxdEdxTPC = track.tpcSignal();
+        LOGF(info, "<DiffMCQA> New maxdEdx TPC %f", maxdEdxTPC);
+      }
+
+      // TOF hit?
+      if (track.hasTOF()) {
+        if (isPythiaDiff) {
+          registry.get<TH2>(HIST("dEdxTOFDiff1"))->Fill(track.pt(), track.tofSignal());
+        } else if (isGraniittiDiff) {
+          registry.get<TH2>(HIST("dEdxTOFDiff2"))->Fill(track.pt(), track.tofSignal());
+        } else {
+          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
+        }
+        if (track.tofSignal() > maxdEdxTOF) {
+          maxdEdxTOF = track.tofSignal();
+          LOGF(info, "<DiffMCQA> New maxdEdx TOF %f", maxdEdxTOF);
+        }
+
+        // vertex track with TOF hit?
+        if (track.isPVContributor()) {
           rgtrwTOF += 1.;
         }
       }
-      rgtrwTOF /= goodTracks.size();
     }
-    LOGF(debug, "<DiffMCQA> Good tracks with TOF: %f [1]", rgtrwTOF);
-
-    // update histograms
-    if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("CDEtimeResolution"))->Fill(collision.collisionTimeRes());
-      registry.get<TH2>(HIST("CDEtResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
-      registry.get<TH1>(HIST("CDEnumberBCs"))->Fill(bcSlice.size());
-      registry.get<TH1>(HIST("CDEnumberTracks"))->Fill(tracks.size());
-      registry.get<TH1>(HIST("CDEnumberVtxTracks"))->Fill(collision.numContrib());
-      registry.get<TH1>(HIST("CDEnumberGlobalTracks"))->Fill(goodTracks.size());
-      registry.get<TH1>(HIST("CDEnumberFWDTracks"))->Fill(fwdtracks.size());
-      registry.get<TH2>(HIST("CDEVtxvsGlobalTracks"))->Fill(collision.numContrib(), goodTracks.size());
+    if (collision.numContrib() > 0) {
+      rgtrwTOF /= collision.numContrib();
+    }
+    LOGF(debug, "<DiffMCQA> Vertex tracks with TOF: %f [1]", rgtrwTOF);
+    if (isPythiaDiff) {
+      registry.get<TH2>(HIST("tResvsrTOFTracksDiff1"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
+    } else if (isGraniittiDiff) {
+      registry.get<TH2>(HIST("tResvsrTOFTracksDiff2"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
     } else {
-      registry.get<TH1>(HIST("timeResolution"))->Fill(collision.collisionTimeRes());
       registry.get<TH2>(HIST("tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
-      registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
-      registry.get<TH1>(HIST("numberTracks"))->Fill(tracks.size());
-      registry.get<TH1>(HIST("numberVtxTracks"))->Fill(collision.numContrib());
-      registry.get<TH1>(HIST("numberGlobalTracks"))->Fill(goodTracks.size());
-      registry.get<TH1>(HIST("numberFWDTracks"))->Fill(fwdtracks.size());
-      registry.get<TH2>(HIST("VtxvsGlobalTracks"))->Fill(collision.numContrib(), goodTracks.size());
     }
 
     // is it a DG candidate?
     // DG = no FIT signal in compatible BCs
+    //    & no ZDC signal in compatible BCs
+    //    & no Calo signal in compatible BCs
+    //    & no V0s
+    //    & no Cascades
     //    & number of forward tracks = 0
-    //    & ntrMin <= number of vertex tracks <= ntrMax
     //    & no global track which is not a vertex track
-    bool isDGcandidate = true;
+    //    & ntrMin <= number of vertex tracks <= ntrMax
+    isDGcandidate = true;
 
-    // no FIT signal in compatible BCs
+    // get BCrange to test for FIT signals
+    auto bcSlice = MCcompatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
+
+    // no FIT signal in bcSlice
     for (auto& bc : bcSlice) {
       if (!cleanFIT(bc, diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
-        continue;
+        break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(0., isDGcandidate * 1.);
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(1., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(1., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
+    }
+
+    // no Zdc signal in bcSlice
+    std::vector<float> lims(10, 0.);
+    for (auto& bc : bcSlice) {
+      if (!cleanZDC(bc, zdcs, lims)) {
+        isDGcandidate = false;
+        break;
+      }
+    }
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(2., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(2., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
+    }
+
+    // no Calo signal in bcSlice
+    for (auto& bc : bcSlice) {
+      if (!cleanCalo(bc, calos, lims)) {
+        isDGcandidate = false;
+        break;
+      }
+    }
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(3., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(3., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(3., isDGcandidate * 1.);
+    }
+
+    // no V0s
+    auto colId = collision.globalIndex();
+    const auto& V0Collision = v0s.sliceBy(aod::v0::collisionId, colId);
+    isDGcandidate &= (V0Collision.size() == 0);
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(4., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(4., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(4., isDGcandidate * 1.);
+    }
+
+    // no Cascades
+    const auto& CascadeCollision = cascades.sliceBy(aod::cascade::collisionId, colId);
+    isDGcandidate &= (CascadeCollision.size() == 0);
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(5., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(5., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(5., isDGcandidate * 1.);
+    }
 
     // number of forward tracks = 0
     isDGcandidate &= (fwdtracks.size() == 0);
-    registry.get<TH1>(HIST("Stat"))->Fill(1., isDGcandidate * 1.);
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(6., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(6., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(6., isDGcandidate * 1.);
+    }
 
     // no global tracks which are no vtx tracks
+    bool globalAndVtx = isDGcandidate;
+    bool vtxAndGlobal = isDGcandidate;
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
-        isDGcandidate = false;
-        continue;
+        globalAndVtx = false;
+      }
+      if (track.isPVContributor() && !track.isGlobalTrack()) {
+        vtxAndGlobal = false;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(2., isDGcandidate * 1.);
-    LOGF(debug, "<DiffMCQA> isDGcandidate: %i / %i", isPythiaDiff || isGraniittiDiff, isDGcandidate);
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(7., globalAndVtx * 1.);
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(8., vtxAndGlobal * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(7., globalAndVtx * 1.);
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(8., vtxAndGlobal * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(7., globalAndVtx * 1.);
+      registry.get<TH1>(HIST("Stat"))->Fill(8., vtxAndGlobal * 1.);
+    }
+    isDGcandidate &= globalAndVtx;
+
+    // at least one vtx track with TOF hit
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+    }
+
+    // check a given bc for possible ambiguous Tracks
+    auto withAmbTracks = isDGcandidate;
+    for (auto& bc : bcSlice) {
+      if (abcrs.isInRange(bc.globalIndex())) {
+        withAmbTracks = false;
+        break;
+      }
+    }
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(10., withAmbTracks * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(10., withAmbTracks * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(10., withAmbTracks * 1.);
+    }
+
+    // check a given bc for possible ambiguous FwdTracks
+    auto withAmbFwdTracks = isDGcandidate;
+    for (auto& bc : bcSlice) {
+      if (afbcrs.isInRange(bc.globalIndex())) {
+        withAmbFwdTracks = false;
+        break;
+      }
+    }
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(11., withAmbFwdTracks * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(11., withAmbFwdTracks * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(11., withAmbFwdTracks * 1.);
+    }
 
     // number of vertex tracks <= n
-    for (int ii = 2; ii <= 10; ii++) {
-      registry.get<TH1>(HIST("Stat"))->Fill(ii + 1, isDGcandidate * (collision.numContrib() <= (12 - ii)) * 1.);
-    }
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(12., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(12., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(12., isDGcandidate * 1.);
+    }
     isDGcandidate &= (collision.numContrib() <= diffCuts.maxNTracks());
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(13., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(13., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(13., isDGcandidate * 1.);
+    }
 
-    // invariant mass
+    // net charge and invariant mass
+    bool goodetas = true;
+    bool goodpts = true;
+    auto netCharge = 0;
+    auto lvtmp = TLorentzVector();
+    auto ivm = TLorentzVector();
     if (isDGcandidate) {
 
       // which particle hypothesis?
@@ -178,73 +510,267 @@ struct DiffMCQA {
         mass2Use = constants::physics::MassKaonCharged;
       }
 
-      auto netCharge = 0;
-      auto lvtmp = TLorentzVector();
-      auto ivm = TLorentzVector();
+      // check also pt and eta of tracks
+      for (auto& track : tracks) {
+        if (!track.isPVContributor()) {
+          continue;
+        }
+
+        lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mass2Use);
+        LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
+        if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
+          goodpts = false;
+        }
+        if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
+          goodetas = false;
+        }
+        netCharge += track.sign();
+        ivm += lvtmp;
+      }
+    }
+    isDGcandidate &= goodpts;
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(14., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(14., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(14., isDGcandidate * 1.);
+    }
+    isDGcandidate &= goodetas;
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(15., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(15., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(15., isDGcandidate * 1.);
+    }
+    isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(16., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(16., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(16., isDGcandidate * 1.);
+    }
+    isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(17., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(17., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(17., isDGcandidate * 1.);
+    }
+    isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(18., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(18., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(18., isDGcandidate * 1.);
+    }
+    isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(19., isDGcandidate * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(19., isDGcandidate * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(19., isDGcandidate * 1.);
+    }
+
+    if (isDGcandidate) {
+      if (isPythiaDiff) {
+        registry.get<TH2>(HIST("vtxPosxyDGDiff1"))->Fill(collision.posX(), collision.posY());
+        registry.get<TH1>(HIST("vtxPoszDGDiff1"))->Fill(collision.posZ());
+        registry.get<TH2>(HIST("IVMptSysDGDiff1"))->Fill(ivm.M(), ivm.Perp());
+      } else if (isGraniittiDiff) {
+        registry.get<TH2>(HIST("vtxPosxyDGDiff2"))->Fill(collision.posX(), collision.posY());
+        registry.get<TH1>(HIST("vtxPoszDGDiff2"))->Fill(collision.posZ());
+        registry.get<TH2>(HIST("IVMptSysDGDiff2"))->Fill(ivm.M(), ivm.Perp());
+      } else {
+        registry.get<TH2>(HIST("vtxPosxyDG"))->Fill(collision.posX(), collision.posY());
+        registry.get<TH1>(HIST("vtxPoszDG"))->Fill(collision.posZ());
+        registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
+      }
+
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
-          lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
-          if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-            isDGcandidate = false;
-            break;
+          if (isPythiaDiff) {
+            registry.get<TH2>(HIST("etaptDGDiff1"))->Fill(track.eta(), track.pt());
+            registry.get<TH2>(HIST("dEdxTPCDGDiff1"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("IVMptTrkDGDiff1"))->Fill(ivm.M(), track.pt());
+          } else if (isGraniittiDiff) {
+            registry.get<TH2>(HIST("etaptDGDiff2"))->Fill(track.eta(), track.pt());
+            registry.get<TH2>(HIST("dEdxTPCDGDiff2"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("IVMptTrkDGDiff2"))->Fill(ivm.M(), track.pt());
+          } else {
+            registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
+            registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           }
-          if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-            isDGcandidate = false;
-            break;
-          }
-          netCharge += track.sign();
-          ivm += lvtmp;
-
-          // if (track.isPVContributor() && track.mcParticleId()>0) {
-          // auto mcpart = track.mcParticle();
-          // auto plv = TLorentzVector(mcpart.px(),mcpart.py(),mcpart.pz(),mcpart.e());
-          // registry.get<TH1>(HIST("CDEpt"))->Fill(plv.Perp());
-          // ivm += plv;
-        }
-      }
-      isDGcandidate &= (netCharge >= diffCuts.minNetCharge());
-      isDGcandidate &= (netCharge <= diffCuts.maxNetCharge());
-      isDGcandidate &= (ivm.M() >= diffCuts.minIVM());
-      isDGcandidate &= (ivm.M() <= diffCuts.maxIVM());
-
-      if (isDGcandidate) {
-        LOGF(debug, "<DiffMCQA> Invariant mass: %f", ivm.M());
-
-        // invariant mass
-        if (!isGraniittiDiff) {
-          registry.get<TH1>(HIST("TCH"))->Fill(netCharge);
-          registry.get<TH2>(HIST("IVM"))->Fill(ivm.M(), collision.numContrib());
-        } else {
-          registry.get<TH1>(HIST("CDETCH"))->Fill(netCharge);
-          registry.get<TH2>(HIST("CDEIVM"))->Fill(ivm.M(), collision.numContrib());
-        }
-
-        // track pt
-        for (auto& track : tracks) {
-          if (track.isPVContributor()) {
-            lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
-            if (!isGraniittiDiff) {
-              registry.get<TH2>(HIST("pt"))->Fill(lvtmp.Perp(), collision.numContrib());
-              registry.get<TH2>(HIST("eta"))->Fill(lvtmp.Eta(), collision.numContrib());
+          if (track.hasTOF()) {
+            if (isPythiaDiff) {
+              registry.get<TH2>(HIST("dEdxTOFDGDiff1"))->Fill(track.pt(), track.tofSignal());
+            } else if (isGraniittiDiff) {
+              registry.get<TH2>(HIST("dEdxTOFDGDiff2"))->Fill(track.pt(), track.tofSignal());
             } else {
-              registry.get<TH2>(HIST("CDEpt"))->Fill(lvtmp.Perp(), collision.numContrib());
-              registry.get<TH2>(HIST("CDEeta"))->Fill(lvtmp.Eta(), collision.numContrib());
+              registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.pt(), track.tofSignal());
             }
           }
         }
       }
     }
+  };
+};
 
-    // update Efficiency
-    registry.get<TH2>(HIST("Efficiency"))->Fill(0. + isPythiaDiff * 1. + isGraniittiDiff * 2., 0. + isDGcandidate * 1.);
+struct FV0Signals {
 
-    LOGF(debug, "<DiffMCQA> End");
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
+    }};
+
+  void process(aod::FV0A fv0)
+  {
+    // side A
+    for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
+      registry.get<TH2>(HIST("FV0A"))->Fill((fv0.channel())[ind], (fv0.amplitude())[ind]);
+    }
+  };
+};
+
+struct FT0Signals {
+
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"FT0A", "#FT0A", {HistType::kTH2F, {{96, -0.5, 95.5}, {100, 0., 200.}}}},
+      {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
+    }};
+
+  void process(aod::FT0 ft0)
+  {
+    // side A
+    for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
+      registry.get<TH2>(HIST("FT0A"))->Fill((ft0.channelA())[ind], (ft0.amplitudeA())[ind]);
+    }
+
+    // side C
+    for (size_t ind = 0; ind < ft0.channelC().size(); ind++) {
+      registry.get<TH2>(HIST("FT0C"))->Fill((ft0.channelC())[ind], (ft0.amplitudeC())[ind]);
+    }
+  };
+};
+
+struct FDDSignals {
+
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"FDDA", "#FDDA", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
+      {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
+    }};
+
+  void process(aod::FDD fdd)
+  {
+    // side A
+    for (auto ind = 0; ind < 8; ind++) {
+      registry.get<TH2>(HIST("FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
+    }
+
+    // side C
+    for (auto ind = 0; ind < 8; ind++) {
+      registry.get<TH2>(HIST("FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
+    }
+  };
+};
+
+struct ZDCSignals {
+
+  // energies:
+  //  0: energyZEM1
+  //  1: energyZEM2
+  //  2: energyCommonZNA
+  //  3: energyCommonZNC
+  //  4: energyCommonZPA
+  //  5: energyCommonZPC
+  //  6: energySectorZNA[0]
+  //  7: energySectorZNA[1]
+  //  8: energySectorZNA[2]
+  //  9: energySectorZNA[3]
+  // 10: energySectorZNC[0]
+  // 11: energySectorZNC[1]
+  // 12: energySectorZNC[2]
+  // 13: energySectorZNC[3]
+  // 14: energySectorZPA[0]
+  // 15: energySectorZPA[1]
+  // 16: energySectorZPA[2]
+  // 17: energySectorZPA[3]
+  // 18: energySectorZPC[0]
+  // 19: energySectorZPC[1]
+  // 20: energySectorZPC[2]
+  // 21: energySectorZPC[3]
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
+    }};
+
+  void process(aod::Zdc zdc)
+  {
+    // Zdc energies
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(0., zdc.energyZEM1());
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(1., zdc.energyZEM2());
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(2., zdc.energyCommonZNA());
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(3., zdc.energyCommonZNC());
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(4., zdc.energyCommonZPA());
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(5., zdc.energyCommonZPC());
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(6., (zdc.energySectorZNA())[0]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(7., (zdc.energySectorZNA())[1]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(8., (zdc.energySectorZNA())[2]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(9., (zdc.energySectorZNA())[3]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(10., (zdc.energySectorZNC())[0]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(11., (zdc.energySectorZNC())[1]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(12., (zdc.energySectorZNC())[2]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(13., (zdc.energySectorZNC())[2]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(14., (zdc.energySectorZPA())[0]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(15., (zdc.energySectorZPA())[1]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(16., (zdc.energySectorZPA())[2]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(17., (zdc.energySectorZPA())[3]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(18., (zdc.energySectorZPC())[0]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(19., (zdc.energySectorZPC())[1]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(20., (zdc.energySectorZPC())[2]);
+    registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
+  };
+};
+
+struct CaloSignals {
+
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"CaloCell", "#CaloCell", {HistType::kTH1I, {{18000, -0.5, 17999.5}}}},
+      {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
+    }};
+
+  void process(aod::Calo calo)
+  {
+    // cell number
+    registry.get<TH1>(HIST("CaloCell"))->Fill(calo.cellNumber());
+
+    // amplitude
+    registry.get<TH1>(HIST("CaloAmplitude"))->Fill(calo.amplitude());
   };
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffmcqa"}),
+    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffqa"}),
+    adaptAnalysisTask<FV0Signals>(cfgc, TaskName{"fv0signals"}),
+    adaptAnalysisTask<FT0Signals>(cfgc, TaskName{"ft0signals"}),
+    adaptAnalysisTask<FDDSignals>(cfgc, TaskName{"fddsignals"}),
+    adaptAnalysisTask<ZDCSignals>(cfgc, TaskName{"zdcsignals"}),
+    adaptAnalysisTask<CaloSignals>(cfgc, TaskName{"calosignals"}),
   };
 }
