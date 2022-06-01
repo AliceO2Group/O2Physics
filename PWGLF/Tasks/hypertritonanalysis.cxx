@@ -95,7 +95,7 @@ struct hypertritonAnalysis {
     "registry",
       {
         {"hSelectedEventCounter", "hSelectedEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-        {"hSelectedV0Counter", "hSelectedV0Counter", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
+        {"hSelectedV0Counter", "hSelectedV0Counter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
         {"hMassHypertriton", "hMassHypertriton", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
         {"hMassAntiHypertriton", "hMassAntiHypertriton", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
         {"hMassHypertritonTotal", "hMassHypertritonTotal", {HistType::kTH1F, {{160, 2.8f, 3.2f}}}},
@@ -142,15 +142,15 @@ struct hypertritonAnalysis {
 
   //Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcav0dau{"dcav0dau", 0.7, "DCA V0 Daughters"};
+  Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};//loose cut
   Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<float> rapidity{"rapidity", 0.9, "rapidity"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-  Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};//unknown
-  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};//unknown
+  //Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};//unknown
+  //Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};//unknown
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
-  Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; //ct
+  Configurable<float> lifetimecut{"lifetimecut", 25., "lifetimecut"}; //ct
 
   //Filter dcaFilterV0 = aod::v0data::dcaV0daughters < dcav0dau;
 
@@ -208,7 +208,7 @@ struct hypertritonAnalysis {
       if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
 
-        if (TMath::Abs(v0.dcanegtopv()) < dcapiontopv) {
+        if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
           registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
           registry.fill(HIST("hPtHelium3"), v0.positivept());
@@ -227,7 +227,7 @@ struct hypertritonAnalysis {
       if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
 
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        if (TMath::Abs(v0.dcapostopv()) < dcapiontopv) {
+        if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
           registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
           registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
@@ -293,7 +293,7 @@ struct hypertritonAnalysis {
       if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
 
-        if (TMath::Abs(v0.dcanegtopv()) < dcapiontopv) {
+        if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
           registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
           registry.fill(HIST("hPtHelium3"), v0.positivept());
@@ -312,7 +312,7 @@ struct hypertritonAnalysis {
       if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
 
         registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        if (TMath::Abs(v0.dcapostopv()) < dcapiontopv) {
+        if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
           registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
           registry.fill(HIST("hPtAntiHelium3"), v0.negativept());
