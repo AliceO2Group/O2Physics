@@ -110,13 +110,3 @@ o2physics_add_dpl_workflow(hypertritonanalysis-mc
                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                    COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hypertritonanalysis-finder
-                   SOURCES hypertritonanalysisforfinder.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
-                   COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(hypertritonanalysis-mc-finder
-                   SOURCES hypertritonanalysisMCforfinder.cxx
-                   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
-                   COMPONENT_NAME Analysis)
-

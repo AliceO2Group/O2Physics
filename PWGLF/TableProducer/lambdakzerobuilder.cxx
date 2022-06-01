@@ -116,7 +116,7 @@ struct lambdakzeroBuilder {
     "registry",
       {
         {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-        {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+        {"hV0Candidate", "hV0Candidate", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
         {"hGoodIndices", "hGoodIndices", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
       },
   };
@@ -130,7 +130,7 @@ struct lambdakzeroBuilder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
+  Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 1, "rejDiffCollTracks"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -162,6 +162,20 @@ struct lambdakzeroBuilder {
       o2::base::Propagator::initFieldFromGRP(grpo);
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
+
+    registry.get<TH1>(HIST("hGoodIndices"))->GetXaxis()->SetBinLabel(1, "Readin");
+    registry.get<TH1>(HIST("hGoodIndices"))->GetXaxis()->SetBinLabel(2, "CutForRun2");
+    registry.get<TH1>(HIST("hGoodIndices"))->GetXaxis()->SetBinLabel(3, "tpcNClsCrossedRows");
+    registry.get<TH1>(HIST("hGoodIndices"))->GetXaxis()->SetBinLabel(4, "DcatoPV(off)");
+
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(1, "Readin");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(2, "DiffCol");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(3, "nCand1");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(4, "nCand2");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(5, "Dcav0Dau");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(6, "CosPA");
+    registry.get<TH1>(HIST("hV0Candidate"))->GetXaxis()->SetBinLabel(7, "V0Radius");
+
   }
 
   float getMagneticField(uint64_t timestamp)
@@ -284,6 +298,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 1.5);
 
       // Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
@@ -296,6 +311,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 2.5);
 
       double finalXpos = fitter.getTrack(0).getX();
       double finalXneg = fitter.getTrack(1).getX();
@@ -319,6 +335,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 3.5);
 
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
@@ -348,6 +365,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 4.5);
 
       auto V0CosinePA = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       if (V0CosinePA < v0cospa) {
@@ -355,6 +373,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 5.5);
 
       auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
@@ -365,7 +384,7 @@ struct lambdakzeroBuilder {
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      registry.fill(HIST("hV0Candidate"), 1.5);
+      registry.fill(HIST("hV0Candidate"), 6.5);
       v0data(
           V0.posTrackId(),
           V0.negTrackId(),
@@ -487,6 +506,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 1.5);
 
       // Act on copies for minimization
       auto pTrackCopy = o2::track::TrackParCov(pTrack);
@@ -499,6 +519,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 2.5);
 
       double finalXpos = fitter.getTrack(0).getX();
       double finalXneg = fitter.getTrack(1).getX();
@@ -522,6 +543,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 3.5);
 
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
@@ -556,6 +578,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 4.5);
 
       auto V0CosinePA = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       if (V0CosinePA < v0cospa) {
@@ -563,6 +586,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
+      registry.fill(HIST("hV0Candidate"), 5.5);
 
       auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
       if (V0radius < v0radius) {
@@ -573,7 +597,7 @@ struct lambdakzeroBuilder {
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      registry.fill(HIST("hV0Candidate"), 1.5);
+      registry.fill(HIST("hV0Candidate"), 6.5);
       v0data(
           V0.posTrackId(),
           V0.negTrackId(),

@@ -42,12 +42,12 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "../Hypv0Table.h"
 //------------------copy from lamdakzerobuilder---------------------
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "PID/PIDResponse.h"
 //------------------copy from lamdakzerobuilder---------------------
 
 #include <TFile.h>
@@ -143,9 +143,9 @@ struct hypertritonprefilter {
 };
 
 struct hypertritonfinder {
-  Produces<aod::HypStoredV0Datas> v0data;
+  Produces<aod::StoredV0Datas> v0data;
   Produces<aod::V0s> v0;
-  //Produces<aod::V0DataLink> v0datalink;
+  Produces<aod::V0DataLink> v0datalink;
 
   HistogramRegistry registry{
     "registry",
@@ -195,7 +195,7 @@ struct hypertritonfinder {
 
 //------------------------------------------------------------------
 
-  void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
+  void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe> const& tracks,
       aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks)
   {
     // Define o2 fitter, 2-prong
@@ -217,8 +217,8 @@ struct hypertritonfinder {
         if (t0id.collisionId() != t1id.collisionId()) {
           continue;
         }
-        auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
-        auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov>>();
+        auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe>>();
+        auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe>>();
         auto Track1 = getTrackParCov(t0);
         auto Track2 = getTrackParCov(t1);
         auto pTrack = getTrackParCov(t0);
@@ -281,11 +281,6 @@ struct hypertritonfinder {
       pTrack.getPxPyPzGlo(pvec0);
       nTrack.getPxPyPzGlo(pvec1);
 //------------------------------------------------------------------
-
-        for (int i = 0; i < 3; i++) {
-          pvec0[i] = pvec0[i]*2;
-        }
-
         /*uint32_t pTrackPID = t0.pidForTracking();
           uint32_t nTrackPID = t1.pidForTracking();
           int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
@@ -294,6 +289,18 @@ struct hypertritonfinder {
           pvec0[i] = pvec0[i] * pTrackCharge;
           pvec1[i] = pvec1[i] * nTrackCharge;
           }*/
+    int pTrackCharge = 1, nTrackCharge = 1;
+      if (TMath::Abs(t0.tpcNSigmaHe()) < 5){
+        pTrackCharge = 2;
+      } 
+      if (TMath::Abs(t1.tpcNSigmaHe()) < 5){
+        nTrackCharge = 2;
+      } 
+      for (int i=0; i<3; i++){
+        pvec0[i] = pvec0[i] * pTrackCharge;
+        pvec1[i] = pvec1[i] * nTrackCharge;
+      }
+
 
         auto thisv0cospa = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()},
             array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
@@ -311,7 +318,7 @@ struct hypertritonfinder {
             pvec1[0], pvec1[1], pvec1[2],
             fitter.getChi2AtPCACandidate(),
             t0id.dcaXY(), t1id.dcaXY());
-        //v0datalink(v0data.lastIndex());
+        v0datalink(v0data.lastIndex());
       }
     }
     registry.fill(HIST("hCandPerEvent"), lNCand);
@@ -382,7 +389,7 @@ registry.fill(HIST("hCandPerEvent"), lNCand);
 
 /// Extends the v0data table with expression columns
 struct hypertritoninitializer {
-  Spawns<aod::HypV0Datas> v0datas;
+  Spawns<aod::V0Datas> v0datas;
   void init(InitContext const&) {}
 };
 
