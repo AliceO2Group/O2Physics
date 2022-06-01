@@ -142,17 +142,17 @@ struct CorrelationTask {
 
     // --- OBJECT INIT ---
 
-    std::vector<AxisSpec> axisList = {{axisDeltaEta, "#Delta#eta"},
+    std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
                                       {axisMultiplicity, "multiplicity / centrality"},
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                      {axisVertex, "z-vtx (cm)"},
-                                      {axisEtaEfficiency, "#eta"},
-                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
-                                      {axisVertexEfficiency, "z-vtx (cm)"}};
-    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", axisList));
-    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", axisList));
+                                      {axisVertex, "z-vtx (cm)"}};
+    std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
+                                     {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                     {axisVertexEfficiency, "z-vtx (cm)"}};
+    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
 
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
