@@ -597,7 +597,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
     TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
     f1minPi->SetParameters(60, 4.);
-    cut->AddCut(VarManager::kTPCsignal, f1minPi, 90., true, VarManager::kPin, 0.0, 10, false);
+    cut->AddCut(VarManager::kTPCsignal, f1minPi, 90., false, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
