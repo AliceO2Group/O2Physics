@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \author Antonio Ortiz (antonio.ortiz.velasquez.@cern.ch)
 /// \since May 2022 (flatenicity definition from arXiv:2204.13733)
 
