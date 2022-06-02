@@ -103,6 +103,11 @@ struct EmcalCorrectionTask {
       mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, true, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
       mClusterFactories.emplace_back(std::make_unique<o2::emcal::ClusterFactory<o2::emcal::Cell>>());
       LOG(info) << "Cluster definition initialized: " << clusterDefinition.toString();
+      LOG(info) << "timeMin: " << clusterDefinition.timeMin;
+      LOG(info) << "timeMax: " << clusterDefinition.timeMax;
+      LOG(info) << "gradientCut: " << clusterDefinition.gradientCut;
+      LOG(info) << "seedEnergy: " << clusterDefinition.seedEnergy;
+      LOG(info) << "minCellEnergy: " << clusterDefinition.minCellEnergy;
     }
     for (auto& clusterizer : mClusterizers) {
       clusterizer->setGeometry(geometry);
@@ -142,7 +147,6 @@ struct EmcalCorrectionTask {
       }
       // LOG(debug) << "Cell E: " << cell.getEnergy();
       // LOG(debug) << "Cell E: " << cell;
-
       mEmcalCells.emplace_back(o2::emcal::Cell(
         cell.cellNumber(),
         cell.amplitude(),
@@ -187,8 +191,8 @@ struct EmcalCorrectionTask {
       mClusterFactories.at(i)->setClustersContainer(*emcalClusters);
       mClusterFactories.at(i)->setCellsContainer(mEmcalCells);
       mClusterFactories.at(i)->setCellsIndicesContainer(*emcalClustersInputIndices);
-      LOG(debug) << "Cluster factory set up.";
 
+      LOG(debug) << "Cluster factory set up.";
       // Convert to analysis clusters.
       for (int icl = 0; icl < mClusterFactories.at(i)->getNumberOfClusters(); icl++) {
         auto analysisCluster = mClusterFactories.at(i)->buildCluster(icl);
