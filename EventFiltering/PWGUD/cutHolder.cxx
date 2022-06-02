@@ -20,6 +20,10 @@ void cutHolder::SetMinNBCs(int nminbcs)
 {
   mMinNBCs = nminbcs;
 }
+void cutHolder::SetGlobalTracksOnly(bool globalTracksOnly)
+{
+  mGlobalTracksOnly = globalTracksOnly;
+}
 void cutHolder::SetNTracks(int MinNTracks, int MaxNTracks)
 {
   mMinNTracks = MinNTracks;
@@ -72,6 +76,7 @@ void cutHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 // getter
 int cutHolder::NDtcoll() const { return mNDtcoll; }
 int cutHolder::minNBCs() const { return mMinNBCs; }
+bool cutHolder::globalTracksOnly() const { return mGlobalTracksOnly; }
 int cutHolder::minNTracks() const { return mMinNTracks; }
 int cutHolder::maxNTracks() const { return mMaxNTracks; }
 int cutHolder::minNetCharge() const { return mMinNetCharge; }
