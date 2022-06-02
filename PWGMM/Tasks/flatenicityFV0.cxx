@@ -9,9 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Antonio Ortiz (antonio.ortiz.velasquez.@cern.ch)
-/// \since May 2022 (flatenicity definition from arXiv:2204.13733)
-
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
