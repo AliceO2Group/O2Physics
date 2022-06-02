@@ -49,7 +49,7 @@ enum EventSelectionFlags {
   kNoV0C012vsTklBG,    // no beam-gas according to V0C012-vs-tracklet correlation
   kNoInconsistentVtx,  // no inconsistency in SPD and Track vertices
   kNoPileupInMultBins, // no pileup according to multiplicity-differential pileup checks
-  kNoPilupMV,          // no pileup according to multi-vertexer
+  kNoPileupMV,         // no pileup according to multi-vertexer
   kNoPileupTPC,        // no pileup in TPC
   kNsel                // counter
 };

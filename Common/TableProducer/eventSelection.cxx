@@ -153,9 +153,9 @@ struct BcSelectionTask {
       selection[kNoPileupFromSPD] = (eventCuts & 1 << aod::kIsPileupFromSPD) == 0;
       selection[kNoV0PFPileup] = (eventCuts & 1 << aod::kIsV0PFPileup) == 0;
       selection[kNoInconsistentVtx] = (eventCuts & 1 << aod::kConsistencySPDandTrackVertices) > 0;
-      selection[kNoPileupInMultBins] = (eventCuts & 1 << aod::kPileupInMultBins) == 0;
-      selection[kNoPilupMV] = (eventCuts & 1 << aod::kPileUpMV) == 0;
-      selection[kNoPileupTPC] = (eventCuts & 1 << aod::kTPCPileUp) == 0;
+      selection[kNoPileupInMultBins] = (eventCuts & 1 << aod::kPileupInMultBins) > 0;
+      selection[kNoPileupMV] = (eventCuts & 1 << aod::kPileUpMV) > 0;
+      selection[kNoPileupTPC] = (eventCuts & 1 << aod::kTPCPileUp) > 0;
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
