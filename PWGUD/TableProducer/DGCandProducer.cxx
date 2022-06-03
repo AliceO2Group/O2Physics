@@ -35,11 +35,15 @@
 //
 //           o2-analysis-timestamp $copts |
 //           o2-analysis-track-propagation $copts |
+//           o2-analysis-multiplicity-table $copts |
+//           o2-analysis-ft0-corrected-table $copts |\
 //           o2-analysis-event-selection $copts |
-//           o2-analysis-ft0-corrected-table $copts |
 //           o2-analysis-trackextension $copts |
 //           o2-analysis-trackselection $copts |
-//           o2-analysis-ud-dgcandidate-producer $copts > DGCandProducer.log
+//           o2-analysis-pid-tpc $copts |
+//           o2-analysis-pid-tof-base $copts |
+//           o2-analysis-pid-tof $copts |
+//           o2-analysis-ud-dgcand-producer $copts > DGCandProducer.log
 //
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  20.05.2022
