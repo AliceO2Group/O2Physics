@@ -48,12 +48,13 @@ using namespace o2::framework::expressions;
 struct LfTreeCreatorNuclei {
   Produces<o2::aod::LfCandNucleusFull> rowCandidateFull;
   Produces<o2::aod::LfCandNucleusFullEvents> rowCandidateFullEvents;
+  Produces<o2::aod::LfCandNucleusMC> rowCandidateMC;
 
   void init(o2::framework::InitContext&)
   {
   }
 
-  //track
+  // track
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -61,69 +62,104 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -8.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +8.0, "Value of the Nsigma cut"};
-  //events
+  // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
-                                                  aod::pidTOFbeta, aod::TOFSignal,
-                                                  aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                                  aod::pidTPCFullKa, aod::pidTOFFullKa,
-                                                  aod::pidTPCFullPr, aod::pidTOFFullPr,
-                                                  aod::pidTPCFullDe, aod::pidTOFFullDe,
-                                                  aod::pidTPCFullHe, aod::pidTOFFullHe>>;
-
-  void process(soa::Filtered<soa::Join<aod::Collisions,
-                                       aod::EvSels, aod::Mults>>::iterator const& collision,
-               TrackCandidates const& tracks,
-               aod::BCs const&)
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+                                    aod::pidTOFbeta, aod::TOFSignal,
+                                    aod::pidTPCFullPi, aod::pidTOFFullPi,
+                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
+                                    aod::pidTPCFullPr, aod::pidTOFFullPr,
+                                    aod::pidTPCFullDe, aod::pidTOFFullDe,
+                                    aod::pidTPCFullHe, aod::pidTOFFullHe>;
+  int nevs = 0;
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>> const& collisions,
+               soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)
   {
-    if (useEvsel && !collision.sel8()) {
-      return;
-    }
-    // Filling event properties
-    rowCandidateFullEvents(
-      collision.bcId(),
-      collision.numContrib(),
-      collision.posX(),
-      collision.posY(),
-      collision.posZ(),
-      collision.multFV0M(),
-      collision.sel8(),
-      collision.bc().runNumber());
+    for (const auto& collision : collisions) {
+      LOG(INFO) << "nevs=" << nevs++;
+      if (useEvsel && !collision.sel8()) {
+        return;
+      }
+      // std::cout<<"mc Z-vertex ====>"<<mcColl.posZ()<<std::endl;
+      /*for(auto& mcCollItr : mcCollisions)
+      {}*/
+      // Filling event properties
+      rowCandidateFullEvents(
+        collision.bcId(),
+        collision.numContrib(),
+        collision.posX(),
+        collision.posY(),
+        collision.posZ(),
+        collision.multFV0M(),
+        collision.sel8(),
+        collision.bc().runNumber());
 
-    // Filling candidate properties
-    rowCandidateFull.reserve(tracks.size());
-    for (auto& track : tracks) {
-      rowCandidateFull(
-        rowCandidateFullEvents.lastIndex(),
-        track.dcaXY(),
-        track.dcaZ(),
-        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-        track.tpcNSigmaDe(), track.tpcNSigmaHe(),
-        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-        track.tofNSigmaDe(), track.tofNSigmaHe(),
-        track.hasTOF(),
-        track.tpcInnerParam(),
-        track.tpcSignal(),
-        track.beta(),
-        track.px(),
-        track.py(),
-        track.pz(),
-        track.pt(),
-        track.p(),
-        track.eta(),
-        track.phi(),
-        track.sign(),
-        track.tpcNClsCrossedRows(),
-        track.tpcCrossedRowsOverFindableCls(),
-        track.tpcChi2NCl(),
-        track.itsChi2NCl());
+      // Filling candidate properties
+      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      rowCandidateFull.reserve(tracksInCollision.size());
+      for (auto& track : tracksInCollision) {
+        // auto const& mcParticle = track.mcParticle();
+        // std::cout<<"mc pdg code ====>"<<mcParticle.pdgCode()<<std::endl;
+        // std::cout<<"mc physical primary ====>"<<mcParticle.isPhysicalPrimary()<<std::endl;
+        // std::cout<<"eta-gen ====>"<<mcParticle.eta()<<"  eta-reco"<<track.eta()<<std::endl;
+        rowCandidateFull(
+          rowCandidateFullEvents.lastIndex(),
+          track.dcaXY(),
+          track.dcaZ(),
+          track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+          track.tpcNSigmaDe(), track.tpcNSigmaHe(),
+          track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+          track.tofNSigmaDe(), track.tofNSigmaHe(),
+          track.hasTOF(),
+          track.tpcInnerParam(),
+          track.tpcSignal(),
+          track.beta(),
+          track.px(),
+          track.py(),
+          track.pz(),
+          track.pt(),
+          track.p(),
+          track.eta(),
+          track.phi(),
+          track.sign(),
+          track.tpcNClsCrossedRows(),
+          track.tpcCrossedRowsOverFindableCls(),
+          track.tpcChi2NCl(),
+          track.itsChi2NCl());
+      }
     }
   }
+  int nevsmc = 0;
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                 soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>> const& tracks,
+                 aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    for (const auto& collision : collisions) {
+      LOG(INFO) << "nevsmc=" << nevsmc++;
+      if (useEvsel && !collision.sel8()) {
+        return;
+      }
+      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      rowCandidateMC.reserve(tracksInCollision.size());
+      LOG(info) << tracks.size() << " " << tracksInCollision.size();
+      for (const auto& track : tracksInCollision)
+      // for(const auto& track: tracks)
+      {
+        if (track.has_mcParticle()) {
+          const auto& particle = track.mcParticle();
+          rowCandidateMC(particle.pdgCode());
+          continue;
+        }
+        rowCandidateMC(0);
+      }
+    }
+  }
+  PROCESS_SWITCH(LfTreeCreatorNuclei, processMC, "process MC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
