@@ -34,7 +34,8 @@ using namespace o2::framework;
 // The collision time t_coll is determined by the tracks which are used to
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
-// around t_coll could potentially be the true BC. ndt is typically 4.
+// around t_coll could potentially be the true BC. ndt is typically 4. The
+// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS
 
 template <typename T>
 T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7)
@@ -46,6 +47,8 @@ T MCcompatibleBCs(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels
   // due to the filling scheme the most probably BC may not be the one estimated from the collision time
   uint64_t mostProbableBC = bcIter.globalBC();
   uint64_t meanBC = mostProbableBC - std::lround(collision.collisionTime() / o2::constants::lhc::LHCBunchSpacingNS);
+
+  // enforce minimum number for deltaBC
   int deltaBC = std::ceil(collision.collisionTimeRes() / o2::constants::lhc::LHCBunchSpacingNS * ndt);
   if (deltaBC < nMinBCs) {
     deltaBC = nMinBCs;

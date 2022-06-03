@@ -167,6 +167,7 @@ struct AnalysisTrackSelection {
 
   void init(o2::framework::InitContext&)
   {
+    // Setting the cut names
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -179,6 +180,17 @@ struct AnalysisTrackSelection {
     TString configSigNamesStr = fConfigMCSignals.value;
     std::unique_ptr<TObjArray> sigNamesArray(configSigNamesStr.Tokenize(","));
 
+    // Setting the MC signal names
+    for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
+      if (sig) {
+        if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
+          continue;
+        }
+        fMCSignals.push_back(*sig);
+      }
+    }
+
     // Configure histogram classes for each track cut;
     // Add histogram classes for each track cut and for each requested MC signal (reconstructed tracks with MC truth)
     TString histClasses = "TrackBarrel_BeforeCuts;";
@@ -187,17 +199,11 @@ struct AnalysisTrackSelection {
       fHistNamesReco.push_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
-      for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
-        MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
-        if (sig) {
-          if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
-            continue;
-          }
-          fMCSignals.push_back(*sig);
-          TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sigNamesArray->At(isig)->GetName());
-          mcnames.push_back(nameStr2);
-          histClasses += Form("%s;", nameStr2.Data());
-        }
+      for (auto& sig : fMCSignals) {
+        TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName());
+        printf("Adding my histogram class %s\n", nameStr2.Data());
+        mcnames.push_back(nameStr2);
+        histClasses += Form("%s;", nameStr2.Data());
       }
       fHistNamesMCMatched.push_back(mcnames);
     }
@@ -321,6 +327,7 @@ struct AnalysisMuonSelection {
 
   void init(o2::framework::InitContext&)
   {
+    // Setting the cut names
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -333,6 +340,17 @@ struct AnalysisMuonSelection {
     TString configSigNamesStr = fConfigMCSignals.value;
     std::unique_ptr<TObjArray> sigNamesArray(configSigNamesStr.Tokenize(","));
 
+    // Setting the MC signal names
+    for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
+      if (sig) {
+        if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
+          continue;
+        }
+        fMCSignals.push_back(*sig);
+      }
+    }
+
     // Configure histogram classes for each track cut;
     // Add histogram classes for each track cut and for each requested MC signal (reconstructed tracks with MC truth)
     TString histClasses = "Muon_BeforeCuts;";
@@ -341,17 +359,11 @@ struct AnalysisMuonSelection {
       fHistNamesReco.push_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
-      for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
-        MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
-        if (sig) {
-          if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
-            continue;
-          }
-          fMCSignals.push_back(*sig);
-          TString nameStr2 = Form("Muon_%s_%s;", cut.GetName(), sigNamesArray->At(isig)->GetName());
-          mcnames.push_back(nameStr2);
-          histClasses += Form("%s;", nameStr2.Data());
-        }
+      for (auto& sig : fMCSignals) {
+        TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName());
+        printf("Adding my histogram class %s\n", nameStr2.Data());
+        mcnames.push_back(nameStr2);
+        histClasses += Form("%s;", nameStr2.Data());
       }
       fHistNamesMCMatched.push_back(mcnames);
     }
@@ -510,6 +522,18 @@ struct AnalysisSameEventPairing {
     TString sigNamesStr = fConfigMCRecSignals.value;
     std::unique_ptr<TObjArray> objRecSigArray(sigNamesStr.Tokenize(","));
     TString histNames = "";
+
+    // Setting the MC rec signal names
+    for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
+      if (sig) {
+        if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
+          continue;
+        }
+        fRecMCSignals.push_back(*sig);
+      }
+    }
+
     if (enableBarrelHistos) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) {
@@ -523,17 +547,10 @@ struct AnalysisSameEventPairing {
           fBarrelHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
-            for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
-              MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
-              if (sig) {
-                if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
-                  continue;
-                }
-                fRecMCSignals.push_back(*sig);
-                TString histName = Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
-                histNames += Form("%s;", histName.Data());
-                mcSigClasses.push_back(histName);
-              }
+            for (auto& sig : fRecMCSignals) {
+              TString histName = Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), sig.GetName());
+              histNames += Form("%s;", histName.Data());
+              mcSigClasses.push_back(histName);
             } // end loop over MC signals
           }
           fBarrelHistNamesMCmatched.push_back(mcSigClasses);
@@ -555,17 +572,10 @@ struct AnalysisSameEventPairing {
           fMuonHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
-            for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
-              MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
-              if (sig) {
-                if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
-                  continue;
-                }
-                fRecMCSignals.push_back(*sig);
-                TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName());
-                histNames += Form("%s;", histName.Data());
-                mcSigClasses.push_back(histName);
-              }
+            for (auto& sig : fRecMCSignals) {
+              TString histName = Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig.GetName());
+              histNames += Form("%s;", histName.Data());
+              mcSigClasses.push_back(histName);
             } // end loop over MC signals
           }
           fMuonHistNamesMCmatched.push_back(mcSigClasses);

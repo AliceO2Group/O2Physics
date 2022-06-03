@@ -34,6 +34,7 @@ struct BcSelectionTask {
 
   void init(InitContext&)
   {
+    // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -151,6 +152,10 @@ struct BcSelectionTask {
       selection[kNoTPCHVdip] = (eventCuts & 1 << aod::kIsTPCHVdip) == 0;
       selection[kNoPileupFromSPD] = (eventCuts & 1 << aod::kIsPileupFromSPD) == 0;
       selection[kNoV0PFPileup] = (eventCuts & 1 << aod::kIsV0PFPileup) == 0;
+      selection[kNoInconsistentVtx] = (eventCuts & 1 << aod::kConsistencySPDandTrackVertices) > 0;
+      selection[kNoPileupInMultBins] = (eventCuts & 1 << aod::kPileupInMultBins) > 0;
+      selection[kNoPileupMV] = (eventCuts & 1 << aod::kPileUpMV) > 0;
+      selection[kNoPileupTPC] = (eventCuts & 1 << aod::kTPCPileUp) > 0;
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
@@ -171,8 +176,7 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
-
-    for (auto& bc : bcs) {
+    for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
 
       // TODO: fill fired aliases for run3
@@ -187,14 +191,44 @@ struct BcSelectionTask {
       float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
       float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
       float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+      float timeV0ABG = -999.f;
+      float timeT0ABG = -999.f;
+      float timeT0CBG = -999.f;
+      float timeFDABG = -999.f;
+      float timeFDCBG = -999.f;
+
+      uint64_t globalBC = bc.globalBC();
+      // move to previous bcs to check beam-gas in FT0, FV0 and FDD
+      int64_t backwardMoveCount = 0;
+      int64_t deltaBC = 6; // up to 6 bcs back
+      while (bc.globalBC() + deltaBC >= globalBC) {
+        if (bc == bcs.begin()) {
+          break;
+        }
+        --bc;
+        backwardMoveCount++;
+        if (bc.globalBC() + 1 == globalBC) {
+          timeV0ABG = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+          timeT0ABG = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+          timeT0CBG = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+        }
+        if (bc.globalBC() + 5 == globalBC) {
+          timeFDABG = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+          timeFDCBG = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+        }
+      }
+      // move back to initial position
+      bc.moveByIndex(backwardMoveCount);
 
       // applying timing selections
       bool bbV0A = timeV0A > par->fV0ABBlower && timeV0A < par->fV0ABBupper;
       bool bbFDA = timeFDA > par->fFDABBlower && timeFDA < par->fFDABBupper;
       bool bbFDC = timeFDC > par->fFDCBBlower && timeFDC < par->fFDCBBupper;
-      bool bgV0A = timeV0A > par->fV0ABGlower && timeV0A < par->fV0ABGupper;
-      bool bgFDA = timeFDA > par->fFDABGlower && timeFDA < par->fFDABGupper;
-      bool bgFDC = timeFDC > par->fFDCBGlower && timeFDC < par->fFDCBGupper;
+      bool bgV0A = timeV0ABG > par->fV0ABGlower && timeV0ABG < par->fV0ABGupper;
+      bool bgFDA = timeFDABG > par->fFDABGlower && timeFDABG < par->fFDABGupper;
+      bool bgFDC = timeFDCBG > par->fFDCBGlower && timeFDCBG < par->fFDCBGupper;
+      bool bgT0A = timeT0ABG > par->fT0ABGlower && timeT0ABG < par->fT0ABGupper;
+      bool bgT0C = timeT0CBG > par->fT0CBGlower && timeT0CBG < par->fT0CBGupper;
       bool bbV0C = 0;
       bool bgV0C = 0;
 
@@ -206,6 +240,8 @@ struct BcSelectionTask {
       selection[kNoBGV0A] = !bgV0A;
       selection[kNoBGFDA] = !bgFDA;
       selection[kNoBGFDC] = !bgFDC;
+      selection[kNoBGT0A] = !bgT0A;
+      selection[kNoBGT0C] = !bgT0C;
       selection[kIsBBT0A] = timeT0A > par->fT0ABBlower && timeT0A < par->fT0ABBupper;
       selection[kIsBBT0C] = timeT0C > par->fT0CBBlower && timeT0C < par->fT0CBBupper;
       selection[kIsBBZNA] = timeZNA > par->fZNABBlower && timeZNA < par->fZNABBupper;
@@ -254,6 +290,7 @@ struct EventSelectionTask {
 
   void init(InitContext&)
   {
+    //ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

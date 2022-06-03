@@ -99,8 +99,7 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lMcParticle.mcCollisionId(),
           lMcParticle.globalIndex(),
           -1, // V0Id when running in reconstructed task
-          lMcParticle.statusCode(),
-          lMcParticle.flags(),
+          lMcParticle.pdgCode(), lMcParticle.statusCode(), lMcParticle.flags(),
           lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(),
           lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(),
           lNDaughters,

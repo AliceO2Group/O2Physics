@@ -27,12 +27,12 @@ namespace emcalcluster
 // define global cluster definitions
 // the V1 algorithm is not yet implemented, but the V3 algorithm is
 // New definitions should be added here!
-const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.1, 0.5, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.1, 0.3, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.1, 0.2, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.1, 0.5, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.1, 0.3, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.1, 0.2, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.3, 0.1, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.2, 0.1, -10000, 10000, 0.03);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
