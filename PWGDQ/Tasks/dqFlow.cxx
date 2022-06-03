@@ -55,7 +55,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 // Declarations of various short names
-
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -119,16 +118,15 @@ struct AnalysisQvector {
   Filter collisionFilter = nabs(aod::collision::posZ) < fVtxCut;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
-  HistogramManager* fHistMan = nullptr;
-  AnalysisCompositeCut* fEventCut;
-  std::vector<TString> fTrackHistNames;
-
   struct Config {
     TH1D* mEfficiency = nullptr;
     GFWWeights* mAcceptance = nullptr;
   } cfg;
 
   // Define output
+  HistogramManager* fHistMan = nullptr;
+  AnalysisCompositeCut* fEventCut;
+  std::vector<TString> fTrackHistNames;
   OutputObj<THashList> fOutputList{"output"};
   // OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};  // Need to add a dictionary for FlowContainer output
 
@@ -373,16 +371,14 @@ struct AnalysisQvector {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
-  /*
     // Dummy function for the case when no process function is enabled
-    void processDummy(MyEvents&)
-    {
-      // do nothing
-    }
-
-    PROCESS_SWITCH(AnalysisQvector, processQvectorSkimmed, "Fill Q vectors for selected events and tracks, for dilepton flow analyses", false);
-    PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
-   */
+  //    void processDummy(MyEvents&)
+  //    {
+  //      // do nothing
+  //    }
+  //
+  //    PROCESS_SWITCH(AnalysisQvector, processQvectorSkimmed, "Fill Q vectors for selected events and tracks, for dilepton flow analyses", false);
+  //    PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
