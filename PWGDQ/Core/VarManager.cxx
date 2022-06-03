@@ -25,7 +25,6 @@ o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
-// TComplex VarManager::Qvector[VarManager::fmaxHarmonic][VarManager::fmaxPower] = {{0.0}};
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -64,17 +63,6 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
     values[i] = -9999.;
   }
 }
-
-////__________________________________________________________________
-// void VarManager::ResetQvector()
-//{
-//   // Reset all Q-vector components to zero before starting a new collision.
-//   for (Int_t h = 0; h < VarManager::fmaxHarmonic; h++) {
-//     for (Int_t p = 0; p < VarManager::fmaxPower; p++) {
-//       Qvector[h][p] = TComplex(0., 0.);
-//     }
-//   }
-// }
 
 //__________________________________________________________________
 void VarManager::SetRunNumbers(int n, int* runs)

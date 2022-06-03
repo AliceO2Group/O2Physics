@@ -34,17 +34,6 @@ DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t); //! Bit-field used for t
 DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level decisions (DQ high level triggers)
                   dqppfilter::EventFilter);
 
-// namespace dqflow
-//{
-// DECLARE_SOA_COLUMN(EventQvectorX, Qx, float); //! Q vectors components
-// DECLARE_SOA_COLUMN(EventQvectorY, Qy, float); //! Q vectors components
-// }
-//
-// DECLARE_SOA_TABLE(DQEventQvector, "AOD", "EVENTQVECTOR", //! Store event-level Q vectors components
-//                   collision::PosZ, collision::NumContrib, cent::CentRun2V0M, dqflow::EventQvectorX, dqflow::EventQvectorY);
-//
-// using ReducedQvector = DQEventQvector::iterator;
-
 namespace reducedevent
 {
 

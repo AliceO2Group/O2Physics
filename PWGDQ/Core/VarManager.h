@@ -23,7 +23,6 @@
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
 #include <TRandom.h>
-#include "TComplex.h"
 
 #include <vector>
 #include <map>
@@ -304,10 +303,6 @@ class VarManager : public TObject
   static TString fgVariableUnits[kNVars]; // variable units
   static void SetDefaultVarNames();
 
-  //  static const int fmaxHarmonic = 3;                // max harmonic
-  //  static const int fmaxPower = 3;                   // max power
-  //  static TComplex Qvector[fmaxHarmonic][fmaxPower]; // Q-vector components
-
   static void SetUseVariable(int var)
   {
     if (var >= 0 && var < kNVars) {
@@ -388,8 +383,6 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
-  template <uint32_t collFillMap, typename C, typename A>
-  static void FillQVector(C const& collision, A const& comp, float res = 1.0, float norm = 1.0, float* values = nullptr, float weight = 1.0);
   template <uint32_t collFillMap, typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& comp, float res = 1.0, float norm = 1.0, float* values = nullptr);
 
@@ -1224,29 +1217,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   }
 }
 
-template <uint32_t collFillMap, typename C, typename A>
-void VarManager::FillQVector(C const& collision, A const& comp, float res, float norm, float* values, float weight)
-{
-  if (!values) {
-    values = fgValues;
-  }
-
-  constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
-
-  if constexpr (eventHasVtxCov) {
-    values[kVtxZ] = collision.posZ();
-    values[kCentVZERO] = collision.centRun2V0M();
-
-    // TODO: to be adapted
-    if (fgUsedVars[kQ2X0] || fgUsedVars[kQ2Y0]) {
-      int harm = 2;
-      values[kQ2X0] = comp.Re() / norm;
-      values[kQ2Y0] = comp.Im() / norm;
-      values[kPsi2] = (1.0 / harm) * TMath::ATan2(values[kQ2X0], values[kQ2Y0]);
-      values[kRes] = res;
-    }
-  }
-}
 template <uint32_t collFillMap, typename C, typename A>
 void VarManager::FillQVectorFromGFW(C const& collision, A const& comp, float res, float norm, float* values)
 {
