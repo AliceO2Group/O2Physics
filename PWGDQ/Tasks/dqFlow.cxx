@@ -122,7 +122,6 @@ struct AnalysisQvector {
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
   std::vector<TString> fTrackHistNames;
-  float* fValuesQn;
 
   struct Config {
     TH1D* mEfficiency = nullptr;
@@ -131,7 +130,7 @@ struct AnalysisQvector {
 
   // Define output
   OutputObj<THashList> fOutputList{"output"};
-  // OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  // OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};  // Need to add a dictionary for FlowContainer output
 
   // define global variables for generic framework
   GFW* fGFW = new GFW();
@@ -141,9 +140,6 @@ struct AnalysisQvector {
   // Initialize CCDB, efficiencies and acceptances from CCDB, histograms, GFW, FlowContainer
   void init(o2::framework::InitContext&)
   {
-    // TODO: initialize
-
-    fValuesQn = new float[VarManager::kNVars];
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut = new AnalysisCompositeCut(true);
     if (!eventCutStr.IsNull()) {
@@ -406,9 +402,6 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     histMan->AddHistClass(classStr.Data());
 
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent");
-    }
-    if (classStr.Contains("Q")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent");
     }
   }
