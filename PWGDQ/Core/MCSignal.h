@@ -155,7 +155,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
         LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
       }*/
-      currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+      currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+      //currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
       //currentMCParticle = currentMCParticle.template mother0_as<U>();
     }
   }
@@ -210,7 +211,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
           LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
         }*/
-        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+	currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+        //currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
         //currentMCParticle = currentMCParticle.template mother0_as<U>();
       }
       /*if (j < fProngs[i].fNGenerations - 1) {

@@ -791,6 +791,7 @@ struct AnalysisSameEventPairing {
 
     runPairing<VarManager::kJpsiToEE, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, tracks, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
 
@@ -805,6 +806,7 @@ struct AnalysisSameEventPairing {
 
     runPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMCEventFillMap, gkMuonFillMap>(event, muons, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
 
@@ -819,6 +821,7 @@ struct AnalysisSameEventPairing {
 
     runPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, muons, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
 
@@ -1075,6 +1078,7 @@ struct AnalysisDileptonTrack {
   {
     runDileptonTrack<VarManager::kBcToThreeMuons, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
   void processDummy(MyEvents&)
