@@ -82,7 +82,6 @@ constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarMana
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
 struct AnalysisQvector {
-
   Produces<ReducedEventsQvector> eventQvector;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
@@ -370,15 +369,6 @@ struct AnalysisQvector {
   {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
-
-    // Dummy function for the case when no process function is enabled
-  //    void processDummy(MyEvents&)
-  //    {
-  //      // do nothing
-  //    }
-  //
-  //    PROCESS_SWITCH(AnalysisQvector, processQvectorSkimmed, "Fill Q vectors for selected events and tracks, for dilepton flow analyses", false);
-  //    PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
