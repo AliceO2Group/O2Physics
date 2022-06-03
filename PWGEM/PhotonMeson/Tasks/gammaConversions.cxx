@@ -108,30 +108,57 @@ struct GammaConversions {
     {"hIsPhotonSelected", "hIsPhotonSelected;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}},
     {"hTruePhotonSelection", "hTruePhotonSelection;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
 
-  // todo: change this into map<enum,string> as I did in skimmerGammaConversions
-  std::map<std::string, size_t> fPhotonCutIndeces{
-    {"kV0In", 0},
-    {"kTrackEta", 1},
-    {"kTrackPt", 2},
-    {"kElectronPID", 3},
-    {"kPionRejLowMom", 4},
-    {"kPionRejHighMom", 5},
-    {"kTPCFoundOverFindableCls", 6},
-    {"kTPCCrossedRowsOverFindableCls", 7},
-    {"kV0Radius", 8},
-    {"kArmenteros", 9},
-    {"kPsiPair", 10},
-    {"kCosinePA", 11},
-    {"kV0Out", 12}};
+  enum ePhotonCuts{
+    kV0In,
+    kTrackEta,
+    kTrackPt,
+    kElectronPID,
+    kPionRejLowMom,
+    kPionRejHighMom,
+    kTPCFoundOverFindableCls,
+    kTPCCrossedRowsOverFindableCls,
+    kV0Radius,
+    kArmenteros,
+    kPsiPair,
+    kCosinePA,
+    kV0Out
+  };
 
-  std::map<std::string, size_t> fMcPhotonCutIndeces{
-    {"kV0in", 0},
-    {"kFakeV0", 1},
-    {"kMcMotherIn", 2},
-    {"kNoPhysicalPrimary", 3},
-    {"kNoPhoton", 4},
-    {"kOutsideMCEtaAcc", 5},
-    {"kGoodMcPhotonOut", 12}};
+  std::map<size_t, std::string> fPhotonCutLabels{
+    {kV0In, "kV0In"},
+    {kTrackEta, "kTrackEta"},
+    {kTrackPt, "kTrackPt"},
+    {kElectronPID, "kElectronPID"},
+    {kPionRejLowMom, "kPionRejLowMom"},
+    {kPionRejHighMom, "kPionRejHighMom"},
+    {kTPCFoundOverFindableCls, "kTPCFoundOverFindableCls"},
+    {kTPCCrossedRowsOverFindableCls, "kTPCCrossedRowsOverFindableCls"},
+    {kV0Radius, "kV0Radius"},
+    {kArmenteros, "kArmenteros"},
+    {kPsiPair, "kPsiPair"},
+    {kCosinePA, "kCosinePA"},
+    {kV0Out, "kV0Out"}
+  };
+
+  enum class eV0McValidation{
+    kV0in,
+    kFakeV0,
+    kMcMotherIn,
+    kNoPhysicalPrimary,
+    kNoPhoton,
+    kOutsideMCEtaAcc,
+    kGoodMcPhotonOut,
+  };
+
+  std::map<eV0McValidation, std::string> fV0McValidationLabels{
+    {eV0McValidation::kV0in, "kV0in"},
+    {eV0McValidation::kFakeV0, "kFakeV0"},
+    {eV0McValidation::kMcMotherIn, "kMcMotherIn"},
+    {eV0McValidation::kNoPhysicalPrimary, "kNoPhysicalPrimary"},
+    {eV0McValidation::kNoPhoton, "kNoPhoton"},
+    {eV0McValidation::kOutsideMCEtaAcc, "kOutsideMCEtaAcc"},
+    {eV0McValidation::kGoodMcPhotonOut, "kGoodMcPhotonOut"}
+  };
 
   std::vector<std::string> fHistoSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
   enum eBeforeAfterRecCuts { kBeforeRecCuts,
@@ -207,8 +234,8 @@ struct GammaConversions {
     tMotherDirRejMc mRejectedByMc[2]{mPath + "rejectedByMc/kNoPhysicalPrimary/",
                                      mPath + "rejectedByMc/kOutsideMCEtaAcc/"};
   };
-  enum eMcRejectionReason { kNoPhysicalPrimary,
-                            kOutsideMCEtaAcc };
+  enum class eMcRejectedSaved { kNoPhysicalPrimary,
+                                kOutsideMCEtaAcc };
 
   struct tHistoRegistry {
     tHistoRegistry(std::string thePath) : mPath{thePath} {}
@@ -228,7 +255,7 @@ struct GammaConversions {
       if (lHisto != theContainer.end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lHisto->second)->GetXaxis();
         for (auto& lPairIt : theLables) {
-          lXaxis->SetBinLabel(lPairIt.second + 1, lPairIt.first.data());
+          lXaxis->SetBinLabel(static_cast<int>(lPairIt.first) + 1, lPairIt.second.data());
         }
       }
     };
@@ -247,9 +274,9 @@ struct GammaConversions {
       fSpecialHistoDefinitions);
 
     // do some labeling
-    addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hIsPhotonSelected", fPhotonCutIndeces);
+    addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hIsPhotonSelected", fPhotonCutLabels);
     if (doprocessMc) {
-      addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hTruePhotonSelection", fMcPhotonCutIndeces);
+      addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hTruePhotonSelection", fV0McValidationLabels);
     }
 
     for (size_t iBARecCuts = 0; iBARecCuts < 2; ++iBARecCuts) {
@@ -286,26 +313,14 @@ struct GammaConversions {
     }
   }
 
-  // SFS todo: think about if this is actually too expensive. Going the other way round with the indices as keys wouldnt require lookups at inserting but pbly produce a but of code duplication at the definition of the cut names
-  size_t gMax_size = (size_t)-1;
-  size_t getPhotonCutIndex(std::string const& theKey, bool theMcCuts = false)
+  void fillIsPhotonSelected(ePhotonCuts theCase)
   {
-    auto const& lMap = theMcCuts ? fMcPhotonCutIndeces : fPhotonCutIndeces;
-    auto lPairIt = lMap.find(theKey);
-    if (lPairIt != lMap.end()) {
-      return lPairIt->second;
-    }
-    return gMax_size;
+    fillTH1(fMyRegistry.mV0.mSpecialHistos.mContainer, "hIsPhotonSelected", theCase);
   }
 
-  void fillIsPhotonSelected(std::string theCase)
+  void fillTruePhotonSelection(eV0McValidation theCase)
   {
-    fillTH1(fMyRegistry.mV0.mSpecialHistos.mContainer, "hIsPhotonSelected", getPhotonCutIndex(theCase));
-  }
-
-  void fillTruePhotonSelection(std::string theCase)
-  {
-    fillTH1(fMyRegistry.mV0.mSpecialHistos.mContainer, "hTruePhotonSelection", getPhotonCutIndex(theCase, true /*theMcCuts*/));
+    fillTH1(fMyRegistry.mV0.mSpecialHistos.mContainer, "hTruePhotonSelection", static_cast<int>(theCase));
   }
 
   template <typename TV0, typename TTRACKS>
@@ -354,14 +369,14 @@ struct GammaConversions {
   template <typename TV0, typename TMCGAMMA>
   bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts)
   {
-    auto fillRejectionHistos = [&](int theRejReason) {
-      fillAllV0HistogramsForRejectedByMc(theRejReason,
+    auto fillRejectionHistos = [&](eMcRejectedSaved theRejReason) {
+      fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
                                          kBeforeRecCuts,
                                          theMcPhoton,
                                          theV0,
                                          theV0CosinePA);
       if (theV0PassesRecCuts) {
-        fillAllV0HistogramsForRejectedByMc(theRejReason,
+        fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
                                            kAfterRecCuts,
                                            theMcPhoton,
                                            theV0,
@@ -369,24 +384,24 @@ struct GammaConversions {
       }
     };
 
-    fillTruePhotonSelection("kMcMotherIn");
+    fillTruePhotonSelection(eV0McValidation::kMcMotherIn);
     if (!theMcPhoton.isPhysicalPrimary()) {
-      fillTruePhotonSelection("kNoPhysicalPrimary");
-      fillRejectionHistos(kNoPhysicalPrimary);
+      fillTruePhotonSelection(eV0McValidation::kNoPhysicalPrimary);
+      fillRejectionHistos(eMcRejectedSaved::kNoPhysicalPrimary);
       return false;
     }
 
     if (theMcPhoton.pdgCode() != 22) {
-      fillTruePhotonSelection("kNoPhoton");
+      fillTruePhotonSelection(eV0McValidation::kNoPhoton);
       return false;
     }
 
     if (std::abs(theMcPhoton.eta()) > fTruePhotonEtaMax) {
-      fillTruePhotonSelection("kOutsideMCEtaAcc");
-      fillRejectionHistos(kOutsideMCEtaAcc);
+      fillTruePhotonSelection(eV0McValidation::kOutsideMCEtaAcc);
+      fillRejectionHistos(eMcRejectedSaved::kOutsideMCEtaAcc);
       return false;
     }
-    fillTruePhotonSelection("kGoodMcPhotonOut");
+    fillTruePhotonSelection(eV0McValidation::kGoodMcPhotonOut);
     return true;
   }
 
@@ -397,11 +412,11 @@ struct GammaConversions {
                        bool theV0PassesRecCuts,
                        TTRACKS const& theTwoV0Daughters)
   {
-    fillTruePhotonSelection("kV0in");
+    fillTruePhotonSelection(eV0McValidation::kV0in);
 
     // is a table that might be empty
     if (theMcPhotonForThisV0AsTable.begin() == theMcPhotonForThisV0AsTable.end()) {
-      fillTruePhotonSelection("kFakeV0");
+      fillTruePhotonSelection(eV0McValidation::kFakeV0);
       return;
     }
     auto const lMcPhoton = theMcPhotonForThisV0AsTable.begin();
@@ -611,13 +626,13 @@ struct GammaConversions {
   {
     // single track eta cut
     if (TMath::Abs(theTrack.eta()) > fTrackEtaMax) {
-      fillIsPhotonSelected("kTrackEta");
+      fillIsPhotonSelected(kTrackEta);
       return kFALSE;
     }
 
     // single track pt cut
     if (theTrack.pt() < fTrackPtMin) {
-      fillIsPhotonSelected("kTrackPt");
+      fillIsPhotonSelected(kTrackPt);
       return kFALSE;
     }
 
@@ -626,12 +641,12 @@ struct GammaConversions {
     }
 
     if (theTrack.tpcFoundOverFindableCls() < fMinTPCFoundOverFindableCls) {
-      fillIsPhotonSelected("kTPCFoundOverFindableCls");
+      fillIsPhotonSelected(kTPCFoundOverFindableCls);
       return kFALSE;
     }
 
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
-      fillIsPhotonSelected("kTPCCrossedRowsOverFindableCls");
+      fillIsPhotonSelected(kTPCCrossedRowsOverFindableCls);
       return kFALSE;
     }
     return kTRUE;
@@ -652,22 +667,22 @@ struct GammaConversions {
   bool v0PassesPhotonCuts(const TV0& theV0, float theV0CosinePA)
   {
     if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
-      fillIsPhotonSelected("kV0Radius");
+      fillIsPhotonSelected(kV0Radius);
       return kFALSE;
     }
 
     if (fV0PhotonAsymmetryMax > 0. && !ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
-      fillIsPhotonSelected("kArmenteros");
+      fillIsPhotonSelected(kArmenteros);
       return kFALSE;
     }
 
     if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
-      fillIsPhotonSelected("kPsiPair");
+      fillIsPhotonSelected(kPsiPair);
       return kFALSE;
     }
 
     if (fV0CosPAngleMin > 0. && theV0CosinePA < fV0CosPAngleMin) {
-      fillIsPhotonSelected("kCosinePA");
+      fillIsPhotonSelected(kCosinePA);
       return kFALSE;
     }
     return kTRUE;
@@ -676,7 +691,7 @@ struct GammaConversions {
   template <typename TV0, typename TTRACKS>
   void fillReconstructedInfoHistograms(int theBefAftRec, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
   {
-    fillIsPhotonSelected(!theBefAftRec ? "kV0In" : "kV0Out");
+    fillIsPhotonSelected(!theBefAftRec ? kV0In : kV0Out);
 
     fillTrackHistograms(
       fMyRegistry.mTrack.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
@@ -706,7 +721,7 @@ struct GammaConversions {
   {
     // TPC Electron Line
     if (fPIDnSigmaElectronMin && (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMax)) {
-      fillIsPhotonSelected("kElectronPID");
+      fillIsPhotonSelected(kElectronPID);
       return kFALSE;
     }
 
@@ -715,14 +730,14 @@ struct GammaConversions {
       // low pt Pion rej
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
-          fillIsPhotonSelected("kPionRejLowMom");
+          fillIsPhotonSelected(kPionRejLowMom);
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
-          fillIsPhotonSelected("kPionRejHighMom");
+          fillIsPhotonSelected(kPionRejHighMom);
           return kFALSE;
         }
       }
