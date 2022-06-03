@@ -168,7 +168,7 @@ struct AnalysisQvector {
         "Event_BeforeCuts",
         "Event_AfterCuts"};
       histNames += Form("%s;%s", names[0].Data(), names[1].Data());
-      for (int i = 0; i < names.size(); i++) {
+      for (int i = 0; i < 2; i++) {
         fTrackHistNames.push_back(names[i]);
       }
 
@@ -212,40 +212,41 @@ struct AnalysisQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
   }
 
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool flag)
+  // Fill the FlowContainer
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag, bool dqflag)
   {
     // Calculate the correlations from the GFW
-    double dnx, dny, valx, valy;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
-    dny = fGFW->Calculate(corrconf, 0, kTRUE).Im();
-    if (dnx == 0) {
-      return;
-    }
-
-    if (!corrconf.pTDif) {
-      valx = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
-      if (TMath::Abs(valx) < 1) {
-        // fFC->FillProfile(corrconf.Head.Data(), cent, valx, 1, rndm);
-        if (dny == 0) {
-          return;
-        }
-        valy = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dny;
-      }
-      return;
-    }
-    bool DisableOverlap = kFALSE;
-    int nAxisPtBins = 31;
-    for (int i = 1; i <= nAxisPtBins; i++) {
-      dnx = fGFW->Calculate(corrconf, 0, kTRUE, DisableOverlap).Re();
-      if (dnx == 0) {
-        return;
-      }
-      valx = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
-      if (TMath::Abs(valx) < 1) {
-        // fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, valx, 1., rndm);
-      }
-      return;
-    }
+    //    double dnx, dny, valx, valy;
+    //    dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
+    //    dny = fGFW->Calculate(corrconf, 0, kTRUE).Im();
+    //    if (dnx == 0) {
+    //      return;
+    //    }
+    //
+    //    if (!corrconf.pTDif) {
+    //      valx = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dnx;
+    //      if (TMath::Abs(valx) < 1) {
+    //        fFC->FillProfile(corrconf.Head.Data(), cent, valx, 1, rndm);
+    //        if (dny == 0) {
+    //          return;
+    //        }
+    //        valy = fGFW->Calculate(corrconf, 0, kFALSE).Re() / dny;
+    //      }
+    //      return;
+    //    }
+    //    bool DisableOverlap = kFALSE;
+    //    int nAxisPtBins = 31;
+    //    for (int i = 1; i <= nAxisPtBins; i++) {
+    //      dnx = fGFW->Calculate(corrconf, 0, kTRUE, DisableOverlap).Re();
+    //      if (dnx == 0) {
+    //        return;
+    //      }
+    //      valx = fGFW->Calculate(corrconf, 0, kFALSE, DisableOverlap).Re() / dnx;
+    //      if (TMath::Abs(valx) < 1) {
+    //         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.Data(), i), cent, valx, 1., rndm);
+    //      }
+    //      return;
+    //    }
   }
 
   // Templated function instantianed for all of the process functions
@@ -323,9 +324,10 @@ struct AnalysisQvector {
       fGFW->Fill(track.eta(), ptin, track.phi(), wacc * weff, mask);
     }
 
+    bool fillFlag = kFALSE;    // could be used later
     bool DQEventFlag = kFALSE; // could be used later
     for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), centrality, l_Random, DQEventFlag);
+      FillFC(corrconfigs.at(l_ind), centrality, l_Random, fillFlag, DQEventFlag);
     };
 
     // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
