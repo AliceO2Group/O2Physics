@@ -279,6 +279,8 @@ class VarManager : public TObject
     // Qn vector variables
     kQ2X0,
     kQ2Y0,
+    kPsi2,
+    kRes,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -386,8 +388,10 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
-  template <typename T1>
-  static void FillQVector(T1 const& t1, float* values = nullptr, float weight = 1.0);
+  template <uint32_t collFillMap, typename C, typename A>
+  static void FillQVector(C const& collision, A const& comp, float res = 1.0, float norm = 1.0, float* values = nullptr, float weight = 1.0);
+  template <uint32_t collFillMap, typename C, typename A>
+  static void FillQVectorFromGFW(C const& collision, A const& comp, float res = 1.0, float norm = 1.0, float* values = nullptr);
 
  public:
   VarManager();
@@ -1220,17 +1224,48 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   }
 }
 
-template <typename T1>
-void VarManager::FillQVector(T1 const& track, float* values, float weight)
+template <uint32_t collFillMap, typename C, typename A>
+void VarManager::FillQVector(C const& collision, A const& comp, float res, float norm, float* values, float weight)
 {
   if (!values) {
     values = fgValues;
   }
-  // TODO: to be implemented
-  if (fgUsedVars[kQ2X0] || fgUsedVars[kQ2Y0]) {
+
+  constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
+
+  if constexpr (eventHasVtxCov) {
+    values[kVtxZ] = collision.posZ();
+    values[kCentVZERO] = collision.centRun2V0M();
+
+    // TODO: to be adapted
+    if (fgUsedVars[kQ2X0] || fgUsedVars[kQ2Y0]) {
+      int harm = 2;
+      values[kQ2X0] = comp.Re() / norm;
+      values[kQ2Y0] = comp.Im() / norm;
+      values[kPsi2] = (1.0 / harm) * TMath::ATan2(values[kQ2X0], values[kQ2Y0]);
+      values[kRes] = res;
+    }
+  }
+}
+template <uint32_t collFillMap, typename C, typename A>
+void VarManager::FillQVectorFromGFW(C const& collision, A const& comp, float res, float norm, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
+
+  if constexpr (eventHasVtxCov) {
+    values[kVtxZ] = collision.posZ();
+    values[kCentVZERO] = collision.centRun2V0M();
+
+    // Fill Q vector from generic flow framework provided by PWGCF
     int harm = 2;
-    values[kQ2X0] = weight * std::cos(harm * track.phi());
-    values[kQ2Y0] = weight * std::sin(harm * track.phi());
+    values[kQ2X0] = comp.Re() / norm;
+    values[kQ2Y0] = comp.Im() / norm;
+    values[kPsi2] = (1.0 / harm) * TMath::ATan2(values[kQ2X0], values[kQ2Y0]);
+    values[kRes] = res;
   }
 }
 

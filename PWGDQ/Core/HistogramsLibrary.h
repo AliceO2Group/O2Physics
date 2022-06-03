@@ -82,14 +82,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MCImpPar_CentVZERO", "MC impact param vs CentVZERO", false, 50, 0.0, 100.0, VarManager::kCentVZERO, 20, 0.0, 20.0, VarManager::kMCEventImpParam);
     }
     if (subGroupStr.Contains("qvector")) {
-      hm->AddHistogram(histClass, "hQ2X0", "Q2X0 ", false, 100, -1.5, 1.5, VarManager::kQ2X0);
-      hm->AddHistogram(histClass, "hQ2Y0", "Q2Y0 ", false, 100, -1.5, 1.5, VarManager::kQ2Y0);
+      hm->AddHistogram(histClass, "Q2X0", "Q2X0 ", false, 100, -1.0, 1.0, VarManager::kQ2X0);
+      hm->AddHistogram(histClass, "Q2Y0", "Q2Y0 ", false, 100, -1.0, 1.0, VarManager::kQ2Y0);
 
-      hm->AddHistogram(histClass, "hQ2X0vsZvtx", "Q2X vs Zvtx", true, 60, -15.0, 15.0, VarManager::kVtxZ, 100, -1.5, 1.5, VarManager::kQ2X0);
-      hm->AddHistogram(histClass, "hQ2Y0vsZvtx", "Q2Y vs Zvtx", true, 60, -15.0, 15.0, VarManager::kVtxZ, 100, -1.5, 1.5, VarManager::kQ2Y0);
+      hm->AddHistogram(histClass, "Q2X0_VtxZ", "Q2X vs VtxZ", true, 60, -15.0, 15.0, VarManager::kVtxZ, 100, -1.0, 1.0, VarManager::kQ2X0);
+      hm->AddHistogram(histClass, "Q2Y0_VtxZ", "Q2Y vs VtxZ", true, 60, -15.0, 15.0, VarManager::kVtxZ, 100, -1.0, 1.0, VarManager::kQ2Y0);
 
-      hm->AddHistogram(histClass, "hQ2X0vsCent", "Q2X vs Cent", true, 90, 0.0, 90.0, VarManager::kCentVZERO, 100, -1.5, 1.5, VarManager::kQ2X0);
-      hm->AddHistogram(histClass, "hQ2Y0vsCent", "Q2Y vs Cent", true, 90, 0.0, 90.0, VarManager::kCentVZERO, 100, -1.5, 1.5, VarManager::kQ2Y0);
+      hm->AddHistogram(histClass, "Q2X0_Cent", "Q2X vs Cent", true, 90, 0.0, 90.0, VarManager::kCentVZERO, 100, -1.0, 1.0, VarManager::kQ2X0);
+      hm->AddHistogram(histClass, "Q2Y0_Cent", "Q2Y vs Cent", true, 90, 0.0, 90.0, VarManager::kCentVZERO, 100, -1.0, 1.0, VarManager::kQ2Y0);
+      hm->AddHistogram(histClass, "Psi2", "#Psi_{2} ", false, 100, -1.6, 1.6, VarManager::kPsi2);
+      hm->AddHistogram(histClass, "ResGap", "R_{2} ", true, 10, 0.0, 90.0, VarManager::kCentVZERO, 100, -0.2, 0.2, VarManager::kRes);
     }
   }
 

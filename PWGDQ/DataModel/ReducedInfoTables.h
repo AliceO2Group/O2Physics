@@ -34,16 +34,16 @@ DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t); //! Bit-field used for t
 DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level decisions (DQ high level triggers)
                   dqppfilter::EventFilter);
 
-namespace dqflow
-{
-DECLARE_SOA_COLUMN(EventQvector, eventQvector, float); //! Q vectors components
-
-}
-
-DECLARE_SOA_TABLE(DQEventQvector, "AOD", "EVENTQVECTOR", //! Store event-level Q vectors components
-                  dqflow::EventQvector);
-
-using ReducedEventQvector = DQEventQvector::iterator;
+// namespace dqflow
+//{
+// DECLARE_SOA_COLUMN(EventQvectorX, Qx, float); //! Q vectors components
+// DECLARE_SOA_COLUMN(EventQvectorY, Qy, float); //! Q vectors components
+// }
+//
+// DECLARE_SOA_TABLE(DQEventQvector, "AOD", "EVENTQVECTOR", //! Store event-level Q vectors components
+//                   collision::PosZ, collision::NumContrib, cent::CentRun2V0M, dqflow::EventQvectorX, dqflow::EventQvectorY);
+//
+// using ReducedQvector = DQEventQvector::iterator;
 
 namespace reducedevent
 {
@@ -51,6 +51,10 @@ namespace reducedevent
 // basic event information
 DECLARE_SOA_COLUMN(Tag, tag, uint64_t);                   //!  Bit-field for storing event information (e.g. high level info, cut decisions)
 DECLARE_SOA_COLUMN(TriggerAlias, triggerAlias, uint32_t); //!  Trigger aliases bit field
+DECLARE_SOA_COLUMN(Q2X, Q2x, float);
+DECLARE_SOA_COLUMN(Q2Y, Q2y, float);
+DECLARE_SOA_COLUMN(PSI2, Psi2, float);
+DECLARE_SOA_COLUMN(RES, Res, float);
 DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);                //!
 DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);                //!
 DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                //!
@@ -69,6 +73,11 @@ DECLARE_SOA_TABLE(ReducedEventsVtxCov, "AOD", "REVTXCOV", //!    Event vertex co
                   collision::CovXX, collision::CovXY, collision::CovXZ,
                   collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2);
 
+DECLARE_SOA_TABLE(ReducedEventsQvector, "AOD", "REQVECTOR", //!    Event vertex covariance matrix
+                  o2::soa::Index<>, reducedevent::Tag, bc::RunNumber,
+                  collision::PosZ, cent::CentRun2V0M, reducedevent::Q2X, reducedevent::Q2Y,
+                  reducedevent::PSI2, reducedevent::RES);
+
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
@@ -81,6 +90,7 @@ DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REMC", //!   Event level MC truth inf
 using ReducedEvent = ReducedEvents::iterator;
 using ReducedEventExtended = ReducedEventsExtended::iterator;
 using ReducedEventVtxCov = ReducedEventsVtxCov::iterator;
+using ReducedEventQvector = ReducedEventsQvector::iterator;
 using ReducedMCEvent = ReducedMCEvents::iterator;
 
 namespace reducedeventlabel

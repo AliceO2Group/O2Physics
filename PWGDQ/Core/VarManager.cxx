@@ -340,6 +340,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ2X0] = "";
   fgVariableNames[kQ2Y0] = "Q_{2,y} ";
   fgVariableUnits[kQ2Y0] = "";
+  fgVariableNames[kPsi2] = "#Psi_{2} ";
+  fgVariableUnits[kPsi2] = "";
+  fgVariableNames[kRes] = "R_{2} ";
+  fgVariableUnits[kRes] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";
