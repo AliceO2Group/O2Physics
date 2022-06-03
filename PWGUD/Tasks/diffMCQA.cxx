@@ -225,10 +225,15 @@ struct DiffMCQA {
     bool isDGcandidate = true;
 
     // is this a central diffractive event?
-    auto MCCol = collision.mcCollision();
-    auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
-    auto isPythiaDiff = isPythiaCDE(MCPartSlice);
-    auto isGraniittiDiff = isGraniittiCDE(MCPartSlice);
+    // by default it is assumed to be a MB event
+    bool isPythiaDiff = false;
+    bool isGraniittiDiff = false;
+    if (collision.has_mcCollision()) {
+      auto MCCol = collision.mcCollision();
+      auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
+      isPythiaDiff = isPythiaCDE(MCPartSlice);
+      isGraniittiDiff = isGraniittiCDE(MCPartSlice);
+    }
 
     // global tracks
     Partition<TCs> goodTracks = requireGlobalTrackInFilter();
@@ -781,7 +786,7 @@ struct CaloSignals {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffqa"}),
+    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffmcqa"}),
     adaptAnalysisTask<FV0Signals>(cfgc, TaskName{"fv0signals"}),
     adaptAnalysisTask<FT0Signals>(cfgc, TaskName{"ft0signals"}),
     adaptAnalysisTask<FDDSignals>(cfgc, TaskName{"fddsignals"}),
