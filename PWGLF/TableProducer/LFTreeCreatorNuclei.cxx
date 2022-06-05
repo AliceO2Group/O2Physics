@@ -46,12 +46,15 @@ using namespace o2::framework::expressions;
 
 /// Writes the full information in an output TTree
 struct LfTreeCreatorNuclei {
-  Produces<o2::aod::LfCandNucleusFull> rowCandidateFull;
-  Produces<o2::aod::LfCandNucleusFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::LfCandNucleusMC> rowCandidateMC;
+  Produces<o2::aod::LfCandNucleusFullEvents> tableEvents;
+  Produces<o2::aod::LfCandNucleusFull> tableCandidate;
+  Produces<o2::aod::LfCandNucleusMC> tableCandidateMC;
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocessData == true && doprocessMC == true) {
+      LOGF(fatal, "Cannot enable processData and processMC at the same time. Please choose one.");
+    }
   }
 
   // track
@@ -69,6 +72,7 @@ struct LfTreeCreatorNuclei {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (requireGlobalTrackInFilter());
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::TOFSignal,
                                     aod::pidTPCFullPi, aod::pidTOFFullPi,
@@ -76,90 +80,89 @@ struct LfTreeCreatorNuclei {
                                     aod::pidTPCFullPr, aod::pidTOFFullPr,
                                     aod::pidTPCFullDe, aod::pidTOFFullDe,
                                     aod::pidTPCFullHe, aod::pidTOFFullHe>;
-  int nevs = 0;
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>> const& collisions,
-               soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)
-  {
-    for (const auto& collision : collisions) {
-      LOG(INFO) << "nevs=" << nevs++;
-      if (useEvsel && !collision.sel8()) {
-        return;
-      }
-      // std::cout<<"mc Z-vertex ====>"<<mcColl.posZ()<<std::endl;
-      /*for(auto& mcCollItr : mcCollisions)
-      {}*/
-      // Filling event properties
-      rowCandidateFullEvents(
-        collision.bcId(),
-        collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ(),
-        collision.multFV0M(),
-        collision.sel8(),
-        collision.bc().runNumber());
 
-      // Filling candidate properties
-      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      rowCandidateFull.reserve(tracksInCollision.size());
-      for (auto& track : tracksInCollision) {
-        // auto const& mcParticle = track.mcParticle();
-        // std::cout<<"mc pdg code ====>"<<mcParticle.pdgCode()<<std::endl;
-        // std::cout<<"mc physical primary ====>"<<mcParticle.isPhysicalPrimary()<<std::endl;
-        // std::cout<<"eta-gen ====>"<<mcParticle.eta()<<"  eta-reco"<<track.eta()<<std::endl;
-        rowCandidateFull(
-          rowCandidateFullEvents.lastIndex(),
-          track.dcaXY(),
-          track.dcaZ(),
-          track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-          track.tpcNSigmaDe(), track.tpcNSigmaHe(),
-          track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-          track.tofNSigmaDe(), track.tofNSigmaHe(),
-          track.hasTOF(),
-          track.tpcInnerParam(),
-          track.tpcSignal(),
-          track.beta(),
-          track.px(),
-          track.py(),
-          track.pz(),
-          track.pt(),
-          track.p(),
-          track.eta(),
-          track.phi(),
-          track.sign(),
-          track.tpcNClsCrossedRows(),
-          track.tpcCrossedRowsOverFindableCls(),
-          track.tpcChi2NCl(),
-          track.itsChi2NCl());
+  template <bool isMC, typename TrackType, typename CollisionType>
+  void fillForOneEvent(CollisionType const& collision, TrackType const& tracks)
+  {
+    // Filling event properties
+    tableEvents(collision.bcId(),
+                collision.numContrib(),
+                collision.posX(),
+                collision.posY(),
+                collision.posZ(),
+                collision.multFV0M(),
+                collision.sel8(),
+                collision.bc().runNumber());
+
+    // Filling candidate properties
+    tableCandidate.reserve(tracks.size());
+    if constexpr (isMC) {
+      tableCandidateMC.reserve(tracks.size());
+    }
+    for (auto& track : tracks) {
+      // auto const& mcParticle = track.mcParticle();
+      tableCandidate(
+        tableEvents.lastIndex(),
+        track.dcaXY(),
+        track.dcaZ(),
+        track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+        track.tpcNSigmaDe(), track.tpcNSigmaHe(),
+        track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+        track.tofNSigmaDe(), track.tofNSigmaHe(),
+        track.hasTOF(),
+        track.tpcInnerParam(),
+        track.tpcSignal(),
+        track.beta(),
+        track.px(),
+        track.py(),
+        track.pz(),
+        track.pt(),
+        track.p(),
+        track.eta(),
+        track.phi(),
+        track.sign(),
+        track.tpcNClsCrossedRows(),
+        track.tpcCrossedRowsOverFindableCls(),
+        track.tpcChi2NCl(),
+        track.itsChi2NCl());
+
+      if constexpr (isMC) { // Filling MC reco information
+        if (track.has_mcParticle()) {
+          const auto& particle = track.mcParticle();
+          tableCandidateMC(particle.pdgCode());
+          continue;
+        }
+        tableCandidateMC(0);
       }
     }
   }
-  int nevsmc = 0;
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+
+  void processData(soa::Filtered<EventCandidates> const& collisions,
+                   soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)
+  {
+    for (const auto& collision : collisions) {
+      if (useEvsel && !collision.sel8()) {
+        return;
+      }
+      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      fillForOneEvent<false>(collision, tracksInCollision);
+    }
+  }
+  PROCESS_SWITCH(LfTreeCreatorNuclei, processData, "process Data", true);
+
+  void processMC(soa::Filtered<soa::Join<EventCandidates, aod::McCollisionLabels>> const& collisions,
                  soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>> const& tracks,
                  aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
-      LOG(INFO) << "nevsmc=" << nevsmc++;
       if (useEvsel && !collision.sel8()) {
         return;
       }
       const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      rowCandidateMC.reserve(tracksInCollision.size());
-      LOG(info) << tracks.size() << " " << tracksInCollision.size();
-      for (const auto& track : tracksInCollision)
-      // for(const auto& track: tracks)
-      {
-        if (track.has_mcParticle()) {
-          const auto& particle = track.mcParticle();
-          rowCandidateMC(particle.pdgCode());
-          continue;
-        }
-        rowCandidateMC(0);
-      }
+      fillForOneEvent<true>(collision, tracksInCollision);
     }
   }
-  PROCESS_SWITCH(LfTreeCreatorNuclei, processMC, "process MC", true);
+  PROCESS_SWITCH(LfTreeCreatorNuclei, processMC, "process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
