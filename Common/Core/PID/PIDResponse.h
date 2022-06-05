@@ -673,7 +673,9 @@ enum PIDFlags : uint8_t {
 };
 }
 
-DECLARE_SOA_COLUMN(TOFFlags, tofFlags, uint8_t);     //! Flag for the complementary TOF PID information
+DECLARE_SOA_COLUMN(TOFFlags, tofFlags, uint8_t);             //! Flag for the complementary TOF PID information
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeDefined, isEvTimeDefined, //! True if the Event Time was computed with any method i.e. there is a usable event time
+                           [](uint8_t flags) -> bool { return (flags > 0); });
 DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOF, isEvTimeTOF, //! True if the Event Time was computed with the TOF
                            [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOF) == enums::PIDFlags::EvTimeTOF; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, //! True if the Event Time was computed with the T0AC
@@ -698,6 +700,11 @@ DECLARE_SOA_COLUMN(SeparationBetaEl, separationbetael, float); //! Separation co
 DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference between the measured and the expected beta for electrons
                            [](float beta, float expbetael) -> float { return beta - expbetael; });
 } // namespace pidtofbeta
+
+namespace pidtofmass
+{
+DECLARE_SOA_COLUMN(TOFMass, mass, float); //! TOF mass
+} // namespace pidtofmass
 
 namespace pidtof
 {
@@ -811,8 +818,12 @@ DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::SeparationBetaEl,
                   pidtofbeta::DiffBetaEl<pidtofbeta::Beta, pidtofbeta::ExpBetaEl>);
 
+DECLARE_SOA_TABLE(pidTOFmass, "AOD", "pidTOFmass", //! Table of the TOF mass
+                  pidtofmass::TOFMass);
+
 DECLARE_SOA_TABLE(pidEvTimeFlags, "AOD", "pidEvTimeFlags", //! Table of the PID flags for the event time tables
                   pidflags::TOFFlags,
+                  pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
                   pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
                   pidflags::IsEvTimeT0AC<pidflags::TOFFlags>);
 

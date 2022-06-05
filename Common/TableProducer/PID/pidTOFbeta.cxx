@@ -18,11 +18,11 @@
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "pidTOFBase.h"
+#include "TableHelper.h"
 #include "DPG/Tasks/qaPIDTOF.h"
 
 using namespace o2;
@@ -41,50 +41,44 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 struct tofPidBeta {
   Produces<aod::pidTOFbeta> tablePIDBeta;
+  Produces<aod::pidTOFmass> tablePIDTOFMass;
   Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
 
-  void init(o2::framework::InitContext&)
+  bool enableTableBeta = false;
+  bool enableTableMass = false;
+  void init(o2::framework::InitContext& initContext)
   {
-    if (doprocessNoEvTime == true && doprocessEvTime == true) {
-      LOGF(fatal, "Cannot enable processNoEvTime and processEvTime at the same time. Please choose one.");
+    if (isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
+      enableTableBeta = true;
+    }
+    if (isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
+      enableTableMass = true;
     }
     responseBeta.mExpectedResolution = expreso.value;
-    responseBetaEvTime.mExpectedResolution = expreso.value;
   }
 
-  using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>;
-  tof::Beta<TrksEvTime::iterator> responseBetaEvTime;
-  template <o2::track::PID::ID pid>
-  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
-  void processEvTime(TrksEvTime const& tracks, aod::Collisions const&)
-  {
-    tablePIDBeta.reserve(tracks.size());
-    for (auto const& trk : tracks) {
-      tablePIDBeta(responseBetaEvTime.GetBeta(trk, trk.tofEvTime()),
-                   responseBetaEvTime.GetExpectedSigma(trk),
-                   responseBetaEvTime.GetExpectedSignal<o2::track::PID::Electron>(trk),
-                   responseBetaEvTime.GetExpectedSigma(trk),
-                   responseBetaEvTime.GetSeparation<o2::track::PID::Electron>(trk));
-    }
-  }
-  PROCESS_SWITCH(tofPidBeta, processEvTime, "Produce TOF beta with TOF event time", false);
-
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   tof::Beta<Trks::iterator> responseBeta;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processNoEvTime(Trks const& tracks, aod::Collisions const&)
+  void process(Trks const& tracks)
   {
+    float beta = 0.f;
     tablePIDBeta.reserve(tracks.size());
     for (auto const& trk : tracks) {
-      tablePIDBeta(responseBeta.GetBeta(trk),
-                   responseBeta.GetExpectedSigma(trk),
-                   responseBeta.GetExpectedSignal<o2::track::PID::Electron>(trk),
-                   responseBeta.GetExpectedSigma(trk),
-                   responseBeta.GetSeparation<o2::track::PID::Electron>(trk));
+      beta = responseBeta.GetBeta(trk);
+      if (enableTableBeta) {
+        tablePIDBeta(beta,
+                     responseBeta.GetExpectedSigma(trk),
+                     responseBeta.GetExpectedSignal<o2::track::PID::Electron>(trk),
+                     responseBeta.GetExpectedSigma(trk),
+                     responseBeta.GetSeparation<o2::track::PID::Electron>(trk));
+      }
+      if (enableTableMass) {
+        tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, beta));
+      }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processNoEvTime, "Produce TOF beta without TOF event time, standard for Run 2", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
