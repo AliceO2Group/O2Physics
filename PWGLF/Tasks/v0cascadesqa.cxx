@@ -61,9 +61,7 @@ struct v0cascadesQA {
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}}, // storing total #events
     },
-    OutputObjHandlingPolicy::QAObject,
-    true,
-    true};
+  };
 
   HistogramRegistry histos_V0{
     "histos-V0",
@@ -90,9 +88,7 @@ struct v0cascadesQA {
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
     },
-    OutputObjHandlingPolicy::QAObject,
-    true,
-    true};
+  };
 
   HistogramRegistry histos_Casc{
     "histos-Casc",
@@ -106,7 +102,7 @@ struct v0cascadesQA {
       {"CascDecayLengthXi", "CascDecayLengthXi", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {2, -2, 2}}}},
       {"CascDecayLengthOmega", "CascDecayLengthOmega", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {2, -2, 2}}}},
       {"CascRadius", "CascRadius", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {2, -2, 2}}}},
-      {"V0Radius", "V0Radius", {HistType::kTH2D, {{100, 0.0f, 10.0f}, {2, -2, 2}}}}, //asked for D instead of F
+      {"V0Radius", "V0Radius", {HistType::kTH2D, {{100, 0.0f, 10.0f}, {2, -2, 2}}}}, // asked for D instead of F
       {"CascyXi", "CascyXi", {HistType::kTH2F, {{200, -2.0f, 2.0f}, {2, -2, 2}}}},
       {"CascyOmega", "CascyOmega", {HistType::kTH2F, {{200, -2.0f, 2.0f}, {2, -2, 2}}}},
       {"CascCtauXi", "CascCtauXi", {HistType::kTH2F, {{100, 0.0f, 100.0f}, {2, -2, 2}}}},
@@ -125,9 +121,7 @@ struct v0cascadesQA {
       {"InvMassOmegaPlus", "InvMassOmegaPlus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
       {"InvMassOmegaMinus", "InvMassOmegaMinus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
     },
-    OutputObjHandlingPolicy::QAObject,
-    true,
-    true};
+  };
 
   void init(InitContext const&)
   {
@@ -164,19 +158,19 @@ struct v0cascadesQA {
     for (auto& mcparticle : mcParticles) {
       if (mcparticle.isPhysicalPrimary()) {
         if (mcparticle.pdgCode() == 310)
-          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); //K0s
+          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); // K0s
         if (mcparticle.pdgCode() == 3122)
-          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), mcparticle.y()); //Lambda
+          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), mcparticle.y()); // Lambda
         if (mcparticle.pdgCode() == -3122)
-          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), mcparticle.y()); //AntiLambda
+          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), mcparticle.y()); // AntiLambda
         if (mcparticle.pdgCode() == 3312)
-          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), mcparticle.y()); //Xi-
+          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), mcparticle.y()); // Xi-
         if (mcparticle.pdgCode() == -3312)
-          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), mcparticle.y()); //Xi+
+          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), mcparticle.y()); // Xi+
         if (mcparticle.pdgCode() == 3334)
-          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), mcparticle.y()); //Omega-
+          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), mcparticle.y()); // Omega-
         if (mcparticle.pdgCode() == -3334)
-          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), mcparticle.y()); //Omega+
+          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), mcparticle.y()); // Omega+
 
         // if (!IsParticleFromOutOfBunchPileupCollision){fill the 1.5, 3.5 etc}   AliPhysics analysis
       }
@@ -189,7 +183,7 @@ struct v0cascadesQA {
   ////////////////////////////////////////////
 
   Configurable<float> V0_rapidity{"V0_rapidity", 0.5, "rapidity"};
-  Configurable<double> V0_cosPA{"V0_cosPA", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> V0_cosPA{"V0_cosPA", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> V0_dcav0dau{"V0_dcav0dau", 1, "DCA V0 Daughters"};
   Configurable<float> V0_dcapostopv{"V0_dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> V0_dcanegtopv{"V0_dcanegtopv", 0.1, "DCA Neg To PV"};
@@ -298,19 +292,19 @@ struct v0cascadesQA {
   ///// Cascade QA - Reconstructed /////
   //////////////////////////////////////
 
-  Configurable<double> Casc_v0cospa{"Casc_V0cospa", 0.98, "V0 CosPA"};               //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> Casc_casccospa{"Casc_casccospa", 0.98, "Cascade CosPA"};      //AliAnalysisTaskStrAODqa: 0.9992      //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> Casc_dcav0dau{"Casc_dcav0dau", 1.0, "DCA V0 Daughters"};       //AliAnalysisTaskStrAODqa: 1. different scale
-  Configurable<float> Casc_dcacascdau{"Casc_dcacascdau", 0.6, "DCA Casc Daughters"}; //AliAnalysisTaskStrAODqa: 0.3 different scale
-  Configurable<float> Casc_dcav0topv{"Casc_dcav0topv", 0.1, "DCA Pos To PV"};        //AliAnalysisTaskStrAODqa: 0.15 different scale
-  Configurable<float> Casc_dcabachtopv{"Casc_dcabachtopv", .1, "DCA Bach To PV"};    //AliAnalysisTaskStrAODqa: 0.17 different scale
-  Configurable<float> Casc_dcapostopv{"Casc_dcapostopv", 0.1, "DCA V0 To PV"};       //AliAnalysisTaskStrAODqa:    if( fCasc_charge>0 &&(fCasc_DcaPosToPV < 0.3 || fCasc_DcaNegToPV < 0.11)) return kFALSE;  different scale
-  Configurable<float> Casc_dcanegtopv{"Casc_dcanegtopv", 0.1, "DCA Neg To PV"};      //AliAnalysisTaskStrAODqa:    if( fCasc_charge<0 &&(fCasc_DcaPosToPV < 0.11 || fCasc_DcaNegToPV < 0.3)) return kFALSE;  different scale
-  Configurable<float> Casc_v0radius{"Casc_v0radius", 0.9, "v0 radius"};              //AliAnalysisTaskStrAODqa: 5.
-  Configurable<float> Casc_cascradius{"Casc_cascradius", 1.0, "cascade radius"};     //AliAnalysisTaskStrAODqa: 1.
+  Configurable<double> Casc_v0cospa{"Casc_V0cospa", 0.98, "V0 CosPA"};               // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> Casc_casccospa{"Casc_casccospa", 0.98, "Cascade CosPA"};      // AliAnalysisTaskStrAODqa: 0.9992      //double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> Casc_dcav0dau{"Casc_dcav0dau", 1.0, "DCA V0 Daughters"};       // AliAnalysisTaskStrAODqa: 1. different scale
+  Configurable<float> Casc_dcacascdau{"Casc_dcacascdau", 0.6, "DCA Casc Daughters"}; // AliAnalysisTaskStrAODqa: 0.3 different scale
+  Configurable<float> Casc_dcav0topv{"Casc_dcav0topv", 0.1, "DCA Pos To PV"};        // AliAnalysisTaskStrAODqa: 0.15 different scale
+  Configurable<float> Casc_dcabachtopv{"Casc_dcabachtopv", .1, "DCA Bach To PV"};    // AliAnalysisTaskStrAODqa: 0.17 different scale
+  Configurable<float> Casc_dcapostopv{"Casc_dcapostopv", 0.1, "DCA V0 To PV"};       // AliAnalysisTaskStrAODqa:    if( fCasc_charge>0 &&(fCasc_DcaPosToPV < 0.3 || fCasc_DcaNegToPV < 0.11)) return kFALSE;  different scale
+  Configurable<float> Casc_dcanegtopv{"Casc_dcanegtopv", 0.1, "DCA Neg To PV"};      // AliAnalysisTaskStrAODqa:    if( fCasc_charge<0 &&(fCasc_DcaPosToPV < 0.11 || fCasc_DcaNegToPV < 0.3)) return kFALSE;  different scale
+  Configurable<float> Casc_v0radius{"Casc_v0radius", 0.9, "v0 radius"};              // AliAnalysisTaskStrAODqa: 5.
+  Configurable<float> Casc_cascradius{"Casc_cascradius", 1.0, "cascade radius"};     // AliAnalysisTaskStrAODqa: 1.
 
-  //additional AliAnalysisTaskStrAODqa.cxx cuts not present here
-  // if( fCasc_LeastCRaws<70 ) return kFALSE; //assume LeastCRows
+  // additional AliAnalysisTaskStrAODqa.cxx cuts not present here
+  //  if( fCasc_LeastCRaws<70 ) return kFALSE; //assume LeastCRows
 
   // if( fCasc_V0CosPAToXi<0.99 ) return kFALSE;
 

@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 # add_subdirectory(Dilepton)
-# add_subdirectory(PhotonMeson)
 
+add_subdirectory(PhotonMeson)
 add_subdirectory(Tasks)
 

@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct LFNucleiDeuteronTask {
+struct LFNucleiBATask {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry spectraGen{"spectraGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
@@ -90,17 +90,18 @@ struct LFNucleiDeuteronTask {
 
     // MC histograms
     AxisSpec ptAxis = {2000, 0.f, 20.f, "#it{p}_{T} (GeV/#it{c})"};
-    spectraGen.add("histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{2000, -20.f, 20.f, "Vertex Z (cm)"}});
-    spectraGen.add("histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("histGenPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("histGenPtHe", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("histGenPtantiHe", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{2000, -20.f, 20.f, "Vertex Z (cm)"}});
+    histos.add("spectraGen/histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtHe", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiHe", "generated particles", HistType::kTH1F, {ptAxis});
   }
 
-  void processData(o2::aod::LfCandNucleusFullEvents::iterator const& event, o2::aod::LfCandNucleusFull const& tracks)
+  template <bool IsMC, typename CollisionType, typename TracksType>
+  void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
     constexpr float fMassProton = 0.938272088f;
     constexpr float fMassDeuteron = 1.87561f;
@@ -173,55 +174,74 @@ struct LFNucleiDeuteronTask {
         if (std::abs(track.nsigTPC3He()) < nsigmaTPCcut)
           histos.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - fMassHelium * fMassHelium, track.pt());
       }
+      if constexpr (IsMC) {
+        track.pdgCode();
+      }
     }
-    // LOG(info)<<"Vertex Z ==="<<coll.posZ();
-  } // CLOSING PROCESS DATA
+  }
 
-  PROCESS_SWITCH(LFNucleiDeuteronTask, processData, "process data", true);
+  void processData(o2::aod::LfCandNucleusFullEvents::iterator const& event,
+                   o2::aod::LfCandNucleusFull const& tracks)
+  {
+    fillHistograms<false>(event, tracks);
+  } // CLOSING PROCESS DATA
+  PROCESS_SWITCH(LFNucleiBATask, processData, "process data", true);
+
+  void processMCReco(o2::aod::LfCandNucleusFullEvents::iterator const& event,
+                     soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks)
+  {
+    fillHistograms<true>(event, tracks);
+  } // CLOSING PROCESS MC RECO
+  PROCESS_SWITCH(LFNucleiBATask, processMCReco, "process mc reco", false);
   Int_t nCount = 0;
 
   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles_001& mcParticles)
   {
+    constexpr int PDGPion = 211;
+    constexpr int PDGKaon = 321;
+    constexpr int PDGProton = 2212;
+    constexpr int PDGDeuteron = 1000010020;
+    constexpr int PDGHelium = 1000020030;
     nCount++;
-    spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
+    histos.fill(HIST("spectraGen/histGenVetxZ"), mcCollision.posZ());
     for (auto& mcParticleGen : mcParticles) {
       if (abs(mcParticleGen.y()) > std::abs(etaCut)) {
         continue;
       }
 
-      if (std::abs(mcParticleGen.pdgCode()) == 211) {
-        spectraGen.fill(HIST("histGenPtPion"), mcParticleGen.pt());
+      if (std::abs(mcParticleGen.pdgCode()) == PDGPion) {
+        histos.fill(HIST("spectraGen/histGenPtPion"), mcParticleGen.pt());
       }
 
-      if (std::abs(mcParticleGen.pdgCode()) == 321) {
-        spectraGen.fill(HIST("histGenPtKaon"), mcParticleGen.pt());
+      if (std::abs(mcParticleGen.pdgCode()) == PDGKaon) {
+        histos.fill(HIST("spectraGen/histGenPtKaon"), mcParticleGen.pt());
       }
 
-      if (std::abs(mcParticleGen.pdgCode()) == 2212) {
-        spectraGen.fill(HIST("histGenPtProton"), mcParticleGen.pt());
+      if (std::abs(mcParticleGen.pdgCode()) == PDGProton) {
+        histos.fill(HIST("spectraGen/histGenPtProton"), mcParticleGen.pt());
       }
 
-      if (mcParticleGen.pdgCode() == 1000010020) {
-        spectraGen.fill(HIST("histGenPtD"), mcParticleGen.pt());
+      if (mcParticleGen.pdgCode() == PDGDeuteron) {
+        histos.fill(HIST("spectraGen/histGenPtD"), mcParticleGen.pt());
       }
 
-      if (mcParticleGen.pdgCode() == -1000010020) {
-        spectraGen.fill(HIST("histGenPtantiD"), mcParticleGen.pt());
+      if (mcParticleGen.pdgCode() == -PDGDeuteron) {
+        histos.fill(HIST("spectraGen/histGenPtantiD"), mcParticleGen.pt());
       }
 
-      if (mcParticleGen.pdgCode() == 1000020030) {
-        spectraGen.fill(HIST("histGenPtHe"), mcParticleGen.pt());
+      if (mcParticleGen.pdgCode() == PDGHelium) {
+        histos.fill(HIST("spectraGen/histGenPtHe"), mcParticleGen.pt());
       }
 
-      if (mcParticleGen.pdgCode() == -1000020030) {
-        spectraGen.fill(HIST("histGenPtantiHe"), mcParticleGen.pt());
+      if (mcParticleGen.pdgCode() == -PDGHelium) {
+        histos.fill(HIST("spectraGen/histGenPtantiHe"), mcParticleGen.pt());
       }
     }
-  }
-  PROCESS_SWITCH(LFNucleiDeuteronTask, processMCGen, "process MC Generated", true);
+  } // Close processMCGen
+  PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<LFNucleiDeuteronTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LFNucleiBATask>(cfgc)};
 }
