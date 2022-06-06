@@ -18,3 +18,8 @@ o2physics_add_dpl_workflow(gammaconversionstruthonlymc
                     SOURCES gammaConversionsTruthOnlyMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(emc-pi0-qc
+                    SOURCES emcalPi0QC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
