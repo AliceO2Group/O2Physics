@@ -58,9 +58,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 #include "PWGHF/Utils/UtilsDebugLcK0Sp.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -554,10 +552,10 @@ struct lambdakzeroBuilder {
         int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
         int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];*/
       int pTrackCharge = 1, nTrackCharge = 1;
-      if (TMath::Abs(V0.posTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+      if (TMath::Abs(V0.posTrack_as<MyTracks>().tpcNSigmaHe()) < 3){
         pTrackCharge = 2;
       } 
-      if (TMath::Abs(V0.negTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+      if (TMath::Abs(V0.negTrack_as<MyTracks>().tpcNSigmaHe()) < 3){
         nTrackCharge = 2;
       } 
       for (int i=0; i<3; i++){

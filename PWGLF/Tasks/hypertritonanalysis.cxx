@@ -70,7 +70,7 @@ struct hypertritonQa {
   };
   void init(InitContext const&)
   {
-    AxisSpec massAxis = {300, 2.9f, 3.2f, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxis = {120, 2.9f, 3.2f, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("hMassCandidates", "hMassCandidates", {HistType::kTH1F, {massAxis}});
   }
