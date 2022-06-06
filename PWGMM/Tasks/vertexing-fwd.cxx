@@ -32,6 +32,12 @@ using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 using FullBCs = soa::Join<aod::BCs, aod::MatchedBCCollisionsSparse>;
 using FullCollision = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(AmbiguousTracksMFT, "AOD", "AMBIGUOUSTRMFT", //! Table for MFT tracks which are not uniquely associated with a collision
+                  o2::soa::Index<>, o2::aod::ambiguous::MFTTrackId, o2::aod::ambiguous::BCIdSlice, o2::soa::Marker<2>);
+}
+
 struct vertexingfwd {
 
   /// Could be TEMPORARY: store the vertex, collision, dca, and ambiguous tracks information
@@ -89,7 +95,7 @@ struct vertexingfwd {
     return indice;
   }
 
-  void process(aod::AmbiguousMFTTracks const& ambitracks, FullBCs const& bcs, soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels> const& tracks, FullCollision const& collisions, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processNew(aod::AmbiguousMFTTracks const& ambitracks, FullBCs const& bcs, soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels> const& tracks, FullCollision const& collisions, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     for (auto& ambitrack : ambitracks) {
       vecCollForAmb.clear();
@@ -206,7 +212,126 @@ struct vertexingfwd {
     } // ambitracks loop
   }
 
-  PROCESS_SWITCH(vertexingfwd, process, "Process ambiguous track DCA", true);
+  PROCESS_SWITCH(vertexingfwd, processNew, "Process ambiguous track DCA", true);
+
+  void processOld(aod::AmbiguousTracksMFT const& ambitracks, FullBCs const& bcs, soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels> const& tracks, FullCollision const& collisions, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  {
+    for (auto& ambitrack : ambitracks) {
+      vecCollForAmb.clear();
+      vecDCACollForAmb.clear();
+      vecAmbTrack.clear();
+      vecZposCollForAmb.clear();
+
+      double value = 0.0;    // matching value for collision association to an ambiguous track
+      double zVtxMCAmbi = 0; // z vertex associated to the mc collision
+      int mcCollAmbiID = -1; // mc value for the collision containing the ambiguous track
+
+      auto track = ambitrack.mfttrack_as<MFTTracksLabeled>(); // Obtain the MFT ambiguous track with the MC labels
+      // auto extAmbiTrackid = ambitrack.mfttrackId(); // Global index of the MFT ambiguous track
+      int ntracks = tracks.size();
+      int nambitracks = ambitracks.size();
+
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "No MC particle for ambiguous track, skip...");
+        continue;
+      }
+      auto particle = track.mcParticle();
+      mcCollAmbiID = particle.mcCollisionId();
+      zVtxMCAmbi = particle.mcCollision().posZ();
+
+      registry.fill(HIST("AmbiguousTracksStatus"), 0.0, ntracks);
+      registry.fill(HIST("AmbiguousTracksStatus"), 1.0, nambitracks);
+      if (particle.isPhysicalPrimary()) {
+        registry.fill(HIST("AmbiguousTracksStatus"), 2.0);
+      } else {
+        registry.fill(HIST("AmbiguousTracksStatus"), 4.0);
+      }
+
+      // Fill the std::vector for ambiguous tracks with the quantities needed
+      vecAmbTrack.push_back(track.x());
+      vecAmbTrack.push_back(track.y());
+      vecAmbTrack.push_back(track.phi());
+      vecAmbTrack.push_back(track.tgl());
+      vecAmbTrack.push_back(track.signed1Pt());
+      vecAmbTrack.push_back(track.z());
+      vecAmbTrack.push_back(track.chi2());
+
+      auto bcambis = ambitrack.bc_as<soa::Join<aod::BCs, aod::MatchedBCCollisionsSparse>>();
+
+      for (auto& bcambi : bcambis) {
+
+        if (!bcambi.has_collision()) {
+          continue;
+        }
+
+        auto collision = bcambi.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+
+        SMatrix5 tpars(vecAmbTrack[0], vecAmbTrack[1], vecAmbTrack[2], vecAmbTrack[3], vecAmbTrack[4]);
+        //            std::vector<double> v1{extAmbiTrack.cXX(), extAmbiTrack.cXY(), extAmbiTrack.cYY(), extAmbiTrack.cPhiX(), extAmbiTrack.cPhiY(),
+        //                                   extAmbiTrack.cPhiPhi(), extAmbiTrack.cTglX(), extAmbiTrack.cTglY(), extAmbiTrack.cTglPhi(), extAmbiTrack.cTglTgl(),
+        //                                   extAmbiTrack.c1PtX(), extAmbiTrack.c1PtY(), extAmbiTrack.c1PtPhi(), extAmbiTrack.c1PtTgl(), extAmbiTrack.c1Pt21Pt2()};
+
+        std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
+        SMatrix55 tcovs(v1.begin(), v1.end());
+        o2::track::TrackParCovFwd pars1{vecAmbTrack[5], tpars, tcovs, vecAmbTrack[6]};
+
+        // o2::track::TrackParCovFwd pars1{extAmbiTrack.z(), tpars, tcovs, chi2};
+        pars1.propagateToZlinear(collision.posZ()); // track parameters propagation to the position of the z vertex
+
+        const auto dcaX(pars1.getX() - collision.posX());
+        const auto dcaY(pars1.getY() - collision.posY());
+        auto dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+
+        registry.fill(HIST("TracksDCAXY"), dcaXY);
+        registry.fill(HIST("TracksDCAX"), dcaX);
+        registry.fill(HIST("TracksDCAY"), dcaY);
+        registry.fill(HIST("NumberOfContributors"), collision.numContrib());
+
+        int mcCollindex = collision.mcCollision().globalIndex();
+        vecCollForAmb.push_back(mcCollindex);
+        vecDCACollForAmb.push_back(dcaXY);
+        vecZposCollForAmb.push_back(collision.mcCollision().posZ());
+
+        registry.fill(HIST("DeltaZvtx"), collision.mcCollision().posZ() - zVtxMCAmbi);
+      } // BCs loop
+
+      int indexMinDCA = getIndexBestCollision(vecDCACollForAmb, 0); // obtain min value in the stored vector of DCAs
+      int indexMCcoll = vecCollForAmb[indexMinDCA];
+      registry.fill(HIST("CollisionsMatchIndicesMC"), mcCollAmbiID, indexMCcoll);
+      registry.fill(HIST("CollisionsSize"), vecCollForAmb.size());
+      registry.fill(HIST("CorrectMatch"), 3.0); // counting for amibuous track with N collisions >=0
+      if (vecCollForAmb.size() == 0) {          // do not use the vector with no collisions
+        if (!particle.isPhysicalPrimary()) {
+          registry.fill(HIST("AmbiguousTracksStatus"), 5.0);
+        }
+        if (particle.isPhysicalPrimary()) {
+          registry.fill(HIST("AmbiguousTracksStatus"), 3.0);
+        }
+        continue;
+      }
+      registry.fill(HIST("DeltaZvtxBest"), vecZposCollForAmb[indexMinDCA] - zVtxMCAmbi);
+      //      for (auto& dca : vecDCACollForAmb) {
+      //        if (dca != vecDCACollForAmb[indexMinDCA]) {
+      //          registry.fill(HIST("DeltaDCAminNcoll"), vecCollForAmb.size(), std::abs(vecDCACollForAmb[indexMinDCA] - dca));
+      //          registry.fill(HIST("TracksDCAXYOther"), dca);
+      //        }
+      //      }
+      if (mcCollAmbiID == indexMCcoll) {
+        value = 1.0;
+        // LOGF(info, " --> Ambitrack correctly associated to collision, dca= %f", vecDCACollForAmb[indexMinDCA]);
+      }
+      registry.fill(HIST("TracksDCAXYBest"), vecDCACollForAmb[indexMinDCA]);
+      registry.fill(HIST("CorrectMatch"), value);
+      registry.fill(HIST("EfficiencyZvtx"), zVtxMCAmbi, value);
+      registry.fill(HIST("CorrectMatch"), 2.0); // Counting for amibuous track with N collisions > 0
+      if (value == 0.0) {
+        registry.fill(HIST("TracksDCAXYBestFalse"), vecDCACollForAmb[indexMinDCA]); // Incorrect association with min DCA
+      }
+
+    } // ambitracks loop
+  }
+
+  PROCESS_SWITCH(vertexingfwd, processOld, "Process ambiguous track DCA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

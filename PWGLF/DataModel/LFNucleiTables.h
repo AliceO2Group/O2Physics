@@ -30,7 +30,6 @@ namespace fullEvent
 DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occured
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(Vz, vz, float);
 DECLARE_SOA_COLUMN(V0M, v0m, int);
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfCandNucleusFullEvents, "AOD", "LFNUCLEvent",
@@ -72,12 +71,20 @@ DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
-//TPC and ITS QA
+// TPC and ITS QA
 DECLARE_SOA_COLUMN(NcrTPC, ncrTPC, int);
 DECLARE_SOA_COLUMN(RTPC, rTPC, float);
 DECLARE_SOA_COLUMN(Chi2TPC, chi2TPC, float);
 DECLARE_SOA_COLUMN(Chi2ITS, chi2ITS, float);
 } // namespace full
+
+/*
+namespace fullMC
+{
+DECLARE_SOA_INDEX_COLUMN(LfCandNucleusFullEvent, lfCandNucleusFullEvent);
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
+}
+*/
 
 DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   o2::soa::Index<>,
@@ -104,6 +111,8 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::RTPC,
                   full::Chi2TPC,
                   full::Chi2ITS);
+DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
+                  mcparticle::PdgCode);
 
 } // namespace o2::aod
 #endif

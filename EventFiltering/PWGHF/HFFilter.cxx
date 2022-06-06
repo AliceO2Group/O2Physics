@@ -383,15 +383,17 @@ struct HfFilter { // Main struct for HF triggers
         onnxFileXicToPiKPConf};
 
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-        sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
-        inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
-        inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
-        if (inputShapesML[iCharmPart][0][0] < 0) {
-          LOGF(warning, Form("Model for %s with negative input shape likely because converted with ummingbird, setting it to 1.", charmParticleNames[iCharmPart].data()));
-          inputShapesML[iCharmPart][0][0] = 1;
+        if (onnxFiles[iCharmPart] != "") {
+          sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
+          inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
+          inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
+          if (inputShapesML[iCharmPart][0][0] < 0) {
+            LOGF(warning, Form("Model for %s with negative input shape likely because converted with ummingbird, setting it to 1.", charmParticleNames[iCharmPart].data()));
+            inputShapesML[iCharmPart][0][0] = 1;
+          }
+          outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
+          outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
         }
-        outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
-        outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
       }
     }
   }
@@ -708,7 +710,7 @@ struct HfFilter { // Main struct for HF triggers
           assert(typeInfo.GetElementCount() == 3); // we need multiclass
           auto scores = outputTensorD0[1].GetTensorMutableData<float>();
 
-          if (applyML) {
+          if (applyML && activateQA) {
             hBDTScoreBkg[kD0]->Fill(scores[0]);
             hBDTScorePrompt[kD0]->Fill(scores[1]);
             hBDTScoreNonPrompt[kD0]->Fill(scores[2]);
@@ -836,7 +838,7 @@ struct HfFilter { // Main struct for HF triggers
             assert(typeInfo.GetElementCount() == 3); // we need multiclass
             auto scores = outputTensor[1].GetTensorMutableData<float>();
 
-            if (applyML) {
+            if (applyML && activateQA) {
               hBDTScoreBkg[iCharmPart]->Fill(scores[0]);
               hBDTScorePrompt[iCharmPart]->Fill(scores[1]);
               hBDTScoreNonPrompt[iCharmPart]->Fill(scores[2]);

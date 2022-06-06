@@ -76,6 +76,18 @@ struct DGFilterRun3 {
   DGSelector dgSelector;
 
   // histograms with cut statistics
+  // bin:
+  //   0: DG candidate
+  //   1: not clean FIT
+  //   2: number of FwdTracks > 0
+  //   3: not all global tracks are vtx tracks
+  //   4: not all vtx tracks are global tracks
+  //   5: number of vtx tracks out of range
+  //   6: has not good PID information
+  //   7: track pt out of range
+  //   8: track eta out of range
+  //   9: net charge out of range
+  //  10: IVM out of range
   static constexpr std::string_view histNames[4] = {"aftercut2pi", "aftercut4pi", "aftercut2K", "aftercut4K"};
   HistogramRegistry registry{
     "registry",

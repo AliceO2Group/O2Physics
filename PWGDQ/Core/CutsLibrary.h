@@ -42,6 +42,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsiBenchmarkCuts")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityBenchmark"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts2")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -53,6 +61,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+
     return cut;
   }
 
@@ -99,6 +108,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     return cut;
   }
+
   if (!nameStr.compare("NoPID")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -460,6 +470,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronStandardQualityBenchmark")) {
+    cut->AddCut(VarManager::kIsITSrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsTPCrefit, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kITSchi2, 0.1, 36.0);
+    cut->AddCut(VarManager::kTPCncls, 70.0, 161.);
+    return cut;
+  }
+
   if (!nameStr.compare("electronStandardQualityForO2MCdebug")) {
     cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
@@ -523,6 +542,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronPIDnsigmaOpen")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 2.0, 3000.0);
+    return cut;
+  }
+
   if (!nameStr.compare("electronPIDnsigmaLoose")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 3000.0);
@@ -571,7 +597,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
     TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
     f1minPi->SetParameters(60, 4.);
-    cut->AddCut(VarManager::kTPCsignal, f1minPi, 90., true, VarManager::kPin, 0.0, 10, false);
+    cut->AddCut(VarManager::kTPCsignal, f1minPi, 90., false, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 

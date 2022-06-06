@@ -38,6 +38,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct HFCandidateCreator3Prong {
   Produces<aod::HfCandProng3Base> rowCandidateBase;
 
+  Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the candidate daughters, if contributors"};
   Configurable<double> magneticField{"d_bz", 5., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
   Configurable<double> d_maxr{"d_maxr", 200., "reject PCA's above this radius"};
@@ -49,13 +50,17 @@ struct HFCandidateCreator3Prong {
   OutputObj<TH1F> hmass3{TH1F("hmass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
+  OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+
+  float toMicrometers = 10000.; // from cm to µm
 
   double massPi = RecoDecay::getMassPDG(kPiPlus);
   double massK = RecoDecay::getMassPDG(kKPlus);
   double massPiKPi{0.};
 
   void process(aod::Collisions const& collisions,
-               aod::Hf3Prongs const& rowsTrackIndexProng3,
+               soa::Join<aod::Hf3Prongs, aod::HfPvRefitProng3> const& rowsTrackIndexProng3,
                aod::BigTracks const& tracks)
   {
     // 3-prong vertex fitter
@@ -102,6 +107,22 @@ struct HFCandidateCreator3Prong {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
+      if (doPvRefit) {
+        /// use PV refit
+        /// Using it in the rowCandidateBase all dynamic columns shall take it into account
+        // coordinates
+        primaryVertex.setX(rowTrackIndexProng3.pvRefitX());
+        primaryVertex.setY(rowTrackIndexProng3.pvRefitY());
+        primaryVertex.setZ(rowTrackIndexProng3.pvRefitZ());
+        // covariance matrix
+        primaryVertex.setSigmaX2(rowTrackIndexProng3.pvRefitSigmaX2());
+        primaryVertex.setSigmaXY(rowTrackIndexProng3.pvRefitSigmaXY());
+        primaryVertex.setSigmaY2(rowTrackIndexProng3.pvRefitSigmaY2());
+        primaryVertex.setSigmaXZ(rowTrackIndexProng3.pvRefitSigmaXZ());
+        primaryVertex.setSigmaYZ(rowTrackIndexProng3.pvRefitSigmaYZ());
+        primaryVertex.setSigmaZ2(rowTrackIndexProng3.pvRefitSigmaZ2());
+        covMatrixPV = primaryVertex.getCov();
+      }
       hCovPVXX->Fill(covMatrixPV[0]);
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
@@ -109,16 +130,22 @@ struct HFCandidateCreator3Prong {
       trackParVar0.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
       trackParVar2.propagateToDCA(primaryVertex, magneticField, &impactParameter2);
+      hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
+      hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
+      hDcaXYProngs->Fill(track2.pt(), impactParameter2.getY() * toMicrometers);
+      hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
+      hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
+      hDcaZProngs->Fill(track2.pt(), impactParameter2.getZ() * toMicrometers);
 
       // get uncertainty of the decay length
       double phi, theta;
-      getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
+      getPointDirection(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       // fill candidate table rows
       rowCandidateBase(collision.globalIndex(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
                        chi2PCA,
@@ -169,7 +196,7 @@ struct HFCandidateCreator3ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (auto& candidate : *rowCandidateProng3) {
-      //Printf("New rec. candidate");
+      // Printf("New rec. candidate");
       flag = 0;
       origin = 0;
       swapping = 0;
@@ -178,7 +205,7 @@ struct HFCandidateCreator3ProngExpressions {
       auto arrayDaughters = array{candidate.index0_as<aod::BigTracksMC>(), candidate.index1_as<aod::BigTracksMC>(), candidate.index2_as<aod::BigTracksMC>()};
 
       // D± → π± K∓ π±
-      //Printf("Checking D± → π± K∓ π±");
+      // Printf("Checking D± → π± K∓ π±");
       indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::DPlusToPiKPi);
@@ -186,12 +213,12 @@ struct HFCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        //Printf("Checking Λc± → p± K∓ π±");
+        // Printf("Checking Λc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -214,7 +241,7 @@ struct HFCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        //Printf("Checking Ξc± → p± K∓ π±");
+        // Printf("Checking Ξc± → p± K∓ π±");
         indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
@@ -232,25 +259,25 @@ struct HFCandidateCreator3ProngExpressions {
 
     // Match generated particles.
     for (auto& particle : particlesMC) {
-      //Printf("New gen. candidate");
+      // Printf("New gen. candidate");
       flag = 0;
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
 
       // D± → π± K∓ π±
-      //Printf("Checking D± → π± K∓ π±");
+      // Printf("Checking D± → π± K∓ π±");
       if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::DPlusToPiKPi);
       }
 
       // Λc± → p± K∓ π±
       if (flag == 0) {
-        //Printf("Checking Λc± → p± K∓ π±");
+        // Printf("Checking Λc± → p± K∓ π±");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kLambdaCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
-          //Printf("Flagging the different Λc± → p± K∓ π± decay channels");
+          // Printf("Flagging the different Λc± → p± K∓ π± decay channels");
           RecoDecay::getDaughters(particle, &arrDaughIndex, array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
@@ -270,7 +297,7 @@ struct HFCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0) {
-        //Printf("Checking Ξc± → p± K∓ π±");
+        // Printf("Checking Ξc± → p± K∓ π±");
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }

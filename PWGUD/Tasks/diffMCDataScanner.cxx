@@ -37,7 +37,7 @@ struct CompatibleBCs {
 
   void process(CC const& collision, aod::BCs const& bcs)
   {
-    auto bcSlice = getMCCompatibleBCs(collision, 4, bcs);
+    auto bcSlice = MCcompatibleBCs(collision, 4, bcs);
     LOGF(debug, "  Number of possible BCs: %i", bcSlice.size());
     for (auto& bc : bcSlice) {
       LOGF(debug, "    This collision may belong to BC %lld", bc.globalBC());
@@ -108,7 +108,7 @@ struct collisionsInfo {
   {
 
     // obtain slice of compatible BCs
-    auto bcSlice = getMCCompatibleBCs(collision, 4, bct0s);
+    auto bcSlice = MCcompatibleBCs(collision, 4, bct0s);
     LOGF(info, "  Number of compatible BCs: %i", bcSlice.size());
     registry.get<TH1>(HIST("numberBCs"))->Fill(bcSlice.size());
 
