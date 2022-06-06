@@ -14,7 +14,7 @@
 /// dependencies: none
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
-#include "gammaTables.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "TVector3.h"
 

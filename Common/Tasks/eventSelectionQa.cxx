@@ -16,6 +16,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/HistogramRegistry.h"
+#include "CommonDataFormat/BunchFilling.h"
 #include "TH1F.h"
 #include "TH2F.h"
 using namespace o2::framework;
@@ -38,9 +39,17 @@ struct EventSelectionQaTask {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   bool* applySelection = NULL;
   int nBCsPerOrbit = 3564;
+  int lastRunNumber = -1;
+
+  std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternC;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB;
 
   void init(InitContext&)
   {
+    // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -54,42 +63,59 @@ struct EventSelectionQaTask {
     float maxMultFDC = isLowFlux ? 5000 : 10000;
     float maxMultZNA = isLowFlux ? 1000 : 200000;
     float maxMultZNC = isLowFlux ? 1000 : 200000;
-
-    histos.add("hTimeV0Aall", "All bcs;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeV0Call", "All bcs;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeZNAall", "All bcs;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeZNCall", "All bcs;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeT0Aall", "All bcs;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeT0Call", "All bcs;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeFDAall", "All bcs;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
-    histos.add("hTimeFDCall", "All bcs;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    const AxisSpec axisTime{700, -35, 35};
+    histos.add("hTimeV0Aall", "All bcs;V0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Call", "All bcs;V0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNAall", "All bcs;ZNA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNCall", "All bcs;ZNC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Aall", "All bcs;T0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Call", "All bcs;T0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDAall", "All bcs;FDA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDCall", "All bcs;FDC time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZACall", "All bcs; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
-    histos.add("hTimeV0Aref", "Reference bcs;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeV0Cref", "Reference bcs;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeZNAref", "Reference bcs;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeZNCref", "Reference bcs;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeT0Aref", "Reference bcs;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeT0Cref", "Reference bcs;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeFDAref", "Reference bcs;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
-    histos.add("hTimeFDCref", "Reference bcs;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeV0Abga", "BeamA-only bcs;V0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Cbga", "BeamA-only bcs;V0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNAbga", "BeamA-only bcs;ZNA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNCbga", "BeamA-only bcs;ZNC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Abga", "BeamA-only bcs;T0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Cbga", "BeamA-only bcs;T0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDAbga", "BeamA-only bcs;FDA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDCbga", "BeamA-only bcs;FDC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Abgc", "BeamC-only bcs;V0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Cbgc", "BeamC-only bcs;V0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNAbgc", "BeamC-only bcs;ZNA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNCbgc", "BeamC-only bcs;ZNC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Abgc", "BeamC-only bcs;T0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Cbgc", "BeamC-only bcs;T0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDAbgc", "BeamC-only bcs;FDA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDCbgc", "BeamC-only bcs;FDC time (ns);Entries", kTH1F, {axisTime});
+
+    histos.add("hTimeV0Aref", "Reference bcs;V0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Cref", "Reference bcs;V0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNAref", "Reference bcs;ZNA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNCref", "Reference bcs;ZNC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Aref", "Reference bcs;T0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Cref", "Reference bcs;T0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDAref", "Reference bcs;FDA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDCref", "Reference bcs;FDC time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZACref", "Reference bcs; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
-    histos.add("hTimeV0Acol", "All events;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeV0Ccol", "All events;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeZNAcol", "All events;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeZNCcol", "All events;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeT0Acol", "All events;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeT0Ccol", "All events;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeFDAcol", "All events;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
-    histos.add("hTimeFDCcol", "All events;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeV0Acol", "All events;V0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Ccol", "All events;V0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNAcol", "All events;ZNA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNCcol", "All events;ZNC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Acol", "All events;T0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Ccol", "All events;T0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDAcol", "All events;FDA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDCcol", "All events;FDC time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZACcol", "All events; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
-    histos.add("hTimeV0Aacc", "Accepted events;V0A time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeV0Cacc", "Accepted events;V0C time (ns);Entries", kTH1F, {{200, -50., 50.}});
-    histos.add("hTimeZNAacc", "Accepted events;ZNA time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeZNCacc", "Accepted events;ZNC time (ns);Entries", kTH1F, {{250, -25., 25.}});
-    histos.add("hTimeT0Aacc", "Accepted events;T0A time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeT0Cacc", "Accepted events;T0C time (ns);Entries", kTH1F, {{200, -10., 10.}});
-    histos.add("hTimeFDAacc", "Accepted events;FDA time (ns);Entries", kTH1F, {{1000, -100., 100.}});
-    histos.add("hTimeFDCacc", "Accepted events;FDC time (ns);Entries", kTH1F, {{1000, -100., 100.}});
+    histos.add("hTimeV0Aacc", "Accepted events;V0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeV0Cacc", "Accepted events;V0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNAacc", "Accepted events;ZNA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeZNCacc", "Accepted events;ZNC time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Aacc", "Accepted events;T0A time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeT0Cacc", "Accepted events;T0C time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDAacc", "Accepted events;FDA time (ns);Entries", kTH1F, {axisTime});
+    histos.add("hTimeFDCacc", "Accepted events;FDC time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZACacc", "Accepted events; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
     histos.add("hSPDClsVsTklCol", "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
     histos.add("hV0C012vsTklCol", "All events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
@@ -368,6 +394,47 @@ struct EventSelectionQaTask {
     aod::FT0s const& ft0s,
     aod::FDDs const& fdds)
   {
+    if (bcs.iteratorAt(0).runNumber() != lastRunNumber) {
+      auto bf = ccdb->getForTimeStamp<o2::BunchFilling>("GLO/GRP/BunchFilling", bcs.iteratorAt(0).timestamp());
+      beamPatternA = bf->getBeamPattern(0);
+      beamPatternC = bf->getBeamPattern(1);
+      bcPatternA = beamPatternA & ~beamPatternC;
+      bcPatternC = ~beamPatternA & beamPatternC;
+      bcPatternB = beamPatternA & beamPatternC;
+    }
+
+    // background studies
+    for (auto& bc : bcs) {
+      int localBC = bc.globalBC() % nBCsPerOrbit;
+      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+      if (bcPatternA[localBC] == 1 || bcPatternA[(localBC + 1) % nBCsPerOrbit]) {
+        histos.fill(HIST("hTimeV0Abga"), timeV0A);
+        histos.fill(HIST("hTimeT0Abga"), timeT0A);
+        histos.fill(HIST("hTimeT0Cbga"), timeT0C);
+        histos.fill(HIST("hTimeFDAbga"), timeFDA);
+        histos.fill(HIST("hTimeFDCbga"), timeFDC);
+      }
+      if (bcPatternA[(localBC + 5) % nBCsPerOrbit]) {
+        histos.fill(HIST("hTimeFDAbga"), timeFDA);
+        histos.fill(HIST("hTimeFDCbga"), timeFDC);
+      }
+      if (bcPatternC[localBC] == 1 || bcPatternC[(localBC + 1) % nBCsPerOrbit]) {
+        histos.fill(HIST("hTimeV0Abgc"), timeV0A);
+        histos.fill(HIST("hTimeT0Abgc"), timeT0A);
+        histos.fill(HIST("hTimeT0Cbgc"), timeT0C);
+        histos.fill(HIST("hTimeFDAbgc"), timeFDA);
+        histos.fill(HIST("hTimeFDCbgc"), timeFDC);
+      }
+      if (bcPatternC[(localBC + 5) % nBCsPerOrbit]) {
+        histos.fill(HIST("hTimeFDAbgc"), timeFDA);
+        histos.fill(HIST("hTimeFDCbgc"), timeFDC);
+      }
+    }
+
     // per-DF info to deduce FT0 rate
     if (bcs.size() > 0) {
       uint64_t orbit = bcs.iteratorAt(0).globalBC() / nBCsPerOrbit;
@@ -397,7 +464,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hTimeT0Call"), timeT0C);
       histos.fill(HIST("hTimeFDAall"), timeFDA);
       histos.fill(HIST("hTimeFDCall"), timeFDC);
-      if (localBC == refBC) {
+      if (bcPatternB[localBC]) {
         histos.fill(HIST("hTimeV0Aref"), timeV0A);
         histos.fill(HIST("hTimeZNAref"), timeZNA);
         histos.fill(HIST("hTimeZNCref"), timeZNC);

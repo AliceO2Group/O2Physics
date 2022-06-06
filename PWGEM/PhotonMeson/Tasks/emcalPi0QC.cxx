@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <math.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -27,7 +28,6 @@
 #include "Common/DataModel/Centrality.h"
 
 #include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
@@ -35,28 +35,72 @@
 
 #include "CommonDataFormat/InteractionRecord.h"
 
-// \struct ClusterMonitor
+#include "TLorentzVector.h"
+#include "TVector3.h"
+
+// \struct Pi0QCTask
 /// \brief Simple monitoring task for EMCal clusters
-/// \author Florian Jonas <florian.jonas@cern.ch>, Oak Ridge National Laoratory
-/// \since 30.03.2022
+/// \author Joshua Koenig <joshua.konig@cern.ch>, Goethe University Frankfurt
+/// \since 25.05.2022
 ///
-/// This task is meant to be used for monitoring EMCal clusters, allowing to track simple cluster
-/// properties, such as:
-/// - cluster energy
-/// - cluster position
-/// - cluster time
-/// - cluster shape
+/// This task is meant to be used for QC for the emcal using properties of the pi0
 /// - ...
 /// Simple event selection using the flag doEventSel is provided, which selects INT7 events if set to 1
 /// For pilot beam data, instead of relying on the event selection, one can veto specific BC IDS using the flag
 /// fDoVetoBCID.
+
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
-struct ClusterMonitor {
-  HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
+using selectedAmbiguousCluster = o2::soa::Filtered<o2::aod::EMCALAmbiguousCluster>;
+
+struct Photon {
+  Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusid = 0)
+  {
+    eta = eta_tmp;
+    phi = phi_tmp;
+    energy = energy_tmp;
+    theta = 2 * std::atan2(std::exp(-eta), 1);
+    px = energy * std::sin(theta) * std::cos(phi);
+    py = energy * std::sin(theta) * std::sin(phi);
+    pz = energy * std::cos(theta);
+    pt = std::sqrt(px * px + py * py);
+    photon.SetPxPyPzE(px, py, pz, energy);
+    id = clusid;
+  }
+
+  TLorentzVector photon;
+  float pt;
+  float px;
+  float py;
+  float pz;
+  float eta;
+  float phi;
+  float energy;
+  float theta;
+  int id;
+};
+
+struct Meson {
+  Meson(Photon p1, Photon p2) : pgamma1(p1),
+                                pgamma2(p2)
+  {
+    pMeson = p1.photon + p2.photon;
+  }
+  Photon pgamma1;
+  Photon pgamma2;
+  TLorentzVector pMeson;
+
+  float getMass() const { return pMeson.M(); };
+  float getPt() const { return pMeson.Pt(); };
+  float getOpeningAngle() const { return pgamma1.photon.Angle(pgamma2.photon.Vect()); };
+};
+
+struct Pi0QCTask {
+  HistogramRegistry mHistManager{"NeutralMesonHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
 
   // configurable parameters
@@ -65,6 +109,12 @@ struct ClusterMonitor {
   Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
+  Configurable<int> mTimeMin{"TimeMinCut", -600, "apply min timing cut (in ns)"};
+  Configurable<int> mTimeMax{"TimeMaxCut", 900, "apply min timing cut (in ns)"};
+  Configurable<float> mClusterMinM02Cut{"MinM02Cut", 0.1, "apply min M02 cut"};
+  Configurable<float> mClusterMaxM02Cut{"MaxM02Cut", 0.7, "apply max M02 cut"};
+  Configurable<float> mMinEnergyCut{"MinEnergyCut", 0.7, "apply min cluster energy cut"};
+  Configurable<int> mMinNCellsCut{"MinNCellsCut", 1, "apply min cluster number of cell cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
@@ -74,6 +124,9 @@ struct ClusterMonitor {
   // clusterization parameters
   o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+
+  // define container for photons
+  std::vector<Photon> mPhotons;
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -85,15 +138,10 @@ struct ClusterMonitor {
     // load geometry just in case we need it
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
 
-    // create histograms for cluster QA
-    Double_t timeMin = -600;
-    Double_t timeMax = 900;
-
     // create common axes
     LOG(info) << "Creating histograms";
     const o2Axis bcAxis{3501, -0.5, 3500.5};
-    const o2Axis energyAxis{makeEnergyBinningAliPhysics(), "E_{clus} (GeV)"};
-    const o2Axis timeAxis{800, timeMin, timeMax};
+    const o2Axis energyAxis{makeClusterBinning(), "#it{p}_{T} (GeV)"};
 
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -103,7 +151,7 @@ struct ClusterMonitor {
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
-    // cluster properties (matched clusters)
+    // cluster properties
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
@@ -112,7 +160,10 @@ struct ClusterMonitor {
     mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10}});
     mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50}});
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
-    mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
+
+    // meson related histograms
+    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
+    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {{400, 0, 0.8}, {energyAxis}});
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -152,13 +203,45 @@ struct ClusterMonitor {
       LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
       return;
     }
-    mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
-    if (mVertexCut > 0 && TMath::Abs(theCollision.posZ()) > mVertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
-      return;
-    }
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
+
+    ProcessClusters(theCollision, clusters, bcs);
+    ProcessMesons(theCollision, clusters, bcs);
+  }
+  PROCESS_SWITCH(Pi0QCTask, processCollisions, "Process clusters from collision", false);
+
+  /// \brief Process EMCAL clusters that are not matched to a collision
+  /// This is not needed for most users
+  void processAmbiguous(o2::aod::BC const bc, selectedAmbiguousClusters const& clusters)
+  {
+    // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
+    // this can be used as alternative to event selection (e.g. for pilot beam data)
+    // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
+    o2::InteractionRecord eventIR;
+    eventIR.setFromLong(bc.globalBC());
+    mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
+      LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
+      return;
+    }
+    if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+      return;
+    }
+    mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
+
+    // ToDo: Add mode if collision is not found
+    // ProcessClusters(theCollision, clusters, bcs);
+    // ProcessMesons(theCollision, clusters, bcs);
+  }
+  PROCESS_SWITCH(Pi0QCTask, processAmbiguous, "Process Ambiguous clusters", false);
+
+  /// \brief Process EMCAL clusters that are matched to a collisions
+  template <typename Clusters>
+  void ProcessClusters(collisionEvSelIt const& theCollision, Clusters const& clusters, o2::aod::BCs const& bcs)
+  {
+    // clear photon vector
+    mPhotons.clear();
 
     // loop over all clusters from accepted collision
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
@@ -176,97 +259,118 @@ struct ClusterMonitor {
       mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
       mHistManager.fill(HIST("clusterM02"), cluster.m02());
       mHistManager.fill(HIST("clusterM20"), cluster.m20());
-      mHistManager.fill(HIST("clusterTimeVsE"), cluster.time(), cluster.energy());
       mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
       mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
       mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
-    }
-  }
-  PROCESS_SWITCH(ClusterMonitor, processCollisions, "Process clusters from collision", false);
 
-  /// \brief Process EMCAL clusters that are not matched to a collision
-  /// This is not needed for most users
-
-  void processAmbiguous(o2::aod::BC const bc, selectedAmbiguousClusters const& clusters)
-  {
-    // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
-    // this can be used as alternative to event selection (e.g. for pilot beam data)
-    // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
-    o2::InteractionRecord eventIR;
-    eventIR.setFromLong(bc.globalBC());
-    mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
-    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
-      LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
-      return;
-    }
-    if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
-      return;
-    }
-    mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
-    // loop over ambiguous clusters
-    for (const auto& cluster : clusters) {
-      mHistManager.fill(HIST("clusterE"), cluster.energy());
-      mHistManager.fill(HIST("clusterE_SimpleBinning"), cluster.energy());
-      mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
-      mHistManager.fill(HIST("clusterM02"), cluster.m02());
-      mHistManager.fill(HIST("clusterM20"), cluster.m20());
-      mHistManager.fill(HIST("clusterTimeVsE"), cluster.time(), cluster.energy());
-      mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
-      mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
-      mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
-    }
-  }
-  PROCESS_SWITCH(ClusterMonitor, processAmbiguous, "Process Ambiguous clusters", false);
-
-  /// \brief Create binning for cluster energy axis (variable bin size)
-  /// \return vector with bin limits
-  std::vector<double> makeEnergyBinning() const
-  {
-    auto fillBinLimits = [](std::vector<double>& binlimits, double max, double binwidth) {
-      auto current = *binlimits.rbegin();
-      while (current < max) {
-        current += binwidth;
-        binlimits.emplace_back(current);
+      // apply basic cluster cuts
+      if (cluster.energy() < mMinEnergyCut) {
+        LOG(debug) << "Cluster rejected because of energy cut";
+        continue;
       }
-    };
-    std::vector<double> result = {0.};
-    fillBinLimits(result, 2., 0.1);
-    fillBinLimits(result, 5., 0.2);
-    fillBinLimits(result, 10., 0.5);
-    fillBinLimits(result, 20., 1.);
-    fillBinLimits(result, 50., 2.);
-    fillBinLimits(result, 100., 5.);
-    fillBinLimits(result, 200., 10.);
-    return result;
+      if (cluster.nCells() <= mMinNCellsCut) {
+        LOG(debug) << "Cluster rejected because of nCells cut";
+        continue;
+      }
+      if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
+        LOG(debug) << "Cluster rejected because of m02 cut";
+        continue;
+      }
+      if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
+        LOG(debug) << "Cluster rejected because of time cut";
+        continue;
+      }
+
+      // put clusters in photon vector
+      // ToDo: At the moment, the eta and phi values are not corrected for a shift of the primary vertex! Should only be a small effect but has to be corrected
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
+    }
   }
 
-  /// \brief Create binning for cluster energy axis (variable bin size)
+  /// \brief Process meson candidates, caluclate invariant mass and pT and fill histograms
+  template <typename Clusters>
+  void ProcessMesons(collisionEvSelIt const& theCollision, Clusters const& clusters, o2::aod::BCs const& bcs)
+  {
+    // if less then 2 clusters are found, skip event
+    if (mPhotons.size() < 2) {
+      return;
+    }
+
+    // loop over all photon combinations and build meson candidates
+    for (unsigned int ig1 = 0; ig1 < mPhotons.size(); ++ig1) {
+      for (unsigned int ig2 = ig1 + 1; ig2 < mPhotons.size(); ++ig2) {
+
+        // build meson from photons
+        Meson meson(mPhotons[ig1], mPhotons[ig2]);
+        mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
+
+        // calculate background candidates (rotation background)
+        CalculateBackground(meson, ig1, ig2);
+      }
+    }
+  }
+
+  /// \brief Calculate background (using rotation background method)
+  void CalculateBackground(const Meson& meson, unsigned int ig1, unsigned int ig2)
+  {
+    // if less than 3 clusters are present, skip event
+    if (mPhotons.size() < 3) {
+      return;
+    }
+    const double rotationAngle = M_PI / 2.0; //0.78539816339; // rotaion angle 90°
+
+    TLorentzVector lvRotationPhoton1; // photon candidates which get rotated
+    TLorentzVector lvRotationPhoton2; // photon candidates which get rotated
+    TVector3 lvRotationPion;          // rotation axis
+    for (unsigned int ig3 = 0; ig3 < mPhotons.size(); ++ig3) {
+      // continue if photons are identical
+      if (ig3 == ig1 || ig3 == ig2) {
+        continue;
+      }
+      // calculate rotation axis
+      lvRotationPion = (meson.pMeson).Vect();
+
+      // initialize photons for rotation
+      lvRotationPhoton1.SetPxPyPzE(mPhotons[ig1].px, mPhotons[ig1].py, mPhotons[ig1].pz, mPhotons[ig1].energy);
+      lvRotationPhoton2.SetPxPyPzE(mPhotons[ig2].px, mPhotons[ig2].py, mPhotons[ig2].pz, mPhotons[ig2].energy);
+
+      // rotate photons around rotation axis
+      lvRotationPhoton1.Rotate(rotationAngle, lvRotationPion);
+      lvRotationPhoton2.Rotate(rotationAngle, lvRotationPion);
+
+      // initialize Photon objects for rotated photons
+      Photon rotPhoton1(lvRotationPhoton1.Eta(), lvRotationPhoton1.Phi(), lvRotationPhoton1.E(), mPhotons[ig1].id);
+      Photon rotPhoton2(lvRotationPhoton2.Eta(), lvRotationPhoton2.Phi(), lvRotationPhoton2.E(), mPhotons[ig2].id);
+
+      // build meson from rotated photons
+      Meson mesonRotated1(rotPhoton1, mPhotons[ig3]);
+      Meson mesonRotated2(rotPhoton2, mPhotons[ig3]);
+
+      // Fill histograms
+      mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
+      mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
+    }
+  }
+
+  /// \brief Create binning for cluster energy/pT axis (variable bin size)
   /// direct port from binning often used in AliPhysics for debugging
   /// \return vector with bin limits
-  std::vector<double> makeEnergyBinningAliPhysics() const
+  std::vector<double> makeClusterBinning() const
   {
 
     std::vector<double> result;
-    Int_t nBinsClusterE = 235;
-    for (Int_t i = 0; i < nBinsClusterE + 1; i++) {
-      if (i < 1)
-        result.emplace_back(0.3 * i);
-      else if (i < 55)
-        result.emplace_back(0.3 + 0.05 * (i - 1));
-      else if (i < 105)
-        result.emplace_back(3. + 0.1 * (i - 55));
-      else if (i < 140)
-        result.emplace_back(8. + 0.2 * (i - 105));
-      else if (i < 170)
-        result.emplace_back(15. + 0.5 * (i - 140));
-      else if (i < 190)
-        result.emplace_back(30. + 1.0 * (i - 170));
-      else if (i < 215)
-        result.emplace_back(50. + 2.0 * (i - 190));
-      else if (i < 235)
-        result.emplace_back(100. + 5.0 * (i - 215));
-      else if (i < 245)
-        result.emplace_back(200. + 10.0 * (i - 235));
+    int nBinsPt = 179;
+    double maxPt = 60;
+    for (Int_t i = 0; i < nBinsPt + 1; i++) {
+      if (i < 100) {
+        result.emplace_back(0.10 * i);
+      } else if (i < 140) {
+        result.emplace_back(10. + 0.25 * (i - 100));
+      } else if (i < 180) {
+        result.emplace_back(20. + 1.00 * (i - 140));
+      } else {
+        result.emplace_back(maxPt);
+      }
     }
     return result;
   }
@@ -275,7 +379,7 @@ struct ClusterMonitor {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<ClusterMonitor>(cfgc, TaskName{"EMCClusterMonitorTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
-    adaptAnalysisTask<ClusterMonitor>(cfgc, TaskName{"EMCClusterMonitorTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
+    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
+    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
   return workflow;
 }

@@ -17,7 +17,7 @@
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
-#include "gammaTables.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "TVector3.h"
 
@@ -99,8 +99,7 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lMcParticle.mcCollisionId(),
           lMcParticle.globalIndex(),
           -1, // V0Id when running in reconstructed task
-          lMcParticle.statusCode(),
-          lMcParticle.flags(),
+          lMcParticle.pdgCode(), lMcParticle.statusCode(), lMcParticle.flags(),
           lMcParticle.px(), lMcParticle.py(), lMcParticle.pz(),
           lMcParticle.vx(), lMcParticle.vy(), lMcParticle.vz(), lMcParticle.vt(),
           lNDaughters,

@@ -213,10 +213,29 @@ void upload_event_selection_params()
     ccdb.storeAsTFileAny(par[i], "EventSelection/EventSelectionParams", metadata, sor, eor);
   }
 
-  if (0) { // Default Run 3 object
+  if (1) { // Default Run 3 object
     ULong64_t sorRun3 = 1543767116001;
     ULong64_t eorRun3 = 1893445200000;
     metadata["period"] = "Default Run 3";
-    ccdb.storeAsTFileAny(par[0], "EventSelection/EventSelectionParams", metadata, sorRun3, eorRun3);
+    n++;
+    par[n] = new EventSelectionParams();
+    par[n]->fV0ABBlower = -4.0; // ns
+    par[n]->fV0ABBupper = +4.0; // ns
+    par[n]->fV0ABGlower = 32.7; // ns
+    par[n]->fV0ABGupper = 32.8; // ns
+    par[n]->fFDABBlower = -4.0; // ns
+    par[n]->fFDABBupper = +4.0; // ns
+    par[n]->fFDABGlower = 32.7; // ns
+    par[n]->fFDABGupper = 32.8; // ns
+    par[n]->fFDCBBlower = -4.0; // ns
+    par[n]->fFDCBBupper = +4.0; // ns
+    par[n]->fFDCBGlower = 32.7; // ns
+    par[n]->fFDCBGupper = 32.8; // ns
+    par[n]->fT0ABBlower = -1.0; // ns
+    par[n]->fT0ABBupper = +1.0; // ns
+    par[n]->fT0CBBlower = -1.0; // ns
+    par[n]->fT0CBBupper = +1.0; // ns
+
+    ccdb.storeAsTFileAny(par[n], "EventSelection/EventSelectionParams", metadata, sorRun3, eorRun3);
   }
 }

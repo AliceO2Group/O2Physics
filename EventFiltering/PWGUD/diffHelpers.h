@@ -95,16 +95,20 @@ struct DGSelector {
       return 2;
     }
 
-    // no global tracks which are no vtx tracks
+    // no global tracks which are not vtx tracks
+    // no vtx tracks which are not global tracks
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         return 3;
+      }
+      if (diffCuts.globalTracksOnly() && !track.isGlobalTrack() && track.isPVContributor()) {
+        return 4;
       }
     }
 
     // number of vertex tracks
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      return 4;
+      return 5;
     }
 
     // PID, pt, and eta of tracks, invariant mass, and net charge
@@ -124,18 +128,18 @@ struct DGSelector {
 
         // PID
         if (!hasGoodPID(diffCuts, track)) {
-          return 5;
+          return 6;
         }
 
         // pt
         lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
         if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-          return 6;
+          return 7;
         }
 
         // eta
         if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-          return 7;
+          return 8;
         }
         netCharge += track.sign();
         ivm += lvtmp;
@@ -144,11 +148,11 @@ struct DGSelector {
 
     // net charge
     if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
-      return 8;
+      return 9;
     }
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 9;
+      return 10;
     }
 
     // if we arrive here then the event is good!
