@@ -37,6 +37,10 @@ using namespace o2::framework::expressions;
 struct TrackSelectionTask {
   // FIXME: this will be removed once we can get this via meta data
   Configurable<bool> isRun3{"isRun3", false, "temp option to enable run3 mode"};
+  Configurable<float> ptMin{"ptMin", 0.1f, "Lower cut on pt for the track selected"};
+  Configurable<float> ptMax{"ptMax", 1e10f, "Upper cut on pt for the track selected"};
+  Configurable<float> etaMin{"etaMin", -0.8, "Lower cut on eta for the track selected"};
+  Configurable<float> etaMax{"etaMax", 0.8, "Upper cut on eta for the track selected"};
 
   Produces<aod::TrackSelection> filterTable;
 
@@ -46,7 +50,11 @@ struct TrackSelectionTask {
   void init(InitContext&)
   {
     globalTracks = getGlobalTrackSelection();
+    globalTracks.SetPtRange(ptMin, ptMax);
+    globalTracks.SetEtaRange(etaMin, etaMax);
     globalTracksSDD = getGlobalTrackSelectionSDD();
+    globalTracksSDD.SetPtRange(ptMin, ptMax);
+    globalTracksSDD.SetEtaRange(etaMin, etaMax);
 
     if (isRun3) {
       globalTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track);
