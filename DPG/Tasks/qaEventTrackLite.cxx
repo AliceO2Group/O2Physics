@@ -66,6 +66,15 @@ struct qaEventTrackLite {
   Configurable<float> chi2TofMin{"chi2TofMin", -1001.f, "Max TOF chi2"};
   Configurable<float> lengthMin{"lengthMin", -1001.f, "Min length"};
 
+  // Selection 1
+  // ITS selections
+  Configurable<float> chi2ItsMaxSel1{"chi2ItsMaxSel1", 1000.f, "Max ITS chi2 Sel1"};
+  // TPC selections
+  Configurable<int> nClusterTpcMinSel1{"nClusterTpcMinSel1", -1001, "Minimum number of TPC clusters Sel1"};
+  Configurable<int> nCrossedRowsTpcMinSel1{"nCrossedRowsTpcMinSel1", -1001, "Minimum number of TPC crossed rows Sel1"};
+  Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel1{"nCrossedRowsTpcOverFindableClustersTpcMinSel1", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel1"};
+  Configurable<float> chi2TpcMaxSel1{"chi2TpcMaxSel1", 1000.f, "Max TPC chi2 Sel1"};
+
   void init(InitContext const&)
   {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
@@ -110,6 +119,11 @@ struct qaEventTrackLite {
     // kinematics
     histos.add("Tracks/relativeResoPt", "relative #it{p}_{T} resolution;#sigma(#it{p}_{T})/#it{p}_{T};#it{p}_{T};", kTH2D, {{axisPt, {500, 0., 1, "#sigma{#it{p}}/#it{p}_{T}"}}});
     histos.add("Tracks/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT(#it{p}_{T})/#it{p}_{T}#GT;#it{p}_{T};", kTProfile, {axisPt});
+    // track cuts map
+    histos.add("TrackCuts/selPtEtaPhiNoSel", "pt eta phi map no el; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiSel1", "pt eta phi map sel 1; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiSel2", "pt eta phi map sel 2; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiSel3", "pt eta phi map sel 3; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
 
     // MC histograms
     if (doprocessMCLite) {
@@ -117,6 +131,11 @@ struct qaEventTrackLite {
       histos.add("Particles/Kine/pt", "Particle #it{p}_{T}", kTH1D, {axisPt});
       histos.add("Particles/Kine/eta", "Particle #eta", kTH1D, {axisEta});
       histos.add("Particles/Kine/phi", "Particle #phi", kTH1D, {axisPhi});
+      histos.add("Particle/selPtEtaPhiMCGenPrimary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoNoSelPrimary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
     }
   }
 
@@ -145,6 +164,11 @@ struct qaEventTrackLite {
   void processDataLite(o2::soa::Filtered<aod::DPGTracks> const& tracks, aod::DPGCollisions const&)
   {
     for (const auto& track : tracks) {
+      // temporary additional selections
+      if (!applyTrackSelectionsNotFiltered(track))
+        continue;
+      Bool_t sel1 = applyTrackSelectionsNotFilteredSel1(track);
+
       histos.fill(HIST("Tracks/VertexPositionZ"), track.dpgCollision().posZ());
       histos.fill(HIST("Tracks/Kine/pt"), track.pt());
       histos.fill(HIST("Tracks/Kine/eta"), track.eta());
@@ -180,6 +204,13 @@ struct qaEventTrackLite {
       }
       histos.fill(HIST("Tracks/relativeResoPt"), track.pt(), track.ptReso());
       histos.fill(HIST("Tracks/relativeResoPtMean"), track.pt(), track.ptReso());
+
+      histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.pt(), track.eta(), track.phi());
+      if (sel1) {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.pt(), track.eta(), track.phi());
+      }
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.pt(), track.eta(), track.phi());
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.pt(), track.eta(), track.phi());
     }
   }
   PROCESS_SWITCH(qaEventTrackLite, processDataLite, "process data lite", true);
@@ -188,8 +219,22 @@ struct qaEventTrackLite {
   void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGRecoParticles>> const& tracks, aod::DPGCollisions const&, aod::DPGNonRecoParticles const& particles)
   {
     for (const auto& track : tracks) {
+
+      // temporary additional selections
+      if (!applyTrackSelectionsNotFiltered(track))
+        continue;
+      Bool_t sel1 = applyTrackSelectionsNotFilteredSel1(track);
+
       if (track.productionMode() == 0) {
         histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.eta(), track.phi());
+
+        if (sel1) {
+          histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel1Primary"), track.ptMC(), track.eta(), track.phi());
+        }
+
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel2Primary"), track.ptMC(), track.eta(), track.phi());
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel3Primary"), track.ptMC(), track.eta(), track.phi());
       }
 
       histos.fill(HIST("Particles/Kine/pt"), track.ptMC());
@@ -226,15 +271,53 @@ struct qaEventTrackLite {
       if (track.hasTOF()) {
         histos.fill(HIST("Tracks/matchedDet"), 4);
       }
+      histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.ptMC(), track.eta(), track.phi());
+      if (sel1) {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.ptMC(), track.eta(), track.phi());
+      }
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.ptMC(), track.eta(), track.phi());
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.ptMC(), track.eta(), track.phi());
     }
 
     for (const auto& particle : particles) {
       histos.fill(HIST("Particles/Kine/pt"), particle.ptMC());
       histos.fill(HIST("Particles/Kine/eta"), particle.etaMC());
       histos.fill(HIST("Particles/Kine/phi"), particle.phiMC());
+
+      if (particle.productionMode() == 0)
+        histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), particle.ptMC(), particle.etaMC(), particle.phiMC());
     }
   }
   PROCESS_SWITCH(qaEventTrackLite, processMCLite, "process MC lite", false);
+
+  template <typename T>
+  bool applyTrackSelectionsNotFiltered(const T& track)
+  {
+    if (track.tpcNClsFound() < nClusterTpcMin)
+      return false;
+    if (track.tpcNClsCrossedRows() < nCrossedRowsTpcMin)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < nCrossedRowsTpcOverFindableClustersTpcMin)
+      return false;
+    return true;
+  }
+
+  template <typename T>
+  bool applyTrackSelectionsNotFilteredSel1(const T& track)
+  {
+    if (track.tpcNClsFound() < nClusterTpcMinSel1)
+      return false;
+    if (track.tpcNClsCrossedRows() < nCrossedRowsTpcMinSel1)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < nCrossedRowsTpcOverFindableClustersTpcMinSel1)
+      return false;
+    if (track.itsChi2NCl() > chi2ItsMaxSel1)
+      return false;
+    if (track.tpcChi2NCl() > chi2TpcMaxSel1)
+      return false;
+
+    return true;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
