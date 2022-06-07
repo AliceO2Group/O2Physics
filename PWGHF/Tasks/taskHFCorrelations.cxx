@@ -78,12 +78,15 @@ struct TaskHfCorrelations {
   Configurable<std::vector<double>> bins{"pTBins", std::vector<double>{hf_cuts_d0_topik::pTBins_v}, "pT bin limits"};
 
   //  configurables for containers
-  ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
+  //ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 
+                                                        47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, 
+                                                        "multiplicity axis for histograms"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
@@ -92,14 +95,15 @@ struct TaskHfCorrelations {
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
-  //  TODO: doesn't work with derived tables, e.g. cannot use FV0M
+  //using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>; //  example for usage of dynamic columns
   using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
 
   //  Charged track filters
+
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) &&
                        (aod::track::pt > cfgCutPt) &&
-                       (requireGlobalTrackInFilter() ||
-                       (aod::track::isGlobalTrackSDD == (uint8_t) true));
+                       requireGlobalTrackInFilter();// ||
+                       //(aod::track::isGlobalTrackSDD == (uint8_t) true));
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>>;
 
   //  HF candidate filter
@@ -112,6 +116,7 @@ struct TaskHfCorrelations {
   //  =========================
   void init(o2::framework::InitContext&)
   {
+    //  EVENT HISTOGRAMS
     registry.add("eventCounter", "eventCounter", {HistType::kTH1F, {{2, 0.5, 2.5}}});
     //  set axes of the event counter histogram
     const int nBins = 2;
@@ -122,18 +127,28 @@ struct TaskHfCorrelations {
       registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
     registry.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("hVtxZ", "hVtxZ", {HistType::kTH1F, {{100, -10, 10}}});
     registry.add("hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     //  histograms for event mixing
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
     registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("hMultipliciyMixing", "hMultipliciyMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("hVtxZMixing", "hVtxZMixing", {HistType::kTH1F, {{100, -10, 10}}});
+    registry.add("hNtracksMixing", "hNtracksMixing", {HistType::kTH1F, {{500, 0, 500}}});
 
+    //  TRACK HISTOGRAMS
     //  histograms for associated particles
     registry.add("yields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
     registry.add("pT", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
     registry.add("eta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("phi", "phi", {HistType::kTH1F, {{100, 0, 2 * M_PI, "#varphi"}}});
+
+    //  histograms for particles in event mixing
+    registry.add("pTMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("etaMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("phiMixing", "phi", {HistType::kTH1F, {{100, 0, 2 * M_PI, "#varphi"}}});
 
     //  histograms for MFT tracks
     registry.add("etaphiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
@@ -185,9 +200,9 @@ struct TaskHfCorrelations {
   {
     if (processRun2 == true) {
       //  Run 2: trigger selection for data case
-      //if (!collision.alias()[kINT7]) {
-      //  return false;
-      //}
+      if (!collision.alias()[kINT7]) {
+        return false;
+      }
       //  Run 2: further offline selection
       if (!collision.sel7()) {
         return false;
@@ -215,6 +230,19 @@ struct TaskHfCorrelations {
       registry.fill(HIST("etaphi"), multiplicity, track1.eta(), track1.phi());
     }
     registry.fill(HIST("hNtracks"), Ntracks);
+  }
+
+  template <typename TTracks>
+  void fillMixingQA(float multiplicity, TTracks tracks)
+  {
+    int Ntracks = 0;
+    for (auto& track1 : tracks) {
+      Ntracks++;
+      registry.fill(HIST("pTMixing"), track1.pt());
+      registry.fill(HIST("etaMixing"), track1.eta());
+      registry.fill(HIST("phiMixing"), track1.phi());
+    }
+    registry.fill(HIST("hNtracksMixing"), Ntracks);
   }
 
   template <typename TTracks>
@@ -281,9 +309,7 @@ struct TaskHfCorrelations {
       float eta1 = track1.eta();
       float pt1 = track1.pt();
       float phi1 = track1.phi();
-      if constexpr (std::is_same_v<aod::MFTTracks, TTracksTrig>) {
-        o2::math_utils::bringTo02Pi(phi1);
-      }
+      o2::math_utils::bringTo02Pi(phi1);
 
       //  TODO: add getter for NUE trigger efficiency here
 
@@ -306,21 +332,14 @@ struct TaskHfCorrelations {
         float eta2 = track2.eta();
         float pt2 = track2.pt();
         float phi2 = track2.phi();
-        if constexpr (std::is_same_v<aod::MFTTracks, TTracksAssoc>) {
-          o2::math_utils::bringTo02Pi(phi2);
-        }
+        o2::math_utils::bringTo02Pi(phi2);
 
         //  TODO: add getter for NUE associated efficiency here
 
         //  TODO: add pair cuts on phi*
 
         float deltaPhi = phi1 - phi2;
-        if (deltaPhi > 1.5f * PI) {
-          deltaPhi -= TwoPI;
-        }
-        if (deltaPhi < -PIHalf) {
-          deltaPhi += TwoPI;
-        }
+        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * M_PI);
 
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                     eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
@@ -337,15 +356,21 @@ struct TaskHfCorrelations {
                    aod::MFTTracks const& mfttracks,
                    hfCandidates const& candidates)
   {
-    const auto multiplicity = tracks.size();
-    //const auto multiplicity = collision.multTPC(); //  multV0M ?
-    registry.fill(HIST("hMultiplicity"), multiplicity);
+    //printf("Same: Collision global index: %ld \n", collision.globalIndex());
+    //printf("Same: Collision vz: %f \n", collision.posZ());
+    //printf("Same: Collision TPC mult: %d \n", collision.multTPC());
+    //printf("Same: Tracks size: %ld \n", tracks.size());
 
     registry.fill(HIST("eventCounter"), 1);
     if (isCollisionSelected(collision) == false) {
       return;
     }
     registry.fill(HIST("eventCounter"), 2);
+
+    const auto multiplicity = tracks.size();
+    //const auto multiplicity = collision.multTPC(); //  multV0M ?
+    registry.fill(HIST("hMultiplicity"), multiplicity);
+    registry.fill(HIST("hVtxZ"), collision.posZ());
 
     if (processTPCTPChh == true) {
       fillQA(multiplicity, tracks);
@@ -371,14 +396,20 @@ struct TaskHfCorrelations {
                       aodTracks const& tracks,
                       hfCandidates const& candidates)
   {
-    const auto multiplicity = tracks.size();
-    registry.fill(HIST("hMultiplicity"), multiplicity);
+    //printf("Same: Collision global index: %ld \n", collision.globalIndex());
+    //printf("Same: Collision vz: %f \n", collision.posZ());
+    //printf("Same: Collision TPC mult: %d \n", collision.multTPC());
+    //printf("Same: Tracks size: %ld \n", tracks.size());
 
     registry.fill(HIST("eventCounter"), 1);
     if (isCollisionSelected(collision) == false) {
       return;
     }
     registry.fill(HIST("eventCounter"), 2);
+
+    const auto multiplicity = tracks.size();
+    registry.fill(HIST("hMultiplicity"), multiplicity);
+    registry.fill(HIST("hVtxZ"), collision.posZ());
 
     if (processTPCTPChh == true) {
       fillQA(multiplicity, tracks);
@@ -405,6 +436,15 @@ struct TaskHfCorrelations {
     SameKindPair<aodCollisions, aodTracks, BinningType> pair{pairBinning, cfgNoMixedEvents, -1, collisions, tracksTuple};
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      /*printf("Mixing: Collision 1 global index: %ld \n", collision1.globalIndex());
+      printf("Mixing: Collision 1 vz: %f \n", collision1.posZ());
+      printf("Mixing: Collision 1 TPC mult: %d \n", collision1.multTPC());
+      printf("Mixing: Tracks 1 size: %ld \n", tracks1.size());
+      printf("Mixing: Collision 2 global index: %ld \n", collision2.globalIndex());
+      printf("Mixing: Collision 2 vz: %f \n", collision2.posZ());
+      printf("Mixing: Collision 2 TPC mult: %d \n", collision2.multTPC());
+      printf("Mixing: Tracks 2 size: %ld \n", tracks2.size());
+*/
       if (isCollisionSelected(collision1) == false) {
         continue;
       }
@@ -413,11 +453,14 @@ struct TaskHfCorrelations {
       }
 
       const auto multiplicity = tracks1.size();
+      registry.fill(HIST("hMultipliciyMixing"), multiplicity);
+      registry.fill(HIST("hVtxZMixing"), collision1.posZ());
 
       int bin = pairBinning.getBin({collision1.posZ(), multiplicity});
       registry.fill(HIST("eventcount"), bin);
 
       if (processTPCTPChh == true) {
+        fillMixingQA(multiplicity, tracks1);
         fillCorrelations(mixedTPCTPCCh, tracks1, tracks2, multiplicity, collision1.posZ());
       }
     }
