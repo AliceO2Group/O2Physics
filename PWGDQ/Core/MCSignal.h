@@ -133,6 +133,15 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
   auto currentMCParticle = track;
   // loop over the generations specified for this prong
   for (int j = 0; j < fProngs[i].fNGenerations; j++) {
+    // if generations are checked in time (grandmother->mother->daughter) reverse order of MCProng variables to start at the end
+    if (fProngs[i].fCheckGenerationsInTime) {
+      std::reverse(fProngs[i].fPDGcodes.begin(), fProngs[i].fPDGcodes.end());
+      std::reverse(fProngs[i].fCheckBothCharges.begin(), fProngs[i].fCheckBothCharges.end());
+      std::reverse(fProngs[i].fExcludePDG.begin(), fProngs[i].fExcludePDG.end());
+      std::reverse(fProngs[i].fSourceBits.begin(), fProngs[i].fSourceBits.end());
+      std::reverse(fProngs[i].fExcludeSource.begin(), fProngs[i].fExcludeSource.end());
+      std::reverse(fProngs[i].fUseANDonSourceBitMap.begin(), fProngs[i].fUseANDonSourceBitMap.end());
+    }
     // check the PDG code
     if (!fProngs[i].TestPDG(j, currentMCParticle.pdgCode())) {
       return false;
@@ -147,23 +156,46 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         }
       }
     }
-    // make sure that a mother exists in the stack before moving one generation further in history
-    if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-      return false;
-    }
-    if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-      /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
-        LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
-      }*/
-      currentMCParticle = currentMCParticle.template mothers_first_as<U>();
-      // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-      // currentMCParticle = currentMCParticle.template mother0_as<U>();
+
+    // if checking back in time: look for mother
+    // else (checking in time): look for daughter
+    if (!fProngs[i].fCheckGenerationsInTime) {
+      // make sure that a mother exists in the stack before moving one generation further in history
+      if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+        return false;
+      }
+      if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+        /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+          LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+        }*/
+        currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+        // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+        // currentMCParticle = currentMCParticle.template mother0_as<U>();
+      }
+    } else {
+      // make sure that a daughter exists in the stack before moving one generation younger
+      if (!currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+        return false;
+      }
+      if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+        currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+        // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+      }
     }
   }
 
   if (checkSources) {
     currentMCParticle = track;
     for (int j = 0; j < fProngs[i].fNGenerations; j++) {
+      // if generations are checked in time (grandmother->mother->daughter) reverse order of MCProng variables to start at the end
+      if (fProngs[i].fCheckGenerationsInTime) {
+        std::reverse(fProngs[i].fPDGcodes.begin(), fProngs[i].fPDGcodes.end());
+        std::reverse(fProngs[i].fCheckBothCharges.begin(), fProngs[i].fCheckBothCharges.end());
+        std::reverse(fProngs[i].fExcludePDG.begin(), fProngs[i].fExcludePDG.end());
+        std::reverse(fProngs[i].fSourceBits.begin(), fProngs[i].fSourceBits.end());
+        std::reverse(fProngs[i].fExcludeSource.begin(), fProngs[i].fExcludeSource.end());
+        std::reverse(fProngs[i].fUseANDonSourceBitMap.begin(), fProngs[i].fUseANDonSourceBitMap.end());
+      }
       if (!fProngs[i].fSourceBits[j]) {
         // no sources required for this generation
         continue;
@@ -202,23 +234,38 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       if (fProngs[i].fUseANDonSourceBitMap[j] && (sourcesDecision != fProngs[i].fSourceBits[j])) {
         return false;
       }
-      // move one generation back in history
-      // make sure that a mother exists in the stack before moving one generation further in history
-      if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-        return false;
-      }
-      if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-        /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
-          LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+
+      // if checking back in time: look for mother
+      // else (checking in time): look for daughter
+      if (!fProngs[i].fCheckGenerationsInTime) {
+        // move one generation back in history
+        // make sure that a mother exists in the stack before moving one generation further in history
+        if (!currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+          return false;
+        }
+        if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
+          /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
+            LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
+          }*/
+          currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+          // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+          // currentMCParticle = currentMCParticle.template mother0_as<U>();
+        }
+        /*if (j < fProngs[i].fNGenerations - 1) {
+          currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
+          //currentMCParticle = currentMCParticle.template mother0_as<U>();
         }*/
-        currentMCParticle = currentMCParticle.template mothers_first_as<U>();
-        // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-        // currentMCParticle = currentMCParticle.template mother0_as<U>();
+      } else {
+        // move one generation further in history
+        // make sure that a daughter exists in the stack before moving one generation younger
+        if (!currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+          return false;
+        }
+        if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
+          currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+          // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+        }
       }
-      /*if (j < fProngs[i].fNGenerations - 1) {
-        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());
-        //currentMCParticle = currentMCParticle.template mother0_as<U>();
-      }*/
     }
   }
 
