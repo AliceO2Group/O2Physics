@@ -123,9 +123,10 @@ struct TrackPropagation {
     initCCDB(bcs.begin());
 
     gpu::gpustd::array<float, 2> dcaInfo;
-    o2::dataformats::VertexBase vtx;
 
     for (auto& track : tracks) {
+      dcaInfo[0] = 999;
+      dcaInfo[1] = 999;
       auto trackPar = getTrackPar(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
@@ -153,8 +154,9 @@ struct TrackPropagation {
 
     o2::dataformats::DCA dcaInfoCov;
     o2::dataformats::VertexBase vtx;
-    for (auto& track : tracks) {
 
+    for (auto& track : tracks) {
+      dcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
