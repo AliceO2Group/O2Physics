@@ -68,11 +68,11 @@ struct fddQA {
       std::bitset<8> fddTriggers = fdd.triggerMask();
       bool orA = fddTriggers[o2::fdd::Triggers::bitA];
       bool orC = fddTriggers[o2::fdd::Triggers::bitC];
-      bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
-      bool central = fddTriggers[o2::fdd::Triggers::bitCen];
-      bool semiCentral = fddTriggers[o2::fdd::Triggers::bitSCen];
-      bool outputsAreBlocked = fddTriggers[o2::fdd::Triggers::bitOutputsAreBlocked];
-      bool dataIsValid = fddTriggers[o2::fdd::Triggers::bitDataIsValid];
+      // bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
+      // bool central = fddTriggers[o2::fdd::Triggers::bitCen];
+      // bool semiCentral = fddTriggers[o2::fdd::Triggers::bitSCen];
+      // bool outputsAreBlocked = fddTriggers[o2::fdd::Triggers::bitOutputsAreBlocked];
+      // bool dataIsValid = fddTriggers[o2::fdd::Triggers::bitDataIsValid];
       /*std::cout<<" orA "<< orA <<" orC "<< orC << " vertex "<<vertex<<" Central "<<central<<" SemiCentral "
                 <<semiCentral<<" OutputsAreBlocked "<<outputsAreBlocked<<" DataIsValid "<<dataIsValid<<std::endl;*/
       hNcontribFDD->Fill(nContributors);
