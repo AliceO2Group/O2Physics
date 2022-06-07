@@ -24,6 +24,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
+          persist-credentials: false
 
       # MegaLinter
       - name: MegaLinter
