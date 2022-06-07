@@ -13,6 +13,7 @@ o2physics_add_library(AnalysisCore
                SOURCES TrackSelection.cxx
                        OrbitRange.cxx
                        PID/ParamBase.cxx
+                       TrackSelectionDefaults.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(AnalysisCore
