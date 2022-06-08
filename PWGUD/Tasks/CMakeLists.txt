@@ -33,3 +33,8 @@ o2physics_add_dpl_workflow(diff-qa
                   SOURCES diffQA.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
                   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dgcand-analyzer
+                  SOURCES DGCandAnalyzer.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnaparHolder O2Physics::PIDSelector
+                  COMPONENT_NAME Analysis)

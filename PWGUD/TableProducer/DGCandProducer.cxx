@@ -36,7 +36,7 @@
 //           o2-analysis-timestamp $copts |
 //           o2-analysis-track-propagation $copts |
 //           o2-analysis-multiplicity-table $copts |
-//           o2-analysis-ft0-corrected-table $copts |\
+//           o2-analysis-ft0-corrected-table $copts |
 //           o2-analysis-event-selection $copts |
 //           o2-analysis-trackextension $copts |
 //           o2-analysis-trackselection $copts |
@@ -80,8 +80,8 @@ struct DGCandProducer {
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                        aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-                        aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
   void process(CC const& collision,
@@ -113,7 +113,9 @@ struct DGCandProducer {
       // update DGTracks tables
       for (auto& track : tracks) {
         if (track.isPVContributor()) {
-          outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign());
+          outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(),
+                       track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                       track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
         }
       }
     }

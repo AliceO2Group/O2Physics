@@ -18,7 +18,7 @@
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/Core/PID/PIDResponse.h"
 
 namespace o2::aod
 {
@@ -31,16 +31,14 @@ using DGCandidate = DGCandidates::iterator;
 namespace dgtrack
 {
 DECLARE_SOA_INDEX_COLUMN(DGCandidate, dgCandidate); //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                  //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);             //!
 } // namespace dgtrack
 DECLARE_SOA_TABLE(DGTracks, "AOD", "DGTRACKS", //!
                   o2::soa::Index<>,
                   dgtrack::DGCandidateId,
-                  track::Pt, track::Eta, track::Phi,
-                  track::Sign);
+                  track::Pt, track::Eta, track::Phi, dgtrack::Sign,
+                  pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 using DGTrack = DGTracks::iterator;
 } // namespace o2::aod
 
