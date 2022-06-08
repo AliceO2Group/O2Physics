@@ -108,7 +108,7 @@ struct GammaConversions {
     {"hIsPhotonSelected", "hIsPhotonSelected;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}},
     {"hTruePhotonSelection", "hTruePhotonSelection;cut categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
 
-  enum ePhotonCuts{
+  enum class ePhotonCuts{
     kV0In,
     kTrackEta,
     kTrackPt,
@@ -124,20 +124,20 @@ struct GammaConversions {
     kV0Out
   };
 
-  std::map<size_t, std::string> fPhotonCutLabels{
-    {kV0In, "kV0In"},
-    {kTrackEta, "kTrackEta"},
-    {kTrackPt, "kTrackPt"},
-    {kElectronPID, "kElectronPID"},
-    {kPionRejLowMom, "kPionRejLowMom"},
-    {kPionRejHighMom, "kPionRejHighMom"},
-    {kTPCFoundOverFindableCls, "kTPCFoundOverFindableCls"},
-    {kTPCCrossedRowsOverFindableCls, "kTPCCrossedRowsOverFindableCls"},
-    {kV0Radius, "kV0Radius"},
-    {kArmenteros, "kArmenteros"},
-    {kPsiPair, "kPsiPair"},
-    {kCosinePA, "kCosinePA"},
-    {kV0Out, "kV0Out"}
+  std::map<ePhotonCuts, std::string> fPhotonCutLabels{
+    {ePhotonCuts::kV0In, "kV0In"},
+    {ePhotonCuts::kTrackEta, "kTrackEta"},
+    {ePhotonCuts::kTrackPt, "kTrackPt"},
+    {ePhotonCuts::kElectronPID, "kElectronPID"},
+    {ePhotonCuts::kPionRejLowMom, "kPionRejLowMom"},
+    {ePhotonCuts::kPionRejHighMom, "kPionRejHighMom"},
+    {ePhotonCuts::kTPCFoundOverFindableCls, "kTPCFoundOverFindableCls"},
+    {ePhotonCuts::kTPCCrossedRowsOverFindableCls, "kTPCCrossedRowsOverFindableCls"},
+    {ePhotonCuts::kV0Radius, "kV0Radius"},
+    {ePhotonCuts::kArmenteros, "kArmenteros"},
+    {ePhotonCuts::kPsiPair, "kPsiPair"},
+    {ePhotonCuts::kCosinePA, "kCosinePA"},
+    {ePhotonCuts::kV0Out, "kV0Out"}
   };
 
   enum class eV0McValidation{
@@ -315,7 +315,7 @@ struct GammaConversions {
 
   void fillIsPhotonSelected(ePhotonCuts theCase)
   {
-    fillTH1(fMyRegistry.mV0.mSpecialHistos.mContainer, "hIsPhotonSelected", theCase);
+    fillTH1(fMyRegistry.mV0.mSpecialHistos.mContainer, "hIsPhotonSelected", static_cast<int>(theCase));
   }
 
   void fillTruePhotonSelection(eV0McValidation theCase)
@@ -626,13 +626,13 @@ struct GammaConversions {
   {
     // single track eta cut
     if (TMath::Abs(theTrack.eta()) > fTrackEtaMax) {
-      fillIsPhotonSelected(kTrackEta);
+      fillIsPhotonSelected(ePhotonCuts::kTrackEta);
       return kFALSE;
     }
 
     // single track pt cut
     if (theTrack.pt() < fTrackPtMin) {
-      fillIsPhotonSelected(kTrackPt);
+      fillIsPhotonSelected(ePhotonCuts::kTrackPt);
       return kFALSE;
     }
 
@@ -641,12 +641,12 @@ struct GammaConversions {
     }
 
     if (theTrack.tpcFoundOverFindableCls() < fMinTPCFoundOverFindableCls) {
-      fillIsPhotonSelected(kTPCFoundOverFindableCls);
+      fillIsPhotonSelected(ePhotonCuts::kTPCFoundOverFindableCls);
       return kFALSE;
     }
 
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
-      fillIsPhotonSelected(kTPCCrossedRowsOverFindableCls);
+      fillIsPhotonSelected(ePhotonCuts::kTPCCrossedRowsOverFindableCls);
       return kFALSE;
     }
     return kTRUE;
@@ -667,22 +667,22 @@ struct GammaConversions {
   bool v0PassesPhotonCuts(const TV0& theV0, float theV0CosinePA)
   {
     if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
-      fillIsPhotonSelected(kV0Radius);
+      fillIsPhotonSelected(ePhotonCuts::kV0Radius);
       return kFALSE;
     }
 
     if (fV0PhotonAsymmetryMax > 0. && !ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
-      fillIsPhotonSelected(kArmenteros);
+      fillIsPhotonSelected(ePhotonCuts::kArmenteros);
       return kFALSE;
     }
 
     if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
-      fillIsPhotonSelected(kPsiPair);
+      fillIsPhotonSelected(ePhotonCuts::kPsiPair);
       return kFALSE;
     }
 
     if (fV0CosPAngleMin > 0. && theV0CosinePA < fV0CosPAngleMin) {
-      fillIsPhotonSelected(kCosinePA);
+      fillIsPhotonSelected(ePhotonCuts::kCosinePA);
       return kFALSE;
     }
     return kTRUE;
@@ -691,7 +691,7 @@ struct GammaConversions {
   template <typename TV0, typename TTRACKS>
   void fillReconstructedInfoHistograms(int theBefAftRec, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
   {
-    fillIsPhotonSelected(!theBefAftRec ? kV0In : kV0Out);
+    fillIsPhotonSelected(!theBefAftRec ? ePhotonCuts::kV0In : ePhotonCuts::kV0Out);
 
     fillTrackHistograms(
       fMyRegistry.mTrack.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
@@ -721,7 +721,7 @@ struct GammaConversions {
   {
     // TPC Electron Line
     if (fPIDnSigmaElectronMin && (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMax)) {
-      fillIsPhotonSelected(kElectronPID);
+      fillIsPhotonSelected(ePhotonCuts::kElectronPID);
       return kFALSE;
     }
 
@@ -730,14 +730,14 @@ struct GammaConversions {
       // low pt Pion rej
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
-          fillIsPhotonSelected(kPionRejLowMom);
+          fillIsPhotonSelected(ePhotonCuts::kPionRejLowMom);
           return kFALSE;
         }
       }
       // High Pt Pion rej
       else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
-          fillIsPhotonSelected(kPionRejHighMom);
+          fillIsPhotonSelected(ePhotonCuts::kPionRejHighMom);
           return kFALSE;
         }
       }
