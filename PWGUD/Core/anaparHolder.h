@@ -21,9 +21,8 @@ class anaparHolder
 {
  public:
   // constructor
-  anaparHolder(int MinNTracks = 0, int MaxNTracks = 10000,
-               int NCombine = 0,
-               std::vector<float> PIDinfo = {0.}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNCombine{NCombine}, mPIDinfo{PIDinfo}
+  anaparHolder(int NCombine = 0,
+               std::vector<float> TPCnSigmas = {0.}) : mNCombine{NCombine}, mTPCnSigmas{TPCnSigmas}
   {
     // definition of maximum 10 particles
     // for each particle 12 parameters
@@ -37,27 +36,19 @@ class anaparHolder
     //
     // the limits (min/max) of particle PID are inclusive, for all other particles the limits are exclusive
     //
-    mPIDinfo.resize(120, 0.);
+    mTPCnSigmas.resize(120, 0.);
   }
 
-  // setter
-  void SetNTracks(int MinNTracks, int MaxNTracks);
-
   // getter
-  int minNTracks() const;
-  int maxNTracks() const;
   int nCombine() const;
-  std::vector<float> PIDinfo() const;
+  std::vector<float> TPCnSigmas() const;
 
  private:
-  // number of tracks
-  int mMinNTracks, mMaxNTracks; // Number of allowed tracks
-
   // number of tracks to combine
   int mNCombine;
 
   // PID information
-  std::vector<float> mPIDinfo;
+  std::vector<float> mTPCnSigmas;
 
   ClassDefNV(anaparHolder, 1);
 };

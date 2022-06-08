@@ -59,7 +59,7 @@ struct pidSelector {
 
   // getters
   std::vector<DGParticle> IVMs() { return mIVMs; }
-  float getNSigma(aod::DGTrack track, int hypo);
+  float getTPCnSigma(aod::DGTrack track, int hypo);
   bool isGoodTrack(aod::DGTrack track, int cnt);
 
  private:

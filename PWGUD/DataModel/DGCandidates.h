@@ -22,10 +22,14 @@
 
 namespace o2::aod
 {
+namespace dgcand
+{
+DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t); //!
+} // namespace dgcand
 DECLARE_SOA_TABLE(DGCandidates, "AOD", "DGCANDIDATES", //!
                   o2::soa::Index<>, bc::RunNumber, timestamp::Timestamp,
                   collision::PosX, collision::PosY, collision::PosZ,
-                  collision::NumContrib);
+                  collision::NumContrib, dgcand::NetCharge);
 using DGCandidate = DGCandidates::iterator;
 
 namespace dgtrack

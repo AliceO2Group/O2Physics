@@ -51,6 +51,7 @@ float particleMass(int pid)
 };
 
 // -----------------------------------------------------------------------------
+// find all permutations of n0 elements
 void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms)
 {
 
@@ -90,6 +91,7 @@ void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vecto
 }
 
 //-----------------------------------------------------------------------------
+// find all permutations of n0 elements
 int permutations(int n0, std::vector<std::vector<uint>>& perms)
 {
   // initialize with first trivial combination
@@ -111,8 +113,7 @@ int permutations(int n0, std::vector<std::vector<uint>>& perms)
 }
 
 //-----------------------------------------------------------------------------
-// find iterative selections of np out of n0
-//
+// find selections of np out of n0
 void combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
                   std::vector<std::vector<uint>>& combs)
 {
@@ -197,14 +198,15 @@ std::vector<std::vector<uint>> combinations(int nCombine, int nPool)
 DGParticle::DGParticle(anaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb)
 {
   // compute invariant mass
-  TLorentzVector lvtmp(0., 0., 0., 0.);
-  TLorentzVector IVM(0., 0., 0., 0.);
-  auto pidinfo = anaPars.PIDinfo();
+  TLorentzVector lvtmp, IVM;
+  auto pidinfo = anaPars.TPCnSigmas();
 
-  // loop over track combinations
+  // loop over tracks
+  auto cnt = -1;
   for (auto ind : comb) {
+    cnt++;
     auto track = dgtracks.rawIteratorAt(ind);
-    lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), particleMass(pidinfo[ind * 12]));
+    lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), particleMass(pidinfo[cnt * 12]));
     IVM += lvtmp;
   }
 
@@ -223,7 +225,7 @@ void DGParticle::Print()
 }
 
 // -----------------------------------------------------------------------------
-float pidSelector::getNSigma(aod::DGTrack track, int hypo)
+float pidSelector::getTPCnSigma(aod::DGTrack track, int hypo)
 {
   switch (hypo) {
     case 0:
@@ -245,7 +247,7 @@ float pidSelector::getNSigma(aod::DGTrack track, int hypo)
 bool pidSelector::isGoodTrack(aod::DGTrack track, int cnt)
 {
   // extract PID information
-  auto pidinfo = mAnaPars.PIDinfo();
+  auto pidinfo = mAnaPars.TPCnSigmas();
 
   // get pid of particle cnt
   auto ind = cnt * 12;
@@ -263,7 +265,7 @@ bool pidSelector::isGoodTrack(aod::DGTrack track, int cnt)
 
   // check nSigma
   for (auto hypo = 0; hypo < 5; hypo++) {
-    auto nSigma = getNSigma(track, hypo);
+    auto nSigma = getTPCnSigma(track, hypo);
     ind += 2;
     if (hypo == pidhypo) {
       // inclusive limits

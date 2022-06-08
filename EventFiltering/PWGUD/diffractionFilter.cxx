@@ -41,8 +41,9 @@
 //               o2-analysis-multiplicity-table $copts |
 //               o2-analysis-trackextension $copts |
 //               o2-analysis-trackselection $copts |
-//               o2-analysis-pid-tpc $copts |
-//               o2-analysis-pid-tof $copts |
+//               o2-analysis-pid-tpc-full $copts |
+//               o2-analysis-pid-tof-base $copts |
+//               o2-analysis-pid-tof-full $copts |
 //               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
 
 // \author P. Buehler , paul.buehler@oeaw.ac.at
@@ -108,8 +109,9 @@ struct DGFilterRun3 {
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                        aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-                        aod::TOFSignal, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
   // using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 

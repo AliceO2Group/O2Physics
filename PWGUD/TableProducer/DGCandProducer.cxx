@@ -40,9 +40,9 @@
 //           o2-analysis-event-selection $copts |
 //           o2-analysis-trackextension $copts |
 //           o2-analysis-trackselection $copts |
-//           o2-analysis-pid-tpc $copts |
+//           o2-analysis-pid-tpc-full $copts |
 //           o2-analysis-pid-tof-base $copts |
-//           o2-analysis-pid-tof $copts |
+//           o2-analysis-pid-tof-full $copts |
 //           o2-analysis-ud-dgcand-producer $copts > DGCandProducer.log
 //
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
@@ -57,6 +57,21 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+                      aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                      aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
+template <typename TCs>
+int8_t netCharge(TCs tracks)
+{
+
+  int8_t nch = 0;
+  for (auto track : tracks) {
+    nch += track.sign();
+  }
+  return nch;
+}
 
 struct DGCandProducer {
 
@@ -108,7 +123,7 @@ struct DGCandProducer {
       // update DGCandidates tables
       outputCollisions(bc.runNumber(), bc.timestamp(),
                        collision.posX(), collision.posY(), collision.posZ(),
-                       collision.numContrib());
+                       collision.numContrib(), netCharge(tracks));
 
       // update DGTracks tables
       for (auto& track : tracks) {

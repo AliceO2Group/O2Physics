@@ -9,15 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \brief Saves relevant information of DG candidates
+// \brief Analyses reduced tables (DGCandidates, DGTracks) of DG candidates produced with DGCandProducer
 //
 //     options:
-//           anaPars.mMinNTracks(0)
-//           anaPars.mMaxNTracks(10000)
 //           anaPars.mNCombine(2)
-//           anaPars.mPIDinfo(120, 0.)
+//           anaPars.mTPCnSigmas(120, 0.)
 //
-//           mPIDinfo contains 10 blocks (particles) of 12 elements:
+//           mTPCnSigmas contains 10 blocks (particles) of 12 elements:
 //              0: PID
 //              1: sign
 //           2, 3: min/max nsigma for e
@@ -39,6 +37,7 @@
 #include "Framework/AnalysisTask.h"
 
 #include "Common/Core/PID/PIDResponse.h"
+#include "EventFiltering/PWGUD/cutHolder.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 #include "PWGUD/Core/pidSelector.h"
 
@@ -48,23 +47,27 @@ using namespace o2::framework::expressions;
 
 struct DGCandAnalyzer {
 
-  // get a cutHolder
+  // get a cutHolder and anaparHolder
+  cutHolder diffCuts = cutHolder();
+  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   anaparHolder anaPars = anaparHolder();
   MutableConfigurable<anaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
 
   // PID selector
   pidSelector pidsel = pidSelector();
-  TList* IVMs = new TList();
 
+  // define histograms
   HistogramRegistry registry{
     "registry",
     {
+      {"nIVMs", "#nIVMs", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
       {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
     }};
 
   void init(InitContext&)
   {
+    diffCuts = (cutHolder)DGCuts;
     anaPars = (anaparHolder)DGPars;
     pidsel.init(anaPars);
   }
@@ -73,14 +76,20 @@ struct DGCandAnalyzer {
   {
 
     // skip events with too few/many tracks
-    if (dgcand.numContrib() < anaPars.minNTracks() || dgcand.numContrib() > anaPars.maxNTracks()) {
+    if (dgcand.numContrib() < diffCuts.minNTracks() || dgcand.numContrib() > diffCuts.maxNTracks()) {
       return;
     }
 
-    // find track combinations which are compatible with anaPars.PIDinfo()
-    auto nCombs = pidsel.computeIVMs(anaPars.nCombine(), dgtracks);
+    // skip events with out-of-range net charge
+    if (dgcand.netCharge() < diffCuts.minNetCharge() || dgcand.netCharge() > diffCuts.maxNetCharge()) {
+      return;
+    }
+
+    // find track combinations which are compatible with anaPars.TPCnSigmas()
+    auto nIVMs = pidsel.computeIVMs(anaPars.nCombine(), dgtracks);
 
     // update histograms
+    registry.get<TH1>(HIST("nIVMs"))->Fill(nIVMs, 1.);
     for (auto ivm : pidsel.IVMs()) {
       registry.get<TH2>(HIST("IVMptSysDG"))->Fill(ivm.M(), ivm.Perp());
       for (auto ind : ivm.trkinds()) {

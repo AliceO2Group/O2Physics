@@ -11,15 +11,6 @@
 
 #include "anaparHolder.h"
 
-// setter
-void anaparHolder::SetNTracks(int MinNTracks, int MaxNTracks)
-{
-  mMinNTracks = MinNTracks;
-  mMaxNTracks = MaxNTracks;
-}
-
 // getter
-int anaparHolder::minNTracks() const { return mMinNTracks; }
-int anaparHolder::maxNTracks() const { return mMaxNTracks; }
 int anaparHolder::nCombine() const { return mNCombine; }
-std::vector<float> anaparHolder::PIDinfo() const { return mPIDinfo; }
+std::vector<float> anaparHolder::TPCnSigmas() const { return mTPCnSigmas; }
