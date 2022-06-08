@@ -102,7 +102,7 @@ struct ueCharged {
     ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
   }
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
 
   float DeltaPhi(float phia, float phib,
                  float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)

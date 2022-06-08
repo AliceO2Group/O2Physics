@@ -81,7 +81,7 @@ struct TaskLc {
 
   // FIXME: Add ALICE 2/3 switch!
   // void process(aod::HfCandProng3 const& candidates)
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksExtended>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Filtered<soa::Join<aod::HfCandProng3, aod::HFSelLcCandidate>> const& candidates)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {

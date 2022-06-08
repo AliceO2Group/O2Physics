@@ -51,7 +51,7 @@ struct PropagatedTracksQa {
       {"hdeltaphivspT", "#Delta#varphi vs. #it{p}_{T}", {HistType::kTH2F, {{200, 0, 20}, {200, -1., 1}}}},
     }};
 
-  void process(aod::Collision const& collision, aod::TracksIU const& tracksIU, soa::Join<aod::Tracks, aod::TracksExtended> const& tracks)
+  void process(aod::Collision const& collision, aod::TracksIU const& tracksIU, soa::Join<aod::Tracks, aod::TracksDCA> const& tracks)
   {
     registry.fill(HIST("hcollx"), collision.posX());
     for (auto& track : tracksIU) {

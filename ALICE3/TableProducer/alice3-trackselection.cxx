@@ -49,7 +49,7 @@ struct Alice3TrackSelectionTask {
     histos.add("eta/nonselected", "Not selected;#eta;Entries", HistType::kTH1F, {{100, -2, 2}});
   }
 
-  void process(soa::Join<aod::Tracks, aod::TracksExtended> const& tracks, aod::Collisions const&)
+  void process(soa::Join<aod::Tracks, aod::TracksDCA> const& tracks, aod::Collisions const&)
   {
     filterTable.reserve(tracks.size());
     for (auto& track : tracks) {

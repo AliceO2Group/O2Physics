@@ -45,17 +45,17 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
-using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,

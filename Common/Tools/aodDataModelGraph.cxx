@@ -79,7 +79,7 @@ static std::vector<std::pair<std::string, StyleType>> tableStyles = {
   {"V0Datas", StyleType::GREEN},
   {"CascData", StyleType::GREEN},
   {"TrackSelection", StyleType::GREEN},
-  {"TracksExtended", StyleType::GREEN},
+  {"TracksDCA", StyleType::GREEN},
   {"Transient", StyleType::GREEN},
   {"Extension", StyleType::GREEN},
 };
@@ -258,7 +258,7 @@ int main(int, char**)
   displayEntity<FV0Cs>();
   displayEntity<Run2BCInfos>();
 
-  displayEntities<Tracks, TracksCov, TracksExtra, TracksExtended, TrackSelection,
+  displayEntities<Tracks, TracksCov, TracksExtra, TracksDCA, TrackSelection,
                   pidTOFFullEl, pidTOFFullMu, pidTOFFullPi,
                   pidTOFFullKa, pidTOFFullPr, pidTOFFullDe,
                   pidTOFFullTr, pidTOFFullHe, pidTOFFullAl,

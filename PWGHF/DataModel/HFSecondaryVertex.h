@@ -81,12 +81,12 @@ DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
                   hf_pvrefit_track::PvRefitDcaZ);
 
 using BigTracks = soa::Join<Tracks, TracksCov, TracksExtra>;
-using BigTracksExtended = soa::Join<BigTracks, aod::TracksExtended>;
+using BigTracksExtended = soa::Join<BigTracks, aod::TracksDCA>;
 using BigTracksMC = soa::Join<BigTracks, McTrackLabels>;
 using BigTracksPID = soa::Join<BigTracks,
                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksExtended>;
+using BigTracksPIDExtended = soa::Join<BigTracksPID, aod::TracksDCA>;
 
 // FIXME: this is a workaround until we get the index columns to work with joins.
 
