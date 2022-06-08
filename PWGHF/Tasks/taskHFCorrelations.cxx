@@ -339,6 +339,7 @@ struct TaskHfCorrelations {
         //  TODO: add pair cuts on phi*
 
         float deltaPhi = phi1 - phi2;
+        //  set range of delta phi in (-pi/2 , 3/2*pi)
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * M_PI);
 
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
