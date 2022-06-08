@@ -41,10 +41,12 @@ struct TrackSelectionFlags {
   static constexpr flagtype kDCAxy = 1 << 13;
   static constexpr flagtype kDCAz = 1 << 14;
   static constexpr flagtype kGlobalTrack = kTrackType | kPtRange | kEtaRange | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
+  static constexpr flagtype kGlobalTrackWoPtEta = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
 };
 
 #define requireTrackCutInFilter(mask) (aod::track::trackCutFlag & aod::track::mask) == aod::track::mask
 #define requireGlobalTrackInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrack)
+#define requireGlobalTrackWoPtEtaInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoPtEta)
 
 // Columns to store track filter decisions
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
