@@ -181,17 +181,18 @@ std::vector<std::vector<uint>> combinations(int nCombine, int nPool)
   auto nCombs = combinations(nPool, nCombine, combs);
 
   // permute the combinations
+  std::vector<std::vector<uint>> copes;
   for (auto comb : combs) {
     for (auto perm : perms) {
       std::vector<uint> cope(nCombine, 0);
       for (auto ii = 0; ii < nCombine; ii++) {
         cope[perm[ii]] = comb[ii];
       }
-      combs.push_back(cope);
+      copes.push_back(cope);
     }
   }
 
-  return combs;
+  return copes;
 }
 
 // -----------------------------------------------------------------------------
@@ -293,8 +294,6 @@ int pidSelector::computeIVMs(int nCombine, aod::DGTracks const& dgtracks)
 
   // loop over combinations
   for (auto comb : combs) {
-    LOGF(info, "");
-
     // is dgtracks compatible with PID requirements?
     bool isGoodComb = true;
     auto cnt = -1;

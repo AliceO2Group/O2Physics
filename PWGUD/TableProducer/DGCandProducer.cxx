@@ -65,10 +65,11 @@ using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
 template <typename TCs>
 int8_t netCharge(TCs tracks)
 {
-
   int8_t nch = 0;
   for (auto track : tracks) {
-    nch += track.sign();
+    if (track.isPVContributor()) {
+      nch += track.sign();
+    }
   }
   return nch;
 }
