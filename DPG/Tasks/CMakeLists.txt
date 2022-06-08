@@ -34,6 +34,11 @@ o2physics_add_dpl_workflow(qa-impact-parameter
         O2::DetectorsVertexing
         COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(qa-k0s-tracking-efficiency
+                    SOURCES qaK0sTrackingEfficiency.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # PID QA
 
 ## TOF
