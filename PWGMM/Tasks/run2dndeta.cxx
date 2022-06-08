@@ -104,7 +104,7 @@ struct PseudorapidityDensity {
 
   expressions::Filter trackTypeFilter = (aod::track::trackType == (uint8_t)aod::track::TrackTypeEnum::Run2Tracklet);
 
-  using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>>;
+  using Trks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>;
   Partition<Trks> sample = nabs(aod::track::eta) < estimatorEta;
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, Trks const& tracks)
@@ -158,7 +158,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  void processBinned(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& tracks)
+  void processBinned(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>> const& tracks)
   {
     auto p = collision.centRun2V0M();
     registry.fill(HIST("EventSelectionBin"), 1., p);
@@ -182,7 +182,7 @@ struct PseudorapidityDensity {
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   Partition<soa::Filtered<Particles>> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
 
-  void processGen(aod::McCollisions::iterator const& mcCollision, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Filtered<Particles> const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended>> const& /*tracks*/)
+  void processGen(aod::McCollisions::iterator const& mcCollision, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Filtered<Particles> const& particles, soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>> const& /*tracks*/)
   {
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto nCharged = 0;

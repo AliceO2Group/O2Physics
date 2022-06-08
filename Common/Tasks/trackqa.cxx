@@ -86,7 +86,7 @@ struct TrackQa {
     histos.print();
   }
 
-  void process(soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection>>::iterator const& track)
+  void process(soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection>>::iterator const& track)
   {
     // fill kinematic variables
     histos.fill(HIST("Kine/pt"), track.pt());
@@ -142,7 +142,7 @@ struct TrackCutQa {
     }
   }
 
-  void process(soa::Join<aod::FullTracks, aod::TracksExtended>::iterator const& track)
+  void process(soa::Join<aod::FullTracks, aod::TracksDCA>::iterator const& track)
   {
     for (int i = 0; i < ncuts; i++) {
       if (selectedTracks.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) {

@@ -406,7 +406,7 @@ struct flatenictyFV0 {
                        (aod::track::pt > cfgTrkLowPtCut);
   using TrackCandidates =
     soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
-                            aod::TracksExtended, aod::TrackSelection>>;
+                            aod::TracksDCA, aod::TrackSelection>>;
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
 
   void process(CollisionTableData::iterator const& collision,

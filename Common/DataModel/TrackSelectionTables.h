@@ -71,11 +71,11 @@ DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGl
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
 } // namespace track
-DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
+DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the track
                   track::DcaXY,
                   track::DcaZ);
 
-DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELSTORE", //! Stored information on the track selection decision + split dynamic information
+DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
                   track::PassedTrackType<track::TrackCutFlag>,

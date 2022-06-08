@@ -44,7 +44,7 @@ using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
                                      aod::Mults>::iterator;
 using FemtoFullTracks = soa::Join<aod::FullTracks,
-                                  aod::TracksExtended, aod::TOFSignal,
+                                  aod::TracksDCA, aod::TOFSignal,
                                   aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                   aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                   aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,

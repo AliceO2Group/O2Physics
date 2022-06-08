@@ -84,7 +84,7 @@ struct qaEventTrack {
   bool isSelectedTrack(const T& track);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>>;
   void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
   {
     processReco<false>(collision, tracks);
@@ -92,7 +92,7 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
   using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection>>;
   void processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     processReco<true>(collision, tracks);

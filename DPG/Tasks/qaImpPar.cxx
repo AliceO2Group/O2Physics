@@ -128,7 +128,7 @@ struct QaImpactPar {
   /// Data
   using collisionRecoTable = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   using trackTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra>;
-  using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksExtended,
+  using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA,
                                        o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                        o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
   void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,

@@ -201,7 +201,7 @@ struct identifiedraaTask {
   }
 
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
-                           aod::TracksExtended, aod::McTrackLabels,
+                           aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa,
                            aod::pidTOFFullPr> const& tracks,
                  const aod::McParticles_000& mcParticles)
@@ -278,7 +278,7 @@ struct identifiedraaTask {
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
-                   soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+                   soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                              aod::pidTOFFullPi, aod::pidTOFFullKa,
                              aod::pidTOFFullPr, aod::pidTPCFullPi,
                              aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
@@ -312,7 +312,7 @@ struct identifiedraaTask {
   PROCESS_SWITCH(identifiedraaTask, processData, "Process data events", true);
 
   void processMCasData(aod::Collision const& collision,
-                       soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+                       soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa,
                                  aod::pidTOFFullPr, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
