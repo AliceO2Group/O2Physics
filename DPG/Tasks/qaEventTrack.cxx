@@ -143,7 +143,6 @@ struct qaEventTrack {
     if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
       return;
     }
-    nTableEventCounter++;
     if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
       return;
     }
