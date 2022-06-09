@@ -15,6 +15,7 @@
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
 #include "TVector3.h"
 
@@ -34,25 +35,25 @@ struct gammaConversionsTruthOnlyMc {
   HistogramRegistry registry{
     "registry",
     {
-      {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      gHistoSpec_hCollisionZ_all_MCTrue,
+      gHistoSpec_hCollisionZ_MCTrue,
+      gHistoSpec_hCollisionZ_MCRec,
 
-      {"hGammaProdAfterCutsP_MCTrue", "hGammaProdAfterCutsP_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaProdAfterCutsPt_MCTrue", "hGammaProdAfterCutsPt_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaProdAfterCutsP_MCTrue", "hGammaProdAfterCutsP_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
+      {"hGammaProdAfterCutsPt_MCTrue", "hGammaProdAfterCutsPt_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
 
-      {"hGammaConvertedP_Rsel_MCTrue", "hGammaConvertedP_Rsel_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
-      {"hGammaConvertedPt_Rsel_MCTrue", "hGammaConvertedPt_Rsel_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {{800, 0.f, 25.f}}}},
+      {"hGammaConvertedP_Rsel_MCTrue", "hGammaConvertedP_Rsel_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
+      {"hGammaConvertedPt_Rsel_MCTrue", "hGammaConvertedPt_Rsel_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
       {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue;conversion radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
 
-      {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue;#eta;p (GeV/c)", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue;#eta;conversion radius (cm)", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, 0.f, 250.f}}}},
-      {"hGammaConvertedEtaZ_MCTrue", "hGammaConvertedEtaZ_MCTrue;#eta;conversion z (cm)", {HistType::kTH2F, {{400, -2.f, 2.f}, {400, -250.f, 250.f}}}},
-      {"hGammaConvertedRP_MCTrue", "hGammaConvertedRP_MCTrue;conversion radius (cm);conversion z (cm)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedRZ_MCTrue", "hGammaConvertedRZ_MCTrue;conversion radius (cm);conversion z (cm)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, -250.f, 250.f}}}},
-      {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue;conversion radius (cm);p_T (GeV/c)", {HistType::kTH2F, {{400, 0.f, 250.f}, {400, 0.f, 25.f}}}},
-      {"hGammaConvertedXY_MCTrue", "hGammaConvertedXY_MCTrue;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, -250.f, 250.f}}}},
-      {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {{400, -250.f, 250.f}, {400, 0.f, 25.f}}}},
+      {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue;#eta;p (GeV/c)", {HistType::kTH2F, {gAxis_eta2d, gAxis_pT2d}}},
+      {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue;#eta;conversion radius (cm)", {HistType::kTH2F, {gAxis_eta2d, gAxis_r2d}}},
+      {"hGammaConvertedEtaZ_MCTrue", "hGammaConvertedEtaZ_MCTrue;#eta;conversion z (cm)", {HistType::kTH2F, {gAxis_eta2d, gAxis_z2d}}},
+      {"hGammaConvertedRP_MCTrue", "hGammaConvertedRP_MCTrue;conversion radius (cm);conversion z (cm)", {HistType::kTH2F, {gAxis_r2d, gAxis_pT2d}}},
+      {"hGammaConvertedRZ_MCTrue", "hGammaConvertedRZ_MCTrue;conversion radius (cm);conversion z (cm)", {HistType::kTH2F, {gAxis_r2d, gAxis_z2d}}},
+      {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue;conversion radius (cm);p_T (GeV/c)", {HistType::kTH2F, {gAxis_r2d, gAxis_pT2d}}},
+      {"hGammaConvertedXY_MCTrue", "hGammaConvertedXY_MCTrue;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {gAxis_z2d, gAxis_z2d}}},
+      {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {gAxis_z2d, gAxis_pT2d}}},
 
       // debugging histograms
       {"hPeculiarOccurences_MCTrue", "hPeculiarOccurences_MCTrue", {HistType::kTH1F, {{50, -25.f, 25.f}}}},

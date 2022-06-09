@@ -18,6 +18,7 @@
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -36,10 +37,10 @@ struct skimmerGammaConversions {
   HistogramRegistry fRegistry{
     "fRegistry",
     {
-      {"hCollisionZ_MCTrue_all", "hCollisionZ_MCTrue_all;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue (at least one rec. collision);z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_MCRec", "hCollisionZ_MCRec;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_Rec", "hCollisionZ_Rec;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      gHistoSpec_hCollisionZ_all_MCTrue,
+      gHistoSpec_hCollisionZ_MCTrue,
+      gHistoSpec_hCollisionZ_MCRec,
+      {"hCollisionZ_Rec", "hCollisionZ_Rec;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}},
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
       {"hV0Confirmation", "hV0Confirmation", {HistType::kTH1F, {{10, 0.f, 10.f}}}},
     },
