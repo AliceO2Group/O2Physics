@@ -214,7 +214,7 @@ struct tpcPidFull {
       // }
     }
 
-    int lastCollisionId = -999; // Last collision ID analysed
+    int lastCollisionId = -1; // Last collision ID analysed
     unsigned long count_tracks = 0;
     const int tracks_size = tracks.size();
 
