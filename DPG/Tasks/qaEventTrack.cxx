@@ -221,7 +221,8 @@ struct qaEventTrack {
         } else {
           particleProduction = 2;
         }
-        tableNonRecoParticles(particle.pt(), particle.eta(), particle.phi(),
+        tableNonRecoParticles(tableCollisions.lastIndex(),
+                              particle.pt(), particle.eta(), particle.phi(),
                               particle.pdgCode(), particleProduction,
                               particle.vx(), particle.vy(), particle.vz());
       }
