@@ -78,25 +78,26 @@ struct DGFilterRun3 {
 
   // histograms with cut statistics
   // bin:
-  //   0: DG candidate
-  //   1: not clean FIT
-  //   2: number of FwdTracks > 0
-  //   3: not all global tracks are vtx tracks
-  //   4: not all vtx tracks are global tracks
-  //   5: number of vtx tracks out of range
-  //   6: has not good PID information
-  //   7: track pt out of range
-  //   8: track eta out of range
-  //   9: net charge out of range
-  //  10: IVM out of range
+  //   1: All collisions
+  //   2: DG candidate
+  //   3: not clean FIT
+  //   4: number of FwdTracks > 0
+  //   5: not all global tracks are vtx tracks
+  //   6: not all vtx tracks are global tracks
+  //   7: number of vtx tracks out of range
+  //   8: has not good PID information
+  //   9: track pt out of range
+  //  10: track eta out of range
+  //  11: net charge out of range
+  //  12: IVM out of range
   static constexpr std::string_view histNames[4] = {"aftercut2pi", "aftercut4pi", "aftercut2K", "aftercut4K"};
   HistogramRegistry registry{
     "registry",
     {
-      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
-      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
+      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
+      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
+      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
     }};
 
   void init(InitContext&)
@@ -137,15 +138,19 @@ struct DGFilterRun3 {
       switch (ii) {
         case 0:
           diffCuts = (cutHolder)diffCuts2pi;
+          registry.fill(HIST(histNames[0]), 0.);
           break;
         case 1:
           diffCuts = (cutHolder)diffCuts4pi;
+          registry.fill(HIST(histNames[1]), 0.);
           break;
         case 2:
           diffCuts = (cutHolder)diffCuts2K;
+          registry.fill(HIST(histNames[2]), 0.);
           break;
         case 3:
           diffCuts = (cutHolder)diffCuts4K;
+          registry.fill(HIST(histNames[3]), 0.);
           break;
         default:
           continue;
@@ -168,16 +173,16 @@ struct DGFilterRun3 {
       // different cases
       switch (ii) {
         case 0:
-          registry.fill(HIST(histNames[0]), isDGEvent);
+          registry.fill(HIST(histNames[0]), isDGEvent + 1);
           break;
         case 1:
-          registry.fill(HIST(histNames[1]), isDGEvent);
+          registry.fill(HIST(histNames[1]), isDGEvent + 1);
           break;
         case 2:
-          registry.fill(HIST(histNames[2]), isDGEvent);
+          registry.fill(HIST(histNames[2]), isDGEvent + 1);
           break;
         case 3:
-          registry.fill(HIST(histNames[3]), isDGEvent);
+          registry.fill(HIST(histNames[3]), isDGEvent + 1);
           break;
         default:
           continue;
