@@ -15,7 +15,7 @@
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
-/DPG @alibuild @mario-krueger
+/DPG @alibuild @mario-krueger @njacazio @mfaggin
 /EventFiltering @alibuild @mpuccio
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera
 /EventFiltering/PWGUD @alibuild @pbuehler
