@@ -224,7 +224,7 @@ struct tpcPidFull {
         lastCollisionId = trk.collisionId();
         const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
         response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
-      } 
+      }
       // Check and fill enabled tables
       auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
         if (flag.value != 1) {
