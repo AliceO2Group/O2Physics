@@ -139,7 +139,8 @@ struct GammaConversions {
     {ePhotonCuts::kCosinePA, "kCosinePA"},
     {ePhotonCuts::kV0Out, "kV0Out"}};
 
-  // these are the distinguished cases why a reconstructed V0 may not become a MC validated one
+  /* These are the distinguished cases why a reconstructed V0, may not become a MC validated one.
+   * This is done before reconstruction cuts. (except kMcValAfterRecCuts, see comment.) */
   enum class eV0McValidation {
     kV0in,
     kFakeV0,
@@ -147,7 +148,8 @@ struct GammaConversions {
     kNoPhysicalPrimary,
     kNoPhoton,
     kOutsideMCEtaAcc,
-    kMcValidatedPhotonOut, // meaning the V0 comes from a true, primary, mc photon that has a true eta within the accep.
+    kMcValidatedPhotonOut, // meaning the V0 comes from a true, primary, mc photon that has a true |eta| < fTruePhotonEtaMax.
+    kMcValAfterRecCuts     // the kMcValidatedPhotonOut which also pass reconstruction cuts.
   };
 
   std::map<eV0McValidation, std::string> fV0McValidationLabels{
@@ -157,7 +159,8 @@ struct GammaConversions {
     {eV0McValidation::kNoPhysicalPrimary, "kNoPhysicalPrimary"},
     {eV0McValidation::kNoPhoton, "kNoPhoton"},
     {eV0McValidation::kOutsideMCEtaAcc, "kOutsideMCEtaAcc"},
-    {eV0McValidation::kMcValidatedPhotonOut, "kMcValidatedPhotonOut"}};
+    {eV0McValidation::kMcValidatedPhotonOut, "kMcValidatedPhotonOut"},
+    {eV0McValidation::kMcValAfterRecCuts, "kMcValAfterRecCuts"}};
 
   std::vector<std::string> fHistoSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
   enum eBeforeAfterRecCuts { kBeforeRecCuts,
@@ -436,6 +439,7 @@ struct GammaConversions {
                              theV0CosinePA);
 
     if (theV0PassesRecCuts) {
+      fillV0McValidationHisto(eV0McValidation::kMcValAfterRecCuts);
       fillTruePhotonHistograms(kAfterRecCuts,
                                lMcPhoton,
                                theV0,
