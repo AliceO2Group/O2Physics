@@ -134,7 +134,7 @@ struct tpcPid {
     } else {
       useCCDBParam = true;
       const std::string path = ccdbPath.value;
-      const auto time = ccdbTimestamp.value;
+      // const auto time = ccdbTimestamp.value;
       ccdb->setURL(url.value);
       //  ccdb->setTimestamp(time);
       ccdb->setCaching(true);
