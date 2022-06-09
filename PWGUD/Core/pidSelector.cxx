@@ -268,6 +268,9 @@ bool pidSelector::isGoodTrack(aod::DGTrack track, int cnt)
   for (auto hypo = 0; hypo < 5; hypo++) {
     auto nSigma = getTPCnSigma(track, hypo);
     ind += 2;
+    if (pidinfo[ind] == 0. && pidinfo[ind + 1] == 0.) {
+      continue;
+    }
     if (hypo == pidhypo) {
       // inclusive limits
       if (nSigma < pidinfo[ind] || nSigma > pidinfo[ind + 1]) {

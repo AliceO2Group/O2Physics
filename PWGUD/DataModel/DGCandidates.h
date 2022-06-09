@@ -16,7 +16,6 @@
 #ifndef O2_ANALYSIS_DGCANDIDATES_H
 #define O2_ANALYSIS_DGCANDIDATES_H
 
-#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/PID/PIDResponse.h"
 
