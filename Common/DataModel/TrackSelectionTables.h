@@ -47,6 +47,7 @@ struct TrackSelectionFlags {
 #define requireTrackCutInFilter(mask) (aod::track::trackCutFlag & aod::track::mask) == aod::track::mask
 #define requireGlobalTrackInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrack)
 #define requireGlobalTrackWoPtEtaInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoPtEta)
+#define requireTrackWithinBeamPipe (nabs(aod::track::x) < o2::constants::geom::XBeamPipeOuterRef)
 
 // Columns to store track filter decisions
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
