@@ -32,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -88,7 +89,7 @@ struct qaEventTrack {
   bool isSelectedTrack(const T& track);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>>;
+  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::TOFEvTime>>;
   void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
   {
     processReco<false>(collision, tracks);
@@ -96,7 +97,7 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
   using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection>>;
+  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::TOFEvTime>>;
   void processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     processReco<true>(collision, tracks);
@@ -180,7 +181,7 @@ struct qaEventTrack {
                   track.hasITS(), track.hasTPC(), track.hasTRD(), track.hasTOF(),
                   track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                   track.tpcCrossedRowsOverFindableCls(), track.tpcFoundOverFindableCls(), track.tpcFractionSharedCls(),
-                  track.itsNCls(), track.itsNClsInnerBarrel());
+                  track.itsNCls(), track.itsNClsInnerBarrel(), track.tpcSignal(), track.tofSignal() - track.tofEvTime());
 
       if constexpr (IS_MC) { // Running only on MC
         if (track.has_mcParticle()) {
