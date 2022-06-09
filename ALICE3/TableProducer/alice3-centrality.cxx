@@ -48,7 +48,7 @@ struct ALICE3Centrality {
   }
 
   int nevs = 0;
-  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksExtended>& tracks)
+  void process(const o2::aod::Collision& collision, const soa::Join<aod::Tracks, aod::TracksDCA>& tracks)
   {
     TH1D* hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", -1);
     if (!hCumMultALICE3) {

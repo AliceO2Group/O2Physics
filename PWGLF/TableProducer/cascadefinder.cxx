@@ -109,12 +109,12 @@ struct cascadeprefilter {
   Produces<aod::CascGoodPosTracks> cascGoodPosTracks;
   Produces<aod::CascGoodNegTracks> cascGoodNegTracks;
 
-  Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodPosTracks = aod::track::signed1Pt > 0.0f && aod::track::dcaXY > dcabachtopv;
-  Partition<soa::Join<aod::FullTracks, aod::TracksExtended>> goodNegTracks = aod::track::signed1Pt < 0.0f && aod::track::dcaXY < -dcabachtopv;
+  Partition<soa::Join<aod::FullTracks, aod::TracksDCA>> goodPosTracks = aod::track::signed1Pt > 0.0f && aod::track::dcaXY > dcabachtopv;
+  Partition<soa::Join<aod::FullTracks, aod::TracksDCA>> goodNegTracks = aod::track::signed1Pt < 0.0f && aod::track::dcaXY < -dcabachtopv;
 
   Partition<aod::V0Datas> goodV0s = aod::v0data::dcapostopv > dcapostopv&& aod::v0data::dcanegtopv > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtended>;
+  using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>;
 
   void process(aod::Collision const& collision,
                FullTracksExt const& tracks,

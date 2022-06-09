@@ -74,10 +74,6 @@ struct tofPidFull {
 
   void init(o2::framework::InitContext& initContext)
   {
-    // Check that both processes are not enabled
-    if (doprocessNoEvTime == true && doprocessEvTime == true) {
-      LOGF(fatal, "Cannot enable processNoEvTime and processEvTime at the same time. Please choose one.");
-    }
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
       const std::string table = "pidTOFFull" + particle;
@@ -125,20 +121,20 @@ struct tofPidFull {
     }
   }
 
-  using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
-  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
-  void processEvTime(TrksEvTime const& tracks, aod::Collisions const&)
+  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
+  void process(Trks const& tracks, aod::Collisions const&)
   {
-    constexpr auto responseEl = ResponseImplementationEvTime<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementationEvTime<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementationEvTime<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementationEvTime<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementationEvTime<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementationEvTime<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementationEvTime<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementationEvTime<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementationEvTime<PID::Alpha>();
+    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
     auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
@@ -158,33 +154,17 @@ struct tofPidFull {
     reserveTable(pidAl, tablePIDAl);
 
     for (auto const& trk : tracks) { // Loop on collisions
-      if (!trk.has_collision()) {    // Track was not assigned, cannot compute event time
-        auto fillEmptyTable = [](const Configurable<int>& flag, auto& table) {
-          if (flag.value != 1) {
-            return;
-          }
-          table(-999.f, -999.f);
-        };
-
-        fillEmptyTable(pidEl, tablePIDEl);
-        fillEmptyTable(pidMu, tablePIDMu);
-        fillEmptyTable(pidPi, tablePIDPi);
-        fillEmptyTable(pidKa, tablePIDKa);
-        fillEmptyTable(pidPr, tablePIDPr);
-        fillEmptyTable(pidDe, tablePIDDe);
-        fillEmptyTable(pidTr, tablePIDTr);
-        fillEmptyTable(pidHe, tablePIDHe);
-        fillEmptyTable(pidAl, tablePIDAl);
-
-        continue;
-      }
-
       // Check and fill enabled tables
       auto makeTable = [&trk, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
-        if (flag.value == 1) {
-          table(responsePID.GetExpectedSigma(response, trk, trk.tofSignal(), trk.tofEvTimeErr()),
-                responsePID.GetSeparation(response, trk, trk.tofEvTime(), trk.tofEvTimeErr()));
+        if (flag.value != 1) {
+          return;
         }
+        if (!trk.isEvTimeDefined()) {
+          table(-999.f, -999.f);
+          return;
+        }
+        table(responsePID.GetExpectedSigma(response, trk, trk.tofSignal(), trk.tofEvTimeErr()),
+              responsePID.GetSeparation(response, trk, trk.tofEvTime(), trk.tofEvTimeErr()));
       };
 
       makeTable(pidEl, tablePIDEl, responseEl);
@@ -198,47 +178,6 @@ struct tofPidFull {
       makeTable(pidAl, tablePIDAl, responseAl);
     }
   }
-
-  PROCESS_SWITCH(tofPidFull, processEvTime, "Produce TOF response with TOF event time", false);
-
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processNoEvTime(Trks const& tracks, aod::Collisions const&)
-  {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
-
-    // Check and fill enabled tables
-    auto makeTable = [&tracks](const Configurable<int>& flag, auto& table, const DetectorResponse& response, const auto& responsePID) {
-      if (flag.value == 1) {
-        // Prepare memory for enabled tables
-        table.reserve(tracks.size());
-        for (auto const& trk : tracks) { // Loop on Tracks
-          table(responsePID.GetExpectedSigma(response, trk),
-                responsePID.GetSeparation(response, trk));
-        }
-      }
-    };
-    makeTable(pidEl, tablePIDEl, response, responseEl);
-    makeTable(pidMu, tablePIDMu, response, responseMu);
-    makeTable(pidPi, tablePIDPi, response, responsePi);
-    makeTable(pidKa, tablePIDKa, response, responseKa);
-    makeTable(pidPr, tablePIDPr, response, responsePr);
-    makeTable(pidDe, tablePIDDe, response, responseDe);
-    makeTable(pidTr, tablePIDTr, response, responseTr);
-    makeTable(pidHe, tablePIDHe, response, responseHe);
-    makeTable(pidAl, tablePIDAl, response, responseAl);
-  }
-
-  PROCESS_SWITCH(tofPidFull, processNoEvTime, "Produce TOF response without TOF event time, standard for Run 2", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

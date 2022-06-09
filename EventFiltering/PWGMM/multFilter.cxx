@@ -126,7 +126,7 @@ struct multFilter {
   // declare filters on tracks and charged jets
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
   float computeDeltaPhi(float phia, float phib,
                         float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)
   {

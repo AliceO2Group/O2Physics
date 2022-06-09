@@ -153,7 +153,7 @@ struct PseudorapidityDensity {
   expressions::Filter DCAFilterZ = (useDCAZ.node() == false) || (nabs(aod::track::dcaZ) <= maxDCAZ);
   expressions::Filter DCAFilterXY = (useDCAXY.node() == false) || (ifnode(usePtDCAXY.node(), nabs(aod::track::dcaXY) <= 0.0105f + 0.0350f / npow(aod::track::pt, 1.1f), nabs(aod::track::dcaXY) <= maxDCAXY), framework::expressions::LiteralNode{true});
 
-  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended>;
+  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
   Partition<FiTracks> sample = nabs(aod::track::eta) < estimatorEta;
 
@@ -197,7 +197,7 @@ struct PseudorapidityDensity {
   }
 
   using Particles = soa::Filtered<aod::McParticles>;
-  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TracksExtended>;
+  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TracksDCA>;
   using Particle = Particles::iterator;
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
