@@ -24,9 +24,9 @@ namespace o2::aod
 {
 namespace dgcand
 {
-DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t); //!
+DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t); //! Sum of track signs
 } // namespace dgcand
-DECLARE_SOA_TABLE(DGCandidates, "AOD", "DGCANDIDATES", //!
+DECLARE_SOA_TABLE(DGCandidates, "AOD", "DGCANDIDATES", //! Table with DG candidates
                   o2::soa::Index<>, bc::RunNumber, timestamp::Timestamp,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, dgcand::NetCharge);
@@ -34,16 +34,18 @@ using DGCandidate = DGCandidates::iterator;
 
 namespace dgtrack
 {
-DECLARE_SOA_INDEX_COLUMN(DGCandidate, dgCandidate); //!
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);             //!
+DECLARE_SOA_INDEX_COLUMN(DGCandidate, dgCandidate); //! pointer into table DGCandidates
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);             //! Charge sign of DG track
 } // namespace dgtrack
-DECLARE_SOA_TABLE(DGTracks, "AOD", "DGTRACKS", //!
+
+DECLARE_SOA_TABLE(DGTracks, "AOD", "DGTRACKS", //! Table with tracks belonging to a DG candidate
                   o2::soa::Index<>,
                   dgtrack::DGCandidateId,
                   track::Pt, track::Eta, track::Phi, dgtrack::Sign,
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 using DGTrack = DGTracks::iterator;
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_DGCANDIDATES_H

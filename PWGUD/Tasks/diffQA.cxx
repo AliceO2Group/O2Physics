@@ -99,6 +99,7 @@ struct DiffQA {
       {"Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"rejectedTracks", "#rejectedTracks", {HistType::kTH1F, {{15, -0.5, 14.5}}}},
       {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
       {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
@@ -352,7 +353,23 @@ struct DiffQA {
 
       // check also pt and eta of tracks
       for (auto& track : tracks) {
+        // update histogram rejectedTracks
         if (!track.isPVContributor()) {
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(0., track.isGlobalTrackSDD() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(1., track.passedTrackType() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(2., track.passedEtaRange() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(3., track.passedTPCNCls() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(4., track.passedTPCCrossedRows() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(5., track.passedTPCCrossedRowsOverNCls() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(6., track.passedTPCChi2NDF() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(7., track.passedTPCRefit() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(8., track.passedITSNCls() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(9., track.passedITSChi2NDF() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(10., track.passedITSRefit() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(11., track.passedITSHits() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(12., track.passedGoldenChi2() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(13., track.passedDCAxy() * 1.);
+          registry.get<TH1>(HIST("rejectedTracks"))->Fill(14., track.passedDCAz() * 1.);
           continue;
         }
 
