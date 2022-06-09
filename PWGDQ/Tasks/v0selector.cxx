@@ -652,7 +652,7 @@ struct trackPIDQA {
     },
   };
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks)
+  void processQA(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks)
   {
 
     registry.fill(HIST("hEventCounter"), 1.0); // all
@@ -660,15 +660,15 @@ struct trackPIDQA {
     //  return;
     //}
     // registry.fill(HIST("hEventCounter"), 2.0); //INT7
+    if (collision.numContrib() < 0.5) {
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), 3.0); // Ncontrib > 0
 
     if (abs(collision.posZ()) > 10.0) {
       return;
     }
-    registry.fill(HIST("hEventCounter"), 3.0); //|Zvtx| < 10 cm
-    if (collision.numContrib() < 0.5) {
-      return;
-    }
-    registry.fill(HIST("hEventCounter"), 4.0); // accepted
+    registry.fill(HIST("hEventCounter"), 4.0); //|Zvtx| < 10 cm
 
     for (auto& track : tracks) {
       if (!track.has_collision()) {
@@ -733,6 +733,14 @@ struct trackPIDQA {
 
     } // end of track loop
   }   // end of process
+
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(trackPIDQA, processQA, "Run PID QA for barrel tracks", true);
+  PROCESS_SWITCH(trackPIDQA, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
