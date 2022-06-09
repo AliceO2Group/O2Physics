@@ -85,6 +85,7 @@ DECLARE_SOA_TABLE(DPGRecoParticles, "AOD", "DPGRecoPart", //! Table of the DPG r
                   mcparticle::PdgCode, dpgparticles::ProductionMode);
 
 DECLARE_SOA_TABLE(DPGNonRecoParticles, "AOD", "DPGNonRecoPart", //! Table of the DPG particles
+                  dpgtrack::DPGCollisionId,
                   dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
                   mcparticle::PdgCode, dpgparticles::ProductionMode,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz);
