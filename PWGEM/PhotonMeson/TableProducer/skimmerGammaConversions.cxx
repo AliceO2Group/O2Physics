@@ -42,7 +42,7 @@ struct skimmerGammaConversions {
       gHistoSpec_hCollisionZ_MCRec,
       {"hCollisionZ_Rec", "hCollisionZ_Rec;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}},
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
-      {"hV0Confirmation", "hV0Confirmation", {HistType::kTH1F, {{10, 0.f, 10.f}}}},
+      {"hV0Confirmation", "hV0Confirmation", {HistType::kTH1I, {{10, 0.f, 10.f}}}},
     },
   };
 
