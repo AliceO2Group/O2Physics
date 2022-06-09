@@ -96,9 +96,10 @@ DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELDPLUSCAND", //!
 namespace hf_selcandidate_ds
 {
 DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
 } // namespace hf_selcandidate_ds
 DECLARE_SOA_TABLE(HFSelDsToKKPiCandidate, "AOD", "HFSELDSCAND", //!
-                  hf_selcandidate_ds::IsSelDsToKKPi);
+                  hf_selcandidate_ds::IsSelDsToKKPi, hf_selcandidate_ds::IsSelDsToPiKK);
 
 namespace hf_selcandidate_lc
 {
