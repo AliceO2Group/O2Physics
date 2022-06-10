@@ -25,7 +25,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
 }
 
 #include "EventFiltering/PWGUD/diffHelpers.h"
-#include "PWGUD/Tasks/diffMCHelpers.h"
+#include "PWGUD/Core/diffMCHelpers.h"
 
 using namespace o2::framework::expressions;
 

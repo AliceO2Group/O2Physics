@@ -60,7 +60,7 @@ struct DGCandAnalyzer {
   HistogramRegistry registry{
     "registry",
     {
-      {"nIVMs", "#nIVMs", {HistType::kTH1F, {{11, -0.5, 10.5}}}},
+      {"nIVMs", "#nIVMs", {HistType::kTH1F, {{36, -0.5, 35.5}}}},
       {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
     }};

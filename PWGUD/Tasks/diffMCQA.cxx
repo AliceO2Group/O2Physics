@@ -49,7 +49,7 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "PWGUD/Tasks/diffMCHelpers.h"
+#include "PWGUD/Core/diffMCHelpers.h"
 #include "EventFiltering/PWGUD/diffHelpers.h"
 
 using namespace o2;
