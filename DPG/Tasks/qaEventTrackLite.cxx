@@ -164,10 +164,11 @@ struct qaEventTrackLite {
   void fillHistograms(trackType const& track)
   {
 
-    if(TMath::Abs(track.dpgCollision().posZ()>10.))return;
-    if constexpr (isMC){
-      if (track.productionMode() == 0){
-          histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
+    if (TMath::Abs(track.dpgCollision().posZ() > 10.))
+      return;
+    if constexpr (isMC) {
+      if (track.productionMode() == 0) {
+        histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
       }
     }
     // temporary additional selections
@@ -274,8 +275,9 @@ struct qaEventTrackLite {
     }
 
     for (const auto& particle : particles) {
-      if(TMath::Abs(particle.dpgCollision().posZ()>10.))continue;
-      
+      if (TMath::Abs(particle.dpgCollision().posZ() > 10.))
+        continue;
+
       histos.fill(HIST("Particles/Kine/pt"), particle.ptMC());
       histos.fill(HIST("Particles/Kine/eta"), particle.etaMC());
       histos.fill(HIST("Particles/Kine/phi"), particle.phiMC());
@@ -299,14 +301,14 @@ struct qaEventTrackLite {
       return false;
     if (bTpcOnly == true && (track.hasITS() == true || track.hasTPC() == false))
       return false;
-    if(bItsTpcMatched == true && (track.hasITS() == false || track.hasTPC() == false))
+    if (bItsTpcMatched == true && (track.hasITS() == false || track.hasTPC() == false))
       return false;
     if (track.itsChi2NCl() > chi2ItsMax)
       return false;
     if (track.tpcChi2NCl() > chi2TpcMax)
       return false;
     if (track.tpcNClsFound() < nClusterTpcMin)
-      return false;   
+      return false;
     return true;
   }
 
