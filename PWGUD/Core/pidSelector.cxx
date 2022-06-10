@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "TLorentzVector.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "pidSelector.h"
 
 // -----------------------------------------------------------------------------

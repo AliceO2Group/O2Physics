@@ -12,8 +12,6 @@
 #ifndef O2_ANALYSIS_PID_SELECTOR_
 #define O2_ANALYSIS_PID_SELECTOR_
 
-#include "Framework/DataTypes.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 #include "anaparHolder.h"
 
@@ -23,6 +21,7 @@ using namespace o2;
 // a structure which holds the indices of tracks and their invariant mass
 struct DGParticle {
  public:
+  DGParticle() = default;
   DGParticle(anaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb);
 
   // getter
@@ -40,6 +39,8 @@ struct DGParticle {
 
   // indices of tracks included
   std::vector<uint> mtrkinds;
+
+  ClassDefNV(DGParticle, 1);
 };
 
 // -----------------------------------------------------------------------------
@@ -68,6 +69,8 @@ struct pidSelector {
 
   // list of DGParticles
   std::vector<DGParticle> mIVMs;
+
+  ClassDefNV(pidSelector, 1);
 };
 
 // -----------------------------------------------------------------------------

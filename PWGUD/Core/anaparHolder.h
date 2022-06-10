@@ -12,9 +12,7 @@
 #ifndef O2_ANALYSIS_PARAMETER_HOLDER_H_
 #define O2_ANALYSIS_PARAMETER_HOLDER_H_
 
-#include <iosfwd>
 #include <Rtypes.h>
-#include <TMath.h>
 
 // object to hold customizable analysis parameters
 class anaparHolder

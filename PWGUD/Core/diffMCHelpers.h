@@ -16,14 +16,11 @@
 #ifndef O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
 #define O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/DataModel/McPIDTable.h"
+#include <gandiva/projector.h>
+
+#include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
