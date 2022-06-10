@@ -46,6 +46,9 @@ struct qaEventTrackLite {
 
   HistogramRegistry histos;
 
+  // Event selections
+  Configurable<float> vtxZMax{"vtxZMax", 10.f, "Max VTX Z position"};
+  // Track selections
   Configurable<bool> bItsStandalone{"bItsStandalone", false, "Select only ITS standalone DPG tracks"};
   Configurable<bool> bTpcOnly{"bTpcOnly", false, "Select only TPC only DPG tracks"};
   Configurable<bool> bItsTpcMatched{"bItsTpcMatched", false, "Select ITS-TPC matched DPG tracks"};
@@ -164,7 +167,7 @@ struct qaEventTrackLite {
   void fillHistograms(trackType const& track)
   {
 
-    if (TMath::Abs(track.dpgCollision().posZ() > 10.))
+    if (TMath::Abs(track.dpgCollision().posZ()) > vtxZMax)
       return;
     if constexpr (isMC) {
       if (track.productionMode() == 0) {
@@ -275,7 +278,7 @@ struct qaEventTrackLite {
     }
 
     for (const auto& particle : particles) {
-      if (TMath::Abs(particle.dpgCollision().posZ() > 10.))
+      if (TMath::Abs(particle.dpgCollision().posZ()) > vtxZMax)
         continue;
 
       histos.fill(HIST("Particles/Kine/pt"), particle.ptMC());
