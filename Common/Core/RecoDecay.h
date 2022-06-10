@@ -582,18 +582,28 @@ class RecoDecay
     if (sign) {
       *sign = sgn;
     }
+    std::vector<int> listId;
+    listId.push_back(particleMother.globalIndex());
     while (particleMother.has_mothers()) {
       if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
+        return -1;
+      }
+      if (particleMother.mothersIds()[0] == -1) { // Additional check for converted Run 2 MC
         return -1;
       }
       particleMother = particleMother.template mothers_first_as<typename std::decay_t<T>::parent_t>(); // get mother 0
       auto indexMotherTmp = particleMother.globalIndex();
       // Check mother's PDG code.
       auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
-      //printf("getMother: ");
-      //for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
-      //  printf(" ");
-      //printf("Stage %d: Mother PDG: %d\n", stage, PDGParticleIMother);
+      // printf("getMother: ");
+      // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+      //   printf(" ");
+      // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, indexMotherTmp);
+      if (std::find(listId.begin(), listId.end(), indexMotherTmp) != listId.end()) {
+        LOGF(fatal, "Circular mothership at particle index %d", indexMotherTmp);
+        return -1;
+      }
+      listId.push_back(indexMotherTmp);
       if (PDGParticleIMother == PDGMother) { // exact PDG match
         sgn = 1;
         indexMother = indexMotherTmp;
