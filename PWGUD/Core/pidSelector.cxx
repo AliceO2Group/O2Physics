@@ -175,11 +175,11 @@ std::vector<std::vector<uint>> combinations(int nCombine, int nPool)
 {
   // all permutations of nCombine elements
   std::vector<std::vector<uint>> perms;
-  auto nPerms = permutations(nCombine, perms);
+  permutations(nCombine, perms);
 
   // all selections of nCombine elements from nPool elements
   std::vector<std::vector<uint>> combs;
-  auto nCombs = combinations(nPool, nCombine, combs);
+  combinations(nPool, nCombine, combs);
 
   // permute the combinations
   std::vector<std::vector<uint>> copes;
