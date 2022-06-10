@@ -20,6 +20,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/PID/PIDResponse.h"
 
 // Output table declaration
 namespace o2::aod
@@ -56,6 +57,7 @@ DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);    
 DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);                   //! Fraction of shared clusters in TPC
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Clusters found in ITS
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Clusters found in the inner barrel of the ITS
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                                         //! TOF Signal (Ev. Time subtracted)
 
 } // namespace dpgtrack
 
@@ -69,7 +71,7 @@ DECLARE_SOA_TABLE(DPGTracks, "AOD", "DPGTracks", //! Table of the DPG tracks
                   dpgtrack::HasITS, dpgtrack::HasTPC, dpgtrack::HasTRD, dpgtrack::HasTOF,
                   dpgtrack::TPCNClsFound, dpgtrack::TPCNClsCrossedRows,
                   dpgtrack::TPCCrossedRowsOverFindableCls, dpgtrack::TPCFoundOverFindableCls, dpgtrack::TPCFractionSharedCls,
-                  dpgtrack::ITSNCls, dpgtrack::ITSNClsInnerBarrel);
+                  dpgtrack::ITSNCls, dpgtrack::ITSNClsInnerBarrel, track::TPCSignal, dpgtrack::TOFSignal);
 
 namespace dpgparticles
 {
@@ -85,6 +87,7 @@ DECLARE_SOA_TABLE(DPGRecoParticles, "AOD", "DPGRecoPart", //! Table of the DPG r
                   mcparticle::PdgCode, dpgparticles::ProductionMode);
 
 DECLARE_SOA_TABLE(DPGNonRecoParticles, "AOD", "DPGNonRecoPart", //! Table of the DPG particles
+                  dpgtrack::DPGCollisionId,
                   dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
                   mcparticle::PdgCode, dpgparticles::ProductionMode,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz);
