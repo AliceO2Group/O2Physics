@@ -141,7 +141,8 @@ struct cascadeBuilder {
     return output;
   }
 
-  void CheckAndUpdate(Int_t lRunNumber, Int_t lTimeStamp){
+  void CheckAndUpdate(Int_t lRunNumber, Int_t lTimeStamp)
+  {
     if (lRunNumber != mRunNumber) {
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
@@ -152,7 +153,7 @@ struct cascadeBuilder {
       mRunNumber = lRunNumber;
     }
   }
-  
+
   void processRun2(aod::Collision const& collision, aod::V0sLinked const&, aod::V0Datas const& v0data, aod::Cascades const& cascades, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
     hEventCounter->Fill(0.5);
@@ -160,7 +161,7 @@ struct cascadeBuilder {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     CheckAndUpdate(bc.runNumber(), bc.timestamp());
-    
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
@@ -354,7 +355,7 @@ struct cascadeBuilder {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     CheckAndUpdate(bc.runNumber(), bc.timestamp());
-    
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
