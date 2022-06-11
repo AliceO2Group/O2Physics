@@ -9,11 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file multFilter.cxx
-// \brief Selection of events with high activity at mid-pseudorapidity, forward (FV0), or with a leading particle
-//
-// \author Antonio Ortiz, UNAM Mx, antonio.ortiz.velasquez@cern.ch
-
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
