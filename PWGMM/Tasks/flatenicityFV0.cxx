@@ -96,7 +96,7 @@ struct flatenictyFV0 {
 
     ConfigurableAxis ptBinning{
       "ptBinning",
-      {0, 0.0, 0.1, 0.15, 0.3, 0.6, 1.0, 2.0, 4.0, 6.0, 10.0, 20.0, 50.0},
+      {0, 0.15, 0.3, 0.6, 1.0, 2.0, 4.0, 6.0, 10.0, 20.0, 50.0},
       "pTassoc bin limits"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
@@ -136,23 +136,13 @@ struct flatenictyFV0 {
 
     // vs pT
     for (int i_e = 0; i_e < 14; ++i_e) {
-      flatenicity.add(
-        nhPtEst[i_e].data(), "", HistType::kTH2F,
-        {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()},
-         {ptAxis}});
+      flatenicity.add(nhPtEst[i_e].data(), "", HistType::kTProfile,
+                      {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
     }
 
-    flatenicity.add("hdNdeta", "dNdeta", HistType::kTH1F,
-                    {{50, -2.5, 2.5, " "}});
-    flatenicity.add("vtxZEta", ";#eta;vtxZ", HistType::kTH2F,
-                    {{50, -2.5, 2.5, " "}, {60, -30, 30, " "}});
-    flatenicity.add("phiEta", ";#eta;#varphi", HistType::kTH2F,
-                    {{50, -2.5, 2.5}, {200, 0., 2 * M_PI, " "}});
     flatenicity.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
     // QA flatenicity
     flatenicity.add("fMultFv0", "FV0 amp", HistType::kTH1F,
-                    {{1000, -0.5, +39999.5, "FV0 amplitude"}});
-    flatenicity.add("fMultFv0Check", "FV0 amp", HistType::kTH1F,
                     {{1000, -0.5, +39999.5, "FV0 amplitude"}});
     flatenicity.add(
       "hAmpV0VsCh", "", HistType::kTH2F,
@@ -188,25 +178,17 @@ struct flatenictyFV0 {
       "hAmpFDCVsCh", "", HistType::kTH2F,
       {{8, -0.5, 7.5, "channel"}, {600, -0.5, +599.5, "FDC amplitude"}});
 
-    flatenicity.add("fFlatenicityVsFV0", "", HistType::kTH2F,
-                    {{1000, -0.5, +9.5, "flatenicity"},
-                     {1000, -0.5, +39999.5, "FV0 amplitude"}});
     flatenicity.add("hFlatMFTvsFlatGlob", "", HistType::kTH2F,
-                    {{102, -0.01, +1.01, "flatenicity (Glob)"},
-                     {102, -0.01, +1.01, "flatenicity (MFT)"}});
+                    {{20, -0.01, +1.01, "flatenicity (Glob)"},
+                     {20, -0.01, +1.01, "flatenicity (MFT)"}});
     flatenicity.add("hFlatMFTvsFlatFV0", "", HistType::kTH2F,
-                    {{102, -0.01, +1.01, "flatenicity (FV0)"},
-                     {102, -0.01, +1.01, "flatenicity (MFT)"}});
+                    {{20, -0.01, +1.01, "flatenicity (FV0)"},
+                     {20, -0.01, +1.01, "flatenicity (MFT)"}});
     flatenicity.add("hFlatFT0CvsFlatFT0A", "", HistType::kTH2F,
-                    {{102, -0.01, +1.01, "flatenicity (FT0C)"},
-                     {102, -0.01, +1.01, "flatenicity (FT0A)"}});
-    flatenicity.add("fMultGlobVsFV0", "", HistType::kTH2F,
-                    {{100, -0.5, +99.5, "Trk mult"},
-                     {1000, -0.5, +39999.5, "FV0 amplitude"}});
+                    {{20, -0.01, +1.01, "flatenicity (FT0C)"},
+                     {20, -0.01, +1.01, "flatenicity (FT0A)"}});
     flatenicity.add("fEtaPhiFv0", "eta vs phi", HistType::kTH2F,
                     {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
-    flatenicity.add("fFlatenicityBefore", "flatenicity (before vtx cut)",
-                    HistType::kTH1F, {{1000, -0.5, +9.5, "flatenicity"}});
 
     flatenicity.add("hAmpV0vsVtxBeforeCalibration", "", HistType::kTH2F,
                     {{30, -15.0, +15.0, "Trk mult"},
@@ -569,7 +551,6 @@ struct flatenictyFV0 {
         }
       }
       flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
-      flatenicity.fill(HIST("fFlatenicityBefore"), flatenicity_fv0);
       flatenicity.fill(HIST("hAmpV0vsVtxBeforeCalibration"), vtxZ, sumAmpFV0);
       if (applyCalibVtx) {
         sumAmpFV0 *= gVtx[0]->Eval(vtxZ);
@@ -653,9 +634,6 @@ struct flatenictyFV0 {
       }
       float eta_a = track.eta();
       float phi_a = track.phi();
-      flatenicity.fill(HIST("hdNdeta"), eta_a);
-      flatenicity.fill(HIST("vtxZEta"), eta_a, vtxZ);
-      flatenicity.fill(HIST("phiEta"), eta_a, phi_a);
       multGlob++;
 
       int i_ch = 0;
@@ -918,17 +896,13 @@ struct flatenictyFV0 {
           flatenicity.fill(HIST(nhPtEst[index]), estimator[index], pt);
         });
       }
-      float multcheck = 0;
+
       for (int iCh = 0; iCh < 48; ++iCh) {
         flatenicity.fill(HIST("hAmpV0VsCh"), iCh, amp_channel[iCh]);
         flatenicity.fill(HIST("hAmpV0VsChBeforeCalibration"), iCh,
                          amp_channelBefore[iCh]);
-        multcheck += amp_channel[iCh];
       }
-      flatenicity.fill(HIST("fMultFv0Check"), multcheck);
       flatenicity.fill(HIST("fMultFv0"), sumAmpFV0);
-      flatenicity.fill(HIST("fFlatenicityVsFV0"), flatenicity_fv0, sumAmpFV0);
-      flatenicity.fill(HIST("fMultGlobVsFV0"), multGlob, sumAmpFV0);
       flatenicity.fill(HIST("hFlatFT0CvsFlatFT0A"), flatenicity_t0c, flatenicity_t0a);
     }
   }
