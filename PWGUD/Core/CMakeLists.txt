@@ -9,8 +9,13 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-# add_subdirectory(DataModel)
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
+o2physics_add_library(DGCandCore
+                      SOURCES anaparHolder.cxx
+                              pidSelector.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
+o2physics_target_root_dictionary(DGCandCore
+                      HEADERS diffMCHelpers.h
+                              anaparHolder.h
+                              pidSelector.h
+                      LINKDEF DGCandCoreLinkDef.h)

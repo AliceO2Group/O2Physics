@@ -9,9 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
-#pragma link C++ nestedclasses;
+#include "anaparHolder.h"
 
-#pragma link C++ class cutHolder + ;
+// getter
+int anaparHolder::nCombine() const { return mNCombine; }
+std::vector<float> anaparHolder::TPCnSigmas() const { return mTPCnSigmas; }
