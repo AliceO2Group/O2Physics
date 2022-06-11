@@ -18,7 +18,6 @@
 #define ANALYSIS_TASKS_PWGCF_ALIFEMTO_UTILS_H_
 
 #include "Framework/ASoAHelpers.h"
-//#include "AliFemtoDerived.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 #include <CCDB/BasicCCDBManager.h>

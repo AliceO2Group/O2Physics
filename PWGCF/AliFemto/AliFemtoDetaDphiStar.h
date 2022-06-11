@@ -16,7 +16,6 @@
 #ifndef ANALYSIS_TASKS_PWGCF_ALIFEMTO_ALIFEMTODETADPHISTAR_H_
 #define ANALYSIS_TASKS_PWGCF_ALIFEMTO_ALIFEMTODETADPHISTAR_H_
 
-//#include "AliFemtoDerived.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 #include "Framework/HistogramRegistry.h"
