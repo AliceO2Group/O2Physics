@@ -141,7 +141,7 @@ struct cascadeBuilder {
     return output;
   }
 
-  void CheckAndUpdate(Int_t lRunNumber, Int_t lTimeStamp)
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
   {
     if (lRunNumber != mRunNumber) {
       if (d_bz_input < -990) {
