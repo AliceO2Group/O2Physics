@@ -129,7 +129,7 @@ class AliFemtoContainer
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;                                    ///< For QA output
   static constexpr std::string_view mFolderSuffix[2] = {"SameEvent/", "MixedEvent/"}; ///< Folder naming for the output according to mEventType
-  static constexpr aliFemtoContainer::Observable mFemtoObs = obs;                   ///< Femtoscopic observable to be computed (according to aliFemtoContainer::Observable)
+  static constexpr aliFemtoContainer::Observable mFemtoObs = obs;                     ///< Femtoscopic observable to be computed (according to aliFemtoContainer::Observable)
   static constexpr int mEventType = eventType;                                        ///< Type of the event (same/mixed, according to aliFemtoContainer::EventType)
   float mMassOne = 0.f;                                                               ///< PDG mass of particle 1
   float mMassTwo = 0.f;                                                               ///< PDG mass of particle 2
