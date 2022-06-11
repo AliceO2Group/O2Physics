@@ -71,9 +71,9 @@ DECLARE_SOA_COLUMN(HighFv0Flat, hasHighFv0Flat, bool);                     //! i
 DECLARE_SOA_COLUMN(HighMftTrkFlat, hasHighMftTrkFlat, bool);               //! isotropic event MFT
 DECLARE_SOA_COLUMN(HighMftFv0TrkFlat, hasHighMftFv0TrkFlat, bool);         //! isotropic event MFT FV0 trk
 DECLARE_SOA_COLUMN(HighMftFv0Flat, hasHighMftFv0Flat, bool);               //! isotropic event MFT FV0
-DECLARE_SOA_COLUMN(HighMftFt0aMult, hasHighMftFt0aMult, bool);             //! high MFT T0A multiplicity         
+DECLARE_SOA_COLUMN(HighMftFt0aMult, hasHighMftFt0aMult, bool);             //! high MFT T0A multiplicit
 DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);                     //! high FT0 multiplicity
-DECLARE_SOA_COLUMN(HighFt0Flat,hasHighFt0Flat, bool);                      //! isotropic event FT0 
+DECLARE_SOA_COLUMN(HighFt0Flat,hasHighFt0Flat, bool);                      //! isotropic event FT0
 DECLARE_SOA_COLUMN(HighMftFt0aFlat, hasHighMftFt0aFlat, bool);             //! isotropic event MFT FT0A
 DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);               //! event contains leading track
 
