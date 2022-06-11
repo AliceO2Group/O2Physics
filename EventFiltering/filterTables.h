@@ -60,9 +60,21 @@ DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);       //! at least 3 Xi
 DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool); //! at least 4 Xi
 DECLARE_SOA_COLUMN(SingleXiYN, hasSingleXiYN, bool);   //! at least 1 Xi with R > 24.39 cm (YN interactions)
 // multiplicity
-DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);         //! event contains leading track
-DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);               //! high FV0 muliplicity
-DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);           //! high muliplicity collision
+DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);                 //! high trk muliplicity
+DECLARE_SOA_COLUMN(HighFddFt0cMftFv0Mult, hasHighFddFt0cMftFv0Mult, bool); //! high FDD MFT FT0 FV0 multiplicity
+DECLARE_SOA_COLUMN(HighFddMftFv0Mult, hasHighFddMftFv0Mult, bool);         //! high FDD MFT FV0 multiplicity
+DECLARE_SOA_COLUMN(HighFv0MftMult, hasHighFv0MftMult, bool);               //! high MFT FV0 multiplicity
+DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);                     //! high FV0 muliplicity
+DECLARE_SOA_COLUMN(HighMftMult, hasHighMftMult, bool);                     //! high MFT multiplicity
+DECLARE_SOA_COLUMN(HighFv0Flat, hasHighFv0Flat, bool);                     //! isotropic event FV0
+DECLARE_SOA_COLUMN(HighMftTrkFlat, hasHighMftTrkFlat, bool);               //! isotropic event MFT
+DECLARE_SOA_COLUMN(HighMftFv0TrkFlat, hasHighMftFv0TrkFlat, bool);         //! isotropic event MFT FV0 trk
+DECLARE_SOA_COLUMN(HighMftFv0Flat, hasHighMftFv0Flat, bool);               //! isotropic event MFT FV0
+DECLARE_SOA_COLUMN(HighMftFt0aMult, hasHighMftFt0aMult, bool);             //! high MFT T0A multiplicit
+DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);                     //! high FT0 multiplicity
+DECLARE_SOA_COLUMN(HighFt0Flat, hasHighFt0Flat, bool);                     //! isotropic event FT0
+DECLARE_SOA_COLUMN(HighMftFt0aFlat, hasHighMftFt0aFlat, bool);             //! isotropic event MFT FT0A
+DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);               //! event contains leading track
 
 } // namespace filtering
 
@@ -115,7 +127,8 @@ using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
-                  filtering::LeadingPtTrack, filtering::HighMultFv0, filtering::HighTrackMult);
+                  filtering::HighTrackMult, filtering::HighFddFt0cMftFv0Mult, filtering::HighFddMftFv0Mult, filtering::HighFv0MftMult, filtering::HighMultFv0, filtering::HighMftMult, filtering::HighFv0Flat, filtering::HighMftTrkFlat, filtering::HighMftFv0TrkFlat, filtering::HighMftFv0Flat, filtering::HighMftFt0aMult, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighMftFt0aFlat, filtering::LeadingPtTrack);
+
 using MultFilter = MultFilters::iterator;
 
 // cefp decision
