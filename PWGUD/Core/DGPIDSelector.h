@@ -9,20 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_PID_SELECTOR_
-#define O2_ANALYSIS_PID_SELECTOR_
+#ifndef O2_ANALYSIS_DGPID_SELECTOR_
+#define O2_ANALYSIS_DGPID_SELECTOR_
 
+#include "TDatabasePDG.h"
 #include "PWGUD/DataModel/DGCandidates.h"
-#include "anaparHolder.h"
+#include "DGAnaparHolder.h"
 
 using namespace o2;
+
+float particleMass(TDatabasePDG* pdg, int pid);
 
 // -----------------------------------------------------------------------------
 // a structure which holds the indices of tracks and their invariant mass
 struct DGParticle {
  public:
   DGParticle() = default;
-  DGParticle(anaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb);
+  DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb);
 
   // getter
   std::vector<uint> trkinds() { return mtrkinds; }
@@ -45,33 +48,45 @@ struct DGParticle {
 
 // -----------------------------------------------------------------------------
 // A class to check PIDs of tracks and provide track combinations
-struct pidSelector {
+struct DGPIDSelector {
  public:
-  pidSelector() = default;
+  DGPIDSelector();
 
   // setters
-  void init(anaparHolder anaPars)
+  void init(DGAnaparHolder anaPars)
   {
     mAnaPars = anaPars;
     mIVMs.clear();
   };
 
-  int computeIVMs(int nCombine, aod::DGTracks const& dgtracks);
-
   // getters
   std::vector<DGParticle> IVMs() { return mIVMs; }
   float getTPCnSigma(aod::DGTrack track, int hypo);
   bool isGoodTrack(aod::DGTrack track, int cnt);
+  int computeIVMs(int nCombine, aod::DGTracks const& dgtracks);
 
  private:
   // analysis parameters
-  anaparHolder mAnaPars;
+  DGAnaparHolder mAnaPars;
 
   // list of DGParticles
   std::vector<DGParticle> mIVMs;
+  
+  // particle properties
+  TDatabasePDG* fPDG;
+  int pid2ind(int pid);
+  
+  // helper functions for computeIVMs
+  void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms);
+  int permutations(int n0, std::vector<std::vector<uint>>& perms);
+  void combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
+                    std::vector<std::vector<uint>>& combs);
+  int combinations(int n0, int np, std::vector<std::vector<uint>>& combs);
+  std::vector<std::vector<uint>> combinations(int nCombine, int nPool);
 
-  ClassDefNV(pidSelector, 1);
+  
+  ClassDefNV(DGPIDSelector, 1);
 };
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_PID_SELECTOR_
+#endif // O2_ANALYSIS_DGPID_SELECTOR_

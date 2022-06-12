@@ -21,20 +21,20 @@ o2physics_add_dpl_workflow(upc-forward
 
 o2physics_add_dpl_workflow(diff-mcdatascanner
                            SOURCES diffMCDataScanner.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsVertexing
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(diff-mcqa
                            SOURCES diffMCQA.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(diff-qa
                            SOURCES diffQA.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dgcand-analyzer
                            SOURCES DGCandAnalyzer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder O2Physics::DGCandCore
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)

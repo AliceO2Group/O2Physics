@@ -49,8 +49,8 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "PWGUD/Core/diffMCHelpers.h"
-#include "EventFiltering/PWGUD/diffHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/DGMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -61,9 +61,9 @@ struct DiffMCQA {
   float maxdEdxTPC;
   float maxdEdxTOF;
 
-  // get a cutHolder
-  cutHolder diffCuts = cutHolder();
-  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -178,7 +178,7 @@ struct DiffMCQA {
   {
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
-    diffCuts = (cutHolder)DGCuts;
+    diffCuts = (DGCutparHolder)DGCuts;
   }
 
   void run(ProcessingContext& pc)

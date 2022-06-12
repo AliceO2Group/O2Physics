@@ -15,8 +15,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/DataModel/McPIDTable.h"
-#include "EventFiltering/PWGUD/diffHelpers.h"
-#include "PWGUD/Core/diffMCHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/DGMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;

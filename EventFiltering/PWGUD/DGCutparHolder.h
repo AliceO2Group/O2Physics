@@ -9,17 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DIFFCUT_HOLDER_H_
-#define O2_ANALYSIS_DIFFCUT_HOLDER_H_
+#ifndef O2_ANALYSIS_DGCUT_HOLDER_H_
+#define O2_ANALYSIS_DGCUT_HOLDER_H_
 
 #include <Rtypes.h>
 
 // object to hold customizable cut values
-class cutHolder
+class DGCutparHolder
 {
  public:
   // constructor
-  cutHolder(int ndtcoll = 4, int nMinBCs = 7,
+  DGCutparHolder(int ndtcoll = 4, int nMinBCs = 7,
             bool globalTracksOnly = false,
             int MinNTracks = 0, int MaxNTracks = 10000,
             int MinNetCharge = 0, int MaxNetCharge = 0,
@@ -102,7 +102,7 @@ class cutHolder
   // lower limits for FIT signals
   std::vector<float> mFITAmpLimits;
 
-  ClassDefNV(cutHolder, 1);
+  ClassDefNV(DGCutparHolder, 1);
 };
 
-#endif // O2_ANALYSIS_DIFFCUT_HOLDER_H_
+#endif // O2_ANALYSIS_DGCUT_HOLDER_H_
