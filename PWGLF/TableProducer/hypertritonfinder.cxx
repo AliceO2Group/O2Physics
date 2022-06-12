@@ -151,6 +151,7 @@ struct hypertritonfinder {
     "registry",
       {
         {"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
+        {"hV0Counter", "hCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
       },
   };
 
@@ -217,6 +218,7 @@ struct hypertritonfinder {
         if (t0id.collisionId() != t1id.collisionId()) {
           continue;
         }
+
         auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe>>();
         auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe>>();
         auto Track1 = getTrackParCov(t0);
@@ -229,6 +231,7 @@ struct hypertritonfinder {
         if (nCand == 0) {
           continue;
         }
+        registry.fill(HIST("hV0Counter"), 0.5);
 
 //------------------copy from lamdakzerobuilder---------------------
       double finalXpos = fitter.getTrack(0).getX();
@@ -252,21 +255,23 @@ struct hypertritonfinder {
       if (nCand == 0) {
         continue;
       }
+        registry.fill(HIST("hV0Counter"), 1.5);
 
 //------------------------------------------------------------------
         
         const auto& vtx = fitter.getPCACandidate();
         // Fiducial: min radius
-        auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
+        /*auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
         if (thisv0radius < v0radius) {
           continue;
-        }
+        }*/
 
         // DCA V0 daughters
         auto thisdcav0dau = fitter.getChi2AtPCACandidate();
         if (thisdcav0dau > dcav0dau) {
           continue;
         }
+        registry.fill(HIST("hV0Counter"), 2.5);
 
         std::array<float, 3> pos = {0.};
         std::array<float, 3> pvec0;
@@ -307,12 +312,13 @@ struct hypertritonfinder {
         if (thisv0cospa < v0cospa) {
           continue;
         }
+        registry.fill(HIST("hV0Counter"), 3.5);
 
         lNCand++;
         v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
         //there is a change in the position of "0" compared with lambdakzerofinder.cxx
-        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),
-            fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),0,
+        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),0,
+            fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
             pos[0], pos[1], pos[2],
             pvec0[0], pvec0[1], pvec0[2],
             pvec1[0], pvec1[1], pvec1[2],
