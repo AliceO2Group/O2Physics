@@ -20,16 +20,16 @@ class DGCutparHolder
  public:
   // constructor
   DGCutparHolder(int ndtcoll = 4, int nMinBCs = 7,
-            bool globalTracksOnly = false,
-            int MinNTracks = 0, int MaxNTracks = 10000,
-            int MinNetCharge = 0, int MaxNetCharge = 0,
-            int pidHypo = 211,
-            float MinPosz = -1000., float MaxPosz = 1000.,
-            float minPt = 0., float maxPt = 1000.,
-            float minEta = -1.0, float maxEta = 1.0,
-            float minIVM = 0.0, float maxIVM = 1000.,
-            float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-            std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
+                 bool globalTracksOnly = false,
+                 int MinNTracks = 0, int MaxNTracks = 10000,
+                 int MinNetCharge = 0, int MaxNetCharge = 0,
+                 int pidHypo = 211,
+                 float MinPosz = -1000., float MaxPosz = 1000.,
+                 float minPt = 0., float maxPt = 1000.,
+                 float minEta = -1.0, float maxEta = 1.0,
+                 float minIVM = 0.0, float maxIVM = 1000.,
+                 float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
   {
   }
 

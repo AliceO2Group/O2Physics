@@ -20,7 +20,7 @@ class DGAnaparHolder
  public:
   // constructor
   DGAnaparHolder(int NCombine = 0,
-               std::vector<float> TPCnSigmas = {0.}) : mNCombine{NCombine}, mTPCnSigmas{TPCnSigmas}
+                 std::vector<float> TPCnSigmas = {0.}) : mNCombine{NCombine}, mTPCnSigmas{TPCnSigmas}
   {
     // definition of maximum 10 particles
     // for each particle 12 parameters

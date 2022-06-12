@@ -237,7 +237,7 @@ int DGPIDSelector::permutations(int n0, std::vector<std::vector<uint>>& perms)
 //-----------------------------------------------------------------------------
 // find selections of np out of n0
 void DGPIDSelector::combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
-                  std::vector<std::vector<uint>>& combs)
+                                 std::vector<std::vector<uint>>& combs)
 {
   // loop over pool
   for (auto ii = 0; ii < n0 - n; ii++) {

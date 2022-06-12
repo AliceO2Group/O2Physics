@@ -71,11 +71,11 @@ struct DGPIDSelector {
 
   // list of DGParticles
   std::vector<DGParticle> mIVMs;
-  
+
   // particle properties
   TDatabasePDG* fPDG;
   int pid2ind(int pid);
-  
+
   // helper functions for computeIVMs
   void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms);
   int permutations(int n0, std::vector<std::vector<uint>>& perms);
@@ -84,7 +84,6 @@ struct DGPIDSelector {
   int combinations(int n0, int np, std::vector<std::vector<uint>>& combs);
   std::vector<std::vector<uint>> combinations(int nCombine, int nPool);
 
-  
   ClassDefNV(DGPIDSelector, 1);
 };
 

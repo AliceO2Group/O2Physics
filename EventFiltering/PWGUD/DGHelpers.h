@@ -64,7 +64,7 @@ struct DGSelector {
   {
     fPDG = TDatabasePDG::Instance();
   }
-  
+
   // Function to check if collisions passes filter
   template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
   int IsSelected(DGCutparHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
