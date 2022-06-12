@@ -168,9 +168,9 @@ struct hypertritonAnalysisMc {
     }
 
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(1, "Readin");
-    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(2, "V0Radius(off)");
-    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(3, "V0CosPA");
-    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(4, "Hypertriton Rapidity");
+    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(2, "V0CosPA");
+    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(3, "TrackEta");
+    registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(4, "HasMC&Hypertriton Rapidity");
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(5, "lifetime");
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(6, "DcaV0Dau");
     registry.get<TH1>(HIST("hSelectedV0Counter"))->GetXaxis()->SetBinLabel(7, "TPCPID");
@@ -180,6 +180,7 @@ struct hypertritonAnalysisMc {
 
   //Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> etacut{"etacut", 0.9, "etacut"};
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
@@ -208,11 +209,11 @@ struct hypertritonAnalysisMc {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("hSelectedV0Counter"), 0.5);
-      /*if (v0.v0radius() < v0radius){
-        continue;
-        } */
-      registry.fill(HIST("hSelectedV0Counter"), 1.5);
       if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
+        continue;
+      }
+      registry.fill(HIST("hSelectedV0Counter"), 1.5);
+      if ( TMath::Abs(v0.posTrack_as<MyTracks>().eta()) > etacut || TMath::Abs(v0.negTrack_as<MyTracks>().eta()) > etacut){
         continue;
       }
       registry.fill(HIST("hSelectedV0Counter"), 2.5);
@@ -222,31 +223,32 @@ struct hypertritonAnalysisMc {
       if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle()) {
         continue;
       }
+      registry.fill(HIST("hSelectedV0Counter"), 3.5);
       auto mcnegtrack = reconegtrack.mcParticle_as<aod::McParticles>();
       auto mcpostrack = recopostrack.mcParticle_as<aod::McParticles>();
 
       if (TMath::Abs(v0.yHypertriton()) > rapidity) {
         continue;
       }
-      registry.fill(HIST("hSelectedV0Counter"), 3.5);
+      registry.fill(HIST("hSelectedV0Counter"), 4.5);
 
       if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * 2.991 > lifetimecut->get("lifetimecutHypertriton")) {
         continue;
       }
-      registry.fill(HIST("hSelectedV0Counter"), 4.5);
+      registry.fill(HIST("hSelectedV0Counter"), 5.5);
       if (v0.dcaV0daughters() > dcav0dau){
         continue;
       }
-      registry.fill(HIST("hSelectedV0Counter"), 5.5);
+      registry.fill(HIST("hSelectedV0Counter"), 6.5);
 
       //Hypertriton
       if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
-        registry.fill(HIST("hSelectedV0Counter"), 6.5);
+        registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
         if(v0.negTrack_as<MyTracks>().pt() > 0.2 && v0.negTrack_as<MyTracks>().pt() < 1.2 && v0.posTrack_as<MyTracks>().pt() > 1.8 && v0.posTrack_as<MyTracks>().pt() < 10 && v0.pt() > 2 && v0.pt() < 9 ){
-          registry.fill(HIST("hSelectedV0Counter"), 7.5);
-        if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
           registry.fill(HIST("hSelectedV0Counter"), 8.5);
+        if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
+          registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
           registry.fill(HIST("h3dMassHypertriton"), 0., v0.pt(), v0.mHypertriton());
           registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
@@ -275,11 +277,11 @@ struct hypertritonAnalysisMc {
       // AntiHypertriton
       if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
 
-        registry.fill(HIST("hSelectedV0Counter"), 6.5);
-        if(v0.posTrack_as<MyTracks>().pt() > 0.2 && v0.posTrack_as<MyTracks>().pt() < 1.2 && v0.negTrack_as<MyTracks>().pt() > 1.8 && v0.negTrack_as<MyTracks>().pt() < 10 && v0.pt() < 2 && v0.pt() > 9 ){
         registry.fill(HIST("hSelectedV0Counter"), 7.5);
+        if(v0.posTrack_as<MyTracks>().pt() > 0.2 && v0.posTrack_as<MyTracks>().pt() < 1.2 && v0.negTrack_as<MyTracks>().pt() > 1.8 && v0.negTrack_as<MyTracks>().pt() < 10 && v0.pt() < 2 && v0.pt() > 9 ){
+        registry.fill(HIST("hSelectedV0Counter"), 8.5);
         if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
-          registry.fill(HIST("hSelectedV0Counter"), 8.5);
+          registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
           registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
           registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
@@ -309,6 +311,7 @@ struct hypertritonAnalysisMc {
   }
   PROCESS_SWITCH(hypertritonAnalysisMc, processRun3, "Process Run 3 data", true);
 
+  //Fix: Set as same as Run3!
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     if (!collision.alias()[kINT7]) {
@@ -322,9 +325,6 @@ struct hypertritonAnalysisMc {
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
       registry.fill(HIST("hSelectedV0Counter"), 0.5);
-      /*if (v0.v0radius() > v0radius){
-        continue;
-        }*/
       registry.fill(HIST("hSelectedV0Counter"), 1.5);
       if(v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
         registry.fill(HIST("hSelectedV0Counter"), 2.5);
