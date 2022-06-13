@@ -9,19 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "TLorentzVector.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DGPIDSelector.h"
 
 // -----------------------------------------------------------------------------
 float particleMass(TDatabasePDG* pdg, int pid)
 {
-  auto mass2Use = 0.;
+  auto mass = 0.;
   TParticlePDG* pdgparticle = pdg->GetParticle(pid);
   if (pdgparticle != nullptr) {
-    mass2Use = pdgparticle->Mass();
+    mass = pdgparticle->Mass();
   }
-  return mass2Use;
+  return mass;
 };
 
 // -----------------------------------------------------------------------------
