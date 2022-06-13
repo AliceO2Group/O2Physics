@@ -32,7 +32,7 @@ DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks 
   auto pidinfo = anaPars.TPCnSigmas();
 
   // loop over tracks and update mIVM
-  mIVM = TLorentzVector(0.,0.,0.,0.);
+  mIVM = TLorentzVector(0., 0., 0., 0.);
   auto cnt = -1;
   for (auto ind : comb) {
     cnt++;
