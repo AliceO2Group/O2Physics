@@ -9,3 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(lumi
+                    SOURCES lumi.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                                          O2::ReconstructionDataFormats
+                                          O2::DetectorsBase
+                                          O2::DetectorsCommonDataFormats
+                                          O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
