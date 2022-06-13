@@ -102,9 +102,8 @@ struct TaskHfCorrelations {
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) &&
                        (aod::track::pt > cfgCutPt) &&
-                       requireGlobalTrackInFilter();// ||
-                       //(aod::track::isGlobalTrackSDD == (uint8_t) true));
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtended, aod::TrackSelection>>;
+                       requireGlobalTrackWoPtEtaInFilter();
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
 
   //  HF candidate filter
   Filter candidateFilter = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 ||
@@ -177,19 +176,19 @@ struct TaskHfCorrelations {
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     //  set axes of the correlation container
-    std::vector<AxisSpec> axisList = {{axisDeltaEta, "#Delta#eta"},
+    std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
                                       {axisMultiplicity, "multiplicity"},
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                      {axisVertex, "z-vtx (cm)"},
-                                      {axisEtaEfficiency, "#eta"},
+                                      {axisVertex, "z-vtx (cm)"}};
+    std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
                                       {axisPtEfficiency, "p_{T} (GeV/c)"},
                                       {axisVertexEfficiency, "z-vtx (cm)"}};
-    sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", axisList));
-    sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", axisList));
-    sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", axisList));
-    mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", axisList));
+    sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", corrAxis, effAxis, {}));
+    sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
+    sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, {}));
+    mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
   }
 
   //  ---------------
@@ -373,6 +372,10 @@ struct TaskHfCorrelations {
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
+    sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    sameTPCMFTCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+
     if (processTPCTPChh == true) {
       fillQA(multiplicity, tracks);
       fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
@@ -411,6 +414,9 @@ struct TaskHfCorrelations {
     const auto multiplicity = tracks.size();
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
+
+    sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
     if (processTPCTPChh == true) {
       fillQA(multiplicity, tracks);
