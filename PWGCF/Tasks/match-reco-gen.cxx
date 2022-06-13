@@ -431,7 +431,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     collectData<kAFTER, kPOSITIVE>(tracks, mcParticles, collisions);
   }
 
-  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
                                 soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels> const& collisions,
                                 aod::McParticles const& mcParticles)
   {
@@ -440,7 +440,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   }
   PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksWithCent, "Process detector <=> generator levels with centrality/multiplicity information", false);
 
-  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels> const& tracks,
+  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
                                    soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels> const& collisions,
                                    aod::McParticles const& mcParticles)
   {

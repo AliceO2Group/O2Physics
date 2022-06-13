@@ -41,10 +41,13 @@ struct TrackSelectionFlags {
   static constexpr flagtype kDCAxy = 1 << 13;
   static constexpr flagtype kDCAz = 1 << 14;
   static constexpr flagtype kGlobalTrack = kTrackType | kPtRange | kEtaRange | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
+  static constexpr flagtype kGlobalTrackWoPtEta = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
 };
 
 #define requireTrackCutInFilter(mask) (aod::track::trackCutFlag & aod::track::mask) == aod::track::mask
 #define requireGlobalTrackInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrack)
+#define requireGlobalTrackWoPtEtaInFilter() requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoPtEta)
+#define requireTrackWithinBeamPipe (nabs(aod::track::x) < o2::constants::geom::XBeamPipeOuterRef)
 
 // Columns to store track filter decisions
 DECLARE_SOA_COLUMN(IsGlobalTrackSDD, isGlobalTrackSDD, uint8_t);               //!
@@ -71,11 +74,11 @@ DECLARE_DYN_TRKSEL_COLUMN(IsGlobalTrack, isGlobalTrack, TrackSelectionFlags::kGl
 #undef DECLARE_DYN_TRKSEL_COLUMN
 
 } // namespace track
-DECLARE_SOA_TABLE(TracksExtended, "AOD", "TRACKEXTENDED", //!
+DECLARE_SOA_TABLE(TracksDCA, "AOD", "TRACKDCA", //! DCA information for the track
                   track::DcaXY,
                   track::DcaZ);
 
-DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELSTORE", //! Stored information on the track selection decision + split dynamic information
+DECLARE_SOA_TABLE(TrackSelection, "AOD", "TRACKSELECTION", //! Information on the track selection decision + split dynamic information
                   track::IsGlobalTrackSDD,
                   track::TrackCutFlag,
                   track::PassedTrackType<track::TrackCutFlag>,

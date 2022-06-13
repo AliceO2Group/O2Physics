@@ -53,7 +53,7 @@ struct TrackSelectionTask {
     }
   }
 
-  void process(soa::Join<aod::FullTracks, aod::TracksExtended> const& tracks)
+  void process(soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
   {
     for (auto& track : tracks) {
       filterTable((uint8_t)globalTracksSDD.IsSelected(track),

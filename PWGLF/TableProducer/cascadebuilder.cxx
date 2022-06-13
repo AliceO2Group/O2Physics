@@ -65,8 +65,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksExtended>;
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 
 using MyTracks = FullTracksExt;
 using MyTracksIU = FullTracksExtIU;
@@ -141,8 +141,27 @@ struct cascadeBuilder {
     return output;
   }
 
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  {
+    if (lRunNumber != mRunNumber) {
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(lTimeStamp);
+      } else {
+        d_bz = d_bz_input;
+      }
+      mRunNumber = lRunNumber;
+    }
+  }
+
   void processRun2(aod::Collision const& collision, aod::V0sLinked const&, aod::V0Datas const& v0data, aod::Cascades const& cascades, FullTracksExt const&, aod::BCsWithTimestamps const&)
   {
+    hEventCounter->Fill(0.5);
+
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    CheckAndUpdate(bc.runNumber(), bc.timestamp());
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
@@ -162,20 +181,6 @@ struct cascadeBuilder {
     fitterCasc.setMaxDZIni(1e9);
     fitterCasc.setMaxChi2(1e9);
     fitterCasc.setUseAbsDCA(d_UseAbsDCA);
-
-    hEventCounter->Fill(0.5);
-
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (bc.runNumber() != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-      } else {
-        d_bz = d_bz_input;
-      }
-      mRunNumber = bc.runNumber();
-    }
 
     for (auto& casc : cascades) {
       auto v0index = casc.v0_as<o2::aod::V0sLinked>();
@@ -345,6 +350,12 @@ struct cascadeBuilder {
 
   void processRun3(aod::Collision const& collision, aod::V0sLinked const&, aod::V0Datas const& v0data, aod::Cascades const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
+    hEventCounter->Fill(0.5);
+
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    CheckAndUpdate(bc.runNumber(), bc.timestamp());
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitterV0, fitterCasc;
     fitterV0.setBz(d_bz);
@@ -364,20 +375,6 @@ struct cascadeBuilder {
     fitterCasc.setMaxDZIni(1e9);
     fitterCasc.setMaxChi2(1e9);
     fitterCasc.setUseAbsDCA(d_UseAbsDCA);
-
-    hEventCounter->Fill(0.5);
-
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (bc.runNumber() != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-      } else {
-        d_bz = d_bz_input;
-      }
-      mRunNumber = bc.runNumber();
-    }
 
     for (auto& casc : cascades) {
       auto v0index = casc.v0_as<o2::aod::V0sLinked>();

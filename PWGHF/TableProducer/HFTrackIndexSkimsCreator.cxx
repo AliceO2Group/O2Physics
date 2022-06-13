@@ -80,15 +80,15 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 //#define MY_DEBUG
 
 #ifdef MY_DEBUG
-using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksExtended, aod::TrackSelection, aod::McTrackLabels>;
-using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksExtended, aod::McTrackLabels>;
+using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksDCA, aod::McTrackLabels>;
 #define MY_DEBUG_MSG(condition, cmd) \
   if (condition) {                   \
     cmd;                             \
   }
 #else
-using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksExtended, aod::TrackSelection>;
-using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksExtended>;
+using MY_TYPE1 = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
+using MyTracks = soa::Join<aod::BigTracks, aod::HFSelTrack, aod::TracksDCA>;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
@@ -1371,7 +1371,7 @@ struct HfTrackIndexSkimsCreator {
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng > 0;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksExtended, aod::HFSelTrack, aod::HfPvRefitTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::BigTracks, aod::TracksDCA, aod::HFSelTrack, aod::HfPvRefitTrack>>;
 
   // FIXME
   // Partition<SelectedTracks> tracksPos = aod::track::signed1Pt > 0.f;
@@ -2163,7 +2163,7 @@ struct HfTrackIndexSkimsCreatorCascades {
   Filter filterSelectCollisions = (aod::hf_selcollision::whyRejectColl == 0);
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HFSelCollision>>;
-  using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksExtended>;
+  using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>;
 
   void process(SelectedCollisions::iterator const& collision,
                aod::BCs const& bcs,

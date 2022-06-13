@@ -138,7 +138,7 @@ struct tpcSpectra {
     histos.fill(HIST(hpt[id]), track.pt());
   }
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                     aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
@@ -267,7 +267,7 @@ struct tpcPidQaSignalwTof {
     histos.fill(HIST(htpcsignal[id]), track.tpcInnerParam(), track.tpcSignal(), nsigmaTOF);
   }
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                     aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,

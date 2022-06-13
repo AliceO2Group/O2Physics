@@ -138,7 +138,7 @@ struct HfJpsiCandidateSelector {
 
   using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
-  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksExtended>;
+  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksDCA>;
 
   void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
   {

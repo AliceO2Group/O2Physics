@@ -11,7 +11,7 @@
 ///
 /// \brief in this tutorial the information contained in table TrackSelection is
 ///        used to retrieve tracks of a given type.
-///        This requires tables TracksExtended and TrackSelection. Therefor use
+///        This requires tables TracksDCA and TrackSelection. Therefor use
 ///        o2-analysis-trackextension --aod-file AO2D.root | o2-analysis-trackselection | o2-analysistutorial-histogram-track-selection --select n
 ///        with n: 0 = no selection, 1 = globalTracks, 2 = globalTracksSDD
 /// \author

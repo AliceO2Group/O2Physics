@@ -109,8 +109,21 @@ struct tofEventTime {
   void init(o2::framework::InitContext& initContext)
   {
     // Check that both processes are not enabled
-    if (doprocessNoFT0 == true && doprocessFT0 == true) {
-      LOGF(fatal, "Cannot enable processNoEvTime and processEvTime at the same time. Please choose one.");
+    int nEnabled = 0;
+    if (doprocessRun2 == true) {
+      LOGF(info, "Enabling process function: processRun2");
+      nEnabled++;
+    }
+    if (doprocessNoFT0 == true) {
+      LOGF(info, "Enabling process function: processNoFT0");
+      nEnabled++;
+    }
+    if (doprocessFT0 == true) {
+      LOGF(info, "Enabling process function: processFT0");
+      nEnabled++;
+    }
+    if (nEnabled > 1) {
+      LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
     // Checking that the table is requested in the workflow and enabling it
     enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
@@ -141,6 +154,32 @@ struct tofEventTime {
     }
   }
 
+  ///
+  /// Process function to prepare the event for each track on Run 2 data
+  void processRun2(aod::Tracks const& tracks,
+                   aod::Collisions const&)
+  {
+    if (!enableTable) {
+      return;
+    }
+
+    tableEvTime.reserve(tracks.size());
+    tableFlags.reserve(tracks.size());
+
+    for (auto const& t : tracks) { // Loop on collisions
+      if (!t.has_collision()) {    // Track was not assigned, cannot compute event time
+        tableFlags(0);
+        tableEvTime(0.f, 999.f, -1);
+        continue;
+      }
+      tableFlags(1);
+      tableEvTime(t.collision().collisionTime() * 1000.f, t.collision().collisionTimeRes() * 1000.f, 0);
+    }
+  }
+  PROCESS_SWITCH(tofEventTime, processRun2, "Process with Run2 data", false);
+
+  ///
+  /// Process function to prepare the event for each track on Run 3 data without the FT0
   using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
@@ -187,9 +226,10 @@ struct tofEventTime {
       }
     }
   }
-
   PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", true);
 
+  ///
+  /// Process function to prepare the event for each track on Run 3 data without the FT0
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   void processFT0(TrksEvTime const& tracks,
                   aod::FT0s const&,
@@ -266,7 +306,6 @@ struct tofEventTime {
       }
     }
   }
-
   PROCESS_SWITCH(tofEventTime, processFT0, "Process with FT0", false);
 };
 

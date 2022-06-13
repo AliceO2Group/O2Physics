@@ -53,7 +53,7 @@ const char* ccdburl = "http://alice-ccdb.cern.ch"; /* test  "http://alice-ccdb.c
 } // namespace o2
 
 struct TrackExtension {
-  Produces<aod::TracksExtended> extendedTrackQuantities;
+  Produces<aod::TracksDCA> extendedTrackQuantities;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::base::MatLayerCylSet* lut;

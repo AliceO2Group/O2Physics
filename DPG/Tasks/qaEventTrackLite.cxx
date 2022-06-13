@@ -46,6 +46,9 @@ struct qaEventTrackLite {
 
   HistogramRegistry histos;
 
+  // Event selections
+  Configurable<float> vtxZMax{"vtxZMax", 10.f, "Max VTX Z position"};
+  // Track selections
   Configurable<bool> bItsStandalone{"bItsStandalone", false, "Select only ITS standalone DPG tracks"};
   Configurable<bool> bTpcOnly{"bTpcOnly", false, "Select only TPC only DPG tracks"};
   Configurable<bool> bItsTpcMatched{"bItsTpcMatched", false, "Select ITS-TPC matched DPG tracks"};
@@ -65,6 +68,15 @@ struct qaEventTrackLite {
   // TOF selections
   Configurable<float> chi2TofMin{"chi2TofMin", -1001.f, "Max TOF chi2"};
   Configurable<float> lengthMin{"lengthMin", -1001.f, "Min length"};
+
+  // Selection 1
+  // ITS selections
+  Configurable<float> chi2ItsMaxSel1{"chi2ItsMaxSel1", 1000.f, "Max ITS chi2 Sel1"};
+  // TPC selections
+  Configurable<int> nClusterTpcMinSel1{"nClusterTpcMinSel1", -1001, "Minimum number of TPC clusters Sel1"};
+  Configurable<int> nCrossedRowsTpcMinSel1{"nCrossedRowsTpcMinSel1", -1001, "Minimum number of TPC crossed rows Sel1"};
+  Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel1{"nCrossedRowsTpcOverFindableClustersTpcMinSel1", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel1"};
+  Configurable<float> chi2TpcMaxSel1{"chi2TpcMaxSel1", 1000.f, "Max TPC chi2 Sel1"};
 
   void init(InitContext const&)
   {
@@ -110,6 +122,11 @@ struct qaEventTrackLite {
     // kinematics
     histos.add("Tracks/relativeResoPt", "relative #it{p}_{T} resolution;#sigma(#it{p}_{T})/#it{p}_{T};#it{p}_{T};", kTH2D, {{axisPt, {500, 0., 1, "#sigma{#it{p}}/#it{p}_{T}"}}});
     histos.add("Tracks/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT(#it{p}_{T})/#it{p}_{T}#GT;#it{p}_{T};", kTProfile, {axisPt});
+    // track cuts map
+    histos.add("TrackCuts/selPtEtaPhiNoSel", "pt eta phi map no el; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiSel1", "pt eta phi map sel 1; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiSel2", "pt eta phi map sel 2; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+    histos.add("TrackCuts/selPtEtaPhiSel3", "pt eta phi map sel 3; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
 
     // MC histograms
     if (doprocessMCLite) {
@@ -117,6 +134,11 @@ struct qaEventTrackLite {
       histos.add("Particles/Kine/pt", "Particle #it{p}_{T}", kTH1D, {axisPt});
       histos.add("Particles/Kine/eta", "Particle #eta", kTH1D, {axisEta});
       histos.add("Particles/Kine/phi", "Particle #phi", kTH1D, {axisPhi});
+      histos.add("Particle/selPtEtaPhiMCGenPrimary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoNoSelPrimary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
     }
   }
 
@@ -141,45 +163,109 @@ struct qaEventTrackLite {
   Filter tofChi = o2::aod::track::tofChi2 > chi2TofMin;
   Filter length = o2::aod::track::length > lengthMin;
 
+  template <bool isMC, typename trackType>
+  void fillHistograms(trackType const& track)
+  {
+
+    if (TMath::Abs(track.dpgCollision().posZ()) > vtxZMax)
+      return;
+    if constexpr (isMC) {
+      if (track.productionMode() == 0) {
+        histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
+      }
+    }
+    // temporary additional selections
+    if (!applyTrackSelectionsNotFiltered(track)) {
+      return;
+    }
+    Bool_t sel1 = applyTrackSelectionsNotFilteredSel1(track);
+
+    if constexpr (isMC) {
+      if (track.productionMode() == 0) {
+        histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.eta(), track.phi());
+
+        if (sel1) {
+          histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel1Primary"), track.ptMC(), track.eta(), track.phi());
+        }
+
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel2Primary"), track.ptMC(), track.eta(), track.phi());
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel3Primary"), track.ptMC(), track.eta(), track.phi());
+      }
+
+      histos.fill(HIST("Particles/Kine/pt"), track.ptMC());
+      histos.fill(HIST("Particles/Kine/eta"), track.etaMC());
+      histos.fill(HIST("Particles/Kine/phi"), track.phiMC());
+    }
+    histos.fill(HIST("Tracks/VertexPositionZ"), track.dpgCollision().posZ());
+    histos.fill(HIST("Tracks/Kine/pt"), track.pt());
+    histos.fill(HIST("Tracks/Kine/eta"), track.eta());
+    histos.fill(HIST("Tracks/Kine/phi"), track.phi());
+    histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
+    histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
+    histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
+    histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
+    histos.fill(HIST("Tracks/length"), track.length());
+    histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
+    histos.fill(HIST("Tracks/ITS/itsNCl"), track.itsNCls());
+    histos.fill(HIST("Tracks/ITS/itsNClvsItsHitmap"), track.itsNCls(), track.itsClusterMap());
+    histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
+    histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+    histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
+    histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+    histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
+    histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
+    if (track.hasTPC()) {
+      histos.fill(HIST("Tracks/matchedDet"), 1);
+    }
+    if (track.hasITS()) {
+      histos.fill(HIST("Tracks/matchedDet"), 2);
+    }
+    if (track.hasTRD()) {
+      histos.fill(HIST("Tracks/matchedDet"), 3);
+    }
+    if (track.hasTOF()) {
+      histos.fill(HIST("Tracks/matchedDet"), 4);
+    }
+    histos.fill(HIST("Tracks/relativeResoPt"), track.pt(), track.ptReso());
+    histos.fill(HIST("Tracks/relativeResoPtMean"), track.pt(), track.ptReso());
+
+    if constexpr (isMC) {
+      histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.ptMC(), track.eta(), track.phi());
+    } else {
+      histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.pt(), track.eta(), track.phi());
+    }
+
+    if (sel1) {
+      if constexpr (isMC) {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.ptMC(), track.eta(), track.phi());
+      } else {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.pt(), track.eta(), track.phi());
+      }
+    }
+    if constexpr (isMC) {
+      if (sel1) {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.ptMC(), track.eta(), track.phi());
+      }
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.ptMC(), track.eta(), track.phi());
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.ptMC(), track.eta(), track.phi());
+    } else {
+      if (sel1) {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.pt(), track.eta(), track.phi());
+      }
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.pt(), track.eta(), track.phi());
+      histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.pt(), track.eta(), track.phi());
+    }
+  }
+
   // Process data
   void processDataLite(o2::soa::Filtered<aod::DPGTracks> const& tracks, aod::DPGCollisions const&)
   {
     for (const auto& track : tracks) {
-      histos.fill(HIST("Tracks/VertexPositionZ"), track.dpgCollision().posZ());
-      histos.fill(HIST("Tracks/Kine/pt"), track.pt());
-      histos.fill(HIST("Tracks/Kine/eta"), track.eta());
-      histos.fill(HIST("Tracks/Kine/phi"), track.phi());
-      histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
-      histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
-      histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
-      histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
-      histos.fill(HIST("Tracks/length"), track.length());
-      histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
-      histos.fill(HIST("Tracks/ITS/itsNCl"), track.itsNCls());
-      histos.fill(HIST("Tracks/ITS/itsNClvsItsHitmap"), track.itsNCls(), track.itsClusterMap());
-      histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
-      histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-      histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
-      histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
-      histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
-      if (track.hasTPC()) {
-        histos.fill(HIST("Tracks/matchedDet"), 1);
-      }
-      if (track.hasITS()) {
-        histos.fill(HIST("Tracks/matchedDet"), 2);
-      }
-      if (track.hasTRD()) {
-        histos.fill(HIST("Tracks/matchedDet"), 3);
-      }
-      if (track.hasTOF()) {
-        histos.fill(HIST("Tracks/matchedDet"), 4);
-      }
-      histos.fill(HIST("Tracks/relativeResoPt"), track.pt(), track.ptReso());
-      histos.fill(HIST("Tracks/relativeResoPtMean"), track.pt(), track.ptReso());
+      fillHistograms<false>(track);
     }
   }
   PROCESS_SWITCH(qaEventTrackLite, processDataLite, "process data lite", true);
@@ -188,53 +274,63 @@ struct qaEventTrackLite {
   void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGRecoParticles>> const& tracks, aod::DPGCollisions const&, aod::DPGNonRecoParticles const& particles)
   {
     for (const auto& track : tracks) {
-      if (track.productionMode() == 0) {
-        histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
-      }
-
-      histos.fill(HIST("Particles/Kine/pt"), track.ptMC());
-      histos.fill(HIST("Particles/Kine/eta"), track.etaMC());
-      histos.fill(HIST("Particles/Kine/phi"), track.phiMC());
-
-      histos.fill(HIST("Tracks/Kine/pt"), track.pt());
-      histos.fill(HIST("Tracks/Kine/eta"), track.eta());
-      histos.fill(HIST("Tracks/Kine/phi"), track.phi());
-      histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
-      histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
-      histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
-      histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
-      histos.fill(HIST("Tracks/length"), track.length());
-      histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
-      histos.fill(HIST("Tracks/TPC/tpcChi2NCl"), track.tpcChi2NCl());
-      histos.fill(HIST("Tracks/TPC/tpcNClsFound"), track.tpcNClsFound());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRows"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-      histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
-      histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
-      histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
-      histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
-      if (track.hasTPC()) {
-        histos.fill(HIST("Tracks/matchedDet"), 1);
-      }
-      if (track.hasITS()) {
-        histos.fill(HIST("Tracks/matchedDet"), 2);
-      }
-      if (track.hasTRD()) {
-        histos.fill(HIST("Tracks/matchedDet"), 3);
-      }
-      if (track.hasTOF()) {
-        histos.fill(HIST("Tracks/matchedDet"), 4);
-      }
+      fillHistograms<true>(track);
     }
 
     for (const auto& particle : particles) {
+      if (TMath::Abs(particle.dpgCollision().posZ()) > vtxZMax)
+        continue;
+
       histos.fill(HIST("Particles/Kine/pt"), particle.ptMC());
       histos.fill(HIST("Particles/Kine/eta"), particle.etaMC());
       histos.fill(HIST("Particles/Kine/phi"), particle.phiMC());
+
+      if (particle.productionMode() == 0)
+        histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), particle.ptMC(), particle.etaMC(), particle.phiMC());
     }
   }
   PROCESS_SWITCH(qaEventTrackLite, processMCLite, "process MC lite", false);
+
+  template <typename T>
+  bool applyTrackSelectionsNotFiltered(const T& track)
+  {
+    if (track.tpcNClsFound() < nClusterTpcMin)
+      return false;
+    if (track.tpcNClsCrossedRows() < nCrossedRowsTpcMin)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < nCrossedRowsTpcOverFindableClustersTpcMin)
+      return false;
+    if (bItsStandalone == true && (track.hasITS() == false || track.hasTPC() == true))
+      return false;
+    if (bTpcOnly == true && (track.hasITS() == true || track.hasTPC() == false))
+      return false;
+    if (bItsTpcMatched == true && (track.hasITS() == false || track.hasTPC() == false))
+      return false;
+    if (track.itsChi2NCl() > chi2ItsMax)
+      return false;
+    if (track.tpcChi2NCl() > chi2TpcMax)
+      return false;
+    if (track.tpcNClsFound() < nClusterTpcMin)
+      return false;
+    return true;
+  }
+
+  template <typename T>
+  bool applyTrackSelectionsNotFilteredSel1(const T& track)
+  {
+    if (track.tpcNClsFound() < nClusterTpcMinSel1)
+      return false;
+    if (track.tpcNClsCrossedRows() < nCrossedRowsTpcMinSel1)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < nCrossedRowsTpcOverFindableClustersTpcMinSel1)
+      return false;
+    if (track.itsChi2NCl() > chi2ItsMaxSel1)
+      return false;
+    if (track.tpcChi2NCl() > chi2TpcMaxSel1)
+      return false;
+
+    return true;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

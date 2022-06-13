@@ -661,7 +661,7 @@ void VarManager::FillTrack(T const& track, float* values)
       }
       values[kTrackDCAxy] = track.dcaXY();
       values[kTrackDCAz] = track.dcaZ();
-      if constexpr ((fillMap & TrackCov) > 0) {
+      if constexpr ((fillMap & ReducedTrackBarrelCov) > 0) {
         if (fgUsedVars[kTrackDCAsigXY]) {
           values[kTrackDCAsigXY] = track.dcaXY() / std::sqrt(track.cYY());
         }

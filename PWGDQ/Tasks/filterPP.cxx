@@ -76,24 +76,24 @@ DECLARE_SOA_TABLE(DQMuonsCuts, "AOD", "DQMUONCUTS", dqppfilter::IsDQMuonSelected
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventCuts>;
 // TODO: subscribe to the bare needed minimum, in particular for the CEFP task
-using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyBarrelTracksTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracksTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                      aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                      aod::pidTPCKa, aod::pidTPCPr,
                                      aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                      aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
 
-using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
                                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                          aod::DQBarrelTrackCuts>;
-using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                              aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                              aod::pidTPCKa, aod::pidTPCPr,
                                              aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,

@@ -124,8 +124,8 @@ struct HFCandidateCreatorCascade {
       MY_DEBUG_MSG(isLc, LOG(info) << "Processing the Lc with proton " << indexBach << " trackV0DaughPos " << indexV0DaughPos << " trackV0DaughNeg " << indexV0DaughNeg);
 
       auto trackParCovBach = getTrackParCov(bach);
-      auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that MyBigTracks does not need TracksExtended!
-      auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that MyBigTracks does not need TracksExtended!
+      auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that MyBigTracks does not need TracksDCA!
+      auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that MyBigTracks does not need TracksDCA!
       trackParCovV0DaughPos.propagateTo(v0.posX(), bZ);             // propagate the track to the X closest to the V0 vertex
       trackParCovV0DaughNeg.propagateTo(v0.negX(), bZ);             // propagate the track to the X closest to the V0 vertex
       const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
