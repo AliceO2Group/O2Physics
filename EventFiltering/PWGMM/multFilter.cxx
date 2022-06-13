@@ -9,20 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file multFilter.cxx
-// \brief Selection of events with high activity at mid-pseudorapidity, forward (FV0), or with a leading particle
-//
-// \author Antonio Ortiz, UNAM Mx, antonio.ortiz.velasquez@cern.ch
-
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "../filterTables.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
 #include <cmath>
 #include <string>
 #include <TMath.h>
@@ -31,86 +26,112 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> mmObjectsNames{"kHtPt", "kHmFv0", "kHmTrk"};
+static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFddFt0cMftFv0", "kHmFddMftFv0", "kHmFv0Mft", "kHmFv0", "kHmMft", "kHfFv0", "kHfMftTrk", "kHfMftFv0Trk", "kHfMftFv0", "kHmMftFt0a", "kHmFt0", "kHfFt0", "kHfMftFt0a", "kHtPt"};
 
 struct multFilter {
-  enum { kLeadingPtTrack = 0,
-         kHighMultFv0,
-         kHighTrackMult,
+  enum { kHighTrackMult = 0,
+         kHighFddFt0cMftFv0Mult,
+         kHighFddMftFv0Mult,
+         kHighFv0MftMult,
+         kHighFv0Mult,
+         kHighMftMult,
+         kHighFv0Flat,
+         kHighMftTrkFlat,
+         kHighMftFv0TrkFlat,
+         kHighMftFv0Flat,
+         kHighMftFt0aMult,
+         kHighFt0Mult,
+         kHighFt0Flat,
+         kHighMftFt0aFlat,
+         kLeadingPtTrack,
          kNtriggersMM };
 
   // event selection cuts
-  Configurable<float> selPtTrig{"selPtTrig", 5., "Minimum track pT leading threshold"};
-  Configurable<float> selHMFv0{"selHMFv0", 15000., "Minimum FV0-amplitude  threshold"};
-  Configurable<float> selHMMFTMult{"selHMMFTMult", 24., "Minimum MFT multilicity  threshold"};
-  Configurable<float> selHTrkMult{"selHTrkMult", 24., "Minimum global trk multiplicity threshold"};
-  Configurable<float> selHITSTrkMult{"selHITSTrkMult", 135., "Minimum ITS trk multiplicity threshold"};
+  Configurable<float> selHTrkMult{"selHTrkMult", 24., "global trk multiplicity threshold"};
+  Configurable<float> selHMfddft0cfv0mft{"selHMfddft0cfv0mft", 138.6, "FDD+FV0+FT0C+MFT mult threshold"};
+  Configurable<float> selHMfddfv0mft{"selHMfddfv0mft", 137.9, "FDD+FV0+MFT mult threshold"};
+  Configurable<float> selHMfv0mft{"selHMfv0mft", 65.6, "FV0+MFT mult threshold"};
+  Configurable<float> selHMFv0{"selHMFv0", 9991.85, "FV0-amplitude threshold"};
+  Configurable<float> selHMMFTMult{"selHMMFTMult", 28.14, "MFT multilicity threshold"};
+  Configurable<float> sel1Ffv0{"sel1Ffv0", 0.9, "1-flatenicity FV0  threshold"};
+  Configurable<float> sel1Fmftglob{"sel1Fmftglob", 0.80, "1-flatenicity MFT+Globtracks threshold"};
+  Configurable<float> sel1Fmftfv0glob{"sel1Fmftfv0glob", 0.81, "1-flatenicity FV0+MFT+Globtracks threshold"};
+  Configurable<float> sel1Fmftfv0{"sel1Fmftfv0", 0.86, "1-flatenicity MFT+FV0 threshold"};
+  Configurable<float> sel1Mmftft0a{"sel1Mmftft0a", 41.1, "1-flatenicity MFT+FT0A threshold"};
+  Configurable<float> sel1Mft0{"sel1Mft0", 2123.3, "FT0 mult threshold"};
+  Configurable<float> sel1Fft0{"sel1Fft0", 0.78, "1-flatenicity FT0 threshold"};
+  Configurable<float> sel1Fmftft0a{"sel1Fmftft0a", 0.8, "1-flatenicity MFT+FT0A threshold"};
+  Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
 
   Produces<aod::MultFilters> tags;
 
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
-  // rho cuts
-  Configurable<int> cfgRhoNetaBins{"cfgRhoNetaBins", 5, "number of bins in eta"};
-  Configurable<int> cfgRhoNphiBins{"cfgRhoNphiBins", 8, "number of bins in phi"};
-  Configurable<float> cfgRhoMinEtaCut{"cfgRhoMinEtaCut", 2.2f, "min eta for fv0 cells"};
-  Configurable<float> cfgRhoMaxEtaCut{"cfgRhoMaxEtaCut", 5.1f, "max eta for fv0 cells"};
 
   HistogramRegistry multiplicity{"multiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  static constexpr std::string_view nhEst_before[15] = {
+    "eGlobaltrack", "eFDDAFDDCFT0CFV0MFT", "eFDDAFDDCFV0MFT", "eFV0MFT", "eFV0", "eMFTmult",
+    "e1flatencityFV0", "e1flatencitytrkMFT", "e1flatencitytrkMFTFV0", "e1flatencityMFTFV0",
+    "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A", "ePtl"};
+  static constexpr std::string_view nhEst_after[15] = {
+    "eGlobaltrack_selected", "eFDDAFDDCFT0CFV0MFT_selected", "eFDDAFDDCFV0MFT_selected", "eFV0MFT_selected", "eFV0_selected", "eMFTmult_selected", "e1flatencityFV0_selected", "e1flatencitytrkMFT_selected", "e1flatencitytrkMFTFV0_selected", "e1flatencityMFTFV0_selected", "eMFTmultFT0A_selected", "eFT0_selected", "e1flatencityFT0_selected", "e1flatencityMFTFT0A_selected", "ePtl_selected"};
+  static constexpr std::string_view npEst[15] = {
+    "epGlobaltrack", "epFDDAFDDCFT0CFV0MFT", "epFDDAFDDCFV0MFT", "epFV0MFT", "epFV0", "epMFTmult",
+    "ep1flatencityFV0", "ep1flatencitytrkMFT", "ep1flatencitytrkMFTFV0", "ep1flatencityMFTFV0",
+    "epMFTmultFT0A", "epFT0", "ep1flatencityFT0", "e1pflatencityMFTFT0A", "epPtl"};
+
+  static constexpr std::string_view tEst[15] = {
+    "GlobalTrk", "FDDA_FDDC_FT0C_FV0_MFT", "FDDA_FDDC_FV0_MFT", "FV0_MFT", "FV0",
+    "MFTTrk", "1-flatencity_FV0", "1-flatencity_trk_MFT", "1-flatencity_trk_MFT_FV0",
+    "1-flatencity_MFT_FV0", "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A", "pT^{trig} (GeV/#it{c})"};
+
   void init(o2::framework::InitContext&)
   {
+    int nBinsEst[15] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 500, 102, 102, 150};
+    float lowEdgeEst[15] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
+                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, .0};
+    float upEdgeEst[15] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 3999.5, 1.01, 1.01, 150.0};
 
     // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
 
-    // QA FV0
-    multiplicity.add("fEtaPhiFv0", "eta vs phi", HistType::kTH2F, {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
+    // QA FT0
+    multiplicity.add("hAmpT0AVsCh", "", HistType::kTH2F, {{24, -0.5, 23.5, "ch"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
+    multiplicity.add("hAmpT0CVsCh", "", HistType::kTH2F, {{28, -0.5, 27.5, "ch"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
+    multiplicity.add("hFT0C", "FT0C", HistType::kTH1F, {{600, -0.5, 599.5, "FT0C amplitudes"}});
+    multiplicity.add("hFT0A", "FT0A", HistType::kTH1F, {{600, -0.5, 599.5, "FT0A amplitudes"}});
+    multiplicity.add("hAmpT0AvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
+    multiplicity.add("hAmpT0CvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
+
+    // QA FDD
+    multiplicity.add("hAmpFDAVsCh", "", HistType::kTH2F, {{8, -0.5, 7.5, "channel"}, {600, -0.5, +599.5, "FDA amplitude"}});
+    multiplicity.add("hAmpFDCVsCh", "", HistType::kTH2F, {{8, -0.5, 7.5, "channel"}, {600, -0.5, +599.5, "FDC amplitude"}});
+    multiplicity.add("hAmpFDAvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {6000, -0.5, 7999.5, "Ampl. FDA"}});
+    multiplicity.add("hAmpFDCvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {6000, -0.5, 7999.5, "Ampl. FDC"}});
 
     // QA global tracks
     multiplicity.add("hdNdetaGlobal", "dNdeta", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
     multiplicity.add("hPhiGlobal", "Phi", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
-
-    // QA ITS tracks
-    multiplicity.add("hdNdetaITS", "dNdeta (ITStracks)", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
-    multiplicity.add("hPhiITS", "Phi (ITStracks)", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
+    multiplicity.add("hMFTvsVtx", "", HistType::kTH2F, {{30, -15.0, +15.0, "Vtx_z"}, {200, -0.5, +199.5, "MFT mult (-3.6<#eta<-2.5)"}});
 
     // QA MFT tracks
     multiplicity.add("hdNdetaMFT", "dNdeta (MFTtracks)", HistType::kTH1F, {{50, -5.0, 5.0, " "}});
     multiplicity.add("hPhiMFT", "Phi (MFTtracks)", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
 
-    // QA leading track filter
-    multiplicity.add("fLeadingTrackPt", "Lead trk pT", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
-    multiplicity.add("fLeadingTrackPtSelected", "sel lead trk pT", HistType::kTH1F, {{150, 0., +150., "trk #it{p}_{T} (GeV/#it{c})"}});
-
-    // QA hm FV0 filter
-    multiplicity.add("fMultFv0", "FV0 amp", HistType::kTH1F, {{800, -0.5, +39999.5, "FV0 amplitude"}});
-    multiplicity.add("fMultFv0Selected", "sel FV0 amp", HistType::kTH1F, {{800, -0.5, +39999.5, "FV0 amplitude"}});
-    multiplicity.add("fTrackMultVsV0A", "trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {800, -0.5, +39999.5, "sum AmpFV0"}});
-    multiplicity.add("fITSTrackMultVsV0A", "its trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "its trk mult (|#eta|<1.5)"}, {800, -0.5, +39999.5, "sum AmpFV0"}});
-
-    // QA hm MFT filter
-    multiplicity.add("fMFTTrackMult", "MFT trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
-    multiplicity.add("fMFTTrackMultSelected", "sel MFT trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
-    multiplicity.add("fTrackMultVsMFT", "trk mult vs MFT", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
-    multiplicity.add("fITSTrackMultVsMFT", "its trk mult vs FV0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "its trk mult (|#eta|<1.5)"}, {200, -0.5, +199.5, "MFT trk mult (-3.6 < #eta < -2.5)"}});
-
-    // QA hm global track filter
-    multiplicity.add("fTrackMult", "trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
-    multiplicity.add("fTrackMultSelected", "sel trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}});
-
-    // QA its track filter
-    multiplicity.add("fITSTrackMult", "ITS trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "trk mult (|#eta|<1.5)"}});
-    multiplicity.add("fITSTrackMultSelected", "sel ITS trk mult", HistType::kTH1F, {{200, -0.5, +199.5, "itstrk mult (|#eta|<1.5)"}});
-
-    // T0A
-    multiplicity.add("fTrackMultVsT0A", "trk mult vs FT0 amp", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {200, -0.5, +999.5, "sum AmpFT0"}});
-
-    // QA flatenicity
-    multiplicity.add("fRhoVsTrkMult", "rhoN vs trk mult", HistType::kTH2F, {{200, -0.5, +199.5, "trk mult (|#eta|<0.8)"}, {1000, -0.5, +9.5, "#rho"}});
-    multiplicity.add("fMpTVsTrackMult", "Av pT vs trk mult", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
-    multiplicity.add("fMpTVsTrackMultFlat", "Av pT vs trk mult (flat)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
-    multiplicity.add("fMpTVsTrackMultJetty", "Av pT vs trk mult (jetty)", HistType::kTProfile, {{200, -0.5, +199.5, "trk mult"}});
+    // estimators
+    for (int i_e = 0; i_e < 15; ++i_e) {
+      multiplicity.add(
+        npEst[i_e].data(), "", HistType::kTProfile, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
+    }
+    for (int i_e = 0; i_e < 15; ++i_e) {
+      multiplicity.add(
+        nhEst_before[i_e].data(), "", HistType::kTH1F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
+      multiplicity.add(
+        nhEst_after[i_e].data(), "", HistType::kTH1F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
+    }
 
     std::array<std::string, 2> eventTitles = {"all", "rejected"};
 
@@ -123,343 +144,369 @@ struct multFilter {
     }
   }
 
-  // declare filters on tracks and charged jets
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
-
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  float computeDeltaPhi(float phia, float phib,
-                        float rangeMin = -M_PI / 2.0, float rangeMax = 3.0 * M_PI / 2.0)
-  {
-    float dphi = -999;
-    if (phia < 0) {
-      phia += 2 * M_PI;
-    } else if (phia > 2 * M_PI) {
-      phia -= 2 * M_PI;
-    }
-    if (phib < 0) {
-      phib += 2 * M_PI;
-    } else if (phib > 2 * M_PI) {
-      phib -= 2 * M_PI;
-    }
-    dphi = phib - phia;
-    if (dphi < rangeMin) {
-      dphi += 2 * M_PI;
-    } else if (dphi > rangeMax) {
-      dphi -= 2 * M_PI;
-    }
-    return dphi;
-  }
-  int getFV0Ring(int i_ch)
-  {
-    int i_ring = -1;
-    if (i_ch < 8) {
-      i_ring = 0;
-    } else if (i_ch >= 8 && i_ch < 16) {
-      i_ring = 1;
-    } else if (i_ch >= 16 && i_ch < 24) {
-      i_ring = 2;
-    } else if (i_ch >= 24 && i_ch < 32) {
-      i_ring = 3;
-    } else {
-      i_ring = 4;
-    }
-    return i_ring;
-  }
-  int getFV0IndexPhi(int i_ch)
-  {
-    int i_ring = -1;
 
-    if (i_ch >= 0 && i_ch < 8) {
-      if (i_ch < 4) {
-        i_ring = i_ch;
-      } else {
-        if (i_ch == 7) {
-          i_ring = 4;
-        } else if (i_ch == 6) {
-          i_ring = 5;
-        } else if (i_ch == 5) {
-          i_ring = 6;
-        } else if (i_ch == 4) {
-          i_ring = 7;
-        }
+  int getT0ASector(int i_ch)
+  {
+    int i_sec_t0a = -1;
+    for (int i_sec = 0; i_sec < 24; ++i_sec) {
+      if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
+        i_sec_t0a = i_sec;
+        break;
       }
-    } else if (i_ch >= 8 && i_ch < 16) {
-      if (i_ch < 12) {
-        i_ring = i_ch;
-      } else {
-        if (i_ch == 15) {
-          i_ring = 12;
-        } else if (i_ch == 14) {
-          i_ring = 13;
-        } else if (i_ch == 13) {
-          i_ring = 14;
-        } else if (i_ch == 12) {
-          i_ring = 15;
-        }
-      }
-    } else if (i_ch >= 16 && i_ch < 24) {
-      if (i_ch < 20) {
-        i_ring = i_ch;
-      } else {
-        if (i_ch == 23) {
-          i_ring = 20;
-        } else if (i_ch == 22) {
-          i_ring = 21;
-        } else if (i_ch == 21) {
-          i_ring = 22;
-        } else if (i_ch == 20) {
-          i_ring = 23;
-        }
-      }
-    } else if (i_ch >= 24 && i_ch < 32) {
-      if (i_ch < 28) {
-        i_ring = i_ch;
-      } else {
-        if (i_ch == 31) {
-          i_ring = 28;
-        } else if (i_ch == 30) {
-          i_ring = 29;
-        } else if (i_ch == 29) {
-          i_ring = 30;
-        } else if (i_ch == 28) {
-          i_ring = 31;
-        }
-      }
-    } else if (i_ch == 32) {
-      i_ring = 32;
-    } else if (i_ch == 40) {
-      i_ring = 33;
-    } else if (i_ch == 33) {
-      i_ring = 34;
-    } else if (i_ch == 41) {
-      i_ring = 35;
-    } else if (i_ch == 34) {
-      i_ring = 36;
-    } else if (i_ch == 42) {
-      i_ring = 37;
-    } else if (i_ch == 35) {
-      i_ring = 38;
-    } else if (i_ch == 43) {
-      i_ring = 39;
-    } else if (i_ch == 47) {
-      i_ring = 40;
-    } else if (i_ch == 39) {
-      i_ring = 41;
-    } else if (i_ch == 46) {
-      i_ring = 42;
-    } else if (i_ch == 38) {
-      i_ring = 43;
-    } else if (i_ch == 45) {
-      i_ring = 44;
-    } else if (i_ch == 37) {
-      i_ring = 45;
-    } else if (i_ch == 44) {
-      i_ring = 46;
-    } else if (i_ch == 36) {
-      i_ring = 47;
     }
-    return i_ring;
+    return i_sec_t0a;
   }
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& collision, TrackCandidates const& tracks, aod::MFTTracks const& mfttracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  int getT0CSector(int i_ch)
+  {
+    int i_sec_t0c = -1;
+    for (int i_sec = 0; i_sec < 28; ++i_sec) {
+      if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
+        i_sec_t0c = i_sec;
+        break;
+      }
+    }
+    return i_sec_t0c;
+  }
+  float GetFlatenicity(float signals[], int entries)
+  {
+    float flat = 9999;
+    float mRho = 0;
+    for (int iCell = 0; iCell < entries; ++iCell) {
+      mRho += 1.0 * signals[iCell];
+    }
+    // average activity per cell
+    mRho /= (1.0 * entries);
+    if (mRho <= 0) {
+      return 9999;
+    }
+    // get sigma
+    float sRho_tmp = 0;
+    for (int iCell = 0; iCell < entries; ++iCell) {
+      sRho_tmp += TMath::Power(1.0 * signals[iCell] - mRho, 2);
+    }
+    sRho_tmp /= (1.0 * entries * entries);
+    float sRho = TMath::Sqrt(sRho_tmp);
+    if (mRho > 0) {
+      flat = sRho / mRho;
+    }
+    return flat;
+  }
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::MFTTracks const& mfttracks, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::FDDs_001 const& fdds_001)
   {
 
     bool keepEvent[kNtriggersMM]{false};
-
+    auto vtxZ = collision.posZ();
     multiplicity.fill(HIST("fProcessedEvents"), 0);
     multiplicity.fill(HIST("fCollZpos"), collision.posZ());
     // global observables
     int multTrack = 0;
-    int multITSTrack = 0;
-    int multMFTTrack = 0;
     float flPt = 0; // leading pT
-    double rho_m = -1;
+    double flatenicity_fv0 = 9999;
 
-    const int nEta = cfgRhoNetaBins;
-    const int nPhi = cfgRhoNphiBins;
-    double EtaBins[nEta + 1];
-    double deltaEta = TMath::Abs(cfgRhoMaxEtaCut - cfgRhoMinEtaCut) / (1.0 * cfgRhoNetaBins);
-    for (int i_eta = 0; i_eta < cfgRhoNetaBins + 1; ++i_eta) {
-      EtaBins[i_eta] = 0;
-      if (i_eta < cfgRhoNetaBins) {
-        EtaBins[i_eta] = i_eta * deltaEta + 1.0 * cfgRhoMinEtaCut;
-      } else {
-        EtaBins[i_eta] = 1.0 * cfgRhoMaxEtaCut;
-      }
-    }
-    double PhiBins[nPhi + 1];
-    double deltaPhi = (2.0 * M_PI) / (1.0 * cfgRhoNphiBins);
-    for (int i_phi = 0; i_phi < cfgRhoNphiBins + 1; ++i_phi) {
-      PhiBins[i_phi] = 0;
-      if (i_phi < cfgRhoNphiBins) {
-        PhiBins[i_phi] = i_phi * deltaPhi;
-      } else {
-        PhiBins[i_phi] = 2.0 * M_PI;
-      }
-    }
-    int RhoLattice[nEta][nPhi];
-    for (int i_eta = 0; i_eta < cfgRhoNetaBins; ++i_eta) {
-      for (int i_phi = 0; i_phi < cfgRhoNphiBins; ++i_phi) {
-        RhoLattice[i_eta][i_phi] = 0;
-      }
-    }
-    // V0A signal and rho calculation
     float sumAmpFV0 = 0;
+    float sumAmpFV01to4Ch = 0;
     int innerFV0 = 32;
-    bool hasValidV0 = false;
-    float detaFV0 = (cfgRhoMaxEtaCut - cfgRhoMinEtaCut) / 5.0;
+    const int nCells = 48; // 48 sectors in FV0
+
     if (collision.has_foundFV0()) {
-      hasValidV0 = true;
+      float RhoLattice[nCells];
+      for (Int_t iCh = 0; iCh < nCells; iCh++) {
+        RhoLattice[iCh] = 0;
+      }
+
       auto fv0 = collision.foundFV0();
       // LOGP(info, "amplitude.size()={}", fv0.amplitude().size());
       for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
-        sumAmpFV0 += fv0.amplitude()[ich];
-        double phiv0 = -999.0;
-        double etav0 = -999.0;
+
         int channelv0 = fv0.channel()[ich];
-        int ringindex = getFV0Ring(channelv0);
-        int channelv0phi = getFV0IndexPhi(channelv0);
-        etav0 = cfgRhoMaxEtaCut - (detaFV0 / 2.0) * (2.0 * ringindex + 1);
-        if (channelv0 < innerFV0) {
-          phiv0 = (2.0 * (channelv0phi - 8 * ringindex) + 1) * M_PI / (8.0);
-        } else {
-          phiv0 = ((2.0 * channelv0phi) + 1 - 64.0) * 2.0 * M_PI / (32.0);
+        float ampl_ch = fv0.amplitude()[ich];
+        sumAmpFV0 += ampl_ch;
+        if (channelv0 >= 8) { // exclude the 1st ch, eta 2.2,4.52
+          sumAmpFV01to4Ch += ampl_ch;
         }
-        multiplicity.fill(HIST("fEtaPhiFv0"), phiv0, etav0);
-        for (int i_eta = 0; i_eta < cfgRhoNetaBins; ++i_eta) {
-          for (int i_phi = 0; i_phi < cfgRhoNphiBins; ++i_phi) {
-            if (etav0 >= EtaBins[i_eta] && etav0 < EtaBins[i_eta + 1] &&
-                phiv0 >= PhiBins[i_phi] && phiv0 < PhiBins[i_phi + 1]) {
-              if (channelv0 < innerFV0) {
-                RhoLattice[i_eta][i_phi] = fv0.amplitude()[ich];
-              } else {
-                RhoLattice[i_eta][i_phi] += fv0.amplitude()[ich] / 2.0; // two channels per bin
-              }
-            }
-          }
+        if (channelv0 < innerFV0) {
+          RhoLattice[channelv0] = ampl_ch;
+        } else {
+          RhoLattice[channelv0] = ampl_ch / 2.0; // two channels per bin
         }
       }
 
-      double mRho = 0;
-      for (int i_eta = 0; i_eta < cfgRhoNetaBins; ++i_eta) {
-        for (int i_phi = 0; i_phi < cfgRhoNphiBins; ++i_phi) {
-          mRho += 1.0 * RhoLattice[i_eta][i_phi];
-        }
-      }
-      // average activity per cell
-      mRho /= (1.0 * cfgRhoNetaBins * cfgRhoNphiBins);
-      // get sigma
-      double sRho_tmp = 0;
-      for (int i_eta = 0; i_eta < cfgRhoNetaBins; ++i_eta) {
-        for (int i_phi = 0; i_phi < cfgRhoNphiBins; ++i_phi) {
-          sRho_tmp += TMath::Power(1.0 * RhoLattice[i_eta][i_phi] - mRho, 2);
-        }
-      }
-      sRho_tmp /= (1.0 * cfgRhoNetaBins * cfgRhoNphiBins);
-      double sRho = TMath::Sqrt(sRho_tmp);
-      rho_m = sRho / mRho;
+      flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
     }
 
-    // T0 signal
-    float sumAmpFT0 = 0;
-    bool hasValidT0 = false;
+    // FT0
+    float sumAmpFT0A = 0.f;
+    float sumAmpFT0C = 0.f;
+    const int nCellsT0A = 24;
+    float RhoLatticeT0A[nCellsT0A];
+    for (int iCh = 0; iCh < nCellsT0A; iCh++) {
+      RhoLatticeT0A[iCh] = 0.0;
+    }
+    const int nCellsT0C = 28;
+    float RhoLatticeT0C[nCellsT0C];
+    for (int iCh = 0; iCh < nCellsT0C; iCh++) {
+      RhoLatticeT0C[iCh] = 0.0;
+    }
+
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
-      if (collision.t0ACorrectedValid()) {
-        hasValidT0 = true;
-        for (auto amplitude : ft0.amplitudeA()) {
-          sumAmpFT0 += amplitude;
+      for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+        float amplitude = ft0.amplitudeA()[i_a];
+        uint8_t channel = ft0.channelA()[i_a];
+        int sector = getT0ASector(channel);
+        if (sector >= 0 && sector < 24) {
+          RhoLatticeT0A[sector] += amplitude;
+          multiplicity.fill(HIST("hAmpT0AVsCh"), sector, amplitude);
+        }
+        sumAmpFT0A += amplitude;
+        multiplicity.fill(HIST("hFT0A"), amplitude);
+      }
+      for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
+        float amplitude = ft0.amplitudeC()[i_c];
+        sumAmpFT0C += amplitude;
+        uint8_t channel = ft0.channelC()[i_c];
+        int sector = getT0CSector(channel);
+        if (sector >= 0 && sector < 28) {
+          RhoLatticeT0C[sector] += amplitude;
+          multiplicity.fill(HIST("hAmpT0CVsCh"), sector, amplitude);
+        }
+        multiplicity.fill(HIST("hFT0C"), amplitude);
+      }
+      multiplicity.fill(HIST("hAmpT0AvsVtx"), vtxZ, sumAmpFT0A);
+      multiplicity.fill(HIST("hAmpT0CvsVtx"), vtxZ, sumAmpFT0C);
+    }
+    float flatenicity_t0a = GetFlatenicity(RhoLatticeT0A, nCellsT0A);
+    float flatenicity_t0c = GetFlatenicity(RhoLatticeT0C, nCellsT0C);
+
+    // FDD
+    float sumAmpFDDA = 0;
+    float sumAmpFDDC = 0;
+    if (collision.has_foundFDD()) {
+      auto fdd = collision.foundFDD();
+      for (std::size_t ich = 0; ich < 8; ich++) {
+        float amplitude = fdd.chargeA()[ich];
+        sumAmpFDDA += amplitude;
+        multiplicity.fill(HIST("hAmpFDAVsCh"), ich, amplitude);
+      }
+      for (std::size_t ich = 0; ich < 8; ich++) {
+        float amplitude = fdd.chargeC()[ich];
+        sumAmpFDDC += amplitude;
+        multiplicity.fill(HIST("hAmpFDCVsCh"), ich, amplitude);
+      }
+      multiplicity.fill(HIST("hAmpFDAvsVtx"), vtxZ, sumAmpFDDA);
+      multiplicity.fill(HIST("hAmpFDCvsVtx"), vtxZ, sumAmpFDDC);
+    }
+
+    // MFTtracks
+    float multMFTTrackParc = 0;
+    float multMFTTrack = 0;
+
+    const int nRings1 = 2;
+    const int nSectors1 = 8;
+    const int nCells1 = nRings1 * nSectors1;
+    float maxEta1[nRings1] = {-3.05, -2.50};
+    float minEta1[nRings1] = {-3.60, -3.05};
+    float maxPhi1[nSectors1] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
+    float minPhi1[nSectors1] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0};
+    float RhoLattice1[nCells1];
+    for (int iCh = 0; iCh < nCells1; iCh++) {
+      RhoLattice1[iCh] = 0.0;
+    }
+
+    for (auto& track : mfttracks) {
+      float eta_a = track.eta();
+      float phi_a = track.phi();
+      o2::math_utils::bringTo02Pi(phi_a);
+      if (eta_a > -2.5 || eta_a < -3.6) { // the MFT eta coverage
+        continue;
+      }
+      multiplicity.fill(HIST("hdNdetaMFT"), eta_a);
+      multiplicity.fill(HIST("hPhiMFT"), phi_a);
+
+      int i_ch = 0;
+      for (int ir = 0; ir < nRings1; ir++) {
+        for (int is = 0; is < nSectors1; is++) {
+          if (eta_a >= minEta1[ir] && eta_a < maxEta1[ir] &&
+              phi_a >= minPhi1[is] * 2.0 * M_PI / (1.0 * nSectors1) &&
+              phi_a < maxPhi1[is] * 2.0 * M_PI / (1.0 * nSectors1)) {
+            RhoLattice1[i_ch]++;
+          }
+          i_ch++;
+        }
+      }
+
+      multMFTTrack++;
+
+      if (eta_a > -3.4 || eta_a < -3.6) {
+        continue;
+      }
+      multMFTTrackParc++;
+    }
+    multiplicity.fill(HIST("hMFTvsVtx"), vtxZ, multMFTTrack);
+    float flatenicity_mft = GetFlatenicity(RhoLattice1, nCells1);
+    // Globaltracks
+    const int nRings2 = 4;
+    const int nSectors2 = 8;
+    const int nCells2 = nRings2 * nSectors2;
+    float maxEta2[nRings2] = {-0.4, 0.0, +0.4, +0.8};
+    float minEta2[nRings2] = {-0.8, -0.4, +0.0, +0.4};
+    float maxPhi2[nSectors2] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
+    float minPhi2[nSectors2] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0};
+    float RhoLattice2[nCells2];
+    for (int iCh = 0; iCh < nCells2; iCh++) {
+      RhoLattice2[iCh] = 0.0;
+    }
+
+    for (auto& track : tracks) {
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      float eta_a = track.eta();
+      float phi_a = track.phi();
+      float pt_a = track.pt();
+      multTrack++;
+      multiplicity.fill(HIST("hdNdetaGlobal"), eta_a);
+      multiplicity.fill(HIST("hPhiGlobal"), phi_a);
+      if (flPt < pt_a) {
+        flPt = pt_a;
+      }
+      int i_ch = 0;
+      for (int ir = 0; ir < nRings2; ir++) {
+        for (int is = 0; is < nSectors2; is++) {
+          if (eta_a >= minEta2[ir] && eta_a < maxEta2[ir] &&
+              phi_a >= minPhi2[is] * 2.0 * M_PI / (1.0 * nSectors2) &&
+              phi_a < maxPhi2[is] * 2.0 * M_PI / (1.0 * nSectors2)) {
+            RhoLattice2[i_ch]++;
+          }
+          i_ch++;
         }
       }
     }
-    // ITStracks
-    for (auto& track : tracks) {
-      if (track.detectorMap() && track.hasITS() != (uint8_t)0 && track.itsChi2NCl() < 36.0) {
-        continue;
-      }
-      multITSTrack++;
-      multiplicity.fill(HIST("hdNdetaITS"), track.eta());
-      multiplicity.fill(HIST("hPhiITS"), track.phi());
+    float flatenicity_glob = GetFlatenicity(RhoLattice2, nCells2);
+
+    float combined_estimator1 = 0;
+    float combined_estimator2 = 0;
+    float combined_estimator3 = 0;
+    float combined_estimator4 = 0;
+    float combined_estimator5 = 0;
+    float estimator[15];
+    float cut[15];
+    for (int i_e = 0; i_e < 15; ++i_e) {
+      estimator[i_e] = 0;
+      cut[i_e] = 0;
     }
-    // MFTtracks
-    for (auto& track : mfttracks) {
-      float eta = track.eta();
-      float phi = track.phi();
-      o2::math_utils::bringTo02Pi(phi);
-      if (eta > -2.5 || eta < -3.6) { // the MFT eta coverage
-        continue;
-      }
-      multMFTTrack++;
-      multiplicity.fill(HIST("hdNdetaMFT"), track.eta());
-      multiplicity.fill(HIST("hPhiMFT"), phi);
+    cut[0] = selHTrkMult;
+    cut[1] = selHMfddft0cfv0mft;
+    cut[2] = selHMfddfv0mft;
+    cut[3] = selHMfv0mft;
+    cut[4] = selHMFv0;
+    cut[5] = selHMMFTMult;
+    cut[6] = sel1Ffv0;
+    cut[7] = sel1Fmftglob;
+    cut[8] = sel1Fmftfv0glob;
+    cut[9] = sel1Fmftfv0;
+    cut[10] = sel1Mmftft0a;
+    cut[11] = sel1Mft0;
+    cut[12] = sel1Fft0;
+    cut[13] = sel1Fmftft0a;
+    cut[14] = selPtTrig;
+
+    // option 1
+    const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
+    float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};
+    float ampl1[nEta1] = {0, 0, 0, 0, 0};
+    ampl1[0] = sumAmpFDDC;
+    ampl1[1] = multMFTTrackParc;
+    ampl1[2] = sumAmpFT0C;
+    ampl1[3] = sumAmpFV01to4Ch;
+    ampl1[4] = sumAmpFDDA;
+
+    for (int i_1 = 0; i_1 < nEta1; ++i_1) {
+      combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
     }
-    // Globaltracks
-    for (auto& track : tracks) {
-      if (!track.isGlobalTrack()) {
-        continue;
-      }
-      multTrack++;
-      multiplicity.fill(HIST("hdNdetaGlobal"), track.eta());
-      multiplicity.fill(HIST("hPhiGlobal"), track.phi());
-      if (flPt < track.pt()) {
-        flPt = track.pt();
-      }
-    }
-    // filling tprofiles
-    for (auto& track : tracks) {
-      if (!track.isGlobalTrack()) {
-        continue;
-      }
-      multiplicity.fill(HIST("fMpTVsTrackMult"), multTrack, track.pt());
-      if (rho_m < 0.8 && collision.has_foundFV0()) {
-        multiplicity.fill(HIST("fMpTVsTrackMultFlat"), multTrack, track.pt());
-      }
-      if (rho_m > 2.0 && collision.has_foundFV0()) {
-        multiplicity.fill(HIST("fMpTVsTrackMultJetty"), multTrack, track.pt());
-      }
+    // option 2
+    const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
+    float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00548221, 0.0037175};
+    float ampl2[nEta2] = {0, 0, 0, 0};
+    ampl2[0] = sumAmpFDDC;
+    ampl2[1] = multMFTTrack;
+    ampl2[2] = sumAmpFV01to4Ch;
+    ampl2[3] = sumAmpFDDA;
+    for (int i_2 = 0; i_2 < nEta2; ++i_2) {
+      combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
     }
 
-    multiplicity.fill(HIST("fRhoVsTrkMult"), multTrack, rho_m);
-    multiplicity.fill(HIST("fLeadingTrackPt"), flPt);
-    multiplicity.fill(HIST("fTrackMult"), multTrack);
-    multiplicity.fill(HIST("fITSTrackMult"), multITSTrack);
-    multiplicity.fill(HIST("fMFTTrackMult"), multMFTTrack);
-    multiplicity.fill(HIST("fTrackMultVsMFT"), multTrack, multMFTTrack);
-    multiplicity.fill(HIST("fITSTrackMultVsMFT"), multITSTrack, multMFTTrack);
-
-    if (hasValidV0) {
-      multiplicity.fill(HIST("fMultFv0"), sumAmpFV0);
-      multiplicity.fill(HIST("fTrackMultVsV0A"), multTrack, sumAmpFV0);
-      multiplicity.fill(HIST("fITSTrackMultVsV0A"), multITSTrack, sumAmpFV0);
-    }
-    if (hasValidT0) {
-      multiplicity.fill(HIST("fTrackMultVsT0A"), multTrack, sumAmpFT0);
-    }
-    // Check whether this is a high trk multiplicity event
-    if (multTrack >= selHTrkMult) {
-      keepEvent[kHighTrackMult] = true; // accepted HM events
-      multiplicity.fill(HIST("fTrackMultSelected"), multTrack);
-    }
-    if (multITSTrack >= selHITSTrkMult) {
-      multiplicity.fill(HIST("fITSTrackMultSelected"), multITSTrack);
-    }
-    if (multMFTTrack >= selHMMFTMult) {
-      multiplicity.fill(HIST("fMFTTrackMultSelected"), multMFTTrack);
+    // option 3
+    const int nEta3 = 2; // MFT + FV0
+    float weigthsEta3[nEta3] = {1.05258, 0.00535717};
+    float ampl3[nEta3] = {0, 0};
+    ampl3[0] = multMFTTrack;
+    ampl3[1] = sumAmpFV0;
+    for (int i_3 = 0; i_3 < nEta3; ++i_3) {
+      combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
     }
 
-    // Check whether this event has a leading track candidate
-    if (flPt >= selPtTrig) {
-      multiplicity.fill(HIST("fLeadingTrackPtSelected"), flPt); // track pT which passed the cut
-      keepEvent[kLeadingPtTrack] = true;
-    }
-    // Check whether this is a high FV0 multiplicity event
-    if (sumAmpFV0 >= selHMFv0) {
-      keepEvent[kHighMultFv0] = true; // accepted HM events based on FV0
-      multiplicity.fill(HIST("fMultFv0Selected"), sumAmpFV0);
+    // option 4
+    const int nEta4 = 2; // MFT + FT0A
+    float weigthsEta4[nEta4] = {1.05258, 0.014552069};
+    float ampl4[nEta4] = {0, 0};
+    ampl4[0] = multMFTTrack;
+    ampl4[1] = sumAmpFT0A;
+    for (int i_4 = 0; i_4 < nEta4; ++i_4) {
+      combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
     }
 
-    tags(keepEvent[kLeadingPtTrack], keepEvent[kHighMultFv0], keepEvent[kHighTrackMult]);
+    // option 5
+    const int nEta5 = 2;                   // FT0C + FT0A
+    float weigthsEta5[nEta5] = {1.0, 1.0}; // no weigths since same det
+    float ampl5[nEta5] = {0, 0};
+    ampl5[0] = sumAmpFT0C;
+    ampl5[1] = sumAmpFT0A;
+    for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+      combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+    }
+    float flatenicity_mft_glob = (flatenicity_mft + flatenicity_glob) / 2.0;
+    float flatenicity_mft_fv0 = (flatenicity_mft + flatenicity_fv0) / 2.0;
+    float flatenicity_mft_glob_fv0 =
+      (flatenicity_mft + flatenicity_glob + flatenicity_fv0) / 3.0;
 
-    if (!keepEvent[kLeadingPtTrack] && !keepEvent[kHighMultFv0] && !keepEvent[kHighTrackMult]) {
+    estimator[0] = multTrack;
+    estimator[1] = combined_estimator1;
+    estimator[2] = combined_estimator2;
+    estimator[3] = combined_estimator3;
+    estimator[4] = sumAmpFV0;
+    estimator[5] = multMFTTrack;
+    estimator[6] = 1.0 - flatenicity_fv0;
+    estimator[7] = 1.0 - flatenicity_mft_glob;
+    estimator[8] = 1.0 - flatenicity_mft_glob_fv0;
+    estimator[9] = 1.0 - flatenicity_mft_fv0;
+    estimator[10] = combined_estimator4;
+    estimator[11] = combined_estimator5;
+    float flatenicity_ft0 = (flatenicity_t0a + flatenicity_t0c) / 2.0;
+    estimator[12] = 1.0 - flatenicity_ft0;
+    float flatenicity_mft_ft0a = (flatenicity_mft + flatenicity_t0a) / 2.0;
+    estimator[13] = 1.0 - flatenicity_mft_ft0a;
+    estimator[14] = flPt;
+
+    static_for<0, 14>([&](auto i) {
+      constexpr int index = i.value;
+      multiplicity.fill(HIST(npEst[index]), estimator[index], estimator[0]);
+      multiplicity.fill(HIST(nhEst_before[index]), estimator[index]);
+    });
+
+    static_for<0, 14>([&](auto i) {
+      constexpr int index = i.value;
+      if (estimator[index] > cut[index]) {
+        multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
+        keepEvent[index] = true;
+      }
+    });
+
+    tags(keepEvent[kHighTrackMult], keepEvent[kHighFddFt0cMftFv0Mult], keepEvent[kHighFddMftFv0Mult], keepEvent[kHighFv0MftMult], keepEvent[kHighFv0Mult], keepEvent[kHighMftMult], keepEvent[kHighMftMult], keepEvent[kHighMftTrkFlat], keepEvent[kHighMftFv0TrkFlat], keepEvent[kHighMftFv0Flat], keepEvent[kHighMftFt0aMult], keepEvent[kHighFt0Mult], keepEvent[kHighFt0Flat], keepEvent[kHighMftFt0aFlat], keepEvent[kLeadingPtTrack]);
+
+    if (!keepEvent[kHighTrackMult] && !keepEvent[kHighFddFt0cMftFv0Mult] && !keepEvent[kHighFddMftFv0Mult] && !keepEvent[kHighFv0MftMult] && !keepEvent[kHighFv0Mult] && !keepEvent[kHighMftMult] && !keepEvent[kHighMftMult] && !keepEvent[kHighMftTrkFlat] && !keepEvent[kHighMftFv0TrkFlat] && !keepEvent[kHighMftFv0Flat] && !keepEvent[kHighMftFt0aMult] && !keepEvent[kHighFt0Mult] && !keepEvent[kHighFt0Flat] && !keepEvent[kHighMftFt0aFlat] && !keepEvent[kLeadingPtTrack]) {
       multiplicity.fill(HIST("fProcessedEvents"), 1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {
