@@ -12,6 +12,7 @@
 #ifndef O2_ANALYSIS_DGPARAMETER_HOLDER_H_
 #define O2_ANALYSIS_DGPARAMETER_HOLDER_H_
 
+#include <gandiva/projector.h>
 #include <Rtypes.h>
 
 // object to hold customizable analysis parameters
