@@ -13,7 +13,9 @@
 /// dependencies: o2-analysis-lf-lambdakzerobuilder
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
+#include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -57,39 +59,29 @@ struct GammaConversions {
   Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.11, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.040, "the maximum value of the product, that is the maximum qt"};
 
-  // define this in order to have a constructor of the HistogramSpec which copies the name into the title
-  struct MyHistogramSpec {
-    MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
-      : m{name_, title_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
-    MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
-      : m{name_, name_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
-    HistogramSpec m{};
-    bool fDataOnly{false};
-  };
-
   // collision histograms
   std::vector<MyHistogramSpec> fCollisionHistoDefinitions{
-    {"hCollisionZ", "hCollisionZ;z (cm);counts", {HistType::kTH1F, {{800, -50.f, 50.f}}}}};
+    {"hCollisionZ", "hCollisionZ;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}}};
 
   // track histograms
   std::vector<MyHistogramSpec> fTrackHistoDefinitions{
-    {"hTrackPt", "hTrackPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
-    {"hTrackEta", "hTrackEta;#eta;counts", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
-    {"hTrackPhi", "hTrackPhi;#phi (rad);counts", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
+    {"hTrackPt", "hTrackPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
+    {"hTrackEta", "hTrackEta;#eta;counts", {HistType::kTH1F, {gAxis_eta}}},
+    {"hTrackPhi", "hTrackPhi;#phi (rad);counts", {HistType::kTH1F, {gAxis_phi}}},
     {"hTPCFoundOverFindableCls", "hTPCFoundOverFindableCls;TPCFoundOverFindableCls;counts", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
     {"hTPCCrossedRowsOverFindableCls", "hTPCCrossedRowsOverFindableCls;TPCCrossedRowsOverFindableCls;counts", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
-    {"hTPCdEdx", "hTPCdEdx;p (GeV/c);TPCdEdx", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, 0.f, 200.f}}}},
-    {"hTPCdEdxSigEl", "hTPCdEdxSigEl;p (GeV/c);TPCdEdxSigEl", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}},
-    {"hTPCdEdxSigPi", "hTPCdEdxSigPi;p (GeV/c);TPCdEdxSigPi", {HistType::kTH2F, {{800, 0.03f, 20.f}, {800, -10.f, 10.f}}}}};
+    {"hTPCdEdx", "hTPCdEdx;p (GeV/c);TPCdEdx", {HistType::kTH2F, {gAxis_pT, {800, 0.f, 200.f}}}},
+    {"hTPCdEdxSigEl", "hTPCdEdxSigEl;p (GeV/c);TPCdEdxSigEl", {HistType::kTH2F, {gAxis_pT, gAxis_TPCdEdxSig}}},
+    {"hTPCdEdxSigPi", "hTPCdEdxSigPi;p (GeV/c);TPCdEdxSigPi", {HistType::kTH2F, {gAxis_pT, gAxis_TPCdEdxSig}}}};
 
   // v0 histograms
   std::vector<MyHistogramSpec> fV0HistoDefinitions{
-    {"hPt", "hPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {{800, 0.0f, 25.0f}}}},
-    {"hEta", "hEta;#eta;counts", {HistType::kTH1F, {{800, -2.f, 2.f}}}},
-    {"hPhi", "hPhi;#phi (rad);counts", {HistType::kTH1F, {{800, 0.f, 2.f * M_PI}}}},
-    {"hConvPointR", "hConvPointR;conversion radius (cm);counts", {HistType::kTH1F, {{800, 0.f, 200.f}}}},
-    {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, {800, 0.f, 0.25f}}}},
-    {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {{800, -2.f, 2.f}, {800, 0.f, 10.f}}}},
+    {"hPt", "hPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
+    {"hEta", "hEta;#eta;counts", {HistType::kTH1F, {gAxis_eta}}},
+    {"hPhi", "hPhi;#phi (rad);counts", {HistType::kTH1F, {gAxis_phi}}},
+    {"hConvPointR", "hConvPointR;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
+    {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, gAxis_pT}}},
+    {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
     {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
   };
 
@@ -97,32 +89,16 @@ struct GammaConversions {
   // resolution histos
   std::vector<MyHistogramSpec> fV0ResolutionHistoDefinitions{
     {"hPtRes", "hPtRes_Rec-MC;#Delta p_T (GeV/c);counts", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
-    {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {{800, -3.145f, 3.145f}}}},
-    {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {{800, -3.145f, 3.145f}}}},
+    {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {gAxis_radRes}}},
+    {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {gAxis_radRes}}},
     {"hConvPointRRes", "hConvPointRRes_Rec-MC;#Delta R (cm);counts", {HistType::kTH1F, {{800, -200.f, 200.f}}}},
-    {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;euclidean distance (cm);counts", {HistType::kTH1F, {{800, -0.0f, 200.f}}}},
+    {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;euclidean distance (cm);counts", {HistType::kTH1F, {{800, 0.0f, 200.f}}}},
   };
 
   // think of better name
   std::vector<MyHistogramSpec> fSpecialHistoDefinitions{
-    {"hV0Selection", "hV0Selection;V0 categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}},
-    {"hV0McValidation", "hV0McValidation;V0 categories;counts", {HistType::kTH1F, {{13, -0.0f, 12.5f}}}, true /*dataOnly_*/}};
-
-  enum class ePhotonCuts {
-    kV0In,
-    kTrackEta,
-    kTrackPt,
-    kElectronPID,
-    kPionRejLowMom,
-    kPionRejHighMom,
-    kTPCFoundOverFindableCls,
-    kTPCCrossedRowsOverFindableCls,
-    kV0Radius,
-    kArmenteros,
-    kPsiPair,
-    kCosinePA,
-    kV0Out
-  };
+    {"hV0Selection", "hV0Selection;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}},
+    {"hV0McValidation", "hV0McValidation;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}, false /*callSumw2*/, true /*dataOnly_*/}};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
     {ePhotonCuts::kV0In, "kV0In"},
@@ -139,19 +115,6 @@ struct GammaConversions {
     {ePhotonCuts::kCosinePA, "kCosinePA"},
     {ePhotonCuts::kV0Out, "kV0Out"}};
 
-  /* These are the distinguished cases why a reconstructed V0, may not become a MC validated one.
-   * This is done before reconstruction cuts. (except kMcValAfterRecCuts, see comment.) */
-  enum class eV0McValidation {
-    kV0in,
-    kFakeV0,
-    kMcMotherIn,
-    kNoPhysicalPrimary,
-    kNoPhoton,
-    kOutsideMCEtaAcc,
-    kMcValidatedPhotonOut, // meaning the V0 comes from a true, primary, mc photon that has a true |eta| < fTruePhotonEtaMax.
-    kMcValAfterRecCuts     // the kMcValidatedPhotonOut which also pass reconstruction cuts.
-  };
-
   std::map<eV0McValidation, std::string> fV0McValidationLabels{
     {eV0McValidation::kV0in, "kV0in"},
     {eV0McValidation::kFakeV0, "kFakeV0"},
@@ -163,90 +126,7 @@ struct GammaConversions {
     {eV0McValidation::kMcValAfterRecCuts, "kMcValAfterRecCuts"}};
 
   std::vector<std::string> fHistoSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
-  enum eBeforeAfterRecCuts { kBeforeRecCuts,
-                             kAfterRecCuts };
-  enum eV0HistoFlavor { kRec,
-                        kMCTrue,
-                        kMCVal,
-                        kRes };
 
-  typedef std::map<std::string, HistPtr> mapStringHistPtr;
-  struct tV0Kind {
-    tV0Kind(std::string thePath) : mPath{thePath} {}
-
-    // todo: remove
-    template <typename T>
-    void appendSuffixToTitleI(HistPtr& theHistPtr, std::string const* theSuffix)
-    {
-      auto lHisto = std::get<std::shared_ptr<T>>(theHistPtr);
-      if (lHisto) {
-        std::string lTitle(lHisto->GetTitle());
-        lHisto->SetTitle(lTitle.append(*theSuffix).data());
-      } else {
-        LOGF(info, "SFS appendSuffixToTitle(): %s could not be obtained in order to append suffix to title.");
-      }
-    }
-
-    void addHistosToOfficalRegistry(HistogramRegistry& theOfficialRegistry,
-                                    std::vector<MyHistogramSpec> const& theHistoDefinitions,
-                                    std::string const* theSuffix = nullptr)
-    {
-      for (auto& tHisto : theHistoDefinitions) {
-        std::string lFullName(mPath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
-        LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
-        HistPtr lHistPtr = theOfficialRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
-        mContainer.insert(std::pair{tHisto.m.name, lHistPtr});
-
-        // todo ugly: remove
-        if (theSuffix) {
-          if (tHisto.m.config.type == kTH1F) {
-            appendSuffixToTitleI<TH1>(lHistPtr, theSuffix);
-          } else if (tHisto.m.config.type == kTH2F) {
-            appendSuffixToTitleI<TH2>(lHistPtr, theSuffix);
-          }
-        }
-      }
-    }
-
-    std::string mPath{};
-    mapStringHistPtr mContainer{};
-  };
-
-  struct tMotherDirV0Kinds {
-    tMotherDirV0Kinds(std::string thePath) : mPath{thePath} {}
-    std::string mPath{""};
-    tV0Kind mV0Kind[4]{mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/"};
-  };
-
-  struct tMotherDirRejMc {
-    tMotherDirRejMc(std::string thePath) : mPath{thePath} {}
-    std::string mPath{""};
-    tMotherDirV0Kinds mBeforeAfterRecCuts[2]{mPath + "beforeRecCuts/", mPath + "afterRecCuts/"};
-  };
-
-  // for collision track v0
-  struct tHistoFolderCTV {
-    tHistoFolderCTV(std::string thePath) : mPath{thePath} {}
-
-    std::string mPath{""};
-    tV0Kind mSpecialHistos{mPath};
-    tMotherDirV0Kinds mBeforeAfterRecCuts[2]{mPath + "beforeRecCuts/",
-                                             mPath + "afterRecCuts/"};
-
-    tMotherDirRejMc mRejectedByMc[2]{mPath + "rejectedByMc/kNoPhysicalPrimary/",
-                                     mPath + "rejectedByMc/kOutsideMCEtaAcc/"};
-  };
-  enum class eMcRejectedSaved { kNoPhysicalPrimary,
-                                kOutsideMCEtaAcc };
-
-  struct tHistoRegistry {
-    tHistoRegistry(std::string thePath) : mPath{thePath} {}
-
-    std::string mPath{""};
-    tHistoFolderCTV mCollision{mPath + "Collision/"};
-    tHistoFolderCTV mTrack{mPath + "Track/"};
-    tHistoFolderCTV mV0{mPath + "V0/"};
-  };
   tHistoRegistry fMyRegistry{""};
   HistogramRegistry fHistogramRegistry{"fHistogramRegistry"};
 
@@ -268,12 +148,13 @@ struct GammaConversions {
 
     if (doprocessRec) {
       fHistoSuffixes[0] = "Rec";
-      fSpecialHistoDefinitions.pop_back();
     }
 
     fMyRegistry.mV0.mSpecialHistos.addHistosToOfficalRegistry(
       fHistogramRegistry,
-      fSpecialHistoDefinitions);
+      fSpecialHistoDefinitions,
+      nullptr /*theSuffix*/,
+      doprocessRec /*theCheckDataOnly*/);
 
     // do some labeling
     addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0Selection", fPhotonCutLabels);
@@ -287,10 +168,14 @@ struct GammaConversions {
 
         // for track and collision histos we only plot reconstructed quantities at the moment
         if (iMcKind == kRec) {
-          // collision histograms
-          fMyRegistry.mCollision.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                             fCollisionHistoDefinitions,
-                                                                                                             lMcSuffix);
+
+          // no cuts on collisions so far so only plot before cuts
+          if (iBARecCuts == kBeforeRecCuts) {
+            // collision histograms
+            fMyRegistry.mCollision.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                               fCollisionHistoDefinitions,
+                                                                                                               lMcSuffix);
+          }
 
           // track histograms
           fMyRegistry.mTrack.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,

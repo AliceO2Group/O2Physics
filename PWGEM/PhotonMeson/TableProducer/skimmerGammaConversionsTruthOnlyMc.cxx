@@ -18,6 +18,7 @@
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
 #include "TVector3.h"
 
@@ -37,9 +38,9 @@ struct skimmerGammaConversionsTruthOnlyMc {
   HistogramRegistry registry{
     "registry",
     {
-      {"hCollisionZ_MCRec", "hCollisionZ_MCRec", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
-      {"hCollisionZ_MCTrue", "hCollisionZ_MCTrue", {HistType::kTH1F, {{800, -50.f, 50.f}}}},
+      gHistoSpec_hCollisionZ_all_MCTrue,
+      gHistoSpec_hCollisionZ_MCTrue,
+      gHistoSpec_hCollisionZ_MCRec,
       {"hMcParticlesSize", "hMcParticlesSize", {HistType::kTH1F, {{100, 0.f, 1000000.f}}}},
       {"hEtaDiff", "hEtaDiff", {HistType::kTH1F, {{400, -2.f, 2.f}}}},
     },
