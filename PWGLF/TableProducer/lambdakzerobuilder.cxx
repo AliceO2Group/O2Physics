@@ -67,9 +67,9 @@ using namespace o2::framework::expressions;
 using std::array;
 
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksExtended>;
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksExtended>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 //#define MY_DEBUG
@@ -179,6 +179,19 @@ struct lambdakzeroBuilder {
     return output;
   }
 
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  {
+    if (lRunNumber != mRunNumber) {
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(lTimeStamp);
+      } else {
+        d_bz = d_bz_input;
+      }
+      mRunNumber = lRunNumber;
+    }
+  }
+
   void processRun2(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
                    ,
@@ -189,15 +202,7 @@ struct lambdakzeroBuilder {
 
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (bc.runNumber() != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-      } else {
-        d_bz = d_bz_input;
-      }
-      mRunNumber = bc.runNumber();
-    }
+    CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
@@ -380,15 +385,7 @@ struct lambdakzeroBuilder {
 
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (bc.runNumber() != mRunNumber) {
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-      } else {
-        d_bz = d_bz_input;
-      }
-      mRunNumber = bc.runNumber();
-    }
+    CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;

@@ -234,7 +234,7 @@ struct tofSpectra {
     }
   }
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended,
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                     aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                                     aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
@@ -357,7 +357,7 @@ struct tofSpectra {
   }
 
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
-                           aod::TracksExtended, aod::McTrackLabels,
+                           aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa,
                            aod::pidTOFFullPr, aod::TrackSelection> const& tracks,
                  const aod::McParticles& mcParticles)

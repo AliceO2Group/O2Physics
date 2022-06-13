@@ -49,8 +49,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr>; //, aod::McTrackLabels>;
-using MyTracksMC = soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr>; //, aod::McTrackLabels>;
+using MyTracksMC = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
 
 struct v0cascadesQA {
 

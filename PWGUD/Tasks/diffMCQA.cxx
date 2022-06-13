@@ -49,7 +49,7 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "PWGUD/Tasks/diffMCHelpers.h"
+#include "PWGUD/Core/diffMCHelpers.h"
 #include "EventFiltering/PWGUD/diffHelpers.h"
 
 using namespace o2;
@@ -107,6 +107,7 @@ struct DiffMCQA {
       {"Tracks", "#Tracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracks", "#vtxTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"globalTracks", "#globalTracks", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"rejectedTracks", "#rejectedTracks", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
       {"tResvsrTOFTracks", "#tResvsrTOFTracks", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
       {"vtxPosxy", "#vtxPosxy", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPosz", "#vtxPosz", {HistType::kTH1F, {{1000, -100., 100.}}}},
@@ -127,6 +128,7 @@ struct DiffMCQA {
       {"TracksDiff1", "#TracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracksDiff1", "#vtxTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"globalTracksDiff1", "#globalTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"rejectedTracksDiff1", "#rejectedTracksDiff1", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
       {"tResvsrTOFTracksDiff1", "#tResvsrTOFTracksDiff1", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
       {"vtxPosxyDiff1", "#vtxPosxyDiff1", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPoszDiff1", "#vtxPoszDiff1", {HistType::kTH1F, {{1000, -100., 100.}}}},
@@ -147,6 +149,7 @@ struct DiffMCQA {
       {"TracksDiff2", "#TracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracksDiff2", "#vtxTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"globalTracksDiff2", "#globalTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
+      {"rejectedTracksDiff2", "#rejectedTracksDiff2", {HistType::kTH1F, {{17, -0.5, 16.5}}}},
       {"tResvsrTOFTracksDiff2", "#tResvsrTOFTracksDiff2", {HistType::kTH2F, {{1000, 0., 1.E3}, {101, -0.01, 1.01}}}},
       {"vtxPosxyDiff2", "#vtxPosxyDiff2", {HistType::kTH2F, {{200, -2., 2.}, {200, -2., 2.}}}},
       {"vtxPoszDiff2", "#vtxPoszDiff2", {HistType::kTH1F, {{1000, -100., 100.}}}},
@@ -225,10 +228,15 @@ struct DiffMCQA {
     bool isDGcandidate = true;
 
     // is this a central diffractive event?
-    auto MCCol = collision.mcCollision();
-    auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
-    auto isPythiaDiff = isPythiaCDE(MCPartSlice);
-    auto isGraniittiDiff = isGraniittiCDE(MCPartSlice);
+    // by default it is assumed to be a MB event
+    bool isPythiaDiff = false;
+    bool isGraniittiDiff = false;
+    if (collision.has_mcCollision()) {
+      auto MCCol = collision.mcCollision();
+      auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
+      isPythiaDiff = isPythiaCDE(MCPartSlice);
+      isGraniittiDiff = isGraniittiCDE(MCPartSlice);
+    }
 
     // global tracks
     Partition<TCs> goodTracks = requireGlobalTrackInFilter();
@@ -522,7 +530,63 @@ struct DiffMCQA {
 
       // check also pt and eta of tracks
       for (auto& track : tracks) {
+        // update histogram rejectedTracks
         if (!track.isPVContributor()) {
+          if (isPythiaDiff) {
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(0., 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(1., track.isGlobalTrackSDD() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(2., track.passedTrackType() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(3., track.passedPtRange() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(4., track.passedEtaRange() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(5., track.passedTPCNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(6., track.passedTPCCrossedRows() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(8., track.passedTPCChi2NDF() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(9., track.passedTPCRefit() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(10., track.passedITSNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(11., track.passedITSChi2NDF() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(12., track.passedITSRefit() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(13., track.passedITSHits() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(14., track.passedGoldenChi2() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(15., track.passedDCAxy() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff1"))->Fill(16., track.passedDCAz() * 1.);
+          } else if (isGraniittiDiff) {
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(0., 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(1., track.isGlobalTrackSDD() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(2., track.passedTrackType() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(3., track.passedPtRange() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(4., track.passedEtaRange() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(5., track.passedTPCNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(6., track.passedTPCCrossedRows() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(8., track.passedTPCChi2NDF() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(9., track.passedTPCRefit() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(10., track.passedITSNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(11., track.passedITSChi2NDF() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(12., track.passedITSRefit() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(13., track.passedITSHits() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(14., track.passedGoldenChi2() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(15., track.passedDCAxy() * 1.);
+            registry.get<TH1>(HIST("rejectedTracksDiff2"))->Fill(16., track.passedDCAz() * 1.);
+          } else {
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(0., 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(1., track.isGlobalTrackSDD() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(2., track.passedTrackType() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(3., track.passedPtRange() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(4., track.passedEtaRange() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(5., track.passedTPCNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(6., track.passedTPCCrossedRows() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(7., track.passedTPCCrossedRowsOverNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(8., track.passedTPCChi2NDF() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(9., track.passedTPCRefit() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(10., track.passedITSNCls() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(11., track.passedITSChi2NDF() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(12., track.passedITSRefit() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(13., track.passedITSHits() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(14., track.passedGoldenChi2() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(15., track.passedDCAxy() * 1.);
+            registry.get<TH1>(HIST("rejectedTracks"))->Fill(16., track.passedDCAz() * 1.);
+          }
           continue;
         }
 
@@ -781,7 +845,7 @@ struct CaloSignals {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffqa"}),
+    adaptAnalysisTask<DiffMCQA>(cfgc, TaskName{"diffmcqa"}),
     adaptAnalysisTask<FV0Signals>(cfgc, TaskName{"fv0signals"}),
     adaptAnalysisTask<FT0Signals>(cfgc, TaskName{"ft0signals"}),
     adaptAnalysisTask<FDDSignals>(cfgc, TaskName{"fddsignals"}),

@@ -32,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,6 +59,10 @@ struct qaEventTrack {
 
   // options to select specific events
   Configurable<bool> selectGoodEvents{"selectGoodEvents", true, "select good events"};
+  // selection specific to the table creation workflow
+  Configurable<float> selectMaxVtxZ{"selectMaxVtxZ", 100.f, "Derived data option: select collision in a given Z window"};
+  Configurable<int> targetNumberOfEvents{"targetNumberOfEvents", 10000000, "Derived data option: target number of collisions, if the target is met, future collisions will be skipped"};
+  Configurable<float> fractionOfSampledEvents{"fractionOfSampledEvents", 1.f, "Derived data option: fraction of events to sample"};
 
   // options to select only specific tracks
   Configurable<bool> selectGlobalTracks{"selectGlobalTracks", true, "select global tracks"};
@@ -84,7 +89,7 @@ struct qaEventTrack {
   bool isSelectedTrack(const T& track);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::TOFEvTime>>;
   void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
   {
     processReco<false>(collision, tracks);
@@ -92,7 +97,7 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
   using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksExtended, aod::TrackSelection>>;
+  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::TOFEvTime>>;
   void processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     processReco<true>(collision, tracks);
@@ -107,7 +112,7 @@ struct qaEventTrack {
                         TrackTableData const& tracks,
                         aod::BCs const& bcs)
   {
-    processRecoTable<false>(collision, tracks, 0, bcs);
+    fillDerivedTable<false>(collision, tracks, 0, bcs);
   };
   PROCESS_SWITCH(qaEventTrack, processTableData, "Process data for table producing", false);
 
@@ -117,7 +122,7 @@ struct qaEventTrack {
                       aod::McCollisions const& mcCollisions,
                       aod::BCs const& bcs)
   {
-    processRecoTable<true>(collision, tracks, mcParticles, bcs);
+    fillDerivedTable<true>(collision, tracks, mcParticles, bcs);
   };
   PROCESS_SWITCH(qaEventTrack, processTableMC, "Process MC for table producing", false);
 
@@ -126,12 +131,23 @@ struct qaEventTrack {
  * Fill reco level tables.
  */
   //**************************************************************************************************
+  int nTableEventCounter = 0; // Number of processed events
   template <bool IS_MC, typename C, typename T, typename P>
-  void processRecoTable(const C& collision, const T& tracks, const P& particles, const aod::BCs&)
+  void fillDerivedTable(const C& collision, const T& tracks, const P& particles, const aod::BCs&)
   {
     if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
       return;
     }
+    if (abs(collision.posZ()) > selectMaxVtxZ) {
+      return;
+    }
+    if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
+      return;
+    }
+    if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
+      return;
+    }
+    nTableEventCounter++;
 
     tableCollisions(collision.posZ(),
                     (isRun3 ? collision.sel8() : collision.sel7()),
@@ -165,7 +181,7 @@ struct qaEventTrack {
                   track.hasITS(), track.hasTPC(), track.hasTRD(), track.hasTOF(),
                   track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                   track.tpcCrossedRowsOverFindableCls(), track.tpcFoundOverFindableCls(), track.tpcFractionSharedCls(),
-                  track.itsNCls(), track.itsNClsInnerBarrel());
+                  track.itsNCls(), track.itsNClsInnerBarrel(), track.tpcSignal(), track.tofSignal() - track.tofEvTime());
 
       if constexpr (IS_MC) { // Running only on MC
         if (track.has_mcParticle()) {
@@ -206,7 +222,8 @@ struct qaEventTrack {
         } else {
           particleProduction = 2;
         }
-        tableNonRecoParticles(particle.pt(), particle.eta(), particle.phi(),
+        tableNonRecoParticles(tableCollisions.lastIndex(),
+                              particle.pt(), particle.eta(), particle.phi(),
                               particle.pdgCode(), particleProduction,
                               particle.vx(), particle.vy(), particle.vz());
       }

@@ -13,15 +13,15 @@
 //
 /* Schematic Monte Carlo signal definition:
 
-  Prong_0:      Particle(0,0) <-- Particle(0,1) <-- ... Prong(0,m_0) ... <-- Particle(0, n_0)       
-                                                          |      
+  Prong_0:      Particle(0,0) <-- Particle(0,1) <-- ... Prong(0,m_0) ... <-- Particle(0, n_0)
+                                                          |
   Prong_1:      Particle(1,0) <-- Particle(1,1) <-- ... Prong(1,m_1) ... <-- Particle(1, n_1)
                                                           |
   Prong_i:      Particle(i,0) <-- Particle(i,1) <-- ... Prong(i,m_i) ... <-- Particle(i, n_i)
                                                           |
   Prong_N:      Particle(N,0) <-- Particle(N,1) <-- ... Prong(N,m_N) ... <-- Particle(N, n_N)
-                                             
-The MC signal model is composed of N prongs (see MCProng.h) with a variable number of generations specified for each prong (n_i, i=1,N). 
+
+The MC signal model is composed of N prongs (see MCProng.h) with a variable number of generations specified for each prong (n_i, i=1,N).
 At least one prong has to be specified for a valid MCsignal. An optional common ancestor for all prongs can be specified (m_i, i=1,N).
 The common ancestor index, m_i, does not need to be the same for all prongs (e.g. some prongs can have a smaller number of generations in the history up to the common ancestor).
 When a tuple of MC particles is checked whether it matches the specified signal, all prongs must be matched exactly with the particles in the tuple.
@@ -42,8 +42,8 @@ process(aod::McParticles const& mcTracks) {
   ...
   for (auto& mctrack : mcTracks) {
     if(mySignal.CheckSignal(true,mcTracks,mctrack)) {
-      cout << "Found signal" << endl;  
-    }  
+      cout << "Found signal" << endl;
+    }
   }
   for (auto& [mt1, mt2] : combinations(mcTracks, mcTracks)) {
     if(mySignal2.CheckSignal(true,mcTracks,mt1,mt2)) {
@@ -155,8 +155,9 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
         LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
       }*/
-      currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-      //currentMCParticle = currentMCParticle.template mother0_as<U>();
+      currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+      // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+      // currentMCParticle = currentMCParticle.template mother0_as<U>();
     }
   }
 
@@ -210,8 +211,9 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
           LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
         }*/
-        currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-        //currentMCParticle = currentMCParticle.template mother0_as<U>();
+        currentMCParticle = currentMCParticle.template mothers_first_as<U>();
+        // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
+        // currentMCParticle = currentMCParticle.template mother0_as<U>();
       }
       /*if (j < fProngs[i].fNGenerations - 1) {
         currentMCParticle = mcStack.iteratorAt(currentMCParticle.mother0Id());

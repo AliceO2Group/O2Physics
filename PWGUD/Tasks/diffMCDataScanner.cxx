@@ -13,8 +13,10 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#include "Framework/ConfigParamSpec.h"
-#include "Common/CCDB/EventSelectionParams.h"
+#include "Framework/AnalysisTask.h"
+#include "PWGUD/DataModel/McPIDTable.h"
+#include "EventFiltering/PWGUD/diffHelpers.h"
+#include "PWGUD/Core/diffMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,8 +26,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, else - tree"}});
 }
 
-#include "EventFiltering/PWGUD/diffHelpers.h"
-#include "PWGUD/Tasks/diffMCHelpers.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2::framework::expressions;
 

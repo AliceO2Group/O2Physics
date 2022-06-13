@@ -1,0 +1,84 @@
+---
+# MegaLinter GitHub Action configuration file
+# More info at https://megalinter.github.io
+name: MegaLinter
+
+'on': [pull_request_target]
+
+env: # Comment env block if you do not want to apply fixes
+  # Apply linter fixes configuration
+  APPLY_FIXES: all # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    steps:
+      # Git Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
+          persist-credentials: false
+
+      # MegaLinter
+      - name: MegaLinter
+        id: ml
+        # You can override MegaLinter flavor used to have faster performances
+        # More info at https://megalinter.github.io/flavors/
+        uses: megalinter/megalinter@v5
+        env:
+          # All available variables are described in documentation
+          # https://megalinter.github.io/configuration/
+          VALIDATE_ALL_CODEBASE: false # ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }} # Validates all source when push on master, else just the git diff with master. Override with true if you always want to lint all sources
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
+          # DISABLE: COPYPASTE,SPELL # Uncomment to disable copy-paste and spell checks
+
+      # Create or delete the cleanup branch
+      - name: Update cleanup branch
+        if: ${{ github.event.repository.owner.login == 'AliceO2Group' }}
+        env:
+          REMOTE_URL: "https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@\
+            github.com/alibuild/${{ github.event.repository.name }}"
+        run: |
+          # An empty CLEANUP_COMMIT means delete the branch.
+          CLEANUP_COMMIT=""
+          if [ "${{ steps.ml.outputs.has_updated_sources }}" = 1 ]
+          then
+            CLEANUP_COMMIT="HEAD"
+            git commit -am "MegaLinter fixes"
+          fi
+          git push -f "$REMOTE_URL" "$CLEANUP_COMMIT:refs/heads/alibot-cleanup-ml-$PR_NUMBER"
+
+      - name: Create pull request with applied fixes
+        uses: alisw/pull-request@v2
+        if: steps.ml.outputs.has_updated_sources == 1 && ${{ github.event.repository.owner.login == 'AliceO2Group' }}
+        with:
+          source_branch: 'alibuild:alibot-cleanup-ml-${{ env.PR_NUMBER }}'
+          destination_branch: '${{ github.event.pull_request.head.label }}'
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
+          pr_title: >-
+            [MegaLinter] Apply linters automatic fixes to
+            #${{ env.PR_NUMBER }}
+          pr_body: >-
+            Your PR ${{ github.event.repository.full_name }}#${{ env.PR_NUMBER }}
+            cannot be merged as is. You should either run MegaLinter
+            yourself and update the pull request, or merge this PR in yours.
+
+            You can find how to run MegaLinter locally at
+            <https://megalinter.github.io/latest/mega-linter-runner/>.
+        continue-on-error: true  # We do not create PRs if the branch is not there.
+
+      - name: Exit with error if the PR is not clean
+        run: |
+          case "${{ steps.ml.outputs.has_updated_sources }}" in
+            0) echo 'PR clean' ; exit 0 ;;
+            1) echo 'PR not clean' ; exit 1 ;;
+          esac

@@ -44,7 +44,7 @@ struct pidHMPIDQA {
     histos.add("nphotons/nonselected", ";HMPID number of detected photons", kTH1F, {{100, 0, 1000}});
   }
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   void process(const TrackCandidates& tracks,
                const aod::HMPIDs& hmpids,
                const aod::Collisions& colls)

@@ -30,7 +30,7 @@ using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, 
 using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
-using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection>::iterator;
+using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
 } // namespace aod
 namespace analysis
 {

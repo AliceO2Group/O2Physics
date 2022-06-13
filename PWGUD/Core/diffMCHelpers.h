@@ -16,14 +16,11 @@
 #ifndef O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
 #define O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/DataModel/McPIDTable.h"
+#include <gandiva/projector.h>
+
+#include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -105,20 +102,25 @@ bool isPythiaCDE(T MCparts)
 template <typename T>
 bool isGraniittiCDE(T MCparts)
 {
-  if (MCparts.iteratorAt(0).pdgCode() != 2212)
+  if (MCparts.size() < 7) {
     return false;
-  if (MCparts.iteratorAt(1).pdgCode() != 2212)
-    return false;
-  if (MCparts.iteratorAt(2).pdgCode() != 99)
-    return false;
-  if (MCparts.iteratorAt(3).pdgCode() != 2212)
-    return false;
-  if (MCparts.iteratorAt(4).pdgCode() != 2212)
-    return false;
-  if (MCparts.iteratorAt(5).pdgCode() != 99)
-    return false;
-  if (MCparts.iteratorAt(6).pdgCode() != 90)
-    return false;
+  } else {
+    if (MCparts.iteratorAt(0).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(1).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(2).pdgCode() != 99)
+      return false;
+    if (MCparts.iteratorAt(3).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(4).pdgCode() != 2212)
+      return false;
+    if (MCparts.iteratorAt(5).pdgCode() != 99)
+      return false;
+    if (MCparts.iteratorAt(6).pdgCode() != 90)
+      return false;
+  }
+
   return true;
 }
 

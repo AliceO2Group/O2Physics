@@ -257,7 +257,7 @@ struct HfSelOptimisation {
     }
   }
 
-  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksExtended>;
+  using ExtendedTracks = soa::Join<aod::BigTracks, aod::TracksDCA>;
   void process(soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec> const& cand2Prongs,
                soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec> const& cand3Prongs,
                ExtendedTracks const&)
