@@ -28,20 +28,20 @@ float particleMass(TDatabasePDG* pdg, int pid)
 DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb)
 {
   // compute invariant mass
-  TLorentzVector lvtmp, IVM;
+  TLorentzVector lvtmp;
   auto pidinfo = anaPars.TPCnSigmas();
 
-  // loop over tracks
+  // loop over tracks and update mIVM
+  mIVM = TLorentzVector(0.,0.,0.,0.);
   auto cnt = -1;
   for (auto ind : comb) {
     cnt++;
     auto track = dgtracks.rawIteratorAt(ind);
     lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), particleMass(pdg, pidinfo[cnt * 12]));
-    IVM += lvtmp;
+    mIVM += lvtmp;
   }
 
-  mM = IVM.M();
-  mPerp = IVM.Perp();
+  // set array of track indices
   mtrkinds = comb;
 }
 
@@ -50,7 +50,7 @@ void DGParticle::Print()
 {
   LOGF(info, "DGParticle:");
   LOGF(info, "  Number of particles: %i", mtrkinds.size());
-  LOGF(info, "  Mass / pt: %f / %f", mM, mPerp);
+  LOGF(info, "  Mass / pt: %f / %f", mIVM.M(), mIVM.Perp());
   LOGF(info, "");
 }
 

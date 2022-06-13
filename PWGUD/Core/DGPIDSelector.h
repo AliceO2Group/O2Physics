@@ -13,6 +13,7 @@
 #define O2_ANALYSIS_DGPID_SELECTOR_
 
 #include "TDatabasePDG.h"
+#include "TLorentzVector.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 #include "DGAnaparHolder.h"
 
@@ -29,16 +30,13 @@ struct DGParticle {
 
   // getter
   std::vector<uint> trkinds() { return mtrkinds; }
-  float M() { return mM; }
-  float Perp() { return mPerp; }
+  float M() { return mIVM.M(); }
+  float Perp() { return mIVM.Perp(); }
   void Print();
 
  private:
-  // the invariant mass
-  float mM;
-
-  // pt of system
-  float mPerp;
+  // invariant mass
+  TLorentzVector mIVM;
 
   // indices of tracks included
   std::vector<uint> mtrkinds;
