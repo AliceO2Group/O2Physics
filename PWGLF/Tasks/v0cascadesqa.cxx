@@ -135,7 +135,7 @@ struct v0cascadesQA {
   void init(InitContext const&)
   {
     if (isMC) {
-      histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100, 0, 10}, {200, -10, 10}}});
+      histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH2F, {{14, 0.0f, 14.0f}, {100, 0, 10}}});
 
       histos_V0.add("InvMassK0STrue", "InvMassK0STrue", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 0.4f, 0.6f}}});
       histos_V0.add("InvMassLambdaTrue", "InvMassLambdaTrue", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.07f, 1.17f}}});
@@ -165,21 +165,21 @@ struct v0cascadesQA {
   void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
-      if (mcparticle.isPhysicalPrimary()) {
+      if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < V0_rapidity ) {
         if (mcparticle.pdgCode() == 310)
-          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), mcparticle.y()); // K0s
+          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt()); // K0s
         if (mcparticle.pdgCode() == 3122)
-          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), mcparticle.y()); // Lambda
+          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt()); // Lambda
         if (mcparticle.pdgCode() == -3122)
-          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), mcparticle.y()); // AntiLambda
+          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt()); // AntiLambda
         if (mcparticle.pdgCode() == 3312)
-          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), mcparticle.y()); // Xi-
+          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt()); // Xi-
         if (mcparticle.pdgCode() == -3312)
-          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), mcparticle.y()); // Xi+
+          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt()); // Xi+
         if (mcparticle.pdgCode() == 3334)
-          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), mcparticle.y()); // Omega-
+          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt()); // Omega-
         if (mcparticle.pdgCode() == -3334)
-          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), mcparticle.y()); // Omega+
+          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt()); // Omega+
 
         // if (!IsParticleFromOutOfBunchPileupCollision){fill the 1.5, 3.5 etc}   AliPhysics analysis
       }
