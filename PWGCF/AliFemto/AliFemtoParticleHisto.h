@@ -17,7 +17,6 @@
 #define ANALYSIS_TASKS_PWGCF_O2ALIFEMTO_INCLUDE_O2ALIFEMTO_ALIFEMTOPARTICLEHISTO_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;

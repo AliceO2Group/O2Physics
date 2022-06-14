@@ -23,15 +23,15 @@
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "AliFemtoParticleHisto.h"  
-#include "AliFemtoEventHisto.h"  
-#include "AliFemtoPairCleaner.h"  
-#include "AliFemtoContainer.h"  
-#include "AliFemtoDetaDphiStar.h"  
-#include "AliFemtoUtils.h"  
+#include "AliFemtoParticleHisto.h"
+#include "AliFemtoEventHisto.h"
+#include "AliFemtoPairCleaner.h"
+#include "AliFemtoContainer.h"
+#include "AliFemtoDetaDphiStar.h"
+#include "AliFemtoUtils.h"
 
 using namespace o2;
-using namespace o2::analysis::aliFemto;  
+using namespace o2::analysis::aliFemto;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -50,7 +50,7 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
 } // namespace
 
-struct aliFemtoPairTaskTrackTrack {  
+struct aliFemtoPairTaskTrackTrack {
 
   /// Particle selection part
 
@@ -63,10 +63,10 @@ struct aliFemtoPairTaskTrackTrack {
   Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 84035877, "Particle 1 - Selection bit from cutCulator"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
 
-  /// Partition for particle 1  
+  /// Partition for particle 1
   Partition<aod::FemtoDreamParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
-  /// Histogramming for particle 1  
+  /// Histogramming for particle 1
   AliFemtoParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
   /// Particle 2
@@ -75,15 +75,15 @@ struct aliFemtoPairTaskTrackTrack {
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 84035877, "Particle 2 - Selection bit"};
   Configurable<std::vector<int>> ConfPIDPartTwo{"ConfPIDPartTwo", std::vector<int>{2}, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
-  /// Partition for particle 2  
+  /// Partition for particle 2
   Partition<aod::FemtoDreamParticles> partsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  //  (aod::femtodreamparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
                                                  ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
-  /// Histogramming for particle 2  
+  /// Histogramming for particle 2
   AliFemtoParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
 
-  /// Histogramming for Event  
+  /// Histogramming for Event
   AliFemtoEventHisto eventHisto;
 
   /// The configurables need to be passed to an std::vector
@@ -99,9 +99,9 @@ struct aliFemtoPairTaskTrackTrack {
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-   
+
   AliFemtoContainer<aliFemtoContainer::EventType::same, aliFemtoContainer::Observable::kstar> sameEventCont;
-   
+
   AliFemtoContainer<aliFemtoContainer::EventType::mixed, aliFemtoContainer::Observable::kstar> mixedEventCont;
   AliFemtoPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleaner;
   AliFemtoDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejection;
@@ -147,9 +147,9 @@ struct aliFemtoPairTaskTrackTrack {
   {
     const auto& tmstamp = col.timestamp();
     const auto& magFieldTesla = getMagneticFieldTesla(tmstamp, ccdb);
-     
+
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-     
+
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
     const int multCol = col.multV0M();
@@ -198,7 +198,7 @@ struct aliFemtoPairTaskTrackTrack {
     }
   }
 
-  PROCESS_SWITCH(aliFemtoPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);  
+  PROCESS_SWITCH(aliFemtoPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
 
   /// This function processes the mixed event
   /// \todo the trivial loops over the collisions and tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
@@ -209,9 +209,9 @@ struct aliFemtoPairTaskTrackTrack {
     BinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
-       
+
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
-       
+
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
 
       const auto& tmstamp1 = collision1.timestamp();
@@ -245,13 +245,13 @@ struct aliFemtoPairTaskTrackTrack {
     }
   }
 
-  PROCESS_SWITCH(aliFemtoPairTaskTrackTrack, processMixedEvent, "Enable processing mixed events", true);  
+  PROCESS_SWITCH(aliFemtoPairTaskTrackTrack, processMixedEvent, "Enable processing mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<aliFemtoPairTaskTrackTrack>(cfgc),  
+    adaptAnalysisTask<aliFemtoPairTaskTrackTrack>(cfgc),
   };
   return workflow;
 }
