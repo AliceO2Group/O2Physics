@@ -130,7 +130,7 @@ struct skimmerGammaConversions {
                  tracksAndTPCInfoMC const& theTracks,
                  aod::McParticles const& theMcParticles)
   {
-    fRegistry.fill(HIST("hCollisionZ_MCTrue_all"), theMcCollision.posZ());
+    fRegistry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
 
     if (theCollisions.size() == 0) {
       return;
