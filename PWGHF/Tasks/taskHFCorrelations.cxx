@@ -90,6 +90,7 @@ struct TaskHfCorrelations {
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"}; // TODO: check if we really need that many bins
 
   //  Collision filters
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -185,9 +186,10 @@ struct TaskHfCorrelations {
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
                                       {axisPtEfficiency, "p_{T} (GeV/c)"},
                                       {axisVertexEfficiency, "z-vtx (cm)"}};
+    std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};                                    
     sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
-    sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, {}));
+    sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
   }
 
@@ -312,8 +314,14 @@ struct TaskHfCorrelations {
 
       //  TODO: add getter for NUE trigger efficiency here
 
-      //  TODO: Check how to put this into a Filter
+      //  calculating inv. mass to be filled into the container below
+      //  Note: this is needed only in case of HF-hadron correlations
+      bool fillingHFcontainer = false;
+      float invmass = 0;
       if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
+        fillingHFcontainer = true;
+        invmass = InvMassD0(track1);
+        //  TODO: Check how to put this into a Filter
         if (isAcceptedCandidate(track1) == false) {
           continue;
         }
@@ -341,9 +349,15 @@ struct TaskHfCorrelations {
         //  set range of delta phi in (-pi/2 , 3/2*pi)
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * M_PI);
 
-        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                    triggerWeight * associatedWeight);
+        if (fillingHFcontainer == false) {
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+                                      triggerWeight * associatedWeight);
+        } else {
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+        }
       }
     }
   }
