@@ -176,7 +176,7 @@ struct tofPid {
       // Fill new table for the tracks in a collision
       lastCollisionId = track.collisionId(); // Cache last collision ID
       timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
-      if (enableTimeDependentResponse && !ccdb->isCachedObjectValid(parametrizationPath, timestamp)) {
+      if (enableTimeDependentResponse) {
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath << "' and timestamp " << timestamp.value;
         response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(parametrizationPath, timestamp));
       }
