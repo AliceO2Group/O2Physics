@@ -506,8 +506,8 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   int isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD)
   {
-    auto invMassD0 = RecoDecay::M(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
-    auto invMassD0bar = RecoDecay::M(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
+    auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
+    auto invMassD0bar = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
 
     if (activateQA) {
       hMassVsPtC[kD0]->Fill(ptD, invMassD0);
@@ -534,7 +534,7 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   bool isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
-    auto invMassDplus = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
+    auto invMassDplus = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
     if (activateQA) {
       hMassVsPtC[kDplus]->Fill(ptD, invMassDplus);
     }
@@ -555,11 +555,11 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   int isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
-    auto invMassKKFirst = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
-    auto invMassKKSecond = RecoDecay::M(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
+    auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
+    auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
 
-    auto invMassDsToKKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
-    auto invMassDsToPiKK = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
+    auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
+    auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
 
     if (activateQA) {
       hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
@@ -592,8 +592,8 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   int isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc)
   {
-    auto invMassLcToPKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
-    auto invMassLcToPiKP = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
+    auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
+    auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
 
     if (activateQA) {
       hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPKPi);
@@ -620,8 +620,8 @@ struct HfFilter { // Main struct for HF triggers
   template <typename T>
   int isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic)
   {
-    auto invMassXicToPKPi = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
-    auto invMassXicToPiKP = RecoDecay::M(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
+    auto invMassXicToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
+    auto invMassXicToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
 
     if (activateQA) {
       hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPKPi);
@@ -728,8 +728,8 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      auto pVec2Prong = RecoDecay::PVec(pVecPos, pVecNeg);
-      auto pt2Prong = RecoDecay::Pt(pVec2Prong);
+      auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
+      auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
       auto selD0 = isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong);
 
@@ -754,9 +754,9 @@ struct HfFilter { // Main struct for HF triggers
         if (!keepEvent[kBeauty] && isBeautyTagged) {
           int isTrackSelected = isSelectedTrackForBeauty(track, kBeauty3Prong);
           if (isTrackSelected && (((selD0 == 1 || selD0 == 3) && track.signed1Pt() < 0) || (selD0 >= 2 && track.signed1Pt() > 0))) {
-            auto massCand = RecoDecay::M(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
-            auto pVecBeauty3Prong = RecoDecay::PVec(pVec2Prong, pVecThird);
-            auto ptCand = RecoDecay::Pt(pVecBeauty3Prong);
+            auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
+            auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
+            auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
             if (isTrackSelected == kRegular && std::abs(massCand - massBPlus) <= deltaMassBPlus) {
               keepEvent[kBeauty] = true;
               if (activateQA) {
@@ -769,12 +769,12 @@ struct HfFilter { // Main struct for HF triggers
               for (const auto& trackB : tracks) { // start loop over tracks
                 if (track.signed1Pt() * trackB.signed1Pt() < 0 && isSelectedTrackForBeauty(trackB, kBeauty3Prong) == kRegular) {
                   std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
-                  auto massCandB0 = RecoDecay::M(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
+                  auto massCandB0 = RecoDecay::m(std::array{pVec2Prong, pVecThird, pVecFourth}, std::array{massD0, massPi, massPi});
                   if (std::abs(massCandB0 - massB0) <= deltaMassB0) {
                     keepEvent[kBeauty] = true;
                     if (activateQA) {
-                      auto pVecBeauty4Prong = RecoDecay::PVec(pVec2Prong, pVecThird, pVecFourth);
-                      auto ptCandBeauty4Prong = RecoDecay::Pt(pVecBeauty4Prong);
+                      auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
+                      auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
                       hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
                     }
                   }
@@ -865,8 +865,8 @@ struct HfFilter { // Main struct for HF triggers
 
       float sign3Prong = trackFirst.signed1Pt() * trackSecond.signed1Pt() * trackThird.signed1Pt();
 
-      auto pVec3Prong = RecoDecay::PVec(pVecFirst, pVecSecond, pVecThird);
-      auto pt3Prong = RecoDecay::Pt(pVec3Prong);
+      auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
+      auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
       std::array<int, kNCharmParticles - 1> is3ProngInMass{};
       if (is3Prong[0]) {
@@ -907,12 +907,12 @@ struct HfFilter { // Main struct for HF triggers
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty]; ++iHypo) {
             if (isBeautyTagged[iHypo] && ((iHypo != 1 && is3ProngInMass[iHypo] > 0) || (iHypo == 1 && ((TESTBIT(is3ProngInMass[iHypo], 0) && TESTBIT(is3ProngInMass[iHypo], 2)) || (TESTBIT(is3ProngInMass[iHypo], 1) && TESTBIT(is3ProngInMass[iHypo], 3)))))) {
-              auto massCandB = RecoDecay::M(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
+              auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
                 if (activateQA) {
-                  auto pVecBeauty4Prong = RecoDecay::PVec(pVec3Prong, pVecFourth);
-                  auto ptCandBeauty4Prong = RecoDecay::Pt(pVecBeauty4Prong);
+                  auto pVecBeauty4Prong = RecoDecay::pVec(pVec3Prong, pVecFourth);
+                  auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
                   hMassVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, massCandB);
                 }
               }

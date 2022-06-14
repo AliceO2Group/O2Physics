@@ -151,8 +151,8 @@ struct HfTreeCreatorChicToJpsiGamma {
       array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
       array<float, 3> pvecJpsi = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
       array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
-      auto pchic = RecoDecay::P(pvecChic);
-      auto pjpsi = RecoDecay::P(pvecJpsi);
+      auto pchic = RecoDecay::p(pvecChic);
+      auto pjpsi = RecoDecay::p(pvecJpsi);
       auto pl1 = std::abs(RecoDecay::dotProd(pvecChic, pvecJpsi)) / pchic;
       auto pl2 = std::abs(RecoDecay::dotProd(pvecChic, pvecGamma)) / pchic;
       auto alpha = (pl1 - pl2) / (pl1 + pl2);
@@ -176,9 +176,9 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.decayLength(),
             candidate.decayLengthXY(),
             candidate.ptProng0(),
-            RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.ptProng1(),
-            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
             alpha,
             qt,
             candidate.chi2PCA(),
@@ -211,7 +211,7 @@ struct HfTreeCreatorChicToJpsiGamma {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, massChic),
+          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massChic),
           0., // put here the jpsi mass
           particle.flagMCMatchGen());
       }

@@ -200,7 +200,7 @@ struct HFCandidateCreatorCascade {
       // fill histograms
       if (doValPlots) {
         // calculate invariant masses
-        mass2K0sP = RecoDecay::M(array{pVecBach, pVecV0}, array{massP, massK0s});
+        mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
         hmass2->Fill(mass2K0sP);
       }
     }

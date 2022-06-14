@@ -240,9 +240,9 @@ struct HfTreeCreatorBplusToD0Pi {
           rowCandidateFull(
             candidate.rSecondaryVertex(),
             candidate.ptProng0(),
-            RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.ptProng1(),
-            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
             //1 << CandFlag,
             FunctionInvMass,
             candidate.pt(),
@@ -315,7 +315,7 @@ struct HfTreeCreatorBplusToD0Pi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
           particle.flagMCMatchGen());
       }
     }

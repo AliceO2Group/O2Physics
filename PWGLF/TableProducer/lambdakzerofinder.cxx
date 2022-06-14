@@ -229,7 +229,7 @@ struct lambdakzerofinder {
         fitter.getTrack(0).getPxPyPzGlo(pvec0);
         fitter.getTrack(1).getPxPyPzGlo(pvec1);
 
-        auto thisv0cospa = RecoDecay::CPA(array{collision.posX(), collision.posY(), collision.posZ()},
+        auto thisv0cospa = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()},
                                           array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
         if (thisv0cospa < v0cospa) {
           continue;

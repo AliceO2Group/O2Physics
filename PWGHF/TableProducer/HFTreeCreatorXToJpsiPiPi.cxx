@@ -196,12 +196,12 @@ struct HfTreeCreatorXTojpsipipi {
             candidate.decayLengthXY(),
             candidate.impactParameterNormalised0(),
             candidate.ptProng0(),
-            RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.impactParameterNormalised1(),
             candidate.ptProng1(),
-            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
             candidate.ptProng2(),
-            RecoDecay::P(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+            RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
             candidate.impactParameter0(),
             candidate.impactParameter1(),
             candidate.impactParameter2(),
@@ -242,7 +242,7 @@ struct HfTreeCreatorXTojpsipipi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, massX),
+          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, massX),
           particle.flagMCMatchGen());
       }
     }
