@@ -230,7 +230,7 @@ struct HFCandidateCreatorX {
 
           // calculate invariant mass
           auto arrayMomenta = array{pvecJpsi, pvecPos, pvecNeg};
-          massJpsiPiPi = RecoDecay::M(std::move(arrayMomenta), array{massJpsi, massPi, massPi});
+          massJpsiPiPi = RecoDecay::m(std::move(arrayMomenta), array{massJpsi, massPi, massPi});
           if (jpsiCand.isSelJpsiToEE() > 0) {
             hMassXToJpsiToEEPiPi->Fill(massJpsiPiPi);
           }

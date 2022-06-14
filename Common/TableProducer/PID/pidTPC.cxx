@@ -98,18 +98,7 @@ struct tpcPid {
   {
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
-      const std::string table = "pidTPC" + particle;
-      if (isTableRequiredInWorkflow(initContext, table)) {
-        if (flag < 0) {
-          flag.value = 1;
-          LOG(info) << "Auto-enabling table: " + table;
-        } else if (flag > 0) {
-          flag.value = 1;
-          LOG(info) << "Table enabled: " + table;
-        } else {
-          LOG(info) << "Table disabled: " + table;
-        }
-      }
+      enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
     };
     enableFlag("El", pidEl);
     enableFlag("Mu", pidMu);

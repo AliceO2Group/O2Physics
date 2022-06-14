@@ -65,7 +65,7 @@ struct v0selector {
   float alphav0(const array<float, 3>& ppos, const array<float, 3>& pneg)
   {
     std::array<float, 3> pv0 = {ppos[0] + pneg[0], ppos[1] + pneg[1], ppos[2] + pneg[2]};
-    float momTot = RecoDecay::P(pv0);
+    float momTot = RecoDecay::p(pv0);
     float lQlNeg = RecoDecay::dotProd(pneg, pv0) / momTot;
     float lQlPos = RecoDecay::dotProd(ppos, pv0) / momTot;
     return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry
@@ -74,9 +74,9 @@ struct v0selector {
   float qtarmv0(const array<float, 3>& ppos, const array<float, 3>& pneg)
   {
     std::array<float, 3> pv0 = {ppos[0] + pneg[0], ppos[1] + pneg[1], ppos[2] + pneg[2]};
-    float momTot2 = RecoDecay::P2(pv0);
+    float momTot2 = RecoDecay::p2(pv0);
     float dp = RecoDecay::dotProd(pneg, pv0);
-    return std::sqrt(RecoDecay::P2(pneg) - dp * dp / momTot2); // qtarm
+    return std::sqrt(RecoDecay::p2(pneg) - dp * dp / momTot2); // qtarm
   }
 
   float phivv0(const array<float, 3>& ppos, const array<float, 3>& pneg, const int cpos, const int cneg, const float bz)
@@ -107,18 +107,18 @@ struct v0selector {
     }
 
     // unit vector of pep X pem
-    float vx = vpx / RecoDecay::P(array{vpx, vpy, vpz});
-    float vy = vpy / RecoDecay::P(array{vpx, vpy, vpz});
-    float vz = vpz / RecoDecay::P(array{vpx, vpy, vpz});
+    float vx = vpx / RecoDecay::p(array{vpx, vpy, vpz});
+    float vy = vpy / RecoDecay::p(array{vpx, vpy, vpz});
+    float vz = vpz / RecoDecay::p(array{vpx, vpy, vpz});
 
     float px = ppos[0] + pneg[0];
     float py = ppos[1] + pneg[1];
     float pz = ppos[2] + pneg[2];
 
     // unit vector of (pep+pem)
-    float ux = px / RecoDecay::P(array{px, py, pz});
-    float uy = py / RecoDecay::P(array{px, py, pz});
-    float uz = pz / RecoDecay::P(array{px, py, pz});
+    float ux = px / RecoDecay::p(array{px, py, pz});
+    float uy = py / RecoDecay::p(array{px, py, pz});
+    float uz = pz / RecoDecay::p(array{px, py, pz});
     float ax = uy / RecoDecay::sqrtSumOfSquares(ux, uy);
     float ay = -ux / RecoDecay::sqrtSumOfSquares(ux, uy);
 
@@ -134,8 +134,8 @@ struct v0selector {
   {
     // Following idea to use opening of colinear pairs in magnetic field from e.g. PHENIX to ID conversions.
     float deltat = TMath::ATan(pneg[2] / (TMath::Sqrt(pneg[0] * pneg[0] + pneg[1] * pneg[1]))) - TMath::ATan(ppos[2] / (TMath::Sqrt(ppos[0] * ppos[0] + ppos[1] * ppos[1]))); // difference of angles of the two daughter tracks with z-axis
-    float pEle = RecoDecay::P(pneg);                                                                                                                                          // absolute momentum val
-    float pPos = RecoDecay::P(ppos);                                                                                                                                          // absolute momentum val
+    float pEle = RecoDecay::p(pneg);                                                                                                                                          // absolute momentum val
+    float pPos = RecoDecay::p(ppos);                                                                                                                                          // absolute momentum val
     float chipair = TMath::ACos(RecoDecay::dotProd(ppos, pneg) / (pEle * pPos));                                                                                              // Angle between daughter tracks
     return TMath::Abs(TMath::ASin(deltat / chipair));                                                                                                                         // psipair in [0,pi/2]
   }
@@ -352,11 +352,11 @@ struct v0selector {
       auto py = pvec0[1] + pvec1[1];
       auto pz = pvec0[2] + pvec1[2];
       auto pt = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
-      auto eta = RecoDecay::Eta(array{px, py, pz});
-      auto phi = RecoDecay::Phi(px, py);
+      auto eta = RecoDecay::eta(array{px, py, pz});
+      auto phi = RecoDecay::phi(px, py);
 
       auto V0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
-      auto V0CosinePA = RecoDecay::CPA(pVtx, array{pos[0], pos[1], pos[2]}, array{px, py, pz});
+      auto V0CosinePA = RecoDecay::cpa(pVtx, array{pos[0], pos[1], pos[2]}, array{px, py, pz});
       auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]);
 
       registry.fill(HIST("hV0Pt"), pt);
@@ -389,10 +389,10 @@ struct v0selector {
       registry.fill(HIST("hV0PhiV"), phiv);
       registry.fill(HIST("hV0Psi"), psipair);
 
-      float mGamma = RecoDecay::M(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
-      float mK0S = RecoDecay::M(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
-      float mLambda = RecoDecay::M(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
-      float mAntiLambda = RecoDecay::M(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
+      float mGamma = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kElectron), RecoDecay::getMassPDG(kElectron)});
+      float mK0S = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kPiPlus)});
+      float mLambda = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
+      float mAntiLambda = RecoDecay::m(array{pvec0, pvec1}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
 
       registry.fill(HIST("hMassGamma"), mGamma);
       registry.fill(HIST("hMassK0S"), mK0S);
@@ -529,7 +529,7 @@ struct v0selector {
       std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
       const std::array<float, 3> vertex = {(float)v0vtx[0], (float)v0vtx[1], (float)v0vtx[2]};
       const std::array<float, 3> pvecv0 = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
-      auto V0CosinePA = RecoDecay::CPA(pVtx, array{pos[0], pos[1], pos[2]}, pvecv0);
+      auto V0CosinePA = RecoDecay::cpa(pVtx, array{pos[0], pos[1], pos[2]}, pvecv0);
       registry.fill(HIST("hV0CosPA_Casc"), V0CosinePA);
       // if (V0CosinePA < 0.97) {
       //   continue;
@@ -553,16 +553,16 @@ struct v0selector {
       // }
 
       const auto& cascvtx = fitterCasc.getPCACandidate();
-      auto CascCosinePA = RecoDecay::CPA(pVtx, array{cascvtx[0], cascvtx[1], cascvtx[2]}, pvecbach);
+      auto CascCosinePA = RecoDecay::cpa(pVtx, array{cascvtx[0], cascvtx[1], cascvtx[2]}, pvecbach);
       registry.fill(HIST("hCascCosPA"), CascCosinePA);
       // if(CascCosinePA < 0.998){
       //   continue;
       // }
 
-      float mLambda = RecoDecay::M(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
-      float mAntiLambda = RecoDecay::M(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
-      float mXi = RecoDecay::M(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kPiPlus)});
-      float mOmega = RecoDecay::M(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kKPlus)});
+      float mLambda = RecoDecay::m(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)});
+      float mAntiLambda = RecoDecay::m(array{pvecpos, pvecneg}, array{RecoDecay::getMassPDG(kPiPlus), RecoDecay::getMassPDG(kProton)});
+      float mXi = RecoDecay::m(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kPiPlus)});
+      float mOmega = RecoDecay::m(array{pvecv0, pvecbach}, array{RecoDecay::getMassPDG(kLambda0), RecoDecay::getMassPDG(kKPlus)});
       registry.fill(HIST("hMassLambda_Casc"), mLambda);
       registry.fill(HIST("hMassAntiLambda_Casc"), mAntiLambda);
 

@@ -172,8 +172,8 @@ struct ValidationGenLevel {
           if (std::abs(pxDiff) > 0.001 || std::abs(pyDiff) > 0.001 || std::abs(pzDiff) > 0.001) {
             momentumCheck = false;
           }
-          double pDiff = RecoDecay::P(pxDiff, pyDiff, pzDiff);
-          double ptDiff = RecoDecay::Pt(pxDiff, pyDiff);
+          double pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
+          double ptDiff = RecoDecay::pt(pxDiff, pyDiff);
           //Filling histograms with per-component momentum conservation
           registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
           registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
@@ -303,11 +303,11 @@ struct ValidationRecLevel {
         std::array<double, 3> momDau1 = {cand2Prong.pxProng1(),
                                          cand2Prong.pyProng1(),
                                          cand2Prong.pzProng1()};
-        histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::Pt(momDau0));
-        histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::Eta(momDau0));
+        histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
+        histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
         histImpactParameterDau[whichHad][whichOrigin][0]->Fill(cand2Prong.impactParameter0());
-        histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::Pt(momDau1));
-        histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::Eta(momDau1));
+        histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::pt(momDau1));
+        histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::eta(momDau1));
         histImpactParameterDau[whichHad][whichOrigin][1]->Fill(cand2Prong.impactParameter1());
       }
     } //end loop on 2-prong candidates
@@ -370,14 +370,14 @@ struct ValidationRecLevel {
         std::array<double, 3> momDau2 = {cand3Prong.pxProng2(),
                                          cand3Prong.pyProng2(),
                                          cand3Prong.pzProng2()};
-        histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::Pt(momDau0));
-        histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::Eta(momDau0));
+        histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
+        histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
         histImpactParameterDau[whichHad][whichOrigin][0]->Fill(cand3Prong.impactParameter0());
-        histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::Pt(momDau1));
-        histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::Eta(momDau1));
+        histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::pt(momDau1));
+        histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::eta(momDau1));
         histImpactParameterDau[whichHad][whichOrigin][1]->Fill(cand3Prong.impactParameter1());
-        histPtDau[whichHad][whichOrigin][2]->Fill(RecoDecay::Pt(momDau2));
-        histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::Eta(momDau2));
+        histPtDau[whichHad][whichOrigin][2]->Fill(RecoDecay::pt(momDau2));
+        histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::eta(momDau2));
         histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());
       }
     } //end loop on 3-prong candidates

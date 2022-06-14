@@ -76,7 +76,7 @@ struct ConfigurableObjectDemo {
   // Their names must be unique.
   struct : ConfigurableGroup {
     Configurable<float> max_eta{"max_eta", 0.8f, "Maximal eta"};
-    Configurable<float> min_clusters{"min_clusters", 70, "Minimal required number of clusters"};
+    Configurable<int16_t> min_clusters{"min_clusters", 70, "Minimal required number of clusters"};
   } trackcuts;
 
   void init(InitContext const&)

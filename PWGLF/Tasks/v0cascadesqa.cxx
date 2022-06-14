@@ -327,7 +327,7 @@ struct v0cascadesQA {
       histos_Casc.fill(HIST("V0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
 
       // double v0cospatoxi = RecoDecay::CPA(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{v0.px(), v0.py(), v0.pz()});
-      double v0cospatoxi = RecoDecay::CPA(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()});
+      double v0cospatoxi = RecoDecay::cpa(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()});
 
       histos_Casc.fill(HIST("V0CosPAToXi"), v0cospatoxi, casc.sign());
       histos_Casc.fill(HIST("CascRadius"), casc.cascradius(), casc.sign());

@@ -35,5 +35,8 @@
 /PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo
 /PWGLF @alibuild @njacazio
 /PWGMM @alibuild @aalkin
+/PWGMM/Lumi @alibuild @aalkin
+/PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
+/PWGMM/UE @alibuild @aalkin
 /PWGUD @alibuild @pbuehler
 /Tools/PIDML @alibuild @saganatt

@@ -59,16 +59,16 @@ struct HfCandidateCreatorDstar {
       std::array<float, 3> pVecPi = {trackPi.px(), trackPi.py(), trackPi.pz()};
       std::array<float, 3> pVecD0Prong0 = {trackD0Prong0.px(), trackD0Prong0.py(), trackD0Prong0.pz()};
       std::array<float, 3> pVecD0Prong1 = {trackD0Prong1.px(), trackD0Prong1.py(), trackD0Prong1.pz()};
-      auto pVecD0 = RecoDecay::PVec(pVecD0Prong0, pVecD0Prong1);
+      auto pVecD0 = RecoDecay::pVec(pVecD0Prong0, pVecD0Prong1);
 
       // fill histograms
       if (fillHistograms) {
-        hPtPi->Fill(RecoDecay::Pt(pVecPi));
-        hPtD0->Fill(RecoDecay::Pt(pVecD0));
-        hPtD0Prong0->Fill(RecoDecay::Pt(pVecD0Prong0));
-        hPtD0Prong1->Fill(RecoDecay::Pt(pVecD0Prong1));
+        hPtPi->Fill(RecoDecay::pt(pVecPi));
+        hPtD0->Fill(RecoDecay::pt(pVecD0));
+        hPtD0Prong0->Fill(RecoDecay::pt(pVecD0Prong0));
+        hPtD0Prong1->Fill(RecoDecay::pt(pVecD0Prong1));
         // calculate invariant mass
-        auto mass = RecoDecay::M(std::array{pVecPi, pVecD0}, std::array{massPi, massD0});
+        auto mass = RecoDecay::m(std::array{pVecPi, pVecD0}, std::array{massPi, massD0});
         hMass->Fill(mass);
       }
     }

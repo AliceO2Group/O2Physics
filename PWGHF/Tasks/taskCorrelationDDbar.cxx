@@ -47,7 +47,7 @@ double getDeltaPhi(double phiD, double phiDbar)
 ///
 double evaluatePhiByVertex(double xVertex1, double xVertex2, double yVertex1, double yVertex2)
 {
-  return RecoDecay::Phi(xVertex2 - xVertex1, yVertex2 - yVertex1);
+  return RecoDecay::phi(xVertex2 - xVertex1, yVertex2 - yVertex1);
 }
 
 // string definitions, used for histogram axis labels
