@@ -62,9 +62,8 @@ struct v0cascadesQA {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}}, // storing total #events
     },
     OutputObjHandlingPolicy::AnalysisObject,
-    false, 
-    true
-  };
+    false,
+    true};
 
   HistogramRegistry histos_V0{
     "histos-V0",
@@ -92,9 +91,8 @@ struct v0cascadesQA {
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
-    false, 
-    true
-  };
+    false,
+    true};
 
   HistogramRegistry histos_Casc{
     "histos-Casc",
@@ -128,9 +126,8 @@ struct v0cascadesQA {
       {"InvMassOmegaMinus", "InvMassOmegaMinus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
-    false, 
-    true
-  };
+    false,
+    true};
 
   void init(InitContext const&)
   {
@@ -165,7 +162,7 @@ struct v0cascadesQA {
   void processMcEvent(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (auto& mcparticle : mcParticles) {
-      if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < V0_rapidity ) {
+      if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < V0_rapidity) {
         if (mcparticle.pdgCode() == 310)
           histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt()); // K0s
         if (mcparticle.pdgCode() == 3122)
