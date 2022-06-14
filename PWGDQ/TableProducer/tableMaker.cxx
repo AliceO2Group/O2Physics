@@ -324,6 +324,45 @@ struct TableMaker {
       if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
         muonCov.reserve(tracksMuon.size());
       }
+      int nDel = 0;
+      int idxPrev = 0;
+      std::map<int, int> newEntryNb;//(tracksMuon.size(), -99);
+      std::map<int, int> newMatchIndex;
+
+      cout <<"************************************************"<<endl;
+      for (auto& muon : tracksMuon) {
+        trackFilteringTag = uint64_t(0);
+        VarManager::FillTrack<TMuonFillMap>(muon);
+        if (muon.index() > idxPrev + 1) {
+          nDel += muon.index() - (idxPrev + 1);
+          cout<<"[WARNING] one or more muons between "<<idxPrev<<" and "<<muon.index()<<" have been filtered before the skimming function, nDel is now = "<<nDel<<endl;
+        }
+        idxPrev = muon.index();
+
+        int i = 0;
+        for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
+          if ((*cut).IsSelected(VarManager::fgValues))
+            trackTempFilterMap |= (uint8_t(1) << i);
+          }
+
+        if (!trackTempFilterMap) { // does not pass the cuts
+          //newEntryNb[muon.index()] = -1;
+          nDel++;
+          cout <<"[INFO] this muon with index "<<muon.index()<<" will be deleted nDel is now = "<<nDel<<endl;
+        }
+          else {
+            newEntryNb[muon.index()] = muon.index() - nDel;
+            cout <<"[INFO] this muon with index "<<muon.index()<<" will be stored and will get a new index = "<<newEntryNb[muon.index()]<<endl;
+          }
+      }
+      //cout<<"[INFO] tracksMuon.size() = "<<tracksMuon.size()<<" int(newEntryNb.size()) = "<<int(newEntryNb.size())<<endl;
+      //if (tracksMuon.size() != newEntryNb.size()) cout <<"[ERROR] ********** [ERROR] ********** [ERROR] ********** [ERROR] ********** [ERROR] the muon arrays are not compatible"<<endl;
+
+      //cout<<"let's look at the entries of the newEntryNb array: "<<endl;
+      //for (int iEntry = 0; iEntry<int(newEntryNb.size()); iEntry++) cout <<"[INFO] muon with old index "<<iEntry<<" will get a new index "<< newEntryNb[iEntry]<<endl;
+      //for (const auto& [key, value] : newEntryNb)
+        //cout << "[INFO] muon with old index " << key << " will get a new index " << value << "; "<<endl;
+
       // loop over muons
       for (auto& muon : tracksMuon) {
         trackFilteringTag = uint64_t(0);
@@ -350,10 +389,44 @@ struct TableMaker {
         // store the cut decisions
         trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
 
+        //update the matching MCH/MFT index
+        cout<<"[INFO] we have a muon with index "<<muon.index()<<" -> "<<newEntryNb[muon.index()]<<" of type "<<int(muon.trackType())<<". The offset is "<<muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]<<" and it will be saved as "<<muonBasic.lastIndex() + 1<<" in the new tables"<<endl;
+
+        if (int(muon.trackType()) == 0 || int(muon.trackType()) == 2) { // MCH-MFT or GLB track
+          int matchIdx = muon.matchMCHTrackId() - muon.offsets();
+          if(newEntryNb.count(matchIdx)>0) { //if the key exists which means the match will not get deleted
+            newMatchIndex[muon.index()] = newEntryNb[matchIdx]; //update the match for this muon to the updated entry of the match
+            cout <<"  [INFO] the muon was matched to muon with old entry "<<matchIdx<<" -> "<<newMatchIndex[muon.index()];
+            newMatchIndex[muon.index()] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; //adding the offset of muons, muonBasic.lastIndex() start at -1
+            cout <<" that will saved as "<<newMatchIndex[muon.index()]<<" when the offset is added"<<endl;
+            if (int(muon.trackType()) == 0) { //for now only do this to global tracks
+              newMatchIndex[matchIdx] = newEntryNb[muon.index()]; //add the  updated index of this muon as a match to mch track
+              cout <<"  [INFO] the corresponding mch track with index "<<matchIdx<<" -> "<<newEntryNb[matchIdx]<<" will get "<<newEntryNb[muon.index()]<<" as a match (";
+              newMatchIndex[matchIdx] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; //adding the offset, muonBasic.lastIndex() start at -1
+              cout <<newMatchIndex[matchIdx]<<" with offset)"<<endl;
+            }
+          }
+          else {
+            newMatchIndex[muon.index()] = -1;
+            cout<<"  [INFO] the muon had "<< muon.matchMCHTrackId() <<" as a match, which will not exist. Therefore the match is saved as "<<newMatchIndex[muon.index()]<<endl;
+          }
+        }
+
+        else if (int(muon.trackType() == 4)) { //an MCH track
+        // in this case the matches should be filled from the other types but we need to check
+          if (newMatchIndex.count(muon.index()) == 0) {
+              newMatchIndex[muon.index()] = -1;
+              cout <<"  [INFO] this MCH track was not matched to any other muon. Therefore the match is saved as "<<newMatchIndex[muon.index()]<<endl;
+            }
+          else {
+              cout << "  [INFO] this match was already filled and it is equal to "<<newMatchIndex[muon.index()]<<" which corresponds to entry "<<newMatchIndex.find(muon.index())->second - (muonBasic.lastIndex() + 1 - newEntryNb[muon.index()])<<endl;
+            }
+          }
+        //cout <<"[INFO] the new match is "<< newMatchIndex.find(muon.index())->second<<" which corresponds to entry "<<newMatchIndex.find(muon.index())->second - (muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]) <<endl;
         muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign());
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), muon.matchMCHTrackId(), muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), muon.trackType());
+                  muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), newMatchIndex.find(muon.index())->second/*muon.matchMCHTrackId()*/, muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), muon.trackType());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
           muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
                   muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
