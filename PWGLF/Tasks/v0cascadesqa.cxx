@@ -61,6 +61,9 @@ struct v0cascadesQA {
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}}, // storing total #events
     },
+    OutputObjHandlingPolicy::AnalysisObject,
+    false, 
+    true
   };
 
   HistogramRegistry histos_V0{
@@ -88,6 +91,9 @@ struct v0cascadesQA {
       {"InvMassLambda_Ctau", "InvMassLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
       {"InvMassAntiLambda_Ctau", "InvMassAntiLambda_Ctau", {HistType::kTH2F, {{200, 0.0f, 40.0f}, {200, 1.07f, 1.17f}}}},
     },
+    OutputObjHandlingPolicy::AnalysisObject,
+    false, 
+    true
   };
 
   HistogramRegistry histos_Casc{
@@ -121,6 +127,9 @@ struct v0cascadesQA {
       {"InvMassOmegaPlus", "InvMassOmegaPlus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
       {"InvMassOmegaMinus", "InvMassOmegaMinus", {HistType::kTH2F, {{100, 0.f, 10.f}, {80, 1.63f, 1.71f}}}},
     },
+    OutputObjHandlingPolicy::AnalysisObject,
+    false, 
+    true
   };
 
   void init(InitContext const&)
