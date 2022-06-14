@@ -58,7 +58,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksExtended,  aod::pidTPCFullPi, aod::pidTPCFullHe, aod::pidTPCFullTr, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::McTrackLabels>;
+using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,  aod::pidTPCFullPi, aod::pidTPCFullHe, aod::pidTPCFullTr, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::McTrackLabels>;
 
 
 struct hypertritonQa {
@@ -247,30 +247,30 @@ struct hypertritonAnalysisMc {
 
         if(v0.negTrack_as<MyTracks>().pt() > 0.2 && v0.negTrack_as<MyTracks>().pt() < 1.2 && v0.posTrack_as<MyTracks>().pt() > 1.8 && v0.posTrack_as<MyTracks>().pt() < 10 && v0.pt() > 2 && v0.pt() < 9 ){
           registry.fill(HIST("hSelectedV0Counter"), 8.5);
-        if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
-          registry.fill(HIST("hSelectedV0Counter"), 9.5);
+          if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
+            registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
-          registry.fill(HIST("h3dMassHypertriton"), 0., v0.pt(), v0.mHypertriton());
-          registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+            registry.fill(HIST("h3dMassHypertriton"), 0., v0.pt(), v0.mHypertriton());
+            registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
-          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
-                if (particleMotherOfNeg.isPhysicalPrimary()) {
-                  registry.fill(HIST("h3dMassHypertriton_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mHypertriton());
-                  registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
+            for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+              for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+                if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
+                  if (particleMotherOfNeg.isPhysicalPrimary()) {
+                    registry.fill(HIST("h3dMassHypertriton_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mHypertriton());
+                    registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
+                  }
                 }
-              }
-              if (saveDcaHist == 1) {
-                registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
+                if (saveDcaHist == 1) {
+                  registry.fill(HIST("h3dMassHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mHypertriton());
 
-                if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
-                  registry.fill(HIST("h3dMassHypertritonDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mHypertriton());
+                  if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
+                    registry.fill(HIST("h3dMassHypertritonDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mHypertriton());
+                  }
                 }
               }
             }
           }
-        }
         }
       }
 
@@ -279,32 +279,32 @@ struct hypertritonAnalysisMc {
 
         registry.fill(HIST("hSelectedV0Counter"), 7.5);
         if(v0.posTrack_as<MyTracks>().pt() > 0.2 && v0.posTrack_as<MyTracks>().pt() < 1.2 && v0.negTrack_as<MyTracks>().pt() > 1.8 && v0.negTrack_as<MyTracks>().pt() < 10 && v0.pt() < 2 && v0.pt() > 9 ){
-        registry.fill(HIST("hSelectedV0Counter"), 8.5);
-        if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
-          registry.fill(HIST("hSelectedV0Counter"), 9.5);
+          registry.fill(HIST("hSelectedV0Counter"), 8.5);
+          if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
+            registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
-          registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
-          registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
+            registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
+            registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
-          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
-                if (particleMotherOfNeg.isPhysicalPrimary()) {
-                  registry.fill(HIST("h3dMassAntiHypertriton_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mAntiHypertriton());
-                  registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
+            for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+              for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+                if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
+                  if (particleMotherOfNeg.isPhysicalPrimary()) {
+                    registry.fill(HIST("h3dMassAntiHypertriton_MC_truePt"), 0., particleMotherOfNeg.pt(), v0.mAntiHypertriton());
+                    registry.fill(HIST("hArmenterosPostAnalyserCuts_MC"), v0.alpha(), v0.qtarm());
+                  }
                 }
-              }
-              if (saveDcaHist == 1) {
-                registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
+                if (saveDcaHist == 1) {
+                  registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
 
-                if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
-                  registry.fill(HIST("h3dMassAntiHypertritonDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mAntiHypertriton());
+                  if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
+                    registry.fill(HIST("h3dMassAntiHypertritonDca_MC_truePt"), v0.dcaV0daughters(), particleMotherOfNeg.pt(), v0.mAntiHypertriton());
+                  }
                 }
               }
             }
           }
         }
-      }
       }
 
     }
@@ -498,8 +498,8 @@ struct hypertritonTrackCount {
           registry.fill(HIST("hHelium3NsigmaHelium3Test"), track.tpcNSigmaHe());
           registry.fill(HIST("hHelium3TPCBBTest"), track.p()*track.sign(), track.tpcSignal());
           if (track.pt() > 0.9){
-          registry.fill(HIST("hHelium3NsigmaHelium3Test2"), track.tpcNSigmaHe());
-          registry.fill(HIST("hHelium3TPCBBTest2"), track.p()*track.sign(), track.tpcSignal());
+            registry.fill(HIST("hHelium3NsigmaHelium3Test2"), track.tpcNSigmaHe());
+            registry.fill(HIST("hHelium3TPCBBTest2"), track.p()*track.sign(), track.tpcSignal());
           }
         }
         registry.fill(HIST("hHelium3McPx"), mcparticle.px());
@@ -809,6 +809,17 @@ namespace o2::aod
 
 struct V0McCheck {
 
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};//loose cut
+  Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+  Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; //ct*/
+  Configurable<float> etacut{"etacut", 0.9, "etacut"};
+  Configurable<float> rapidity{"rapidity", 0.8, "rapidity"};
+  Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  //max sine phi for propagation
@@ -952,20 +963,23 @@ struct V0McCheck {
     return output;
   }
 
-  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcparticles){
-
-    Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (bc.runNumber() != mRunNumber) {
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  {
+    if (lRunNumber != mRunNumber) {
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
+        d_bz = getMagneticField(lTimeStamp);
       } else {
         d_bz = d_bz_input;
       }
-      mRunNumber = bc.runNumber();
+      mRunNumber = lRunNumber;
     }
+  }
+  void process(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcparticles){
+
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
@@ -1063,16 +1077,6 @@ struct V0McCheck {
       v0mcinfo( mcpostrack.pdgCode(), pTrackPID, v0.posTrack_as<MyTracks>().px(), v0.posTrack_as<MyTracks>().py(), v0.posTrack_as<MyTracks>().pz(), mcpostrack.px(), mcpostrack.py(), mcpostrack.pz(), v0.posTrack_as<MyTracks>().px() - mcpostrack.px(), v0.posTrack_as<MyTracks>().py() - mcpostrack.py(), v0.posTrack_as<MyTracks>().pz() - mcpostrack.pz(), v0.posTrack_as<MyTracks>().tpcNClsCrossedRows(), v0.posTrack_as<MyTracks>().tpcSignal(),v0.posTrack_as<MyTracks>().tpcNSigmaHe(), v0.posTrack_as<MyTracks>().tpcNSigmaPi(), v0.posTrack_as<MyTracks>().tpcNSigmaTr(), v0.posTrack_as<MyTracks>().dcaXY(),  
           mcnegtrack.pdgCode(), nTrackPID, v0.negTrack_as<MyTracks>().px(), v0.negTrack_as<MyTracks>().py(), v0.negTrack_as<MyTracks>().pz(), mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz(), v0.negTrack_as<MyTracks>().px() - mcnegtrack.px(), v0.negTrack_as<MyTracks>().py() - mcnegtrack.py(), v0.negTrack_as<MyTracks>().pz() - mcnegtrack.pz(),  v0.negTrack_as<MyTracks>().tpcNClsCrossedRows(),  v0.negTrack_as<MyTracks>().tpcSignal(), v0.negTrack_as<MyTracks>().tpcNSigmaHe(), v0.negTrack_as<MyTracks>().tpcNSigmaPi(), v0.negTrack_as<MyTracks>().tpcNSigmaTr(), v0.negTrack_as<MyTracks>().dcaXY() );
 
-
-      Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-      Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};//loose cut
-      Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
-      Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
-      Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-      Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; //ct*/
-      Configurable<float> etacut{"etacut", 0.9, "etacut"};
-      Configurable<float> rapidity{"rapidity", 0.8, "rapidity"};
-      Configurable<float> dcapiontopv{"dcapiontopv", .1, "DCA Pion To PV"};
 
       if (mcpostrack.pdgCode() == 1000020030 && mcnegtrack.pdgCode() == -211){
         for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
@@ -1175,15 +1179,15 @@ struct V0McCheck {
           registry.fill(HIST("hV0McHypertritonMassAfterV0Cut"), hypertritonMcMass);
           registry.fill(HIST("hV0HypertritonMass3"), hypertritonMass);
           if (V0radius > v0radius) {
-          registry.fill(HIST("hV0HypertritonMassTest"), hypertritonMass);
-            }
-        for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-          for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-            if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
-              registry.fill(HIST("hTrueHypertritonCounter"), 1.5);
+            registry.fill(HIST("hV0HypertritonMassTest"), hypertritonMass);
+          }
+          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+              if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
+                registry.fill(HIST("hTrueHypertritonCounter"), 1.5);
+              }
             }
           }
-        }
           if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) > TpcPidNsigmaCut){
             break;
           }
@@ -1336,13 +1340,13 @@ struct V0McCheck {
           if (V0radius > v0radius) {
             registry.fill(HIST("hV0HypertritonMassTest"), hypertritonMass);
           }
-        for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-          for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-            if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
-              registry.fill(HIST("hTrueHypertritonCounter"), 4.5);
+          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+              if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
+                registry.fill(HIST("hTrueHypertritonCounter"), 4.5);
+              }
             }
           }
-        }
           if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) > TpcPidNsigmaCut){
             break;
           }
