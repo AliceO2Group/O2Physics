@@ -85,7 +85,8 @@ class VarManager : public TObject
     ReducedMuonExtra = BIT(14),
     ReducedMuonCov = BIT(15),
     ParticleMC = BIT(16),
-    Pair = BIT(17) // TODO: check whether we really need the Pair member here
+    Pair = BIT(17), // TODO: check whether we really need the Pair member here
+    ReducedEventQvector = BIT(18)
   };
 
   enum PairCandidateType {
@@ -276,10 +277,15 @@ class VarManager : public TObject
     kDCATrackVtxProd,
 
     // Qn vector variables
-    kQ2X0,
-    kQ2Y0,
-    kPsi2,
-    kRes,
+    kQ2X0A,
+    kQ2Y0A,
+    kQ2X0B,
+    kQ2Y0B,
+    kQ2X0C,
+    kQ2Y0C,
+    kMultA,
+    kMultB,
+    kMultC,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -383,8 +389,8 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
-  template <uint32_t collFillMap, typename C, typename A>
-  static void FillQVectorFromGFW(C const& collision, A const& comp, float res = 1.0, float norm = 1.0, float* values = nullptr);
+  template <typename C, typename A1, typename A2, typename A3>
+  static void FillQVectorFromGFW(C const& collision, A1 const& compA, A2 const& compB, A3 const& compC, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
 
  public:
   VarManager();
@@ -392,7 +398,6 @@ class VarManager : public TObject
 
   static float fgValues[kNVars]; // array holding all variables computed during analysis
   static void ResetValues(int startValue = 0, int endValue = kNVars, float* values = nullptr);
-  // static void ResetQvector();
 
  private:
   static bool fgUsedVars[kNVars];        // holds flags for when the corresponding variable is needed (e.g., in the histogram manager, in cuts, mixing handler, etc.)
@@ -1217,26 +1222,25 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   }
 }
 
-template <uint32_t collFillMap, typename C, typename A>
-void VarManager::FillQVectorFromGFW(C const& collision, A const& comp, float res, float norm, float* values)
+template <typename C, typename A1, typename A2, typename A3>
+void VarManager::FillQVectorFromGFW(C const& collision, A1 const& compA, A2 const& compB, A3 const& compC, float normA, float normB, float normC, float* values)
 {
   if (!values) {
     values = fgValues;
   }
 
-  constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
-
-  if constexpr (eventHasVtxCov) {
-    values[kVtxZ] = collision.posZ();
-    values[kCentVZERO] = collision.centRun2V0M();
-
-    // Fill Q vector from generic flow framework provided by PWGCF
-    int harm = 2;
-    values[kQ2X0] = comp.Re() / norm;
-    values[kQ2Y0] = comp.Im() / norm;
-    values[kPsi2] = (1.0 / harm) * TMath::ATan2(values[kQ2X0], values[kQ2Y0]);
-    values[kRes] = res;
+  if (normA * normB * normC != 0) {
+    // Fill Q/|M| vector from generic flow framework for different eta gap A, B, C
+    values[kQ2X0A] = compA.Re() / normA;
+    values[kQ2Y0A] = compA.Im() / normA;
+    values[kQ2X0B] = compB.Re() / normB;
+    values[kQ2Y0B] = compB.Im() / normB;
+    values[kQ2X0C] = compC.Re() / normC;
+    values[kQ2Y0C] = compC.Im() / normC;
   }
+  values[kMultA] = normA;
+  values[kMultB] = normB;
+  values[kMultC] = normC;
 }
 
 template <typename T1, typename T2>

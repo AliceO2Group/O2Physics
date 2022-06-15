@@ -76,7 +76,7 @@ using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -89,23 +89,21 @@ struct AnalysisQvector {
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
 
-  Configurable<float> fVtxCut{"VtxCut", 12.0, "Z vertex cut"};
-  Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
-  Configurable<float> cfgCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> cfgEtaLimit{"cfgEtaLimit", 0.4f, "Eta gap separation, only if subEvents=true"};
-  // Configurable<bool> bUseWeights{"UseWeights", true, "If true, fill Q vectors with weights for phi and p_T"};
-  // Configurable<bool> bSubEvents{"SubEvents", true, "If true, fill use sub-events methods with different detector gaps"};
-  Configurable<int> nHarm{"nHarm", 2, "Harmonic number of Q vector"};
-  Configurable<int> nPow{"nPow", 0, "Power of weights for Q vector"};
+  // Configurable<float> fConfigVtxCut{"cfgVtxCut", 12.0, "Z vertex cut"};
+  Configurable<float> fConfigCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
+  Configurable<float> fConfigCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
+  Configurable<float> fConfigCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> fConfigEtaLimit{"cfgEtaLimit", 0.4f, "Eta gap separation, only if using subEvents"};
+  Configurable<int> fConfigNHarm{"cfgNHarm", 2, "Harmonic number of Q vector"};
+  Configurable<int> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
 
   // Access to the efficiencies and acceptances from CCDB
-  Configurable<std::string> fcfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency object"};
-  Configurable<std::string> fcfgAcceptance{"cfgAcceptance", "", "CCDB path to acceptance object"};
+  Configurable<std::string> fConfigEfficiency{"cfgEfficiency", "", "CCDB path to efficiency object"};
+  Configurable<std::string> fConfigAcceptance{"cfgAcceptance", "", "CCDB path to acceptance object"};
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> fConfigURL{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCCDBPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
+  Configurable<long> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Configurables for FlowContainer (e.g charged particles pt-differential v22, v23, ...)
   //  ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -114,8 +112,8 @@ struct AnalysisQvector {
   //  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
   //  AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < fVtxCut;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  // Filter collisionFilter = nabs(aod::collision::posZ) < fConfigVtxCut;
+  Filter trackFilter = (nabs(aod::track::eta) < fConfigCutEta) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   struct Config {
     TH1D* mEfficiency = nullptr;
@@ -125,7 +123,7 @@ struct AnalysisQvector {
   // Define output
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
-  std::vector<TString> fTrackHistNames;
+  std::vector<TString> fEventHistNames;
   OutputObj<THashList> fOutputList{"output"};
   // OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};  // Need to add a dictionary for FlowContainer output
 
@@ -147,16 +145,15 @@ struct AnalysisQvector {
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
-    ccdb->setURL(url.value);
+    ccdb->setURL(fConfigURL.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(nolaterthan.value);
-    auto histCCDB = ccdb->get<TH1F>(ccdbPath.value);
+    ccdb->setCreatedNotAfter(fConfigNoLaterThan.value);
+    auto histCCDB = ccdb->get<TH1F>(fConfigCCDBPath.value);
     if (!histCCDB) {
       LOGF(fatal, "CCDB histogram not found");
     }
 
-    TString histNames = "";
     VarManager::SetDefaultVarNames();
 
     if (fConfigQA) {
@@ -164,46 +161,37 @@ struct AnalysisQvector {
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
-      std::vector<TString> names = {
-        "Event_BeforeCuts",
-        "Event_AfterCuts"};
-      histNames += Form("%s;%s", names[0].Data(), names[1].Data());
-      for (int i = 0; i < 2; i++) {
-        fTrackHistNames.push_back(names[i]);
-      }
-
-      DefineHistograms(fHistMan, histNames.Data());    // define all histograms
+      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
     // Global effiencies
-    if (fcfgEfficiency.value.empty() == false) {
-      // cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(fcfgEfficiency.value, nolaterthan.value);
+    if (fConfigEfficiency.value.empty() == false) {
+      // cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(fConfigEfficiency.value, fConfigNoLaterThan.value);
       if (cfg.mEfficiency)
-        LOGF(info, "Loaded efficiency histogram %s (%p)", fcfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
+        LOGF(info, "Loaded efficiency histogram %s (%p)", fConfigEfficiency.value.c_str(), (void*)cfg.mEfficiency);
       else
-        LOGF(info, "Could not load efficiency histogram from %s (%p)", fcfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
+        LOGF(info, "Could not load efficiency histogram from %s (%p)", fConfigEfficiency.value.c_str(), (void*)cfg.mEfficiency);
     }
 
     // Reference flow
-    TObjArray* oba = new TObjArray();
-    oba->Add(new TNamed("ChGap22", "ChGap22"));   // for gap (|eta|>0.4) case
-    oba->Add(new TNamed("ChGap24", "ChGap24"));   // for gap (|eta|>0.4) case
-    oba->Add(new TNamed("ChFull22", "ChFull22")); // no-gap case
-    oba->Add(new TNamed("ChFull24", "ChFull24")); // no-gap case
-    oba->Add(new TNamed("ChGap32", "ChGap32"));   // gap-case
-
+    //    TObjArray* oba = new TObjArray();
+    //    oba->Add(new TNamed("ChGap22", "ChGap22"));   // for gap (|eta|>0.4) case
+    //    oba->Add(new TNamed("ChGap24", "ChGap24"));   // for gap (|eta|>0.4) case
+    //    oba->Add(new TNamed("ChFull22", "ChFull22")); // no-gap case
+    //    oba->Add(new TNamed("ChFull24", "ChFull24")); // no-gap case
+    //    oba->Add(new TNamed("ChGap32", "ChGap32"));   // gap-case
     // fFC->SetName("FlowContainer");
     // fFC->Initialize(oba, axisMultiplicity, 10);
-    delete oba;
+    // delete oba;
 
     int pows[] = {3, 0, 2, 2, 3, 3, 3};
     int powsFull[] = {5, 0, 4, 4, 3, 3, 3};
     // Define regions of positive and negative eta in order to create gaps
-    fGFW->AddRegion("refN", 7, pows, -cfgCutEta, -cfgEtaLimit, 1, 1);
-    fGFW->AddRegion("refP", 7, pows, cfgEtaLimit, cfgCutEta, 1, 1);
-    fGFW->AddRegion("full", 7, powsFull, -cfgCutEta, cfgCutEta, 1, 2);
+    fGFW->AddRegion("refN", 7, pows, -fConfigCutEta, -fConfigEtaLimit, 1, 1);
+    fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit, fConfigCutEta, 1, 1);
+    fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta, fConfigCutEta, 1, 2);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
@@ -258,44 +246,20 @@ struct AnalysisQvector {
     // Fill the event information with the VarManager
     VarManager::FillEvent<TEventFillMap>(collision);
 
-    uint64_t tag = 0;
-    // store the selection decisions
-    for (int i = 0; i < kNsel; i++) {
-      if (collision.selection()[i] > 0) {
-        tag |= (uint64_t(1) << i);
-      }
-    }
-    if (collision.sel7()) {
-      tag |= (uint64_t(1) << kNsel); //! SEL7 stored at position kNsel in the tag bit map
-    }
-    int mult = tracks1.size();
-
     // TODO: properly access to config files from ccdb using bc.timestamp()
     // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-    if (fcfgAcceptance.value.empty() == false) {
-      // cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fcfgAcceptance.value, bc.timestamp());
+    if (fConfigAcceptance.value.empty() == false) {
+      // cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, bc.timestamp());
       if (cfg.mAcceptance) {
-        LOGF(info, "Loaded acceptance histogram from %s (%p)", fcfgAcceptance.value.c_str(), (void*)cfg.mAcceptance);
+        LOGF(info, "Loaded acceptance histogram from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mAcceptance);
       } else {
-        LOGF(warning, "Could not load acceptance histogram from %s (%p)", fcfgAcceptance.value.c_str(), (void*)cfg.mAcceptance);
+        LOGF(warning, "Could not load acceptance histogram from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mAcceptance);
       }
     }
-    if (mult < 1) {
-      return;
-    }
-    if (!collision.sel7()) {
-      return;
-    }
-    float vtxz = collision.posZ();
 
     fGFW->Clear();
-    const auto centrality = collision.centRun2V0M();
-    if (centrality > 100) {
-      return;
-    }
 
-    float l_Random = fRndm->Rndm(); // used only to compute correlators
     float weff = 1.0, wacc = 1.0;   // acceptance and efficiency weights
 
     // Fill the GFW object in the track loop
@@ -311,59 +275,65 @@ struct AnalysisQvector {
       }
       weff = 1. / weff;
       if (cfg.mAcceptance) {
-        wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), vtxz);
+        wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), collision.posZ());
       } else {
         wacc = 1;
       }
       // Fill the track information in the VarManager
-      VarManager::FillTrack<TTrackFillMap>(track);
+      // VarManager::FillTrack<TTrackFillMap>(track);
 
-      int ptin = 0; // default value
-      int mask = 3; // default value
-      // Fill the GFW for each track in order to compute Q vector
-      fGFW->Fill(track.eta(), ptin, track.phi(), wacc * weff, mask);
+      // Fill the GFW for each track to compute Q vector
+      fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 3); // using default values for ptin=0 and mask=3
     }
 
-    bool fillFlag = kFALSE;    // could be used later
-    bool DQEventFlag = kFALSE; // could be used later
-    for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), centrality, l_Random, fillFlag, DQEventFlag);
-    };
+    //    float l_Random = fRndm->Rndm(); // used only to compute correlators
+    //    bool fillFlag = kFALSE;    // could be used later
+    //    bool DQEventFlag = kFALSE; // could be used later
+    //    for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+    //      FillFC(corrconfigs.at(l_ind), collision.centRun2V0M(), l_Random, fillFlag, DQEventFlag);
+    //    };
 
     // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
-    GFWCumulant fGFWCumulantN = fGFW->GetCumulant(0);
-    GFWCumulant fGFWCumulantP = fGFW->GetCumulant(1);
-    GFWCumulant fGFWCumulant = fGFW->GetCumulant(2);
+    GFWCumulant gfwCumN = fGFW->GetCumulant(0);
+    GFWCumulant gfwCumP = fGFW->GetCumulant(1);
+    GFWCumulant gfwCum = fGFW->GetCumulant(2);
 
     // Get the multiplicity of the event in this region
-    int nentriesN = fGFWCumulant.GetN();
-    int nentriesP = fGFWCumulant.GetN();
-    int nentries = fGFWCumulant.GetN();
+    int nentriesN = gfwCumN.GetN();
+    int nentriesP = gfwCumP.GetN();
+    int nentries = gfwCum.GetN();
 
     // Get the Q vector for selected harmonic, power (for minPt=0)
-    TComplex QvecN = fGFWCumulantN.Vec(nHarm, nPow);
-    TComplex QvecP = fGFWCumulantP.Vec(nHarm, nPow);
-    TComplex Qvec = fGFWCumulant.Vec(nHarm, nPow);
+    TComplex QvecN = gfwCumN.Vec(fConfigNHarm, fConfigNPow);
+    TComplex QvecP = gfwCumP.Vec(fConfigNHarm, fConfigNPow);
+    TComplex Qvec = gfwCum.Vec(fConfigNHarm, fConfigNPow);
 
-    Double_t resGap = 0.0;
+    // TODO: move this part to later analysis development
+    // compute the resolution from Q vectors estimated with different eta gaps
+    //    Double_t resGap = 0.0;
+    //    if (nentriesN > 0 && nentriesP > 0) {
+    //      resGap = (QvecP.Re() * QvecN.Re() + QvecP.Im() * QvecN.Im()) / (nentriesN * nentriesP);
+    //    }
 
-    if (nentriesN > 0 && nentriesP > 0) {
-      // TODO: provide other calculation of R
-      // compute the resolution from Q vectors estimated with different eta gaps
-      resGap = (QvecP.Re() * QvecN.Re() + QvecP.Im() * QvecN.Im()) / (nentriesN * nentriesP);
-
-      // Fill the VarManager::fgValues with the Q vector quantities
-      VarManager::FillQVectorFromGFW<TEventFillMap>(collision, Qvec, resGap, nentries);
-      if (fConfigQA) {
-        fHistMan->FillHistClass(fTrackHistNames[0].Data(), VarManager::fgValues);
+    // Fill the VarManager::fgValues with the Q vector quantities
+    VarManager::FillQVectorFromGFW(collision, Qvec, QvecN, QvecP, nentries, nentriesN, nentriesP);
+    if (fConfigQA) {
+      if (nentriesN * nentriesP * nentries != 0) {
+        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
         if (fEventCut->IsSelected(VarManager::fgValues)) {
-          fHistMan->FillHistClass(fTrackHistNames[1].Data(), VarManager::fgValues);
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
         }
       }
     }
 
-    // Fill the tree for the reduced event table with Q vector quantities
-    eventQvector(tag, collision.bc().runNumber(), collision.posZ(), VarManager::fgValues[VarManager::kCentVZERO], VarManager::fgValues[VarManager::kQ2X0], VarManager::fgValues[VarManager::kQ2Y0], VarManager::fgValues[VarManager::kPsi2], VarManager::fgValues[VarManager::kRes]);
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      // Fill the tree for the reduced event table with Q vector quantities
+      eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A],
+                   VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B],
+                   VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C],
+                   VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC],
+                   VarManager::fgValues[VarManager::kMultC]);
+    }
   }
 
   // Process to fill Q vector in a reduced event table for barrel/muon tracks flow related analyses
