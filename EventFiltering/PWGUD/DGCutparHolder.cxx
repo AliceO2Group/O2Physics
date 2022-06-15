@@ -24,6 +24,10 @@ void DGCutparHolder::SetGlobalTracksOnly(bool globalTracksOnly)
 {
   mGlobalTracksOnly = globalTracksOnly;
 }
+void DGCutparHolder::SetMinRgtrwTOF(float rgtrwTOF)
+{
+  mMinRgtrwTOF = rgtrwTOF;
+}
 void DGCutparHolder::SetNTracks(int MinNTracks, int MaxNTracks)
 {
   mMinNTracks = MinNTracks;
@@ -77,6 +81,7 @@ void DGCutparHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 int DGCutparHolder::NDtcoll() const { return mNDtcoll; }
 int DGCutparHolder::minNBCs() const { return mMinNBCs; }
 bool DGCutparHolder::globalTracksOnly() const { return mGlobalTracksOnly; }
+float DGCutparHolder::minRgtrwTOF() const { return mMinRgtrwTOF; }
 int DGCutparHolder::minNTracks() const { return mMinNTracks; }
 int DGCutparHolder::maxNTracks() const { return mMaxNTracks; }
 int DGCutparHolder::minNetCharge() const { return mMinNetCharge; }
