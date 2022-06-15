@@ -78,6 +78,8 @@ struct qaEventTrackLite {
   Configurable<int> nCrossedRowsTpcMinSel1{"nCrossedRowsTpcMinSel1", -1001, "Minimum number of TPC crossed rows Sel1"};
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel1{"nCrossedRowsTpcOverFindableClustersTpcMinSel1", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel1"};
   Configurable<float> chi2TpcMaxSel1{"chi2TpcMaxSel1", 1000.f, "Max TPC chi2 Sel1"};
+  // MC selections
+  Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection, 1 defines pi,K,p,mu,e, 2 all final-state charged particles including light (hyper)nuclei"};
 
   void init(InitContext const&)
   {
@@ -182,7 +184,7 @@ struct qaEventTrackLite {
     if (TMath::Abs(track.dpgCollision().posZ()) > vtxZMax)
       return;
     if constexpr (isMC) {
-      if (track.productionMode() == 0) {
+      if (track.productionMode() == 0 && isPdgSelected(track.pdgCode())) {
         histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
       }
     }
@@ -193,7 +195,7 @@ struct qaEventTrackLite {
     Bool_t sel1 = applyTrackSelectionsNotFilteredSel1(track);
 
     if constexpr (isMC) {
-      if (track.productionMode() == 0) {
+      if (track.productionMode() == 0 && isPdgSelected(track.pdgCode())) {
         histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
         histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.eta(), track.phi());
 
@@ -307,7 +309,7 @@ struct qaEventTrackLite {
       histos.fill(HIST("Particles/Kine/eta"), particle.etaMC());
       histos.fill(HIST("Particles/Kine/phi"), particle.phiMC());
 
-      if (particle.productionMode() == 0)
+      if (particle.productionMode() == 0 && isPdgSelected(particle.pdgCode()))
         histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), particle.ptMC(), particle.etaMC(), particle.phiMC());
     }
   }
@@ -352,6 +354,22 @@ struct qaEventTrackLite {
       return false;
 
     return true;
+  }
+
+  bool isPdgSelected(const Int_t pdgcode)
+  { // mimics selection of charged particles or id particles
+    Int_t abspdgcode = TMath::Abs(pdgcode);
+    if (abspdgcode == pdgCodeSel)
+      return true;
+    if (pdgCodeSel == 1 || pdgCodeSel == 2) {
+      if (abspdgcode == 211 || abspdgcode == 321 || abspdgcode == 2212 || abspdgcode == 11 || abspdgcode == 13)
+        return true;
+      if (pdgCodeSel == 2) {
+        if (abspdgcode == 3222 || abspdgcode == 3112 || abspdgcode == 3312 || abspdgcode == 3334 || abspdgcode == 1000010020 || abspdgcode == 1000010030 || abspdgcode == 1000020030 || abspdgcode == 1000020040 || abspdgcode == 1010010030 || abspdgcode == 1010020040)
+          return true;
+      }
+    }
+    return false;
   }
 };
 
