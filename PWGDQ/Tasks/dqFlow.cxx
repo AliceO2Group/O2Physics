@@ -322,13 +322,9 @@ struct AnalysisQvector {
       }
     }
 
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
       // Fill the tree for the reduced event table with Q vector quantities
-      eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A],
-                   VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B],
-                   VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C],
-                   VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC],
-                   VarManager::fgValues[VarManager::kMultC]);
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC]);
     }
   }
 
