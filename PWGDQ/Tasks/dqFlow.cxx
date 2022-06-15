@@ -70,7 +70,6 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
 using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 
 using MyMuons = aod::FwdTracks;
@@ -124,7 +123,7 @@ struct AnalysisQvector {
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
   std::vector<TString> fEventHistNames;
-  OutputObj<THashList> fOutputList{"output"};
+  OutputObj<THashList> fOutputList{"outputQA"};
   // OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};  // Need to add a dictionary for FlowContainer output
 
   // define global variables for generic framework
@@ -203,6 +202,7 @@ struct AnalysisQvector {
   // Fill the FlowContainer
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag, bool dqflag)
   {
+    // TODO: make available the flowcontainer output (add a dictionary somewhere...)
     // Calculate the correlations from the GFW
     //    double dnx, dny, valx, valy;
     //    dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
@@ -241,9 +241,7 @@ struct AnalysisQvector {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runFillQvector(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracks1)
   {
-    // Reset the fValues and Qn vector array
     VarManager::ResetValues(0, VarManager::kNVars);
-    // Fill the event information with the VarManager
     VarManager::FillEvent<TEventFillMap>(collision);
 
     // TODO: properly access to config files from ccdb using bc.timestamp()
