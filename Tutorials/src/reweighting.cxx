@@ -12,14 +12,16 @@
 /// \brief A task to apply ML reweighting
 /// \author
 /// \since
-///
-/// command to run:
-/// o2-analysis-track-propagation |\
-/// o2-analysis-timestamp |\
-/// o2-analysis-multiplicity-table |\
-/// o2-analysis-event-selection |\
-/// o2-analysistutorial-ml-reweight
-///
+
+/*
+ * command to run:
+ * o2-analysis-track-propagation |\
+ * o2-analysis-timestamp |\
+ * o2-analysis-multiplicity-table |\
+ * o2-analysis-event-selection |\
+ * o2-analysistutorial-ml-reweight
+ */
+
 /// Uses model produced in train_model.pynb
 /// Currently only works locally because model file needs to be accessed
 

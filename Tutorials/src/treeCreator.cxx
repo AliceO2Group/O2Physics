@@ -13,14 +13,16 @@
 ///        for ML tutorial task
 /// \author
 /// \since
-///
-/// command to run:
-/// o2-analysis-track-propagation --aod-writer-keep="AOD/TRTR/0" |\
-/// o2-analysis-timestamp --aod-writer-keep="AOD/TRTR/0" |\
-/// o2-analysis-multiplicity-table --aod-writer-keep="AOD/TRTR/0" |\
-/// o2-analysis-event-selection --aod-writer-keep="AOD/TRTR/0" |\
-/// o2-analysistutorial-create-tree --aod-writer-keep="AOD/TRTR/0"
-///
+
+/*
+ * command to run:
+ * o2-analysis-track-propagation --aod-writer-keep="AOD/TRTR/0" |\
+ * o2-analysis-timestamp --aod-writer-keep="AOD/TRTR/0" |\
+ * o2-analysis-multiplicity-table --aod-writer-keep="AOD/TRTR/0" |\
+ * o2-analysis-event-selection --aod-writer-keep="AOD/TRTR/0" |\
+ * o2-analysistutorial-create-tree --aod-writer-keep="AOD/TRTR/0"
+ */
+
 /// Note that output in AnalysisResults_trees.root will be split
 /// by dataframe, use o2-aod-merger to merge them into one`
 /// use train_model.pynb to train the model
