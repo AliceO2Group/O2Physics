@@ -122,7 +122,6 @@ struct AnalysisQvector {
   // Define output
   HistogramManager* fHistMan = nullptr;
   AnalysisCompositeCut* fEventCut;
-  std::vector<TString> fEventHistNames;
   OutputObj<THashList> fOutputList{"outputQA"};
   // OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};  // Need to add a dictionary for FlowContainer output
 
@@ -160,7 +159,7 @@ struct AnalysisQvector {
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
-      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
+      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -199,10 +198,10 @@ struct AnalysisQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
   }
 
+  // TODO: make available the flowcontainer output (add a dictionary somewhere...)
   // Fill the FlowContainer
   void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag, bool dqflag)
   {
-    // TODO: make available the flowcontainer output (add a dictionary somewhere...)
     // Calculate the correlations from the GFW
     //    double dnx, dny, valx, valy;
     //    dnx = fGFW->Calculate(corrconf, 0, kTRUE).Re();
@@ -277,7 +276,6 @@ struct AnalysisQvector {
       } else {
         wacc = 1;
       }
-      // Fill the track information in the VarManager
       // VarManager::FillTrack<TTrackFillMap>(track);
 
       // Fill the GFW for each track to compute Q vector
@@ -285,8 +283,8 @@ struct AnalysisQvector {
     }
 
     //    float l_Random = fRndm->Rndm(); // used only to compute correlators
-    //    bool fillFlag = kFALSE;    // could be used later
-    //    bool DQEventFlag = kFALSE; // could be used later
+    //    bool fillFlag = kFALSE;         // could be used later
+    //    bool DQEventFlag = kFALSE;      // could be used later
     //    for (unsigned long int l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
     //      FillFC(corrconfigs.at(l_ind), collision.centRun2V0M(), l_Random, fillFlag, DQEventFlag);
     //    };
