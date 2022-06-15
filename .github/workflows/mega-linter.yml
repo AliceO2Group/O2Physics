@@ -49,6 +49,8 @@ jobs:
           REMOTE_URL: "https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@\
             github.com/alibuild/${{ github.event.repository.name }}"
         run: |
+          git config --global user.email 'alibuild@cern.ch'
+          git config --global user.name 'ALICE Action Bot'
           # An empty CLEANUP_COMMIT means delete the branch.
           CLEANUP_COMMIT=""
           if [ "${{ steps.ml.outputs.has_updated_sources }}" = 1 ]
