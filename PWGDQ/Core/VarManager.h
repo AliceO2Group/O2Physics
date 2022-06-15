@@ -1229,16 +1229,16 @@ void VarManager::FillQVectorFromGFW(C const& collision, A1 const& compA, A2 cons
     values = fgValues;
   }
 
-    // Fill Q/|M| vector from generic flow framework for different eta gap A, B, C
-    values[kQ2X0A] = compA.Re() / normA;
-    values[kQ2Y0A] = compA.Im() / normA;
-    values[kQ2X0B] = compB.Re() / normB;
-    values[kQ2Y0B] = compB.Im() / normB;
-    values[kQ2X0C] = compC.Re() / normC;
-    values[kQ2Y0C] = compC.Im() / normC;
-    values[kMultA] = normA;
-    values[kMultB] = normB;
-    values[kMultC] = normC;
+  // Fill Q vector from generic flow framework for different eta gap A, B, C
+  values[kQ2X0A] = compA.Re() / normA;
+  values[kQ2Y0A] = compA.Im() / normA;
+  values[kQ2X0B] = compB.Re() / normB;
+  values[kQ2Y0B] = compB.Im() / normB;
+  values[kQ2X0C] = compC.Re() / normC;
+  values[kQ2Y0C] = compC.Im() / normC;
+  values[kMultA] = normA;
+  values[kMultB] = normB;
+  values[kMultC] = normC;
 }
 
 template <typename T1, typename T2>
