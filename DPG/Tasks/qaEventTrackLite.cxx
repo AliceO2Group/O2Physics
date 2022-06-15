@@ -146,6 +146,9 @@ struct qaEventTrackLite {
       histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
       histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
       histos.add("Tracks/resoPhivsPtvsEta", "#varphi(reco)-#varphi(gen);", kTH3D, {axisPt, axisEta, {36, -M_PI, M_PI, "#varphi(reco)-#varphi(gen)"}});
+      histos.add("Tracks/phiRecovsphiGen", "#varphi(reco) vs. #varphi(gen);", kTH2D, {axisPhi, axisPhi});
+      histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
+      histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetYaxis()->SetTitle("#varphi(gen)");
     }
   }
 
@@ -245,6 +248,7 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/ITS/itsNClstvsEtavsPt"), track.eta(), track.pt(), track.itsNCls());
     if constexpr (isMC) {
       histos.fill(HIST("Tracks/resoPhivsPtvsEta"), track.pt(), track.eta(), track.phi() - track.phiMC());
+      histos.fill(HIST("Tracks/phiRecovsphiGen"), track.phi(), track.phiMC());
     }
 
     if constexpr (isMC) {
