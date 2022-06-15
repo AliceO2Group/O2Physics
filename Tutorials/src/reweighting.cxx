@@ -19,7 +19,7 @@
  * o2-analysis-timestamp |\
  * o2-analysis-multiplicity-table |\
  * o2-analysis-event-selection |\
- * o2-analysistutorial-ml-reweight
+ * o2-analysistutorial-reweighting
  */
 
 /// Uses model produced in train_model.pynb
