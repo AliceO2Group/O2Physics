@@ -325,7 +325,7 @@ struct TableMaker {
         muonCov.reserve(tracksMuon.size());
       }
       int nDel = 0;
-      int idxPrev = 0;
+      int idxPrev = -1;
       std::map<int, int> newEntryNb;//(tracksMuon.size(), -99);
       std::map<int, int> newMatchIndex;
 
