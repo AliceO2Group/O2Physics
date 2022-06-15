@@ -26,7 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFddFt0cMftFv0", "kHmFddMftFv0", "kHmFv0Mft", "kHmFv0", "kHmMft", "kHfFv0", "kHfMftTrk", "kHfMftFv0Trk", "kHfMftFv0", "kHmMftFt0a", "kHmFt0", "kHfFt0", "kHfMftFt0a", "kHtPt"};
+static const std::vector<std::string> mmObjectsNames{"kHmTrk", "kHmFddFt0cMftFv0", "kHmFddMftFv0", "kHmFv0Mft", "kHmFv0", "kHmMft", "kHfFv0", "kHfMftTrk", "kHfMftFv0Trk", "kHfMftFv0", "kHmMftFt0a", "kHmFt0", "kHfFt0", "kHfMftFt0a", "kHmFt0cFv0", "kHfFt0cFv0", "kHtPt"};
 
 struct multFilter {
   enum { kHighTrackMult = 0,
@@ -43,6 +43,8 @@ struct multFilter {
          kHighFt0Mult,
          kHighFt0Flat,
          kHighMftFt0aFlat,
+         kHighFt0cFv0Mult,
+         kHighFt0cFv0Flat,
          kLeadingPtTrack,
          kNtriggersMM };
 
@@ -58,9 +60,11 @@ struct multFilter {
   Configurable<float> sel1Fmftfv0glob{"sel1Fmftfv0glob", 0.81, "1-flatenicity FV0+MFT+Globtracks threshold"};
   Configurable<float> sel1Fmftfv0{"sel1Fmftfv0", 0.86, "1-flatenicity MFT+FV0 threshold"};
   Configurable<float> sel1Mmftft0a{"sel1Mmftft0a", 41.1, "1-flatenicity MFT+FT0A threshold"};
-  Configurable<float> sel1Mft0{"sel1Mft0", 2123.3, "FT0 mult threshold"};
+  Configurable<float> sel1Mft0{"sel1Mft0", 43.4, "FT0 mult threshold"};
   Configurable<float> sel1Fft0{"sel1Fft0", 0.78, "1-flatenicity FT0 threshold"};
   Configurable<float> sel1Fmftft0a{"sel1Fmftft0a", 0.8, "1-flatenicity MFT+FT0A threshold"};
+  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 70.0, "FT0C+FV0 mult threshold"};
+  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.84, "1-flatenicity FT0C+FV0 threshold"};
   Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
 
   Produces<aod::MultFilters> tags;
@@ -71,29 +75,29 @@ struct multFilter {
 
   HistogramRegistry multiplicity{"multiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  static constexpr std::string_view nhEst_before[15] = {
+  static constexpr std::string_view nhEst_before[17] = {
     "eGlobaltrack", "eFDDAFDDCFT0CFV0MFT", "eFDDAFDDCFV0MFT", "eFV0MFT", "eFV0", "eMFTmult",
     "e1flatencityFV0", "e1flatencitytrkMFT", "e1flatencitytrkMFTFV0", "e1flatencityMFTFV0",
-    "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A", "ePtl"};
-  static constexpr std::string_view nhEst_after[15] = {
-    "eGlobaltrack_selected", "eFDDAFDDCFT0CFV0MFT_selected", "eFDDAFDDCFV0MFT_selected", "eFV0MFT_selected", "eFV0_selected", "eMFTmult_selected", "e1flatencityFV0_selected", "e1flatencitytrkMFT_selected", "e1flatencitytrkMFTFV0_selected", "e1flatencityMFTFV0_selected", "eMFTmultFT0A_selected", "eFT0_selected", "e1flatencityFT0_selected", "e1flatencityMFTFT0A_selected", "ePtl_selected"};
-  static constexpr std::string_view npEst[15] = {
+    "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A", "eFT0CFV0", "e1flatencityFT0CFV0", "ePtl"};
+  static constexpr std::string_view nhEst_after[17] = {
+    "eGlobaltrack_selected", "eFDDAFDDCFT0CFV0MFT_selected", "eFDDAFDDCFV0MFT_selected", "eFV0MFT_selected", "eFV0_selected", "eMFTmult_selected", "e1flatencityFV0_selected", "e1flatencitytrkMFT_selected", "e1flatencitytrkMFTFV0_selected", "e1flatencityMFTFV0_selected", "eMFTmultFT0A_selected", "eFT0_selected", "e1flatencityFT0_selected", "e1flatencityMFTFT0A_selected", "eFT0CFV0_selected", "e1flatencityFT0CFV0_selected", "ePtl_selected"};
+  static constexpr std::string_view npEst[17] = {
     "epGlobaltrack", "epFDDAFDDCFT0CFV0MFT", "epFDDAFDDCFV0MFT", "epFV0MFT", "epFV0", "epMFTmult",
     "ep1flatencityFV0", "ep1flatencitytrkMFT", "ep1flatencitytrkMFTFV0", "ep1flatencityMFTFV0",
-    "epMFTmultFT0A", "epFT0", "ep1flatencityFT0", "e1pflatencityMFTFT0A", "epPtl"};
+    "epMFTmultFT0A", "epFT0", "ep1flatencityFT0", "e1pflatencityMFTFT0A", "epFT0CFV0", "ep1flatencityFT0CFV0", "epPtl"};
 
-  static constexpr std::string_view tEst[15] = {
+  static constexpr std::string_view tEst[17] = {
     "GlobalTrk", "FDDA_FDDC_FT0C_FV0_MFT", "FDDA_FDDC_FV0_MFT", "FV0_MFT", "FV0",
     "MFTTrk", "1-flatencity_FV0", "1-flatencity_trk_MFT", "1-flatencity_trk_MFT_FV0",
-    "1-flatencity_MFT_FV0", "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A", "pT^{trig} (GeV/#it{c})"};
+    "1-flatencity_MFT_FV0", "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A", "FT0C_FV0", "1-flatencity_FT0C_FV0", "pT^{trig} (GeV/#it{c})"};
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[15] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 500, 102, 102, 150};
-    float lowEdgeEst[15] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
-                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, .0};
-    float upEdgeEst[15] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
-                           1.01, 1.01, 1.01, 1.01, 399.5, 3999.5, 1.01, 1.01, 150.0};
+    int nBinsEst[17] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 100, 102, 102, 200, 102, 150};
+    float lowEdgeEst[17] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
+                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01, .0};
+    float upEdgeEst[17] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 99.5, 1.01, 1.01, 199.5, 1.01, 150.0};
 
     // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -122,11 +126,11 @@ struct multFilter {
     multiplicity.add("hPhiMFT", "Phi (MFTtracks)", HistType::kTH1F, {{64, 0., 2.0 * M_PI, " "}});
 
     // estimators
-    for (int i_e = 0; i_e < 15; ++i_e) {
+    for (int i_e = 0; i_e < 17; ++i_e) {
       multiplicity.add(
         npEst[i_e].data(), "", HistType::kTProfile, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
     }
-    for (int i_e = 0; i_e < 15; ++i_e) {
+    for (int i_e = 0; i_e < 17; ++i_e) {
       multiplicity.add(
         nhEst_before[i_e].data(), "", HistType::kTH1F, {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
       multiplicity.add(
@@ -141,6 +145,28 @@ struct multFilter {
         scalers->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
       else
         scalers->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin - 2].data());
+    }
+    // overlap with HtrackMult
+    auto scalerso1{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents_overlap1", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM + 2, -0.5, kNtriggersMM + 2 - 0.5}}))};
+    for (size_t iBin = 0; iBin < eventTitles.size() + mmObjectsNames.size(); iBin++) {
+      if (iBin < 2)
+        scalerso1->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+      else
+        scalerso1->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin - 2].data());
+    }
+    auto scalerso2{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents_overlap2", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM + 2, -0.5, kNtriggersMM + 2 - 0.5}}))};
+    for (size_t iBin = 0; iBin < eventTitles.size() + mmObjectsNames.size(); iBin++) {
+      if (iBin < 2)
+        scalerso2->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+      else
+        scalerso2->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin - 2].data());
+    }
+    auto scalerso3{std::get<std::shared_ptr<TH1>>(multiplicity.add("fProcessedEvents_overlap3", "Multiplicity - event filtered;;events", HistType::kTH1F, {{kNtriggersMM + 2, -0.5, kNtriggersMM + 2 - 0.5}}))};
+    for (size_t iBin = 0; iBin < eventTitles.size() + mmObjectsNames.size(); iBin++) {
+      if (iBin < 2)
+        scalerso3->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+      else
+        scalerso3->GetXaxis()->SetBinLabel(iBin + 1, mmObjectsNames[iBin - 2].data());
     }
   }
 
@@ -391,9 +417,10 @@ struct multFilter {
     float combined_estimator3 = 0;
     float combined_estimator4 = 0;
     float combined_estimator5 = 0;
-    float estimator[15];
-    float cut[15];
-    for (int i_e = 0; i_e < 15; ++i_e) {
+    float combined_estimator6 = 0;
+    float estimator[17];
+    float cut[17];
+    for (int i_e = 0; i_e < 17; ++i_e) {
       estimator[i_e] = 0;
       cut[i_e] = 0;
     }
@@ -411,8 +438,9 @@ struct multFilter {
     cut[11] = sel1Mft0;
     cut[12] = sel1Fft0;
     cut[13] = sel1Fmftft0a;
-    cut[14] = selPtTrig;
-
+    cut[14] = sel1Mft0cFv0;
+    cut[15] = sel1Fft0cFv0;
+    cut[16] = selPtTrig;
     // option 1
     const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
     float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};
@@ -459,14 +487,25 @@ struct multFilter {
     }
 
     // option 5
-    const int nEta5 = 2;                   // FT0C + FT0A
-    float weigthsEta5[nEta5] = {1.0, 1.0}; // no weigths since same det
+    const int nEta5 = 2; // FT0C + FT0A
+    float weigthsEta5[nEta5] = {0.0569502, 0.014552069};
     float ampl5[nEta5] = {0, 0};
     ampl5[0] = sumAmpFT0C;
     ampl5[1] = sumAmpFT0A;
     for (int i_5 = 0; i_5 < nEta5; ++i_5) {
       combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
     }
+
+    // option 6
+    const int nEta6 = 2; //  FT0C + FV0
+    float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
+    float ampl6[nEta6] = {0, 0};
+    ampl6[0] = sumAmpFT0C;
+    ampl6[1] = sumAmpFV0;
+    for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+      combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+    }
+
     float flatenicity_mft_glob = (flatenicity_mft + flatenicity_glob) / 2.0;
     float flatenicity_mft_fv0 = (flatenicity_mft + flatenicity_fv0) / 2.0;
     float flatenicity_mft_glob_fv0 =
@@ -488,15 +527,17 @@ struct multFilter {
     estimator[12] = 1.0 - flatenicity_ft0;
     float flatenicity_mft_ft0a = (flatenicity_mft + flatenicity_t0a) / 2.0;
     estimator[13] = 1.0 - flatenicity_mft_ft0a;
-    estimator[14] = flPt;
+    estimator[14] = combined_estimator6;
+    estimator[15] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
+    estimator[16] = flPt;
 
-    static_for<0, 14>([&](auto i) {
+    static_for<0, 16>([&](auto i) {
       constexpr int index = i.value;
       multiplicity.fill(HIST(npEst[index]), estimator[index], estimator[0]);
       multiplicity.fill(HIST(nhEst_before[index]), estimator[index]);
     });
 
-    static_for<0, 14>([&](auto i) {
+    static_for<0, 16>([&](auto i) {
       constexpr int index = i.value;
       if (estimator[index] > cut[index]) {
         multiplicity.fill(HIST(nhEst_after[index]), estimator[index]);
@@ -504,14 +545,35 @@ struct multFilter {
       }
     });
 
-    tags(keepEvent[kHighTrackMult], keepEvent[kHighFddFt0cMftFv0Mult], keepEvent[kHighFddMftFv0Mult], keepEvent[kHighFv0MftMult], keepEvent[kHighFv0Mult], keepEvent[kHighMftMult], keepEvent[kHighMftMult], keepEvent[kHighMftTrkFlat], keepEvent[kHighMftFv0TrkFlat], keepEvent[kHighMftFv0Flat], keepEvent[kHighMftFt0aMult], keepEvent[kHighFt0Mult], keepEvent[kHighFt0Flat], keepEvent[kHighMftFt0aFlat], keepEvent[kLeadingPtTrack]);
+    tags(keepEvent[kHighTrackMult], keepEvent[kHighFddFt0cMftFv0Mult], keepEvent[kHighFddMftFv0Mult], keepEvent[kHighFv0MftMult], keepEvent[kHighFv0Mult], keepEvent[kHighMftMult], keepEvent[kHighMftMult], keepEvent[kHighMftTrkFlat], keepEvent[kHighMftFv0TrkFlat], keepEvent[kHighMftFv0Flat], keepEvent[kHighMftFt0aMult], keepEvent[kHighFt0Mult], keepEvent[kHighFt0Flat], keepEvent[kHighMftFt0aFlat], keepEvent[kHighFt0cFv0Mult], keepEvent[kHighFt0cFv0Flat], keepEvent[kLeadingPtTrack]);
 
-    if (!keepEvent[kHighTrackMult] && !keepEvent[kHighFddFt0cMftFv0Mult] && !keepEvent[kHighFddMftFv0Mult] && !keepEvent[kHighFv0MftMult] && !keepEvent[kHighFv0Mult] && !keepEvent[kHighMftMult] && !keepEvent[kHighMftMult] && !keepEvent[kHighMftTrkFlat] && !keepEvent[kHighMftFv0TrkFlat] && !keepEvent[kHighMftFv0Flat] && !keepEvent[kHighMftFt0aMult] && !keepEvent[kHighFt0Mult] && !keepEvent[kHighFt0Flat] && !keepEvent[kHighMftFt0aFlat] && !keepEvent[kLeadingPtTrack]) {
+    if (!keepEvent[kHighTrackMult] && !keepEvent[kHighFddFt0cMftFv0Mult] && !keepEvent[kHighFddMftFv0Mult] && !keepEvent[kHighFv0MftMult] && !keepEvent[kHighFv0Mult] && !keepEvent[kHighMftMult] && !keepEvent[kHighMftMult] && !keepEvent[kHighMftTrkFlat] && !keepEvent[kHighMftFv0TrkFlat] && !keepEvent[kHighMftFv0Flat] && !keepEvent[kHighMftFt0aMult] && !keepEvent[kHighFt0Mult] && !keepEvent[kHighFt0Flat] && !keepEvent[kHighMftFt0aFlat] && !keepEvent[kHighFt0cFv0Mult] && !keepEvent[kHighFt0cFv0Flat] && !keepEvent[kLeadingPtTrack]) {
       multiplicity.fill(HIST("fProcessedEvents"), 1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {
         if (keepEvent[iTrigger]) {
           multiplicity.fill(HIST("fProcessedEvents"), iTrigger + 2);
+        }
+      }
+      if (keepEvent[kHighTrackMult]) {
+        for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {
+          if (keepEvent[iTrigger]) {
+            multiplicity.fill(HIST("fProcessedEvents_overlap1"), iTrigger + 2);
+          }
+        }
+      }
+      if (keepEvent[kHighFv0MftMult]) {
+        for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {
+          if (keepEvent[iTrigger]) {
+            multiplicity.fill(HIST("fProcessedEvents_overlap2"), iTrigger + 2);
+          }
+        }
+      }
+      if (keepEvent[kHighFt0Mult]) {
+        for (int iTrigger{0}; iTrigger < kNtriggersMM; iTrigger++) {
+          if (keepEvent[iTrigger]) {
+            multiplicity.fill(HIST("fProcessedEvents_overlap3"), iTrigger + 2);
+          }
         }
       }
     }
