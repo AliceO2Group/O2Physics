@@ -113,6 +113,8 @@ struct qaEventTrackLite {
     histos.add("Tracks/TPC/tpcCrossedRowsvsPt", "", kTH2D, {axisPt, {165, -0.5, 164.5, "# crossed rows TPC"}});
     histos.add("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt", "", kTH2D, {axisPt, {60, 0.7, 1.3, "crossed rows / findable clusters TPC"}});
     histos.add("Tracks/TPC/TPCnClstvsEtavsPt", "profile2D;", kTProfile2D, {axisEta, axisPt});
+    histos.add("Tracks/TPC/dEdxvsP", "", kTH2D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {500, 0, 1000, "d#it{E}/d#it{x} (a.u.)"}});
+    histos.add("Tracks/TPC/dEdxvsPvsEta", "", kTH3D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {20, -2, 2, "#it{#eta}"}, {500, 0, 1000, "d#it{E}/d#it{x} (a.u.)"}});
     // trd histograms
     histos.add("Tracks/TRD/trdChi2", "chi2 in TRD", kTH1D, {{100, 0, 10, "chi2 / cluster TRD"}});
     // tof histograms
@@ -226,6 +228,8 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+    histos.fill(HIST("Tracks/TPC/dEdxvsP"), track.pt() / (sin(2 * atan2(1, exp(track.eta())))), track.tpcSignal());
+    histos.fill(HIST("Tracks/TPC/dEdxvsPvsEta"), track.pt() / (sin(2 * atan2(1, exp(track.eta())))), track.eta(), track.tpcSignal());
     histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
     histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
     if (track.hasTPC()) {
