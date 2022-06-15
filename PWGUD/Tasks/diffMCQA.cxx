@@ -217,9 +217,8 @@ struct DiffMCQA {
       afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
     }
     afbcrs.merge();
-    
-    LOGF(info, "<DiffMCQA> Size of abcrs %i and afbcrs %i", abcrs.size(), afbcrs.size());
 
+    LOGF(info, "<DiffMCQA> Size of abcrs %i and afbcrs %i", abcrs.size(), afbcrs.size());
   }
 
   void process(CC const& collision, BCs const& bct0s,
