@@ -79,7 +79,7 @@ class DGCutparHolder
 
   // require all vertex tracks to be global tracks
   bool mGlobalTracksOnly;
-  
+
   // required minimum fraction of global tracks with TOF hit
   float mMinRgtrwTOF;
 
