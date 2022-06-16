@@ -346,7 +346,7 @@ struct TableMaker {
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
           if ((*cut).IsSelected(VarManager::fgValues))
             trackTempFilterMap |= (uint8_t(1) << i);
-          }
+        }
 
         if (!trackTempFilterMap) { // does not pass the cuts
           nDel++;
@@ -381,15 +381,15 @@ struct TableMaker {
         // store the cut decisions
         trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
 
-        //update the matching MCH/MFT index
+        // update the matching MCH/MFT index
         if (int(muon.trackType()) == 0 || int(muon.trackType()) == 2) { // MCH-MFT(2) or GLB(0) track
           int matchIdx = muon.matchMCHTrackId() - muon.offsets();
-          if (newEntryNb.count(matchIdx) > 0) {                 // if the key exists i.e the match will not get deleted
-            newMatchIndex[muon.index()] = newEntryNb[matchIdx]; //update the match for this muon to the updated entry of the match
-            newMatchIndex[muon.index()] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; //adding the offset of muons, muonBasic.lastIndex() start at -1
-            if (int(muon.trackType()) == 0) { //for now only do this to global tracks
-              newMatchIndex[matchIdx] = newEntryNb[muon.index()]; //add the  updated index of this muon as a match to mch track
-              newMatchIndex[matchIdx] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; //adding the offset, muonBasic.lastIndex() start at -1
+          if (newEntryNb.count(matchIdx) > 0) {                                                  // if the key exists i.e the match will not get deleted
+            newMatchIndex[muon.index()] = newEntryNb[matchIdx];                                  // update the match for this muon to the updated entry of the match
+            newMatchIndex[muon.index()] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; // adding the offset of muons, muonBasic.lastIndex() start at -1
+            if (int(muon.trackType()) == 0) {                                                    // for now only do this to global tracks
+              newMatchIndex[matchIdx] = newEntryNb[muon.index()];                                // add the  updated index of this muon as a match to mch track
+              newMatchIndex[matchIdx] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()];   // adding the offset, muonBasic.lastIndex() start at -1
             }
           } else {
             newMatchIndex[muon.index()] = -1;
