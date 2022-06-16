@@ -175,7 +175,7 @@ struct DGSelector {
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
 // around t_coll could potentially be the true BC. ndt is typically 4. The
-// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS
+// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS.
 
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
