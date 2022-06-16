@@ -221,7 +221,7 @@ bool chargedSpectra::initParticle(const P& particle)
 {
   vars.isChargedPrimary = false;
   auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-  if (!pdgParticle || pdgParticle->Charge() == 0.) {
+  if (!pdgParticle || pdgParticle->Charge() == 0) {
     return false;
   }
   vars.isChargedPrimary = particle.isPhysicalPrimary();
