@@ -324,6 +324,9 @@ struct TableMaker {
       if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
         muonCov.reserve(tracksMuon.size());
       }
+      // loop over muons
+
+      //first we need to get the correct indices
       int nDel = 0;
       int idxPrev = -1;
       std::map<int, int> newEntryNb;
@@ -332,11 +335,13 @@ struct TableMaker {
       for (auto& muon : tracksMuon) {
         trackFilteringTag = uint64_t(0);
         VarManager::FillTrack<TMuonFillMap>(muon);
-        if (muon.index() > idxPrev + 1) {
+
+        if (muon.index() > idxPrev + 1) { //checks if some muons are filtered even before the skimming function
           nDel += muon.index() - (idxPrev + 1);
         }
         idxPrev = muon.index();
 
+        //check the cuts and filters
         int i = 0;
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
           if ((*cut).IsSelected(VarManager::fgValues))
@@ -346,12 +351,12 @@ struct TableMaker {
         if (!trackTempFilterMap) { // does not pass the cuts
           nDel++;
         }
-          else {
+          else { //it passes the cuts and will be saved in the tables
             newEntryNb[muon.index()] = muon.index() - nDel;
           }
       }
 
-      // loop over muons
+      //now let's save the muons with the correct indices and matches
       for (auto& muon : tracksMuon) {
         trackFilteringTag = uint64_t(0);
         trackTempFilterMap = uint8_t(0);
@@ -399,7 +404,7 @@ struct TableMaker {
               newMatchIndex[muon.index()] = -1;
             }
           }
-          
+
         muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign());
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
