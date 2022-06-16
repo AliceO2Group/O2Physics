@@ -160,7 +160,7 @@ struct AnalysisQvector {
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
       DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts"); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
@@ -257,7 +257,8 @@ struct AnalysisQvector {
 
     fGFW->Clear();
 
-    float weff = 1.0, wacc = 1.0;   // acceptance and efficiency weights
+    // acceptance and efficiency weights
+    float weff = 1.0, wacc = 1.0;
 
     // Fill the GFW object in the track loop
     for (auto& track : tracks1) {
@@ -322,7 +323,7 @@ struct AnalysisQvector {
       }
     }
 
-      // Fill the tree for the reduced event table with Q vector quantities
+    // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC]);
     }
