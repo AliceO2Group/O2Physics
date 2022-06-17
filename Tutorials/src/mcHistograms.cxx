@@ -155,8 +155,11 @@ struct LoopOverMcMatched {
 
   Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
 
+  using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+
   void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions,
-               soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+               LabeledTracks const& tracks, aod::McParticles const& mcParticles)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
     if (reduceOutput < 2) {
@@ -168,7 +171,7 @@ struct LoopOverMcMatched {
       }
 
       // NOTE this will be replaced by a improved grouping in the future
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (reduceOutput < 2) {
         LOGF(info, "  which has %d tracks", groupedTracks.size());
       }
