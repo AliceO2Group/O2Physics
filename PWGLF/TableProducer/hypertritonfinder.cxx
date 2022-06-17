@@ -51,10 +51,10 @@
 //------------------copy from lamdakzerobuilder---------------------
 
 #include <TFile.h>
-#include <TLorentzVector.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TProfile.h>
+#include <TLorentzVector.h>
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
@@ -67,6 +67,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
+
+//use parameters + cov mat non-propagated, aux info + (extension propagated)
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullHe>;
+using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullHe>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullHe>;
+using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+
+using MyTracks = FullTracksExt;
+using MyTracksIU = FullTracksExtIU;
 
 namespace o2::aod
 {
@@ -107,7 +116,7 @@ struct hypertritonprefilter {
   Produces<aod::V0GoodNegTracks> v0GoodNegTracks;
 
   void process(aod::Collision const& collision,
-      soa::Join<aod::FullTracks, aod::TracksDCA> const& tracks)
+      MyTracksIU const& tracks)
   {
     for (auto& t0 : tracks) {
       registry.fill(HIST("hGoodTrackCount"), 0.5);
@@ -143,18 +152,6 @@ struct hypertritonprefilter {
 };
 
 struct hypertritonfinder {
-  Produces<aod::StoredV0Datas> v0data;
-  Produces<aod::V0s> v0;
-  Produces<aod::V0DataLink> v0datalink;
-
-  HistogramRegistry registry{
-    "registry",
-      {
-        {"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
-        {"hV0Counter", "hCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
-      },
-  };
-
   // Configurables
   Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -164,15 +161,30 @@ struct hypertritonfinder {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
+  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0s> v0;
+  Produces<aod::V0DataLink> v0datalink;
+
+  HistogramRegistry registry{
+    "registry",
+      {
+        {"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
+        {"hV0CutCounter", "hV0CutCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+      },
+  };
 //------------------copy from lamdakzerobuilder---------------------
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  int mRunNumber;
+  float d_bz;
   float maxSnp;  //max sine phi for propagation
   float maxStep; //max step size (cm) for propagation
   void init(InitContext& context)
   {
     // using namespace analysis::lambdakzerobuilder;
+    mRunNumber = 0;
+    d_bz = 0;
     maxSnp = 0.85f;  //could be changed later
     maxStep = 2.00f; //could be changed later
 
@@ -192,6 +204,11 @@ struct hypertritonfinder {
       o2::base::Propagator::initFieldFromGRP(grpo);
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
+
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(1, "DiffCol");
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(2, "hasSV");
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(3, "Dcav0Dau");
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(4, "CosPA");
   }
 
   float getMagneticField(uint64_t timestamp)
@@ -209,19 +226,28 @@ struct hypertritonfinder {
     float output = grpo->getNominalL3Field();
     return output;
   }
+
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  {
+    if (lRunNumber != mRunNumber) {
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(lTimeStamp);
+      } else {
+        d_bz = d_bz_input;
+      }
+      mRunNumber = lRunNumber;
+    }
+  }
 //------------------------------------------------------------------
 
-  void process(aod::Collision const& collision, soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe> const& tracks,
-      aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks)
+  void process(aod::Collision const& collision, MyTracksIU const& tracks,
+      aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::BCsWithTimestamps const&)
   {
 
-    float d_bz;
-    if (d_bz_input < -990) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = getMagneticField(collision.bc_as<aod::BCsWithTimestamps>().timestamp());
-    } else {
-      d_bz = d_bz_input;
-    }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    CheckAndUpdate(bc.runNumber(), bc.timestamp());
+
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
@@ -241,9 +267,10 @@ struct hypertritonfinder {
         if (t0id.collisionId() != t1id.collisionId()) {
           continue;
         }
+        registry.fill(HIST("hV0CutCounter"), 0.5);
 
-        auto t0 = t0id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe>>();
-        auto t1 = t1id.goodTrack_as<soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCFullPi, aod::pidTPCFullHe>>();
+        auto t0 = t0id.goodTrack_as<MyTracksIU>();
+        auto t1 = t1id.goodTrack_as<MyTracksIU>();
         auto Track1 = getTrackParCov(t0);
         auto Track2 = getTrackParCov(t1);
         auto pTrack = getTrackParCov(t0);
@@ -254,7 +281,7 @@ struct hypertritonfinder {
         if (nCand == 0) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 0.5);
+        registry.fill(HIST("hV0CutCounter"), 1.5);
 
 //------------------copy from lamdakzerobuilder---------------------
       double finalXpos = fitter.getTrack(0).getX();
@@ -278,7 +305,7 @@ struct hypertritonfinder {
       if (nCand == 0) {
         continue;
       }
-        registry.fill(HIST("hV0Counter"), 1.5);
+        registry.fill(HIST("hV0CutCounter"), 2.5);
 
 //------------------------------------------------------------------
         
@@ -294,7 +321,7 @@ struct hypertritonfinder {
         if (thisdcav0dau > dcav0dau) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 2.5);
+        registry.fill(HIST("hV0CutCounter"), 3.5);
 
         std::array<float, 3> pos = {0.};
         std::array<float, 3> pvec0;
@@ -335,12 +362,12 @@ struct hypertritonfinder {
         if (thisv0cospa < v0cospa) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 3.5);
+        registry.fill(HIST("hV0CutCounter"), 4.5);
 
         lNCand++;
         v0(t0.collisionId(), t0.globalIndex(), t1.globalIndex());
         //there is a change in the position of "0" compared with lambdakzerofinder.cxx
-        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(),0,
+        v0data(t0.globalIndex(), t1.globalIndex(), t0.collisionId(), 0,
             fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
             pos[0], pos[1], pos[2],
             pvec0[0], pvec0[1], pvec0[2],
