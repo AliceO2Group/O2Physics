@@ -49,9 +49,7 @@ struct tofSpectra {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
-  Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
-  Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
-  Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, ""};
   Configurable<bool> isRun2{"isRun2", false, "Flag to process Run 2 data"};
   Configurable<bool> doMC{"doMC", false, "Flag to process MC data"};
 
@@ -171,8 +169,8 @@ struct tofSpectra {
     }
 
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
-    const AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
-    const AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
+    const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
 
     histos.add("event/vertexz", "", HistType::kTH1F, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1F, {{10, 0.5, 10.5}});
@@ -206,62 +204,62 @@ struct tofSpectra {
         case 0:
         case Np:
           if (doprocessFullEl == false && doprocessTinyEl == false) {
-            return;
+            continue;
           }
           break;
         case 1:
         case Np + 1:
           if (doprocessFullMu == false && doprocessTinyMu == false) {
-            return;
+            continue;
           }
           break;
         case 2:
         case Np + 2:
           if (doprocessFullPi == false && doprocessTinyPi == false) {
-            return;
+            continue;
           }
           break;
         case 3:
         case Np + 3:
           if (doprocessFullKa == false && doprocessTinyKa == false) {
-            return;
+            continue;
           }
           break;
         case 4:
         case Np + 4:
           if (doprocessFullPr == false && doprocessTinyPr == false) {
-            return;
+            continue;
           }
           break;
         case 5:
         case Np + 5:
           if (doprocessFullDe == false && doprocessTinyDe == false) {
-            return;
+            continue;
           }
           break;
         case 6:
         case Np + 6:
           if (doprocessFullTr == false && doprocessTinyTr == false) {
-            return;
+            continue;
           }
           break;
         case 7:
         case Np + 7:
           if (doprocessFullHe == false && doprocessTinyHe == false) {
-            return;
+            continue;
           }
           break;
         case 8:
         case Np + 8:
           if (doprocessFullAl == false && doprocessTinyAl == false) {
-            return;
+            continue;
           }
           break;
       }
 
       const AxisSpec nsigmaTPCAxis{200, -10, 10, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
       const AxisSpec nsigmaTOFAxis{200, -10, 10, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
-      histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3F, {{10, 0.f, 2.f, "#it{p}_{T} GeV/#it{c}"}, nsigmaTPCAxis, nsigmaTOFAxis});
+      histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3F, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
       histos.add(hdcaxy[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaXyAxis});
       histos.add(hdcaz[i].data(), pTCharge[i], kTH2F, {ptAxis, dcaZAxis});
       histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2F, {phiAxis, dcaXyAxis});
