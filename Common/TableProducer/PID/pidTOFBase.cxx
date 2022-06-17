@@ -183,7 +183,7 @@ struct tofEventTime {
   using TrksEvTime = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
-  void processNoFT0(TrksEvTime const& tracks,
+  void processNoFT0(TrksEvTime& tracks,
                     aod::Collisions const&)
   {
     if (!enableTable) {
@@ -206,7 +206,8 @@ struct tofEventTime {
       /// Create new table for the tracks in a collision
       lastCollisionId = t.collisionId(); /// Cache last collision ID
 
-      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, lastCollisionId);
+      const auto& tracksInCollision = tracks.sliceByCached(o2::aod::track::collisionId, lastCollisionId);
+
       // First make table for event time
       const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, response, diamond);
       int nGoodTracksForTOF = 0;
@@ -231,7 +232,7 @@ struct tofEventTime {
   ///
   /// Process function to prepare the event for each track on Run 3 data without the FT0
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
-  void processFT0(TrksEvTime const& tracks,
+  void processFT0(TrksEvTime& tracks,
                   aod::FT0s const&,
                   EvTimeCollisions const&)
   {
@@ -255,7 +256,7 @@ struct tofEventTime {
       /// Create new table for the tracks in a collision
       lastCollisionId = t.collisionId(); /// Cache last collision ID
 
-      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, lastCollisionId);
+      const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, lastCollisionId);
       const auto& collision = t.collision_as<EvTimeCollisions>();
 
       // Compute the TOF event time

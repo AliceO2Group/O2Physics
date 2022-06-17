@@ -216,9 +216,9 @@ DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //!
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
 DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt2Prong0, pt2Prong0, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt2(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng0, pVectorProng0, //!
                            [](float px, float py, float pz) -> array<float, 3> { return array{px, py, pz}; });
 DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);                     //!
@@ -229,9 +229,9 @@ DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //!
 DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //!
 DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt2Prong1, pt2Prong1, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt2(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng1, pVectorProng1, //!
                            [](float px, float py, float pz) -> array<float, 3> { return array{px, py, pz}; });
 DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);                     //!
@@ -242,9 +242,9 @@ DECLARE_SOA_COLUMN(PxProng2, pxProng2, float); //!
 DECLARE_SOA_COLUMN(PyProng2, pyProng2, float); //!
 DECLARE_SOA_COLUMN(PzProng2, pzProng2, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng2, ptProng2, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt2Prong2, pt2Prong2, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt2(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng2, pVectorProng2, //!
                            [](float px, float py, float pz) -> array<float, 3> { return array{px, py, pz}; });
 DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);                     //!
@@ -253,25 +253,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised2, impactParameterNormalised
                            [](float dca, float err) -> float { return dca / err; });
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt2, pt2, //!
-                           [](float px, float py) -> float { return RecoDecay::Pt2(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
-                           [](float px, float py, float pz) -> float { return RecoDecay::P(px, py, pz); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::p(px, py, pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(P2, p2, //!
-                           [](float px, float py, float pz) -> float { return RecoDecay::P2(px, py, pz); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::p2(px, py, pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVector, pVector, //!
                            [](float px, float py, float pz) -> array<float, 3> { return array{px, py, pz}; });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
-                           [](float px, float py, float pz) -> float { return RecoDecay::Eta(array{px, py, pz}); });
+                           [](float px, float py, float pz) -> float { return RecoDecay::eta(array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //!
-                           [](float px, float py) -> float { return RecoDecay::Phi(px, py); });
+                           [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::Y(array{px, py, pz}, m); });
+                           [](float px, float py, float pz, double m) -> float { return RecoDecay::y(array{px, py, pz}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, //!
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::E(px, py, pz, m); });
+                           [](float px, float py, float pz, double m) -> float { return RecoDecay::e(px, py, pz, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(E2, e2, //!
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::E2(px, py, pz, m); });
+                           [](float px, float py, float pz, double m) -> float { return RecoDecay::e2(px, py, pz, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthXY, decayLengthXY, //!
@@ -283,13 +283,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, //!
 DECLARE_SOA_COLUMN(ErrorDecayLength, errorDecayLength, float);     //!
 DECLARE_SOA_COLUMN(ErrorDecayLengthXY, errorDecayLengthXY, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa,                               //!
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::CPA(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CPAXY, cpaXY, //!
-                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px, float py) -> float { return RecoDecay::CPAXY(array{xVtxP, yVtxP}, array{xVtxS, yVtxS}, array{px, py}); });
+                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px, float py) -> float { return RecoDecay::cpaXY(array{xVtxP, yVtxP}, array{xVtxS, yVtxS}, array{px, py}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Ct, ct, //!
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::Ct(array{px, py, pz}, RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}), m); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::ct(array{px, py, pz}, RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}), m); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::ImpParXY(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
 
 // mapping of origin type
 enum OriginType { Prompt = 1,
@@ -308,11 +308,11 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, //!
                            [](float dca1, float dca2) -> float { return dca1 * dca2; });
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::m(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(M2, m2, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::M2(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) -> float { return RecoDecay::m2(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStar, cosThetaStar, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m, double mTot, int iProng) -> float { return RecoDecay::CosThetaStar(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m, mTot, iProng); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m, double mTot, int iProng) -> float { return RecoDecay::cosThetaStar(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m, mTot, iProng); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum, //!
                            [](float impParProng0, float impParProng1) -> float { return RecoDecay::sumOfSquares(impParProng0, impParProng1); });
 DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
@@ -495,9 +495,9 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * aod::hf_cand::pzProng0 + 1.f * aod::hf_cand::pzProng1);
 // DECLARE_SOA_DYNAMIC_COLUMN(M, m, [](float px0, float py0, float pz0, float px1, float py1, float pz1, const array<double, 2>& m) { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Pos, ptV0Pos, //!
-                           [](float px, float py) { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtV0Neg, ptV0Neg, //!
-                           [](float px, float py) { return RecoDecay::Pt(px, py); });
+                           [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_COLUMN(FlagMCMatchRec, flagMCMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMCMatchGen, flagMCMatchGen, int8_t); //! generator level
 
@@ -682,9 +682,9 @@ DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * aod::hf_cand::pzProng0 + 1.f * aod::hf_cand::pzProng1 + 1.f * aod::hf_cand::pzProng2);
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, const array<double, 3>& m) -> float { return RecoDecay::M(array{array{px0, py0, pz0}, array{px1, py1, pz1}, array{px2, py2, pz2}}, m); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, const array<double, 3>& m) -> float { return RecoDecay::m(array{array{px0, py0, pz0}, array{px1, py1, pz1}, array{px2, py2, pz2}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(M2, m2, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, const array<double, 3>& m) -> float { return RecoDecay::M2(array{array{px0, py0, pz0}, array{px1, py1, pz1}, array{px2, py2, pz2}}, m); });
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, const array<double, 3>& m) -> float { return RecoDecay::m2(array{array{px0, py0, pz0}, array{px1, py1, pz1}, array{px2, py2, pz2}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum, //!
                            [](float impParProng0, float impParProng1, float impParProng2) -> float { return RecoDecay::sumOfSquares(impParProng0, impParProng1, impParProng2); });
 DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
@@ -909,7 +909,7 @@ auto QX(const T& candidate)
   double massPi = RecoDecay::getMassPDG(kPiPlus);
 
   auto arrayMomenta = array{piVec1, piVec2};
-  double massPiPi = RecoDecay::M(arrayMomenta, array{massPi, massPi});
+  double massPiPi = RecoDecay::m(arrayMomenta, array{massPi, massPi});
 
   // PDG mass, as reported in CMS paper https://arxiv.org/pdf/1302.3968.pdf
   double massJpsi = RecoDecay::getMassPDG(o2::analysis::pdg::kJpsi);
@@ -922,17 +922,17 @@ auto QX(const T& candidate)
 template <typename T>
 auto DRX(const T& candidate, int numPi)
 {
-  double etaJpsi = RecoDecay::Eta(array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
-  double phiJpsi = RecoDecay::Phi(candidate.pxProng0(), candidate.pyProng0());
+  double etaJpsi = RecoDecay::eta(array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
+  double phiJpsi = RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0());
 
   double etaPi, phiPi;
 
   if (numPi <= 1) {
-    etaPi = RecoDecay::Eta(array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
-    phiPi = RecoDecay::Phi(candidate.pxProng1(), candidate.pyProng1());
+    etaPi = RecoDecay::eta(array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
+    phiPi = RecoDecay::phi(candidate.pxProng1(), candidate.pyProng1());
   } else {
-    etaPi = RecoDecay::Eta(array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
-    phiPi = RecoDecay::Phi(candidate.pxProng2(), candidate.pyProng2());
+    etaPi = RecoDecay::eta(array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
+    phiPi = RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2());
   }
 
   double deltaEta = etaJpsi - etaPi;
@@ -945,8 +945,8 @@ auto DRX(const T& candidate, int numPi)
 template <typename T>
 auto PiBalanceX(const T& candidate)
 {
-  double ptPi1 = RecoDecay::Pt(candidate.pxProng1(), candidate.pyProng1());
-  double ptPi2 = RecoDecay::Pt(candidate.pxProng2(), candidate.pyProng2());
+  double ptPi1 = RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1());
+  double ptPi2 = RecoDecay::pt(candidate.pxProng2(), candidate.pyProng2());
   return std::abs(ptPi1 - ptPi2) / (ptPi1 + ptPi2);
 }
 // declare dedicated X candidate table

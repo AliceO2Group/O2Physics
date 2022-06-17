@@ -394,7 +394,9 @@ struct EventSelectionQaTask {
     aod::FT0s const& ft0s,
     aod::FDDs const& fdds)
   {
-    if (bcs.iteratorAt(0).runNumber() != lastRunNumber) {
+    int runNumber = bcs.iteratorAt(0).runNumber();
+    if (runNumber != lastRunNumber && runNumber >= 500000) { // using BC filling scheme for data only
+      lastRunNumber = runNumber;
       auto bf = ccdb->getForTimeStamp<o2::BunchFilling>("GLO/GRP/BunchFilling", bcs.iteratorAt(0).timestamp());
       beamPatternA = bf->getBeamPattern(0);
       beamPatternC = bf->getBeamPattern(1);

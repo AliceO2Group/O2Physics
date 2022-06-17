@@ -40,6 +40,7 @@ using namespace o2::dataformats;
 struct qaEventTrackLite {
   // Binning
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis bins1overPt{"bins1overPt", {100, 0, 10}, "1/pt binning (c/GeV)"};
   ConfigurableAxis binsImpPar{"binsImpPar", {200, -0.15, 0.15}, "Impact parameter binning (cm)"};
   ConfigurableAxis binsEta{"binsEta", {800, -2., 2.}, "Eta binning"};
   ConfigurableAxis binsPhi{"binsPhi", {180, 0., 2 * M_PI}, "Phi binning"};
@@ -77,19 +78,22 @@ struct qaEventTrackLite {
   Configurable<int> nCrossedRowsTpcMinSel1{"nCrossedRowsTpcMinSel1", -1001, "Minimum number of TPC crossed rows Sel1"};
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel1{"nCrossedRowsTpcOverFindableClustersTpcMinSel1", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel1"};
   Configurable<float> chi2TpcMaxSel1{"chi2TpcMaxSel1", 1000.f, "Max TPC chi2 Sel1"};
+  // MC selections
+  Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection, 1 defines pi,K,p,mu,e, 2 all final-state charged particles including light (hyper)nuclei"};
 
   void init(InitContext const&)
   {
-    const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
+    const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/c)"};
+    const AxisSpec axis1overPt{bins1overPt, "1/#it{p}_{T} (GeV/c)^{-1}"};
     const AxisSpec axisEta{binsEta, "#it{#eta}"};
-    const AxisSpec axisPhi{binsPhi, "#it{#phi} [rad]"};
+    const AxisSpec axisPhi{binsPhi, "#it{#phi} (rad)"};
 
     // kine histograms
-    histos.add("Tracks/VertexPositionZ", "", kTH1D, {{100, -20.f, 20.f, "Vertex Z [cm]"}});
+    histos.add("Tracks/VertexPositionZ", "", kTH1D, {{100, -20.f, 20.f, "Vertex Z (cm)"}});
     histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
     histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/Kine/phi", "#phi", kTH1D, {axisPhi});
-    histos.add("Tracks/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
+    histos.add("Tracks/length", "track length in cm;#it{Length} (cm);", kTH1D, {{400, 0, 1000}});
     const AxisSpec axisImpParRPhi{binsImpPar, "#it{d}_{r#it{#varphi}} (#cm)"};
     const AxisSpec axisImpParZAxis{binsImpPar, "#it{d}_{z} (#cm)"};
     histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane", kTH1D, {axisImpParRPhi});
@@ -101,6 +105,7 @@ struct qaEventTrackLite {
     histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
     histos.add("Tracks/ITS/itsNCl", "ITS number of clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
     histos.add("Tracks/ITS/itsNClvsItsHitmap", "ITS number of clusters vs. ITS hitmap;# clusters ITS; ITS hitmap", kTH2D, {{8, -0.5, 7.5, "# clusters ITS"}, {128, 0, 128, "ITS hitmap"}});
+    histos.add("Tracks/ITS/itsNClstvsEtavsPt", "profile2D;", kTProfile2D, {axisEta, axisPt});
     // tpc histograms
     histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
     histos.add("Tracks/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
@@ -109,6 +114,9 @@ struct qaEventTrackLite {
     histos.add("Tracks/TPC/tpcNClsFoundvsPt", "", kTH2D, {axisPt, {165, -0.5, 164.5, "# clusters TPC"}});
     histos.add("Tracks/TPC/tpcCrossedRowsvsPt", "", kTH2D, {axisPt, {165, -0.5, 164.5, "# crossed rows TPC"}});
     histos.add("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt", "", kTH2D, {axisPt, {60, 0.7, 1.3, "crossed rows / findable clusters TPC"}});
+    histos.add("Tracks/TPC/TPCnClstvsEtavsPt", "profile2D;", kTProfile2D, {axisEta, axisPt});
+    histos.add("Tracks/TPC/dEdxvsP", "", kTH2D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {500, 0, 1000, "d#it{E}/d#it{x} (a.u.)"}});
+    histos.add("Tracks/TPC/dEdxvsPvsEta", "", kTH3D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {20, -2, 2, "#it{#eta}"}, {500, 0, 1000, "d#it{E}/d#it{x} (a.u.)"}});
     // trd histograms
     histos.add("Tracks/TRD/trdChi2", "chi2 in TRD", kTH1D, {{100, 0, 10, "chi2 / cluster TRD"}});
     // tof histograms
@@ -121,7 +129,9 @@ struct qaEventTrackLite {
     histos.get<TH1>(HIST("Tracks/matchedDet"))->GetXaxis()->SetBinLabel(4, "hasTOF");
     // kinematics
     histos.add("Tracks/relativeResoPt", "relative #it{p}_{T} resolution;#sigma(#it{p}_{T})/#it{p}_{T};#it{p}_{T};", kTH2D, {{axisPt, {500, 0., 1, "#sigma{#it{p}}/#it{p}_{T}"}}});
-    histos.add("Tracks/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT(#it{p}_{T})/#it{p}_{T}#GT;#it{p}_{T};", kTProfile, {axisPt});
+    histos.add("Tracks/relativeResoPtMean", "mean relative #it{p}_{T} resolution;;average #sigma_{#it{p}_{T}}/#it{p}_{T};", kTProfile, {axisPt});
+    histos.add("Tracks/relativeResoPtMeanvsEtavsPt", "mean relative #it{p}_{T} resolution;", kTProfile2D, {axisPt, axisEta});
+    histos.add("Tracks/reso1overPtMeanvsEtavs1overPt", "mean 1/#it{p}_{T} resolution;", kTProfile2D, {axis1overPt, axisEta});
     // track cuts map
     histos.add("TrackCuts/selPtEtaPhiNoSel", "pt eta phi map no el; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
     histos.add("TrackCuts/selPtEtaPhiSel1", "pt eta phi map sel 1; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
@@ -139,6 +149,10 @@ struct qaEventTrackLite {
       histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
       histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
       histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Tracks/resoPhivsPtvsEta", "#varphi(reco)-#varphi(gen);", kTH3D, {axisPt, axisEta, {3600, -M_PI, M_PI, "#varphi(reco)-#varphi(gen)"}});
+      histos.add("Tracks/phiRecovsphiGen", "#varphi(reco) vs. #varphi(gen);", kTH2D, {axisPhi, axisPhi});
+      histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
+      histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetYaxis()->SetTitle("#varphi(gen)");
     }
   }
 
@@ -170,7 +184,7 @@ struct qaEventTrackLite {
     if (TMath::Abs(track.dpgCollision().posZ()) > vtxZMax)
       return;
     if constexpr (isMC) {
-      if (track.productionMode() == 0) {
+      if (track.productionMode() == 0 && isPdgSelected(track.pdgCode())) {
         histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
       }
     }
@@ -181,16 +195,16 @@ struct qaEventTrackLite {
     Bool_t sel1 = applyTrackSelectionsNotFilteredSel1(track);
 
     if constexpr (isMC) {
-      if (track.productionMode() == 0) {
+      if (track.productionMode() == 0 && isPdgSelected(track.pdgCode())) {
         histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
-        histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.eta(), track.phi());
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
 
         if (sel1) {
-          histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel1Primary"), track.ptMC(), track.eta(), track.phi());
+          histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel1Primary"), track.ptMC(), track.etaMC(), track.phiMC());
         }
 
-        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel2Primary"), track.ptMC(), track.eta(), track.phi());
-        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel3Primary"), track.ptMC(), track.eta(), track.phi());
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel2Primary"), track.ptMC(), track.etaMC(), track.phiMC());
+        histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel3Primary"), track.ptMC(), track.etaMC(), track.phiMC());
       }
 
       histos.fill(HIST("Particles/Kine/pt"), track.ptMC());
@@ -216,6 +230,8 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
+    histos.fill(HIST("Tracks/TPC/dEdxvsP"), track.pt() / (sin(2 * atan2(1, exp(track.eta())))), track.tpcSignal());
+    histos.fill(HIST("Tracks/TPC/dEdxvsPvsEta"), track.pt() / (sin(2 * atan2(1, exp(track.eta())))), track.eta(), track.tpcSignal());
     histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
     histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
     if (track.hasTPC()) {
@@ -232,6 +248,14 @@ struct qaEventTrackLite {
     }
     histos.fill(HIST("Tracks/relativeResoPt"), track.pt(), track.ptReso());
     histos.fill(HIST("Tracks/relativeResoPtMean"), track.pt(), track.ptReso());
+    histos.fill(HIST("Tracks/relativeResoPtMeanvsEtavsPt"), track.pt(), track.eta(), track.ptReso());
+    histos.fill(HIST("Tracks/reso1overPtMeanvsEtavs1overPt"), 1. / track.pt(), track.eta(), track.ptReso() / (track.pt())); // reso(1/pt) = reso(pt)/pt^2 and here ptReso==reso(pt)/pt
+    histos.fill(HIST("Tracks/TPC/TPCnClstvsEtavsPt"), track.eta(), track.pt(), track.tpcNClsFound());
+    histos.fill(HIST("Tracks/ITS/itsNClstvsEtavsPt"), track.eta(), track.pt(), track.itsNCls());
+    if constexpr (isMC) {
+      histos.fill(HIST("Tracks/resoPhivsPtvsEta"), track.pt(), track.eta(), track.phi() - track.phiMC());
+      histos.fill(HIST("Tracks/phiRecovsphiGen"), track.phi(), track.phiMC());
+    }
 
     if constexpr (isMC) {
       histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.ptMC(), track.eta(), track.phi());
@@ -285,7 +309,7 @@ struct qaEventTrackLite {
       histos.fill(HIST("Particles/Kine/eta"), particle.etaMC());
       histos.fill(HIST("Particles/Kine/phi"), particle.phiMC());
 
-      if (particle.productionMode() == 0)
+      if (particle.productionMode() == 0 && isPdgSelected(particle.pdgCode()))
         histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), particle.ptMC(), particle.etaMC(), particle.phiMC());
     }
   }
@@ -330,6 +354,22 @@ struct qaEventTrackLite {
       return false;
 
     return true;
+  }
+
+  bool isPdgSelected(const Int_t pdgcode)
+  { // mimics selection of charged particles or id particles
+    Int_t abspdgcode = TMath::Abs(pdgcode);
+    if (abspdgcode == pdgCodeSel)
+      return true;
+    if (pdgCodeSel == 1 || pdgCodeSel == 2) {
+      if (abspdgcode == 211 || abspdgcode == 321 || abspdgcode == 2212 || abspdgcode == 11 || abspdgcode == 13)
+        return true;
+      if (pdgCodeSel == 2) {
+        if (abspdgcode == 3222 || abspdgcode == 3112 || abspdgcode == 3312 || abspdgcode == 3334 || abspdgcode == 1000010020 || abspdgcode == 1000010030 || abspdgcode == 1000020030 || abspdgcode == 1000020040 || abspdgcode == 1010010030 || abspdgcode == 1010020040)
+          return true;
+      }
+    }
+    return false;
   }
 };
 

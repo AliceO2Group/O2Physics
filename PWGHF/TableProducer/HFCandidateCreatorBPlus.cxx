@@ -172,7 +172,7 @@ struct HfCandidateCreatorBplus {
         auto covMatrixPCA = bfitter.calcPCACovMatrixFlat();
         hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
 
-        pVecBCand = RecoDecay::PVec(pVecD0, pVecBach);
+        pVecBCand = RecoDecay::pVec(pVecD0, pVecBach);
 
         // get track impact parameters
         // This modifies track momenta!

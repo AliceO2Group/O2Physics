@@ -23,7 +23,9 @@
 #include <string>
 
 /// Function to check if a table is required in a workflow
-bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string table)
+/// @param initContext initContext of the init function
+/// @param table name of the table to check for
+bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string& table)
 {
   auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   for (auto device : workflows.devices) {
@@ -34,6 +36,26 @@ bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const st
     }
   }
   return false;
+}
+
+/// Function to enable or disable a configurable flag, depending on the fact that a table is needed or not
+/// @param initContext initContext of the init function
+/// @param table name of the table to check for
+/// @param flag configurable flag to set, only if initially set to -1. Initial values of 0 or 1 will be kept disregarding the table usage in the workflow.
+template <typename FlagType>
+void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, FlagType& flag)
+{
+  if (isTableRequiredInWorkflow(initContext, table)) {
+    if (flag < 0) {
+      flag.value = 1;
+      LOG(info) << "Auto-enabling table: " + table;
+    } else if (flag > 0) {
+      flag.value = 1;
+      LOG(info) << "Table enabled: " + table;
+    } else {
+      LOG(info) << "Table disabled: " + table;
+    }
+  }
 }
 
 #endif

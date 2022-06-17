@@ -146,8 +146,8 @@ struct HFCandidateCreator2Prong {
       if (b_dovalplots) {
         // calculate invariant masses
         auto arrayMomenta = array{pvec0, pvec1};
-        massPiK = RecoDecay::M(arrayMomenta, array{massPi, massK});
-        massKPi = RecoDecay::M(arrayMomenta, array{massK, massPi});
+        massPiK = RecoDecay::m(arrayMomenta, array{massPi, massK});
+        massKPi = RecoDecay::m(arrayMomenta, array{massK, massPi});
         hmass2->Fill(massPiK);
         hmass2->Fill(massKPi);
       }

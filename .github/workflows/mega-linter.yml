@@ -23,6 +23,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
           persist-credentials: false
@@ -48,6 +49,8 @@ jobs:
           REMOTE_URL: "https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@\
             github.com/alibuild/${{ github.event.repository.name }}"
         run: |
+          git config --global user.email 'alibuild@cern.ch'
+          git config --global user.name 'ALICE Action Bot'
           # An empty CLEANUP_COMMIT means delete the branch.
           CLEANUP_COMMIT=""
           if [ "${{ steps.ml.outputs.has_updated_sources }}" = 1 ]

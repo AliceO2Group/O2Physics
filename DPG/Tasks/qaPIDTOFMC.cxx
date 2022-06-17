@@ -152,7 +152,7 @@ struct pidTOFTaskQA {
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.template mcParticle_as<aod::McParticles_000>();
+    const auto particle = track.template mcParticle_as<aod::McParticles>();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
@@ -171,7 +171,8 @@ struct pidTOFTaskQA {
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                          aod::McTrackLabels, aod::pidTOFbeta> const& tracks,
-               aod::McParticles& mcParticles)
+               aod::McParticles& mcParticles,
+               aod::McCollisions&)
   {
     if (collision.numContrib() < nMinNumberOfContributors) {
       return;
@@ -225,7 +226,7 @@ struct pidTOFTaskQA {
       // Fill for all
       histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
       histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
-      const auto particle = t.mcParticle_as<aod::McParticles_000>();
+      const auto particle = t.mcParticle_as<aod::McParticles>();
       if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
@@ -261,21 +262,21 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{};
   if (cfgc.options().get<int>("qa-el")) {
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Electron>>(cfgc, TaskName{"pidTOF-qa-El"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Electron>>(cfgc, TaskName{"pidTOF-qa-mc-El"}));
   }
   if (cfgc.options().get<int>("qa-mu")) {
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Muon>>(cfgc, TaskName{"pidTOF-qa-Mu"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Muon>>(cfgc, TaskName{"pidTOF-qa-mc-Mu"}));
   }
   if (cfgc.options().get<int>("qa-pikapr")) {
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Pion>>(cfgc, TaskName{"pidTOF-qa-Pi"}));
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Kaon>>(cfgc, TaskName{"pidTOF-qa-Ka"}));
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Proton>>(cfgc, TaskName{"pidTOF-qa-Pr"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Pion>>(cfgc, TaskName{"pidTOF-qa-mc-Pi"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Kaon>>(cfgc, TaskName{"pidTOF-qa-mc-Ka"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Proton>>(cfgc, TaskName{"pidTOF-qa-mc-Pr"}));
   }
   if (cfgc.options().get<int>("qa-nuclei")) {
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Deuteron>>(cfgc, TaskName{"pidTOF-qa-De"}));
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Triton>>(cfgc, TaskName{"pidTOF-qa-Tr"}));
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Helium3>>(cfgc, TaskName{"pidTOF-qa-He"}));
-    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Alpha>>(cfgc, TaskName{"pidTOF-qa-Al"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Deuteron>>(cfgc, TaskName{"pidTOF-qa-mc-De"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Triton>>(cfgc, TaskName{"pidTOF-qa-mc-Tr"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Helium3>>(cfgc, TaskName{"pidTOF-qa-mc-He"}));
+    workflow.push_back(adaptAnalysisTask<pidTOFTaskQA<PID::Alpha>>(cfgc, TaskName{"pidTOF-qa-mc-Al"}));
   }
   return workflow;
 }

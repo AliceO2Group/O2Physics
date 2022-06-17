@@ -62,6 +62,10 @@ struct LFNucleiBATask {
     histos.add<TH1>("tracks/h1p", "Track momentum; p (GeV/#it{c}); counts", HistType::kTH1F, {{1000, 0., 10.}});
 
     // tracks
+    histos.add<TH1>("tracks/hDCAxy", "DCAxy; #DCAxy; counts", HistType::kTH1F, {{200, -2.0, 2.0}});
+    histos.add<TH1>("tracks/hDCAz", "DCAz; #DCAz; counts", HistType::kTH1F, {{200, -2.0, 2.0}});
+    histos.add<TH2>("tracks/hDCAxyVsDCAz", "DCAxy vs DCAz; DCAxy (cm); DCAz (cm)", HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}});
+
     histos.add<TH1>("tracks/proton/h1ProtonSpectra", "#it{p}_{T} (p); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{800, 0, 8}});
     histos.add<TH1>("tracks/deuteron/h1DeuteronSpectra", "#it{p}_{T} (d); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{800, 0, 8}});
     histos.add<TH1>("tracks/helium/h1HeliumSpectra", "#it{p}_{T} (He); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{800, 0, 8}});
@@ -120,6 +124,11 @@ struct LFNucleiBATask {
       histos.fill(HIST("qa/h1rTPC"), track.rTPC());
       histos.fill(HIST("qa/h1chi2ITS"), track.chi2TPC());
       histos.fill(HIST("qa/h1chi2TPC"), track.chi2ITS());
+
+      // Tracks DCA histos fill
+      histos.fill(HIST("tracks/hDCAxy"), track.dcaxy());
+      histos.fill(HIST("tracks/hDCAz"), track.dcaz());
+      histos.fill(HIST("tracks/hDCAxyVsDCAz"), track.dcaxy(), track.dcaz());
 
       // Tracks histos fill
       histos.fill(HIST("tracks/h1Eta"), track.eta());

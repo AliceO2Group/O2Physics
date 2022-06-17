@@ -13,7 +13,8 @@
 /// \file   spectraTOF.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
-/// \brief Task for the analysis of the spectra with the TOF detector
+/// \brief Task for the analysis of the spectra with the TOF detector.
+///        Depending on the configuration it can also run on tiny tables.
 ///
 
 // O2 includes
@@ -47,6 +48,7 @@ struct tofSpectra {
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
@@ -133,6 +135,34 @@ struct tofSpectra {
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocessFullEl == true && doprocessTinyEl == true) {
+      LOGF(fatal, "Cannot enable processFullEl and processTinyEl at the same time. Please choose one.");
+    }
+    if (doprocessFullMu == true && doprocessTinyMu == true) {
+      LOGF(fatal, "Cannot enable processFullMu and processTinyMu at the same time. Please choose one.");
+    }
+    if (doprocessFullPi == true && doprocessTinyPi == true) {
+      LOGF(fatal, "Cannot enable processFullPi and processTinyPi at the same time. Please choose one.");
+    }
+    if (doprocessFullKa == true && doprocessTinyKa == true) {
+      LOGF(fatal, "Cannot enable processFullKa and processTinyKa at the same time. Please choose one.");
+    }
+    if (doprocessFullPr == true && doprocessTinyPr == true) {
+      LOGF(fatal, "Cannot enable processFullPr and processTinyPr at the same time. Please choose one.");
+    }
+    if (doprocessFullDe == true && doprocessTinyDe == true) {
+      LOGF(fatal, "Cannot enable processFullDe and processTinyDe at the same time. Please choose one.");
+    }
+    if (doprocessFullTr == true && doprocessTinyTr == true) {
+      LOGF(fatal, "Cannot enable processFullTr and processTinyTr at the same time. Please choose one.");
+    }
+    if (doprocessFullHe == true && doprocessTinyHe == true) {
+      LOGF(fatal, "Cannot enable processFullHe and processTinyHe at the same time. Please choose one.");
+    }
+    if (doprocessFullAl == true && doprocessTinyAl == true) {
+      LOGF(fatal, "Cannot enable processFullAl and processTinyAl at the same time. Please choose one.");
+    }
+
     globalTrackswoPrim = getGlobalTrackSelection();
     globalTrackswoPrim.SetMaxDcaXYPtDep([](float pt) { return 3.f; });
     globalTrackswoPrim.SetRequireGoldenChi2(false);
@@ -171,6 +201,64 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{600, -3.005, 2.995, "DCA_{z} (cm)"};
     for (int i = 0; i < NpCharge; i++) {
+
+      switch (i) {
+        case 0:
+        case Np:
+          if (doprocessFullEl == false && doprocessTinyEl == false) {
+            return;
+          }
+          break;
+        case 1:
+        case Np + 1:
+          if (doprocessFullMu == false && doprocessTinyMu == false) {
+            return;
+          }
+          break;
+        case 2:
+        case Np + 2:
+          if (doprocessFullPi == false && doprocessTinyPi == false) {
+            return;
+          }
+          break;
+        case 3:
+        case Np + 3:
+          if (doprocessFullKa == false && doprocessTinyKa == false) {
+            return;
+          }
+          break;
+        case 4:
+        case Np + 4:
+          if (doprocessFullPr == false && doprocessTinyPr == false) {
+            return;
+          }
+          break;
+        case 5:
+        case Np + 5:
+          if (doprocessFullDe == false && doprocessTinyDe == false) {
+            return;
+          }
+          break;
+        case 6:
+        case Np + 6:
+          if (doprocessFullTr == false && doprocessTinyTr == false) {
+            return;
+          }
+          break;
+        case 7:
+        case Np + 7:
+          if (doprocessFullHe == false && doprocessTinyHe == false) {
+            return;
+          }
+          break;
+        case 8:
+        case Np + 8:
+          if (doprocessFullAl == false && doprocessTinyAl == false) {
+            return;
+          }
+          break;
+      }
+
       const AxisSpec nsigmaTPCAxis{200, -10, 10, Form("N_{#sigma}^{TPC}(%s)", pTCharge[i])};
       const AxisSpec nsigmaTOFAxis{200, -10, 10, Form("N_{#sigma}^{TOF}(%s)", pTCharge[i])};
       histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3F, {{10, 0.f, 2.f, "#it{p}_{T} GeV/#it{c}"}, nsigmaTPCAxis, nsigmaTOFAxis});
@@ -188,11 +276,10 @@ struct tofSpectra {
     }
   }
 
-  template <PID::ID id, typename T>
+  template <bool fillFullInfo, PID::ID id, typename T>
   void fillParticleHistos(const T& track)
   {
-    const float y = TMath::ASinH(track.pt() / TMath::Sqrt(PID::getMass2(id) + track.pt() * track.pt()) * TMath::SinH(track.eta()));
-    if (abs(y) > 0.5) {
+    if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
       return;
     }
     const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
@@ -204,7 +291,7 @@ struct tofSpectra {
     }
 
     // if (std::abs(nsigmaTOF) < 2) {
-    if (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2) {
+    if (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f) {
       if (track.sign() > 0) {
         histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
@@ -232,62 +319,80 @@ struct tofSpectra {
       histos.fill(HIST(hp[id + Np]), track.p());
       histos.fill(HIST(hpt[id + Np]), track.pt());
     }
+
+    if constexpr (fillFullInfo) {
+    }
   }
 
+  template <bool fillHistograms, typename CollisionType>
+  bool isEventSelected(CollisionType const& collision)
+  {
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 1);
+    }
+    if (isRun2 && !collision.sel7()) {
+      return false;
+
+    } else if (!collision.sel8()) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 2);
+    }
+    if (abs(collision.posZ()) > cfgCutVertex) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 3);
+      histos.fill(HIST("event/vertexz"), collision.posZ());
+    }
+    return true;
+  }
+
+  template <bool fillHistograms, typename TrackType>
+  bool isTrackSelected(TrackType const& track)
+  {
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("tracksel"), 1);
+    }
+    if (abs(track.eta()) > cfgCutEta) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("tracksel"), 2);
+    }
+    if (!globalTrackswoPrim.IsSelected(track)) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("tracksel"), 3);
+    }
+    if (!track.hasTOF()) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("tracksel"), 4);
+      histos.fill(HIST("p/Unselected"), track.p());
+      histos.fill(HIST("pt/Unselected"), track.pt());
+    }
+
+    return true;
+  }
+
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                    aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                    aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                                    aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                                    aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                    aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                    aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                                    // aod::pidTOFbeta, aod::TOFSignal,
-                                    aod::pidEvTimeFlags, aod::TrackSelection>;
+                                    aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                TrackCandidates const& tracks)
   {
-    histos.fill(HIST("evsel"), 1);
-    if (isRun2 && !collision.sel7()) {
-      return;
-
-    } else if (!collision.sel8()) {
+    if (!isEventSelected<true>(collision)) {
       return;
     }
-    histos.fill(HIST("evsel"), 2);
-    if (abs(collision.posZ()) > cfgCutVertex) {
-      return;
-    }
-    histos.fill(HIST("evsel"), 3);
-    histos.fill(HIST("event/vertexz"), collision.posZ());
-
     for (const auto& track : tracks) {
-      histos.fill(HIST("tracksel"), 1);
-      if (abs(track.eta()) > cfgCutEta) {
+      if (!isTrackSelected<true>(track)) {
         continue;
       }
-      histos.fill(HIST("tracksel"), 2);
-      if (!globalTrackswoPrim.IsSelected(track)) {
-        continue;
-      }
-      histos.fill(HIST("tracksel"), 3);
-      if (!track.hasTOF()) {
-        continue;
-      }
-      histos.fill(HIST("tracksel"), 4);
-
-      histos.fill(HIST("p/Unselected"), track.p());
-      histos.fill(HIST("pt/Unselected"), track.pt());
-
-      fillParticleHistos<PID::Electron>(track);
-      fillParticleHistos<PID::Muon>(track);
-      fillParticleHistos<PID::Pion>(track);
-      fillParticleHistos<PID::Kaon>(track);
-      fillParticleHistos<PID::Proton>(track);
-      fillParticleHistos<PID::Deuteron>(track);
-      fillParticleHistos<PID::Triton>(track);
-      fillParticleHistos<PID::Helium3>(track);
-      fillParticleHistos<PID::Alpha>(track);
 
       //
       // if (TMath::Abs(track.separationbetael() < 1.f)) {
@@ -301,6 +406,66 @@ struct tofSpectra {
     }
   } // end of the process function
 
+// Full tables
+#define makeProcessFunction(inputPid, particleId)                                \
+  void processFull##inputPid(CollisionCandidate const& collision,                \
+                             soa::Join<TrackCandidates,                          \
+                                       aod::pidTOFFull##inputPid,                \
+                                       aod::pidTPCFull##inputPid> const& tracks) \
+  {                                                                              \
+    if (!isEventSelected<false>(collision)) {                                    \
+      return;                                                                    \
+    }                                                                            \
+    for (const auto& track : tracks) {                                           \
+      if (!isTrackSelected<false>(track)) {                                      \
+        continue;                                                                \
+      }                                                                          \
+      fillParticleHistos<true, PID::particleId>(track);                          \
+    }                                                                            \
+  }                                                                              \
+  PROCESS_SWITCH(tofSpectra, processFull##inputPid, Form("Process for the %s hypothesis from full tables", #particleId), false);
+
+  makeProcessFunction(El, Electron);
+  makeProcessFunction(Mu, Muon);
+  makeProcessFunction(Pi, Pion);
+  makeProcessFunction(Ka, Kaon);
+  makeProcessFunction(Pr, Proton);
+  makeProcessFunction(De, Deuteron);
+  makeProcessFunction(Tr, Triton);
+  makeProcessFunction(He, Helium3);
+  makeProcessFunction(Al, Alpha);
+#undef makeProcessFunction
+
+// Tiny tables
+#define makeProcessFunction(inputPid, particleId)                            \
+  void processTiny##inputPid(CollisionCandidate const& collision,            \
+                             soa::Join<TrackCandidates,                      \
+                                       aod::pidTOF##inputPid,                \
+                                       aod::pidTPC##inputPid> const& tracks) \
+  {                                                                          \
+    if (!isEventSelected<false>(collision)) {                                \
+      return;                                                                \
+    }                                                                        \
+    for (const auto& track : tracks) {                                       \
+      if (!isTrackSelected<false>(track)) {                                  \
+        continue;                                                            \
+      }                                                                      \
+      fillParticleHistos<true, PID::particleId>(track);                      \
+    }                                                                        \
+  }                                                                          \
+  PROCESS_SWITCH(tofSpectra, processTiny##inputPid, Form("Process for the %s hypothesis from tiny tables", #particleId), false);
+
+  makeProcessFunction(El, Electron);
+  makeProcessFunction(Mu, Muon);
+  makeProcessFunction(Pi, Pion);
+  makeProcessFunction(Ka, Kaon);
+  makeProcessFunction(Pr, Proton);
+  makeProcessFunction(De, Deuteron);
+  makeProcessFunction(Tr, Triton);
+  makeProcessFunction(He, Helium3);
+  makeProcessFunction(Al, Alpha);
+#undef makeProcessFunction
+
   template <std::size_t i, typename T1, typename T2>
   void fillHistograms_MC(T1 const& tracks, T2 const& mcParticles)
   {
@@ -313,10 +478,10 @@ struct tofSpectra {
       if (mcParticle.pdgCode() != PDGs[i]) {
         continue;
       }
-      if (std::abs(mcParticle.eta()) > 0.8) {
+      if (std::abs(mcParticle.eta()) > cfgCutEta) {
         continue;
       }
-      if (std::abs(mcParticle.y()) > 0.5) {
+      if (std::abs(mcParticle.y()) > cfgCutY) {
         continue;
       }
       if (!globalTrackswoPrim.IsSelected(track)) {
@@ -358,8 +523,8 @@ struct tofSpectra {
 
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
                            aod::TracksDCA, aod::McTrackLabels,
-                           aod::pidTOFFullPi, aod::pidTOFFullKa,
-                           aod::pidTOFFullPr, aod::TrackSelection> const& tracks,
+                           aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                           aod::TrackSelection> const& tracks,
                  const aod::McParticles& mcParticles)
   {
     // LOGF(info, "Enter processMC!");

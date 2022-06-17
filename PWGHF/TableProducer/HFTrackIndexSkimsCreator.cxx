@@ -992,7 +992,7 @@ struct HfTrackIndexSkimsCreator {
       array{hfTrack0.pxProng(), hfTrack0.pyProng(), hfTrack0.pzProng()},
       array{hfTrack1.pxProng(), hfTrack1.pyProng(), hfTrack1.pzProng()}};
 
-    auto pT = RecoDecay::Pt(arrMom[0], arrMom[1]) + pTTolerance; // add tolerance because of no reco decay vertex
+    auto pT = RecoDecay::pt(arrMom[0], arrMom[1]) + pTTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
 
@@ -1014,8 +1014,8 @@ struct HfTrackIndexSkimsCreator {
       double max2 = pow(cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P]), 2);
 
       if ((debug || TESTBIT(isSelected, iDecay2P)) && cut2Prong[iDecay2P].get(pTBin, massMinIndex[iDecay2P]) >= 0. && cut2Prong[iDecay2P].get(pTBin, massMaxIndex[iDecay2P]) > 0.) {
-        massHypos[0] = RecoDecay::M2(arrMom, arrMass2Prong[iDecay2P][0]);
-        massHypos[1] = RecoDecay::M2(arrMom, arrMass2Prong[iDecay2P][1]);
+        massHypos[0] = RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][0]);
+        massHypos[1] = RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][1]);
         if (massHypos[0] < min2 || massHypos[0] >= max2) {
           whichHypo[iDecay2P] -= 1;
         }
@@ -1075,7 +1075,7 @@ struct HfTrackIndexSkimsCreator {
       array{hfTrack1.pxProng(), hfTrack1.pyProng(), hfTrack1.pzProng()},
       array{hfTrack2.pxProng(), hfTrack2.pyProng(), hfTrack2.pzProng()}};
 
-    auto pT = RecoDecay::Pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
+    auto pT = RecoDecay::pt(arrMom[0], arrMom[1], arrMom[2]) + pTTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
 
@@ -1097,8 +1097,8 @@ struct HfTrackIndexSkimsCreator {
       double max2 = pow(cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P]), 2);
 
       if ((debug || TESTBIT(isSelected, iDecay3P)) && cut3Prong[iDecay3P].get(pTBin, massMinIndex[iDecay3P]) >= 0. && cut3Prong[iDecay3P].get(pTBin, massMaxIndex[iDecay3P]) > 0.) { // no need to check isSelected but to avoid mistakes
-        massHypos[0] = RecoDecay::M2(arrMom, arrMass3Prong[iDecay3P][0]);
-        massHypos[1] = RecoDecay::M2(arrMom, arrMass3Prong[iDecay3P][1]);
+        massHypos[0] = RecoDecay::m2(arrMom, arrMass3Prong[iDecay3P][0]);
+        massHypos[1] = RecoDecay::m2(arrMom, arrMass3Prong[iDecay3P][1]);
         if (massHypos[0] < min2 || massHypos[0] >= max2) {
           whichHypo[iDecay3P] -= 1;
         }
@@ -1140,7 +1140,7 @@ struct HfTrackIndexSkimsCreator {
       for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
 
         // pT
-        auto pTBin = findBin(&pTBins2Prong[iDecay2P], RecoDecay::Pt(pVecCand));
+        auto pTBin = findBin(&pTBins2Prong[iDecay2P], RecoDecay::pt(pVecCand));
         if (pTBin == -1) { // cut if it is outside the defined pT bins
           CLRBIT(isSelected, iDecay2P);
           if (debug) {
@@ -1151,7 +1151,7 @@ struct HfTrackIndexSkimsCreator {
 
         // cosp
         if (debug || TESTBIT(isSelected, iDecay2P)) {
-          auto cpa = RecoDecay::CPA(primVtx, secVtx, pVecCand);
+          auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
           if (cpa < cut2Prong[iDecay2P].get(pTBin, cospIndex[iDecay2P])) {
             CLRBIT(isSelected, iDecay2P);
             if (debug) {
@@ -1191,7 +1191,7 @@ struct HfTrackIndexSkimsCreator {
       for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
 
         // pT
-        auto pTBin = findBin(&pTBins3Prong[iDecay3P], RecoDecay::Pt(pVecCand));
+        auto pTBin = findBin(&pTBins3Prong[iDecay3P], RecoDecay::pt(pVecCand));
         if (pTBin == -1) { // cut if it is outside the defined pT bins
           CLRBIT(isSelected, iDecay3P);
           if (debug) {
@@ -1202,7 +1202,7 @@ struct HfTrackIndexSkimsCreator {
 
         // cosp
         if ((debug || TESTBIT(isSelected, iDecay3P))) {
-          auto cpa = RecoDecay::CPA(primVtx, secVtx, pVecCand);
+          auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
           if (cpa < cut3Prong[iDecay3P].get(pTBin, cospIndex[iDecay3P])) {
             CLRBIT(isSelected, iDecay3P);
             if (debug) {
@@ -1583,7 +1583,7 @@ struct HfTrackIndexSkimsCreator {
               }
             }
 
-            auto pVecCandProng2 = RecoDecay::PVec(pvec0, pvec1);
+            auto pVecCandProng2 = RecoDecay::pVec(pvec0, pvec1);
             // 2-prong selections after secondary vertex
             array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
             if (doPvRefit) {
@@ -1623,7 +1623,7 @@ struct HfTrackIndexSkimsCreator {
                 for (int iDecay2P = 0; iDecay2P < n2ProngDecays; iDecay2P++) {
                   if (TESTBIT(isSelected2ProngCand, iDecay2P)) {
                     if (whichHypo2Prong[iDecay2P] == 1 || whichHypo2Prong[iDecay2P] == 3) {
-                      auto mass2Prong = RecoDecay::M(arrMom, arrMass2Prong[iDecay2P][0]);
+                      auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
                       switch (iDecay2P) {
                         case hf_cand_prong2::DecayType::D0ToPiK:
                           registry.fill(HIST("hmassD0ToPiK"), mass2Prong);
@@ -1637,7 +1637,7 @@ struct HfTrackIndexSkimsCreator {
                       }
                     }
                     if (whichHypo2Prong[iDecay2P] >= 2) {
-                      auto mass2Prong = RecoDecay::M(arrMom, arrMass2Prong[iDecay2P][1]);
+                      auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][1]);
                       if (iDecay2P == hf_cand_prong2::DecayType::D0ToPiK) {
                         registry.fill(HIST("hmassD0ToPiK"), mass2Prong);
                       }
@@ -1782,7 +1782,7 @@ struct HfTrackIndexSkimsCreator {
               }
             }
 
-            auto pVecCandProng3Pos = RecoDecay::PVec(pvec0, pvec1, pvec2);
+            auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
             // 3-prong selections after secondary vertex
             array<float, 3> pvCoord3Prong2Pos1Neg = {collision.posX(), collision.posY(), collision.posZ()};
             if (doPvRefit) {
@@ -1825,7 +1825,7 @@ struct HfTrackIndexSkimsCreator {
               for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
                 if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
                   if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
-                    auto mass3Prong = RecoDecay::M(arr3Mom, arrMass3Prong[iDecay3P][0]);
+                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
                         registry.fill(HIST("hmassDPlusToPiKPi"), mass3Prong);
@@ -1842,7 +1842,7 @@ struct HfTrackIndexSkimsCreator {
                     }
                   }
                   if (whichHypo3Prong[iDecay3P] >= 2) {
-                    auto mass3Prong = RecoDecay::M(arr3Mom, arrMass3Prong[iDecay3P][1]);
+                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DsToPiKK:
                         registry.fill(HIST("hmassDsToPiKK"), mass3Prong);
@@ -1985,7 +1985,7 @@ struct HfTrackIndexSkimsCreator {
               }
             }
 
-            auto pVecCandProng3Neg = RecoDecay::PVec(pvec0, pvec1, pvec2);
+            auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
             // 3-prong selections after secondary vertex
             array<float, 3> pvCoord3Prong1Pos2Neg = {collision.posX(), collision.posY(), collision.posZ()};
             if (doPvRefit) {
@@ -2028,7 +2028,7 @@ struct HfTrackIndexSkimsCreator {
               for (int iDecay3P = 0; iDecay3P < n3ProngDecays; iDecay3P++) {
                 if (TESTBIT(isSelected3ProngCand, iDecay3P)) {
                   if (whichHypo3Prong[iDecay3P] == 1 || whichHypo3Prong[iDecay3P] == 3) {
-                    auto mass3Prong = RecoDecay::M(arr3Mom, arrMass3Prong[iDecay3P][0]);
+                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
                         registry.fill(HIST("hmassDPlusToPiKPi"), mass3Prong);
@@ -2045,7 +2045,7 @@ struct HfTrackIndexSkimsCreator {
                     }
                   }
                   if (whichHypo3Prong[iDecay3P] >= 2) {
-                    auto mass3Prong = RecoDecay::M(arr3Mom, arrMass3Prong[iDecay3P][1]);
+                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DsToPiKK:
                         registry.fill(HIST("hmassDsToPiKK"), mass3Prong);
@@ -2285,7 +2285,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
         // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
         // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
-        mass2K0sP = RecoDecay::M(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
+        mass2K0sP = RecoDecay::m(array{array{bach.px(), bach.py(), bach.pz()}, momentumV0}, array{massP, massK0s});
         if ((cutCascInvMassLc >= 0.) && (std::abs(mass2K0sP - massLc) > cutCascInvMassLc)) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to invMass cut: " << mass2K0sP << ", mass Lc " << massLc << " (cut " << cutCascInvMassLc << ")");
           continue;
@@ -2316,7 +2316,7 @@ struct HfTrackIndexSkimsCreatorCascades {
         fitter.getTrack(1).getPxPyPzGlo(pVecBach);
 
         // cascade candidate pT cut
-        auto ptCascCand = RecoDecay::Pt(pVecBach, pVecV0);
+        auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
         if (ptCascCand < cutCascPtCandMin) {
           MY_DEBUG_MSG(isK0SfromLc && isProtonFromLc, LOG(info) << "True Lc from proton " << indexBach << " and K0S pos " << indexV0DaughPos << " and neg " << indexV0DaughNeg << " rejected due to pt cut: " << ptCascCand << " (cut " << cutCascPtCandMin << ")");
           continue;
@@ -2324,7 +2324,7 @@ struct HfTrackIndexSkimsCreatorCascades {
 
         // invariant mass
         // re-calculate invariant masses with updated momenta, to fill the histogram
-        mass2K0sP = RecoDecay::M(array{pVecBach, pVecV0}, array{massP, massK0s});
+        mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
 
         std::array<float, 3> posCasc = {0., 0., 0.};
         const auto& cascVtx = fitter.getPCACandidate();
