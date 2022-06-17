@@ -141,6 +141,15 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
+    kQ2X0A, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
+    kQ2Y0A, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ2X0B,
+    kQ2Y0B,
+    kQ2X0C,
+    kQ2Y0C,
+    kMultA, // Multiplicity of the sub-event A
+    kMultB,
+    kMultC,
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
@@ -275,17 +284,6 @@ class VarManager : public TObject
     kImpParXYK,
     kDCATrackProd,
     kDCATrackVtxProd,
-
-    // Qn vector variables
-    kQ2X0A,
-    kQ2Y0A,
-    kQ2X0B,
-    kQ2Y0B,
-    kQ2X0C,
-    kQ2Y0C,
-    kMultA,
-    kMultB,
-    kMultC,
 
     // Candidate-track correlation variables
     kPairMass,
