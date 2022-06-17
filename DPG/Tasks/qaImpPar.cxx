@@ -52,6 +52,7 @@ using namespace o2::framework::expressions;
 struct QaImpactPar {
 
   /// Input parameters
+  Configurable<bool> fDebug{"fDebug", false, "Debug flag enabling outputs"};
   ConfigurableAxis binningImpPar{"binningImpPar", {200, -500.f, 500.f}, "Impact parameter binning"};
   Configurable<bool> keepOnlyPhysPrimary{"keepOnlyPhysPrimary", false, "Consider only phys. primary particles (MC)"};
   // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
@@ -333,7 +334,9 @@ struct QaImpactPar {
     /// retrieve the tracks contributing to the primary vertex fitting
     std::vector<int64_t> vec_globID_contr = {};
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
-    LOG(info) << "\n === New collision";
+    if (fDebug) {
+      LOG(info) << "\n === New collision";
+    }
     const int nTrk = unfilteredTracks.size();
     int nContrib = 0;
     int nNonContrib = 0;
@@ -345,11 +348,15 @@ struct QaImpactPar {
       }
       vec_globID_contr.push_back(unfilteredTrack.globalIndex());
       vec_TrkContributos.push_back(getTrackParCov(unfilteredTrack));
-      LOG(info) << "---> a contributor! stuff saved";
       nContrib++;
-      LOG(info) << "vec_contrib size: " << vec_TrkContributos.size() << ", nContrib: " << nContrib;
+      if (fDebug) {
+        LOG(info) << "---> a contributor! stuff saved";
+        LOG(info) << "vec_contrib size: " << vec_TrkContributos.size() << ", nContrib: " << nContrib;
+      }
     }
-    LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
+    if (fDebug) {
+      LOG(info) << "===> nTrk: " << nTrk << ",   nContrib: " << nContrib << ",   nNonContrib: " << nNonContrib;
+    }
 
     if (vec_TrkContributos.size() != collision.numContrib()) {
       LOG(info) << "!!! something wrong in the number of contributor tracks for PV fit !!! " << vec_TrkContributos.size() << " vs. " << collision.numContrib();
@@ -395,7 +402,9 @@ struct QaImpactPar {
       histograms.fill(HIST("Reco/vertices"), 2);
     }
 
-    LOG(info) << "prepareVertexRefit = " << PVrefit_doable << " Ncontrib= " << vec_TrkContributos.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << Pvtx.asString();
+    if (fDebug) {
+      LOG(info) << "prepareVertexRefit = " << PVrefit_doable << " Ncontrib= " << vec_TrkContributos.size() << " Ntracks= " << collision.numContrib() << " Vtx= " << Pvtx.asString();
+    }
     ///////////////////////////////////
     ///////////////////////////////////
 
@@ -522,7 +531,10 @@ struct QaImpactPar {
             vec_useTrk_PVrefit[entry] = false; /// remove the track from the PV refitting
           }
           auto Pvtx_refitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx); // vertex refit
-          LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
+          if (fDebug) {
+            LOG(info) << "refit " << cnt << "/" << ntr << " result = " << Pvtx_refitted.asString();
+          }
+
           if (Pvtx_refitted.getChi2() < 0) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
             histograms.fill(HIST("Reco/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
