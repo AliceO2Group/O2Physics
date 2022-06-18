@@ -46,7 +46,7 @@
 //               o2-analysis-pid-tof-full $copts |
 //               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
 
-// \author P. Buehler , paul.buehler@oeaw.ac.at
+// \author P. Buehler, paul.buehler@oeaw.ac.at
 // \since June 1, 2021
 
 #include "Framework/runDataProcessing.h"
