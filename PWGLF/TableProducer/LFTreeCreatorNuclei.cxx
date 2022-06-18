@@ -142,7 +142,7 @@ struct LfTreeCreatorNuclei {
   {
     for (const auto& collision : collisions) {
       if (useEvsel && !collision.sel8()) {
-        return;
+        continue;
       }
       const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
       fillForOneEvent<false>(collision, tracksInCollision);
