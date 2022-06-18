@@ -148,7 +148,7 @@ struct tofPid {
     int lastCollisionId = -1;          // Last collision ID analysed
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time)
-        auto makeTableEmpty = [this](const Configurable<int>& flag, auto& table) {
+        auto makeTableEmpty = [&](const Configurable<int>& flag, auto& table) {
           if (flag.value != 1) {
             return;
           }

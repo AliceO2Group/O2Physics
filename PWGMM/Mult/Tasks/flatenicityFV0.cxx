@@ -37,8 +37,8 @@ struct flatenictyFV0 {
 
   Configurable<bool> isMC{"isMC", false, "option to flag mc"};
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
-  Configurable<bool> applyCalibCh{"applyCalibCh", false, "equalize FV0"};
-  Configurable<bool> applyCalibVtx{"applyCalibVtx", false, "equalize FV0 vs vtx"};
+  Configurable<bool> applyCalibCh{"applyCalibCh", true, "equalize FV0"};
+  Configurable<bool> applyCalibVtx{"applyCalibVtx", true, "equalize FV0 vs vtx"};
   Configurable<bool> applyNorm{"applyNorm", false, "normalization to eta"};
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f,
@@ -51,48 +51,20 @@ struct flatenictyFV0 {
     OutputObjHandlingPolicy::AnalysisObject,
     true,
     true};
-  static constexpr std::string_view nhEst[14] = {"eGlobaltrack",
-                                                 "eFDDAFDDCFT0CFV0MFT",
-                                                 "eFDDAFDDCFV0MFT",
-                                                 "eFV0MFT",
-                                                 "eFV0",
-                                                 "eMFTmult",
-                                                 "e1flatencityFV0",
-                                                 "e1flatencitytrkMFT",
-                                                 "e1flatencitytrkMFTFV0",
-                                                 "e1flatencityMFTFV0",
-                                                 "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A"};
-  static constexpr std::string_view tEst[14] = {"GlobalTrk",
-                                                "FDDA_FDDC_FT0C_FV0_MFT",
-                                                "FDDA_FDDC_FV0_MFT",
-                                                "FV0_MFT",
-                                                "FV0",
-                                                "MFTTrk",
-                                                "1-flatencity_FV0",
-                                                "1-flatencity_trk_MFT",
-                                                "1-flatencity_trk_MFT_FV0",
-                                                "1-flatencity_MFT_FV0",
-                                                "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A"};
-
-  static constexpr std::string_view nhPtEst[14] = {"ptVsGlobaltrack",
-                                                   "ptVsFDDAFDDCFT0CFV0MFT",
-                                                   "ptVsFDDAFDDCFV0MFT",
-                                                   "ptVsFV0MFT",
-                                                   "ptVsFV0",
-                                                   "ptVsMFTmult",
-                                                   "ptVs1flatencityFV0",
-                                                   "ptVs1flatencitytrkMFT",
-                                                   "ptVs1flatencitytrkMFTFV0",
-                                                   "ptVs1flatencityMFTFV0",
-                                                   "ptVsMFTmultFT0A", "ptVsFT0", "ptVs1flatencityFT0", "ptVs1flatencityMFTFT0A"};
+  static constexpr std::string_view nhEst[16] = {
+    "eGlobaltrack", "eFDDAFDDCFT0CFV0MFT", "eFDDAFDDCFV0MFT", "eFV0MFT", "eFV0", "eMFTmult", "e1flatencityFV0", "e1flatencitytrkMFT", "e1flatencitytrkMFTFV0", "e1flatencityMFTFV0", "eMFTmultFT0A", "eFT0", "e1flatencityFT0", "e1flatencityMFTFT0A", "eFV0FT0C", "e1flatencityFV0FT0C"};
+  static constexpr std::string_view tEst[16] = {
+    "GlobalTrk", "FDDA_FDDC_FT0C_FV0_MFT", "FDDA_FDDC_FV0_MFT", "FV0_MFT", "FV0", "MFTTrk", "1-flatencity_FV0", "1-flatencity_trk_MFT", "1-flatencity_trk_MFT_FV0", "1-flatencity_MFT_FV0", "MFT_FT0A", "FT0", "1-flatencityFT0", "1-flatencity_MFT_FT0A", "FV0_FT0C", "1-flatencity_FV0_FT0C"};
+  static constexpr std::string_view nhPtEst[16] = {
+    "ptVsGlobaltrack", "ptVsFDDAFDDCFT0CFV0MFT", "ptVsFDDAFDDCFV0MFT", "ptVsFV0MFT", "ptVsFV0", "ptVsMFTmult", "ptVs1flatencityFV0", "ptVs1flatencitytrkMFT", "ptVs1flatencitytrkMFTFV0", "ptVs1flatencityMFTFV0", "ptVsMFTmultFT0A", "ptVsFT0", "ptVs1flatencityFT0", "ptVs1flatencityMFTFT0A", "ptVsFV0FT0C", "ptVs1flatencityFV0FT0C"};
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[14] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 500, 102, 102};
-    float lowEdgeEst[14] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
-                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01};
-    float upEdgeEst[14] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
-                           1.01, 1.01, 1.01, 1.01, 399.5, 3999.5, 1.01, 1.01};
+    int nBinsEst[16] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 100, 102, 102, 400, 102};
+    float lowEdgeEst[16] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
+                            -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01};
+    float upEdgeEst[16] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 99.5, 1.01, 1.01, 399.5, 1.01};
 
     ConfigurableAxis ptBinning{
       "ptBinning",
@@ -127,7 +99,7 @@ struct flatenictyFV0 {
     flatenicity.add("hMFTmultAll", "", HistType::kTH1F,
                     {{200, -0.5, +199.5, "MFT mult (-3.6<#eta<-2.5)"}});
     // estimators
-    for (int i_e = 0; i_e < 14; ++i_e) {
+    for (int i_e = 0; i_e < 16; ++i_e) {
       flatenicity.add(
         nhEst[i_e].data(), "", HistType::kTH2F,
         {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()},
@@ -135,7 +107,7 @@ struct flatenictyFV0 {
     }
 
     // vs pT
-    for (int i_e = 0; i_e < 14; ++i_e) {
+    for (int i_e = 0; i_e < 16; ++i_e) {
       flatenicity.add(nhPtEst[i_e].data(), "", HistType::kTProfile,
                       {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
     }
@@ -415,30 +387,35 @@ struct flatenictyFV0 {
 
     flatenicity.fill(HIST("hEv"), 3);
     // these values are from equalized pass 4 signals
-    const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
-    float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};
+    const int nEta1 = 5;                                                               // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
+    float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175}; // after calibration
     float deltaEeta1[nEta1] = {2.0, 0.2, 1.1, 2.32, 1.6};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
 
-    const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
-    float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00548221, 0.0037175};
+    const int nEta2 = 4;                                                    // FDDC + MFT + FV0 (rings 1-4) + FDDA
+    float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00569502, 0.0037175}; // after calibration
     float deltaEeta2[nEta2] = {2.0, 1.1, 2.32, 1.6};
     float ampl2[nEta2] = {0, 0, 0, 0};
 
-    const int nEta3 = 2; // MFT + FV0
-    float weigthsEta3[nEta3] = {1.05258, 0.00535717};
+    const int nEta3 = 2;                              // MFT + FV0
+    float weigthsEta3[nEta3] = {1.05258, 0.00535717}; // after calibration
     float deltaEeta3[nEta3] = {1.1, 2.9};
     float ampl3[nEta3] = {0, 0};
 
-    const int nEta4 = 2; // MFT + FT0A
-    float weigthsEta4[nEta4] = {1.05258, 0.014552069};
+    const int nEta4 = 2;                               // MFT + FT0A
+    float weigthsEta4[nEta4] = {1.05258, 0.014552069}; // after calibration
     float deltaEeta4[nEta4] = {1.1, 1.2};
     float ampl4[nEta4] = {0, 0};
 
-    const int nEta5 = 2;                   // FT0C + FT0A
-    float weigthsEta5[nEta5] = {1.0, 1.0}; // no weigths since same det
+    const int nEta5 = 2;                                 // FT0C + FT0A
+    float weigthsEta5[nEta5] = {0.0569502, 0.014552069}; // after calibration
     float deltaEeta5[nEta5] = {1.1, 1.2};
     float ampl5[nEta5] = {0, 0};
+
+    const int nEta6 = 2;                                // FT0C + FV0
+    float weigthsEta6[nEta6] = {0.0569502, 0.00535717}; // after calibration
+    float deltaEeta6[nEta6] = {1.1, 2.9};
+    float ampl6[nEta6] = {0, 0};
 
     // V0A signal and flatenicity calculation
     float flatenicity_fv0;
@@ -753,9 +730,10 @@ struct flatenictyFV0 {
     float combined_estimator3 = 0;
     float combined_estimator4 = 0;
     float combined_estimator5 = 0;
+    float combined_estimator6 = 0;
 
-    float estimator[14];
-    for (int i_e = 0; i_e < 14; ++i_e) {
+    float estimator[16];
+    for (int i_e = 0; i_e < 16; ++i_e) {
       estimator[i_e] = 0;
     }
 
@@ -839,12 +817,29 @@ struct flatenictyFV0 {
         for (int i_5 = 0; i_5 < nEta5; ++i_5) {
           combined_estimator5 +=
             ampl5[i_5] * weigthsEta5[i_5] / deltaEeta5[i_5];
-          all_weights += weigthsEta3[i_5];
+          all_weights += weigthsEta5[i_5];
         }
         combined_estimator5 /= all_weights;
       } else {
         for (int i_5 = 0; i_5 < nEta5; ++i_5) {
           combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+        }
+      }
+
+      // option 6: FT0C + FV0
+      ampl6[0] = sumAmpFT0C;
+      ampl6[1] = sumAmpFV0;
+      if (applyNorm) {
+        all_weights = 0;
+        for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+          combined_estimator6 +=
+            ampl6[i_6] * weigthsEta6[i_6] / deltaEeta6[i_6];
+          all_weights += weigthsEta6[i_6];
+        }
+        combined_estimator6 /= all_weights;
+      } else {
+        for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+          combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
         }
       }
 
@@ -876,8 +871,10 @@ struct flatenictyFV0 {
       estimator[12] = 1.0 - flatenicity_ft0;
       float flatenicity_mft_ft0a = (flatenicity_mft + flatenicity_t0a) / 2.0;
       estimator[13] = 1.0 - flatenicity_mft_ft0a;
+      estimator[14] = combined_estimator6;
+      estimator[15] = 1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0;
 
-      static_for<0, 13>([&](auto i) {
+      static_for<0, 15>([&](auto i) {
         constexpr int index = i.value;
         flatenicity.fill(HIST(nhEst[index]), estimator[index], estimator[0]);
       });
@@ -891,7 +888,7 @@ struct flatenictyFV0 {
           continue;
         }
         float pt = track.pt();
-        static_for<0, 13>([&](auto i) {
+        static_for<0, 15>([&](auto i) {
           constexpr int index = i.value;
           flatenicity.fill(HIST(nhPtEst[index]), estimator[index], pt);
         });

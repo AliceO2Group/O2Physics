@@ -74,6 +74,8 @@ DECLARE_SOA_COLUMN(HighMftFt0aMult, hasHighMftFt0aMult, bool);             //! h
 DECLARE_SOA_COLUMN(HighFt0Mult, hasHighFt0Mult, bool);                     //! high FT0 multiplicity
 DECLARE_SOA_COLUMN(HighFt0Flat, hasHighFt0Flat, bool);                     //! isotropic event FT0
 DECLARE_SOA_COLUMN(HighMftFt0aFlat, hasHighMftFt0aFlat, bool);             //! isotropic event MFT FT0A
+DECLARE_SOA_COLUMN(HighFt0cFv0Mult, hasHighFt0cFv0Mult, bool);             //! high FT0C FV0 multiplicity
+DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool);             //! isotropic event FT0C FV0
 DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);               //! event contains leading track
 
 } // namespace filtering
@@ -127,7 +129,7 @@ using StrangenessFilter = StrangenessFilters::iterator;
 
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
-                  filtering::HighTrackMult, filtering::HighFddFt0cMftFv0Mult, filtering::HighFddMftFv0Mult, filtering::HighFv0MftMult, filtering::HighMultFv0, filtering::HighMftMult, filtering::HighFv0Flat, filtering::HighMftTrkFlat, filtering::HighMftFv0TrkFlat, filtering::HighMftFv0Flat, filtering::HighMftFt0aMult, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighMftFt0aFlat, filtering::LeadingPtTrack);
+                  filtering::HighTrackMult, filtering::HighFddFt0cMftFv0Mult, filtering::HighFddMftFv0Mult, filtering::HighFv0MftMult, filtering::HighMultFv0, filtering::HighMftMult, filtering::HighFv0Flat, filtering::HighMftTrkFlat, filtering::HighMftFv0TrkFlat, filtering::HighMftFv0Flat, filtering::HighMftFt0aMult, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighMftFt0aFlat, filtering::HighFt0cFv0Mult, filtering::HighFt0cFv0Flat, filtering::LeadingPtTrack);
 
 using MultFilter = MultFilters::iterator;
 

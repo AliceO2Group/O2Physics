@@ -25,6 +25,7 @@ DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //! Impact parameter in Z of the track 
 struct TrackSelectionFlags {
  public:
   typedef uint16_t flagtype;
+  // Single cut masks
   static constexpr flagtype kTrackType = 1 << 0;
   static constexpr flagtype kPtRange = 1 << 1;
   static constexpr flagtype kEtaRange = 1 << 2;
@@ -40,8 +41,12 @@ struct TrackSelectionFlags {
   static constexpr flagtype kGoldenChi2 = 1 << 12;
   static constexpr flagtype kDCAxy = 1 << 13;
   static constexpr flagtype kDCAz = 1 << 14;
-  static constexpr flagtype kGlobalTrack = kTrackType | kPtRange | kEtaRange | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
-  static constexpr flagtype kGlobalTrackWoPtEta = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits | kGoldenChi2 | kDCAxy | kDCAz;
+  // Combo masks
+  static constexpr flagtype kQualityTracks = kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits;
+  static constexpr flagtype kPrimaryTracks = kGoldenChi2 | kDCAxy | kDCAz;
+  static constexpr flagtype kInAcceptanceTracks = kPtRange | kEtaRange;
+  static constexpr flagtype kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks;
+  static constexpr flagtype kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks;
 };
 
 #define requireTrackCutInFilter(mask) (aod::track::trackCutFlag & aod::track::mask) == aod::track::mask
