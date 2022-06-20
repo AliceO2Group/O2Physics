@@ -149,7 +149,7 @@ struct pidTPCTaskQA {
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.template mcParticle_as<o2::aod::McParticles>();
+    const auto particle = track.mcParticle();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
@@ -162,89 +162,76 @@ struct pidTPCTaskQA {
     }
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
                soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                          aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                          aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                         aod::McTrackLabels> const& tracks,
+                         aod::McTrackLabels>& tracks,
                aod::McParticles& mcParticles,
                aod::McCollisions&)
   {
-    if (collision.numContrib() < nMinNumberOfContributors) {
-      return;
-    }
-    // const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
-
-    // for (const auto& p : particlesInCollision) {
-    //   histos.fill(HIST("particle/p"), p.p());
-    //   histos.fill(HIST("particle/pt"), p.pt());
-    //   histos.fill(HIST("particle/eta"), p.eta());
-    // }
-
-    for (const auto& t : tracks) {
-      //
-      if (t.eta() < minEta || t.eta() > maxEta) {
+    for (const auto& collision : collisions) {
+      if (collision.numContrib() < nMinNumberOfContributors) {
+        return;
+      }
+      if (!collision.has_mcCollision()) {
         continue;
       }
+      const auto tracksInCollision = tracks.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
 
-      histos.fill(HIST("tracks/p"), t.p());
-      histos.fill(HIST("tracks/pt"), t.pt());
-      histos.fill(HIST("tracks/eta"), t.eta());
-      histos.fill(HIST("tracks/length"), t.length());
-
-      float nsigma = -999.f;
-      if constexpr (pid_type == 0) {
-        nsigma = t.tpcNSigmaEl();
-      } else if constexpr (pid_type == 1) {
-        nsigma = t.tpcNSigmaMu();
-      } else if constexpr (pid_type == 2) {
-        nsigma = t.tpcNSigmaPi();
-      } else if constexpr (pid_type == 3) {
-        nsigma = t.tpcNSigmaKa();
-      } else if constexpr (pid_type == 4) {
-        nsigma = t.tpcNSigmaPr();
-      } else if constexpr (pid_type == 5) {
-        nsigma = t.tpcNSigmaDe();
-      } else if constexpr (pid_type == 6) {
-        nsigma = t.tpcNSigmaTr();
-      } else if constexpr (pid_type == 7) {
-        nsigma = t.tpcNSigmaHe();
-      } else if constexpr (pid_type == 8) {
-        nsigma = t.tpcNSigmaAl();
+      for (const auto& p : particlesInCollision) {
+        histos.fill(HIST("particle/p"), p.p());
+        histos.fill(HIST("particle/pt"), p.pt());
+        histos.fill(HIST("particle/eta"), p.eta());
       }
 
-      // Fill for all
-      histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
-      histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
-      const auto particle = t.mcParticle_as<aod::McParticles>();
-      if (particle.isPhysicalPrimary()) { // Selecting primaries
-        histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
-      } else {
-        histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tpcsignalSec"), t.p(), t.tpcSignal());
-      }
-      if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
-        histos.fill(HIST("event/tpcsignalMC"), t.pt(), t.tpcSignal());
-        if (particle.isPhysicalPrimary()) {
-          histos.fill(HIST("event/tpcsignalMCPrm"), t.pt(), t.tpcSignal());
-        } else {
-          histos.fill(HIST("event/tpcsignalMCSec"), t.pt(), t.tpcSignal());
+      for (const auto& t : tracksInCollision) {
+        //
+        if (t.eta() < minEta || t.eta() > maxEta) {
+          continue;
         }
+
+        histos.fill(HIST("tracks/p"), t.p());
+        histos.fill(HIST("tracks/pt"), t.pt());
+        histos.fill(HIST("tracks/eta"), t.eta());
+        histos.fill(HIST("tracks/length"), t.length());
+
+        const float nsigma = o2::aod::pidutils::tpcNSigma<pid_type>(t);
+
+        // Fill for all
+        histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
+        histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
+        const auto particle = t.mcParticle();
+        if (particle.isPhysicalPrimary()) { // Selecting primaries
+          histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
+          histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
+        } else {
+          histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
+          histos.fill(HIST("event/tpcsignalSec"), t.p(), t.tpcSignal());
+        }
+        if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
+          histos.fill(HIST("event/tpcsignalMC"), t.pt(), t.tpcSignal());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("event/tpcsignalMCPrm"), t.pt(), t.tpcSignal());
+          } else {
+            histos.fill(HIST("event/tpcsignalMCSec"), t.pt(), t.tpcSignal());
+          }
+        }
+        // Fill with PDG codes
+        fillNsigma<0>(t, nsigma);
+        fillNsigma<1>(t, nsigma);
+        fillNsigma<2>(t, nsigma);
+        fillNsigma<3>(t, nsigma);
+        fillNsigma<4>(t, nsigma);
+        fillNsigma<5>(t, nsigma);
+        fillNsigma<6>(t, nsigma);
+        fillNsigma<7>(t, nsigma);
+        fillNsigma<8>(t, nsigma);
       }
-      // Fill with PDG codes
-      fillNsigma<0>(t, nsigma);
-      fillNsigma<1>(t, nsigma);
-      fillNsigma<2>(t, nsigma);
-      fillNsigma<3>(t, nsigma);
-      fillNsigma<4>(t, nsigma);
-      fillNsigma<5>(t, nsigma);
-      fillNsigma<6>(t, nsigma);
-      fillNsigma<7>(t, nsigma);
-      fillNsigma<8>(t, nsigma);
+      histos.fill(HIST("event/vertexz"), collision.posZ());
     }
-    histos.fill(HIST("event/vertexz"), collision.posZ());
   }
 };
 
