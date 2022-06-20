@@ -400,19 +400,61 @@ struct MixedEventsPartitionedTracks {
   }
 };
 
+// TODO: Test also with constant binning (expandConstantBinning())
+struct MixedEventsLambdaBinning {
+  ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, "multiplicity axis for histograms"};
+  using BinningType = LambdaBinningPolicy<aod::collision::PosZ, soa::Index<>>;
+
+  void process(aod::Collisions const& collisions, aod::Tracks& tracks)
+  {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+
+    auto getBinTracksSize =
+      [&tracks, this](std::tuple<typename aod::collision::PosZ::type, typename soa::Index<>::type> const& data) {
+        float posZ = std::get<0>(data);
+        int32_t colIndex = std::get<1>(data);
+        // TODO: Does it slice only once, is it cached properly when used inside lambda?
+        auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, colIndex);
+        return binning_helpers::getBin({axisVertex, axisMultiplicity}, std::make_tuple(posZ, tracks.size()), true); // true is for 'ignore overflows' (true by default)
+      };
+
+    BinningType binningWithLambda{getBinTracksSize};
+    SameKindPair<aod::Collisions, aod::Tracks, LambdaBinningPolicy> pair{binningWithLambda, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+    int count = 0;
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      count++;
+      if (count == 100)
+        break;
+
+      // Example of using tracks from mixed events -- iterate over all track pairs from the two collisions
+      int trackCount = 0;
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", t1.index(), t2.index(), c1.index(), c2.index(), t1.collision().index(), t2.collision().index());
+        trackCount++;
+        if (trackCount == 10)
+          break;
+      }
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MixedEvents>(cfgc),
-    adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
-    adaptAnalysisTask<MixedEventsFilteredTracks>(cfgc),
-    adaptAnalysisTask<MixedEventsJoinedCollisions>(cfgc),
-    adaptAnalysisTask<MixedEventsDynamicColumns>(cfgc),
-    adaptAnalysisTask<MixedEventsVariousKinds>(cfgc),
-    adaptAnalysisTask<MixedEventsTriple>(cfgc),
-    adaptAnalysisTask<MixedEventsTripleVariousKinds>(cfgc),
-    adaptAnalysisTask<HashTask>(cfgc),
-    adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
-    adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
+    // adaptAnalysisTask<MixedEvents>(cfgc),
+    // adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
+    // adaptAnalysisTask<MixedEventsFilteredTracks>(cfgc),
+    // adaptAnalysisTask<MixedEventsJoinedCollisions>(cfgc),
+    // adaptAnalysisTask<MixedEventsDynamicColumns>(cfgc),
+    // adaptAnalysisTask<MixedEventsVariousKinds>(cfgc),
+    // adaptAnalysisTask<MixedEventsTriple>(cfgc),
+    // adaptAnalysisTask<MixedEventsTripleVariousKinds>(cfgc),
+    // adaptAnalysisTask<HashTask>(cfgc),
+    // adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
+    // adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
+    adaptAnalysisTask<MixedEventsLambdaBinning>(cfgc),
   };
 }
