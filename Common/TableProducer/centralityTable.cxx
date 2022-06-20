@@ -95,10 +95,10 @@ struct CentralityTable {
     {
     }
   };
-  calibrationInfo FV0AInfo = calibrationInfo("V0");
-  calibrationInfo FT0MInfo = calibrationInfo("T0");
+  calibrationInfo FV0AInfo = calibrationInfo("FV0");
+  calibrationInfo FT0MInfo = calibrationInfo("FT0");
   calibrationInfo FDDMInfo = calibrationInfo("FDD");
-  calibrationInfo NTPVInfo = calibrationInfo("NTracks");
+  calibrationInfo NTPVInfo = calibrationInfo("NTracksPV");
 
   void init(InitContext& context)
   {
