@@ -202,8 +202,8 @@ void upload_event_selection_params()
       printf(" .... is not new, skipping\n");
       continue;
     }
-    headersFirst = ccdb.retrieveHeaders(Form("RCT/RunInformation/%i", runFirst[i]), metadataRCT, -1);
-    headersLast = ccdb.retrieveHeaders(Form("RCT/RunInformation/%i", runLast[i]), metadataRCT, -1);
+    headersFirst = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runFirst[i]), metadataRCT, -1);
+    headersLast = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runLast[i]), metadataRCT, -1);
     ULong64_t sor = atol(headersFirst["SOR"].c_str());
     ULong64_t eor = atol(headersLast["EOR"].c_str());
     printf("sor=%llu eor=%llu\n", sor, eor);
