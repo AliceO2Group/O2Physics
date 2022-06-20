@@ -152,7 +152,7 @@ struct pidTOFTaskQA {
   template <uint8_t pidIndex, typename T>
   void fillNsigma(const T& track, const float& nsigma)
   {
-    const auto particle = track.template mcParticle_as<aod::McParticles>();
+    const auto particle = track.mcParticle();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
@@ -165,96 +165,83 @@ struct pidTOFTaskQA {
     }
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
                soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                         aod::McTrackLabels, aod::pidTOFbeta> const& tracks,
+                         aod::McTrackLabels, aod::pidTOFbeta>& tracks,
                aod::McParticles& mcParticles,
                aod::McCollisions&)
   {
-    if (collision.numContrib() < nMinNumberOfContributors) {
-      return;
-    }
-    const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
-
-    for (const auto& p : particlesInCollision) {
-      histos.fill(HIST("particle/p"), p.p());
-      histos.fill(HIST("particle/pt"), p.pt());
-      histos.fill(HIST("particle/eta"), p.eta());
-    }
-
-    const float collisionTime_ps = collision.collisionTime() * 1000.f;
-    unsigned int nTracksWithTOF = 0;
-    for (const auto& t : tracks) {
-      //
-      if (!t.hasTOF()) { // Skipping tracks without TOF
+    for (const auto& collision : collisions) {
+      if (collision.numContrib() < nMinNumberOfContributors) {
+        return;
+      }
+      if (!collision.has_mcCollision()) {
         continue;
       }
-      if (t.eta() < minEta || t.eta() > maxEta) {
-        continue;
+      const auto tracksInCollision = tracks.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+
+      for (const auto& p : particlesInCollision) {
+        histos.fill(HIST("particle/p"), p.p());
+        histos.fill(HIST("particle/pt"), p.pt());
+        histos.fill(HIST("particle/eta"), p.eta());
       }
 
-      histos.fill(HIST("tracks/p"), t.p());
-      histos.fill(HIST("tracks/pt"), t.pt());
-      histos.fill(HIST("tracks/eta"), t.eta());
-      histos.fill(HIST("tracks/length"), t.length());
-
-      nTracksWithTOF++;
-      float nsigma = -999.f;
-      if constexpr (pid_type == 0) {
-        nsigma = t.tofNSigmaEl();
-      } else if constexpr (pid_type == 1) {
-        nsigma = t.tofNSigmaMu();
-      } else if constexpr (pid_type == 2) {
-        nsigma = t.tofNSigmaPi();
-      } else if constexpr (pid_type == 3) {
-        nsigma = t.tofNSigmaKa();
-      } else if constexpr (pid_type == 4) {
-        nsigma = t.tofNSigmaPr();
-      } else if constexpr (pid_type == 5) {
-        nsigma = t.tofNSigmaDe();
-      } else if constexpr (pid_type == 6) {
-        nsigma = t.tofNSigmaTr();
-      } else if constexpr (pid_type == 7) {
-        nsigma = t.tofNSigmaHe();
-      } else if constexpr (pid_type == 8) {
-        nsigma = t.tofNSigmaAl();
-      }
-
-      // Fill for all
-      histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
-      histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
-      const auto particle = t.mcParticle_as<aod::McParticles>();
-      if (particle.isPhysicalPrimary()) { // Selecting primaries
-        histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
-      } else {
-        histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
-        histos.fill(HIST("event/tofbetaSec"), t.p(), t.beta());
-      }
-      if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
-        histos.fill(HIST("event/tofbetaMC"), t.pt(), t.beta());
-        if (particle.isPhysicalPrimary()) {
-          histos.fill(HIST("event/tofbetaMCPrm"), t.pt(), t.beta());
-        } else {
-          histos.fill(HIST("event/tofbetaMCSec"), t.pt(), t.beta());
+      const float collisionTime_ps = collision.collisionTime() * 1000.f;
+      unsigned int nTracksWithTOF = 0;
+      for (const auto& t : tracksInCollision) {
+        //
+        if (!t.hasTOF()) { // Skipping tracks without TOF
+          continue;
         }
+        if (t.eta() < minEta || t.eta() > maxEta) {
+          continue;
+        }
+
+        histos.fill(HIST("tracks/p"), t.p());
+        histos.fill(HIST("tracks/pt"), t.pt());
+        histos.fill(HIST("tracks/eta"), t.eta());
+        histos.fill(HIST("tracks/length"), t.length());
+
+        nTracksWithTOF++;
+        const float nsigma = o2::aod::pidutils::tofNSigma<pid_type>(t);
+
+        // Fill for all
+        histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
+        histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
+        const auto particle = t.mcParticle();
+        if (particle.isPhysicalPrimary()) { // Selecting primaries
+          histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
+          histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
+        } else {
+          histos.fill(HIST(hnsigmasec[pid_type]), t.pt(), nsigma);
+          histos.fill(HIST("event/tofbetaSec"), t.p(), t.beta());
+        }
+        if (abs(particle.pdgCode()) == PDGs[pid_type]) { // Checking the PDG code
+          histos.fill(HIST("event/tofbetaMC"), t.pt(), t.beta());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("event/tofbetaMCPrm"), t.pt(), t.beta());
+          } else {
+            histos.fill(HIST("event/tofbetaMCSec"), t.pt(), t.beta());
+          }
+        }
+        // Fill with PDG codes
+        fillNsigma<0>(t, nsigma);
+        fillNsigma<1>(t, nsigma);
+        fillNsigma<2>(t, nsigma);
+        fillNsigma<3>(t, nsigma);
+        fillNsigma<4>(t, nsigma);
+        fillNsigma<5>(t, nsigma);
+        fillNsigma<6>(t, nsigma);
+        fillNsigma<7>(t, nsigma);
+        fillNsigma<8>(t, nsigma);
       }
-      // Fill with PDG codes
-      fillNsigma<0>(t, nsigma);
-      fillNsigma<1>(t, nsigma);
-      fillNsigma<2>(t, nsigma);
-      fillNsigma<3>(t, nsigma);
-      fillNsigma<4>(t, nsigma);
-      fillNsigma<5>(t, nsigma);
-      fillNsigma<6>(t, nsigma);
-      fillNsigma<7>(t, nsigma);
-      fillNsigma<8>(t, nsigma);
+      histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
+      histos.fill(HIST("event/vertexz"), collision.posZ());
     }
-    histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
-    histos.fill(HIST("event/vertexz"), collision.posZ());
   }
 };
 

@@ -82,7 +82,7 @@ void upload_trigger_aliases()
     }
 
     // read SOR and EOR timestamps from RCT CCDB
-    header = ccdb.retrieveHeaders(Form("RCT/RunInformation/%i", run), metadataRCT, -1);
+    header = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", run), metadataRCT, -1);
     ULong64_t sor = atol(header["SOR"].c_str());
     ULong64_t eor = atol(header["EOR"].c_str());
     // add safety margins to avoid edge effects due to SOR/EOR time differences in DCS and CTP

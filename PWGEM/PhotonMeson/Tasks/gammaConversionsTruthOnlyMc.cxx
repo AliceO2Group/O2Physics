@@ -56,33 +56,13 @@ struct gammaConversionsTruthOnlyMc {
       {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {gAxis_z2d, gAxis_pT2d}}},
 
       // debugging histograms
-      {"hPeculiarOccurences_MCTrue", "hPeculiarOccurences_MCTrue", {HistType::kTH1F, {{50, -25.f, 25.f}}}},
-      {"hNElectrons_MCTrue", "hNElectrons_MCTrue", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
       {"hNDaughters_MCTrue", "hNDaughters_MCTrue;nDaughters;counts", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
-      {"hPdgCodeDaughters_MCTrue", "hPdgCodeDaughters_MCTrue;pdg code;counts", {HistType::kTH1F, {{2000, -1000.f, 1000.f}}}},
     },
   };
 
   template <typename MCGAMMA>
   void fillConversionHistograms(MCGAMMA const& theMcConvGamma)
   {
-    // this produces another convpoint r distribution than the uncommend version below. why?
-    // access first daughter to get conversion point
-
-    /*auto const &lDaughter0 = lDaughters.begin();
-    float lConversionRadius = std::sqrt(std::pow(lDaughter0.vx(), 2) + std::pow(lDaughter0.vy(), 2));
-    registry.fill(HIST("hGammaConvertedEtaP"), lMcGamma.eta(), lMcGamma.p());
-    registry.fill(HIST("hGammaConvertedEtaR"), lMcGamma.eta(), lConversionRadius);
-    registry.fill(HIST("hGammaConvertedEtaZ"), lMcGamma.eta(), lDaughter0.vz());
-    registry.fill(HIST("hGammaConvertedR"), lConversionRadius);
-    registry.fill(HIST("hGammaConvertedRP"), lConversionRadius, lMcGamma.p());
-    registry.fill(HIST("hGammaConvertedRZ"), lConversionRadius, lDaughter0.vz());
-    registry.fill(HIST("hGammaConvertedZP"), lDaughter0.vz(), lMcGamma.p());
-    registry.fill(HIST("hGammaConvertedRPt"), lConversionRadius, lMcGamma.pt());
-    TVector3 lDaughter0Vtx(lDaughter0.vx(),lDaughter0.vy(), lDaughter0.vz());
-    float_t lEtaDiff = lDaughter0Vtx.Eta() - lMcGamma.eta();
-    registry.fill(HIST("hEtaDiff"), lEtaDiff);*/
-
     float lConversionRadius = theMcConvGamma.v0Radius();
     // 1d histos
     registry.fill(HIST("hGammaConvertedR_MCTrue"), lConversionRadius);
@@ -121,8 +101,7 @@ struct gammaConversionsTruthOnlyMc {
   void process(aod::McCollision const& theMcCollision,
                soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                           aod::Collisions>> const& theCollisions,
-               aod::McGammasTrue const& theMcGammas,
-               aod::McGammaDaughtersTrue const& theMcGammaDaughters)
+               aod::McGammasTrue const& theMcGammas)
   {
     registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
     if (theCollisions.size() == 0) {
