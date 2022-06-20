@@ -40,6 +40,15 @@ namespace reducedevent
 // basic event information
 DECLARE_SOA_COLUMN(Tag, tag, uint64_t);                   //!  Bit-field for storing event information (e.g. high level info, cut decisions)
 DECLARE_SOA_COLUMN(TriggerAlias, triggerAlias, uint32_t); //!  Trigger aliases bit field
+DECLARE_SOA_COLUMN(Q2X0A, q2x0a, float);                  //!  Q-vector x component, with event eta gap A (and power 0)
+DECLARE_SOA_COLUMN(Q2Y0A, q2y0a, float);                  //!  Q-vector y component, with event eta gap A (and power 0)
+DECLARE_SOA_COLUMN(Q2X0B, q2x0b, float);                  //!  Q-vector x component, with event eta gap B (and power 0)
+DECLARE_SOA_COLUMN(Q2Y0B, q2y0b, float);                  //!  Q-vector y component, with event eta gap B (and power 0)
+DECLARE_SOA_COLUMN(Q2X0C, q2x0c, float);                  //!  Q-vector x component, with event eta gap C (and power 0)
+DECLARE_SOA_COLUMN(Q2Y0C, q2y0c, float);                  //!  Q-vector y component, with event eta gap C (and power 0)
+DECLARE_SOA_COLUMN(MultA, multa, float);                  //!  Event multiplicity eta gap A
+DECLARE_SOA_COLUMN(MultB, multb, float);                  //!  Event multiplicity eta gap B
+DECLARE_SOA_COLUMN(MultC, multc, float);                  //!  Event multiplicity eta gap C
 DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);                //!
 DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);                //!
 DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                //!
@@ -58,6 +67,10 @@ DECLARE_SOA_TABLE(ReducedEventsVtxCov, "AOD", "REVTXCOV", //!    Event vertex co
                   collision::CovXX, collision::CovXY, collision::CovXZ,
                   collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2);
 
+DECLARE_SOA_TABLE(ReducedEventsQvector, "AOD", "REQVECTOR", //!    Event Q-vector
+                  reducedevent::Q2X0A, reducedevent::Q2Y0A, reducedevent::Q2X0B, reducedevent::Q2Y0B,
+                  reducedevent::Q2X0C, reducedevent::Q2Y0C, reducedevent::MultA, reducedevent::MultB, reducedevent::MultC);
+
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
@@ -70,6 +83,7 @@ DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REMC", //!   Event level MC truth inf
 using ReducedEvent = ReducedEvents::iterator;
 using ReducedEventExtended = ReducedEventsExtended::iterator;
 using ReducedEventVtxCov = ReducedEventsVtxCov::iterator;
+using ReducedEventQvector = ReducedEventsQvector::iterator;
 using ReducedMCEvent = ReducedMCEvents::iterator;
 
 namespace reducedeventlabel
