@@ -145,8 +145,8 @@ struct MultiplicityTableTaskIndexed {
 
     /* check the previous run number */
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
-    if( doVertexZeq > 0 ){
-      if ( bc.runNumber() != mRunNumber ) {
+    if (doVertexZeq > 0) {
+      if (bc.runNumber() != mRunNumber) {
         lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", bc.timestamp()); //temporary
         if (lCalibObjects) {
           hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
