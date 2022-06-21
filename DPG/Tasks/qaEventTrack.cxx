@@ -84,8 +84,25 @@ struct qaEventTrack {
 
   void init(InitContext const&);
 
+  // Function to select tracks
   template <bool IS_MC, typename T>
   bool isSelectedTrack(const T& track);
+
+  // Function to select collisions
+  template <bool doFill, typename T>
+  bool isSelectedCollision(const T& collision)
+  {
+    if constexpr (doFill) {
+      histos.fill(HIST("Events/recoEff"), 1);
+    }
+    if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return false;
+    }
+    if constexpr (doFill) {
+      histos.fill(HIST("Events/recoEff"), 2);
+    }
+    return true;
+  }
 
   // General function to fill data and MC histograms
   template <bool IS_MC, typename C, typename T>
@@ -104,7 +121,7 @@ struct qaEventTrack {
   void processDataIU(CollisionTableData::iterator const& collision,
                      aod::FullTracks const& tracksUnfiltered, aod::TracksIU const& tracksIU)
   {
-    if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only  sel8 is defined for run3
+    if (!isSelectedCollision<false>(collision)) {
       return;
     }
 
@@ -134,7 +151,6 @@ struct qaEventTrack {
       histos.fill(HIST("Tracks/IUvsDCA/Pt"), trk.pt(), trkIU.pt());
       histos.fill(HIST("Tracks/IUvsDCA/Eta"), trk.eta(), trkIU.eta());
       histos.fill(HIST("Tracks/IUvsDCA/Phi"), trk.phi(), trkIU.phi());
-      ;
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
@@ -178,7 +194,7 @@ struct qaEventTrack {
   template <bool IS_MC, typename C, typename T, typename P>
   void fillDerivedTable(const C& collision, const T& tracks, const P& particles, const aod::BCs&)
   {
-    if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+    if (!isSelectedCollision<false>(collision)) {
       return;
     }
     if (abs(collision.posZ()) > selectMaxVtxZ) {
@@ -491,11 +507,9 @@ template <bool IS_MC, typename C, typename T>
 void qaEventTrack::fillRecoHistograms(const C& collision, const T& tracks, const aod::FullTracks& tracksUnfiltered)
 {
   // fill reco collision related histograms
-  histos.fill(HIST("Events/recoEff"), 1);
-  if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only  sel8 is defined for run3
+  if (!isSelectedCollision<true>(collision)) {
     return;
   }
-  histos.fill(HIST("Events/recoEff"), 2);
 
   int nTracks = 0;
   for (const auto& track : tracks) {
