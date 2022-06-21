@@ -178,7 +178,7 @@ struct pidTPCTaskQA {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      const auto tracksInCollision = tracks.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.mcCollision().globalIndex());
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
 
       for (const auto& p : particlesInCollision) {
