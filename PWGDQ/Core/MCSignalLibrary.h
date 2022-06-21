@@ -284,7 +284,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromLMeeLFQ")) {
     MCProng prong(2, {11, 900}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     //prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
-    prong.SetDirectionOfGeneration(0, true);  // set direction to check generation in time (true) or back in time (false)
+    prong.SetSignalInTime(0, false);  // set direction to check generation in time (true) or back in time (false)
     signal = new MCSignal(name, "Electrons from LF meson + quarkonia decays", {prong}, {-1}); //pi0,eta,eta',rho,omega,phi,jpsi,psi2s mesons
     return signal;
   }

@@ -104,7 +104,7 @@ void MCProng::SetUseANDonSourceBits(int generation, bool option /*=true*/)
 }
 
 //________________________________________________________________________________________________________________
-void MCProng::SetDirectionOfGeneration(int generation, bool intime /*=false*/)
+void MCProng::SetSignalInTime(int generation, bool intime /*=false*/)
 {
   if (generation < 0 || generation >= fNGenerations) {
     return;
