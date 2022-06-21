@@ -258,7 +258,7 @@ DECLARE_SOA_TABLE(ReducedMuons, "AOD", "RTMUON", //!
 DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MatchScoreMCHMFT, fwdtrack::MFTTrackId, reducedmuon::MCHTrackId,
+                  fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId,
                   fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType);
 
 // Muon covariance, TODO: the rest of the matrix should be added when needed
