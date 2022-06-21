@@ -84,8 +84,25 @@ struct qaEventTrack {
 
   void init(InitContext const&);
 
+  // Function to select tracks
   template <bool IS_MC, typename T>
   bool isSelectedTrack(const T& track);
+
+  // Function to select collisions
+  template <bool doFill, typename T>
+  bool isSelectedCollision(const T& collision)
+  {
+    if constexpr (doFill) {
+      histos.fill(HIST("Events/recoEff"), 1);
+    }
+    if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return false;
+    }
+    if constexpr (doFill) {
+      histos.fill(HIST("Events/recoEff"), 2);
+    }
+    return true;
+  }
 
   // General function to fill data and MC histograms
   template <bool IS_MC, typename C, typename T>
@@ -101,14 +118,39 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
   // Process function for IU vs DCA track comparison
-  void processDataIU(aod::FullTracks const& tracksUnfiltered, aod::TracksIU const& tracksIU)
+  void processDataIU(CollisionTableData::iterator const& collision,
+                     aod::FullTracks const& tracksUnfiltered, aod::TracksIU const& tracksIU)
   {
+    if (!isSelectedCollision<false>(collision)) {
+      return;
+    }
+
     int trackIndex = 0;
-    for (const aod::FullTrack& trk : tracksUnfiltered) {
-      histos.fill(HIST("Tracks/IU/Pt"), trk.pt(), tracksIU.iteratorAt(trackIndex).pt());
-      histos.fill(HIST("Tracks/IU/Eta"), trk.eta(), tracksIU.iteratorAt(trackIndex).eta());
-      histos.fill(HIST("Tracks/IU/Phi"), trk.phi(), tracksIU.iteratorAt(trackIndex).phi());
-      trackIndex++;
+    for (const auto& trk : tracksUnfiltered) {
+      if (!isSelectedTrack<false>(trk)) {
+        continue;
+      }
+
+      const auto& trkIU = tracksIU.iteratorAt(trackIndex++);
+      histos.fill(HIST("Tracks/IU/Pt"), trkIU.pt());
+      histos.fill(HIST("Tracks/IU/Eta"), trkIU.pt());
+      histos.fill(HIST("Tracks/IU/Phi"), trkIU.phi());
+
+      histos.fill(HIST("Tracks/IU/alpha"), trkIU.alpha());
+      histos.fill(HIST("Tracks/IU/x"), trkIU.x());
+      histos.fill(HIST("Tracks/IU/y"), trkIU.y());
+      histos.fill(HIST("Tracks/IU/z"), trkIU.z());
+      histos.fill(HIST("Tracks/IU/signed1Pt"), trkIU.signed1Pt());
+      histos.fill(HIST("Tracks/IU/snp"), trkIU.snp());
+      histos.fill(HIST("Tracks/IU/tgl"), trkIU.tgl());
+
+      histos.fill(HIST("Tracks/IUdeltaDCA/Pt"), trkIU.pt() - trk.pt());
+      histos.fill(HIST("Tracks/IUdeltaDCA/Eta"), trkIU.eta() - trk.eta());
+      histos.fill(HIST("Tracks/IUdeltaDCA/Phi"), trkIU.phi() - trk.phi());
+
+      histos.fill(HIST("Tracks/IUvsDCA/Pt"), trk.pt(), trkIU.pt());
+      histos.fill(HIST("Tracks/IUvsDCA/Eta"), trk.eta(), trkIU.eta());
+      histos.fill(HIST("Tracks/IUvsDCA/Phi"), trk.phi(), trkIU.phi());
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
@@ -152,7 +194,7 @@ struct qaEventTrack {
   template <bool IS_MC, typename C, typename T, typename P>
   void fillDerivedTable(const C& collision, const T& tracks, const P& particles, const aod::BCs&)
   {
-    if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+    if (!isSelectedCollision<false>(collision)) {
       return;
     }
     if (abs(collision.posZ()) > selectMaxVtxZ) {
@@ -283,6 +325,13 @@ void qaEventTrack::init(InitContext const&)
   const AxisSpec axisVertexCov{100, -0.005, 0.005};
   const AxisSpec axisVertexPosReso{100, -0.5, 0.5};
   const AxisSpec axisTrackMultiplicity{binsTrackMultiplicity, "Track Multiplicity"};
+  const AxisSpec axisParX{200, -0.36, 0.36, "#it{x} [cm]"};
+  const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
+  const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
+  const AxisSpec axisParAlpha{36, -M_PI, M_PI, "#alpha [rad]"};
+  const AxisSpec axisParSigned1Pt{200, -8, 8, "#it{q}/#it{p}_{T}"};
+  const AxisSpec axisParSnp{11, -0.1, 0.1, "snp"};
+  const AxisSpec axisParTgl{200, -1., 1., "tgl"};
 
   const AxisSpec axisDeltaPt{100, -0.5, 0.5, "#it{p}_{T, rec} - #it{p}_{T, gen}"};
   const AxisSpec axisDeltaEta{100, -0.1, 0.1, "#eta_{rec} - #eta_{gen}"};
@@ -336,13 +385,13 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
   // track histograms
-  histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system;#it{x} [cm]", kTH1D, {{200, -0.36, 0.36}});
-  histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system;#it{y} [cm]", kTH1D, {{200, -0.5, 0.5}});
-  histos.add("Tracks/z", "track #it{z} position at dca in local coordinate system;#it{z} [cm]", kTH1D, {{200, -11., 11.}});
-  histos.add("Tracks/alpha", "rotation angle of local wrt. global coordinate system;#alpha [rad]", kTH1D, {{36, -M_PI, M_PI}});
-  histos.add("Tracks/signed1Pt", "track signed 1/#it{p}_{T};#it{q}/#it{p}_{T}", kTH1D, {{200, -8, 8}});
-  histos.add("Tracks/snp", "sinus of track momentum azimuthal angle;snp", kTH1D, {{11, -0.1, 0.1}});
-  histos.add("Tracks/tgl", "tangent of the track momentum dip angle;tgl;", kTH1D, {{200, -1., 1.}});
+  histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
+  histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
+  histos.add("Tracks/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
+  histos.add("Tracks/alpha", "rotation angle of local wrt. global coordinate system", kTH1D, {axisParAlpha});
+  histos.add("Tracks/signed1Pt", "track signed 1/#it{p}_{T}", kTH1D, {axisParSigned1Pt});
+  histos.add("Tracks/snp", "sinus of track momentum azimuthal angle", kTH1D, {axisParSnp});
+  histos.add("Tracks/tgl", "tangent of the track momentum dip angle", kTH1D, {axisParTgl});
   histos.add("Tracks/flags", "track flag;flag bit", kTH1D, {{64, -0.5, 63.5}});
   histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
   histos.add("Tracks/dcaZ", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH1D, {{200, -0.15, 0.15}});
@@ -372,15 +421,46 @@ void qaEventTrack::init(InitContext const&)
 
   // tracks vs tracks @ IU
   if (doprocessDataIU) {
-    auto histo = histos.add<TH2>("Tracks/IU/Pt", "IU vs PV: Pt", kTH2F, {axisPt, axisPt});
-    histo->GetXaxis()->SetTitle(Form("%s PV", histo->GetXaxis()->GetTitle()));
-    histo->GetYaxis()->SetTitle(Form("%s IU", histo->GetYaxis()->GetTitle()));
-    histo = histos.add<TH2>("Tracks/IU/Eta", "IU vs PV: Eta", kTH2F, {axisEta, axisEta});
-    histo->GetXaxis()->SetTitle(Form("%s PV", histo->GetXaxis()->GetTitle()));
-    histo->GetYaxis()->SetTitle(Form("%s IU", histo->GetYaxis()->GetTitle()));
-    histo = histos.add<TH2>("Tracks/IU/Phi", "IU vs PV: Phi", kTH2F, {axisPhi, axisPhi});
-    histo->GetXaxis()->SetTitle(Form("%s PV", histo->GetXaxis()->GetTitle()));
-    histo->GetYaxis()->SetTitle(Form("%s IU", histo->GetYaxis()->GetTitle()));
+    // Full distributions
+    auto h1 = histos.add<TH1>("Tracks/IU/Pt", "IU: Pt", kTH1F, {axisPt});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/Eta", "IU: Eta", kTH1F, {axisEta});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/Phi", "IU: Phi", kTH1F, {axisPhi});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+
+    h1 = histos.add<TH1>("Tracks/IU/x", "IU: x", kTH1F, {axisParX});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/y", "IU: y", kTH1F, {axisParY});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/z", "IU: z", kTH1F, {axisParZ});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/alpha", "rotation angle of local wrt. global coordinate system", kTH1F, {axisParAlpha});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/signed1Pt", "track signed 1/#it{p}_{T}", kTH1F, {axisParSigned1Pt});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/snp", "sinus of track momentum azimuthal angle", kTH1F, {axisParSnp});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IU/tgl", "tangent of the track momentum dip angle", kTH1F, {axisParTgl});
+    h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
+
+    // Deltas
+    h1 = histos.add<TH1>("Tracks/IUdeltaDCA/Pt", "IU - DCA: Pt", kTH1F, {axisPt});
+    h1->GetXaxis()->SetTitle(Form("%s IU - DCA", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUdeltaDCA/Eta", "IU - DCA: Eta", kTH1F, {axisEta});
+    h1->GetXaxis()->SetTitle(Form("%s IU - DCA", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUdeltaDCA/Phi", "IU - DCA: Phi", kTH1F, {axisPhi});
+    h1->GetXaxis()->SetTitle(Form("%s IU - DCA", h1->GetXaxis()->GetTitle()));
+    // Correlations
+    auto h2 = histos.add<TH2>("Tracks/IUvsDCA/Pt", "IU vs DCA: Pt", kTH2F, {axisPt, axisPt});
+    h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
+    h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
+    h2 = histos.add<TH2>("Tracks/IUvsDCA/Eta", "IU vs DCA: Eta", kTH2F, {axisEta, axisEta});
+    h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
+    h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
+    h2 = histos.add<TH2>("Tracks/IUvsDCA/Phi", "IU vs DCA: Phi", kTH2F, {axisPhi, axisPhi});
+    h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
+    h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
   }
 }
 
@@ -427,11 +507,9 @@ template <bool IS_MC, typename C, typename T>
 void qaEventTrack::fillRecoHistograms(const C& collision, const T& tracks, const aod::FullTracks& tracksUnfiltered)
 {
   // fill reco collision related histograms
-  histos.fill(HIST("Events/recoEff"), 1);
-  if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only  sel8 is defined for run3
+  if (!isSelectedCollision<true>(collision)) {
     return;
   }
-  histos.fill(HIST("Events/recoEff"), 2);
 
   int nTracks = 0;
   for (const auto& track : tracks) {
@@ -477,7 +555,7 @@ void qaEventTrack::fillRecoHistograms(const C& collision, const T& tracks, const
   histos.fill(HIST("Tracks/recoEff"), 2, tracks.size());
 
   // unfiltered track related histograms
-  for (const aod::FullTrack& trackUnfiltered : tracksUnfiltered) {
+  for (const auto& trackUnfiltered : tracksUnfiltered) {
     // fill ITS variables
     int itsNhits = 0;
     for (unsigned int i = 0; i < 7; i++) {
