@@ -95,6 +95,9 @@ struct MultiplicityCounter {
 
       if (fillResponse) {
         registry.add({"Tracks/Response", " ; N_{gen}; N_{rec}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
+        registry.add({"Events/EfficiencyMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+        registry.add({"Events/GeneratedMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+        registry.add({"Events/SplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
       }
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
@@ -294,6 +297,9 @@ struct MultiplicityCounter {
     }
     registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
     registry.fill(HIST("Events/Efficiency"), 1.);
+    if (fillResponse) {
+      registry.fill(HIST("Events/GeneratedMult"), nCharged);
+    }
 
     if (nCharged > 0) {
       registry.fill(HIST("Events/Efficiency"), 2.);
@@ -320,6 +326,14 @@ struct MultiplicityCounter {
     }
     if (fillResponse) {
       registry.fill(HIST("Tracks/Response"), nCharged, Nrec, mcCollision.posZ());
+      for (auto& collision : collisions) {
+        if (!useEvSel || collision.sel8()) {
+          registry.fill(HIST("Events/SplitMult"), nCharged);
+        }
+      }
+      if (atLeastOne) {
+        registry.fill(HIST("Events/EfficiencyMult"), nCharged);
+      }
     }
     if (collisions.size() == 0) {
       registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
