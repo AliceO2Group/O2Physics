@@ -93,19 +93,15 @@ struct TrackSkimmer {
     std::vector<int32_t> newEventIDs;
 
     if constexpr (static_cast<bool>(TUseMC)) {
-      const auto& mcParticlesRef = *mcParticles;
-      const auto& mcCollisionsRef = *mcCollisions;
-
-      newPartIDs.resize(mcParticlesRef.size(), -1);
-      newEventIDs.resize(mcCollisionsRef.size(), -1);
+      newPartIDs.resize(mcParticles->size(), -1);
+      newEventIDs.resize(mcCollisions->size(), -1);
       int32_t newPartID = 0;
       int32_t newEventID = 0;
       for (const auto& label : *mcFwdTrackLabels) {
         int32_t mcPartID = label.mcParticleId();
-        uint16_t mcMask = label.mcMask();
-        const auto& mcPart = mcParticlesRef.iteratorAt(mcPartID);
+        const auto& mcPart = mcParticles->iteratorAt(mcPartID);
         int32_t mcEventID = mcPart.mcCollisionId();
-        const auto& mcEvent = mcCollisionsRef.iteratorAt(mcEventID);
+        const auto& mcEvent = mcCollisions->iteratorAt(mcEventID);
         bool isSignal = mcEvent.generatorsID() == signalGenID;
         if (isSignal) {
           newPartIDs[mcPartID] = newPartID;
@@ -118,11 +114,11 @@ struct TrackSkimmer {
       }
 
       // storing MC particles
-      for (int32_t i = 0; i < mcParticlesRef.size(); i++) {
+      for (int32_t i = 0; i < mcParticles->size(); i++) {
         if (newPartIDs[i] == -1) {
           continue;
         }
-        const auto& mcPart = mcParticlesRef.iteratorAt(i);
+        const auto& mcPart = mcParticles->iteratorAt(i);
         int32_t mcEventID = mcPart.mcCollisionId();
         int32_t newEventID = newEventIDs[mcEventID];
         // collecting new mother IDs
@@ -130,7 +126,7 @@ struct TrackSkimmer {
         std::vector<int32_t> newMotherIDs;
         newMotherIDs.reserve(motherIDs.size());
         for (auto motherID : motherIDs) {
-          newMotherIDs.push_back(newPartIDs[i]);
+          newMotherIDs.push_back(newPartIDs[motherID]);
         }
         // collecting new daughter IDs
         const auto& daughterIDs = mcPart.daughtersIds();
@@ -144,11 +140,11 @@ struct TrackSkimmer {
       }
 
       // storing MC events
-      for (int32_t i = 0; i < mcCollisionsRef.size(); i++) {
+      for (int32_t i = 0; i < mcCollisions->size(); i++) {
         if (newEventIDs[i] == -1) {
           continue;
         }
-        const auto& mcEvent = mcCollisionsRef.iteratorAt(i);
+        const auto& mcEvent = mcCollisions->iteratorAt(i);
         skMCEvents(mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
                    mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
       }
@@ -182,7 +178,7 @@ struct TrackSkimmer {
       muonsExtra(tr.nClusters(), tr.pDca(), tr.rAtAbsorberEnd(), tr.chi2(), tr.chi2MatchMCHMID(),
                  tr.mchBitMap(), tr.midBitMap(), tr.midBoards());
       if constexpr (static_cast<bool>(TUseMC)) {
-        const auto& label = (*mcFwdTrackLabels).iteratorAt(trId);
+        const auto& label = mcFwdTrackLabels->iteratorAt(trId);
         int32_t mcPartID = label.mcParticleId();
         uint16_t mcMask = label.mcMask();
         int32_t newPartID = newPartIDs[mcPartID];

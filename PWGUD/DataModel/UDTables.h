@@ -144,14 +144,14 @@ using SkimmedMuonTrackLabel = SkimmedMuonTrackLabels::iterator;
 
 namespace eventcand
 {
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);                             //! run number
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);                              //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
-//
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);             //! sum of amplitudes on A side of FT0
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);             //! sum of amplitudes on C side of FT0
-///DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0, //!
-///                           [](uint32_t midBoards) -> int { return static_cast<int>(midBoards & 0xFF); });
-//
+// general information
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
+// FT0 information
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float); //! sum of amplitudes on A side of FT0
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
+// matched IDs
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedFwdTracks, matchedFwdTracks);       //! array of matched forward tracks
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedBarrelTracks, matchedBarrelTracks); //! array of matched barrel tracks
 } // namespace eventcand
@@ -167,7 +167,7 @@ DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
                   eventcand::TotalFT0AmplitudeC,
                   ft0::TimeA,
                   ft0::TimeC,
-                  ft0::TriggerMask);
+                  eventcand::TriggerMaskFT0);
 
 using EventCanditate = EventCandidates::iterator;
 
