@@ -18,7 +18,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct TrackSkimmer {
-  int32_t signalGenID{1};
+  int32_t fSignalGenID{1};
 
   Produces<o2::aod::SkimmedMuons> muonTracks;
   Produces<o2::aod::SkimmedMuonsExtra> muonsExtra;
@@ -80,45 +80,52 @@ struct TrackSkimmer {
     return true;
   }
 
-  template <uint32_t TTrackType, uint32_t TUseMC, typename TFwdTracks, typename TAmbFwdTracks, typename TBCs,
-            typename TMcFwdTrackLabels, typename TMcCollisions, typename TMcParticles>
-  void skimFwdTracks(TFwdTracks const& tracks,
-                     TAmbFwdTracks const& ambTracks,
-                     TBCs const& bcs,
-                     TMcFwdTrackLabels* mcFwdTrackLabels,
-                     TMcCollisions* mcCollisions,
-                     TMcParticles* mcParticles)
+  template <typename TMcTrackLabels, typename TMcCollisions, typename TMcParticles, typename TBCs>
+  void skimMCInfo(TMcTrackLabels const& mcTrackLabels,
+                  TMcCollisions const& mcCollisions,
+                  TMcParticles const& mcParticles,
+                  TBCs const& bcs,
+                  const std::vector<bool>& passedTracks)
   {
-    std::vector<int32_t> newPartIDs;
-    std::vector<int32_t> newEventIDs;
+      std::map<int32_t, int32_t> newPartIDs;
+      std::vector<int32_t> newEventIDs;
 
-    if constexpr (static_cast<bool>(TUseMC)) {
-      newPartIDs.resize(mcParticles->size(), -1);
-      newEventIDs.resize(mcCollisions->size(), -1);
+      newEventIDs.resize(mcCollisions.size(), -1);
       int32_t newPartID = 0;
       int32_t newEventID = 0;
-      for (const auto& label : *mcFwdTrackLabels) {
-        int32_t mcPartID = label.mcParticleId();
-        const auto& mcPart = mcParticles->iteratorAt(mcPartID);
+      int32_t nMCParticles = mcParticles.size();
+      for (int32_t mcPartID = 0; mcPartID < nMCParticles; mcPartID++) {
+        const auto& mcPart = mcParticles.iteratorAt(mcPartID);
         int32_t mcEventID = mcPart.mcCollisionId();
-        const auto& mcEvent = mcCollisions->iteratorAt(mcEventID);
-        bool isSignal = mcEvent.generatorsID() == signalGenID;
-        if (isSignal) {
-          newPartIDs[mcPartID] = newPartID;
-          newPartID++;
-          if (newEventIDs[mcEventID] == -1) {
-            newEventIDs[mcEventID] = newEventID;
-            newEventID++;
-          }
+        const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
+        bool isSignal = mcEvent.generatorsID() == fSignalGenID;
+        if (!isSignal || !mcPart.producedByGenerator()) {
+          continue;
+        }
+        newPartIDs[mcPartID] = newPartID;
+        newPartID++;
+        if (newEventIDs[mcEventID] == -1) {
+          newEventIDs[mcEventID] = newEventID;
+          newEventID++;
         }
       }
 
-      // storing MC particles
-      for (int32_t i = 0; i < mcParticles->size(); i++) {
-        if (newPartIDs[i] == -1) {
+      int32_t nMCLabels = mcTrackLabels.size();
+      for (int32_t i = 0; i < nMCLabels; i++) {
+        if (!passedTracks[i]) {
           continue;
         }
-        const auto& mcPart = mcParticles->iteratorAt(i);
+        const auto& label = mcTrackLabels.iteratorAt(i);
+        uint16_t mcMask = label.mcMask();
+        auto it = newPartIDs.find(label.mcParticleId());
+        int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
+        muonLabels(newPartID, mcMask);
+      }
+
+      // storing MC particles
+      for (const auto& item : newPartIDs) {
+        int32_t mcPartID = item.first;
+        const auto& mcPart = mcParticles.iteratorAt(mcPartID);
         int32_t mcEventID = mcPart.mcCollisionId();
         int32_t newEventID = newEventIDs[mcEventID];
         // collecting new mother IDs
@@ -126,32 +133,55 @@ struct TrackSkimmer {
         std::vector<int32_t> newMotherIDs;
         newMotherIDs.reserve(motherIDs.size());
         for (auto motherID : motherIDs) {
-          newMotherIDs.push_back(newPartIDs[motherID]);
+          if (motherID >= nMCParticles) {
+            continue;
+          }
+          auto it = newPartIDs.find(motherID);
+          if (it != newPartIDs.end()) {
+            newMotherIDs.push_back(it->second);
+          }
         }
         // collecting new daughter IDs
         const auto& daughterIDs = mcPart.daughtersIds();
         int32_t newDaughterIDs[2] = {-1, -1};
         if (daughterIDs.size() > 0) {
-          newDaughterIDs[0] = daughterIDs.front();
-          newDaughterIDs[1] = daughterIDs.back();
+          int32_t firstDaughter = daughterIDs.front();
+          int32_t lastDaughter = daughterIDs.back();
+          if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
+            continue;
+          }
+          auto itFirst = newPartIDs.find(firstDaughter);
+          auto itLast = newPartIDs.find(lastDaughter);
+          if (itFirst != newPartIDs.end() && itLast != newPartIDs.end()) {
+            newDaughterIDs[0] = newPartIDs.at(daughterIDs.front());
+            newDaughterIDs[1] = newPartIDs.at(daughterIDs.back());
+          }
         }
         skMCParticles(newEventID, mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
                       mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
       }
 
+      newPartIDs.clear();
+
       // storing MC events
-      for (int32_t i = 0; i < mcCollisions->size(); i++) {
+      for (int32_t i = 0; i < mcCollisions.size(); i++) {
         if (newEventIDs[i] == -1) {
           continue;
         }
-        const auto& mcEvent = mcCollisions->iteratorAt(i);
-        skMCEvents(mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
+        const auto& mcEvent = mcCollisions.iteratorAt(i);
+        skMCEvents(mcEvent.bc().globalBC(), mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
                    mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
       }
 
       newEventIDs.clear();
-    }
+  }
 
+  template <uint32_t TTrackType, typename TFwdTracks, typename TAmbFwdTracks, typename TBCs>
+  void skimFwdTracks(TFwdTracks const& tracks,
+                     TAmbFwdTracks const& ambTracks,
+                     TBCs const& bcs,
+                     std::vector<bool>& passedTracks)
+  {
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.fwdtrackId();
       const auto& tr = tracks.iteratorAt(trId);
@@ -177,16 +207,8 @@ struct TrackSkimmer {
                tr.c1Pt21Pt2());
       muonsExtra(tr.nClusters(), tr.pDca(), tr.rAtAbsorberEnd(), tr.chi2(), tr.chi2MatchMCHMID(),
                  tr.mchBitMap(), tr.midBitMap(), tr.midBoards());
-      if constexpr (static_cast<bool>(TUseMC)) {
-        const auto& label = mcFwdTrackLabels->iteratorAt(trId);
-        int32_t mcPartID = label.mcParticleId();
-        uint16_t mcMask = label.mcMask();
-        int32_t newPartID = newPartIDs[mcPartID];
-        muonLabels(newPartID, mcMask);
-      }
+      passedTracks[trId] = true;
     }
-
-    newPartIDs.clear();
   }
 
   void processFwdMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& tracks,
@@ -198,8 +220,10 @@ struct TrackSkimmer {
   {
     using namespace o2::aod::fwdtrack;
     const uint32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
-    const uint32_t useMC = 1u;
-    skimFwdTracks<trType, useMC>(tracks, ambTracks, bcs, &mcFwdTrackLabels, &mcCollisions, &mcParticles);
+    std::vector<bool> passedTracks(mcFwdTrackLabels.size(), false);
+    skimFwdTracks<trType>(tracks, ambTracks, bcs, passedTracks);
+    skimMCInfo(mcFwdTrackLabels, mcCollisions, mcParticles, bcs, passedTracks);
+    passedTracks.clear();
   }
 
   void processFwd(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& tracks,
@@ -208,9 +232,8 @@ struct TrackSkimmer {
   {
     using namespace o2::aod::fwdtrack;
     const uint32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
-    const uint32_t useMC = 0u;
-    skimFwdTracks<trType, useMC>(tracks, ambTracks, bcs,
-                                 (o2::aod::McFwdTrackLabels*)nullptr, (o2::aod::McCollisions*)nullptr, (o2::aod::McParticles_001*)nullptr);
+    std::vector<bool> dummyVector;
+    skimFwdTracks<trType>(tracks, ambTracks, bcs, dummyVector);
   }
 
   PROCESS_SWITCH(TrackSkimmer, processFwdMC, "Produce only muon tracks with MC information", false);

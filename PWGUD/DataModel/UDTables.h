@@ -89,8 +89,14 @@ using SkimmedMuon = SkimmedMuons::iterator;
 using SkimmedMuonExtra = SkimmedMuonsExtra::iterator;
 using SkimmedMuonCov = SkimmedMuonsCov::iterator;
 
+namespace skimmcevent
+{
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+}
+
 DECLARE_SOA_TABLE(SkimmedMCEvents, "AOD", "SKMCEVENTS",
                   o2::soa::Index<>,
+                  skimmcevent::GlobalBC,
                   mccollision::GeneratorsID,
                   mccollision::PosX,
                   mccollision::PosY,
@@ -148,9 +154,13 @@ namespace eventcand
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
 // FT0 information
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float); //! sum of amplitudes on A side of FT0
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(TotalAmplitudeAFT0, totalAmplitudeAFT0, float); //! sum of amplitudes on A side of FT0
+DECLARE_SOA_COLUMN(TotalAmplitudeCFT0, totalAmplitudeCFT0, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(TimeAFT0, timeAFT0, float);                     //! FT0A average time
+DECLARE_SOA_COLUMN(TimeCFT0, timeCFT0, float);                     //! FT0C average time
 DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
+DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0, //! has FT0 signal in the same BC
+                           [](float TimeAFT0, float TimeCFT0) -> bool { return TimeAFT0 > -999. && TimeCFT0 > -999.; });
 // matched IDs
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedFwdTracks, matchedFwdTracks);       //! array of matched forward tracks
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedBarrelTracks, matchedBarrelTracks); //! array of matched barrel tracks
@@ -163,11 +173,12 @@ DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
                   eventcand::MatchedFwdTracksIds,
                   eventcand::MatchedBarrelTracksIds,
                   //
-                  eventcand::TotalFT0AmplitudeA,
-                  eventcand::TotalFT0AmplitudeC,
-                  ft0::TimeA,
-                  ft0::TimeC,
-                  eventcand::TriggerMaskFT0);
+                  eventcand::TotalAmplitudeAFT0,
+                  eventcand::TotalAmplitudeCFT0,
+                  eventcand::TimeAFT0,
+                  eventcand::TimeCFT0,
+                  eventcand::TriggerMaskFT0,
+                  eventcand::HasFT0<eventcand::TimeAFT0, eventcand::TimeCFT0>);
 
 using EventCanditate = EventCandidates::iterator;
 
