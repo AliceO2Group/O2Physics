@@ -40,20 +40,7 @@ AxisSpec PtAxis = {2401, -0.005, 24.005};
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
-namespace o2::aod
-{
-namespace idx
-{
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcparticle);
-DECLARE_SOA_INDEX_COLUMN(LabeledTrack, track);
-} // namespace idx
-
-DECLARE_SOA_INDEX_TABLE_USER(Particles2Tracks, McParticles, "P2T", idx::McParticleId, idx::LabeledTrackId);
-} // namespace o2::aod
-
-static constexpr float phi[1][2] = {{4.0, 5.0}};
-
-struct PseudorapidityDensity {
+struct MultiplicityCounter {
   Service<TDatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
@@ -65,8 +52,7 @@ struct PseudorapidityDensity {
   Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
   Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
 
-  Configurable<bool> usePhiCut{"usePhiCut", false, "apply azimuthal cuts"};
-  Configurable<Array2D<float>> exclusionPhi{"exclusionPhi", {&phi[0][0], 1, 2}, "Azimuthal regions to exclude"};
+  Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
 
   HistogramRegistry registry{
     "registry",
@@ -102,12 +88,14 @@ struct PseudorapidityDensity {
       registry.add({"Tracks/EtaZvtxGen_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"Tracks/EtaZvtxGen_gt0t", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       registry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
-      registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
 
       registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
       registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
+
+      if (fillResponse) {
+        registry.add({"Tracks/Response", " ; N_{gen}; N_{rec}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
+      }
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
       x = heff->GetXaxis();
@@ -117,10 +105,20 @@ struct PseudorapidityDensity {
       x->SetBinLabel(4, "Selected");
       x->SetBinLabel(5, "Selected INEL>0");
     }
+
+    if (doprocessTrackEfficiency) {
+      registry.add({"Tracks/Control/PtGen", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiency", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencySecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+    }
+    if (doprocessTrackEfficiencyIndexed) {
+      registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+    }
   }
 
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-  void processTagging(FullBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  void processEventStat(FullBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
@@ -147,7 +145,7 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity, processTagging, "Collect event sample stats", false);
+  PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
   expressions::Filter ITStracks = (aod::track::detectorMap & (uint8_t)o2::aod::track::ITS) != (uint8_t)0;
   expressions::Filter DCAFilterZ = (useDCAZ.node() == false) || (nabs(aod::track::dcaZ) <= maxDCAZ);
@@ -157,7 +155,7 @@ struct PseudorapidityDensity {
   using FiTracks = soa::Filtered<ExTracks>;
   Partition<FiTracks> sample = nabs(aod::track::eta) < estimatorEta;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, FiTracks const& tracks)
+  void processCounting(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, FiTracks const& tracks)
   {
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
@@ -170,18 +168,6 @@ struct PseudorapidityDensity {
       registry.fill(HIST("Events/NtrkZvtx"), perCollisionSample.size(), z);
 
       for (auto& track : tracks) {
-        if (usePhiCut) {
-          auto exclude = false;
-          for (auto i = 0u; i < exclusionPhi->rows; ++i) {
-            if (track.phi() >= exclusionPhi->operator()(i, 0) && track.phi() <= exclusionPhi->operator()(i, 1)) {
-              exclude = true;
-              break;
-            }
-          }
-          if (exclude) {
-            continue;
-          }
-        }
         registry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
         registry.fill(HIST("Tracks/PhiEta"), track.phi(), track.eta());
         registry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
@@ -196,6 +182,8 @@ struct PseudorapidityDensity {
     }
   }
 
+  PROCESS_SWITCH(MultiplicityCounter, processCounting, "Count tracks", false);
+
   using Particles = soa::Filtered<aod::McParticles>;
   using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TracksDCA>;
   using Particle = Particles::iterator;
@@ -205,10 +193,10 @@ struct PseudorapidityDensity {
   Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) &&
                                      (nabs(aod::mcparticle::eta) < estimatorEta);
 
-  void processTrackEfficiency(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                              aod::McCollisions const&,
-                              ParticlesI const&,
-                              soa::Filtered<LabeledTracksEx> const& tracks)
+  void processTrackEfficiencyIndexed(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+                                     aod::McCollisions const&,
+                                     ParticlesI const&,
+                                     soa::Filtered<LabeledTracksEx> const& tracks)
   {
     for (auto& collision : collisions) {
       if (useEvSel && !collision.sel8()) {
@@ -230,18 +218,64 @@ struct PseudorapidityDensity {
         if (std::abs(charge) < 3.) {
           continue;
         }
-        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+        registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
         if (particle.has_tracks()) {
           for (auto& track : particle.tracks_as<soa::Filtered<LabeledTracksEx>>()) {
             if (std::abs(track.eta()) < estimatorEta) {
-              registry.fill(HIST("Tracks/Control/PtEfficiency"), particle.pt());
+              registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
             }
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(PseudorapidityDensity, processTrackEfficiency, "Calculate tracking efficiency vs pt (indexed)", false);
+
+  PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
+
+  Partition<soa::Filtered<LabeledTracksEx>> lsample = nabs(aod::track::eta) < estimatorEta;
+  void processTrackEfficiency(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+                              aod::McCollisions const&,
+                              Particles const& mcParticles,
+                              soa::Filtered<LabeledTracksEx> const&)
+  {
+    for (auto& collision : collisions) {
+      if (useEvSel && !collision.sel8()) {
+        continue;
+      }
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      auto mcCollision = collision.mcCollision();
+      auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+      auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex());
+      tracks.bindExternalIndices(&mcParticles);
+
+      for (auto& track : tracks) {
+        if (track.has_mcParticle()) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), track.mcParticle_as<Particles>().pt());
+        } else {
+          registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), track.pt());
+        }
+      }
+
+      for (auto& particle : particles) {
+        if (!particle.producedByGenerator()) {
+          continue;
+        }
+        auto charge = 0.;
+        auto p = pdg->GetParticle(particle.pdgCode());
+        if (p != nullptr) {
+          charge = p->Charge();
+        }
+        if (std::abs(charge) < 3.) {
+          continue;
+        }
+        registry.fill(HIST("Tracks/Control/PtGen"), particle.pt());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
 
   void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, FiTracks const& /*tracks*/)
   {
@@ -267,12 +301,16 @@ struct PseudorapidityDensity {
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
+
+    auto Nrec = 0;
+
     for (auto& collision : collisions) {
       registry.fill(HIST("Events/Efficiency"), 3.);
       if (!useEvSel || collision.sel8()) {
         atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
         registry.fill(HIST("Events/Efficiency"), 4.);
+        Nrec += perCollisionSample.size();
         if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;
           registry.fill(HIST("Events/Efficiency"), 5.);
@@ -280,22 +318,13 @@ struct PseudorapidityDensity {
         registry.fill(HIST("Events/NtrkZvtxGen"), perCollisionSample.size(), collision.posZ());
       }
     }
+    if (fillResponse) {
+      registry.fill(HIST("Tracks/Response"), nCharged, Nrec, mcCollision.posZ());
+    }
     if (collisions.size() == 0) {
       registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
     }
     for (auto& particle : particles) {
-      if (usePhiCut) {
-        auto exclude = false;
-        for (auto i = 0u; i < exclusionPhi->rows; ++i) {
-          if (particle.phi() >= exclusionPhi->operator()(i, 0) && particle.phi() <= exclusionPhi->operator()(i, 1)) {
-            exclude = true;
-            break;
-          }
-        }
-        if (exclude) {
-          continue;
-        }
-      }
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0.;
       if (p != nullptr) {
@@ -319,11 +348,11 @@ struct PseudorapidityDensity {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensity, processGen, "Process generator-level info", false);
+  PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
 };
 
 WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensity>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MultiplicityCounter>(cfgc)};
 }
