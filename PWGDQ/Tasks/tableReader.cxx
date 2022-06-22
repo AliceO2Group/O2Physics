@@ -69,6 +69,7 @@ using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExt
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
+using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
@@ -83,7 +84,7 @@ using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuo
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
-constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
+constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 // constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
@@ -779,15 +780,15 @@ struct AnalysisSameEventPairing {
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::FillEvent<gkEventFillMapWithQvector>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMapWithQvector, gkTrackFillMap>(event, tracks, tracks);
+    VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks);
   }
   void processVnJpsiToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::FillEvent<gkEventFillMapWithQvector>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithQvector, gkMuonFillMap>(event, muons, muons);
+    VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCovQvector, gkMuonFillMap>(event, muons, muons);
   }
   void processElectronMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {

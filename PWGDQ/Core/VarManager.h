@@ -1312,22 +1312,17 @@ void VarManager::FillPairVn(T const& t1, T const& t2, float* values)
 
   // TODO: provide different computations for Res and vn
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
-
   double Psi2A = (1.0 / 2.0) * TMath::ATan(values[kQ2Y0A] / values[kQ2X0A]);
   double Psi3A = (1.0 / 3.0) * TMath::ATan(values[kQ3Y0A] / values[kQ3X0A]);
   double Psi2B = (1.0 / 2.0) * TMath::ATan(values[kQ2Y0B] / values[kQ2X0B]);
   double Psi3B = (1.0 / 3.0) * TMath::ATan(values[kQ3Y0B] / values[kQ3X0B]);
   double Psi2C = (1.0 / 2.0) * TMath::ATan(values[kQ2Y0C] / values[kQ2X0C]);
   double Psi3C = (1.0 / 3.0) * TMath::ATan(values[kQ3Y0C] / values[kQ3X0C]);
-  double Resolution2 = TMath::Cos(2 * (Psi2B - Psi2C));
-  double Resolution3 = TMath::Cos(3 * (Psi3B - Psi3C));
 
-  if (eventHasQvector && (values[kQ2X0B] * values[kQ2X0C] != 0)) {
-    values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
-    values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
-    values[kR2EP] = Resolution2;
-    values[kR3EP] = Resolution3;
-  }
+  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
+  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
+  values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
 
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton Vn could be accessible after dividing this product with the Res factor
