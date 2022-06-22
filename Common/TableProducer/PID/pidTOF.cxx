@@ -114,6 +114,8 @@ struct tofPid {
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  // Define slice per collision
+  Preslice<Trks> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
   void process(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
@@ -181,7 +183,7 @@ struct tofPid {
         response.LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(parametrizationPath, timestamp));
       }
 
-      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, lastCollisionId);
+      const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
       for (auto const& trkInColl : tracksInCollision) { // Loop on tracks
         // Check and fill enabled tables
         auto makeTable = [&trkInColl, this](const Configurable<int>& flag, auto& table, const auto& responsePID) {
