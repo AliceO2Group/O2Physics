@@ -13,3 +13,13 @@ o2physics_add_dpl_workflow(dgcand-producer
                     SOURCES DGCandProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(track-skimmer
+        SOURCES trackSkimmer.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+        COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(candidate-creator
+        SOURCES candidateCreator.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+        COMPONENT_NAME Analysis)

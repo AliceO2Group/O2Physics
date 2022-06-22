@@ -38,3 +38,13 @@ o2physics_add_dpl_workflow(dgcand-analyzer
                            SOURCES DGCandAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fwd-dimuon
+        SOURCES fwdDimuonAnalysis.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+        COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(track-skimmer-qa
+        SOURCES trackSkimmerQA.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+        COMPONENT_NAME Analysis)
