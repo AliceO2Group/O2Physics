@@ -323,7 +323,7 @@ struct CentralityTable {
             }
             estimator.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from %s for run %d corrupted", estimator.name.c_str(), bc.runNumber());
+            LOGF(error, "Calibration information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
           }
         };
         if (estFV0A == 1) {
@@ -338,9 +338,7 @@ struct CentralityTable {
         if (estNTPV == 1) {
           getccdb(NTPVInfo, genName);
         }
-        if (FV0AInfo.mCalibrationStored or FT0MInfo.mCalibrationStored or FDDMInfo.mCalibrationStored or NTPVInfo.mCalibrationStored) {
-          mRunNumber = bc.runNumber();
-        }
+        mRunNumber = bc.runNumber();
       } else {
         LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
