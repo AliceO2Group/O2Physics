@@ -129,10 +129,12 @@ struct LfTreeCreatorNuclei {
       if constexpr (isMC) { // Filling MC reco information
         if (track.has_mcParticle()) {
           const auto& particle = track.mcParticle();
-          tableCandidateMC(particle.pdgCode());
+          tableCandidateMC(particle.pdgCode(),
+                           particle.isPhysicalPrimary(),
+                           particle.producedByGenerator());
           continue;
         }
-        tableCandidateMC(0);
+        tableCandidateMC(0, -1, -1);
       }
     }
   }
@@ -148,6 +150,7 @@ struct LfTreeCreatorNuclei {
       fillForOneEvent<false>(collision, tracksInCollision);
     }
   }
+
   PROCESS_SWITCH(LfTreeCreatorNuclei, processData, "process Data", true);
 
   void processMC(soa::Filtered<soa::Join<EventCandidates, aod::McCollisionLabels>> const& collisions,
@@ -156,12 +159,13 @@ struct LfTreeCreatorNuclei {
   {
     for (const auto& collision : collisions) {
       if (useEvsel && !collision.sel8()) {
-        return;
+        continue;
       }
       const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
       fillForOneEvent<true>(collision, tracksInCollision);
     }
   }
+
   PROCESS_SWITCH(LfTreeCreatorNuclei, processMC, "process MC", false);
 };
 

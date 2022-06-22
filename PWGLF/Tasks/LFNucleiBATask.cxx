@@ -46,6 +46,10 @@ struct LFNucleiBATask {
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocessData == true && doprocessMCReco == true) {
+      LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
+    }
+
     histos.add<TH1>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{3000, -15, 15}});
     histos.add<TH1>("event/h1CentV0M", "V0M; Multiplicity; counts", HistType::kTH1F, {{27000, 0, 27000}});
 
@@ -96,12 +100,39 @@ struct LFNucleiBATask {
     AxisSpec ptAxis = {2000, 0.f, 20.f, "#it{p}_{T} (GeV/#it{c})"};
     histos.add("spectraGen/histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{2000, -20.f, 20.f, "Vertex Z (cm)"}});
     histos.add("spectraGen/histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtPionPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtPionSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+
     histos.add("spectraGen/histGenPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtKaonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtKaonSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
+
     histos.add("spectraGen/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+
     histos.add("spectraGen/histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtDPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtDSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtD", "generated particles", HistType::kTH1F, {ptAxis});
+
     histos.add("spectraGen/histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiDPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiDSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
+
     histos.add("spectraGen/histGenPtHe", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtHePrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtHeSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtHe", "generated particles", HistType::kTH1F, {ptAxis});
+
     histos.add("spectraGen/histGenPtantiHe", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiHePrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiHeSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtantiHe", "generated particles", HistType::kTH1F, {ptAxis});
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
@@ -185,6 +216,9 @@ struct LFNucleiBATask {
       }
       if constexpr (IsMC) {
         track.pdgCode();
+        track.isPhysicalPrimary();
+        track.producedByGenerator();
+        //std::cout<<"track PDG================>"<<track.pdgCode()<<std::endl;
       }
     }
   }
@@ -218,32 +252,70 @@ struct LFNucleiBATask {
         continue;
       }
 
+      bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
+      bool isProdByGen = mcParticleGen.producedByGenerator();
       if (std::abs(mcParticleGen.pdgCode()) == PDGPion) {
         histos.fill(HIST("spectraGen/histGenPtPion"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtPionPrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtPionSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtPion"), mcParticleGen.pt());
       }
-
       if (std::abs(mcParticleGen.pdgCode()) == PDGKaon) {
         histos.fill(HIST("spectraGen/histGenPtKaon"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtKaonPrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtKaonSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtKaon"), mcParticleGen.pt());
       }
-
       if (std::abs(mcParticleGen.pdgCode()) == PDGProton) {
         histos.fill(HIST("spectraGen/histGenPtProton"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtProtonPrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtProtonSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtProton"), mcParticleGen.pt());
       }
-
       if (mcParticleGen.pdgCode() == PDGDeuteron) {
         histos.fill(HIST("spectraGen/histGenPtD"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtDPrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtDSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtD"), mcParticleGen.pt());
       }
-
       if (mcParticleGen.pdgCode() == -PDGDeuteron) {
         histos.fill(HIST("spectraGen/histGenPtantiD"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtantiDPrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtantiDSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtantiD"), mcParticleGen.pt());
       }
-
       if (mcParticleGen.pdgCode() == PDGHelium) {
         histos.fill(HIST("spectraGen/histGenPtHe"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtHePrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtHeSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtHe"), mcParticleGen.pt());
       }
-
       if (mcParticleGen.pdgCode() == -PDGHelium) {
         histos.fill(HIST("spectraGen/histGenPtantiHe"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtantiHePrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtantiHeSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtantiHe"), mcParticleGen.pt());
       }
     }
   } // Close processMCGen
