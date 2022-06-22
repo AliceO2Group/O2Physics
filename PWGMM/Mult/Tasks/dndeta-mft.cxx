@@ -68,7 +68,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}});
       registry.add({"TracksEtaZvtxGen_t", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {18, -4.6, -1.}}}});
-      registry.add({"TracksToPartPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});                       //
+      registry.add({"TracksToPartPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}}); //
       registry.add({"TracksPtEtaGen", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});
       registry.add({"TracksPtEtaGen_t", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});
       registry.add({"EventEfficiency", "; status; events", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
@@ -161,7 +161,6 @@ struct PseudorapidityDensityMFT {
     }
     registry.fill(HIST("EventsNtrkZvtxGen_t"), nCharged, mcCollision.posZ());
 
-
     bool atLeastOne = false;
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
@@ -197,28 +196,21 @@ struct PseudorapidityDensityMFT {
       }
       registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
       registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
-
     }
-
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGen, "Process generator-level info", false);
 
-
   void processGenPt(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
     //In the MFT the measurement of pT is not precise, so we access it by using the particle's pT instead
-    if (!useEvSel || (useEvSel && collision.sel8()))
-    {
-      for (auto& track : tracks)
-      {
-        if (!track.has_mcParticle())
-        {
+    if (!useEvSel || (useEvSel && collision.sel8())) {
+      for (auto& track : tracks) {
+        if (!track.has_mcParticle()) {
           continue;
         }
         auto particle = track.mcParticle();
-        if (!particle.isPhysicalPrimary())
-        {
+        if (!particle.isPhysicalPrimary()) {
           continue;
         }
         registry.fill(HIST("TracksToPartPtEta"), particle.pt(), particle.eta());
