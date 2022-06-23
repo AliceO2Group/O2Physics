@@ -83,10 +83,10 @@ struct TaskHfCorrelations {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  //ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, 
-                                                        47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1}, 
-                                                        "multiplicity axis for histograms"};
+  // ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, //
+                                                         47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1},
+                                    "multiplicity axis for histograms"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
@@ -96,7 +96,7 @@ struct TaskHfCorrelations {
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
-  //using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>; //  example for usage of dynamic columns
+  // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>; //  example for usage of dynamic columns
   using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
 
   //  Charged track filters
@@ -184,9 +184,9 @@ struct TaskHfCorrelations {
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
                                       {axisVertex, "z-vtx (cm)"}};
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
-                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
-                                      {axisVertexEfficiency, "z-vtx (cm)"}};
-    std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};                                    
+                                     {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                     {axisVertexEfficiency, "z-vtx (cm)"}};
+    std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
     sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
@@ -208,8 +208,7 @@ struct TaskHfCorrelations {
       if (!collision.sel7()) {
         return false;
       }
-    }
-    else {
+    } else {
       //  Run 3: selection
       if (!collision.sel8()) {
         return false;
@@ -366,14 +365,14 @@ struct TaskHfCorrelations {
   //    process same event correlations
   // =====================================
   void processSameRun3(aodCollisions::iterator const& collision,
-                   aodTracks const& tracks,
-                   aod::MFTTracks const& mfttracks,
-                   hfCandidates const& candidates)
+                       aodTracks const& tracks,
+                       aod::MFTTracks const& mfttracks,
+                       hfCandidates const& candidates)
   {
-    //printf("Same: Collision global index: %ld \n", collision.globalIndex());
-    //printf("Same: Collision vz: %f \n", collision.posZ());
-    //printf("Same: Collision TPC mult: %d \n", collision.multTPC());
-    //printf("Same: Tracks size: %ld \n", tracks.size());
+    // printf("Same: Collision global index: %ld \n", collision.globalIndex());
+    // printf("Same: Collision vz: %f \n", collision.posZ());
+    // printf("Same: Collision TPC mult: %d \n", collision.multTPC());
+    // printf("Same: Tracks size: %ld \n", tracks.size());
 
     registry.fill(HIST("eventCounter"), 1);
     if (isCollisionSelected(collision) == false) {
@@ -382,7 +381,7 @@ struct TaskHfCorrelations {
     registry.fill(HIST("eventCounter"), 2);
 
     const auto multiplicity = tracks.size();
-    //const auto multiplicity = collision.multTPC(); //  multV0M ?
+    // const auto multiplicity = collision.multTPC(); //  multV0M ?
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
@@ -411,13 +410,13 @@ struct TaskHfCorrelations {
   //    process same event correlations
   // =====================================
   void processSameRun2(aodCollisions::iterator const& collision,
-                      aodTracks const& tracks,
-                      hfCandidates const& candidates)
+                       aodTracks const& tracks,
+                       hfCandidates const& candidates)
   {
-    //printf("Same: Collision global index: %ld \n", collision.globalIndex());
-    //printf("Same: Collision vz: %f \n", collision.posZ());
-    //printf("Same: Collision TPC mult: %d \n", collision.multTPC());
-    //printf("Same: Tracks size: %ld \n", tracks.size());
+    // printf("Same: Collision global index: %ld \n", collision.globalIndex());
+    // printf("Same: Collision vz: %f \n", collision.posZ());
+    // printf("Same: Collision TPC mult: %d \n", collision.multTPC());
+    // printf("Same: Tracks size: %ld \n", tracks.size());
 
     registry.fill(HIST("eventCounter"), 1);
     if (isCollisionSelected(collision) == false) {
