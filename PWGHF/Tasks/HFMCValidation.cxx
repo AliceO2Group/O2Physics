@@ -225,22 +225,24 @@ struct ValidationGenLevel {
 struct ValidationRecLevel {
 
   static const int nCharmHadrons = 7;
-  std::array<std::shared_ptr<TH1>, nCharmHadrons> histPt, histPx, histPy, histPz, histSecondaryVertexX, histSecondaryVertexY, histSecondaryVertexZ, histDecayLength;
+  std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
+  std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
 
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
-      histPt[iHad] = registry.add<TH1>(Form("histPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histPx[iHad] = registry.add<TH1>(Form("histPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histPy[iHad] = registry.add<TH1>(Form("histPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histPz[iHad] = registry.add<TH1>(Form("histPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histSecondaryVertexX[iHad] = registry.add<TH1>(Form("histSecondaryVertexX%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
-      histSecondaryVertexY[iHad] = registry.add<TH1>(Form("histSecondaryVertexY%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
-      histSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
-      histDecayLength[iHad] = registry.add<TH1>(Form("histDecayLength%s", particleNames[iHad].data()), Form("Pz difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
+      histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
+      histDeltaPx[iHad] = registry.add<TH1>(Form("histDeltaPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
+      histDeltaPy[iHad] = registry.add<TH1>(Form("histDeltaPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
+      histDeltaPz[iHad] = registry.add<TH1>(Form("histDeltaPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
+      histDeltaSecondaryVertexX[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexX%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
+      histDeltaSecondaryVertexY[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexY%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
+      histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
+      histDeltaDecayLength[iHad] = registry.add<TH1>(Form("histDeltaDecayLength%s", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
       for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
+        histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("histPtReco%s%s", originNames[iOrigin].data(), particleNames[iHad].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, 0., 50.}});
         for (auto iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
           histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histPtDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{50, 0., 25.}});
           histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histEtaDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
@@ -283,26 +285,27 @@ struct ValidationRecLevel {
           indexParticle = RecoDecay::getMother(cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
-        histPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
-        histPx[whichHad]->Fill(cand2Prong.px() - mother.px());
-        histPy[whichHad]->Fill(cand2Prong.py() - mother.py());
-        histPz[whichHad]->Fill(cand2Prong.pz() - mother.pz());
+        histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
+        histDeltaPx[whichHad]->Fill(cand2Prong.px() - mother.px());
+        histDeltaPy[whichHad]->Fill(cand2Prong.py() - mother.py());
+        histDeltaPz[whichHad]->Fill(cand2Prong.pz() - mother.pz());
         //Compare Secondary vertex and decay length with MC
         auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
         auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
 
-        histSecondaryVertexX[whichHad]->Fill(cand2Prong.xSecondaryVertex() - vertexDau[0]);
-        histSecondaryVertexY[whichHad]->Fill(cand2Prong.ySecondaryVertex() - vertexDau[1]);
-        histSecondaryVertexZ[whichHad]->Fill(cand2Prong.zSecondaryVertex() - vertexDau[2]);
-        histDecayLength[whichHad]->Fill(cand2Prong.decayLength() - decayLength);
+        histDeltaSecondaryVertexX[whichHad]->Fill(cand2Prong.xSecondaryVertex() - vertexDau[0]);
+        histDeltaSecondaryVertexY[whichHad]->Fill(cand2Prong.ySecondaryVertex() - vertexDau[1]);
+        histDeltaSecondaryVertexZ[whichHad]->Fill(cand2Prong.zSecondaryVertex() - vertexDau[2]);
+        histDeltaDecayLength[whichHad]->Fill(cand2Prong.decayLength() - decayLength);
         std::array<double, 3> momDau0 = {cand2Prong.pxProng0(),
                                          cand2Prong.pyProng0(),
                                          cand2Prong.pzProng0()};
         std::array<double, 3> momDau1 = {cand2Prong.pxProng1(),
                                          cand2Prong.pyProng1(),
                                          cand2Prong.pzProng1()};
+        histPtReco[whichHad][whichOrigin]->Fill(cand2Prong.pt());
         histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
         histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
         histImpactParameterDau[whichHad][whichOrigin][0]->Fill(cand2Prong.impactParameter0());
@@ -347,20 +350,20 @@ struct ValidationRecLevel {
           indexParticle = RecoDecay::getMother(cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
-        histPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
-        histPx[whichHad]->Fill(cand3Prong.px() - mother.px());
-        histPy[whichHad]->Fill(cand3Prong.py() - mother.py());
-        histPz[whichHad]->Fill(cand3Prong.pz() - mother.pz());
+        histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
+        histDeltaPx[whichHad]->Fill(cand3Prong.px() - mother.px());
+        histDeltaPy[whichHad]->Fill(cand3Prong.py() - mother.py());
+        histDeltaPz[whichHad]->Fill(cand3Prong.pz() - mother.pz());
         //Compare Secondary vertex and decay length with MC
         auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
         auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
 
-        histSecondaryVertexX[whichHad]->Fill(cand3Prong.xSecondaryVertex() - vertexDau[0]);
-        histSecondaryVertexY[whichHad]->Fill(cand3Prong.ySecondaryVertex() - vertexDau[1]);
-        histSecondaryVertexZ[whichHad]->Fill(cand3Prong.zSecondaryVertex() - vertexDau[2]);
-        histDecayLength[whichHad]->Fill(cand3Prong.decayLength() - decayLength);
+        histDeltaSecondaryVertexX[whichHad]->Fill(cand3Prong.xSecondaryVertex() - vertexDau[0]);
+        histDeltaSecondaryVertexY[whichHad]->Fill(cand3Prong.ySecondaryVertex() - vertexDau[1]);
+        histDeltaSecondaryVertexZ[whichHad]->Fill(cand3Prong.zSecondaryVertex() - vertexDau[2]);
+        histDeltaDecayLength[whichHad]->Fill(cand3Prong.decayLength() - decayLength);
         std::array<double, 3> momDau0 = {cand3Prong.pxProng0(),
                                          cand3Prong.pyProng0(),
                                          cand3Prong.pzProng0()};
@@ -370,6 +373,7 @@ struct ValidationRecLevel {
         std::array<double, 3> momDau2 = {cand3Prong.pxProng2(),
                                          cand3Prong.pyProng2(),
                                          cand3Prong.pzProng2()};
+        histPtReco[whichHad][whichOrigin]->Fill(cand3Prong.pt());
         histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
         histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
         histImpactParameterDau[whichHad][whichOrigin][0]->Fill(cand3Prong.impactParameter0());
