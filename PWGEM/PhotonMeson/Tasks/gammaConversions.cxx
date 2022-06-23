@@ -387,6 +387,8 @@ struct GammaConversions {
       theV0);
   }
 
+  Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
+
   void processRec(aod::Collisions::iterator const& theCollision,
                   aod::V0Datas const& theV0s,
                   aod::V0DaughterTracks const& theAllTracks)
@@ -397,7 +399,7 @@ struct GammaConversions {
 
     for (auto& lV0 : theV0s) {
 
-      auto lTwoV0Daughters = theAllTracks.sliceBy(aod::v0data::v0Id, lV0.v0Id());
+      auto lTwoV0Daughters = theAllTracks.sliceBy(perV0, lV0.v0Id());
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
 
       if (!processV0(lV0, lV0CosinePA, lTwoV0Daughters)) {
@@ -406,6 +408,8 @@ struct GammaConversions {
     }
   }
   PROCESS_SWITCH(GammaConversions, processRec, "process reconstructed info", true);
+
+  Preslice<aod::McGammasTrue> gperV0 = aod::v0data::v0Id;
 
   void processMc(aod::Collisions::iterator const& theCollision,
                  aod::V0Datas const& theV0s,
@@ -418,15 +422,14 @@ struct GammaConversions {
 
     for (auto& lV0 : theV0s) {
 
-      // todo: use sliceByCached
-      auto lTwoV0Daughters = theAllTracks.sliceBy(aod::v0data::v0Id, lV0.v0Id());
+      auto lTwoV0Daughters = theAllTracks.sliceBy(perV0, lV0.v0Id());
       float lV0CosinePA = lV0.v0cosPA(theCollision.posX(), theCollision.posY(), theCollision.posZ());
 
       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
       bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
 
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
-      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(aod::v0data::v0Id, lV0.v0Id());
+      auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
       processMcPhoton(lMcPhotonForThisV0AsTable,
                       lV0,
                       lV0CosinePA,
