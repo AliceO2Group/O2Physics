@@ -91,6 +91,8 @@ struct qaEventTrack {
 
   HistogramRegistry histos;
 
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+
   void init(InitContext const&);
 
   // Function to select tracks
@@ -307,7 +309,7 @@ struct qaEventTrack {
       if (!collision.has_mcCollision()) {
         return;
       }
-      const auto& particlesInCollision = particles.sliceBy(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex());
+      const auto& particlesInCollision = particles.sliceBy(perMcCollision, collision.mcCollision().globalIndex());
       tableNonRecoParticles.reserve(particlesInCollision.size() - nTracks);
       for (const auto& particle : particlesInCollision) {
         const auto partReconstructed = std::find(recoPartIndices.begin(), recoPartIndices.end(), particle.globalIndex()) != recoPartIndices.end();
