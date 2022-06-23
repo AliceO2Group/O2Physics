@@ -231,7 +231,7 @@ struct HfTaskB0Mc {
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << hf_cand_b0::DecayType::B0ToDPi) {
 
-        auto yParticle = RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
+        auto yParticle = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(pdg::Code::kB0));
         if (cutYCandMax >= 0. && std::abs(yParticle) > cutYCandMax) {
           continue;
         }
@@ -241,7 +241,7 @@ struct HfTaskB0Mc {
         for (auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::Y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(array{daught.px(), daught.py(), daught.pz()}, RecoDecay::getMassPDG(daught.pdgCode()));
           counter++;
         }
 

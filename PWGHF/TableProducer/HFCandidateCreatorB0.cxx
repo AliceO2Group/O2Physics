@@ -204,7 +204,7 @@ struct HFCandidateCreatorB0 {
 
         // calculate invariant mass
         auto arrayMomenta = array{pvecD, pvecPion};
-        massDPi = RecoDecay::M(std::move(arrayMomenta), array{massD, massPi});
+        massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
         if (dCand.isSelDplusToPiKPi() > 0) {
           hMassB0ToDPi->Fill(massDPi);
         }
