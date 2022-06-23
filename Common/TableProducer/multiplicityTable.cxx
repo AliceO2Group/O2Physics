@@ -64,7 +64,7 @@ struct MultiplicityTableTaskIndexed {
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
 
-    ccdb->setURL("http://ccdb-test.cern.ch:8080"); //temporary - to be tuned  shortly
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
