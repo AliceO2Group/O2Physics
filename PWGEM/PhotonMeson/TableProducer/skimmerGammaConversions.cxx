@@ -123,6 +123,8 @@ struct skimmerGammaConversions {
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
 
+  Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
+
   void processMc(aod::McCollision const& theMcCollision,
                  soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                             aod::Collisions>> const& theCollisions,
@@ -142,8 +144,7 @@ struct skimmerGammaConversions {
     for (auto& lCollision : theCollisions) {
       fRegistry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
 
-      // todo: replace by sliceByCached
-      auto lGroupedV0s = theV0s.sliceBy(aod::v0data::collisionId, lCollision.globalIndex());
+      auto lGroupedV0s = theV0s.sliceBy(perCollision, lCollision.globalIndex());
       for (auto& lV0 : lGroupedV0s) {
 
         auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
