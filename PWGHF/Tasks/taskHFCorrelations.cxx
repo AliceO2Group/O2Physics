@@ -451,9 +451,23 @@ struct TaskHfCorrelations {
   void processMixed(aodCollisions& collisions,
                     aodTracks const& tracks)
   {
-    BinningType pairBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default)
+    // Expand z-vertex binning from {14, -7, 7} to {VARIABLE_WIDTH, -7, -6, -5, ..., 5, 6, 7}
+    // TODO: Separate faster bin calculation for constant binning, eliminate the need for expansion
+    std::vector<double> axisVertexExpanded;
+    binning_helpers::expandConstantBinning(axisVertex, axisVertexExpanded);
+
+    auto getBinVtxTracksSize =
+      [&tracks, this](std::tuple<typename aod::collision::PosZ::type, typename soa::Index<>::type> const& data) -> int {
+      float posZ = std::get<0>(data);
+      int32_t colIndex = std::get<1>(data);
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, colIndex);                                          // it's cached, so slicing/grouping happens only once
+      return binning_helpers::getBin({axisVertexExpanded, axisMultiplicity}, std::make_tuple(posZ, associatedTracks.size()), true); // true is for 'ignore overflows' (true by default)
+    };
+
+    using BinningType = LambdaBinningPolicy<decltype(getBinVtxTracksSize), aod::collision::PosZ, soa::Index<>>;
+    BinningType binningWithLambda{getBinVtxTracksSize};
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aodCollisions, aodTracks, BinningType> pair{pairBinning, cfgNoMixedEvents, -1, collisions, tracksTuple};
+    SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithLambda, cfgNoMixedEvents, -1, collisions, tracksTuple};
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       /*printf("Mixing: Collision 1 global index: %ld \n", collision1.globalIndex());
