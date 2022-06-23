@@ -19,7 +19,6 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -45,8 +44,7 @@ struct HfTaskB0 {
     "registry",
     {{"hPtProng0", "B0 candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
      {"hPtProng1", "B0 candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 10.}}}},
-     {"hPtCand", "B0 candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}},
-     {"hCentrality", "centrality;centrality percentile;entries", {HistType::kTH1F, {{100, 0., 100.}}}}}};
+     {"hPtCand", "B0 candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 50.}}}}}};
 
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<double> cutYCandMax{"cutYCandMax", 1.44, "max. cand. rapidity"};
@@ -54,7 +52,7 @@ struct HfTaskB0 {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); centrality", {HistType::kTH3F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}, {100, 0., 100.}}});
+    registry.add("hMass", "B^{0} candidates;inv. mass D^{#minus}#pi^{#plus} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 0., 10.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLength", "B^{0} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXY", "B^{0} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "B^{0} candidates;prong 0 (D^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -71,11 +69,8 @@ struct HfTaskB0 {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
-  void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>, aod::BigTracks)
+  void process(aod::Collision const& collision, soa::Filtered<soa::Join<aod::HfCandB0, aod::HFSelB0ToDPiCandidate>> const& candidates, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>, aod::BigTracks)
   {
-    float centrality = collision.centRun2V0M();
-    registry.fill(HIST("hCentrality"), centrality);
-
     for (auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << hf_cand_b0::DecayType::B0ToDPi)) {
         continue;
@@ -87,7 +82,7 @@ struct HfTaskB0 {
       auto candD = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>>();
       auto candPi = candidate.index1_as<aod::BigTracks>();
 
-      registry.fill(HIST("hMass"), InvMassB0(candidate), candidate.pt(), centrality);
+      registry.fill(HIST("hMass"), InvMassB0(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
