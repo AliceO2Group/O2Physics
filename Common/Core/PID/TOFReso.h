@@ -20,7 +20,6 @@
 #define O2_ANALYSIS_PID_TOFRESO_H_
 
 // O2 includes
-#include "Common/Core/PID/ParamBase.h"
 #include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid::tof
@@ -50,7 +49,7 @@ class TOFReso : public Parametrization
     const float sigma = dpp * time / (1. + mom * mom / (mass * mass));
     return sqrt(sigma * sigma + mParameters[3] * mParameters[3] / mom / mom + mParameters[4] * mParameters[4] + evtimereso * evtimereso);
   }
-  ClassDef(TOFReso, 1);
+  ClassDefOverride(TOFReso, 1);
 };
 
 } // namespace o2::pid::tof

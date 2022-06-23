@@ -10,16 +10,16 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaTOF.h
+/// \file   qaPIDTOF.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Header file for QA tasks of the TOF PID quantities
 ///
 
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -172,9 +172,22 @@ struct tofPidQa {
     }
     histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
     histos.add("event/tofmultiplicity", "", kTH1F, {multAxis});
-    histos.add("event/colltime", "", kTH1F, {colTimeAxis});
-    histos.add("event/colltimereso", "", kTH2F, {multAxis, colTimeResoAxis});
-    histos.add("event/tofsignal", "", kTH2F, {pAxis, tofAxis});
+
+    histos.add("event/evtime/colltime", "collisionTime", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/colltimereso", "collisionTimeRes", kTH2F, {multAxis, colTimeResoAxis});
+    histos.add("event/evtime/undef", "Undefined event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/undefreso", "Undefined event time reso.", kTH2F, {multAxis, colTimeResoAxis});
+    histos.add("event/evtime/avail", "Available event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/availreso", "Available event time reso.", kTH2F, {multAxis, colTimeResoAxis});
+    histos.add("event/evtime/ft0tof", "FT0+TOF event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/ft0tofreso", "FT0+TOF event time reso.", kTH2F, {multAxis, colTimeResoAxis});
+    histos.add("event/evtime/tof", "TOF event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/tofreso", "TOF event time reso.", kTH2F, {multAxis, colTimeResoAxis});
+    histos.add("event/evtime/ft0", "FT0 event time", kTH1F, {colTimeAxis});
+    histos.add("event/evtime/ft0reso", "FT0 event time reso.", kTH2F, {multAxis, colTimeResoAxis});
+
+    histos.add("event/tofsignal", "TOF signal", kTH2F, {pAxis, tofAxis});
+    histos.add("event/tofsignalunassigned", "TOF signal (unassigned tracks)", kTH2F, {pAxis, tofAxis});
     histos.add("event/pexp", "", kTH2F, {pAxis, pExpAxis});
     histos.add("event/eta", "", kTH1F, {etaAxis});
     histos.add("event/phi", "", kTH1F, {phiAxis});
@@ -211,8 +224,12 @@ struct tofPidQa {
     }
 
     // Computing Multiplicity first
-    float ntracks = 0;
+    int ntracks = 0;
     int tofmult = 0;
+    float evtime = 0.f;
+    float evtimereso = 0.f;
+    int evtimeflag = 0;
+
     if constexpr (fillHistograms) {
       for (auto t : tracks) {
         if (applyTrackCut && !t.isGlobalTrack()) {
@@ -223,6 +240,19 @@ struct tofPidQa {
           continue;
         }
         tofmult++;
+        evtime = t.tofEvTime();
+        evtimereso = t.tofEvTimeErr();
+        evtimeflag = 0;
+        if (t.isEvTimeDefined()) {
+          evtimeflag = 1;
+        }
+        if (t.isEvTimeTOF() && t.isEvTimeT0AC()) {
+          evtimeflag = 2;
+        } else if (t.isEvTimeTOF()) {
+          evtimeflag = 3;
+        } else if (t.isEvTimeT0AC()) {
+          evtimeflag = 4;
+        }
       }
       histos.fill(HIST("event/evsel"), 3);
     }
@@ -236,8 +266,34 @@ struct tofPidQa {
       histos.fill(HIST("event/tofmultiplicity"), tofmult);
 
       const float collisionTime_ps = collision.collisionTime() * 1000.f;
-      histos.fill(HIST("event/colltime"), collisionTime_ps);
-      histos.fill(HIST("event/colltimereso"), tofmult, collision.collisionTimeRes() * 1000.f);
+      histos.fill(HIST("event/evtime/colltime"), collisionTime_ps);
+      histos.fill(HIST("event/evtime/colltimereso"), tofmult, collision.collisionTimeRes() * 1000.f);
+
+      switch (evtimeflag) {
+        case 0:
+          histos.fill(HIST("event/evtime/undef"), evtime);
+          histos.fill(HIST("event/evtime/undefreso"), tofmult, evtimereso);
+          break;
+        case 1:
+          histos.fill(HIST("event/evtime/avail"), evtime);
+          histos.fill(HIST("event/evtime/availreso"), tofmult, evtimereso);
+          break;
+        case 2:
+          histos.fill(HIST("event/evtime/ft0tof"), evtime);
+          histos.fill(HIST("event/evtime/ft0tofreso"), tofmult, evtimereso);
+          break;
+        case 3:
+          histos.fill(HIST("event/evtime/tof"), evtime);
+          histos.fill(HIST("event/evtime/tofreso"), tofmult, evtimereso);
+          break;
+        case 4:
+          histos.fill(HIST("event/evtime/tof"), evtime);
+          histos.fill(HIST("event/evtime/tofreso"), tofmult, evtimereso);
+          break;
+        default:
+          LOG(fatal) << "Unrecognized Event time flag";
+          break;
+      }
     }
     return true;
   }
@@ -272,7 +328,11 @@ struct tofPidQa {
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 5.f);
       histos.fill(HIST("event/particlehypo"), track.pidForTracking());
-      histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
+      if (track.has_collision()) {
+        histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
+      } else {
+        histos.fill(HIST("event/tofsignalunassigned"), track.p(), track.tofSignal());
+      }
       histos.fill(HIST("event/pexp"), track.p(), track.tofExpMom());
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/phi"), track.phi());
@@ -287,7 +347,7 @@ struct tofPidQa {
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection> const& tracks)
+               soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::TrackSelection> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {

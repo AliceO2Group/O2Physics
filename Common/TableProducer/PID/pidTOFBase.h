@@ -15,6 +15,10 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
+#include "PID/ParamBase.h"
+#include "PID/DetectorResponse.h"
+#include "PID/PIDTOF.h"
+
 #include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;

@@ -11,10 +11,10 @@
 
 ///
 /// \file   ParamBase.h
-/// \author Nicolo' Jacazio
-///
+/// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>
+/// \since 07/08/2020
 /// \brief Set of utilities to handle the parametrization of the PID response for each detector
-/// These are the basic storage elements to be kept in the CCDB
+///        These are the basic storage elements to be kept in the CCDB
 ///
 
 #ifndef O2_FRAMEWORK_PARAMBASE_H_
@@ -22,6 +22,9 @@
 
 // ROOT includes
 #include "TNamed.h"
+#include "TFile.h"
+
+#include "Framework/Logger.h"
 
 namespace o2::pid
 {
@@ -96,10 +99,108 @@ class Parameters : public TNamed
   /// Vector of the parameter
   std::vector<pidvar_t> mPar;
 
-  ClassDef(Parameters, 1); // Container for parameter of parametrizations
+  ClassDefOverride(Parameters, 1); // Container for parameter of parametrizations
 };
 
-/// \brief Class to handle the parameters and the parametrization of a given detector response
+/// \brief Class to handle the parameters of a given detector response
+template <int nPar>
+class PidParameters : public TNamed
+{
+ public:
+  /// Default constructor
+  PidParameters(TString name = "DefaultParameters") : TNamed(name, name), mPar{} {};
+
+  /// Default destructor
+  ~PidParameters() override = default;
+
+  /// Setter for the parameter at position iparam
+  /// \param iparam index in the array of the parameters
+  /// \param value value of the parameter at position iparam
+  void SetParameter(const unsigned int iparam, const pidvar_t value) { mPar[iparam] = value; }
+
+  /// Setter for the parameter, using an array
+  /// \param param array with parameters
+  void SetParameters(const pidvar_t* params) { std::copy(params, params + mPar.size(), mPar.begin()); }
+
+  /// Setter for the parameter, using a vector
+  /// \param params vector with parameters
+  void SetParameters(const std::array<pidvar_t, nPar> params)
+  {
+    for (int i = 0; i < nPar; i++) {
+      mPar[i] = params[i];
+    }
+  }
+
+  /// Setter for the parameter, using a parameter object
+  /// \param params parameter object with parameters
+  void SetParameters(const PidParameters<nPar> params) { SetParameters(params.mPar); };
+
+  /// Setter for the parameter, using a parameter pointer
+  /// \param params pointer to parameter object with parameters
+  void SetParameters(const PidParameters<nPar>* params) { SetParameters(params->mPar); };
+
+  /// Printer of the parameter values
+  void Print(Option_t* option = "") const override
+  {
+    LOG(info) << "PidParameters '" << fName << "'";
+    for (int i = 0; i < nPar; i++) {
+      LOG(info) << "Parameter " << i << "/" << nPar - 1 << " is " << mPar[i];
+    }
+  }
+
+  /// Adds the parameters to the metadata
+  void AddToMetadata(std::map<std::string, std::string>& metadata) const
+  {
+    for (int i = 0; i < nPar; i++) {
+      metadata[Form("p%i", i)] = Form("%f", mPar[i]);
+    }
+  }
+
+  /// Loader from file
+  /// \param FileName name of the input file
+  /// \param ParamName name of the input object
+  void LoadParamFromFile(const TString FileName, const TString ParamName)
+  {
+    TFile f(FileName, "READ");
+    if (!f.Get(ParamName)) {
+      LOG(fatal) << "Did not find parameters " << ParamName << " in file " << FileName;
+    }
+    LOG(info) << "Loading parameters " << ParamName << " from TFile " << FileName;
+    PidParameters<nPar>* p;
+    f.GetObject(ParamName, p);
+    if (!p) {
+      LOG(fatal) << "Could not get parameters " << ParamName << " from file";
+      f.ls();
+    }
+    f.Close();
+    SetParameters(p);
+    Print();
+  }
+
+  /// Getter for the parameters
+  /// \return returns an array of parameters
+  const pidvar_t* GetParameters() const { return mPar.to_array(); }
+
+  /// Getter for the parameters
+  /// \return returns an array of parameters
+  const pidvar_t GetParameter(int i) const { return mPar[i]; }
+
+  /// Getter for the size of the parameter
+  /// \return returns the size of the parameter array
+  static int size() { return nPar; }
+
+  /// Getter of the parameter at position i
+  /// \param i index of the parameter to get
+  /// \return returns the parameter value at position i
+  pidvar_t operator[](const unsigned int i) const { return mPar[i]; }
+
+ private:
+  /// Array of the parameter
+  std::array<pidvar_t, nPar> mPar;
+
+  ClassDefOverride(PidParameters, 1); // Container for parameter of parametrizations
+};
+
 class Parametrization : public TNamed
 {
  public:
@@ -154,7 +255,7 @@ class Parametrization : public TNamed
   /// Parameters of the parametrization
   Parameters mParameters;
 
-  ClassDef(Parametrization, 1); // Container for the parametrization of the response function
+  ClassDefOverride(Parametrization, 1); // Container for the parametrization of the response function
 };
 
 } // namespace o2::pid
