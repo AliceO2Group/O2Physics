@@ -12,7 +12,7 @@
 /// \file HFB0ToDPiCandidateSelector.cxx
 /// \brief B0 → D- π+ candidate selector
 ///
-/// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
+/// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -28,6 +28,7 @@ using namespace o2::aod::hf_cand_b0;	// from HFSecondaryVertex.h
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_b0_todpi;	// from HFSelectorCuts.h
+//using namespace o2::analysis::hf_cuts_dplus_topikpi;  // used if we apply D mass cut
 
 struct HfB0ToDPiCandidateSelector {
   Produces<aod::HFSelB0ToDPiCandidate> hfSelB0ToDPiCandidate; // table defined in HFCandidateSelectionTables.h
@@ -86,30 +87,30 @@ struct HfB0ToDPiCandidateSelector {
       return false;
     }
 
-    //Lc mass
-    //if (trackPi.sign() < 0) {
-    //if (std::abs(InvMassLcpKpi(hfCandLc) - RecoDecay::getMassPDG(pdg::Code::kLambdaCPlus)) > cuts->get(pTBin, "DeltaMLc")) {
-    //return false;
-    //}
+    //D mass cut
+    //if (trackPi.sign() > 0) {
+    //	if (std::abs(InvMassDplus(hfCandD) - RecoDecay::getMassPDG(pdg::Code::kDMinus)) > cuts->get(pTBin, "DeltaM")) {
+    //		return false;
+    //	}
     //}
 
-    //Lb Decay length
-    if (hfCandB0.decayLength() < cuts->get(pTBin, "Lb decLen")) {
+    //B0 Decay length
+    if (hfCandB0.decayLength() < cuts->get(pTBin, "B0 decLen")) {
       return false;
     }
 
-    //Lb Decay length XY
-    if (hfCandB0.decayLengthXY() < cuts->get(pTBin, "Lb decLenXY")) {
+    //B0 Decay length XY
+    if (hfCandB0.decayLengthXY() < cuts->get(pTBin, "B0 decLenXY")) {
       return false;
     }
 
-    //Lb chi2PCA cut
+    //B0 chi2PCA cut
     if (hfCandB0.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      //Printf("Lb selection failed at chi2PCA");
+      //Printf("B0 selection failed at chi2PCA");
       return false;
     }
 
-    //Lb CPA cut
+    //B0 CPA cut
     if (hfCandB0.cpa() < cuts->get(pTBin, "CPA")) {
       return false;
     }
@@ -120,7 +121,7 @@ struct HfB0ToDPiCandidateSelector {
     }
 
     //d0 of D
-    if (std::abs(hfCandB0.impactParameter0()) < cuts->get(pTBin, "d0 D^{#minus}")) {
+    if (std::abs(hfCandB0.impactParameter0()) < cuts->get(pTBin, "d0 D")) {
       return false;
     }
 
@@ -129,11 +130,11 @@ struct HfB0ToDPiCandidateSelector {
 
   void process(aod::HfCandB0 const& hfCandB0s, soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>, aod::BigTracksPID const&)
   {
-    for (auto& hfCandB0 : hfCandB0s) { //looping over Lb candidates
+    for (auto& hfCandB0 : hfCandB0s) { //looping over B0 candidates
 
       int statusB0 = 0;
 
-      // check if flagged as Λb --> Λc+ π-
+      // check if flagged as B0 → D- π+
       if (!(hfCandB0.hfflag() & 1 << hf_cand_b0::DecayType::B0ToDPi)) {
         hfSelB0ToDPiCandidate(statusB0);
         //Printf("B0 candidate selection failed at hfflag check");

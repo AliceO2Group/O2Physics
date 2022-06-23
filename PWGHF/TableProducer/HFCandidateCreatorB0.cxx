@@ -13,7 +13,7 @@
 /// \brief Reconstruction of B0 candidates
 /// \note Adapted from HFCandidateCreatorXicc
 ///
-/// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
+/// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
@@ -29,7 +29,7 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
-using namespace o2::aod::hf_cand_b0;
+using namespace o2::aod::hf_cand_b0;	// from HFSecondaryVertex.h
 using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 /// Reconstruction of B0 candidates
 struct HFCandidateCreatorB0 {
-  Produces<aod::HfCandB0Base> rowCandidateBase;
+  Produces<aod::HfCandB0Base> rowCandidateBase;  // table defined in HFSecondaryVertex.h
 
   Configurable<double> magneticField{"magneticField", 20., "magnetic field"};
   Configurable<bool> b_propdca{"b_propdca", true, "create tracks version propagated to PCA"};
@@ -137,7 +137,7 @@ struct HFCandidateCreatorB0 {
       int index2D = track2.globalIndex();
       //int charge = track0.sign() + track1.sign() + track2.sign();
       
-			// ?      
+			// loop over pions      
       for (auto& trackPion : tracks) {
       	// minimum pT selection
         if (trackPion.pt() < ptPionMin) {
@@ -221,8 +221,8 @@ struct HFCandidateCreatorB0Expressions {
 
 /// Performs MC matching.
 struct HFCandidateCreatorB0MC {
-  Produces<aod::HfCandB0MCRec> rowMCMatchRec;
-  Produces<aod::HfCandB0MCGen> rowMCMatchGen;
+  Produces<aod::HfCandB0MCRec> rowMCMatchRec; // table defined in HFSecondaryVertex.h
+  Produces<aod::HfCandB0MCGen> rowMCMatchGen; // table defined in HFSecondaryVertex.h
 
   void process(aod::HfCandB0 const& candidates,
                aod::HfCandProng3,
