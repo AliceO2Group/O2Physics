@@ -32,6 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
+AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec DCAAxis = {401, -2.01, 2.01};
 AxisSpec EtaAxis = {22, -2.2, 2.2};
 AxisSpec MultAxis = {301, -0.5, 300.5};
@@ -44,14 +45,9 @@ struct MultiplicityCounter {
   Service<TDatabasePDG> pdg;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
-
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  Configurable<bool> useDCAZ{"useDCAZ", true, "use DCAZ cut"};
-  Configurable<bool> useDCAXY{"useDCAXY", false, "use DCAXY cut"};
-  Configurable<bool> usePtDCAXY{"usePtDCAXY", false, "use pt-dependent DCAXY"};
-  Configurable<float> maxDCAXY{"maxDCAXY", 2.4, "max allowed transverse DCA"};
-  Configurable<float> maxDCAZ{"maxDCAZ", 3.2, "max allowed longitudal DCA"};
-
+  Configurable<bool> useZDfiffCut{"useZDiffCut", true, "use Z difference cut"};
+  Configurable<float> maxZDiff{"maxZDiff", 1.0f, "max allowed Z difference for reconstruced collisions (cm)"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
 
   HistogramRegistry registry{
@@ -90,11 +86,16 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
 
       registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
+      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{7, 0.5, 7.5}}}});
       registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
+
+      registry.add({"Events/ZposDiff", " ; Z_{rec} - Z_{gen} (cm)", {HistType::kTH1F, {DeltaZAxis}}});
 
       if (fillResponse) {
         registry.add({"Tracks/Response", " ; N_{gen}; N_{rec}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
+        registry.add({"Events/EfficiencyMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+        registry.add({"Events/GeneratedMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+        registry.add({"Events/SplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
       }
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
@@ -104,6 +105,8 @@ struct MultiplicityCounter {
       x->SetBinLabel(3, "Reconstructed");
       x->SetBinLabel(4, "Selected");
       x->SetBinLabel(5, "Selected INEL>0");
+      x->SetBinLabel(6, "Selected (Zdiff)");
+      x->SetBinLabel(7, "Selected INEL>0 (ZDiff)");
     }
 
     if (doprocessTrackEfficiency) {
@@ -148,8 +151,6 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
   expressions::Filter ITStracks = (aod::track::detectorMap & (uint8_t)o2::aod::track::ITS) != (uint8_t)0;
-  expressions::Filter DCAFilterZ = (useDCAZ.node() == false) || (nabs(aod::track::dcaZ) <= maxDCAZ);
-  expressions::Filter DCAFilterXY = (useDCAXY.node() == false) || (ifnode(usePtDCAXY.node(), nabs(aod::track::dcaXY) <= 0.0105f + 0.0350f / npow(aod::track::pt, 1.1f), nabs(aod::track::dcaXY) <= maxDCAXY), framework::expressions::LiteralNode{true});
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
@@ -206,6 +207,11 @@ struct MultiplicityCounter {
         continue;
       }
       auto mcCollision = collision.mcCollision();
+      if (useZDfiffCut) {
+        if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
+          continue;
+        }
+      }
       auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
       particlesI.bindExternalIndices(&tracks);
 
@@ -246,6 +252,11 @@ struct MultiplicityCounter {
         continue;
       }
       auto mcCollision = collision.mcCollision();
+      if (useZDfiffCut) {
+        if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
+          continue;
+        }
+      }
       auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
       auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex());
       tracks.bindExternalIndices(&mcParticles);
@@ -294,12 +305,16 @@ struct MultiplicityCounter {
     }
     registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
     registry.fill(HIST("Events/Efficiency"), 1.);
+    if (fillResponse) {
+      registry.fill(HIST("Events/GeneratedMult"), nCharged);
+    }
 
     if (nCharged > 0) {
       registry.fill(HIST("Events/Efficiency"), 2.);
     }
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
+    auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
     auto Nrec = 0;
@@ -307,19 +322,37 @@ struct MultiplicityCounter {
     for (auto& collision : collisions) {
       registry.fill(HIST("Events/Efficiency"), 3.);
       if (!useEvSel || collision.sel8()) {
-        atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
         registry.fill(HIST("Events/Efficiency"), 4.);
+        if (perCollisionSample.size() > 0) {
+          registry.fill(HIST("Events/Efficiency"), 5.);
+        }
+
+        registry.fill(HIST("Events/ZposDiff"), collision.posZ() - mcCollision.posZ());
+        if (useZDfiffCut) {
+          if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
+            continue;
+          }
+        }
+        registry.fill(HIST("Events/Efficiency"), 6.);
+        ++moreThanOne;
+        atLeastOne = true;
         Nrec += perCollisionSample.size();
         if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;
-          registry.fill(HIST("Events/Efficiency"), 5.);
+          registry.fill(HIST("Events/Efficiency"), 7.);
         }
         registry.fill(HIST("Events/NtrkZvtxGen"), perCollisionSample.size(), collision.posZ());
       }
     }
     if (fillResponse) {
       registry.fill(HIST("Tracks/Response"), nCharged, Nrec, mcCollision.posZ());
+      if (atLeastOne) {
+        registry.fill(HIST("Events/EfficiencyMult"), nCharged);
+      }
+      if (moreThanOne > 1) {
+        registry.fill(HIST("Events/SplitMult"), nCharged);
+      }
     }
     if (collisions.size() == 0) {
       registry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
