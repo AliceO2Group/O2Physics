@@ -449,7 +449,7 @@ struct TaskHfCorrelations {
   //  TODO: these collisions do not contain trigger selection, because SameKindPair needs table, not iterator -> check if it can be solved
   //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3
   void processMixed(aodCollisions& collisions,
-                    aodTracks const& tracks)
+                    aodTracks& tracks)
   {
     // Expand z-vertex binning from {14, -7, 7} to {VARIABLE_WIDTH, -7, -6, -5, ..., 5, 6, 7}
     // TODO: Separate faster bin calculation for constant binning, eliminate the need for expansion
@@ -457,7 +457,7 @@ struct TaskHfCorrelations {
     binning_helpers::expandConstantBinning(axisVertex, axisVertexExpanded);
 
     auto getBinVtxTracksSize =
-      [&tracks, this](std::tuple<typename aod::collision::PosZ::type, typename soa::Index<>::type> const& data) -> int {
+      [&tracks, &axisVertexExpanded, this](std::tuple<typename aod::collision::PosZ::type, typename soa::Index<>::type> const& data) -> int {
       float posZ = std::get<0>(data);
       int32_t colIndex = std::get<1>(data);
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, colIndex);                                          // it's cached, so slicing/grouping happens only once
@@ -490,7 +490,7 @@ struct TaskHfCorrelations {
       registry.fill(HIST("hMultipliciyMixing"), multiplicity);
       registry.fill(HIST("hVtxZMixing"), collision1.posZ());
 
-      int bin = pairBinning.getBin({collision1.posZ(), multiplicity});
+      int bin = binningWithLambda.getBin({collision1.posZ(), multiplicity});
       registry.fill(HIST("eventcount"), bin);
 
       if (processTPCTPChh == true) {
