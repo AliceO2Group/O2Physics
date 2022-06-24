@@ -87,93 +87,93 @@ struct TrackSkimmer {
                   TBCs const& bcs,
                   const std::vector<bool>& passedTracks)
   {
-      std::map<int32_t, int32_t> newPartIDs;
-      std::vector<int32_t> newEventIDs;
+    std::map<int32_t, int32_t> newPartIDs;
+    std::vector<int32_t> newEventIDs;
 
-      newEventIDs.resize(mcCollisions.size(), -1);
-      int32_t newPartID = 0;
-      int32_t newEventID = 0;
-      int32_t nMCParticles = mcParticles.size();
-      for (int32_t mcPartID = 0; mcPartID < nMCParticles; mcPartID++) {
-        const auto& mcPart = mcParticles.iteratorAt(mcPartID);
-        int32_t mcEventID = mcPart.mcCollisionId();
-        const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
-        bool isSignal = mcEvent.generatorsID() == fSignalGenID;
-        if (!isSignal || !mcPart.producedByGenerator()) {
+    newEventIDs.resize(mcCollisions.size(), -1);
+    int32_t newPartID = 0;
+    int32_t newEventID = 0;
+    int32_t nMCParticles = mcParticles.size();
+    for (int32_t mcPartID = 0; mcPartID < nMCParticles; mcPartID++) {
+      const auto& mcPart = mcParticles.iteratorAt(mcPartID);
+      int32_t mcEventID = mcPart.mcCollisionId();
+      const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
+      bool isSignal = mcEvent.generatorsID() == fSignalGenID;
+      if (!isSignal || !mcPart.producedByGenerator()) {
+        continue;
+      }
+      newPartIDs[mcPartID] = newPartID;
+      newPartID++;
+      if (newEventIDs[mcEventID] == -1) {
+        newEventIDs[mcEventID] = newEventID;
+        newEventID++;
+      }
+    }
+
+    int32_t nMCLabels = mcTrackLabels.size();
+    for (int32_t i = 0; i < nMCLabels; i++) {
+      if (!passedTracks[i]) {
+        continue;
+      }
+      const auto& label = mcTrackLabels.iteratorAt(i);
+      uint16_t mcMask = label.mcMask();
+      auto it = newPartIDs.find(label.mcParticleId());
+      int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
+      muonLabels(newPartID, mcMask);
+    }
+
+    // storing MC particles
+    for (const auto& item : newPartIDs) {
+      int32_t mcPartID = item.first;
+      const auto& mcPart = mcParticles.iteratorAt(mcPartID);
+      int32_t mcEventID = mcPart.mcCollisionId();
+      int32_t newEventID = newEventIDs[mcEventID];
+      // collecting new mother IDs
+      const auto& motherIDs = mcPart.mothersIds();
+      std::vector<int32_t> newMotherIDs;
+      newMotherIDs.reserve(motherIDs.size());
+      for (auto motherID : motherIDs) {
+        if (motherID >= nMCParticles) {
           continue;
         }
-        newPartIDs[mcPartID] = newPartID;
-        newPartID++;
-        if (newEventIDs[mcEventID] == -1) {
-          newEventIDs[mcEventID] = newEventID;
-          newEventID++;
+        auto it = newPartIDs.find(motherID);
+        if (it != newPartIDs.end()) {
+          newMotherIDs.push_back(it->second);
         }
       }
-
-      int32_t nMCLabels = mcTrackLabels.size();
-      for (int32_t i = 0; i < nMCLabels; i++) {
-        if (!passedTracks[i]) {
+      // collecting new daughter IDs
+      const auto& daughterIDs = mcPart.daughtersIds();
+      int32_t newDaughterIDs[2] = {-1, -1};
+      if (daughterIDs.size() > 0) {
+        int32_t firstDaughter = daughterIDs.front();
+        int32_t lastDaughter = daughterIDs.back();
+        if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
           continue;
         }
-        const auto& label = mcTrackLabels.iteratorAt(i);
-        uint16_t mcMask = label.mcMask();
-        auto it = newPartIDs.find(label.mcParticleId());
-        int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
-        muonLabels(newPartID, mcMask);
-      }
-
-      // storing MC particles
-      for (const auto& item : newPartIDs) {
-        int32_t mcPartID = item.first;
-        const auto& mcPart = mcParticles.iteratorAt(mcPartID);
-        int32_t mcEventID = mcPart.mcCollisionId();
-        int32_t newEventID = newEventIDs[mcEventID];
-        // collecting new mother IDs
-        const auto& motherIDs = mcPart.mothersIds();
-        std::vector<int32_t> newMotherIDs;
-        newMotherIDs.reserve(motherIDs.size());
-        for (auto motherID : motherIDs) {
-          if (motherID >= nMCParticles) {
-            continue;
-          }
-          auto it = newPartIDs.find(motherID);
-          if (it != newPartIDs.end()) {
-            newMotherIDs.push_back(it->second);
-          }
+        auto itFirst = newPartIDs.find(firstDaughter);
+        auto itLast = newPartIDs.find(lastDaughter);
+        if (itFirst != newPartIDs.end() && itLast != newPartIDs.end()) {
+          newDaughterIDs[0] = newPartIDs.at(daughterIDs.front());
+          newDaughterIDs[1] = newPartIDs.at(daughterIDs.back());
         }
-        // collecting new daughter IDs
-        const auto& daughterIDs = mcPart.daughtersIds();
-        int32_t newDaughterIDs[2] = {-1, -1};
-        if (daughterIDs.size() > 0) {
-          int32_t firstDaughter = daughterIDs.front();
-          int32_t lastDaughter = daughterIDs.back();
-          if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
-            continue;
-          }
-          auto itFirst = newPartIDs.find(firstDaughter);
-          auto itLast = newPartIDs.find(lastDaughter);
-          if (itFirst != newPartIDs.end() && itLast != newPartIDs.end()) {
-            newDaughterIDs[0] = newPartIDs.at(daughterIDs.front());
-            newDaughterIDs[1] = newPartIDs.at(daughterIDs.back());
-          }
-        }
-        skMCParticles(newEventID, mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
-                      mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
       }
+      skMCParticles(newEventID, mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
+                    mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
+    }
 
-      newPartIDs.clear();
+    newPartIDs.clear();
 
-      // storing MC events
-      for (int32_t i = 0; i < mcCollisions.size(); i++) {
-        if (newEventIDs[i] == -1) {
-          continue;
-        }
-        const auto& mcEvent = mcCollisions.iteratorAt(i);
-        skMCEvents(mcEvent.bc().globalBC(), mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
-                   mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
+    // storing MC events
+    for (int32_t i = 0; i < mcCollisions.size(); i++) {
+      if (newEventIDs[i] == -1) {
+        continue;
       }
+      const auto& mcEvent = mcCollisions.iteratorAt(i);
+      skMCEvents(mcEvent.bc().globalBC(), mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
+                 mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
+    }
 
-      newEventIDs.clear();
+    newEventIDs.clear();
   }
 
   template <uint32_t TTrackType, typename TFwdTracks, typename TAmbFwdTracks, typename TBCs>
