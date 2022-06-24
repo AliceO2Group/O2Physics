@@ -255,7 +255,7 @@ struct HFCandidateCreatorXMC {
   Produces<aod::HfCandXMCGen> rowMCMatchGen;
 
   void process(aod::HfCandX const& candidates,
-               aod::HfCandProng2,
+               aod::HfCandProng2 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
