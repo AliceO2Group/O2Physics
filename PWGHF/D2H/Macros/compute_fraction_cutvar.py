@@ -91,19 +91,19 @@ def main(config):
         hist_covariance.SetBinContent(ipt+1, minimiser.get_prompt_nonprompt_cov())
         hist_covariance.SetBinError(ipt+1, 0)
 
-        canv_rawy, histos_rawy, leg = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_rawy.Write()
         for _, hist in histos_rawy.items():
             hist.Write()
 
-        canv_eff, histos_eff, leg = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_eff.Write()
         for _, hist in histos_eff.items():
             hist.Write()
 
-        canv_frac, histos_frac, leg = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_frac.Write()
         for _, hist in histos_frac.items():
