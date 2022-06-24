@@ -1,5 +1,9 @@
 """
 Script with helper methods for style settings
+
+\author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+\author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino
+\author Stefano Politanò <stefano.politano@cern.ch>, Politecnico and INFN Torino
 """
 
 import ROOT
