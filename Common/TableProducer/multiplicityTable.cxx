@@ -64,7 +64,7 @@ struct MultiplicityTableTaskIndexed {
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
 
-    ccdb->setURL("http://ccdb-test.cern.ch:8080"); //temporary - to be tuned  shortly
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -147,7 +147,7 @@ struct MultiplicityTableTaskIndexed {
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
     if (doVertexZeq > 0) {
       if (bc.runNumber() != mRunNumber) {
-        lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", bc.timestamp()); //temporary
+        lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
         if (lCalibObjects) {
           hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
           hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
