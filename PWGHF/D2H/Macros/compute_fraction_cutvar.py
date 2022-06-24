@@ -4,6 +4,7 @@ Script for the (non-)prompt fraction calculation with the cut-variation method
 \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 \author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino
 \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico and INFN Torino
+\author Daniel Battistini <daniel.battistini@cern.ch>, TUM
 """
 
 import os
