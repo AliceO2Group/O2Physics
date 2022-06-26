@@ -65,6 +65,9 @@ struct qaEventTrack {
 
   // options to select only specific tracks
   Configurable<bool> selectGlobalTracks{"selectGlobalTracks", true, "select global tracks"};
+  Configurable<bool> debugFilterkAcceptanceTrkSel{"debugFilterkAcceptanceTrkSel", false, "debug filter: select acceptance tracks (track selection workflow)"};
+  Configurable<bool> debugFilterkAcceptaceManualPtMin{"debugFilterkAcceptaceManualPtMin", false, "debug filter: select acceptance tracks (manual, pt min only)"};
+  Configurable<bool> debugFilterkAcceptaceManualPtMinMax{"debugFilterkAcceptaceManualPtMinMax", false, "debug filter: select acceptance tracks (manual, pt min and max)"};
   Configurable<int> selectCharge{"selectCharge", 0, "select charge +1 or -1 (0 means no selection)"};
   Configurable<bool> selectPrim{"selectPrim", false, "select primaries"};
   Configurable<bool> selectSec{"selectSec", false, "select secondaries"};
@@ -78,7 +81,13 @@ struct qaEventTrack {
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
 
   // TODO: ask if one can have different filters for both process functions
-  Filter trackFilter = (selectGlobalTracks.node() == false) || requireGlobalTrackInFilter();
+  Filter trackFilter = (selectGlobalTracks.node() == false) || requireGlobalTrackInFilter(); // default: lobal tracks
+  // Partition<aod::TracksIU> tracksIUFiltered = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks); // this cannot work because TrackSelection only on tracks and not tracksIU
+  // debug filters - acceptance
+  Filter trackFilterPtEtaTrkSel = (debugFilterkAcceptanceTrkSel.node() == false) || requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
+  Filter trackFilterPtEtaManualPtMin = (debugFilterkAcceptaceManualPtMin.node() == false) || ((aod::track::pt > 0.1f) && (nabs(aod::track::eta) < 0.8f));
+  Filter trackFilterPtEtaManualPtMinMax = (debugFilterkAcceptaceManualPtMinMax.node() == false) || ((aod::track::pt > 0.1f) && (aod::track::pt < 1e10f) && (nabs(aod::track::eta) < 0.8f));
+  Partition<aod::TracksIU> tracksIUFiltered = (debugFilterkAcceptaceManualPtMin.node() == false && debugFilterkAcceptaceManualPtMinMax.node() == false) || (debugFilterkAcceptaceManualPtMin.node() == true && (aod::track::pt > 0.1f) && (nabs(aod::track::eta) < 0.8f)) || (debugFilterkAcceptaceManualPtMinMax.node() == true && (aod::track::pt > 0.1f) && (aod::track::pt < 1e10f) && (nabs(aod::track::eta) < 0.8f));
 
   HistogramRegistry histos;
 
@@ -133,7 +142,7 @@ struct qaEventTrack {
 
       const auto& trkIU = tracksIU.iteratorAt(trackIndex++);
       histos.fill(HIST("Tracks/IU/Pt"), trkIU.pt());
-      histos.fill(HIST("Tracks/IU/Eta"), trkIU.pt());
+      histos.fill(HIST("Tracks/IU/Eta"), trkIU.eta());
       histos.fill(HIST("Tracks/IU/Phi"), trkIU.phi());
 
       histos.fill(HIST("Tracks/IU/alpha"), trkIU.alpha());
@@ -154,6 +163,37 @@ struct qaEventTrack {
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
+
+  // Process function for filtered IU
+  void processDataIUFiltered(CollisionTableData::iterator const& collision)
+  {
+    if (!isSelectedCollision<false>(collision)) {
+      return;
+    }
+
+    auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
+
+    // int trackIndex = 0;
+    for (const auto& trkIU : tracksIU) {
+      if (!isSelectedTrack<false>(trkIU)) {
+        continue;
+      }
+
+      // const auto& trkIU = tracksIU.iteratorAt(trackIndex++);
+      histos.fill(HIST("Tracks/IUFiltered/Pt"), trkIU.pt());
+      histos.fill(HIST("Tracks/IUFiltered/Eta"), trkIU.eta());
+      histos.fill(HIST("Tracks/IUFiltered/Phi"), trkIU.phi());
+
+      histos.fill(HIST("Tracks/IUFiltered/alpha"), trkIU.alpha());
+      histos.fill(HIST("Tracks/IUFiltered/x"), trkIU.x());
+      histos.fill(HIST("Tracks/IUFiltered/y"), trkIU.y());
+      histos.fill(HIST("Tracks/IUFiltered/z"), trkIU.z());
+      histos.fill(HIST("Tracks/IUFiltered/signed1Pt"), trkIU.signed1Pt());
+      histos.fill(HIST("Tracks/IUFiltered/snp"), trkIU.snp());
+      histos.fill(HIST("Tracks/IUFiltered/tgl"), trkIU.tgl());
+    }
+  }
+  PROCESS_SWITCH(qaEventTrack, processDataIUFiltered, "process IU filtered", true);
 
   // Process function for MC
   using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
@@ -462,6 +502,34 @@ void qaEventTrack::init(InitContext const&)
     h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
     h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
   }
+
+  // filtered tracks @ IU
+  if (doprocessDataIUFiltered) {
+    // Full distributions
+    auto h1 = histos.add<TH1>("Tracks/IUFiltered/Pt", "IU: Pt", kTH1F, {axisPt});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/Eta", "IU: Eta", kTH1F, {axisEta});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/Phi", "IU: Phi", kTH1F, {axisPhi});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+
+    h1 = histos.add<TH1>("Tracks/IUFiltered/x", "IU: x", kTH1F, {axisParX});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/y", "IU: y", kTH1F, {axisParY});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/z", "IU: z", kTH1F, {axisParZ});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/alpha", "rotation angle of local wrt. global coordinate system", kTH1F, {axisParAlpha});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/signed1Pt", "track signed 1/#it{p}_{T}", kTH1F, {axisParSigned1Pt});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/snp", "sinus of track momentum azimuthal angle", kTH1F, {axisParSnp});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+    h1 = histos.add<TH1>("Tracks/IUFiltered/tgl", "tangent of the track momentum dip angle", kTH1F, {axisParTgl});
+    h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+  }
+
+  // tracks IU filtered
 }
 
 //**************************************************************************************************
