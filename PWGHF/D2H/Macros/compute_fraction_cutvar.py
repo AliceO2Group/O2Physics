@@ -13,7 +13,7 @@ import json
 import numpy as np
 import ROOT
 from cut_variation import CutVarMinimiser
-from style_formatter import set_global_style, set_object_style
+from style_formatter import set_object_style
 
 # pylint: disable=no-member,too-many-locals,too-many-statements
 

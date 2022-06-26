@@ -278,7 +278,7 @@ def set_object_style(obj, **kwargs):
     if "fillstyle" in kwargs:
         obj.SetFillStyle(kwargs["fillstyle"])
 
-    #global color
+    # global color
     if "color" in kwargs:
         if lalpha < 1:
             obj.SetLineColorAlpha(kwargs["color"], lalpha)
