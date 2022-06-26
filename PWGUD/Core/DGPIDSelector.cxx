@@ -9,211 +9,38 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "TLorentzVector.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "pidSelector.h"
+#include "DGPIDSelector.h"
 
 // -----------------------------------------------------------------------------
-int pid2ind(int pid)
+float particleMass(TDatabasePDG* pdg, int pid)
 {
-  switch (abs(pid)) {
-    case 21: // electron
-      return 0;
-    case 211: // pion
-      return 1;
-    case 13: // muon
-      return 2;
-    case 321: // kaon
-      return 3;
-    case 2212: // proton
-      return 4;
-    default: // unknown
-      return -1.;
+  auto mass = 0.;
+  TParticlePDG* pdgparticle = pdg->GetParticle(pid);
+  if (pdgparticle != nullptr) {
+    mass = pdgparticle->Mass();
   }
+  return mass;
 };
 
 // -----------------------------------------------------------------------------
-float particleMass(int pid)
-{
-  switch (abs(pid)) {
-    case 21:
-      return constants::physics::MassElectron;
-    case 211:
-      return constants::physics::MassPionCharged;
-    case 13:
-      return constants::physics::MassMuon;
-    case 321:
-      return constants::physics::MassKaonCharged;
-    case 2212:
-      return constants::physics::MassProton;
-    default:
-      return -1.;
-  }
-};
-
-// -----------------------------------------------------------------------------
-// find all permutations of n0 elements
-void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms)
-{
-
-  // create local reference
-  auto ref2u = ref;
-
-  // loop over np-1 rotations of last np elements of ref
-  for (auto ii = 0; ii < np; ii++) {
-
-    // create a new permutation
-    // copy first n0-np elements from ref
-    // then rotate last np elements of ref
-    std::vector<uint> perm(n0, 0);
-    for (auto ii = 0; ii < n0 - np; ii++) {
-      perm[ii] = ref2u[ii];
-    }
-    for (auto ii = n0 - np + 1; ii < n0; ii++) {
-      perm[ii - 1] = ref2u[ii];
-    }
-    perm[n0 - 1] = ref2u[n0 - np];
-
-    // add new permutation to the list of permuutations
-    if (ii < (np - 1)) {
-      perms.push_back(perm);
-    }
-
-    // if np>2 then do permutation of next level
-    // use the new combination as reference
-    if (np > 2) {
-      auto newnp = np - 1;
-      permutations(perm, n0, newnp, perms);
-    }
-
-    // update reference
-    ref2u = perm;
-  }
-}
-
-//-----------------------------------------------------------------------------
-// find all permutations of n0 elements
-int permutations(int n0, std::vector<std::vector<uint>>& perms)
-{
-  // initialize with first trivial combination
-  perms.clear();
-  if (n0 == 0) {
-    return 0;
-  }
-
-  std::vector<uint> ref(n0, 0);
-  for (auto ii = 0; ii < n0; ii++) {
-    ref[ii] = ii;
-  }
-  perms.push_back(ref);
-
-  // iterate recursively
-  permutations(ref, n0, n0, perms);
-
-  return perms.size();
-}
-
-//-----------------------------------------------------------------------------
-// find selections of np out of n0
-void combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
-                  std::vector<std::vector<uint>>& combs)
-{
-  // loop over pool
-  for (auto ii = 0; ii < n0 - n; ii++) {
-
-    inds[n] = pool[ii];
-
-    // if all inds are defined then print them out
-    // else get next inds
-    if (np == 1) {
-
-      std::vector<uint> comb(n + 1, 0);
-      for (uint ii = 0; ii < inds.size(); ii++) {
-        comb[ii] = inds[ii];
-      }
-      combs.push_back(comb);
-
-    } else {
-
-      auto n0new = n0 - ii;
-      std::vector<uint> newpool(n0new, 0);
-      for (auto kk = 0; kk < n0new; kk++) {
-        newpool[kk] = pool[kk + ii + 1];
-      }
-
-      auto npnew = np - 1;
-      auto nnew = n + 1;
-      combinations(n0new, newpool, npnew, inds, nnew, combs);
-    }
-  }
-}
-
-// -----------------------------------------------------------------------------
-// find all possible selections of np out of n0
-int combinations(int n0, int np, std::vector<std::vector<uint>>& combs)
-{
-  // initialisations
-  combs.clear();
-  if (n0 < np) {
-    return 0;
-  }
-
-  std::vector<uint> pool(n0, 0);
-  for (auto ii = 0; ii < n0; ii++) {
-    pool[ii] = ii;
-  }
-  std::vector<uint> inds(np, 0);
-
-  // iterate recursively
-  combinations(n0, pool, np, inds, 0, combs);
-
-  return combs.size();
-}
-
-// -----------------------------------------------------------------------------
-std::vector<std::vector<uint>> combinations(int nCombine, int nPool)
-{
-  // all permutations of nCombine elements
-  std::vector<std::vector<uint>> perms;
-  permutations(nCombine, perms);
-
-  // all selections of nCombine elements from nPool elements
-  std::vector<std::vector<uint>> combs;
-  combinations(nPool, nCombine, combs);
-
-  // permute the combinations
-  std::vector<std::vector<uint>> copes;
-  for (auto comb : combs) {
-    for (auto perm : perms) {
-      std::vector<uint> cope(nCombine, 0);
-      for (auto ii = 0; ii < nCombine; ii++) {
-        cope[perm[ii]] = comb[ii];
-      }
-      copes.push_back(cope);
-    }
-  }
-
-  return copes;
-}
-
-// -----------------------------------------------------------------------------
-DGParticle::DGParticle(anaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb)
+DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb)
 {
   // compute invariant mass
-  TLorentzVector lvtmp, IVM;
+  TLorentzVector lvtmp;
   auto pidinfo = anaPars.TPCnSigmas();
 
-  // loop over tracks
+  // loop over tracks and update mIVM
+  mIVM = TLorentzVector(0., 0., 0., 0.);
   auto cnt = -1;
   for (auto ind : comb) {
     cnt++;
     auto track = dgtracks.rawIteratorAt(ind);
-    lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), particleMass(pidinfo[cnt * 12]));
-    IVM += lvtmp;
+    lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), particleMass(pdg, pidinfo[cnt * 12]));
+    mIVM += lvtmp;
   }
 
-  mM = IVM.M();
-  mPerp = IVM.Perp();
+  // set array of track indices
   mtrkinds = comb;
 }
 
@@ -222,12 +49,18 @@ void DGParticle::Print()
 {
   LOGF(info, "DGParticle:");
   LOGF(info, "  Number of particles: %i", mtrkinds.size());
-  LOGF(info, "  Mass / pt: %f / %f", mM, mPerp);
+  LOGF(info, "  Mass / pt: %f / %f", mIVM.M(), mIVM.Perp());
   LOGF(info, "");
 }
 
+// =============================================================================
+DGPIDSelector::DGPIDSelector()
+{
+  fPDG = TDatabasePDG::Instance();
+}
+
 // -----------------------------------------------------------------------------
-float pidSelector::getTPCnSigma(aod::DGTrack track, int hypo)
+float DGPIDSelector::getTPCnSigma(aod::DGTrack track, int hypo)
 {
   switch (hypo) {
     case 0:
@@ -241,12 +74,12 @@ float pidSelector::getTPCnSigma(aod::DGTrack track, int hypo)
     case 4:
       return track.tpcNSigmaPr();
     default:
-      return 999.;
+      return 0.;
   }
 }
 
 // -----------------------------------------------------------------------------
-bool pidSelector::isGoodTrack(aod::DGTrack track, int cnt)
+bool DGPIDSelector::isGoodTrack(aod::DGTrack track, int cnt)
 {
   // extract PID information
   auto pidinfo = mAnaPars.TPCnSigmas();
@@ -288,7 +121,7 @@ bool pidSelector::isGoodTrack(aod::DGTrack track, int cnt)
 }
 
 // -----------------------------------------------------------------------------
-int pidSelector::computeIVMs(int nCombine, aod::DGTracks const& dgtracks)
+int DGPIDSelector::computeIVMs(int nCombine, aod::DGTracks const& dgtracks)
 {
   // reset
   mIVMs.clear();
@@ -311,12 +144,176 @@ int pidSelector::computeIVMs(int nCombine, aod::DGTracks const& dgtracks)
 
     // update list of IVMs
     if (isGoodComb) {
-      DGParticle IVM(mAnaPars, dgtracks, comb);
+      DGParticle IVM(fPDG, mAnaPars, dgtracks, comb);
       mIVMs.push_back(IVM);
     }
   }
 
   return mIVMs.size();
+}
+
+// -----------------------------------------------------------------------------
+int DGPIDSelector::pid2ind(int pid)
+{
+  switch (abs(pid)) {
+    case 21: // electron
+      return 0;
+    case 211: // pion
+      return 1;
+    case 13: // muon
+      return 2;
+    case 321: // kaon
+      return 3;
+    case 2212: // proton
+      return 4;
+    default: // unknown
+      return -1.;
+  }
+};
+
+// -----------------------------------------------------------------------------
+// find all permutations of n0 elements
+void DGPIDSelector::permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms)
+{
+
+  // create local reference
+  auto ref2u = ref;
+
+  // loop over np-1 rotations of last np elements of ref
+  for (auto ii = 0; ii < np; ii++) {
+
+    // create a new permutation
+    // copy first n0-np elements from ref
+    // then rotate last np elements of ref
+    std::vector<uint> perm(n0, 0);
+    for (auto ii = 0; ii < n0 - np; ii++) {
+      perm[ii] = ref2u[ii];
+    }
+    for (auto ii = n0 - np + 1; ii < n0; ii++) {
+      perm[ii - 1] = ref2u[ii];
+    }
+    perm[n0 - 1] = ref2u[n0 - np];
+
+    // add new permutation to the list of permuutations
+    if (ii < (np - 1)) {
+      perms.push_back(perm);
+    }
+
+    // if np>2 then do permutation of next level
+    // use the new combination as reference
+    if (np > 2) {
+      auto newnp = np - 1;
+      permutations(perm, n0, newnp, perms);
+    }
+
+    // update reference
+    ref2u = perm;
+  }
+}
+
+//-----------------------------------------------------------------------------
+// find all permutations of n0 elements
+int DGPIDSelector::permutations(int n0, std::vector<std::vector<uint>>& perms)
+{
+  // initialize with first trivial combination
+  perms.clear();
+  if (n0 == 0) {
+    return 0;
+  }
+
+  std::vector<uint> ref(n0, 0);
+  for (auto ii = 0; ii < n0; ii++) {
+    ref[ii] = ii;
+  }
+  perms.push_back(ref);
+
+  // iterate recursively
+  permutations(ref, n0, n0, perms);
+
+  return perms.size();
+}
+
+//-----------------------------------------------------------------------------
+// find selections of np out of n0
+void DGPIDSelector::combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
+                                 std::vector<std::vector<uint>>& combs)
+{
+  // loop over pool
+  for (auto ii = 0; ii < n0 - n; ii++) {
+
+    inds[n] = pool[ii];
+
+    // if all inds are defined then print them out
+    // else get next inds
+    if (np == 1) {
+
+      std::vector<uint> comb(n + 1, 0);
+      for (uint ii = 0; ii < inds.size(); ii++) {
+        comb[ii] = inds[ii];
+      }
+      combs.push_back(comb);
+
+    } else {
+
+      auto n0new = n0 - ii;
+      std::vector<uint> newpool(n0new, 0);
+      for (auto kk = 0; kk < n0new; kk++) {
+        newpool[kk] = pool[kk + ii + 1];
+      }
+
+      auto npnew = np - 1;
+      auto nnew = n + 1;
+      combinations(n0new, newpool, npnew, inds, nnew, combs);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// find all possible selections of np out of n0
+int DGPIDSelector::combinations(int n0, int np, std::vector<std::vector<uint>>& combs)
+{
+  // initialisations
+  combs.clear();
+  if (n0 < np) {
+    return 0;
+  }
+
+  std::vector<uint> pool(n0, 0);
+  for (auto ii = 0; ii < n0; ii++) {
+    pool[ii] = ii;
+  }
+  std::vector<uint> inds(np, 0);
+
+  // iterate recursively
+  combinations(n0, pool, np, inds, 0, combs);
+
+  return combs.size();
+}
+
+// -----------------------------------------------------------------------------
+std::vector<std::vector<uint>> DGPIDSelector::combinations(int nCombine, int nPool)
+{
+  // all permutations of nCombine elements
+  std::vector<std::vector<uint>> perms;
+  permutations(nCombine, perms);
+
+  // all selections of nCombine elements from nPool elements
+  std::vector<std::vector<uint>> combs;
+  combinations(nPool, nCombine, combs);
+
+  // permute the combinations
+  std::vector<std::vector<uint>> copes;
+  for (auto comb : combs) {
+    for (auto perm : perms) {
+      std::vector<uint> cope(nCombine, 0);
+      for (auto ii = 0; ii < nCombine; ii++) {
+        cope[perm[ii]] = comb[ii];
+      }
+      copes.push_back(cope);
+    }
+  }
+
+  return copes;
 }
 
 // -----------------------------------------------------------------------------

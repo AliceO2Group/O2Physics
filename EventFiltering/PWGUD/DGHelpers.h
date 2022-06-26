@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DIFFRACTION_HELPERS_
-#define O2_ANALYSIS_DIFFRACTION_HELPERS_
+#ifndef O2_ANALYSIS_DGHELPERS_
+#define O2_ANALYSIS_DGHELPERS_
 
+#include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/LHCConstants.h"
@@ -19,7 +20,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDResponse.h"
-#include "EventFiltering/PWGUD/cutHolder.h"
+#include "EventFiltering/PWGUD/DGCutparHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,7 +50,7 @@ template <typename T>
 bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims);
 
 template <typename TC>
-bool hasGoodPID(cutHolder diffCuts, TC track);
+bool hasGoodPID(DGCutparHolder diffCuts, TC track);
 
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7);
@@ -59,11 +60,14 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 // Selector for Double Gap events
 struct DGSelector {
  public:
-  DGSelector() = default;
+  DGSelector()
+  {
+    fPDG = TDatabasePDG::Instance();
+  }
 
   // Function to check if collisions passes filter
   template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
-  int IsSelected(cutHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
     LOGF(debug, "Collision %f BC %i", collision.collisionTime(), bc.globalBC());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
@@ -115,9 +119,10 @@ struct DGSelector {
     // consider only vertex tracks
 
     // which particle hypothesis?
-    auto mass2Use = constants::physics::MassPionCharged;
-    if (diffCuts.pidHypothesis() == 321) {
-      mass2Use = constants::physics::MassKaonCharged;
+    auto mass2Use = 0.;
+    TParticlePDG* pdgparticle = fPDG->GetParticle(diffCuts.pidHypothesis());
+    if (pdgparticle != nullptr) {
+      mass2Use = pdgparticle->Mass();
     }
 
     auto netCharge = 0;
@@ -158,6 +163,9 @@ struct DGSelector {
     // if we arrive here then the event is good!
     return 0;
   };
+
+ private:
+  TDatabasePDG* fPDG;
 };
 
 // -----------------------------------------------------------------------------
@@ -167,7 +175,7 @@ struct DGSelector {
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
 // around t_coll could potentially be the true BC. ndt is typically 4. The
-// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS
+// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS.
 
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
@@ -221,7 +229,7 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
 template <typename TC>
-bool hasGoodPID(cutHolder diffCuts, TC track)
+bool hasGoodPID(DGCutparHolder diffCuts, TC track)
 {
   // El, Mu, Pi, Ka, and Pr are considered
   // at least one nSigma must be within set limits
@@ -385,4 +393,4 @@ bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims)
 }
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_DIFFRACTION_HELPERS_
+#endif // O2_ANALYSIS_DGHELPERS_

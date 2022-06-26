@@ -9,27 +9,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DIFFCUT_HOLDER_H_
-#define O2_ANALYSIS_DIFFCUT_HOLDER_H_
+#ifndef O2_ANALYSIS_DGCUT_HOLDER_H_
+#define O2_ANALYSIS_DGCUT_HOLDER_H_
 
 #include <Rtypes.h>
 
 // object to hold customizable cut values
-class cutHolder
+class DGCutparHolder
 {
  public:
   // constructor
-  cutHolder(int ndtcoll = 4, int nMinBCs = 7,
-            bool globalTracksOnly = false,
-            int MinNTracks = 0, int MaxNTracks = 10000,
-            int MinNetCharge = 0, int MaxNetCharge = 0,
-            int pidHypo = 211,
-            float MinPosz = -1000., float MaxPosz = 1000.,
-            float minPt = 0., float maxPt = 1000.,
-            float minEta = -1.0, float maxEta = 1.0,
-            float minIVM = 0.0, float maxIVM = 1000.,
-            float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
-            std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
+  DGCutparHolder(int ndtcoll = 4, int nMinBCs = 7,
+                 bool globalTracksOnly = false,
+                 float minrgtrwTOF = 0.,
+                 int MinNTracks = 0, int MaxNTracks = 10000,
+                 int MinNetCharge = 0, int MaxNetCharge = 0,
+                 int pidHypo = 211,
+                 float MinPosz = -1000., float MaxPosz = 1000.,
+                 float minPt = 0., float maxPt = 1000.,
+                 float minEta = -1.0, float maxEta = 1.0,
+                 float minIVM = 0.0, float maxIVM = 1000.,
+                 float maxNSigmaTPC = 1000., float maxNSigmaTOF = 1000.,
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mGlobalTracksOnly{globalTracksOnly}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinNetCharge{MinNetCharge}, mMaxNetCharge{MaxNetCharge}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mFITAmpLimits{FITAmpLimits}
   {
   }
 
@@ -37,6 +38,7 @@ class cutHolder
   void SetNDtcoll(int);
   void SetMinNBCs(int);
   void SetGlobalTracksOnly(bool);
+  void SetMinRgtrwTOF(float);
   void SetNTracks(int MinNTracks, int MaxNTracks);
   void SetNetCharge(int minNetCharge, int maxNetCharge);
   void SetPidHypothesis(int pidHypo);
@@ -52,6 +54,7 @@ class cutHolder
   int NDtcoll() const;
   int minNBCs() const;
   bool globalTracksOnly() const;
+  float minRgtrwTOF() const;
   int minNTracks() const;
   int maxNTracks() const;
   int minNetCharge() const;
@@ -76,6 +79,9 @@ class cutHolder
 
   // require all vertex tracks to be global tracks
   bool mGlobalTracksOnly;
+
+  // required minimum fraction of global tracks with TOF hit
+  float mMinRgtrwTOF;
 
   // number of tracks
   int mMinNTracks, mMaxNTracks; // Number of allowed tracks
@@ -102,7 +108,7 @@ class cutHolder
   // lower limits for FIT signals
   std::vector<float> mFITAmpLimits;
 
-  ClassDefNV(cutHolder, 1);
+  ClassDefNV(DGCutparHolder, 1);
 };
 
-#endif // O2_ANALYSIS_DIFFCUT_HOLDER_H_
+#endif // O2_ANALYSIS_DGCUT_HOLDER_H_

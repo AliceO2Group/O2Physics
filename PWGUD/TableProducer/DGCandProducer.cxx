@@ -51,7 +51,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
-#include "EventFiltering/PWGUD/diffHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 
 using namespace o2;
@@ -76,16 +76,16 @@ int8_t netCharge(TCs tracks)
 
 struct DGCandProducer {
 
-  // get a cutHolder
-  cutHolder diffCuts = cutHolder();
-  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // DG selector
   DGSelector dgSelector;
 
   void init(InitContext&)
   {
-    diffCuts = (cutHolder)DGCuts;
+    diffCuts = (DGCutparHolder)DGCuts;
   }
 
   Produces<aod::DGCandidates> outputCollisions;

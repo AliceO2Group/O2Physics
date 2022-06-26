@@ -9,18 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_PARAMETER_HOLDER_H_
-#define O2_ANALYSIS_PARAMETER_HOLDER_H_
+#ifndef O2_ANALYSIS_DGPARAMETER_HOLDER_H_
+#define O2_ANALYSIS_DGPARAMETER_HOLDER_H_
 
 #include <Rtypes.h>
 
 // object to hold customizable analysis parameters
-class anaparHolder
+class DGAnaparHolder
 {
  public:
   // constructor
-  anaparHolder(int NCombine = 0,
-               std::vector<float> TPCnSigmas = {0.}) : mNCombine{NCombine}, mTPCnSigmas{TPCnSigmas}
+  DGAnaparHolder(int NCombine = 0,
+                 std::vector<float> TPCnSigmas = {0.}) : mNCombine{NCombine}, mTPCnSigmas{TPCnSigmas}
   {
     // definition of maximum 10 particles
     // for each particle 12 parameters
@@ -48,7 +48,7 @@ class anaparHolder
   // PID information
   std::vector<float> mTPCnSigmas;
 
-  ClassDefNV(anaparHolder, 1);
+  ClassDefNV(DGAnaparHolder, 1);
 };
 
-#endif // O2_ANALYSIS_PARAMETER_HOLDER_H_
+#endif // O2_ANALYSIS_DGPARAMETER_HOLDER_H_

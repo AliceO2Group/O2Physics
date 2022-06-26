@@ -49,8 +49,8 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "PWGUD/Core/diffMCHelpers.h"
-#include "EventFiltering/PWGUD/diffHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/DGMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -61,9 +61,9 @@ struct DiffMCQA {
   float maxdEdxTPC;
   float maxdEdxTOF;
 
-  // get a cutHolder
-  cutHolder diffCuts = cutHolder();
-  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -80,10 +80,10 @@ struct DiffMCQA {
   //  bin  6: no FWD tracks
   //  bin  7: no global tracks which are no vtx tracks
   //  bin  8: no vtx tracks which are no global tracks
-  //  bin  9: at least one vtx tracks with TOF hit
-  //  bin 10: all vtx tracks with TOF hit
-  //  bin 11: possible ambiguous tracks
-  //  bin 12: possible ambiguous FwdTracks
+  //  bin  9: possible ambiguous tracks
+  //  bin 10: possible ambiguous FwdTracks
+  //  bin 11: at least one vtx tracks with TOF hit
+  //  bin 12: all vtx tracks with TOF hit
   //  bin 13: number of tracks >= minimum number
   //  bin 14: number of tracks <= maximum number
   //  bin 15: minimum pt <= pt of vtx tracks <= maximum pt
@@ -123,7 +123,7 @@ struct DiffMCQA {
       {"IVMptSysDG", "#IVMptSysDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       {"IVMptTrkDG", "#IVMptTrkDG", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       // PYTHIA8 diffractive events
-      {"StatDiff1", "#StatDiff1", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
+      {"StatDiff1", "#StatDiff1", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
       {"cleanFITDiff1", "#cleanFITDiff1", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
       {"TracksDiff1", "#TracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracksDiff1", "#vtxTracksDiff1", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
@@ -144,7 +144,7 @@ struct DiffMCQA {
       {"IVMptSysDGDiff1", "#IVMptSysDGDiff1", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       {"IVMptTrkDGDiff1", "#IVMptTrkDGDiff1", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}}},
       // GRANIITTI diffractive events
-      {"StatDiff2", "#StatDiff2", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
+      {"StatDiff2", "#StatDiff2", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
       {"cleanFITDiff2", "#cleanFITDiff2", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}}},
       {"TracksDiff2", "#TracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
       {"vtxTracksDiff2", "#vtxTracksDiff2", {HistType::kTH1F, {{50, 0.5, 50.5}}}},
@@ -178,7 +178,7 @@ struct DiffMCQA {
   {
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
-    diffCuts = (cutHolder)DGCuts;
+    diffCuts = (DGCutparHolder)DGCuts;
   }
 
   void run(ProcessingContext& pc)
@@ -195,6 +195,7 @@ struct DiffMCQA {
     // make sorted list of BC ranges which are associated with an ambiguous track.
     // This is used to efficiently check whether a given BC is contained in one of these ranges
     abcrs.reset();
+    LOGF(info, "<DiffMCQA> size of ambiguous tracks table %i", ambtracks.size());
     for (auto ambtrack : ambtracks) {
       auto bcfirst = ambtrack.bc().rawIteratorAt(0);
       auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
@@ -209,12 +210,15 @@ struct DiffMCQA {
 
     // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
     afbcrs.reset();
+    LOGF(info, "<DiffMCQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
     for (auto ambfwdtrack : ambfwdtracks) {
       auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
       auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
       afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
     }
     afbcrs.merge();
+
+    LOGF(info, "<DiffMCQA> Size of abcrs %i and afbcrs %i", abcrs.size(), afbcrs.size());
   }
 
   void process(CC const& collision, BCs const& bct0s,
@@ -224,7 +228,6 @@ struct DiffMCQA {
                aod::V0s& v0s, aod::Cascades& cascades,
                aod::McCollisions& McCols, aod::McParticles const& McParts)
   {
-    LOGF(debug, "<DiffMCQA> Start %i", abcrs.size());
     bool isDGcandidate = true;
 
     // is this a central diffractive event?
@@ -452,49 +455,50 @@ struct DiffMCQA {
       isDGcandidate &= vtxAndGlobal;
     }
 
-    // at least one vtx track with TOF hit
-    if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(10., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
-    } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(10., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
-    } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
-      registry.get<TH1>(HIST("Stat"))->Fill(10., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
-    }
-
     // check a given bc for possible ambiguous Tracks
-    auto withAmbTracks = isDGcandidate;
+    auto noAmbTracks = isDGcandidate;
     for (auto& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
-        withAmbTracks = false;
+        noAmbTracks = false;
         break;
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(11., withAmbTracks * 1.);
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(9., noAmbTracks * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(11., withAmbTracks * 1.);
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(9., noAmbTracks * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(11., withAmbTracks * 1.);
+      registry.get<TH1>(HIST("Stat"))->Fill(9., noAmbTracks * 1.);
     }
 
     // check a given bc for possible ambiguous FwdTracks
-    auto withAmbFwdTracks = isDGcandidate;
+    auto noAmbFwdTracks = isDGcandidate;
     for (auto& bc : bcSlice) {
       if (afbcrs.isInRange(bc.globalIndex())) {
-        withAmbFwdTracks = false;
+        noAmbFwdTracks = false;
         break;
       }
     }
     if (isPythiaDiff) {
-      registry.get<TH1>(HIST("StatDiff1"))->Fill(12., withAmbFwdTracks * 1.);
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(10., noAmbFwdTracks * 1.);
     } else if (isGraniittiDiff) {
-      registry.get<TH1>(HIST("StatDiff2"))->Fill(12., withAmbFwdTracks * 1.);
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(10., noAmbFwdTracks * 1.);
     } else {
-      registry.get<TH1>(HIST("Stat"))->Fill(12., withAmbFwdTracks * 1.);
+      registry.get<TH1>(HIST("Stat"))->Fill(10., noAmbFwdTracks * 1.);
     }
+
+    // at least one vtx track with TOF hit
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(11., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+      registry.get<TH1>(HIST("StatDiff1"))->Fill(12., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(11., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+      registry.get<TH1>(HIST("StatDiff2"))->Fill(12., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
+    } else {
+      registry.get<TH1>(HIST("Stat"))->Fill(11., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+      registry.get<TH1>(HIST("Stat"))->Fill(12., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
+    }
+    isDGcandidate &= (rgtrwTOF >= diffCuts.minRgtrwTOF());
 
     // number of vertex tracks <= n
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
