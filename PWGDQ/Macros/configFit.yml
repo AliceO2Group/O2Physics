@@ -8,4 +8,7 @@ input:
     "parLimMax": [[3.5, 1.9e-01, 1.0891, 3.3931, 2.098, 8.695], [+10, 100, 100], [50000, 500000]],
     "parName": [["mean", "width", "a", "b", "c", "d"], ["aa", "bb", "cc"], ["sig", "bkg"]],
     "fitRangeMin": [2, 2.1, 2.2],
-    "fitRangeMax": [5, 4.9, 4.8]}
+    "fitRangeMax": [5, 4.9, 4.8]
+  }
+output:
+output_file_name: "FitResults.root"
