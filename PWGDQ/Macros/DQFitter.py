@@ -1,3 +1,6 @@
+"""
+\author Luca Micheletti <luca.micheletti@cern.ch>, CERN
+"""
 from os.path import exists
 from traceback import print_tb
 import ROOT

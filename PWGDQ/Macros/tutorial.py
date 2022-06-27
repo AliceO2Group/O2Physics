@@ -1,3 +1,6 @@
+"""
+\author Luca Micheletti <luca.micheletti@cern.ch>, CERN
+"""
 import yaml
 import sys
 import argparse
@@ -64,5 +67,4 @@ def main():
         dqFitter = DQFitter(inputCfg["input"]["input_file_name"], inputCfg["input"]["input_name"])
         dqFitter.SetFitConfig(inputCfg["input"]["pdf_dictionary"])
         dqFitter.MultiTrial()
-
 main()
