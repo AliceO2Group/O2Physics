@@ -463,10 +463,10 @@ struct TableMakerMC {
         auto groupedMuons = tracksMuon.sliceBy(aod::fwdtrack::collisionId, collision.globalIndex());
         // loop over muons
 
-        //first we need to get the correct indices
+        // first we need to get the correct indices
         int nDel = 0;
         int idxPrev = -1;
-        std::map<int, int> newEntryNb;//(tracksMuon.size(), -99);
+        std::map<int, int> newEntryNb; //(tracksMuon.size(), -99);
         std::map<int, int> newMatchIndex;
 
         for (auto& muon : groupedMuons) {
@@ -479,12 +479,12 @@ struct TableMakerMC {
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
 
-          if (muon.index() > idxPrev + 1) { //checks if some muons are filtered even before the skimming function
+          if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
             nDel += muon.index() - (idxPrev + 1);
           }
           idxPrev = muon.index();
 
-          //check the cuts and filters
+          // check the cuts and filters
           int i = 0;
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
@@ -498,14 +498,12 @@ struct TableMakerMC {
           }
           if (!trackTempFilterMap) { // does not pass the cuts
             nDel++;
-          }
-          else { //it passes the cuts and will be saved in the tables
+          } else { // it passes the cuts and will be saved in the tables
             newEntryNb[muon.index()] = muon.index() - nDel;
           }
-
         }
 
-        //now let's save the muons with the correct indices and matches
+        // now let's save the muons with the correct indices and matches
         for (auto& muon : groupedMuons) {
 
           trackFilteringTag = uint64_t(0);
@@ -568,30 +566,28 @@ struct TableMakerMC {
             fCounters[0]++;
           }
 
-          //update the matching MCH/MFT index
+          // update the matching MCH/MFT index
 
           if (int(muon.trackType()) == 0 || int(muon.trackType()) == 2) { // MCH-MFT or GLB track
             int matchIdx = muon.matchMCHTrackId() - muon.offsets();
-            if(newEntryNb.count(matchIdx)>0) { //if the key exists which means the match will not get deleted
-              newMatchIndex[muon.index()] = newEntryNb[matchIdx]; //update the match for this muon to the updated entry of the match
-              newMatchIndex[muon.index()] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; //adding the offset of muons, muonBasic.lastIndex() start at -1
-              if (int(muon.trackType()) == 0) { //for now only do this to global tracks
-                newMatchIndex[matchIdx] = newEntryNb[muon.index()]; //add the  updated index of this muon as a match to mch track
-                newMatchIndex[matchIdx] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; //adding the offset, muonBasic.lastIndex() start at -1
+            if (newEntryNb.count(matchIdx) > 0) {                                                  // if the key exists which means the match will not get deleted
+              newMatchIndex[muon.index()] = newEntryNb[matchIdx];                                  // update the match for this muon to the updated entry of the match
+              newMatchIndex[muon.index()] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()]; // adding the offset of muons, muonBasic.lastIndex() start at -1
+              if (int(muon.trackType()) == 0) {                                                    // for now only do this to global tracks
+                newMatchIndex[matchIdx] = newEntryNb[muon.index()];                                // add the  updated index of this muon as a match to mch track
+                newMatchIndex[matchIdx] += muonBasic.lastIndex() + 1 - newEntryNb[muon.index()];   // adding the offset, muonBasic.lastIndex() start at -1
               }
-            }
-            else {
+            } else {
               newMatchIndex[muon.index()] = -1;
             }
           }
 
-          else if (int(muon.trackType() == 4)) { //an MCH track
-          // in this case the matches should be filled from the other types but we need to check
+          else if (int(muon.trackType() == 4)) { // an MCH track
+            // in this case the matches should be filled from the other types but we need to check
             if (newMatchIndex.count(muon.index()) == 0) {
-                newMatchIndex[muon.index()] = -1;
-              }
+              newMatchIndex[muon.index()] = -1;
             }
-
+          }
 
           muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign());
           muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
