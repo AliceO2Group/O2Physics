@@ -1,3 +1,4 @@
+---
 input:
   input_file_name: "tutorial.root"
   input_name: "data"
@@ -10,5 +11,3 @@ input:
     "fitRangeMin": [2, 2.1, 2.2],
     "fitRangeMax": [5, 4.9, 4.8]
   }
-output:
-output_file_name: "FitResults.root"
