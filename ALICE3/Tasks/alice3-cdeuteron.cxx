@@ -20,7 +20,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/RecoDecay.h"
 #include "DetectorsVertexing/DCAFitterN.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
 
 using namespace o2;

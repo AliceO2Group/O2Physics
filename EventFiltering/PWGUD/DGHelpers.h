@@ -19,7 +19,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "EventFiltering/PWGUD/DGCutparHolder.h"
 
 using namespace o2;
