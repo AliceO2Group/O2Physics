@@ -127,7 +127,7 @@ class DQFitter:
         canvasPull.Write()
         histResults.Write()
 
-    
+
     def MultiTrial(self):
         '''
         Method to run multiple fits of the same invariant mass distribution
