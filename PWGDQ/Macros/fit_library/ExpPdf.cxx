@@ -16,29 +16,24 @@
 
 ClassImp(ExpPdf);
 
- ExpPdf::ExpPdf(const char *name, const char *title,
-                        RooAbsReal& _x,
-                        RooAbsReal& _A,
-                        RooAbsReal& _B) :
-   RooAbsPdf(name,title),
-   x("x","x",this,_x),
-   A("A","A",this,_A),
-   B("B","B",this,_B)
- {
- }
+ExpPdf::ExpPdf(const char* name, const char* title,
+               RooAbsReal& _x,
+               RooAbsReal& _A,
+               RooAbsReal& _B) : RooAbsPdf(name, title),
+                                 x("x", "x", this, _x),
+                                 A("A", "A", this, _A),
+                                 B("B", "B", this, _B)
+{
+}
 
+ExpPdf::ExpPdf(const ExpPdf& other, const char* name) : RooAbsPdf(other, name),
+                                                        x("x", this, other.x),
+                                                        A("A", this, other.A),
+                                                        B("B", this, other.B)
+{
+}
 
- ExpPdf::ExpPdf(const ExpPdf& other, const char* name) :
-   RooAbsPdf(other,name),
-   x("x",this,other.x),
-   A("A",this,other.A),
-   B("B",this,other.B)
- {
- }
-
-
-
- Double_t ExpPdf::evaluate() const
- {
-   return TMath::Exp(-B * (x / A));
- }
+Double_t ExpPdf::evaluate() const
+{
+  return TMath::Exp(-B * (x / A));
+}

@@ -1,9 +1,14 @@
+from os.path import exists
+from traceback import print_tb
 import ROOT
 from ROOT import TCanvas, TFile, TH1F, RooRealVar, RooDataSet, RooWorkspace, RooDataHist, RooArgSet
 from ROOT import gPad, gROOT
 
 class DQFitter:
     def __init__(self, fInName, fInputName):
+        if not exists(fInName):
+            print("The input file does not exist, exit...")
+            exit()
         self.fPdfDict          = {}
         self.fFileOut          = TFile("FitResults.root", "RECREATE")
         self.fFileIn           = TFile.Open(fInName)
