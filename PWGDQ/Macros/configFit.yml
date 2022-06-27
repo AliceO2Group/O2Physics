@@ -9,4 +9,4 @@ input:
     "parName": [["mean", "width", "a", "b", "c", "d"], ["aa", "bb", "cc"], ["sig", "bkg"]],
     "fitRangeMin": [2, 2.1, 2.2],
     "fitRangeMax": [5, 4.9, 4.8]
-    }
+  }
