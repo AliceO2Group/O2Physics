@@ -43,12 +43,14 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "bb2", bpo::value<float>()->default_value(2.5266601063857674e-16f), "Bethe-Bloch parameter 2")(
     "bb3", bpo::value<float>()->default_value(2.7212300300598145f), "Bethe-Bloch parameter 3")(
     "bb4", bpo::value<float>()->default_value(6.080920219421387f), "Bethe-Bloch parameter 4")(
+    "s0", bpo::value<float>()->default_value(0.07), "resolution parameter 0")(
+    "s1", bpo::value<float>()->default_value(0.), "resolution parameter 1")(
     "reso-param-path", bpo::value<std::string>()->default_value(""), "Path to resolution parameter file")(
     "sigmaGlobal", bpo::value<std::string>()->default_value("5.43799e-7,0.053044,0.667584,0.0142667,0.00235175,1.22482,2.3501e-7,0.031585"), "Sigma parameters global")(
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.299999952316284f), "Charge factor value")(
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
-    "useDefaultParam", bpo::value<bool>()->default_value(true), "Use default parametrizatio")(
+    "useDefaultParam", bpo::value<bool>()->default_value(true), "Use default sigma parametrisation")(
     "dryrun,D", bpo::value<int>()->default_value(0), "Perform a dryrun check before uploading")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(
     "help,h", "Produce help message.");
@@ -98,6 +100,8 @@ int main(int argc, char* argv[])
   const float bb2 = arguments["bb2"].as<float>();
   const float bb3 = arguments["bb3"].as<float>();
   const float bb4 = arguments["bb4"].as<float>();
+  const float s0 = arguments["s0"].as<float>();
+  const float s1 = arguments["s1"].as<float>();
   const std::string pathResoParam = arguments["reso-param-path"].as<std::string>();
   const std::string sigmaGlobal = arguments["sigmaGlobal"].as<std::string>();
   const float mipval = arguments["paramMIP"].as<float>();
@@ -111,7 +115,7 @@ int main(int argc, char* argv[])
   }
   // create parameter arrays from commandline options
   std::array<float, 5> BBparams = {bb0, bb1, bb2, bb3, bb4};
-
+  std::array<float, 2> sparams = {s0, s1};
   std::vector<double> sigparamsGlobal;
 
   if (pathResoParam != "") { // Read resolution parameters from file
@@ -181,6 +185,7 @@ int main(int argc, char* argv[])
 
       tpc = new Response();
       tpc->SetBetheBlochParams(BBparams);
+      tpc->SetResolutionParamsDefault(sparams);
       tpc->SetResolutionParams(sigparamsGlobal);
       tpc->SetMIP(mipval);
       tpc->SetChargeFactor(chargefacval);
