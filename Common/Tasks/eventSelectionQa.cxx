@@ -219,7 +219,7 @@ struct EventSelectionQaTask {
   }
 
   void processRun2(
-    soa::Join<aod::Collisions, aod::EvSels> cols,
+    soa::Join<aod::Collisions, aod::EvSels> const& cols,
     BCsRun2 const& bcs,
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
@@ -387,7 +387,7 @@ struct EventSelectionQaTask {
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
   void processRun3(
-    soa::Join<aod::Collisions, aod::EvSels> cols,
+    soa::Join<aod::Collisions, aod::EvSels> const& cols,
     aod::FullTracks const& tracks,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,

@@ -222,7 +222,7 @@ struct HFCandidateCreatorLbMC {
   Produces<aod::HfCandLbMCGen> rowMCMatchGen;
 
   void process(aod::HfCandLb const& candidates,
-               aod::HfCandProng3,
+               aod::HfCandProng3 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {

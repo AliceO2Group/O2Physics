@@ -125,7 +125,7 @@ struct CellMonitor {
   }
 
   /// \brief Process EMCAL cells
-  void process(o2::aod::BC const bc, o2::aod::Calos const& cells)
+  void process(o2::aod::BC const& bc, o2::aod::Calos const& cells)
   {
     LOG(debug) << "Processing next event";
     o2::InteractionRecord eventIR;

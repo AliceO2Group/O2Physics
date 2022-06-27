@@ -713,7 +713,7 @@ struct FV0Signals {
       {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
     }};
 
-  void process(aod::FV0A fv0)
+  void process(aod::FV0A const& fv0)
   {
     // side A
     for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -731,7 +731,7 @@ struct FT0Signals {
       {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
     }};
 
-  void process(aod::FT0 ft0)
+  void process(aod::FT0 const& ft0)
   {
     // side A
     for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
@@ -754,7 +754,7 @@ struct FDDSignals {
       {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
     }};
 
-  void process(aod::FDD fdd)
+  void process(aod::FDD const& fdd)
   {
     // side A
     for (auto ind = 0; ind < 8; ind++) {
@@ -799,7 +799,7 @@ struct ZDCSignals {
       {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
     }};
 
-  void process(aod::Zdc zdc)
+  void process(aod::Zdc const& zdc)
   {
     // Zdc energies
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(0., zdc.energyZEM1());
@@ -836,7 +836,7 @@ struct CaloSignals {
       {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
     }};
 
-  void process(aod::Calo calo)
+  void process(aod::Calo const& calo)
   {
     // cell number
     registry.get<TH1>(HIST("CaloCell"))->Fill(calo.cellNumber());

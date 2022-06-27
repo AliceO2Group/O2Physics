@@ -205,7 +205,7 @@ struct HFCandidateCreatorChicMC {
   OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGammaMatched{TH1F("hMassChicToJpsiToMuMuGammaMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   void process(aod::HfCandChic const& candidates,
-               aod::HfCandProng2,
+               aod::HfCandProng2 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC,
                aod::ECALs const& ecals)
