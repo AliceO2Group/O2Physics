@@ -62,7 +62,7 @@ def main():
 
     if args.gen_tutorial:
         GenerateTutorialSample()
-    
+
     if args.run_fit:
         dqFitter = DQFitter(inputCfg["input"]["input_file_name"], inputCfg["input"]["input_name"])
         dqFitter.SetFitConfig(inputCfg["input"]["pdf_dictionary"])
