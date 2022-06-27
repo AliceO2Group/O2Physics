@@ -64,14 +64,17 @@ struct qaEventTrack {
   Configurable<float> fractionOfSampledEvents{"fractionOfSampledEvents", 1.f, "Derived data option: fraction of events to sample"};
 
   // options to select only specific tracks
-  Configurable<bool> selectGlobalTracks{"selectGlobalTracks", true, "select global tracks"};
-  Configurable<bool> debugFilterkAcceptanceTrkSel{"debugFilterkAcceptanceTrkSel", false, "debug filter: select acceptance tracks (track selection workflow)"};
-  Configurable<bool> debugFilterkAcceptaceManualPtMin{"debugFilterkAcceptaceManualPtMin", false, "debug filter: select acceptance tracks (manual, pt min only)"};
-  Configurable<bool> debugFilterkAcceptaceManualPtMinMax{"debugFilterkAcceptaceManualPtMinMax", false, "debug filter: select acceptance tracks (manual, pt min and max)"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<int> selectCharge{"selectCharge", 0, "select charge +1 or -1 (0 means no selection)"};
   Configurable<bool> selectPrim{"selectPrim", false, "select primaries"};
   Configurable<bool> selectSec{"selectSec", false, "select secondaries"};
   Configurable<int> selectPID{"selectPID", 0, "select pid"};
+  Configurable<float> minPt{"minPt", -10.f, "Minimum pt of accepted tracks"};
+  Configurable<float> maxPt{"maxPt", 1e10f, "Maximum pt of accepted tracks"};
+  Configurable<float> minEta{"minEta", -2.f, "Minimum eta of accepted tracks"};
+  Configurable<float> maxEta{"maxEta", 2.0f, "Maximum eta of accepted tracks"};
+  Configurable<float> minPhi{"minPhi", -1.f, "Minimum phi of accepted tracks"};
+  Configurable<float> maxPhi{"maxPhi", 10.f, "Maximum phi of accepted tracks"};
 
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
@@ -81,13 +84,20 @@ struct qaEventTrack {
   ConfigurableAxis binsTrackMultiplicity{"binsTrackMultiplcity", {200, 0, 200}, ""};
 
   // TODO: ask if one can have different filters for both process functions
-  Filter trackFilter = (selectGlobalTracks.node() == false) || requireGlobalTrackInFilter(); // default: lobal tracks
-  // Partition<aod::TracksIU> tracksIUFiltered = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks); // this cannot work because TrackSelection only on tracks and not tracksIU
-  // debug filters - acceptance
-  Filter trackFilterPtEtaTrkSel = (debugFilterkAcceptanceTrkSel.node() == false) || requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
-  Filter trackFilterPtEtaManualPtMin = (debugFilterkAcceptaceManualPtMin.node() == false) || ((aod::track::pt > 0.1f) && (nabs(aod::track::eta) < 0.8f));
-  Filter trackFilterPtEtaManualPtMinMax = (debugFilterkAcceptaceManualPtMinMax.node() == false) || ((aod::track::pt > 0.1f) && (aod::track::pt < 1e10f) && (nabs(aod::track::eta) < 0.8f));
-  Partition<aod::TracksIU> tracksIUFiltered = (debugFilterkAcceptaceManualPtMin.node() == false && debugFilterkAcceptaceManualPtMinMax.node() == false) || (debugFilterkAcceptaceManualPtMin.node() == true && (aod::track::pt > 0.1f) && (nabs(aod::track::eta) < 0.8f)) || (debugFilterkAcceptaceManualPtMinMax.node() == true && (aod::track::pt > 0.1f) && (aod::track::pt < 1e10f) && (nabs(aod::track::eta) < 0.8f));
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireTrackCutInFilter(TrackSelectionFlags::kQualityTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                       ((trackSelection.node() == 4) && requireTrackCutInFilter(TrackSelectionFlags::kQualityTracks)) ||
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+
+  using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection>;
+  Partition<TrackIUTable> tracksIUFiltered = (trackSelection.node() == 0) ||
+                                             ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                                             ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                                             ((trackSelection.node() == 3) && requireTrackCutInFilter(TrackSelectionFlags::kQualityTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                                             ((trackSelection.node() == 4) && requireTrackCutInFilter(TrackSelectionFlags::kQualityTracks)) ||
+                                             ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
   HistogramRegistry histos;
 
@@ -95,7 +105,42 @@ struct qaEventTrack {
 
   // Function to select tracks
   template <bool IS_MC, typename T>
-  bool isSelectedTrack(const T& track);
+  bool isSelectedTrack(const T& track)
+  {
+    if (track.pt() < minPt || track.pt() > maxPt) { // Extra pT selection
+      return false;
+    }
+    if (track.eta() < minEta || track.eta() > maxEta) { // Extra Eta selection
+      return false;
+    }
+    if (track.phi() < minPhi || track.phi() > maxPhi) { // Extra Phi selection
+      return false;
+    }
+    if (selectCharge && (selectCharge != track.sign())) {
+      return false;
+    }
+    if constexpr (IS_MC) {
+      if (!track.has_mcParticle()) {
+        if (selectPrim || selectSec || selectPID) {
+          return false;
+        } else {
+          return true;
+        }
+      }
+      auto particle = track.mcParticle();
+      const bool isPrimary = particle.isPhysicalPrimary();
+      if (selectPrim && !isPrimary) {
+        return false;
+      }
+      if (selectSec && isPrimary) {
+        return false;
+      }
+      if (selectPID && selectPID != std::abs(particle.pdgCode())) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   // Function to select collisions
   template <bool doFill, typename T>
@@ -119,8 +164,8 @@ struct qaEventTrack {
 
   // Process function for data
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::TOFEvTime>>;
-  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FullTracks const& tracksUnfiltered)
+  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
+  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
   {
     fillRecoHistograms<false>(collision, tracks, tracksUnfiltered);
   }
@@ -153,19 +198,19 @@ struct qaEventTrack {
       histos.fill(HIST("Tracks/IU/snp"), trkIU.snp());
       histos.fill(HIST("Tracks/IU/tgl"), trkIU.tgl());
 
-      histos.fill(HIST("Tracks/IUdeltaDCA/Pt"), trkIU.pt() - trk.pt());
-      histos.fill(HIST("Tracks/IUdeltaDCA/Eta"), trkIU.eta() - trk.eta());
-      histos.fill(HIST("Tracks/IUdeltaDCA/Phi"), trkIU.phi() - trk.phi());
+      histos.fill(HIST("Tracks/IU/deltaDCA/Pt"), trk.pt(), trkIU.pt() - trk.pt());
+      histos.fill(HIST("Tracks/IU/deltaDCA/Eta"), trk.eta(), trkIU.eta() - trk.eta());
+      histos.fill(HIST("Tracks/IU/deltaDCA/Phi"), trk.phi(), trkIU.phi() - trk.phi());
 
-      histos.fill(HIST("Tracks/IUvsDCA/Pt"), trk.pt(), trkIU.pt());
-      histos.fill(HIST("Tracks/IUvsDCA/Eta"), trk.eta(), trkIU.eta());
-      histos.fill(HIST("Tracks/IUvsDCA/Phi"), trk.phi(), trkIU.phi());
+      histos.fill(HIST("Tracks/IU/vsDCA/Pt"), trk.pt(), trkIU.pt());
+      histos.fill(HIST("Tracks/IU/vsDCA/Eta"), trk.eta(), trkIU.eta());
+      histos.fill(HIST("Tracks/IU/vsDCA/Phi"), trk.phi(), trkIU.phi());
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
 
   // Process function for filtered IU
-  void processDataIUFiltered(CollisionTableData::iterator const& collision)
+  void processDataIUFiltered(CollisionTableData::iterator const& collision, TrackIUTable const&)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
@@ -196,10 +241,9 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processDataIUFiltered, "process IU filtered", true);
 
   // Process function for MC
-  using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using TrackTableMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::TOFEvTime,
-                                               aod::McTrackLabels>>;
-  void processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks, aod::FullTracks const& tracksUnfiltered,
+  using CollisionTableMC = soa::Join<CollisionTableData, aod::McCollisionLabels>;
+  using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
+  void processMC(CollisionTableMC::iterator const& collision, soa::Filtered<TrackTableMC> const& tracks, aod::FullTracks const& tracksUnfiltered,
                  aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     fillRecoHistograms<true>(collision, tracks, tracksUnfiltered);
@@ -208,7 +252,7 @@ struct qaEventTrack {
 
   // Process functions for skimming data
   void processTableData(CollisionTableData::iterator const& collision,
-                        TrackTableData const& tracks,
+                        soa::Filtered<soa::Join<TrackTableData, aod::TOFSignal, aod::TOFEvTime>> const& tracks,
                         aod::BCs const& bcs)
   {
     fillDerivedTable<false>(collision, tracks, 0, bcs);
@@ -216,7 +260,7 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processTableData, "Process data for table producing", false);
 
   void processTableMC(CollisionTableMC::iterator const& collision,
-                      TrackTableMC const& tracks,
+                      soa::Filtered<soa::Join<TrackTableMC, aod::TOFSignal, aod::TOFEvTime>> const& tracks,
                       aod::McParticles const& mcParticles,
                       aod::McCollisions const& mcCollisions,
                       aod::BCs const& bcs)
@@ -375,7 +419,7 @@ void qaEventTrack::init(InitContext const&)
 
   const AxisSpec axisDeltaPt{100, -0.5, 0.5, "#it{p}_{T, rec} - #it{p}_{T, gen}"};
   const AxisSpec axisDeltaEta{100, -0.1, 0.1, "#eta_{rec} - #eta_{gen}"};
-  const AxisSpec axisDeltaPhi{100, -0.1, 0.1, "#phi_{rec} - #phi_{gen}"};
+  const AxisSpec axisDeltaPhi{100, -0.1, 0.1, "#varphi_{rec} - #varphi_{gen}"};
 
   // collision
   auto eventRecoEffHist = histos.add<TH1>("Events/recoEff", "", kTH1D, {{2, 0.5, 2.5}});
@@ -413,18 +457,58 @@ void qaEventTrack::init(InitContext const&)
   trackRecoEffHist->SetBit(TH1::kIsNotW);
 
   // kine histograms
-  histos.add("Tracks/Kine/pt", "#it{p}_{T};#it{p}_{T} [GeV/c]", kTH1D, {{axisPt}});
+  histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
   histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
-  histos.add("Tracks/Kine/phi", "#phi", kTH1D, {axisPhi});
+  histos.add("Tracks/Kine/phi", "#varphi", kTH1D, {axisPhi});
+  histos.add("Tracks/Kine/etavspt", "#eta vs #it{p}_{T}", kTH2F, {axisPt, axisEta});
+  histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
   if (doprocessMC) {
     histos.add("Tracks/Kine/resoPt", "", kTH2D, {axisDeltaPt, axisPt});
     histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
-    histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#phi_{rec}");
+    histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
   }
   histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
   histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
   // track histograms
+  auto hselAxis = histos.add<TH1>("Tracks/selection", "trackSelection", kTH1F, {{40, 0.5, 40.5}})->GetXaxis();
+  hselAxis->SetBinLabel(1, "Tracks read");
+  hselAxis->SetBinLabel(2, "Tracks selected");
+  hselAxis->SetBinLabel(3, "passedTrackType");
+  hselAxis->SetBinLabel(4, "passedPtRange");
+  hselAxis->SetBinLabel(5, "passedEtaRange");
+  hselAxis->SetBinLabel(6, "passedTPCNCls");
+  hselAxis->SetBinLabel(7, "passedTPCCrossedRows");
+  hselAxis->SetBinLabel(8, "passedTPCCrossedRowsOverNCls");
+  hselAxis->SetBinLabel(9, "passedTPCChi2NDF");
+  hselAxis->SetBinLabel(10, "passedTPCRefit");
+  hselAxis->SetBinLabel(11, "passedITSNCls");
+  hselAxis->SetBinLabel(12, "passedITSChi2NDF");
+  hselAxis->SetBinLabel(13, "passedITSRefit");
+  hselAxis->SetBinLabel(14, "passedITSHits");
+  hselAxis->SetBinLabel(15, "passedGoldenChi2");
+  hselAxis->SetBinLabel(16, "passedDCAxy");
+  hselAxis->SetBinLabel(17, "passedDCAz");
+  hselAxis->SetBinLabel(18, "isGlobalTrack");
+  // Now we combine cuts
+  hselAxis->SetBinLabel(19, "Summed cuts#rightarrow");
+  hselAxis->SetBinLabel(20, "passedTrackType");
+  hselAxis->SetBinLabel(21, "passedPtRange");
+  hselAxis->SetBinLabel(22, "passedEtaRange");
+  hselAxis->SetBinLabel(23, "passedTPCNCls");
+  hselAxis->SetBinLabel(24, "passedTPCCrossedRows");
+  hselAxis->SetBinLabel(25, "passedTPCCrossedRowsOverNCls");
+  hselAxis->SetBinLabel(26, "passedTPCChi2NDF");
+  hselAxis->SetBinLabel(27, "passedTPCRefit");
+  hselAxis->SetBinLabel(28, "passedITSNCls");
+  hselAxis->SetBinLabel(29, "passedITSChi2NDF");
+  hselAxis->SetBinLabel(30, "passedITSRefit");
+  hselAxis->SetBinLabel(31, "passedITSHits");
+  hselAxis->SetBinLabel(32, "passedGoldenChi2");
+  hselAxis->SetBinLabel(33, "passedDCAxy");
+  hselAxis->SetBinLabel(34, "passedDCAz");
+  hselAxis->SetBinLabel(35, "isGlobalTrack");
+
   histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
   histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
   histos.add("Tracks/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
@@ -485,20 +569,17 @@ void qaEventTrack::init(InitContext const&)
     h1->GetXaxis()->SetTitle(Form("%s IU", h1->GetXaxis()->GetTitle()));
 
     // Deltas
-    h1 = histos.add<TH1>("Tracks/IUdeltaDCA/Pt", "IU - DCA: Pt", kTH1F, {axisPt});
-    h1->GetXaxis()->SetTitle(Form("%s IU - DCA", h1->GetXaxis()->GetTitle()));
-    h1 = histos.add<TH1>("Tracks/IUdeltaDCA/Eta", "IU - DCA: Eta", kTH1F, {axisEta});
-    h1->GetXaxis()->SetTitle(Form("%s IU - DCA", h1->GetXaxis()->GetTitle()));
-    h1 = histos.add<TH1>("Tracks/IUdeltaDCA/Phi", "IU - DCA: Phi", kTH1F, {axisPhi});
-    h1->GetXaxis()->SetTitle(Form("%s IU - DCA", h1->GetXaxis()->GetTitle()));
+    histos.add("Tracks/IU/deltaDCA/Pt", "IU - DCA: Pt", kTH2F, {axisPt, {30, -0.15, 0.15, "#it{p}_{T}^{IU} - #it{p}_{T}^{DCA} [GeV/#it{c}]"}});
+    histos.add("Tracks/IU/deltaDCA/Eta", "IU - DCA: Eta", kTH2F, {axisEta, {30, -0.15, 0.15, "#it{#eta}^{IU} - #it{#eta}^{DCA}"}});
+    histos.add("Tracks/IU/deltaDCA/Phi", "IU - DCA: Phi", kTH2F, {axisPhi, {30, -0.15, 0.15, "#varphi^{IU} - #varphi^{DCA} [rad]"}});
     // Correlations
-    auto h2 = histos.add<TH2>("Tracks/IUvsDCA/Pt", "IU vs DCA: Pt", kTH2F, {axisPt, axisPt});
+    auto h2 = histos.add<TH2>("Tracks/IU/vsDCA/Pt", "IU vs DCA: Pt", kTH2F, {axisPt, axisPt});
     h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
     h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
-    h2 = histos.add<TH2>("Tracks/IUvsDCA/Eta", "IU vs DCA: Eta", kTH2F, {axisEta, axisEta});
+    h2 = histos.add<TH2>("Tracks/IU/vsDCA/Eta", "IU vs DCA: Eta", kTH2F, {axisEta, axisEta});
     h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
     h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
-    h2 = histos.add<TH2>("Tracks/IUvsDCA/Phi", "IU vs DCA: Phi", kTH2F, {axisPhi, axisPhi});
+    h2 = histos.add<TH2>("Tracks/IU/vsDCA/Phi", "IU vs DCA: Phi", kTH2F, {axisPhi, axisPhi});
     h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
     h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
   }
@@ -534,40 +615,6 @@ void qaEventTrack::init(InitContext const&)
 
 //**************************************************************************************************
 /**
- * Check if track fulfils the configurable requirements.
- */
-//**************************************************************************************************
-template <bool IS_MC, typename T>
-bool qaEventTrack::isSelectedTrack(const T& track)
-{
-  if (selectCharge && (selectCharge != track.sign())) {
-    return false;
-  }
-  if constexpr (IS_MC) {
-    if (!track.has_mcParticle()) {
-      if (selectPrim || selectSec || selectPID) {
-        return false;
-      } else {
-        return true;
-      }
-    }
-    auto particle = track.mcParticle();
-    const bool isPrimary = particle.isPhysicalPrimary();
-    if (selectPrim && !isPrimary) {
-      return false;
-    }
-    if (selectSec && isPrimary) {
-      return false;
-    }
-    if (selectPID && selectPID != std::abs(particle.pdgCode())) {
-      return false;
-    }
-  }
-  return true;
-}
-
-//**************************************************************************************************
-/**
  * Fill reco level histograms.
  */
 //**************************************************************************************************
@@ -581,10 +628,139 @@ void qaEventTrack::fillRecoHistograms(const C& collision, const T& tracks, const
 
   int nTracks = 0;
   for (const auto& track : tracks) {
+    histos.fill(HIST("Tracks/selection"), 1.f);
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
+    histos.fill(HIST("Tracks/selection"), 2.f);
     ++nTracks;
+    if (track.passedTrackType()) {
+      histos.fill(HIST("Tracks/selection"), 3.f);
+    }
+    if (track.passedPtRange()) {
+      histos.fill(HIST("Tracks/selection"), 4.f);
+    }
+    if (track.passedEtaRange()) {
+      histos.fill(HIST("Tracks/selection"), 5.f);
+    }
+    if (track.passedTPCNCls()) {
+      histos.fill(HIST("Tracks/selection"), 6.f);
+    }
+    if (track.passedTPCCrossedRows()) {
+      histos.fill(HIST("Tracks/selection"), 7.f);
+    }
+    if (track.passedTPCCrossedRowsOverNCls()) {
+      histos.fill(HIST("Tracks/selection"), 8.f);
+    }
+    if (track.passedTPCChi2NDF()) {
+      histos.fill(HIST("Tracks/selection"), 9.f);
+    }
+    if (track.passedTPCRefit()) {
+      histos.fill(HIST("Tracks/selection"), 10.f);
+    }
+    if (track.passedITSNCls()) {
+      histos.fill(HIST("Tracks/selection"), 11.f);
+    }
+    if (track.passedITSChi2NDF()) {
+      histos.fill(HIST("Tracks/selection"), 12.f);
+    }
+    if (track.passedITSRefit()) {
+      histos.fill(HIST("Tracks/selection"), 13.f);
+    }
+    if (track.passedITSHits()) {
+      histos.fill(HIST("Tracks/selection"), 14.f);
+    }
+    if (track.passedGoldenChi2()) {
+      histos.fill(HIST("Tracks/selection"), 15.f);
+    }
+    if (track.passedDCAxy()) {
+      histos.fill(HIST("Tracks/selection"), 16.f);
+    }
+    if (track.passedDCAz()) {
+      histos.fill(HIST("Tracks/selection"), 17.f);
+    }
+    if (track.isGlobalTrack()) {
+      histos.fill(HIST("Tracks/selection"), 18.f);
+    }
+    // Filling combined cuts
+    if (track.passedTrackType()) {
+      histos.fill(HIST("Tracks/selection"), 20.f);
+    } else {
+      continue;
+    }
+    if (track.passedPtRange()) {
+      histos.fill(HIST("Tracks/selection"), 21.f);
+    } else {
+      continue;
+    }
+    if (track.passedEtaRange()) {
+      histos.fill(HIST("Tracks/selection"), 22.f);
+    } else {
+      continue;
+    }
+    if (track.passedTPCNCls()) {
+      histos.fill(HIST("Tracks/selection"), 23.f);
+    } else {
+      continue;
+    }
+    if (track.passedTPCCrossedRows()) {
+      histos.fill(HIST("Tracks/selection"), 24.f);
+    } else {
+      continue;
+    }
+    if (track.passedTPCCrossedRowsOverNCls()) {
+      histos.fill(HIST("Tracks/selection"), 25.f);
+    } else {
+      continue;
+    }
+    if (track.passedTPCChi2NDF()) {
+      histos.fill(HIST("Tracks/selection"), 26.f);
+    } else {
+      continue;
+    }
+    if (track.passedTPCRefit()) {
+      histos.fill(HIST("Tracks/selection"), 27.f);
+    } else {
+      continue;
+    }
+    if (track.passedITSNCls()) {
+      histos.fill(HIST("Tracks/selection"), 28.f);
+    } else {
+      continue;
+    }
+    if (track.passedITSChi2NDF()) {
+      histos.fill(HIST("Tracks/selection"), 29.f);
+    } else {
+      continue;
+    }
+    if (track.passedITSRefit()) {
+      histos.fill(HIST("Tracks/selection"), 30.f);
+    } else {
+      continue;
+    }
+    if (track.passedITSHits()) {
+      histos.fill(HIST("Tracks/selection"), 31.f);
+    } else {
+      continue;
+    }
+    if (track.passedGoldenChi2()) {
+      histos.fill(HIST("Tracks/selection"), 32.f);
+    } else {
+      continue;
+    }
+    if (track.passedDCAxy()) {
+      histos.fill(HIST("Tracks/selection"), 33.f);
+    } else {
+      continue;
+    }
+    if (track.passedDCAz()) {
+      histos.fill(HIST("Tracks/selection"), 34.f);
+    } else {
+      continue;
+    }
+    if (track.isGlobalTrack()) {
+      histos.fill(HIST("Tracks/selection"), 35.f);
+    }
   }
 
   histos.fill(HIST("Events/posX"), collision.posX());
@@ -652,6 +828,8 @@ void qaEventTrack::fillRecoHistograms(const C& collision, const T& tracks, const
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
     histos.fill(HIST("Tracks/Kine/phi"), track.phi());
+    histos.fill(HIST("Tracks/Kine/etavspt"), track.pt(), track.eta());
+    histos.fill(HIST("Tracks/Kine/phivspt"), track.pt(), track.phi());
     histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
     histos.fill(HIST("Tracks/Kine/relativeResoPtMean"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
 
