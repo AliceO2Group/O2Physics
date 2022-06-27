@@ -21,6 +21,76 @@
 namespace o2::aod
 {
 
+namespace skimbartrack
+{
+DECLARE_SOA_COLUMN(Px, px, float);                     //!
+DECLARE_SOA_COLUMN(Py, py, float);                     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //! absolute time in ns
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
+//
+DECLARE_SOA_COLUMN(Flags, flags, uint32_t);                                                   //! Track flags. Run 2: see TrackFlagsRun2Enum | Run 3: see TrackFlags
+DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, uint8_t);                                    //! ITS cluster map, one bit per a layer, starting from the innermost
+DECLARE_SOA_COLUMN(TPCNClsFindable, tpcNClsFindable, uint8_t);                                //! Findable TPC clusters for this track geometry
+DECLARE_SOA_COLUMN(TPCNClsFindableMinusFound, tpcNClsFindableMinusFound, int8_t);             //! TPC Clusters: Findable - Found
+DECLARE_SOA_COLUMN(TPCNClsFindableMinusCrossedRows, tpcNClsFindableMinusCrossedRows, int8_t); //! TPC Clusters: Findable - crossed rows
+DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, uint8_t);                                    //! Number of shared TPC clusters
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                                            //! Chi2 / cluster for the ITS track segment
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);                                            //! Chi2 / cluster for the TPC track segment
+DECLARE_SOA_COLUMN(TOFChi2, tofChi2, float);                                                  //! Chi2 for the TOF track segment
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);                                              //! dE/dx signal in the TPC
+DECLARE_SOA_COLUMN(Length, length, float);                                                    //! Track length
+DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);                                              //! TOF expected momentum obtained in tracking, used to compute the expected times
+} // namespace skimbartrack
+
+// Barrel track kinematics
+DECLARE_SOA_TABLE(SkimmedBarTracks, "AOD", "SKIMBARTRACK",
+                  o2::soa::Index<>,
+                  skimbartrack::Px,
+                  skimbartrack::Py,
+                  skimbartrack::Pz,
+                  skimbartrack::Sign,
+                  skimbartrack::TrackTime,
+                  skimbartrack::TrackTimeRes);
+
+DECLARE_SOA_TABLE(SkimmedBarTracksCov, "AOD", "SKIMBARTRCOV", //!
+                  track::X, track::Alpha,
+                  track::Y, track::Z, track::Snp, track::Tgl, track::Signed1Pt,
+                  track::CYY, track::CZY, track::CZZ, track::CSnpY, track::CSnpZ,
+                  track::CSnpSnp, track::CTglY, track::CTglZ, track::CTglSnp, track::CTglTgl,
+                  track::C1PtY, track::C1PtZ, track::C1PtSnp, track::C1PtTgl, track::C1Pt21Pt2);
+
+DECLARE_SOA_TABLE(SkimmedBarTracksExtra, "AOD", "SKIMBARTREXTRA",
+                  skimbartrack::Flags,
+                  skimbartrack::ITSClusterMap,
+                  skimbartrack::TPCNClsFindable,
+                  skimbartrack::TPCNClsFindableMinusFound,
+                  skimbartrack::TPCNClsFindableMinusCrossedRows,
+                  skimbartrack::TPCNClsShared,
+                  skimbartrack::ITSChi2NCl,
+                  skimbartrack::TPCChi2NCl,
+                  skimbartrack::TOFChi2,
+                  skimbartrack::TPCSignal,
+                  skimbartrack::Length,
+                  skimbartrack::TOFExpMom);
+
+using SkimmedBarTrack = SkimmedBarTracks::iterator;
+using SkimmedBarTrackCov = SkimmedBarTracksCov::iterator;
+using SkimmedBarTrackExtra = SkimmedBarTracksExtra::iterator;
+
+namespace skimbartracklabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+} // namespace skimbartracklabel
+
+DECLARE_SOA_TABLE(SkimmedBarTrackLabels, "AOD", "SKBARTRLABEL",
+                  skimbartracklabel::McParticleId,
+                  skimbartracklabel::McMask);
+
+using SkimmedBarTrackLabel = SkimmedBarTrackLabels::iterator;
+
 // only MCH-MID tracks
 namespace skimmuontrack
 {
@@ -159,11 +229,11 @@ DECLARE_SOA_COLUMN(TotalAmplitudeCFT0, totalAmplitudeCFT0, float); //! sum of am
 DECLARE_SOA_COLUMN(TimeAFT0, timeAFT0, float);                     //! FT0A average time
 DECLARE_SOA_COLUMN(TimeCFT0, timeCFT0, float);                     //! FT0C average time
 DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
-DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0, //! has FT0 signal in the same BC
+DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0,                         //! has FT0 signal in the same BC
                            [](float TimeAFT0, float TimeCFT0) -> bool { return TimeAFT0 > -999. && TimeCFT0 > -999.; });
 // matched IDs
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedFwdTracks, matchedFwdTracks);       //! array of matched forward tracks
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedBarrelTracks, matchedBarrelTracks); //! array of matched barrel tracks
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedFwdTracks, matchedFwdTracks); //! array of matched forward tracks
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedBarTracks, matchedBarTracks); //! array of matched barrel tracks
 } // namespace eventcand
 
 DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
@@ -171,7 +241,7 @@ DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
                   eventcand::GlobalBC,
                   eventcand::RunNumber,
                   eventcand::MatchedFwdTracksIds,
-                  eventcand::MatchedBarrelTracksIds,
+                  eventcand::MatchedBarTracksIds,
                   //
                   eventcand::TotalAmplitudeAFT0,
                   eventcand::TotalAmplitudeCFT0,
