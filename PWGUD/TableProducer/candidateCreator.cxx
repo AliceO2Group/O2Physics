@@ -44,12 +44,15 @@ struct CandidateCreator {
                         TFT0s const& ft0s)
   {
     std::map<uint64_t, int32_t> BCsWithFT0;
+    // collect BCs with FT0 signals
     for (const auto& ft0 : ft0s) {
       uint64_t bc = ft0.bc().globalBC();
       BCsWithFT0[bc] = ft0.globalIndex();
     }
 
-    std::map<uint64_t, std::pair<std::vector<int32_t>, std::vector<int32_t>>> bcsMatchedFwdTrIds; // pairs of global BCs and vectors of matched track IDs
+    // pairs of global BCs and vectors of matched track IDs:
+    // global BC <-> <vector of fwd. trackIDs, vector of barrel trackIDs>
+    std::map<uint64_t, std::pair<std::vector<int32_t>, std::vector<int32_t>>> bcsMatchedFwdTrIds;
 
     // forward matching
     if (fwdTracks != nullptr) {
@@ -90,10 +93,12 @@ struct CandidateCreator {
       const std::vector<int32_t>& barTrackIDs = item.second.second;
       int32_t nFwdTracks = fwdTrackIDs.size();
       int32_t nBarTracks = barTrackIDs.size();
+      // skip candidate if it does not pass `number of tracks` requirement
       if (!(nFwdTracks == fNFwdProngs && nBarTracks == fNBarProngs)) {
         continue;
       }
       // fetching FT0 information
+      // if there is no FT0 signal, dummy info will be used
       FT0Info ft0Info;
       auto ft0Iter = BCsWithFT0.find(bc);
       if (ft0Iter != BCsWithFT0.end()) {
@@ -120,6 +125,7 @@ struct CandidateCreator {
     BCsWithFT0.clear();
   }
 
+  // create candidates for forward region
   void processFwd(o2::aod::SkimmedMuons const& muonTracks,
                   o2::aod::BCs const& bcs,
                   o2::aod::FT0s const& ft0s)
@@ -127,6 +133,7 @@ struct CandidateCreator {
     createCandidates(&muonTracks, (o2::aod::SkimmedBarTracks*)nullptr, bcs, ft0s);
   }
 
+  // create candidates for semiforward region
   void processSemiFwd(o2::aod::SkimmedMuons const& muonTracks,
                       o2::aod::SkimmedBarTracks const& barTracks,
                       o2::aod::BCs const& bcs,

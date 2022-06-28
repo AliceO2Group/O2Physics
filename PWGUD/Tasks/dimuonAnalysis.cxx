@@ -54,12 +54,14 @@ struct DimuonsAnalysis {
      {"PairSelection/MassNoFT0MC", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/PtNoFT0", ";#it{p}_{T}^{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}}}};
 
+  // process candidates with 2 muon tracks
   void processFwd(o2::aod::EventCandidates const& eventCandidates,
                   soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonsExtra, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
                   o2::aod::SkimmedMCEvents const& mcEvents,
                   o2::aod::SkimmedMCParticles const& mcParticles)
   {
     int32_t nMCEvents = mcEvents.size();
+    // collect MC distributions
     for (int32_t i = 0; i < nMCEvents; i++) {
       auto mcPartsGroup = mcParticles.sliceBy(o2::aod::skimmcpart::skimmedMCEventId, i);
       std::vector<aod::SkimmedMCParticle> mcPartsFiltered;
@@ -69,6 +71,7 @@ struct DimuonsAnalysis {
         }
         mcPartsFiltered.emplace_back(mcPart);
       }
+      // sanity check
       if (mcPartsFiltered.size() != 2) {
         continue;
       }
@@ -84,6 +87,8 @@ struct DimuonsAnalysis {
       mcPartsFiltered.clear();
     }
 
+    // process candidates
+    // assuming that candidates have exatly 2 muon tracks and 0 barrel tracks
     for (const auto& cand : eventCandidates) {
       const auto& trackIDs = cand.matchedFwdTracksIds();
       const auto& tr1 = muonTracks.iteratorAt(trackIDs[0]);
@@ -108,20 +113,23 @@ struct DimuonsAnalysis {
       mcP1.SetXYZM(mcPart1.px(), mcPart1.py(), mcPart1.pz(), mmuon);
       mcP2.SetXYZM(mcPart2.px(), mcPart2.py(), mcPart2.pz(), mmuon);
       pPairMC = mcP1 + mcP2;
-      //
+      // reconstructed distributions and "MC" distributions for reconstructed tracks
       registry.fill(HIST("PairSelection/Mass"), pPair.M());
-      registry.fill(HIST("PairSelection/MassMC"), pPairMC.M());
       registry.fill(HIST("PairSelection/Pt"), pPair.Pt());
       registry.fill(HIST("PairSelection/EtaMu"), p1.Eta());
       registry.fill(HIST("PairSelection/EtaMu"), p2.Eta());
+      registry.fill(HIST("PairSelection/MassMC"), pPairMC.M());
       //
       bool passFT0;
       bool hasFT0 = cand.hasFT0();
+      // check FT0 signal
       if (hasFT0) {
         registry.fill(HIST("TracksWithFT0/Eta"), p1.Eta());
         registry.fill(HIST("TracksWithFT0/Eta"), p2.Eta());
         registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeAFT0());
         registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeCFT0());
+        // if there is a signal, candidate passes if timeA is dummy
+        // and timeC is between +/- 1 ns
         bool checkA = std::abs(cand.timeAFT0() - ft0DummyTime) < 1e-3;
         bool checkC = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
         passFT0 = checkA && checkC;
@@ -136,6 +144,7 @@ struct DimuonsAnalysis {
     }
   }
 
+  // process candidates with 1 muon and 1 barrel tracks
   void processSemiFwd(o2::aod::EventCandidates const& eventCandidates,
                       soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonsExtra, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
                       soa::Join<o2::aod::SkimmedBarTracks, o2::aod::SkimmedBarTracksExtra, o2::aod::SkimmedBarTrackLabels> const& barTracks,
@@ -143,6 +152,7 @@ struct DimuonsAnalysis {
                       o2::aod::SkimmedMCParticles const& mcParticles)
   {
     int32_t nMCEvents = mcEvents.size();
+    // collect MC distributions
     for (int32_t i = 0; i < nMCEvents; i++) {
       auto mcPartsGroup = mcParticles.sliceBy(o2::aod::skimmcpart::skimmedMCEventId, i);
       std::vector<aod::SkimmedMCParticle> mcPartsFiltered;
@@ -152,6 +162,7 @@ struct DimuonsAnalysis {
         }
         mcPartsFiltered.emplace_back(mcPart);
       }
+      // sanity check
       if (mcPartsFiltered.size() != 2) {
         continue;
       }
@@ -167,6 +178,8 @@ struct DimuonsAnalysis {
       mcPartsFiltered.clear();
     }
 
+    // process candidates
+    // assuming that candidates have exatly 1 muon track and 1 barrel track
     for (const auto& cand : eventCandidates) {
       const auto& muonTrackIDs = cand.matchedFwdTracksIds();
       const auto& barTrackIDs = cand.matchedBarTracksIds();
@@ -192,20 +205,23 @@ struct DimuonsAnalysis {
       mcP1.SetXYZM(mcPart1.px(), mcPart1.py(), mcPart1.pz(), mmuon);
       mcP2.SetXYZM(mcPart2.px(), mcPart2.py(), mcPart2.pz(), mmuon);
       pPairMC = mcP1 + mcP2;
-      //
+      // reconstructed distributions and "MC" distributions for reconstructed tracks
       registry.fill(HIST("PairSelection/Mass"), pPair.M());
-      registry.fill(HIST("PairSelection/MassMC"), pPairMC.M());
       registry.fill(HIST("PairSelection/Pt"), pPair.Pt());
       registry.fill(HIST("PairSelection/EtaMu"), p1.Eta());
       registry.fill(HIST("PairSelection/EtaMu"), p2.Eta());
+      registry.fill(HIST("PairSelection/MassMC"), pPairMC.M());
       //
       bool passFT0;
       bool hasFT0 = cand.hasFT0();
+      // check FT0 signal
       if (hasFT0) {
         registry.fill(HIST("TracksWithFT0/Eta"), p1.Eta());
         registry.fill(HIST("TracksWithFT0/Eta"), p2.Eta());
         registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeAFT0());
         registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeCFT0());
+        // if there is a signal, candidate passes if timeA is dummy
+        // and timeC is between +/- 1 ns
         bool checkA = std::abs(cand.timeAFT0() - ft0DummyTime) < 1e-3;
         bool checkC = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
         passFT0 = checkA && checkC;

@@ -24,6 +24,7 @@ struct TrackSkimmer {
   int32_t fSignalGenID{1};
   bool fDoMC;
 
+  // histograms for debug checks, to be removed
   OutputObj<TH1I> hNSig{TH1I("hNSig", ";n tracks;", 2, 0, 2)};
   OutputObj<TH1I> hNSigITSTPC{TH1I("hNSigITSTPC", ";n tracks;", 2, 0, 2)};
 
@@ -180,6 +181,8 @@ struct TrackSkimmer {
     int32_t newPartID = 0;
     int32_t newEventID = 0;
     int32_t nMCParticles = mcParticles.size();
+    // loop over MC particles to select only the ones from signal events
+    // and calculate new MC table IDs
     for (int32_t mcPartID = 0; mcPartID < nMCParticles; mcPartID++) {
       const auto& mcPart = mcParticles.iteratorAt(mcPartID);
       int32_t mcEventID = mcPart.mcCollisionId();
@@ -280,10 +283,13 @@ struct TrackSkimmer {
                tr.c1Pt21Pt2());
       muonsExtra(tr.nClusters(), tr.pDca(), tr.rAtAbsorberEnd(), tr.chi2(), tr.chi2MatchMCHMID(),
                  tr.mchBitMap(), tr.midBitMap(), tr.midBoards());
+      // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trId);
         uint16_t mcMask = label.mcMask();
         auto it = newPartIDs.find(label.mcParticleId());
+        // signal tracks should always have an MC particle
+        // background tracks have label == -1
         int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
         muonLabels(newPartID, mcMask);
       }
@@ -306,6 +312,7 @@ struct TrackSkimmer {
       auto trId = ambTr.trackId();
       const auto& tr = tracks.iteratorAt(trId);
       // using only tracks with TOF match
+      // todo: make this selection optional?
       if (!tr.hasTOF()) {
         continue;
       }
@@ -326,11 +333,13 @@ struct TrackSkimmer {
                 tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
                 tr.tpcNClsShared(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.tofChi2(),
                 tr.tpcSignal(), tr.length(), tr.tofExpMom());
+      // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trId);
         uint16_t mcMask = label.mcMask();
         int32_t mcPartID = label.mcParticleId();
-        // debug
+        // debug checks
+        // todo: remove
         if (mcPartID >= 0) {
           const auto& mcPart = mcParticles.iteratorAt(mcPartID);
           bool isSignal = mcPart.mcCollision().generatorsID() == fSignalGenID;
@@ -342,12 +351,15 @@ struct TrackSkimmer {
         }
         //
         auto it = newPartIDs.find(mcPartID);
+        // signal tracks should always have an MC particle
+        // background tracks have label == -1
         int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
         barLabels(newPartID, mcMask);
       }
     }
   }
 
+  // process only MCH-MID tracks with MC information
   void processFwdMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& tracks,
                     o2::aod::AmbiguousFwdTracks const& ambTracks,
                     o2::aod::McFwdTrackLabels const& mcFwdTrackLabels,
@@ -364,6 +376,7 @@ struct TrackSkimmer {
     newPartIDs.clear();
   }
 
+  // process only MCH-MID tracks without MC information
   void processFwd(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& tracks,
                   o2::aod::AmbiguousFwdTracks const& ambTracks,
                   o2::aod::BCs const& bcs)
@@ -375,6 +388,7 @@ struct TrackSkimmer {
     skimFwdTracks<trType>(tracks, ambTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
   }
 
+  // process both barrel and muon tracks with MC information
   // todo: switch to propagated tracks?
   void processAllMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& fwdTracks,
                     o2::aod::McFwdTrackLabels const& mcFwdTrackLabels,
@@ -399,7 +413,7 @@ struct TrackSkimmer {
   PROCESS_SWITCH(TrackSkimmer, processFwdMC, "Produce only muon tracks with MC information", false);
   PROCESS_SWITCH(TrackSkimmer, processFwd, "Produce only muon tracks", false);
   PROCESS_SWITCH(TrackSkimmer, processAllMC, "Produce barrel and muon tracks with MC information", false);
-  // todo: process without MC info
+  // todo: process without MC info once debug checks are removed from skimBarTracks()
   // PROCESS_SWITCH(TrackSkimmer, processAll, "Produce barrel and muon tracks", false);
 };
 
