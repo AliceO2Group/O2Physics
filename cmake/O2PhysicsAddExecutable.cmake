@@ -116,6 +116,7 @@ function(o2physics_add_executable baseTargetName)
   set_property(TARGET ${target} PROPERTY OUTPUT_NAME ${exeName})
   if(A_JOB_POOL)
     set_property(TARGET ${target} PROPERTY JOB_POOL_COMPILE ${A_JOB_POOL})
+    set_property(TARGET ${target} PROPERTY JOB_POOL_LINK ${A_JOB_POOL})
   endif()
 
   if(A_IS_TEST)
