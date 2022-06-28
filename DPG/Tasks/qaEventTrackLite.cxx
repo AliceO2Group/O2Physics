@@ -119,6 +119,8 @@ struct qaEventTrackLite {
     histos.add("Tracks/dcaZ", "distance of closest approach in #it{z}", kTH1D, {axisImpParZAxis});
     histos.add("Tracks/dcaXYvsPt", "d_#it{xy} vs. #it{p}_{T}", kTH2D, {axisPt, axisImpParRPhi});
     histos.add("Tracks/dcaZvsPt", "d_#it{z} vs. #it{p}_{T}", kTH2D, {axisPt, axisImpParRPhi});
+    histos.add("Tracks/dcaXYvsPtvsEta", "d_#it{xy} vs. #it{p}_{T} vs. #eta", kTH3D, {axisPt, axisEta, axisImpParRPhi});
+    histos.add("Tracks/dcaZvsPtvsEta", "d_#it{z} vs. #it{p}_{T} vs. #eta", kTH3D, {axisPt, axisEta, axisImpParRPhi});
 
     // its histograms
     histos.add("Tracks/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 40}});
@@ -243,6 +245,8 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
     histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
     histos.fill(HIST("Tracks/dcaZvsPt"), track.pt(), track.dcaZ());
+    histos.fill(HIST("Tracks/dcaXYvsPtvsEta"), track.pt(), track.eta(), track.dcaXY());
+    histos.fill(HIST("Tracks/dcaZvsPtvsEta"), track.pt(), track.eta(), track.dcaZ());
     histos.fill(HIST("Tracks/length"), track.length());
     histos.fill(HIST("Tracks/ITS/itsChi2NCl"), track.itsChi2NCl());
     histos.fill(HIST("Tracks/ITS/itsNCl"), track.itsNCls());
