@@ -56,7 +56,7 @@ function(o2physics_add_executable baseTargetName)
     message(FATAL_ERROR "Got trailing arguments ${A_UNPARSED_ARGUMENTS}")
   endif()
 
-  # check naming conventions for executable  
+  # check naming conventions for executable
   if (NOT ${baseTargetName} MATCHES "^[a-z0-9\-]*$")
     message(FATAL_ERROR "Executable name can only contain lower case letters, numbers and -. Violated by ${baseTargetName}")
   endif()
