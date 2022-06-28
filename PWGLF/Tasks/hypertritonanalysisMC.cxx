@@ -135,12 +135,11 @@ struct hypertritonAnalysisMc {
         {"h3dMassAntiHypertriton", "h3dMassAntiHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
         {"h3dMassHypertriton_MC_truePt", "h3dMassHypertriton_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
         {"h3dMassAntiHypertriton_MC_truePt", "h3dMassAntiHypertriton_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+        {"hMassHypertritonTotal", "hMassHypertritonTotal", {HistType::kTH1F, {{120, 2.9f, 3.2f}}}},
 
         {"hSelectedV0Counter", "hSelectedV0Counter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
         {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{9, 0.0f, 9.0f}}}},
 
-        {"hHypertritonFeedDownMatrix", "hHypertritonFeedDownMatrix", {HistType::kTH2F, {{200, 0.0f, 10.0f, "#it{p}_{T}^{#Hypertriton} (GeV/c)"}, {200, 0.0f, 10.0f, "#it{p}_{T}^{#Omega-} (GeV/c)"}}}},
-        {"hAntiHypertritonFeedDownMatrix", "hAntiHypertritonFeedDownMatrix", {HistType::kTH2F, {{200, 0.0f, 10.0f, "#it{p}_{T}^{#bar{#Hypertriton}} (GeV/c)"}, {200, 0.0f, 10.0f, "#it{p}_{T}^{#Omega+} (GeV/c)"}}}},
 
         {"hSelectedEventCounter", "hSelectedEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
 
@@ -247,7 +246,7 @@ struct hypertritonAnalysisMc {
       if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
         registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
-          registry.fill(HIST("hTestCounter"), 0.5);
+        registry.fill(HIST("hTestCounter"), 0.5);
         if(v0.negativept() > 0.2 && v0.negativept() < 1.2 ){
           registry.fill(HIST("hTestCounter"), 1.5);
           if (v0.positivept() > 1.8 && v0.positivept() < 10){
@@ -263,6 +262,7 @@ struct hypertritonAnalysisMc {
           if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
             registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
+            registry.fill(HIST("hMassHypertritonTotal"), v0.mHypertriton());
             registry.fill(HIST("h3dMassHypertriton"), 0., v0.pt(), v0.mHypertriton());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
@@ -292,7 +292,7 @@ struct hypertritonAnalysisMc {
 
         registry.fill(HIST("hSelectedV0Counter"), 7.5);
 
-          registry.fill(HIST("hTestCounter"), 0.5);
+        registry.fill(HIST("hTestCounter"), 0.5);
         if(v0.positivept() > 0.2 && v0.positivept() < 1.2 ){
           registry.fill(HIST("hTestCounter"), 1.5);
           if (v0.negativept() > 1.8 && v0.negativept() < 10){
@@ -303,11 +303,12 @@ struct hypertritonAnalysisMc {
           }
         }
 
-            if(v0.positivept() > 0.2 && v0.positivept() < 1.2 && v0.negativept() > 1.8 && v0.negativept() < 10 && v0.pt() > 2 && v0.pt() < 9 ){
+        if(v0.positivept() > 0.2 && v0.positivept() < 1.2 && v0.negativept() > 1.8 && v0.negativept() < 10 && v0.pt() > 2 && v0.pt() < 9 ){
           registry.fill(HIST("hSelectedV0Counter"), 8.5);
           if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
             registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
+            registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
             registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
@@ -390,6 +391,7 @@ struct hypertritonAnalysisMc {
           if (TMath::Abs(v0.dcanegtopv()) > dcapiontopv) {
             registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
+            registry.fill(HIST("hMassHypertritonTotal"), v0.mHypertriton());
             registry.fill(HIST("h3dMassHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mHypertriton());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
@@ -418,11 +420,12 @@ struct hypertritonAnalysisMc {
       if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) < TpcPidNsigmaCut && TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) < TpcPidNsigmaCut ) {
 
         registry.fill(HIST("hSelectedV0Counter"), 7.5);
-            if(v0.positivept() > 0.2 && v0.positivept() < 1.2 && v0.negativept() > 1.8 && v0.negativept() < 10 && v0.pt() > 2 && v0.pt() < 9 ){
+        if(v0.positivept() > 0.2 && v0.positivept() < 1.2 && v0.negativept() > 1.8 && v0.negativept() < 10 && v0.pt() > 2 && v0.pt() < 9 ){
           registry.fill(HIST("hSelectedV0Counter"), 8.5);
           if (TMath::Abs(v0.dcapostopv()) > dcapiontopv) {
             registry.fill(HIST("hSelectedV0Counter"), 9.5);
 
+            registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
             registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
@@ -452,6 +455,10 @@ struct hypertritonAnalysisMc {
 };
 
 
+
+
+
+
 struct hypertritonTrackCount {
   //Basic checks
   HistogramRegistry registry{
@@ -473,28 +480,28 @@ struct hypertritonTrackCount {
         {"hHypertritonMcRapidity", "hHypertritonMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
 
 
-        {"hHypertritonMcPt", "hHypertritonMcPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hHypertritonMcPt", "hHypertritonMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
         {"hHelium3Px", "hHelium3Px", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hHelium3Py", "hHelium3Py", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hHelium3Pz", "hHelium3Pz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-        {"hHelium3Pt", "hHelium3Pt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hHelium3P", "hHelium3P", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hHelium3Pt", "hHelium3Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hHelium3P", "hHelium3P", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hHelium3McPx", "hHelium3McPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hHelium3McPy", "hHelium3McPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hHelium3McPz", "hHelium3McPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-        {"hHelium3McPt", "hHelium3McPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hHelium3McP", "hHelium3McP", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hHelium3McPt", "hHelium3McPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hHelium3McP", "hHelium3McP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hPionPx", "hPionPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hPionPy", "hPionPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hPionPz", "hPionPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-        {"hPionPt", "hPionPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hPionP", "hPionP", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hPionPt", "hPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hPionP", "hPionP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hPionMcPx", "hPionMcPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hPionMcPy", "hPionMcPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hPionMcPz", "hPionMcPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-        {"hPionMcPt", "hPionMcPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hPionMcP", "hPionMcP", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hPionMcPt", "hPionMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hPionMcP", "hPionMcP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
 
         {"hHelium3NsigmaHelium3", "hHelium3NsigmaHelium3", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
@@ -504,8 +511,8 @@ struct hypertritonTrackCount {
         {"hHelium3NsigmaHelium3Test", "hHelium3NsigmaHelium3Test", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
         {"hHelium3TPCBBTest", "hHelium3TPCBBTest", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal" }}}},
         {"hHelium3WrongNSigmaDCAToPV", "hHelium3WrongNSigmaDCAToPV", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
-        {"hHelium3WrongNSigmaPt", "hHelium3WrongNSigmaPt", {HistType::kTH1F, {{150, 0.0f, 15.0f}}}},
-        {"hHelium3WrongNSigmaP", "hHelium3WrongNSigmaP", {HistType::kTH1F, {{150, 0.0f, 15.0f}}}},
+        {"hHelium3WrongNSigmaPt", "hHelium3WrongNSigmaPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hHelium3WrongNSigmaP", "hHelium3WrongNSigmaP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
         {"hHelium3TPCNClsCrossedRows", "hHelium3TPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
         {"hPionTPCNClsCrossedRows", "hPionTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
@@ -663,7 +670,7 @@ struct hypertritonParticleCountMc {
         {"hTotalMcCollCounter", "hTotalMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
         {"hSelAndRecoMcCollCounter", "hSelAndRecoMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
 
-        {"h3dMCHypertriton", "h3dMCHypertriton", {HistType::kTH3F, {{20, -1.0f, 1.0f, "Rapidity"}, {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {50, 0.0f, 50.0f, "ct(cm)"}}}},
+        {"h3dMCHypertriton", "h3dMCHypertriton", {HistType::kTH3F, {{20, -1.0f, 1.0f, "Rapidity"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {50, 0.0f, 50.0f, "ct(cm)"}}}},
         {"hMcHypertritonEffCheck", "hMcHypertritonCount", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
         {"hMcParticleCount", "hMcParticleCount", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
         {"hHypertritonCount_PtDiff", "hHypertritonCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -673,13 +680,13 @@ struct hypertritonParticleCountMc {
         {"hMcHypertritonCount", "hMcHypertritonCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
         {"hMcAntiHypertritonCount", "hMcAntiHypertritonCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
 
-        {"hMcHypertritonCheck", "hMcHypertritonCheck", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
-        {"hMcHelium3Check", "hMcHelium3Check", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+        {"hMcHypertritonCheck", "hMcHypertritonCheck", {HistType::kTH1F, {{1, 0.0f, 3.0f}}}},
+        {"hMcHelium3Check", "hMcHelium3Check", {HistType::kTH1F, {{1, 0.0f, 4.0f}}}},
 
-        {"hMcHypertritonPt", "hMcHypertritonPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hMcHypertritonPt", "hMcHypertritonPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hMcHypertritonLifeTime", "hMcHypertritonLifeTime", {HistType::kTH1F, {{500, 0.0f, 50.0f}}}},
-        {"hMcHelium3Pt", "hMcHelium3Pt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hMcPionPt", "hMcPionPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hMcHelium3Pt", "hMcHelium3Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hMcPionPt", "hMcPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
         {"hMcDauHelium3Vx", "hMcDauHelium3Vx", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
         {"hMcDauHelium3Vy", "hMcDauHelium3Vy", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
@@ -705,12 +712,7 @@ struct hypertritonParticleCountMc {
     registry.get<TH1>(HIST("hMcAntiHypertritonCount"))->GetXaxis()->SetBinLabel(1, "primary AntiHypertriton mothers");
     registry.get<TH1>(HIST("hMcAntiHypertritonCount"))->GetXaxis()->SetBinLabel(2, "decaying into V0");
     registry.get<TH1>(HIST("hMcHelium3Check"))->GetXaxis()->SetBinLabel(1, "PdgCode");
-    registry.get<TH1>(HIST("hMcHelium3Check"))->GetXaxis()->SetBinLabel(2, "has_mothers");
-    registry.get<TH1>(HIST("hMcHelium3Check"))->GetXaxis()->SetBinLabel(3, "has_daughters");
-    registry.get<TH1>(HIST("hMcHelium3Check"))->GetXaxis()->SetBinLabel(4, "has_mothers&&has_daughters");
     registry.get<TH1>(HIST("hMcHypertritonCheck"))->GetXaxis()->SetBinLabel(1, "PdgCode");
-    registry.get<TH1>(HIST("hMcHypertritonCheck"))->GetXaxis()->SetBinLabel(2, "has_mothers");
-    registry.get<TH1>(HIST("hMcHypertritonCheck"))->GetXaxis()->SetBinLabel(3, "has_daughters");
   }
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 0.8, "rapidity cut MC count"};
@@ -741,15 +743,6 @@ struct hypertritonParticleCountMc {
       if (mcparticle.pdgCode() == 1000020030 || mcparticle.pdgCode() == -1000020030) {
         registry.fill(HIST("hMcHelium3Check"), 0.5);
         registry.fill(HIST("hMcHelium3Pt"), mcparticle.pt());
-        if (mcparticle.has_mothers()){
-          registry.fill(HIST("hMcHelium3Check"), 1.5);
-        }
-        if (mcparticle.has_daughters()){
-          registry.fill(HIST("hMcHelium3Check"), 2.5);
-        }
-        if (mcparticle.has_mothers() && mcparticle.has_daughters()){
-          registry.fill(HIST("hMcHelium3Check"), 3.5);
-        }
         for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
           for (auto& mcparticleMonther : mcparticle.mothers_as<aod::McParticles>()) {
             helium3CheckTable(mcparticleMonther.pdgCode(),mcparticleDaughter.pdgCode());
@@ -764,12 +757,6 @@ struct hypertritonParticleCountMc {
         registry.fill(HIST("hMcHypertritonCheck"), 0.5);
         registry.fill(HIST("hMcHypertritonEffCheck"), 0.5);
         registry.fill(HIST("hMcHypertritonPt"), mcparticle.pt());
-        if (mcparticle.has_mothers()){
-          registry.fill(HIST("hMcHypertritonCheck"), 1.5);
-        }
-        if (mcparticle.has_daughters()){
-          registry.fill(HIST("hMcHypertritonCheck"), 2.5);
-        }
 
         double dauHe3Vx = -999; 
         double dauHe3Vy = -999;
@@ -941,14 +928,14 @@ struct V0McCheck {
         {"hV0Helium3PerEvent", "hV0Helium3PerEvent", {HistType::kTH1F, {{7, -0.5f, 6.5f}}}},
         {"hV0AntiHelium3PerEvent", "hV0AntiHelium3PerEvent", {HistType::kTH1F, {{7, -0.5f, 6.5f}}}},
         {"hV0CollisionID", "hV0CollisionID", {HistType::kTH1F, {{100, 0.0f, 100.0f}}}},
-        {"hV0PostrackPt", "hV0PostrackPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hV0NegtrackPt", "hV0PostrackPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hV0PostrackPt", "hV0PostrackPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hV0NegtrackPt", "hV0PostrackPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hV0PostrackTPCNClus", "hV0PostrackTPCNClus", {HistType::kTH1F, {{24, 0.0f, 240.0f}}}},
         {"hV0NegtrackTPCNClus", "hV0NegtrackTPCNClus", {HistType::kTH1F, {{24, 0.0f, 240.0f}}}},
         {"hV0PostrackDcatoPv", "hV0PostrackDcatoPv", {HistType::kTH1F, {{10, 0.0f, 1.0f}}}},
         {"hV0NegtrackDcatoPv", "hV0NegtrackDcatoPv", {HistType::kTH1F, {{10, 0.0f, 1.0f}}}},
-        {"hV0McPostrackPt", "hV0McPostrackPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hV0McNegtrackPt", "hV0McNegtrackPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hV0McPostrackPt", "hV0McPostrackPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hV0McNegtrackPt", "hV0McNegtrackPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hV0PostrackCharge", "hV0PostrackCharge", {HistType::kTH1F, {{10, -5.0f, 5.0f}}}},
         {"hV0NegtrackCharge", "hV0NegtrackCharge", {HistType::kTH1F, {{10, -5.0f, 5.0f}}}},
         {"hV0PostrackID", "hV0PostrackID", {HistType::kTH1F, {{20, 0.0f, 20.0f}}}},
@@ -965,13 +952,13 @@ struct V0McCheck {
         {"hV0DauHelium3Px", "hV0DauHelium3Px", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hV0DauHelium3Py", "hV0DauHelium3Py", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hV0DauHelium3Pz", "hV0DauHelium3Pz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-        {"hV0DauHelium3Pt", "hV0DauHelium3Pt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hV0DauHelium3P", "hV0DauHelium3P", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hV0DauHelium3Pt", "hV0DauHelium3Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hV0DauHelium3P", "hV0DauHelium3P", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hV0DauHelium3McPx", "hV0DauHelium3McPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hV0DauHelium3McPy", "hV0DauHelium3McPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hV0DauHelium3McPz", "hV0DauHelium3McPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-        {"hV0DauHelium3McPt", "hV0DauHelium3McPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-        {"hV0DauHelium3McP", "hV0DauHelium3McP", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+        {"hV0DauHelium3McPt", "hV0DauHelium3McPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hV0DauHelium3McP", "hV0DauHelium3McP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
         {"hV0DauHelium3DiffPx", "hV0DauHelium3DiffPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hV0DauHelium3DiffPy", "hV0DauHelium3DiffPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
         {"hV0DauHelium3DiffPz", "hV0DauHelium3DiffPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
@@ -981,13 +968,13 @@ struct V0McCheck {
         /*{"hV0PionPx", "hV0PionPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
           {"hV0PionPy", "hV0PionPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
           {"hV0PionPz", "hV0PionPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-          {"hV0PionPt", "hV0PionPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-          {"hV0PionP", "hV0PionP", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+          {"hV0PionPt", "hV0PionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+          {"hV0PionP", "hV0PionP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
           {"hV0PionMcPx", "hV0PionMcPx", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
           {"hV0PionMcPy", "hV0PionMcPy", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
           {"hV0PionMcPz", "hV0PionMcPz", {HistType::kTH1F, {{400, -10.0f, 10.0f}}}},
-          {"hV0PionMcPt", "hV0PionMcPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-          {"hV0PionMcP", "hV0PionMcP", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},*/
+          {"hV0PionMcPt", "hV0PionMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+          {"hV0PionMcP", "hV0PionMcP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},*/
         {"hV0DauHelium3NSigmaHelium3", "hV0DauHelium3NSigmaHelium3", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
         {"hV0DauHelium3NSigmaPion", "hV0DauHelium3NSigmaPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
         {"hV0DauHelium3NSigmaTriton", "hV0DauHelium3NSigmaTriton", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
@@ -1181,7 +1168,7 @@ struct V0McCheck {
       registry.fill(HIST("hNSigmaTritonNeg"), v0.negTrack_as<MyTracks>().tpcNSigmaTr());
 
       v0mcinfo( mcpostrack.pdgCode(), pTrackPID, v0.posTrack_as<MyTracks>().px(), v0.posTrack_as<MyTracks>().py(), v0.posTrack_as<MyTracks>().pz(), mcpostrack.px(), mcpostrack.py(), mcpostrack.pz(), v0.posTrack_as<MyTracks>().tpcNClsCrossedRows(), v0.posTrack_as<MyTracks>().tpcSignal(), v0.posTrack_as<MyTracks>().tpcNSigmaHe(), v0.posTrack_as<MyTracks>().tpcNSigmaPi(), v0.posTrack_as<MyTracks>().tpcNSigmaTr(), v0.posTrack_as<MyTracks>().dcaXY(),  
-                mcnegtrack.pdgCode(), nTrackPID, v0.negTrack_as<MyTracks>().px(), v0.negTrack_as<MyTracks>().py(), v0.negTrack_as<MyTracks>().pz(), mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz(), v0.negTrack_as<MyTracks>().tpcNClsCrossedRows(), v0.negTrack_as<MyTracks>().tpcSignal(), v0.negTrack_as<MyTracks>().tpcNSigmaHe(), v0.negTrack_as<MyTracks>().tpcNSigmaPi(), v0.negTrack_as<MyTracks>().tpcNSigmaTr(), v0.negTrack_as<MyTracks>().dcaXY() );
+          mcnegtrack.pdgCode(), nTrackPID, v0.negTrack_as<MyTracks>().px(), v0.negTrack_as<MyTracks>().py(), v0.negTrack_as<MyTracks>().pz(), mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz(), v0.negTrack_as<MyTracks>().tpcNClsCrossedRows(), v0.negTrack_as<MyTracks>().tpcSignal(), v0.negTrack_as<MyTracks>().tpcNSigmaHe(), v0.negTrack_as<MyTracks>().tpcNSigmaPi(), v0.negTrack_as<MyTracks>().tpcNSigmaTr(), v0.negTrack_as<MyTracks>().dcaXY() );
 
 
       if (mcpostrack.pdgCode() == 1000020030 && mcnegtrack.pdgCode() == -211){
@@ -1195,161 +1182,7 @@ struct V0McCheck {
             }
           }
         }
-
-        bool fillV0Hist = true;
-        auto pTrack = getTrackParCov(v0.posTrack_as<MyTracks>());
-        auto nTrack = getTrackParCov(v0.negTrack_as<MyTracks>());
-        auto pTrackCopy = o2::track::TrackParCov(pTrack);
-        auto nTrackCopy = o2::track::TrackParCov(nTrack);
-
-        std::array<float, 3> pos = {0.};
-        std::array<float, 3> pvec0 = {0.};
-        std::array<float, 3> pvec1 = {0.};
-
-        int nCand = fitter.process(pTrackCopy, nTrackCopy);
-        if (nCand == 0) {
-          fillV0Hist = false;
-        }
-        if(fillV0Hist){
-          double finalXpos = fitter.getTrack(0).getX();
-          double finalXneg = fitter.getTrack(1).getX();
-
-          // Rotate to desired alpha
-          pTrack.rotateParam(fitter.getTrack(0).getAlpha());
-          nTrack.rotateParam(fitter.getTrack(1).getAlpha());
-          o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-          o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
-          o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
-
-          nCand = fitter.process(pTrack, nTrack);
-          if (nCand == 0) {
-            fillV0Hist = false;
-          }
-
-          pTrack.getPxPyPzGlo(pvec0);
-          nTrack.getPxPyPzGlo(pvec1);
-          const auto& vtx = fitter.getPCACandidate();
-          for (int i = 0; i < 3; i++) {
-            pos[i] = vtx[i];
-            pvec0[i] = 2*pvec0[i];
-          }
-        }
-        double hypertritonMcMass = RecoDecay::m(array{array{mcpostrack.px(), mcpostrack.py(), mcpostrack.pz()}, array{mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz()}}, array{2.80839, RecoDecay::getMassPDG(kPiPlus)}); 
-        double hypertritonMass = RecoDecay::m(array{array{pvec0[0], pvec0[1], pvec0[2]}, array{pvec1[0], pvec1[1], pvec1[2]}}, array{2.80839, RecoDecay::getMassPDG(kPiPlus)}); 
-        double hypertritonRapidity = RecoDecay::y(array{pvec0[0]+pvec1[0], pvec0[1]+pvec1[1], pvec0[2]+pvec1[2]}, 2.991); 
-        double hypertritonPt = TMath::Sqrt(TMath::Power(pvec0[0]+pvec1[0], 2) + TMath::Power(pvec0[1]+pvec1[1], 2));
-        auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]);
-        auto V0CosinePA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
-        double ct = std::sqrt(std::pow(collision.posX() - pos[0], 2) + std::pow(collision.posY() - pos[1], 2) + std::pow(collision.posZ() - pos[2], 2)) / (TMath::Sqrt( TMath::Power(pvec0[0]+pvec1[0], 2) + TMath::Power( pvec0[1]+pvec1[1], 2) + TMath::Power( pvec0[2]+pvec1[2], 2)) + 1E-10) * 2.991;
-
-        if (fillV0Hist){
-
-          registry.fill(HIST("hV0DauHelium3McPx"), mcpostrack.px());
-          registry.fill(HIST("hV0DauHelium3McPy"), mcpostrack.py());
-          registry.fill(HIST("hV0DauHelium3McPz"), mcpostrack.pz());
-          registry.fill(HIST("hV0DauHelium3McPt"), mcpostrack.pt());
-          registry.fill(HIST("hV0DauHelium3McP"), mcpostrack.p());
-
-          registry.fill(HIST("hV0DauHelium3Px"), pvec0[0]);
-          registry.fill(HIST("hV0DauHelium3Py"), pvec0[1]);
-          registry.fill(HIST("hV0DauHelium3Pz"), pvec0[2]);
-          registry.fill(HIST("hV0DauHelium3Pt"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) );
-          registry.fill(HIST("hV0DauHelium3P"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]+pvec0[2]*pvec0[2]) );
-
-          registry.fill(HIST("hV0DauHelium3DiffPx"), pvec0[0]-mcpostrack.px());
-          registry.fill(HIST("hV0DauHelium3DiffPy"), pvec0[1]-mcpostrack.py());
-          registry.fill(HIST("hV0DauHelium3DiffPz"), pvec0[2]-mcpostrack.pz());
-          registry.fill(HIST("hV0DauHelium3DiffPt"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) - mcpostrack.pt());
-          registry.fill(HIST("hV0DauHelium3DiffP"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]+pvec0[2]*pvec0[2]) - mcpostrack.p());
-          registry.fill(HIST("hV0DauHelium3TPCBB"), v0.posTrack_as<MyTracks>().p()*v0.posTrack_as<MyTracks>().sign(), v0.posTrack_as<MyTracks>().tpcSignal());
-          registry.fill(HIST("hV0DauHelium3NSigmaHelium3"), v0.posTrack_as<MyTracks>().tpcNSigmaHe());
-          registry.fill(HIST("hV0DauHelium3NSigmaPion"), v0.posTrack_as<MyTracks>().tpcNSigmaPi());
-          registry.fill(HIST("hV0DauHelium3NSigmaTriton"), v0.posTrack_as<MyTracks>().tpcNSigmaTr());
-          registry.fill(HIST("hV0DauPionNSigmaHelium3"), v0.negTrack_as<MyTracks>().tpcNSigmaHe());
-          registry.fill(HIST("hV0DauPionNSigmaPion"), v0.negTrack_as<MyTracks>().tpcNSigmaPi());
-          registry.fill(HIST("hV0McHypertritonMass"), hypertritonMcMass);
-          registry.fill(HIST("hV0HypertritonMass"), hypertritonMass);
-        }
-
-
-
-        for (int i=0; i<1; i++){
-          if (v0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows && v0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows){
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass1"), hypertritonMass);
-          if (fitter.getChi2AtPCACandidate() > dcav0dau) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass2"), hypertritonMass);
-          if (V0CosinePA < v0cospa) {
-            break;
-          }
-          registry.fill(HIST("hV0McHypertritonMassAfterV0Cut"), hypertritonMcMass);
-          registry.fill(HIST("hV0HypertritonMass3"), hypertritonMass);
-          if (V0radius > v0radius) {
-            registry.fill(HIST("hV0HypertritonMassTest"), hypertritonMass);
-          }
-          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
-                registry.fill(HIST("hTrueHypertritonCounter"), 2.5);
-                if (particleMotherOfNeg.isPhysicalPrimary()) {
-                  registry.fill(HIST("hTrueHypertritonCounter"), 3.5);
-                }
-              }
-            }
-          }
-          if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaHe()) > TpcPidNsigmaCut){
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass4"), hypertritonMass);
-          if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPi()) > TpcPidNsigmaCut ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass5"), hypertritonMass);
-          if ( TMath::Abs(v0.posTrack_as<MyTracks>().eta()) > etacut || TMath::Abs(v0.negTrack_as<MyTracks>().eta()) > etacut){
-            continue;
-          }
-          registry.fill(HIST("hV0HypertritonMass6"), hypertritonMass);
-          if (TMath::Abs(hypertritonRapidity) > rapidity){ 
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass7"), hypertritonMass);
-          if (ct > lifetimecut) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass8"), hypertritonMass);
-          if ( TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) < 0.2 || TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) > 1.2 ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass9"), hypertritonMass);
-          if ( TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) < 1.8 || TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) > 10 ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass10"), hypertritonMass);
-          if (hypertritonPt < 2 || hypertritonPt > 9 ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass11"), hypertritonMass);
-          if (TMath::Abs(v0.negTrack_as<MyTracks>().dcaXY()) < dcapiontopv) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass12"), hypertritonMass);
-
-          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
-                registry.fill(HIST("hTrueHypertritonCounter"), 4.5);
-                if (particleMotherOfNeg.isPhysicalPrimary()) {
-                  registry.fill(HIST("hTrueHypertritonCounter"), 5.5);
-                }
-              }
-            }
-          }
-        }
       }
-
       if (mcnegtrack.pdgCode() == -1000020030 && mcpostrack.pdgCode() == 211) {
         for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
           for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
@@ -1361,158 +1194,224 @@ struct V0McCheck {
             }
           }
         }
+      }
 
-        bool fillV0Hist = true;
-        auto pTrack = getTrackParCov(v0.posTrack_as<MyTracks>());
-        auto nTrack = getTrackParCov(v0.negTrack_as<MyTracks>());
-        auto pTrackCopy = o2::track::TrackParCov(pTrack);
-        auto nTrackCopy = o2::track::TrackParCov(nTrack);
+      auto pTrack = getTrackParCov(v0.posTrack_as<MyTracks>());
+      auto nTrack = getTrackParCov(v0.negTrack_as<MyTracks>());
+      auto pTrackCopy = o2::track::TrackParCov(pTrack);
+      auto nTrackCopy = o2::track::TrackParCov(nTrack);
 
-        std::array<float, 3> pos = {0.};
-        std::array<float, 3> pvec0 = {0.};
-        std::array<float, 3> pvec1 = {0.};
+      std::array<float, 3> pos = {0.};
+      std::array<float, 3> pvec0 = {0.};
+      std::array<float, 3> pvec1 = {0.};
 
-        int nCand = fitter.process(pTrackCopy, nTrackCopy);
-        if (nCand == 0) {
-          fillV0Hist = false;
+      int nCand = fitter.process(pTrackCopy, nTrackCopy);
+      if (nCand == 0) {
+        continue;
+      }
+      double finalXpos = fitter.getTrack(0).getX();
+      double finalXneg = fitter.getTrack(1).getX();
+
+      // Rotate to desired alpha
+      pTrack.rotateParam(fitter.getTrack(0).getAlpha());
+      nTrack.rotateParam(fitter.getTrack(1).getAlpha());
+      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
+      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
+
+      nCand = fitter.process(pTrack, nTrack);
+      if (nCand == 0) {
+        continue;
+      }
+
+      pTrack.getPxPyPzGlo(pvec0);
+      nTrack.getPxPyPzGlo(pvec1);
+      const auto& vtx = fitter.getPCACandidate();
+
+      double hypertritonMcMass = -999, hypertritonMass = -999;
+      double hypertritonRapidity = -999, hypertritonPt = -999, V0radius = -999, V0CosinePA = -999, ct = -999;
+      double He3Nsigma = -999, PionNSigma = -999, He3Pt = -999, PionPt = -999, PionDcatoPV = -999;
+      if (mcpostrack.pdgCode() == 1000020030 && mcnegtrack.pdgCode() == -211){
+        for (int i = 0; i < 3; i++) {
+          pos[i] = vtx[i];
+          pvec0[i] = 2*pvec0[i];
         }
-        if(fillV0Hist){
-          double finalXpos = fitter.getTrack(0).getX();
-          double finalXneg = fitter.getTrack(1).getX();
+        hypertritonMcMass = RecoDecay::m(array{array{mcpostrack.px(), mcpostrack.py(), mcpostrack.pz()}, array{mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz()}}, array{2.80839, RecoDecay::getMassPDG(kPiPlus)}); 
+        hypertritonMass = RecoDecay::m(array{array{pvec0[0], pvec0[1], pvec0[2]}, array{pvec1[0], pvec1[1], pvec1[2]}}, array{2.80839, RecoDecay::getMassPDG(kPiPlus)}); 
+        He3Nsigma   = v0.posTrack_as<MyTracks>().tpcNSigmaHe();
+        PionNSigma  = v0.negTrack_as<MyTracks>().tpcNSigmaPi();
+        He3Pt       = TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]);
+        PionPt      = TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]);
+        PionDcatoPV = v0.negTrack_as<MyTracks>().dcaXY();
 
-          // Rotate to desired alpha
-          pTrack.rotateParam(fitter.getTrack(0).getAlpha());
-          nTrack.rotateParam(fitter.getTrack(1).getAlpha());
-          o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-          o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
-          o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
+        registry.fill(HIST("hV0DauHelium3McPx"), mcpostrack.px());
+        registry.fill(HIST("hV0DauHelium3McPy"), mcpostrack.py());
+        registry.fill(HIST("hV0DauHelium3McPz"), mcpostrack.pz());
+        registry.fill(HIST("hV0DauHelium3McPt"), mcpostrack.pt());
+        registry.fill(HIST("hV0DauHelium3McP"), mcpostrack.p());
 
-          nCand = fitter.process(pTrack, nTrack);
-          if (nCand == 0) {
-            fillV0Hist = false;
-          }
+        registry.fill(HIST("hV0DauHelium3Px"), pvec0[0]);
+        registry.fill(HIST("hV0DauHelium3Py"), pvec0[1]);
+        registry.fill(HIST("hV0DauHelium3Pz"), pvec0[2]);
+        registry.fill(HIST("hV0DauHelium3Pt"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) );
+        registry.fill(HIST("hV0DauHelium3P"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]+pvec0[2]*pvec0[2]) );
 
-          pTrack.getPxPyPzGlo(pvec0);
-          nTrack.getPxPyPzGlo(pvec1);
-          const auto& vtx = fitter.getPCACandidate();
-          for (int i = 0; i < 3; i++) {
-            pos[i] = vtx[i];
-            pvec1[i] = 2*pvec1[i];
-          }
+        registry.fill(HIST("hV0DauHelium3DiffPx"), pvec0[0]-mcpostrack.px());
+        registry.fill(HIST("hV0DauHelium3DiffPy"), pvec0[1]-mcpostrack.py());
+        registry.fill(HIST("hV0DauHelium3DiffPz"), pvec0[2]-mcpostrack.pz());
+        registry.fill(HIST("hV0DauHelium3DiffPt"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) - mcpostrack.pt());
+        registry.fill(HIST("hV0DauHelium3DiffP"), TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]+pvec0[2]*pvec0[2]) - mcpostrack.p());
+        registry.fill(HIST("hV0DauHelium3TPCBB"), v0.posTrack_as<MyTracks>().p()*v0.posTrack_as<MyTracks>().sign(), v0.posTrack_as<MyTracks>().tpcSignal());
+        registry.fill(HIST("hV0DauHelium3NSigmaHelium3"), v0.posTrack_as<MyTracks>().tpcNSigmaHe());
+        registry.fill(HIST("hV0DauHelium3NSigmaPion"), v0.posTrack_as<MyTracks>().tpcNSigmaPi());
+        registry.fill(HIST("hV0DauHelium3NSigmaTriton"), v0.posTrack_as<MyTracks>().tpcNSigmaTr());
+        registry.fill(HIST("hV0DauPionNSigmaHelium3"), v0.negTrack_as<MyTracks>().tpcNSigmaHe());
+        registry.fill(HIST("hV0DauPionNSigmaPion"), v0.negTrack_as<MyTracks>().tpcNSigmaPi());
+        registry.fill(HIST("hV0McHypertritonMass"), hypertritonMcMass);
+        registry.fill(HIST("hV0HypertritonMass"), hypertritonMass);
+
+      }
+
+      if (mcnegtrack.pdgCode() == -1000020030 && mcpostrack.pdgCode() == 211) {
+        for (int i = 0; i < 3; i++) {
+          pos[i] = vtx[i];
+          pvec1[i] = 2*pvec1[i];
         }
 
-        double hypertritonMcMass = RecoDecay::m(array{array{mcpostrack.px(), mcpostrack.py(), mcpostrack.pz()}, array{mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz()}}, array{RecoDecay::getMassPDG(kPiPlus), 2.80839}); 
-        double hypertritonMass = RecoDecay::m(array{array{pvec0[0], pvec0[1], pvec0[2]}, array{pvec1[0], pvec1[1], pvec1[2]}}, array{RecoDecay::getMassPDG(kPiPlus), 2.80839}); 
-        double hypertritonRapidity = RecoDecay::y(array{pvec0[0]+pvec1[0], pvec0[1]+pvec1[1], pvec0[2]+pvec1[2]}, 2.991); 
-        double hypertritonPt = TMath::Sqrt(TMath::Power(pvec0[0]+pvec1[0], 2) + TMath::Power(pvec0[1]+pvec1[1], 2));
-        auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]);
-        auto V0CosinePA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
-        double ct = std::sqrt(std::pow(collision.posX() - pos[0], 2) + std::pow(collision.posY() - pos[1], 2) + std::pow(collision.posZ() - pos[2], 2)) / (TMath::Sqrt( TMath::Power(pvec0[0]+pvec1[0], 2) + TMath::Power( pvec0[1]+pvec1[1], 2) + TMath::Power( pvec0[2]+pvec1[2], 2)) + 1E-10) * 2.991;
-
-        if (fillV0Hist){
-
-          registry.fill(HIST("hV0DauHelium3McPx"), mcnegtrack.px());
-          registry.fill(HIST("hV0DauHelium3McPy"), mcnegtrack.py());
-          registry.fill(HIST("hV0DauHelium3McPz"), mcnegtrack.pz());
-          registry.fill(HIST("hV0DauHelium3McPt"), mcnegtrack.pt());
-          registry.fill(HIST("hV0DauHelium3McP"), mcnegtrack.p());
-
-          registry.fill(HIST("hV0DauHelium3Px"), pvec1[0]);
-          registry.fill(HIST("hV0DauHelium3Py"), pvec1[1]);
-          registry.fill(HIST("hV0DauHelium3Pz"), pvec1[2]);
-          registry.fill(HIST("hV0DauHelium3Pt"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) );
-          registry.fill(HIST("hV0DauHelium3P"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]+pvec1[2]*pvec1[2]) );
-
-          registry.fill(HIST("hV0DauHelium3DiffPx"), pvec1[0]-mcpostrack.px());
-          registry.fill(HIST("hV0DauHelium3DiffPy"), pvec1[1]-mcpostrack.py());
-          registry.fill(HIST("hV0DauHelium3DiffPz"), pvec1[2]-mcpostrack.pz());
-          registry.fill(HIST("hV0DauHelium3DiffPt"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) - mcpostrack.pt());
-          registry.fill(HIST("hV0DauHelium3DiffP"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]+pvec1[2]*pvec1[2]) - mcpostrack.p());
-
-          registry.fill(HIST("hV0DauHelium3TPCBB"), v0.negTrack_as<MyTracks>().p()*v0.posTrack_as<MyTracks>().sign(), v0.posTrack_as<MyTracks>().tpcSignal());
-          registry.fill(HIST("hV0DauHelium3NSigmaHelium3"), v0.negTrack_as<MyTracks>().tpcNSigmaHe());
-          registry.fill(HIST("hV0DauHelium3NSigmaPion"), v0.negTrack_as<MyTracks>().tpcNSigmaPi());
-          registry.fill(HIST("hV0DauHelium3NSigmaTriton"), v0.negTrack_as<MyTracks>().tpcNSigmaTr());
-          registry.fill(HIST("hV0DauPionNSigmaHelium3"), v0.posTrack_as<MyTracks>().tpcNSigmaHe());
-          registry.fill(HIST("hV0DauPionNSigmaPion"), v0.posTrack_as<MyTracks>().tpcNSigmaPi());
-          registry.fill(HIST("hV0McHypertritonMass"), hypertritonMcMass);
-          registry.fill(HIST("hV0HypertritonMass"), hypertritonMass);
-        }
+        hypertritonMcMass = RecoDecay::m(array{array{mcpostrack.px(), mcpostrack.py(), mcpostrack.pz()}, array{mcnegtrack.px(), mcnegtrack.py(), mcnegtrack.pz()}}, array{RecoDecay::getMassPDG(kPiPlus), 2.80839}); 
+        hypertritonMass = RecoDecay::m(array{array{pvec0[0], pvec0[1], pvec0[2]}, array{pvec1[0], pvec1[1], pvec1[2]}}, array{RecoDecay::getMassPDG(kPiPlus), 2.80839}); 
+        He3Nsigma   = v0.negTrack_as<MyTracks>().tpcNSigmaHe();
+        PionNSigma  = v0.posTrack_as<MyTracks>().tpcNSigmaPi();
+        He3Pt       = TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]);
+        PionPt      = TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]);
+        PionDcatoPV = v0.posTrack_as<MyTracks>().dcaXY();
 
 
+        registry.fill(HIST("hV0DauHelium3McPx"), mcnegtrack.px());
+        registry.fill(HIST("hV0DauHelium3McPy"), mcnegtrack.py());
+        registry.fill(HIST("hV0DauHelium3McPz"), mcnegtrack.pz());
+        registry.fill(HIST("hV0DauHelium3McPt"), mcnegtrack.pt());
+        registry.fill(HIST("hV0DauHelium3McP"), mcnegtrack.p());
 
-        for (int i=0; i<1; i++){
-          if (v0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows && v0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows){
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass1"), hypertritonMass);
-          if (fitter.getChi2AtPCACandidate() > dcav0dau) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass2"), hypertritonMass);
-          if (V0CosinePA < v0cospa) {
-            break;
-          }
-          registry.fill(HIST("hV0McHypertritonMassAfterV0Cut"), hypertritonMcMass);
-          registry.fill(HIST("hV0HypertritonMass3"), hypertritonMass);
-          if (V0radius > v0radius) {
-            registry.fill(HIST("hV0HypertritonMassTest"), hypertritonMass);
-          }
-          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
-                registry.fill(HIST("hTrueHypertritonCounter"), 8.5);
-                if (particleMotherOfNeg.isPhysicalPrimary()) {
-                  registry.fill(HIST("hTrueHypertritonCounter"), 9.5);
-                }
-              }
+        registry.fill(HIST("hV0DauHelium3Px"), pvec1[0]);
+        registry.fill(HIST("hV0DauHelium3Py"), pvec1[1]);
+        registry.fill(HIST("hV0DauHelium3Pz"), pvec1[2]);
+        registry.fill(HIST("hV0DauHelium3Pt"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) );
+        registry.fill(HIST("hV0DauHelium3P"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]+pvec1[2]*pvec1[2]) );
+
+        registry.fill(HIST("hV0DauHelium3DiffPx"), pvec1[0]-mcpostrack.px());
+        registry.fill(HIST("hV0DauHelium3DiffPy"), pvec1[1]-mcpostrack.py());
+        registry.fill(HIST("hV0DauHelium3DiffPz"), pvec1[2]-mcpostrack.pz());
+        registry.fill(HIST("hV0DauHelium3DiffPt"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) - mcpostrack.pt());
+        registry.fill(HIST("hV0DauHelium3DiffP"), TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]+pvec1[2]*pvec1[2]) - mcpostrack.p());
+
+        registry.fill(HIST("hV0DauHelium3TPCBB"), v0.negTrack_as<MyTracks>().p()*v0.posTrack_as<MyTracks>().sign(), v0.posTrack_as<MyTracks>().tpcSignal());
+        registry.fill(HIST("hV0DauHelium3NSigmaHelium3"), v0.negTrack_as<MyTracks>().tpcNSigmaHe());
+        registry.fill(HIST("hV0DauHelium3NSigmaPion"), v0.negTrack_as<MyTracks>().tpcNSigmaPi());
+        registry.fill(HIST("hV0DauHelium3NSigmaTriton"), v0.negTrack_as<MyTracks>().tpcNSigmaTr());
+        registry.fill(HIST("hV0DauPionNSigmaHelium3"), v0.posTrack_as<MyTracks>().tpcNSigmaHe());
+        registry.fill(HIST("hV0DauPionNSigmaPion"), v0.posTrack_as<MyTracks>().tpcNSigmaPi());
+        registry.fill(HIST("hV0McHypertritonMass"), hypertritonMcMass);
+        registry.fill(HIST("hV0HypertritonMass"), hypertritonMass);
+
+      }
+
+      hypertritonRapidity = RecoDecay::y(array{pvec0[0]+pvec1[0], pvec0[1]+pvec1[1], pvec0[2]+pvec1[2]}, 2.991); 
+      hypertritonPt = TMath::Sqrt(TMath::Power(pvec0[0]+pvec1[0], 2) + TMath::Power(pvec0[1]+pvec1[1], 2));
+      V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]);
+      V0CosinePA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
+      ct = std::sqrt(std::pow(collision.posX() - pos[0], 2) + std::pow(collision.posY() - pos[1], 2) + std::pow(collision.posZ() - pos[2], 2)) / (TMath::Sqrt( TMath::Power(pvec0[0]+pvec1[0], 2) + TMath::Power( pvec0[1]+pvec1[1], 2) + TMath::Power( pvec0[2]+pvec1[2], 2)) + 1E-10) * 2.991;
+
+      if (v0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows && v0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows){
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass1"), hypertritonMass);
+      if (fitter.getChi2AtPCACandidate() > dcav0dau) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass2"), hypertritonMass);
+      if (V0CosinePA < v0cospa) {
+        continue;
+      }
+      registry.fill(HIST("hV0McHypertritonMassAfterV0Cut"), hypertritonMcMass);
+      registry.fill(HIST("hV0HypertritonMass3"), hypertritonMass);
+      if (V0radius > v0radius) {
+        registry.fill(HIST("hV0HypertritonMassTest"), hypertritonMass);
+      }
+      for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
+            registry.fill(HIST("hTrueHypertritonCounter"), 2.5);
+            if (particleMotherOfNeg.isPhysicalPrimary()) {
+              registry.fill(HIST("hTrueHypertritonCounter"), 3.5);
             }
           }
-          if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaHe()) > TpcPidNsigmaCut){
-            break;
+        }
+      }
+      for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
+            registry.fill(HIST("hTrueHypertritonCounter"), 8.5);
+            if (particleMotherOfNeg.isPhysicalPrimary()) {
+              registry.fill(HIST("hTrueHypertritonCounter"), 9.5);
+            }
           }
-          registry.fill(HIST("hV0HypertritonMass4"), hypertritonMass);
-          if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPi()) > TpcPidNsigmaCut ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass5"), hypertritonMass);
-          if ( TMath::Abs(v0.posTrack_as<MyTracks>().eta()) > etacut || TMath::Abs(v0.negTrack_as<MyTracks>().eta()) > etacut){
-            continue;
-          }
-          registry.fill(HIST("hV0HypertritonMass6"), hypertritonMass);
-          if (TMath::Abs(hypertritonRapidity) > rapidity){ 
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass7"), hypertritonMass);
-          if (ct > lifetimecut) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass8"), hypertritonMass);
-          if ( TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) < 0.2 || TMath::Sqrt(pvec0[0]*pvec0[0]+pvec0[1]*pvec0[1]) > 1.2 ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass9"), hypertritonMass);
-          if ( TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1]) < 1.8 || TMath::Sqrt(pvec1[0]*pvec1[0]+pvec1[1]*pvec1[1])  > 10 ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass10"), hypertritonMass);
-          if (hypertritonPt < 2 || hypertritonPt > 9 ) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass11"), hypertritonMass);
-          if (TMath::Abs(v0.posTrack_as<MyTracks>().dcaXY()) < dcapiontopv) {
-            break;
-          }
-          registry.fill(HIST("hV0HypertritonMass12"), hypertritonMass);
+        }
+      }
 
-          for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
-                registry.fill(HIST("hTrueHypertritonCounter"), 10.5);
-                if (particleMotherOfNeg.isPhysicalPrimary()) {
-                  registry.fill(HIST("hTrueHypertritonCounter"), 11.5);
-                }
-              }
+      if (TMath::Abs(He3Nsigma) > TpcPidNsigmaCut){
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass4"), hypertritonMass);
+      if (TMath::Abs(PionNSigma) > TpcPidNsigmaCut ) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass5"), hypertritonMass);
+      if ( TMath::Abs(v0.posTrack_as<MyTracks>().eta()) > etacut || TMath::Abs(v0.negTrack_as<MyTracks>().eta()) > etacut){
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass6"), hypertritonMass);
+      if (TMath::Abs(hypertritonRapidity) > rapidity){ 
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass7"), hypertritonMass);
+      if (ct > lifetimecut) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass8"), hypertritonMass);
+      if ( PionPt < 0.2 || PionPt > 1.2 ) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass9"), hypertritonMass);
+      if ( He3Pt < 1.8 || He3Pt > 10 ) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass10"), hypertritonMass);
+      if (hypertritonPt < 2 || hypertritonPt > 9 ) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass11"), hypertritonMass);
+      if (TMath::Abs(PionDcatoPV) < dcapiontopv) {
+        continue;
+      }
+      registry.fill(HIST("hV0HypertritonMass12"), hypertritonMass);
+
+      for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 1010010030) {
+            registry.fill(HIST("hTrueHypertritonCounter"), 4.5);
+            if (particleMotherOfNeg.isPhysicalPrimary()) {
+              registry.fill(HIST("hTrueHypertritonCounter"), 5.5);
+            }
+          }
+        }
+      }
+      for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
+          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -1010010030) {
+            registry.fill(HIST("hTrueHypertritonCounter"), 10.5);
+            if (particleMotherOfNeg.isPhysicalPrimary()) {
+              registry.fill(HIST("hTrueHypertritonCounter"), 11.5);
             }
           }
         }
