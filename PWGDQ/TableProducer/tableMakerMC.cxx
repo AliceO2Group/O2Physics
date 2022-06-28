@@ -466,7 +466,7 @@ struct TableMakerMC {
         // first we need to get the correct indices
         int nDel = 0;
         int idxPrev = -1;
-        std::map<int, int> newEntryNb; //(tracksMuon.size(), -99);
+        std::map<int, int> newEntryNb;
         std::map<int, int> newMatchIndex;
 
         for (auto& muon : groupedMuons) {
@@ -476,7 +476,7 @@ struct TableMakerMC {
           if (!muon.has_mcParticle()) {
             continue;
           }
-          auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
+
           VarManager::FillTrack<TMuonFillMap>(muon);
 
           if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
