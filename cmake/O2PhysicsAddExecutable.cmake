@@ -56,7 +56,7 @@ function(o2physics_add_executable baseTargetName)
     message(FATAL_ERROR "Got trailing arguments ${A_UNPARSED_ARGUMENTS}")
   endif()
 
-  # check naming conventions for executable  
+  # check naming conventions for executable
   if (NOT ${baseTargetName} MATCHES "^[a-z0-9\-]*$")
     message(FATAL_ERROR "Executable name can only contain lower case letters, numbers and -. Violated by ${baseTargetName}")
   endif()
@@ -116,6 +116,7 @@ function(o2physics_add_executable baseTargetName)
   set_property(TARGET ${target} PROPERTY OUTPUT_NAME ${exeName})
   if(A_JOB_POOL)
     set_property(TARGET ${target} PROPERTY JOB_POOL_COMPILE ${A_JOB_POOL})
+    set_property(TARGET ${target} PROPERTY JOB_POOL_LINK ${A_JOB_POOL})
   endif()
 
   if(A_IS_TEST)
