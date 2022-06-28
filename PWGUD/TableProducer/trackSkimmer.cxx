@@ -15,12 +15,17 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "TH1I.h"
+
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct TrackSkimmer {
   int32_t fSignalGenID{1};
   bool fDoMC;
+
+  OutputObj<TH1I> hNSig{TH1I("hNSig", ";n tracks;", 2, 0, 2)};
+  OutputObj<TH1I> hNSigITSTPC{TH1I("hNSigITSTPC", ";n tracks;", 2, 0, 2)};
 
   Produces<o2::aod::SkimmedMCEvents> skMCEvents;
   Produces<o2::aod::SkimmedMCParticles> skMCParticles;
@@ -248,7 +253,7 @@ struct TrackSkimmer {
                      TAmbFwdTracks const& ambTracks,
                      TBCs const& bcs,
                      TMcFwdTrackLabels* mcTrackLabels,
-                     std::map<int32_t, int32_t>& newPartIDs)
+                     std::map<int32_t, int32_t> const& newPartIDs)
   {
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.fwdtrackId();
@@ -290,15 +295,12 @@ struct TrackSkimmer {
                      TAmbBarTracks const& ambTracks,
                      TBCs const& bcs,
                      TMcBarTrackLabels* mcTrackLabels,
-                     std::map<int32_t, int32_t>& newPartIDs,
+                     std::map<int32_t, int32_t> const& newPartIDs,
                      o2::aod::McParticles const& mcParticles,
                      o2::aod::McCollisions const& mcCollisions)
   {
     // debug
     LOGF(info, "n barrel tracks = %d", tracks.size());
-    int nPassed = 0;
-    int nSig = 0;
-    int nSigITSTPC = 0;
 
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.trackId();
@@ -331,10 +333,11 @@ struct TrackSkimmer {
         // debug
         if (mcPartID >= 0) {
           const auto& mcPart = mcParticles.iteratorAt(mcPartID);
-          if (mcPart.isPhysicalPrimary() && std::abs(mcPart.pdgCode()) == 13) {
-            nSig++;
+          bool isSignal = mcPart.mcCollision().generatorsID() == fSignalGenID;
+          if (isSignal && mcPart.producedByGenerator()) {
+            hNSig->Fill(1);
             if (tr.hasITS() && tr.hasTPC())
-              nSigITSTPC++;
+              hNSigITSTPC->Fill(1);
           }
         }
         //
@@ -342,13 +345,7 @@ struct TrackSkimmer {
         int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
         barLabels(newPartID, mcMask);
       }
-      nPassed++;
     }
-
-    // debug
-    LOGF(info, "passed barrel tracks = %d", nPassed);
-    LOGF(info, "signal barrel tracks = %d", nSig);
-    LOGF(info, "signal barrel tracks with ITS-TPC = %d", nSigITSTPC);
   }
 
   void processFwdMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& tracks,
@@ -373,7 +370,7 @@ struct TrackSkimmer {
   {
     fDoMC = false;
     using namespace o2::aod::fwdtrack;
-    const uint32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
+    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> dummyMap;
     skimFwdTracks<trType>(tracks, ambTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
   }
@@ -391,7 +388,7 @@ struct TrackSkimmer {
   {
     fDoMC = true;
     using namespace o2::aod::fwdtrack;
-    const uint32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
+    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
     std::map<int32_t, int32_t> newPartIDs;
     skimMCInfo(mcCollisions, mcParticles, bcs, newPartIDs);
     skimFwdTracks<trType>(fwdTracks, ambFwdTracks, bcs, &mcFwdTrackLabels, newPartIDs);

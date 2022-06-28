@@ -26,20 +26,58 @@ struct TrackSkimmerQa {
   HistogramRegistry registry{
     "registry",
     {
-      {"Timings/TrackTimeRes", ";Track time resolution, ns;", {HistType::kTH1D, {{100, 0., 10.}}}},
-      {"Kine/Pt", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
-      {"Kine/Eta", ";#eta;", {HistType::kTH1D, {{100, -4., 4.}}}}
+      {"Muons/Timings/TrackTimeRes", ";Track time resolution, ns;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Muons/Kine/Pt", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Muons/Kine/Eta", ";#eta;", {HistType::kTH1D, {{100, -4., 4.}}}},
+      //
+      {"Barrels/Timings/TrackTimeRes", ";Track time resolution, ns;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Barrels/Kine/Pt", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Barrels/Kine/Eta", ";#eta;", {HistType::kTH1D, {{100, -4., 4.}}}},
+      {"Barrels/ITS/chi2", ";chi2;", {HistType::kTH1D, {{1100, -100., 1000.}}}},
+      {"Barrels/ITS/nClusters", ";n clusters;", {HistType::kTH1I, {{10, 0, 10}}}},
+      {"Barrels/TPC/chi2", ";chi2;", {HistType::kTH1D, {{110, -10., 100.}}}},
+      {"Barrels/TPC/nClusters", ";n clusters;", {HistType::kTH1I, {{200, 0, 200}}}},
     }
   };
 
-  void process(o2::aod::SkimmedMuons const& muonTracks)
+  void process(soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
+               soa::Join<o2::aod::SkimmedBarTracks, o2::aod::SkimmedBarTracksExtra, o2::aod::SkimmedBarTrackLabels> const& barTracks,
+               o2::aod::SkimmedMCParticles const& mcParticles)
   {
     for (const auto& track : muonTracks) {
+      int32_t mcPartId = track.skimmedMCParticleId();
+      if (mcPartId < 0) {
+        continue;
+      }
+      const auto& mcPart = mcParticles.iteratorAt(mcPartId);
+      if (!(mcPart.isPhysicalPrimary() && std::abs(mcPart.pdgCode()) == 13)) {
+        continue;
+      }
       TLorentzVector p;
       p.SetXYZM(track.px(), track.py(), track.pz(), mmuon);
-      registry.fill(HIST("Timings/TrackTimeRes"), track.trackTimeRes());
-      registry.fill(HIST("Kine/Pt"), p.Pt());
-      registry.fill(HIST("Kine/Eta"), p.Eta());
+      registry.fill(HIST("Muons/Timings/TrackTimeRes"), track.trackTimeRes());
+      registry.fill(HIST("Muons/Kine/Pt"), p.Pt());
+      registry.fill(HIST("Muons/Kine/Eta"), p.Eta());
+    }
+
+    for (const auto& track : barTracks) {
+      int32_t mcPartId = track.skimmedMCParticleId();
+      if (mcPartId < 0) {
+        continue;
+      }
+      const auto& mcPart = mcParticles.iteratorAt(mcPartId);
+      if (!(mcPart.isPhysicalPrimary() && std::abs(mcPart.pdgCode()) == 13)) {
+        continue;
+      }
+      TLorentzVector p;
+      p.SetXYZM(track.px(), track.py(), track.pz(), mmuon);
+      registry.fill(HIST("Barrels/Timings/TrackTimeRes"), track.trackTimeRes());
+      registry.fill(HIST("Barrels/Kine/Pt"), p.Pt());
+      registry.fill(HIST("Barrels/Kine/Eta"), p.Eta());
+      registry.fill(HIST("Barrels/ITS/chi2"), track.itsChi2NCl());
+      registry.fill(HIST("Barrels/ITS/nClusters"), track.itsNCls());
+      registry.fill(HIST("Barrels/TPC/chi2"), track.tpcChi2NCl());
+      registry.fill(HIST("Barrels/TPC/nClusters"), track.tpcNClsCrossedRows());
     }
   }
 };

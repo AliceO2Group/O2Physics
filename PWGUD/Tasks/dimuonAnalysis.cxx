@@ -28,6 +28,8 @@ using namespace o2::framework::expressions;
 #define muonPDG 13
 
 struct DimuonsAnalysis {
+  float ft0DummyTime = 32.767f;
+
   HistogramRegistry registry{
     "registry",
     {{"BCs/Candidates", ";BC;", {HistType::kTH1D, {{1000000, 0., 1000000.}}}},
@@ -98,8 +100,8 @@ struct DimuonsAnalysis {
         continue;
       }
       //
-      int mcPartId1 = tr1.mcParticleId();
-      int mcPartId2 = tr2.mcParticleId();
+      int mcPartId1 = tr1.skimmedMCParticleId();
+      int mcPartId2 = tr2.skimmedMCParticleId();
       const auto& mcPart1 = mcParticles.iteratorAt(mcPartId1);
       const auto& mcPart2 = mcParticles.iteratorAt(mcPartId2);
       TLorentzVector mcP1, mcP2, pPairMC;
@@ -120,7 +122,9 @@ struct DimuonsAnalysis {
         registry.fill(HIST("TracksWithFT0/Eta"), p2.Eta());
         registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeAFT0());
         registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeCFT0());
-        passFT0 = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
+        bool checkA = std::abs(cand.timeAFT0() - ft0DummyTime) < 1e-3;
+        bool checkC = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
+        passFT0 = checkA && checkC;
       } else {
         passFT0 = true;
       }
@@ -180,8 +184,8 @@ struct DimuonsAnalysis {
         continue;
       }
       //
-      int mcPartId1 = tr1.mcParticleId();
-      int mcPartId2 = tr2.mcParticleId();
+      int mcPartId1 = tr1.skimmedMCParticleId();
+      int mcPartId2 = tr2.skimmedMCParticleId();
       const auto& mcPart1 = mcParticles.iteratorAt(mcPartId1);
       const auto& mcPart2 = mcParticles.iteratorAt(mcPartId2);
       TLorentzVector mcP1, mcP2, pPairMC;
@@ -202,7 +206,9 @@ struct DimuonsAnalysis {
         registry.fill(HIST("TracksWithFT0/Eta"), p2.Eta());
         registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeAFT0());
         registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeCFT0());
-        passFT0 = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
+        bool checkA = std::abs(cand.timeAFT0() - ft0DummyTime) < 1e-3;
+        bool checkC = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
+        passFT0 = checkA && checkC;
       } else {
         passFT0 = true;
       }

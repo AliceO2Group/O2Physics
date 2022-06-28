@@ -21,6 +21,53 @@
 namespace o2::aod
 {
 
+namespace skimmcevent
+{
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+}
+
+DECLARE_SOA_TABLE(SkimmedMCEvents, "AOD", "SKMCEVENTS",
+                  o2::soa::Index<>,
+                  skimmcevent::GlobalBC,
+                  mccollision::GeneratorsID,
+                  mccollision::PosX,
+                  mccollision::PosY,
+                  mccollision::PosZ,
+                  mccollision::T,
+                  mccollision::Weight,
+                  mccollision::ImpactParameter);
+
+namespace skimmcpart
+{
+DECLARE_SOA_INDEX_COLUMN(SkimmedMCEvent, skimmedMCEvent);  //!
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters); //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_COLUMN(Px, px, float);                         //!
+DECLARE_SOA_COLUMN(Py, py, float);                         //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                         //!
+DECLARE_SOA_COLUMN(E, e, float);                           //!
+} // namespace skimmcpart
+
+DECLARE_SOA_TABLE_FULL(SkimmedMCParticles, "SkimmedMCParticles", "AOD", "SKMCPARTICLES", //!  MC track information (on disk)
+                       o2::soa::Index<>, skimmcpart::SkimmedMCEventId,
+                       mcparticle::PdgCode,
+                       mcparticle::StatusCode,
+                       mcparticle::Flags,
+                       skimmcpart::MothersIds,
+                       skimmcpart::DaughtersIdSlice,
+                       mcparticle::Weight,
+                       skimmcpart::Px,
+                       skimmcpart::Py,
+                       skimmcpart::Pz,
+                       skimmcpart::E,
+                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
+                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
+
+using SkimmedMCParticle = SkimmedMCParticles::iterator;
+
 namespace skimbartrack
 {
 DECLARE_SOA_COLUMN(Px, px, float);                     //!
@@ -29,19 +76,6 @@ DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
 DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //! absolute time in ns
 DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
-//
-DECLARE_SOA_COLUMN(Flags, flags, uint32_t);                                                   //! Track flags. Run 2: see TrackFlagsRun2Enum | Run 3: see TrackFlags
-DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, uint8_t);                                    //! ITS cluster map, one bit per a layer, starting from the innermost
-DECLARE_SOA_COLUMN(TPCNClsFindable, tpcNClsFindable, uint8_t);                                //! Findable TPC clusters for this track geometry
-DECLARE_SOA_COLUMN(TPCNClsFindableMinusFound, tpcNClsFindableMinusFound, int8_t);             //! TPC Clusters: Findable - Found
-DECLARE_SOA_COLUMN(TPCNClsFindableMinusCrossedRows, tpcNClsFindableMinusCrossedRows, int8_t); //! TPC Clusters: Findable - crossed rows
-DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, uint8_t);                                    //! Number of shared TPC clusters
-DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                                            //! Chi2 / cluster for the ITS track segment
-DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);                                            //! Chi2 / cluster for the TPC track segment
-DECLARE_SOA_COLUMN(TOFChi2, tofChi2, float);                                                  //! Chi2 for the TOF track segment
-DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);                                              //! dE/dx signal in the TPC
-DECLARE_SOA_COLUMN(Length, length, float);                                                    //! Track length
-DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);                                              //! TOF expected momentum obtained in tracking, used to compute the expected times
 } // namespace skimbartrack
 
 // Barrel track kinematics
@@ -62,18 +96,20 @@ DECLARE_SOA_TABLE(SkimmedBarTracksCov, "AOD", "SKIMBARTRCOV", //!
                   track::C1PtY, track::C1PtZ, track::C1PtSnp, track::C1PtTgl, track::C1Pt21Pt2);
 
 DECLARE_SOA_TABLE(SkimmedBarTracksExtra, "AOD", "SKIMBARTREXTRA",
-                  skimbartrack::Flags,
-                  skimbartrack::ITSClusterMap,
-                  skimbartrack::TPCNClsFindable,
-                  skimbartrack::TPCNClsFindableMinusFound,
-                  skimbartrack::TPCNClsFindableMinusCrossedRows,
-                  skimbartrack::TPCNClsShared,
-                  skimbartrack::ITSChi2NCl,
-                  skimbartrack::TPCChi2NCl,
-                  skimbartrack::TOFChi2,
-                  skimbartrack::TPCSignal,
-                  skimbartrack::Length,
-                  skimbartrack::TOFExpMom);
+                  track::Flags,
+                  track::ITSClusterMap,
+                  track::TPCNClsFindable,
+                  track::TPCNClsFindableMinusFound,
+                  track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCNClsShared,
+                  track::ITSChi2NCl,
+                  track::TPCChi2NCl,
+                  track::TOFChi2,
+                  track::TPCSignal,
+                  track::Length,
+                  track::TOFExpMom,
+                  track::ITSNCls<track::ITSClusterMap>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
 using SkimmedBarTrack = SkimmedBarTracks::iterator;
 using SkimmedBarTrackCov = SkimmedBarTracksCov::iterator;
@@ -81,12 +117,12 @@ using SkimmedBarTrackExtra = SkimmedBarTracksExtra::iterator;
 
 namespace skimbartracklabel
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_INDEX_COLUMN(SkimmedMCParticle, skimmedMCParticle);
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 } // namespace skimbartracklabel
 
 DECLARE_SOA_TABLE(SkimmedBarTrackLabels, "AOD", "SKBARTRLABEL",
-                  skimbartracklabel::McParticleId,
+                  skimbartracklabel::SkimmedMCParticleId,
                   skimbartracklabel::McMask);
 
 using SkimmedBarTrackLabel = SkimmedBarTrackLabels::iterator;
@@ -159,61 +195,14 @@ using SkimmedMuon = SkimmedMuons::iterator;
 using SkimmedMuonExtra = SkimmedMuonsExtra::iterator;
 using SkimmedMuonCov = SkimmedMuonsCov::iterator;
 
-namespace skimmcevent
-{
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
-}
-
-DECLARE_SOA_TABLE(SkimmedMCEvents, "AOD", "SKMCEVENTS",
-                  o2::soa::Index<>,
-                  skimmcevent::GlobalBC,
-                  mccollision::GeneratorsID,
-                  mccollision::PosX,
-                  mccollision::PosY,
-                  mccollision::PosZ,
-                  mccollision::T,
-                  mccollision::Weight,
-                  mccollision::ImpactParameter);
-
-namespace skimmcpart
-{
-DECLARE_SOA_INDEX_COLUMN(SkimmedMCEvent, skimmedMCEvent);  //!
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters); //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
-DECLARE_SOA_COLUMN(Px, px, float);                         //!
-DECLARE_SOA_COLUMN(Py, py, float);                         //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                         //!
-DECLARE_SOA_COLUMN(E, e, float);                           //!
-} // namespace skimmcpart
-
-DECLARE_SOA_TABLE_FULL(SkimmedMCParticles, "SkimmedMCParticles", "AOD", "SKMCPARTICLES", //!  MC track information (on disk)
-                       o2::soa::Index<>, skimmcpart::SkimmedMCEventId,
-                       mcparticle::PdgCode,
-                       mcparticle::StatusCode,
-                       mcparticle::Flags,
-                       skimmcpart::MothersIds,
-                       skimmcpart::DaughtersIdSlice,
-                       mcparticle::Weight,
-                       skimmcpart::Px,
-                       skimmcpart::Py,
-                       skimmcpart::Pz,
-                       skimmcpart::E,
-                       mcparticle::ProducedByGenerator<mcparticle::Flags>,
-                       mcparticle::FromBackgroundEvent<mcparticle::Flags>,
-                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
-                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
-                       mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
-
-using SkimmedMCParticle = SkimmedMCParticles::iterator;
-
 namespace skimmuontracklabel
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_INDEX_COLUMN(SkimmedMCParticle, skimmedMCParticle);
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 } // namespace skimmuontracklabel
 
 DECLARE_SOA_TABLE(SkimmedMuonTrackLabels, "AOD", "SKMUONTRLABEL",
-                  skimmuontracklabel::McParticleId,
+                  skimmuontracklabel::SkimmedMCParticleId,
                   skimmuontracklabel::McMask);
 
 using SkimmedMuonTrackLabel = SkimmedMuonTrackLabels::iterator;
