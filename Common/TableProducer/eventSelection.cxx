@@ -21,7 +21,9 @@ using namespace o2::framework;
 #include "Common/CCDB/TriggerAliases.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "CommonConstants/LHCConstants.h"
-
+#include "Framework/HistogramRegistry.h"
+#include "DataFormatsFT0/Digit.h"
+#include "TH1F.h"
 using namespace evsel;
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
@@ -31,6 +33,7 @@ using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
@@ -38,6 +41,8 @@ struct BcSelectionTask {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    histos.add("hCounterTVX", "", kTH1F, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -156,10 +161,16 @@ struct BcSelectionTask {
       selection[kNoPileupInMultBins] = (eventCuts & 1 << aod::kPileupInMultBins) > 0;
       selection[kNoPileupMV] = (eventCuts & 1 << aod::kPileUpMV) > 0;
       selection[kNoPileupTPC] = (eventCuts & 1 << aod::kTPCPileUp) > 0;
+      selection[kIsTriggerTVX] = bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0;
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
+
+      // Fill TVX (T0 vertex) counters
+      if (selection[kIsTriggerTVX]) {
+        histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
 
       // Fill bc selection columns
       bcsel(alias, selection,
@@ -248,6 +259,7 @@ struct BcSelectionTask {
       selection[kIsBBZNC] = timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper;
       selection[kNoBGZNA] = !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper);
       selection[kNoBGZNC] = !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper);
+      selection[kIsTriggerTVX] = bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0;
 
       // Calculate V0 multiplicity per ring
       float multRingV0A[5] = {0.};
@@ -268,6 +280,12 @@ struct BcSelectionTask {
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
       LOGP(debug, "foundFT0={}\n", foundFT0);
+
+      // Fill TVX (T0 vertex) counters
+      if (selection[kIsTriggerTVX]) {
+        histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
+
       // Fill bc selection columns
       bcsel(alias, selection,
             bbV0A, bbV0C, bgV0A, bgV0C,
@@ -287,13 +305,17 @@ struct EventSelectionTask {
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
-    //ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    histos.add("hColCounterAll", "", kTH1F, {{1, 0., 1.}});
+    histos.add("hColCounterAcc", "", kTH1F, {{1, 0., 1.}});
   }
 
   void processRun2(aod::Collision const& col, BCsWithBcSels const& bcs, aod::Tracks const& tracks)
@@ -365,6 +387,15 @@ struct EventSelectionTask {
     // TODO introduce sel1 etc?
     // TODO introduce array of sel[0]... sel[8] or similar?
     bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C];
+
+    // fill counters
+
+    if (isMC || alias[kINT7]) {
+      histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
+      if (sel7) {
+        histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
+    }
 
     evsel(alias, selection,
           bbV0A, bbV0C, bgV0A, bgV0C,
@@ -464,6 +495,12 @@ struct EventSelectionTask {
     // TODO introduce sel1 etc?
     // TODO introduce array of sel[0]... sel[8] or similar?
     bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C];
+
+    // fill counters
+    histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
+    if (sel8) {
+      histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
+    }
 
     evsel(alias, selection,
           bbV0A, bbV0C, bgV0A, bgV0C,
