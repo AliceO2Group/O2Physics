@@ -51,6 +51,7 @@ enum EventSelectionFlags {
   kNoPileupInMultBins, // no pileup according to multiplicity-differential pileup checks
   kNoPileupMV,         // no pileup according to multi-vertexer
   kNoPileupTPC,        // no pileup in TPC
+  kIsTriggerTVX,       // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
   kNsel                // counter
 };
 
@@ -133,7 +134,7 @@ class EventSelectionParams
   float fV0CasymA = -25.f;
   float fV0CasymB = 0.15f;
 
-  ClassDefNV(EventSelectionParams, 1)
+  ClassDefNV(EventSelectionParams, 2)
 };
 
 #endif
