@@ -125,12 +125,15 @@ struct tpcPid {
       const std::string path = ccdbPath.value;
       const auto time = ccdbTimestamp.value;
       ccdb->setURL(url.value);
-      ccdb->setTimestamp(time);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-      response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
-      LOGP(info, "Loading TPC response from CCDB, using path: {} for ccdbTimestamp {}", path, time);
+      if (time != 0) {
+        LOGP(info, "Initialising TPC PID response for fixed timestamp {}:", time);
+        ccdb->setTimestamp(time);
+        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time));
+      } else
+        LOGP(info, "Initialising default TPC PID response:");
       response.PrintAll();
     }
 
