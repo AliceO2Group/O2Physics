@@ -76,7 +76,7 @@ DECLARE_SOA_COLUMN(NcrTPC, ncrTPC, int);
 DECLARE_SOA_COLUMN(RTPC, rTPC, float);
 DECLARE_SOA_COLUMN(Chi2TPC, chi2TPC, float);
 DECLARE_SOA_COLUMN(Chi2ITS, chi2ITS, float);
-//For MC
+// For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 } // namespace full
