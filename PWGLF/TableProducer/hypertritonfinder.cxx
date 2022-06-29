@@ -159,7 +159,7 @@ struct hypertritonfinder {
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+  //Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
   Produces<aod::StoredV0Datas> v0data;
   Produces<aod::V0s> v0;
@@ -169,7 +169,7 @@ struct hypertritonfinder {
     "registry",
       {
         {"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
-        {"hV0CutCounter", "hV0CutCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+        {"hV0CutCounter", "hV0CutCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
       },
   };
 //------------------copy from lamdakzerobuilder---------------------
@@ -207,8 +207,9 @@ struct hypertritonfinder {
 
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(1, "DiffCol");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(2, "hasSV");
-    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(3, "Dcav0Dau");
-    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(4, "CosPA");
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(3, "hasSV2");
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(4, "Dcav0Dau");
+    registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(5, "CosPA");
   }
 
   float getMagneticField(uint64_t timestamp)
