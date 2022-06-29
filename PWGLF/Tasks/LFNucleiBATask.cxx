@@ -44,6 +44,14 @@ struct LFNucleiBATask {
   Configurable<float> etaCut{"etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
   Configurable<float> cfgCutVertex{"cfgCutVSertex", 10.0f, "Accepted z-vertex range"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, ""};
+  static constexpr int PDGPion = 211;
+  static constexpr int PDGKaon = 321;
+  static constexpr int PDGProton = 2212;
+  static constexpr int PDGDeuteron = 1000010020;
+  static constexpr int PDGHelium = 1000020030;
+  static constexpr float fMassProton /* = o2::track::PID::getMass2Z(4));*/ = 0.938272088f;
+  static constexpr float fMassDeuteron = 1.87561f;
+  static constexpr float fMassHelium = 2.80839f;
 
   void init(o2::framework::InitContext&)
   {
@@ -75,9 +83,15 @@ struct LFNucleiBATask {
     histos.add<TH1>("tracks/hDCAz", "DCAz; #DCAz; counts", HistType::kTH1F, {{200, -2.0, 2.0}});
     histos.add<TH2>("tracks/hDCAxyVsDCAz", "DCAxy vs DCAz; DCAxy (cm); DCAz (cm)", HistType::kTH2F, {{200, -2.0, 2.0}, {200, -2.0, 2.0}});
 
-    histos.add<TH1>("tracks/proton/h1ProtonSpectra", "#it{p}_{T} (p); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{800, 0, 8}});
-    histos.add<TH1>("tracks/deuteron/h1DeuteronSpectra", "#it{p}_{T} (d); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{800, 0, 8}});
-    histos.add<TH1>("tracks/helium/h1HeliumSpectra", "#it{p}_{T} (He); #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{800, 0, 8}});
+    histos.add<TH1>("tracks/proton/h1ProtonSpectra", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
+    histos.add<TH1>("tracks/deuteron/h1DeuteronSpectra", "#it{p}_{T} (d)", HistType::kTH1F, {ptAxis});
+    histos.add<TH1>("tracks/helium/h1HeliumSpectra", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
+
+    if (doprocessMCReco) {
+      histos.add<TH1>("tracks/proton/h1ProtonSpectraTrue", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
+      histos.add<TH1>("tracks/deuteron/h1DeuteronSpectraTrue", "#it{p}_{T} (d)", HistType::kTH1F, {ptAxis});
+      histos.add<TH1>("tracks/helium/h1HeliumSpectraTrue", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
+    }
 
     histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "-dE/dX vs p; p (GeV/c); -dE/dx (a.u.)", HistType::kTH2F, {{500, 0.0, 5.0}, {81000, 0.0, 1E3}});
     histos.add<TH2>("tracks/h2TOFbetaVsP", "#beta (TOF) vs p; p (GeV/c); #beta", HistType::kTH2F, {{500, 0.0, 5.0}, {1200, 0.0, 1.2}});
@@ -143,9 +157,7 @@ struct LFNucleiBATask {
   template <bool IsMC, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
-    constexpr float fMassProton = 0.938272088f;
-    constexpr float fMassDeuteron = 1.87561f;
-    constexpr float fMassHelium = 2.80839f;
+
     float gamma = 0., massTOF = 0.;
 
     // Event histos fill
@@ -223,7 +235,15 @@ struct LFNucleiBATask {
         track.pdgCode();
         track.isPhysicalPrimary();
         track.producedByGenerator();
-        // std::cout<<"track PDG================>"<<track.pdgCode()<<std::endl;
+        // PID
+        if (std::abs(track.pdgCode()) == PDGProton)
+          histos.fill(HIST("tracks/proton/h1ProtonSpectraTrue"), track.pt());
+
+        if (std::abs(track.pdgCode()) == PDGDeuteron)
+          histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrue"), track.pt());
+
+        if (std::abs(track.pdgCode()) == PDGHelium)
+          histos.fill(HIST("tracks/helium/h1HeliumSpectraTrue"), track.pt());
       }
     }
   }
@@ -245,11 +265,6 @@ struct LFNucleiBATask {
 
   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles_001& mcParticles)
   {
-    constexpr int PDGPion = 211;
-    constexpr int PDGKaon = 321;
-    constexpr int PDGProton = 2212;
-    constexpr int PDGDeuteron = 1000010020;
-    constexpr int PDGHelium = 1000020030;
     nCount++;
     histos.fill(HIST("spectraGen/histGenVetxZ"), mcCollision.posZ());
     for (auto& mcParticleGen : mcParticles) {
