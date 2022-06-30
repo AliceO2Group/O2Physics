@@ -36,7 +36,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "EventFiltering/PWGUD/DGCutparHolder.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 #include "PWGUD/Core/DGPIDSelector.h"

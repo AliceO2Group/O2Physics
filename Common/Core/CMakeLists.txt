@@ -23,7 +23,6 @@ o2physics_target_root_dictionary(AnalysisCore
                         PID/DetectorResponse.h
                         PID/PIDTOF.h
                         PID/TOFReso.h
-                        PID/TPCPIDResponse.h
               LINKDEF AnalysisCoreLinkDef.h)
 
 o2physics_add_executable(merger

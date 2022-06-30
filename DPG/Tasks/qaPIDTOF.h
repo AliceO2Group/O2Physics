@@ -15,7 +15,7 @@
 /// \brief  Header file for QA tasks of the TOF PID quantities
 ///
 
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"

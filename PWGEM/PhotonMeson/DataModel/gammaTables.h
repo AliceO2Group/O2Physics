@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "Framework/AnalysisDataModel.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
