@@ -196,24 +196,28 @@ struct TaskHfCorrelations {
   {
     if (processRun2 == true) {
       //  Run 2: trigger selection for data case
-      if (fillHistograms) registry.fill(HIST("eventCounter"), 1);
+      if (fillHistograms)
+        registry.fill(HIST("eventCounter"), 1);
       if (!collision.alias()[kINT7]) {
         return false;
       }
       //  Run 2: further offline selection
-      if (fillHistograms) registry.fill(HIST("eventCounter"), 2);
+      if (fillHistograms)
+        registry.fill(HIST("eventCounter"), 2);
       if (!collision.sel7()) {
         return false;
       }
-      if (fillHistograms) registry.fill(HIST("eventCounter"), 3);
-    }
-    else {
+      if (fillHistograms)
+        registry.fill(HIST("eventCounter"), 3);
+    } else {
       //  Run 3: selection
-      if (fillHistograms) registry.fill(HIST("eventCounter"), 1);
+      if (fillHistograms)
+        registry.fill(HIST("eventCounter"), 1);
       if (!collision.sel8()) {
         return false;
       }
-      if (fillHistograms) registry.fill(HIST("eventCounter"), 3);
+      if (fillHistograms)
+        registry.fill(HIST("eventCounter"), 3);
     }
     return true;
   }
@@ -370,7 +374,7 @@ struct TaskHfCorrelations {
   //    process same event correlations
   // =====================================
   void processSameRun3(aodCollisions::iterator const& collision,
-                       aodTracks const& tracks,
+                       aodTracks& tracks,
                        aod::MFTTracks const& mfttracks,
                        hfCandidates const& candidates)
   {
@@ -383,9 +387,14 @@ struct TaskHfCorrelations {
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    std::vector<double> axisVertexExpanded;
-    binning_helpers::expandConstantBinning(axisVertex, axisVertexExpanded);
-    int bin = binning_helpers::getBin({axisVertexExpanded, axisMultiplicity}, std::make_tuple(collision.posZ(), multiplicity), true); // true is for 'ignore overflows' (true by default)
+    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
+      return associatedTracks.size();
+    };
+    auto mult = getTracksSize(collision);
+
+    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), mult));
     registry.fill(HIST("eventcountsame"), bin);
 
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -413,21 +422,26 @@ struct TaskHfCorrelations {
   //    process same event correlations
   // =====================================
   void processSameRun2(aodCollisions::iterator const& collision,
-                       aodTracks const& tracks,
+                       aodTracks& tracks,
                        hfCandidates const& candidates)
   {
 
     if (!(isCollisionSelected(collision, true))) {
       return;
     }
- 
+
     const auto multiplicity = tracks.size();
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    std::vector<double> axisVertexExpanded;
-    binning_helpers::expandConstantBinning(axisVertex, axisVertexExpanded);
-    int bin = binning_helpers::getBin({axisVertexExpanded, axisMultiplicity}, std::make_tuple(collision.posZ(), multiplicity), true); // true is for 'ignore overflows' (true by default)
+    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
+      return associatedTracks.size();
+    };
+    auto mult = getTracksSize(collision);
+
+    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), mult));
     registry.fill(HIST("eventcountsame"), bin);
 
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -453,24 +467,35 @@ struct TaskHfCorrelations {
   void processMixed(aodCollisions& collisions,
                     aodTracks& tracks)
   {
-    // Expand z-vertex binning from {14, -7, 7} to {VARIABLE_WIDTH, -7, -6, -5, ..., 5, 6, 7} -> ?
-    // TODO: Separate faster bin calculation for constant binning, eliminate the need for expansion
-    std::vector<double> axisVertexExpanded;
-    binning_helpers::expandConstantBinning(axisVertex, axisVertexExpanded);
-
-    auto getBinVtxTracksSize =
-      [&tracks, &axisVertexExpanded, this](std::tuple<typename aod::collision::PosZ::type, typename soa::Index<>::type> const& data) -> int {
-      float posZ = std::get<0>(data);
-      int32_t colIndex = std::get<1>(data);
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, colIndex);                                             // it's cached, so slicing/grouping happens only once
-      int bin = binning_helpers::getBin({axisVertexExpanded, axisMultiplicity}, std::make_tuple(posZ, associatedTracks.size()), true); // true is for 'ignore overflows' (true by default)
-      return bin;
+    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
+      auto size = associatedTracks.size();
+      LOG(info) << "Lambda iterator: " << col.globalIndex() << " tracks size: " << size;
+      return size;
     };
 
-    using BinningType = LambdaBinningPolicy<decltype(getBinVtxTracksSize), aod::collision::PosZ, soa::Index<>>;
-    BinningType binningWithLambda{getBinVtxTracksSize};
+    using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    BinningType binningWithTracksSize{{getTracksSize}, {axisVertex, axisMultiplicity}, true};
+
+    // =====================================
+    // Debugging code for mixing, not needed in real analysis
+    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    for (auto& col : collisions) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex());
+      auto mult = associatedTracks.size();
+      int bin1 = baseBinning.getBin(std::make_tuple(col.posZ(), mult));
+      LOG(info) << "Standard binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " tracks size: " << mult << " bin: " << bin1;
+
+      auto binningValues = binningWithTracksSize.getBinningValues(col, collisions);
+      int bin = binningWithTracksSize.getBin(binningValues);
+      LOG(info) << "Lambda binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " z from binning: " << std::get<0>(binningValues) << " mult from binning: " << std::get<1>(binningValues) << " bin: " << bin;
+    }
+    // End of debuging code
+    // =====================================
+
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithLambda, cfgNoMixedEvents, -1, collisions, tracksTuple};
+    SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithTracksSize, cfgNoMixedEvents, -1, collisions, tracksTuple};
+    LOG(info) << "Created mixed pair";
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -485,8 +510,10 @@ struct TaskHfCorrelations {
       registry.fill(HIST("hMultipliciyMixing"), multiplicity);
       registry.fill(HIST("hVtxZMixing"), collision1.posZ());
 
-      int bin = binningWithLambda.getBin({collision1.posZ(), collision1.globalIndex()});
+      auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
+      int bin = binningWithTracksSize.getBin(binningValues);
       registry.fill(HIST("eventcount"), bin);
+      LOG(info) << "Collisions: " << collision1.globalIndex() << ", " << collision2.globalIndex() << " z: " << collision1.posZ() << ", " << collision2.posZ() << " mult: " << tracks1.size() << ", " << tracks2.size() << " bin: " << bin;
 
       if (processTPCTPChh) {
         fillMixingQA(multiplicity, tracks1);
