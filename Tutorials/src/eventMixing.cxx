@@ -409,7 +409,7 @@ struct MixedEventsLambdaBinning {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
 
     auto getTracksSize =
-      [&tracks](aod::Collision& col) {
+      [&tracks](aod::Collision const& col) {
         auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
         return associatedTracks.size();
       };
