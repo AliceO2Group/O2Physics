@@ -49,6 +49,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "PID/PIDResponse.h"
 //------------------copy from lamdakzerobuilder---------------------
+#include "DataFormatsTPC/BetheBlochAleph.h"
 
 #include <TFile.h>
 #include <TH1F.h>
@@ -76,6 +77,12 @@ using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 using MyTracks = FullTracksExt;
 using MyTracksIU = FullTracksExtIU;
+
+inline float GetTPCNSigmaHe3(float p, float TPCSignal)
+{
+  float bg = p/2.80839;
+  return  (TPCSignal - o2::tpc::BetheBlochAleph(bg, -9.973f, -18.5543f, 29.5704f, 2.02064f, -3.85076f)) / (TPCSignal*0.0812);
+}
 
 namespace o2::aod
 {
@@ -346,10 +353,10 @@ struct hypertritonfinder {
           pvec1[i] = pvec1[i] * nTrackCharge;
           }*/
     int pTrackCharge = 1, nTrackCharge = 1;
-      if (TMath::Abs(t0.tpcNSigmaHe()) < 5){
+      if (TMath::Abs( GetTPCNSigmaHe3( 2*t0.p(), t0.tpcSignal()) ) < 5){
         pTrackCharge = 2;
       } 
-      if (TMath::Abs(t1.tpcNSigmaHe()) < 5){
+      if (TMath::Abs( GetTPCNSigmaHe3( 2*t1.p(), t1.tpcSignal()) ) < 5){
         nTrackCharge = 2;
       } 
       for (int i=0; i<3; i++){

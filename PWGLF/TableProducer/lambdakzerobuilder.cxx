@@ -47,6 +47,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "PID/PIDResponse.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -84,6 +85,12 @@ using MyTracks = FullTracksExt;
 using MyTracksIU = FullTracksExtIU;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
+
+inline float GetTPCNSigmaHe3(float p, float TPCSignal)
+{
+  float bg = p/2.80839;
+  return  (TPCSignal - o2::tpc::BetheBlochAleph(bg, -9.973f, -18.5543f, 29.5704f, 2.02064f, -3.85076f)) / (TPCSignal*0.0812);
+}
 
 // Builder task: rebuilds V0s
 // The prefilter part skims the list of good V0s to re-reconstruct so that
@@ -355,10 +362,10 @@ struct lambdakzeroBuilder {
       nTrack.getPxPyPzGlo(pvec1);
 
       int pTrackCharge = 1, nTrackCharge = 1;
-      if (TMath::Abs(V0.posTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+      if (TMath::Abs( GetTPCNSigmaHe3(2*V0.posTrack_as<MyTracks>().p(), V0.posTrack_as<MyTracks>().tpcSignal()) ) < 5){
         pTrackCharge = 2;
       } 
-      if (TMath::Abs(V0.negTrack_as<MyTracks>().tpcNSigmaHe()) < 5){
+      if (TMath::Abs( GetTPCNSigmaHe3(2*V0.negTrack_as<MyTracks>().p(), V0.negTrack_as<MyTracks>().tpcSignal()) ) < 5){
         nTrackCharge = 2;
       } 
       for (int i=0; i<3; i++){
@@ -566,10 +573,10 @@ struct lambdakzeroBuilder {
         int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
         int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];*/
       int pTrackCharge = 1, nTrackCharge = 1;
-      if (TMath::Abs(V0.posTrack_as<MyTracksIU>().tpcNSigmaHe()) < 5){
+      if (TMath::Abs( GetTPCNSigmaHe3(2*V0.posTrack_as<MyTracksIU>().p(), V0.posTrack_as<MyTracksIU>().tpcSignal()) ) < 5){
         pTrackCharge = 2;
       } 
-      if (TMath::Abs(V0.negTrack_as<MyTracksIU>().tpcNSigmaHe()) < 5){
+      if (TMath::Abs( GetTPCNSigmaHe3(2*V0.negTrack_as<MyTracksIU>().p(), V0.negTrack_as<MyTracksIU>().tpcSignal()) ) < 5){
         nTrackCharge = 2;
       } 
       for (int i=0; i<3; i++){
