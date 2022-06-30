@@ -11,5 +11,5 @@
 
 o2physics_add_dpl_workflow(dgcand-producer
                     SOURCES DGCandProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::CutHolder
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                     COMPONENT_NAME Analysis)

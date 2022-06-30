@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "anaparHolder.h"
-
-// getter
-int anaparHolder::nCombine() const { return mNCombine; }
-std::vector<float> anaparHolder::TPCnSigmas() const { return mTPCnSigmas; }
+#pragma link off all globals;
+#pragma link off all classes;
+#pragma link off all functions;
+#pragma link C++ nestedclasses;
+#pragma link C++ class DGParticle + ;
+#pragma link C++ class DGPIDSelector + ;

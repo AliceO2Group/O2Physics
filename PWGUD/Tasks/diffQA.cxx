@@ -49,7 +49,7 @@
 #include "TLorentzVector.h"
 #include "ReconstructionDataFormats/BCRange.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "EventFiltering/PWGUD/diffHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -60,9 +60,9 @@ struct DiffQA {
   float maxdEdxTPC;
   float maxdEdxTOF;
 
-  // get a cutHolder
-  cutHolder diffCuts = cutHolder();
-  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -79,10 +79,10 @@ struct DiffQA {
   //  bin  6: no FWD tracks
   //  bin  7: no global tracks which are no vtx tracks
   //  bin  8: no vtx tracks which are no global tracks
-  //  bin  9: at least one vtx tracks with TOF hit
-  //  bin 10: all vtx tracks with TOF hit
-  //  bin 11: possible ambiguous tracks
-  //  bin 12: possible ambiguous FwdTracks
+  //  bin  9: possible ambiguous tracks
+  //  bin 10: possible ambiguous FwdTracks
+  //  bin 11: at least one vtx tracks with TOF hit
+  //  bin 12: all vtx tracks with TOF hit
   //  bin 13: number of tracks >= minimum number
   //  bin 14: number of tracks <= maximum number
   //  bin 15: minimum pt <= pt of vtx tracks <= maximum pt
@@ -128,7 +128,7 @@ struct DiffQA {
   {
     maxdEdxTPC = 0.;
     maxdEdxTOF = 0.;
-    diffCuts = (cutHolder)DGCuts;
+    diffCuts = (DGCutparHolder)DGCuts;
   }
 
   void run(ProcessingContext& pc)
@@ -145,6 +145,7 @@ struct DiffQA {
     // make sorted list of BC ranges which are associated with an ambiguous track.
     // This is used to efficiently check whether a given BC is contained in one of these ranges
     abcrs.reset();
+    LOGF(debug, "<DiffQA> size of ambiguous tracks table %i", ambtracks.size());
     for (auto ambtrack : ambtracks) {
       auto bcfirst = ambtrack.bc().rawIteratorAt(0);
       auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
@@ -159,6 +160,7 @@ struct DiffQA {
 
     // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
     afbcrs.reset();
+    LOGF(debug, "<DiffQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
     for (auto ambfwdtrack : ambfwdtracks) {
       auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
       auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
@@ -307,29 +309,30 @@ struct DiffQA {
       isDGcandidate &= vtxAndGlobal;
     }
 
-    // at least one vtx track with TOF hit
-    registry.get<TH1>(HIST("Stat"))->Fill(9., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
-    registry.get<TH1>(HIST("Stat"))->Fill(10., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
-
     // check a given bc for possible ambiguous Tracks
-    auto withAmbTracks = isDGcandidate;
+    auto noAmbTracks = isDGcandidate;
     for (auto& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
-        withAmbTracks = false;
+        noAmbTracks = false;
         break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(11., withAmbTracks * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(9., noAmbTracks * 1.);
 
     // check a given bc for possible ambiguous FwdTracks
-    auto withAmbFwdTracks = isDGcandidate;
+    auto noAmbFwdTracks = isDGcandidate;
     for (auto& bc : bcSlice) {
       if (afbcrs.isInRange(bc.globalIndex())) {
-        withAmbFwdTracks = false;
+        noAmbFwdTracks = false;
         break;
       }
     }
-    registry.get<TH1>(HIST("Stat"))->Fill(12., withAmbFwdTracks * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(10., noAmbFwdTracks * 1.);
+
+    // at least one vtx track with TOF hit
+    registry.get<TH1>(HIST("Stat"))->Fill(11., (isDGcandidate && (rgtrwTOF > 0.)) * 1.);
+    registry.get<TH1>(HIST("Stat"))->Fill(12., (isDGcandidate && (rgtrwTOF == 1.)) * 1.);
+    isDGcandidate &= (rgtrwTOF >= diffCuts.minRgtrwTOF());
 
     // number of vertex tracks <= n
     isDGcandidate &= (collision.numContrib() >= diffCuts.minNTracks());
@@ -432,7 +435,7 @@ struct FV0Signals {
       {"FV0A", "#FV0A", {HistType::kTH2F, {{48, -0.5, 47.5}, {1000, 0., 1000.}}}},
     }};
 
-  void process(aod::FV0A fv0)
+  void process(aod::FV0A const& fv0)
   {
     // side A
     for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -450,7 +453,7 @@ struct FT0Signals {
       {"FT0C", "#FT0C", {HistType::kTH2F, {{112, -0.5, 111.5}, {100, 0., 200.}}}},
     }};
 
-  void process(aod::FT0 ft0)
+  void process(aod::FT0 const& ft0)
   {
     // side A
     for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
@@ -473,7 +476,7 @@ struct FDDSignals {
       {"FDDC", "#FDDC", {HistType::kTH2F, {{8, -0.5, 7.5}, {100, 0., 100.}}}},
     }};
 
-  void process(aod::FDD fdd)
+  void process(aod::FDD const& fdd)
   {
     // side A
     for (auto ind = 0; ind < 8; ind++) {
@@ -518,7 +521,7 @@ struct ZDCSignals {
       {"ZdcEnergies", "#ZdcEnergies", {HistType::kTH2F, {{22, -0.5, 21.5}, {100, 0., 1000.}}}},
     }};
 
-  void process(aod::Zdc zdc)
+  void process(aod::Zdc const& zdc)
   {
     // Zdc energies
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(0., zdc.energyZEM1());
@@ -555,7 +558,7 @@ struct CaloSignals {
       {"CaloAmplitude", "#CaloAmplitude", {HistType::kTH1F, {{100, 0, 10.}}}},
     }};
 
-  void process(aod::Calo calo)
+  void process(aod::Calo const& calo)
   {
     // cell number
     registry.get<TH1>(HIST("CaloCell"))->Fill(calo.cellNumber());

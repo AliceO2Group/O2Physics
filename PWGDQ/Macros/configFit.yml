@@ -1,0 +1,13 @@
+---
+input:
+  input_file_name: "tutorial.root"
+  input_name: "data"
+  pdf_dictionary: {
+    "pdf": ["CB2", "VWG", "SUM"],
+    "parVal": [[3.096, 1.2e-01, 1.089, 3.393, 2.097, 8.694], [1, 1, 1], [1000, 100000]],
+    "parLimMin": [[2.9, 7.0e-02, 1.0889, 3.3929, 2.096, 8.693], [-10, 0, -100], [0, 0]],
+    "parLimMax": [[3.5, 1.9e-01, 1.0891, 3.3931, 2.098, 8.695], [+10, 100, 100], [50000, 500000]],
+    "parName": [["mean", "width", "a", "b", "c", "d"], ["aa", "bb", "cc"], ["sig", "bkg"]],
+    "fitRangeMin": [2, 2.1, 2.2],
+    "fitRangeMax": [5, 4.9, 4.8]
+  }

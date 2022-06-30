@@ -39,6 +39,9 @@ struct MultiplicityTableTaskIndexed {
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Partition<soa::Join<aod::Tracks, aod::TracksExtra>> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
 
+  //Configurable
+  Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+
   int mRunNumber;
   bool lCalibLoaded;
   TList* lCalibObjects;
@@ -61,7 +64,7 @@ struct MultiplicityTableTaskIndexed {
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
 
-    ccdb->setURL("http://ccdb-test.cern.ch:8080"); //temporary - to be tuned  shortly
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -142,21 +145,23 @@ struct MultiplicityTableTaskIndexed {
 
     /* check the previous run number */
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
-    if (bc.runNumber() != mRunNumber) {
-      lCalibObjects = ccdb->getForTimeStamp<TList>("Users/v/victor/Centrality/Calibration", bc.timestamp()); //temporary
-      if (lCalibObjects) {
-        hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
-        hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
-        hVtxZFT0C = (TProfile*)lCalibObjects->FindObject("hVtxZFT0C");
-        hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
-        hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
-        hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
-        mRunNumber = bc.runNumber();
-        lCalibLoaded = true;
-        //Capture error
-        if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
-          LOGF(info, "Problem loading CCDB objects! Please check");
-          lCalibLoaded = false;
+    if (doVertexZeq > 0) {
+      if (bc.runNumber() != mRunNumber) {
+        lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
+        if (lCalibObjects) {
+          hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
+          hVtxZFT0A = (TProfile*)lCalibObjects->FindObject("hVtxZFT0A");
+          hVtxZFT0C = (TProfile*)lCalibObjects->FindObject("hVtxZFT0C");
+          hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
+          hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
+          hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
+          mRunNumber = bc.runNumber();
+          lCalibLoaded = true;
+          //Capture error
+          if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
+            LOGF(info, "Problem loading CCDB objects! Please check");
+            lCalibLoaded = false;
+          }
         }
       }
     }

@@ -17,6 +17,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/HistogramRegistry.h"
 #include "CommonDataFormat/BunchFilling.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "TH1F.h"
 #include "TH2F.h"
 using namespace o2::framework;
@@ -218,7 +219,7 @@ struct EventSelectionQaTask {
   }
 
   void processRun2(
-    soa::Join<aod::Collisions, aod::EvSels> cols,
+    soa::Join<aod::Collisions, aod::EvSels> const& cols,
     BCsRun2 const& bcs,
     aod::Zdcs const& zdcs,
     aod::FV0As const& fv0as,
@@ -386,7 +387,7 @@ struct EventSelectionQaTask {
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
   void processRun3(
-    soa::Join<aod::Collisions, aod::EvSels> cols,
+    soa::Join<aod::Collisions, aod::EvSels> const& cols,
     aod::FullTracks const& tracks,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs,
@@ -397,9 +398,9 @@ struct EventSelectionQaTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber && runNumber >= 500000) { // using BC filling scheme for data only
       lastRunNumber = runNumber;
-      auto bf = ccdb->getForTimeStamp<o2::BunchFilling>("GLO/GRP/BunchFilling", bcs.iteratorAt(0).timestamp());
-      beamPatternA = bf->getBeamPattern(0);
-      beamPatternC = bf->getBeamPattern(1);
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bcs.iteratorAt(0).timestamp());
+      beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
+      beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
       bcPatternA = beamPatternA & ~beamPatternC;
       bcPatternC = ~beamPatternA & beamPatternC;
       bcPatternB = beamPatternA & beamPatternC;

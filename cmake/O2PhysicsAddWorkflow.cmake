@@ -46,6 +46,7 @@ function(o2physics_add_dpl_workflow baseTargetName)
         PARENT_SCOPE)
   endif()
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_COMPILE analysis)
+  set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_LINK analysis)
 
   set(jsonFile $<TARGET_FILE_BASE_NAME:${targetExeName}>.json)
 

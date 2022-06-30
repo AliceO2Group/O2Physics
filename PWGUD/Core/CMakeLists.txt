@@ -9,13 +9,18 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_library(DGCandCore
-                      SOURCES anaparHolder.cxx
-                              pidSelector.cxx
+o2physics_add_library(DGAnaparHolder
+                      SOURCES DGAnaparHolder.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
-o2physics_target_root_dictionary(DGCandCore
-                      HEADERS diffMCHelpers.h
-                              anaparHolder.h
-                              pidSelector.h
-                      LINKDEF DGCandCoreLinkDef.h)
+o2physics_target_root_dictionary(DGAnaparHolder
+                      HEADERS DGAnaparHolder.h
+                      LINKDEF DGAnaparHolderLinkDef.h)
+
+o2physics_add_library(DGPIDSelector
+                      SOURCES DGPIDSelector.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGAnaparHolder)
+
+o2physics_target_root_dictionary(DGPIDSelector
+                      HEADERS DGPIDSelector.h
+                      LINKDEF DGPIDSelectorLinkDef.h)

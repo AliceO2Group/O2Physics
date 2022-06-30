@@ -197,7 +197,7 @@ struct HfCandidateCreatorXiccMc {
   Produces<aod::HfCandXiccMCGen> rowMCMatchGen;
 
   void process(aod::HfCandXicc const& candidates,
-               aod::HfCandProng3,
+               aod::HfCandProng3 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {

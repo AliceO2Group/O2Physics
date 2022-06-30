@@ -100,6 +100,8 @@ struct ConsumeColExtra {
 };
 
 struct PartitionColExtra {
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+
   using myCol = soa::Join<aod::Collisions, aod::CollisionsExtra>;
 
   void process(myCol const& collisions, aod::Tracks const& tracks)
@@ -113,7 +115,7 @@ struct PartitionColExtra {
     LOGF(info, "Bin 0-10");
     for (auto& col : multbin0_10) {
       // ... find all the associated tracks
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
+      auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
       LOGF(info, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
       if (groupedTracks.size() > 0) {
         auto track = groupedTracks.begin();
@@ -123,13 +125,13 @@ struct PartitionColExtra {
 
     LOGF(info, "Bin 10-30");
     for (auto& col : multbin10_30) {
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
+      auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
       LOGF(info, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
     }
 
     LOGF(info, "Bin 30-100");
     for (auto& col : multbin30_100) {
-      auto groupedTracks = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
+      auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
       LOGF(info, "Collision %d; Ntrk = %d vs %d", col.globalIndex(), col.mult(), groupedTracks.size());
     }
   }

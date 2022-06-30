@@ -16,9 +16,8 @@
 #include "CommonDataFormat/InteractionRecord.h"
 #include "CommonDataFormat/IRFrame.h"
 #include "ReconstructionDataFormats/BCRange.h"
-
 #include "filterTables.h"
-#include "PWGUD/diffHelpers.h"
+#include "PWGUD/DGHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;

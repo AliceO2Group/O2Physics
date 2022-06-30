@@ -222,7 +222,7 @@ struct HfCandidateCreatorBplusMc {
   Produces<aod::HfCandBPMCGen> rowMCMatchGen;
 
   void process(aod::HfCandBPlus const& candidates,
-               aod::HfCandProng2,
+               aod::HfCandProng2 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {

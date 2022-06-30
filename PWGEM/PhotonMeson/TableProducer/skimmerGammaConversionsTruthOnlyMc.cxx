@@ -33,7 +33,6 @@ using namespace o2::framework::expressions;
 struct skimmerGammaConversionsTruthOnlyMc {
 
   Produces<aod::McGammasTrue> fFuncTableMcGammas;
-  Produces<aod::McGammaDaughtersTrue> fFuncTableMcGammaDaughters;
 
   HistogramRegistry registry{
     "registry",
@@ -79,22 +78,6 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lDaughter0Vy = lDaughter0.vy();
           lDaughter0Vz = lDaughter0.vz();
           lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
-
-          for (auto& lDaughter : lMcParticle.daughters_as<aod::McParticles>()) {
-
-            // SFS this can be removed once the eta integrity is checked
-            TVector3 lDaughterVtx(lDaughter.vx(), lDaughter.vy(), lDaughter.vz());
-            if (lMcParticle.isPhysicalPrimary()) {
-              float_t lEtaDiff = lDaughterVtx.Eta() - lMcParticle.eta();
-              registry.fill(HIST("hEtaDiff"), lEtaDiff);
-            }
-            fFuncTableMcGammaDaughters(lDaughter.mcCollisionId(),
-                                       lMcParticle.globalIndex(),
-                                       lDaughter.mothersIds().size(),
-                                       lDaughter.pdgCode(), lDaughter.statusCode(), lDaughter.flags(),
-                                       lDaughter.px(), lDaughter.py(), lDaughter.pz(), lDaughter.e(),
-                                       lDaughter.vx(), lDaughter.vy(), lDaughter.vz(), lDaughter.vt());
-          }
         }
         fFuncTableMcGammas(
           lMcParticle.mcCollisionId(),

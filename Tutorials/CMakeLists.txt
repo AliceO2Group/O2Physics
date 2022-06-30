@@ -191,3 +191,13 @@ o2physics_add_dpl_workflow(propagated-tracks
                   SOURCES src/propagatedTracks.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(tree-creator
+                  SOURCES src/treeCreator.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(reweighting
+                  SOURCES src/reweighting.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
+                  COMPONENT_NAME AnalysisTutorial)

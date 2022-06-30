@@ -13,10 +13,8 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#ifndef O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
-#define O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
-
-#include <gandiva/projector.h>
+#ifndef O2_ANALYSIS_DGMCHELPER_H_
+#define O2_ANALYSIS_DGMCHELPER_H_
 
 #include "Framework/Logger.h"
 #include "CommonConstants/LHCConstants.h"
@@ -126,4 +124,4 @@ bool isGraniittiCDE(T MCparts)
 
 // -----------------------------------------------------------------------------
 
-#endif // O2_ANALYSIS_DIFFRACTION_MCHELPER_H_
+#endif // O2_ANALYSIS_DGMCHELPER_H_

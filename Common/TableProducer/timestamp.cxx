@@ -39,7 +39,7 @@ struct TimestampTask {
 
   // Configurables
   Configurable<bool> verbose{"verbose", false, "verbose mode"};
-  Configurable<std::string> rct_path{"rct-path", "RCT/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
+  Configurable<std::string> rct_path{"rct-path", "RCT/Info/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
   Configurable<std::string> orbit_reset_path{"orbit-reset-path", "CTP/Calib/OrbitReset", "path to the ccdb orbit-reset objects"};
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
   Configurable<bool> isRun2MC{"isRun2MC", false, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp"};
