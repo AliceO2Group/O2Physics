@@ -117,7 +117,7 @@ struct DGCandProducer {
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bc, bcRange, tracks, fwdtracks);
-
+    
     // save DG candidates
     if (isDGEvent == 0) {
 
