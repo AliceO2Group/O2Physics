@@ -1,0 +1,9 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": "",
+    "internal-dpl-aod-spawner": "",
+    "group-by-collision": "",
+    "tracks-per-collision": "",
+    "internal-dpl-injected-dummy-sink": "",
+    "tracks-per-dataframe": ""
+}
