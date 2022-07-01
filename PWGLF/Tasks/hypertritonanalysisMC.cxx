@@ -496,6 +496,7 @@ struct hypertritonTrackCount {
         {"hParticleCount2", "hParticleCount2", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},//for tpcncls > 70
         {"hDauHelium3Count", "hDauHelium3Count", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
         {"hDauPionCount", "hDauPionCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
+        {"hBackgroundPionCount", "hBackgroundPionCount", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
         {"hTPCNClsCrossedRows", "hTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
         {"hTrackEta", "hTrackEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
         {"hTrackITSNcls", "hTrackITSNcls", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
@@ -582,6 +583,11 @@ struct hypertritonTrackCount {
     registry.get<TH1>(HIST("hDauPionCount"))->GetXaxis()->SetBinLabel(5, "Pt");
     registry.get<TH1>(HIST("hDauPionCount"))->GetXaxis()->SetBinLabel(6, "TPCPID");
     registry.get<TH1>(HIST("hDauPionCount"))->GetXaxis()->SetBinLabel(7, "DcatoPV");
+    registry.get<TH1>(HIST("hBackgroundPionCount"))->GetXaxis()->SetBinLabel(1, "NotFromHypertriton");
+    registry.get<TH1>(HIST("hBackgroundPionCount"))->GetXaxis()->SetBinLabel(2, "TPCNcls");
+    registry.get<TH1>(HIST("hBackgroundPionCount"))->GetXaxis()->SetBinLabel(3, "Eta");
+    registry.get<TH1>(HIST("hBackgroundPionCount"))->GetXaxis()->SetBinLabel(4, "Pt");
+    registry.get<TH1>(HIST("hBackgroundPionCount"))->GetXaxis()->SetBinLabel(5, "TPCPID");
   }
 
 
@@ -660,6 +666,27 @@ struct hypertritonTrackCount {
           }
         }
 
+
+        registry.fill(HIST("hHelium3McPx"), mcparticle.px());
+        registry.fill(HIST("hHelium3McPy"), mcparticle.py());
+        registry.fill(HIST("hHelium3McPz"), mcparticle.pz());
+        registry.fill(HIST("hHelium3McPt"), mcparticle.pt());
+        registry.fill(HIST("hHelium3McP"), mcparticle.p());
+
+        registry.fill(HIST("hHelium3Px"), 2*track.px());
+        registry.fill(HIST("hHelium3Py"), 2*track.py());
+        registry.fill(HIST("hHelium3Pz"), 2*track.pz());
+        registry.fill(HIST("hHelium3Pt"), 2*track.pt());
+        registry.fill(HIST("hHelium3P"), 2*track.p());
+
+        registry.fill(HIST("hHelium3NsigmaHelium3"), GetTPCNSigmaHe3(2*track.p(), track.tpcSignal()));
+        registry.fill(HIST("hHelium3NsigmaPion"), track.tpcNSigmaPi());
+        registry.fill(HIST("hHelium3NsigmaTriton"), track.tpcNSigmaTr());
+        registry.fill(HIST("hHelium3TPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("hHelium3Eta"), track.eta());
+        registry.fill(HIST("hHelium3McRapidity"), mcparticle.y());
+        registry.fill(HIST("hHelium3TPCBB"), track.p()*track.sign(), track.tpcSignal());
+
         registry.fill(HIST("hHelium3McPx"), mcparticle.px());
         registry.fill(HIST("hHelium3McPy"), mcparticle.py());
         registry.fill(HIST("hHelium3McPz"), mcparticle.pz());
@@ -727,6 +754,36 @@ struct hypertritonTrackCount {
             registry.fill(HIST("hDauPionCount"), 6.5);
             v0GoodPionTracks(track.globalIndex(), track.collisionId());
           }
+        }
+
+        bool isFromHypertriton = false; 
+        if (mcparticle.has_mothers()){
+          for (auto& particleMother : mcparticle.mothers_as<aod::McParticles>()) {
+            if ( particleMother.pdgCode() == 1010010030 || particleMother.pdgCode() == -1010010030){
+              isFromHypertriton = true;
+            }
+          }
+        }
+
+        while (!isFromHypertriton){
+            registry.fill(HIST("hBackgroundPionCount"), 0.5);
+            if (track.tpcNClsCrossedRows() < 70) {
+              break;
+            }
+            registry.fill(HIST("hBackgroundPionCount"), 1.5);
+            if (TMath::Abs(track.eta()) > 0.9) {
+              break;
+            }
+            registry.fill(HIST("hBackgroundPionCount"), 2.5);
+            if ( track.pt() < 0.2 || track.pt() > 1.2) {
+              break;
+            }
+            registry.fill(HIST("hBackgroundPionCount"), 3.5);
+            if (TMath::Abs(track.tpcNSigmaPi()) > 5) {
+              break;
+            }
+            registry.fill(HIST("hBackgroundPionCount"), 4.5);
+              break;
         }
 
         registry.fill(HIST("hPionMcPx"), mcparticle.px());
@@ -1130,9 +1187,9 @@ struct hypertritonParticleCountMc {
         {"hMcHypertritonCheck", "hMcHypertritonCheck", {HistType::kTH1F, {{1, 0.0f, 3.0f}}}},
         {"hMcHelium3Check", "hMcHelium3Check", {HistType::kTH1F, {{1, 0.0f, 4.0f}}}},
 
-        {"hMcHypertritonPt", "hMcHypertritonPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hMcHypertritonPt", "hMcHypertritonPt", {HistType::kTH1F, {{300, 0.0f, 15.0f}}}},
         {"hMcHypertritonLifeTime", "hMcHypertritonLifeTime", {HistType::kTH1F, {{500, 0.0f, 50.0f}}}},
-        {"hMcHelium3Pt", "hMcHelium3Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+        {"hMcHelium3Pt", "hMcHelium3Pt", {HistType::kTH1F, {{300, 0.0f, 15.0f}}}},
         {"hMcPionPt", "hMcPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
         {"hMcDauHelium3Vx", "hMcDauHelium3Vx", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},

@@ -299,7 +299,7 @@ struct hypertritonAnalysis {
             registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
             registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
             registry.fill(HIST("h3dMassAntiHypertriton"), 0., v0.pt(), v0.mAntiHypertriton());
-            registry.fill(HIST("h3dTotalHypertriton"), ct, v0.pt(), v0.mHypertriton());
+            registry.fill(HIST("h3dTotalHypertriton"), ct, v0.pt(), v0.mAntiHypertriton());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
             if (saveDcaHist == 1) {
               registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
@@ -393,7 +393,7 @@ struct hypertritonAnalysis {
             registry.fill(HIST("hMassAntiHypertriton"), v0.mAntiHypertriton());
             registry.fill(HIST("hMassHypertritonTotal"), v0.mAntiHypertriton());
             registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
-            registry.fill(HIST("h3dTotalHypertriton"), ct, v0.pt(), v0.mHypertriton());
+            registry.fill(HIST("h3dTotalHypertriton"), ct, v0.pt(), v0.mAntiHypertriton());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
             if (saveDcaHist == 1) {
               registry.fill(HIST("h3dMassAntiHypertritonDca"), v0.dcaV0daughters(), v0.pt(), v0.mAntiHypertriton());
