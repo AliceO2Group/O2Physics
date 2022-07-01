@@ -183,9 +183,6 @@ struct ValidationGenLevel {
           double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
 
           auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
-          if (whichHadron == 1 && origin == OriginType::Prompt && decayLength * 10000 > 100) {
-            RecoDecay::getMother(particlesMC, particle, kBottom, true);
-          }
           //Filling histograms with per-component momentum conservation
           registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
           registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
