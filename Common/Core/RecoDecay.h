@@ -569,55 +569,63 @@ class RecoDecay
   /// \param depthMax  maximum decay tree level to check; Mothers up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if found, -1 otherwise
   template <typename T>
-  static int getMother(const T& particle,
+  static int getMother(const T& particlesMC,
+                       const typename T::iterator& particle,
                        int PDGMother,
                        bool acceptAntiParticles = false,
                        int8_t* sign = nullptr,
                        int8_t depthMax = -1)
   {
-    int8_t sgn = 0;                 // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
-    int indexMother = -1;           // index of the final matched mother, if found
-    auto particleMother = particle; // Initialise loop over mothers.
-    int stage = 0;                  // mother tree level (just for debugging)
+    int8_t sgn = 0;       // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
+    int indexMother = -1; // index of the final matched mother, if found
+    int stage = 0;        // mother tree level (just for debugging)
+    bool motherFound = false;
     if (sign) {
       *sign = sgn;
     }
-    std::vector<int> listId;
-    listId.push_back(particleMother.globalIndex());
-    while (particleMother.has_mothers()) {
-      if (depthMax > -1 && -stage >= depthMax) { // Maximum depth has been reached.
-        return -1;
+
+    std::vector<std::vector<long int>> arrayIds{};
+    arrayIds.push_back(std::vector{particle.globalIndex()});
+
+    while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
+      std::vector<long int> arrayIdsStage{};
+      for (auto& iPart : arrayIds[-stage]) {
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          auto motherIds = particleMother.mothersIds();
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) {
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {
+              continue;
+            }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            // Check mother's PDG code.
+            auto PDGParticleIMother = mother.pdgCode(); // PDG code of the mother
+            // printf("getMother: ");
+            // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+            //   printf(" ");
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
+            if (PDGParticleIMother == PDGMother) { // exact PDG match
+              sgn = 1;
+              indexMother = iMother;
+              motherFound = true;
+              break;
+            } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
+              sgn = -1;
+              indexMother = iMother;
+              motherFound = true;
+              break;
+            }
+            arrayIdsStage.push_back(iMother);
+          }
+        }
       }
-      if (particleMother.mothersIds()[0] == -1) { // Additional check for converted Run 2 MC
-        return -1;
-      }
-      particleMother = particleMother.template mothers_first_as<typename std::decay_t<T>::parent_t>(); // get mother 0
-      auto indexMotherTmp = particleMother.globalIndex();
-      // Check mother's PDG code.
-      auto PDGParticleIMother = particleMother.pdgCode(); // PDG code of the mother
-      // printf("getMother: ");
-      // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
-      //   printf(" ");
-      // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, indexMotherTmp);
-      if (std::find(listId.begin(), listId.end(), indexMotherTmp) != listId.end()) {
-        LOGF(fatal, "Circular mothership at particle index %d", indexMotherTmp);
-        return -1;
-      }
-      listId.push_back(indexMotherTmp);
-      if (PDGParticleIMother == PDGMother) { // exact PDG match
-        sgn = 1;
-        indexMother = indexMotherTmp;
-        break;
-      } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
-        sgn = -1;
-        indexMother = indexMotherTmp;
-        break;
-      }
+      arrayIds.push_back(arrayIdsStage);
       stage--;
     }
     if (sign) {
       *sign = sgn;
     }
+
     return indexMother;
   }
 
@@ -723,7 +731,7 @@ class RecoDecay
       if (iProng == 0) {
         // Get the mother index and its sign.
         // PDG code of the first daughter's mother determines whether the expected mother is a particle or antiparticle.
-        indexMother = getMother(particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
+        indexMother = getMother(particlesMC, particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
         // Check whether mother was found.
         if (indexMother <= -1) {
           //Printf("MC Rec: Rejected: bad mother index or PDG");
