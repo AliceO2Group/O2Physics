@@ -44,12 +44,14 @@ using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtr
                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyReducedEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
-using BarrelReducedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
+using BarrelReducedTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
+using BarrelReducedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 
 constexpr static uint32_t gkReducedEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
+constexpr static uint32_t gkReducedTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkReducedTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 
 
@@ -196,8 +198,10 @@ struct dalitzSelection {
       	
       // pairing
       VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
-      VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, track1, track2);
-      
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov) || static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov)) {
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, track1, track2);
+      }      
+
       // pair cuts
       int iT = 0;  
       for (auto cutT = fTrackCuts.begin(); cutT != fTrackCuts.end(); cutT++, iT++) {
@@ -230,11 +234,11 @@ struct dalitzSelection {
       } //end of track cuts
       	        
     } //end of tracksP,N loop
-		
+
+    dalitzbits.reserve(tracks.size());
     for (auto& track : tracks) {
       dalitzbits(dalitzmap[track.globalIndex()]);
     } 
-
   }
 
   void processFullTracks(MyEvents::iterator const& event, FullTracksExt const& tracks)
@@ -245,7 +249,7 @@ struct dalitzSelection {
     }
     runDalitzSelection<gkEventFillMap,gkTrackFillMapWithCov,false>(event,tracks);
   }
- void processReducedTracks(MyReducedEvents::iterator const& event, BarrelReducedTracks const& tracks)
+/* void processReducedTracksWithCov(MyReducedEvents::iterator const& event, BarrelReducedTracksWithCov const& tracks)
   {
     if(fTrackCuts.size()==0 || fPairCuts.size()==0 ) {
       std::cout<<"WARNING: YOU NEED A TRACK AND A PAIR CUT"<<std::endl;
@@ -253,9 +257,18 @@ struct dalitzSelection {
     }
     runDalitzSelection<gkReducedEventFillMapWithCov,gkReducedTrackFillMapWithCov,true>(event,tracks);
   }
+ void processReducedTracks(MyReducedEvents::iterator const& event, BarrelReducedTracks const& tracks)
+  {
+    if(fTrackCuts.size()==0 || fPairCuts.size()==0 ) {
+      std::cout<<"WARNING: YOU NEED A TRACK AND A PAIR CUT"<<std::endl;
+      return;
+    }
+    runDalitzSelection<gkReducedEventFillMapWithCov,gkReducedTrackFillMap,true>(event,tracks);
+  }*/
 
   PROCESS_SWITCH(dalitzSelection, processFullTracks, "Run Dalitz selection on AO2D tables", false);
-  PROCESS_SWITCH(dalitzSelection, processReducedTracks, "Run Dalitz selection on skimmed tables", false);
+  //PROCESS_SWITCH(dalitzSelection, processReducedTracks, "Run Dalitz selection on skimmed tables", false);
+  //PROCESS_SWITCH(dalitzSelection, processReducedTracksWithCov, "Run Dalitz selection on skimmed tables with cov information stored", false);
 
 };
 
