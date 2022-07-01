@@ -62,6 +62,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::McTrackLabels>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsWithCents = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::McCollisionLabels>;
 
@@ -397,11 +398,16 @@ struct TableMakerMC {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
               }
               ((TH1I*)fStatsList->At(1))->Fill(float(i));
+              //std::cout<<cut.GetName()<<"  "<<mctrack.pdgCode()<<"   "<<track.pt()<<"  "<<track.tpcNSigmaEl()<<std::endl;
             }
             i++;
           }
           if (!trackTempFilterMap) {
             continue;
+          }
+
+          if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
+            if(!track.dalitzBits()) continue;
           }
 
           // store filtering information
