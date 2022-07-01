@@ -925,8 +925,8 @@ struct HfTrackIndexSkimsCreator {
     cut2Prong = {cutsD0ToPiK, cutsJpsiToEE, cutsJpsiToMuMu};
     pTBins2Prong = {pTBinsD0ToPiK, pTBinsJpsiToEE, pTBinsJpsiToMuMu};
     // cuts for 3-prong decays retrieved by json. the order must be then one in hf_cand_prong3::DecayType
-    cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToPiKK, cutsXicToPKPi};
-    pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToPiKK, pTBinsXicToPKPi};
+    cut3Prong = {cutsDPlusToPiKPi, cutsLcToPKPi, cutsDsToKKPi, cutsXicToPKPi};
+    pTBins3Prong = {pTBinsDPlusToPiKPi, pTBinsLcToPKPi, pTBinsDsToKKPi, pTBinsXicToPKPi};
 
     // needed for PV refitting
     if (doPvRefit) {
