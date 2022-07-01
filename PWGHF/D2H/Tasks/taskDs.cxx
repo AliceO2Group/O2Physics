@@ -166,7 +166,7 @@ struct HfTaskDs {
             registry.fill(HIST("hPtvsYRecSigPromptRecoPID"), ptRec, yRec);
           }
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
-        } else { // FD
+        } else {                                         // FD
           registry.fill(HIST("hPtvsYRecSigNonPromptRecoSkim"), ptRec, yRec);
           if (TESTBIT(DsToKKPi, aod::SelectionStep::RecoTopol) || TESTBIT(DsToPiKK, aod::SelectionStep::RecoTopol)) {
             registry.fill(HIST("hPtvsYRecSigNonPromptRecoTopol"), ptRec, yRec);
