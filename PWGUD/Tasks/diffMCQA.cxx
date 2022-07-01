@@ -291,13 +291,13 @@ struct DiffMCQA {
       // update eta vs pt and dEdx histograms histogram
       if (isPythiaDiff) {
         registry.get<TH2>(HIST("etaptDiff1"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPCDiff1"))->Fill(track.pt(), track.tpcSignal());
+        registry.get<TH2>(HIST("dEdxTPCDiff1"))->Fill(track.p(), track.tpcSignal());
       } else if (isGraniittiDiff) {
         registry.get<TH2>(HIST("etaptDiff2"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPCDiff2"))->Fill(track.pt(), track.tpcSignal());
+        registry.get<TH2>(HIST("dEdxTPCDiff2"))->Fill(track.p(), track.tpcSignal());
       } else {
         registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
+        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.p(), track.tpcSignal());
       }
       if (track.tpcSignal() > maxdEdxTPC) {
         maxdEdxTPC = track.tpcSignal();
@@ -307,11 +307,11 @@ struct DiffMCQA {
       // TOF hit?
       if (track.hasTOF()) {
         if (isPythiaDiff) {
-          registry.get<TH2>(HIST("dEdxTOFDiff1"))->Fill(track.pt(), track.tofSignal());
+          registry.get<TH2>(HIST("dEdxTOFDiff1"))->Fill(track.p(), track.tofSignal());
         } else if (isGraniittiDiff) {
-          registry.get<TH2>(HIST("dEdxTOFDiff2"))->Fill(track.pt(), track.tofSignal());
+          registry.get<TH2>(HIST("dEdxTOFDiff2"))->Fill(track.p(), track.tofSignal());
         } else {
-          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
+          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.p(), track.tofSignal());
         }
         if (track.tofSignal() > maxdEdxTOF) {
           maxdEdxTOF = track.tofSignal();
@@ -679,24 +679,24 @@ struct DiffMCQA {
         if (track.isPVContributor()) {
           if (isPythiaDiff) {
             registry.get<TH2>(HIST("etaptDGDiff1"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDGDiff1"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("dEdxTPCDGDiff1"))->Fill(track.p(), track.tpcSignal());
             registry.get<TH2>(HIST("IVMptTrkDGDiff1"))->Fill(ivm.M(), track.pt());
           } else if (isGraniittiDiff) {
             registry.get<TH2>(HIST("etaptDGDiff2"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDGDiff2"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("dEdxTPCDGDiff2"))->Fill(track.p(), track.tpcSignal());
             registry.get<TH2>(HIST("IVMptTrkDGDiff2"))->Fill(ivm.M(), track.pt());
           } else {
             registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.p(), track.tpcSignal());
             registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           }
           if (track.hasTOF()) {
             if (isPythiaDiff) {
-              registry.get<TH2>(HIST("dEdxTOFDGDiff1"))->Fill(track.pt(), track.tofSignal());
+              registry.get<TH2>(HIST("dEdxTOFDGDiff1"))->Fill(track.p(), track.tofSignal());
             } else if (isGraniittiDiff) {
-              registry.get<TH2>(HIST("dEdxTOFDGDiff2"))->Fill(track.pt(), track.tofSignal());
+              registry.get<TH2>(HIST("dEdxTOFDGDiff2"))->Fill(track.p(), track.tofSignal());
             } else {
-              registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.pt(), track.tofSignal());
+              registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.p(), track.tofSignal());
             }
           }
         }
