@@ -184,7 +184,7 @@ struct ValidationGenLevel {
 
           auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
           if (whichHadron == 1 && origin == OriginType::Prompt && decayLength * 10000 > 100) {
-            RecoDecay::getMother(particlesMC, particle, kBottom, true, nullptr, -1, true);
+            RecoDecay::getMother(particlesMC, particle, kBottom, true);
           }
           //Filling histograms with per-component momentum conservation
           registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
