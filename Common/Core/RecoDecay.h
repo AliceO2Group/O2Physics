@@ -562,6 +562,7 @@ class RecoDecay
   }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
+  /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param PDGMother  expected mother PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle of the expected mother
@@ -576,25 +577,27 @@ class RecoDecay
                        int8_t* sign = nullptr,
                        int8_t depthMax = -1)
   {
-    int8_t sgn = 0;       // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
-    int indexMother = -1; // index of the final matched mother, if found
-    int stage = 0;        // mother tree level (just for debugging)
-    bool motherFound = false;
+    int8_t sgn = 0;           // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
+    int indexMother = -1;     // index of the final matched mother, if found
+    int stage = 0;            // mother tree level (just for debugging)
+    bool motherFound = false; // true when the desired mother particle is found in the kine tree
     if (sign) {
       *sign = sgn;
     }
 
+    // vector of vectors with mother indices; each line corresponds to a "stage"
     std::vector<std::vector<long int>> arrayIds{};
-    arrayIds.push_back(std::vector{particle.globalIndex()});
+    arrayIds.push_back(std::vector{particle.globalIndex()}); // the first vector contains the index of the original particle
 
     while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
+      // vector of mother indices for the current stage
       std::vector<long int> arrayIdsStage{};
-      for (auto& iPart : arrayIds[-stage]) {
+      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
           auto motherIds = particleMother.mothersIds();
-          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) {
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
@@ -615,10 +618,12 @@ class RecoDecay
               motherFound = true;
               break;
             }
+            // add mother index in the vector for the current stage
             arrayIdsStage.push_back(iMother);
           }
         }
       }
+      // add vector of mother indices for the current stage
       arrayIds.push_back(arrayIdsStage);
       stage--;
     }
