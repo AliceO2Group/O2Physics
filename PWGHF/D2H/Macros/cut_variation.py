@@ -8,6 +8,7 @@ Module for the (non-)prompt fraction calculation with the cut-variation method
 """
 
 import sys
+
 import numpy as np
 import ROOT
 from style_formatter import set_global_style, set_object_style
@@ -43,7 +44,7 @@ class CutVarMinimiser:
         eff_nonprompt=None,
         unc_raw_yields=None,
         unc_eff_prompt=None,
-        unc_eff_nonprompt=None
+        unc_eff_nonprompt=None,
     ):
         self.raw_yields = raw_yields
         self.eff_prompt = eff_prompt
@@ -68,7 +69,7 @@ class CutVarMinimiser:
         self.m_corr_yields = None
         self.m_covariance = None
 
-        self.chi_2 = 0.
+        self.chi_2 = 0.0
         self.ndf = self.n_sets - 2
 
     def __check_input_consistency(self):
@@ -79,7 +80,10 @@ class CutVarMinimiser:
         self.n_sets = len(self.raw_yields)
         self.ndf = self.n_sets - 2
 
-        if len(self.eff_prompt) != self.n_sets or len(self.eff_nonprompt) != self.n_sets:
+        if (
+            len(self.eff_prompt) != self.n_sets
+            or len(self.eff_nonprompt) != self.n_sets
+        ):
             print("ERROR: number of raw yields and eff not consistent! Exit")
             sys.exit()
 
@@ -87,7 +91,10 @@ class CutVarMinimiser:
             print("ERROR: number of raw yield uncertainties not consistent! Exit")
             sys.exit()
 
-        if len(self.unc_eff_prompt) != self.n_sets or len(self.unc_eff_nonprompt) != self.n_sets:
+        if (
+            len(self.unc_eff_prompt) != self.n_sets
+            or len(self.unc_eff_nonprompt) != self.n_sets
+        ):
             print("ERROR: number of raw yield uncertainties not consistent! Exit")
             sys.exit()
 
@@ -118,7 +125,7 @@ class CutVarMinimiser:
             self.m_eff.itemset((i_set, 1), effnp)
 
     # pylint: disable=too-many-locals
-    def minimise_system(self, correlated=True, precision=1.e-8, max_iterations=100):
+    def minimise_system(self, correlated=True, precision=1.0e-8, max_iterations=100):
         """
         Minimise the system of equations to compute the corrected yields
 
@@ -144,11 +151,20 @@ class CutVarMinimiser:
                 zip(self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt)
             ):
                 for i_col, (rw_unc_col, effp_unc_col, effnp_unc_col) in enumerate(
-                        zip(self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt)):
-                    unc_row = np.sqrt(rw_unc_row**2 + effp_unc_row**2 * self.m_corr_yields.item(0)
-                                      ** 2 + effnp_unc_row**2 * self.m_corr_yields.item(1)**2)
-                    unc_col = np.sqrt(rw_unc_col**2 + effp_unc_col**2 * self.m_corr_yields.item(0)
-                                      ** 2 + effnp_unc_col**2 * self.m_corr_yields.item(1)**2)
+                    zip(
+                        self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt
+                    )
+                ):
+                    unc_row = np.sqrt(
+                        rw_unc_row**2
+                        + effp_unc_row**2 * self.m_corr_yields.item(0) ** 2
+                        + effnp_unc_row**2 * self.m_corr_yields.item(1) ** 2
+                    )
+                    unc_col = np.sqrt(
+                        rw_unc_col**2
+                        + effp_unc_col**2 * self.m_corr_yields.item(0) ** 2
+                        + effnp_unc_col**2 * self.m_corr_yields.item(1) ** 2
+                    )
 
                     if correlated and unc_row > 0 and unc_col > 0:
                         if unc_row < unc_col:
@@ -157,9 +173,9 @@ class CutVarMinimiser:
                             rho = unc_col / unc_row
                     else:
                         if i_row == i_col:
-                            rho = 1.
+                            rho = 1.0
                         else:
-                            rho = 0.
+                            rho = 0.0
                     cov_row_col = rho * unc_row * unc_col
                     self.m_cov_sets.itemset((i_row, i_col), cov_row_col)
 
@@ -172,13 +188,17 @@ class CutVarMinimiser:
             self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
             self.m_covariance = self.m_covariance.T * self.m_covariance
 
-            self.m_corr_yields = self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
+            self.m_corr_yields = (
+                self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
+            )
             self.m_res = self.m_eff * self.m_corr_yields - self.m_rawy
             m_res_tr = np.transpose(self.m_res)
 
             rel_delta = [
-                (self.m_corr_yields.item(0)-m_corr_yields_old.item(0)) / self.m_corr_yields.item(0),
-                (self.m_corr_yields.item(1)-m_corr_yields_old.item(1)) / self.m_corr_yields.item(1)
+                (self.m_corr_yields.item(0) - m_corr_yields_old.item(0))
+                / self.m_corr_yields.item(0),
+                (self.m_corr_yields.item(1) - m_corr_yields_old.item(1))
+                / self.m_corr_yields.item(1),
             ]
 
             if rel_delta[0] < precision and rel_delta[1] < precision:
@@ -193,17 +213,29 @@ class CutVarMinimiser:
         for i_set, (effp, effnp) in enumerate(zip(self.eff_prompt, self.eff_nonprompt)):
             rawyp = effp * self.m_corr_yields.item(0)
             rawynp = effnp * self.m_corr_yields.item(1)
-            der_fp_p = (effp * (rawyp + rawynp) - effp**2 * self.m_corr_yields.item(0)) / (rawyp + rawynp)**2
-            der_fp_np = -effp * effnp * self.m_corr_yields.item(0) / (rawyp + rawynp)**2
-            der_fnp_np = (effnp * (rawyp + rawynp) - effnp**2 * self.m_corr_yields.item(1)) / (rawyp + rawynp)**2
-            der_fnp_p = -effp * effnp * self.m_corr_yields.item(1) / (rawyp + rawynp)**2
+            der_fp_p = (
+                effp * (rawyp + rawynp) - effp**2 * self.m_corr_yields.item(0)
+            ) / (rawyp + rawynp) ** 2
+            der_fp_np = (
+                -effp * effnp * self.m_corr_yields.item(0) / (rawyp + rawynp) ** 2
+            )
+            der_fnp_np = (
+                effnp * (rawyp + rawynp) - effnp**2 * self.m_corr_yields.item(1)
+            ) / (rawyp + rawynp) ** 2
+            der_fnp_p = (
+                -effp * effnp * self.m_corr_yields.item(1) / (rawyp + rawynp) ** 2
+            )
 
-            unc_fp = np.sqrt(der_fp_p**2 * self.m_covariance.item(0, 0) +
-                             der_fp_np**2 * self.m_covariance.item(1, 1) +
-                             2 * der_fp_p * der_fp_np * self.m_covariance.item(1, 0))
-            unc_fnp = np.sqrt(der_fnp_p**2 * self.m_covariance.item(0, 0) +
-                              der_fnp_np**2 * self.m_covariance.item(1, 1) +
-                              2 * der_fnp_p * der_fnp_np * self.m_covariance.item(1, 0))
+            unc_fp = np.sqrt(
+                der_fp_p**2 * self.m_covariance.item(0, 0)
+                + der_fp_np**2 * self.m_covariance.item(1, 1)
+                + 2 * der_fp_p * der_fp_np * self.m_covariance.item(1, 0)
+            )
+            unc_fnp = np.sqrt(
+                der_fnp_p**2 * self.m_covariance.item(0, 0)
+                + der_fnp_np**2 * self.m_covariance.item(1, 1)
+                + 2 * der_fnp_p * der_fnp_np * self.m_covariance.item(1, 0)
+            )
             self.frac_prompt.itemset(i_set, rawyp / (rawyp + rawynp))
             self.frac_nonprompt.itemset(i_set, rawynp / (rawyp + rawynp))
             self.unc_frac_prompt.itemset(i_set, unc_fp)
@@ -265,32 +297,37 @@ class CutVarMinimiser:
             ";cut set;raw yield",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
         hist_raw_yield_prompt = ROOT.TH1F(
             f"hRawYieldPromptVsCut{suffix}",
             ";cut set;prompt raw yield",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
         hist_raw_yield_nonprompt = ROOT.TH1F(
             f"hRawYieldNonPromptVsCut{suffix}",
             ";cut set;non-prompt raw yield",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
         hist_raw_yield_sum = ROOT.TH1F(
             f"hRawYieldSumVsCut{suffix}",
             ";cut set;raw yield",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
 
         for i_bin, (rawy, unc_rawy, effp, effnp) in enumerate(
-            zip(self.raw_yields, self.unc_raw_yields, self.eff_prompt, self.eff_nonprompt)
+            zip(
+                self.raw_yields,
+                self.unc_raw_yields,
+                self.eff_prompt,
+                self.eff_nonprompt,
+            )
         ):
             hist_raw_yield.SetBinContent(i_bin + 1, rawy)
             hist_raw_yield.SetBinError(i_bin + 1, unc_rawy)
@@ -299,8 +336,11 @@ class CutVarMinimiser:
             unc_rawy_prompt = np.sqrt(self.m_covariance.item(0, 0)) * effp
             rawy_nonprompt = self.m_corr_yields.item(1) * effnp
             unc_rawy_nonprompt = np.sqrt(self.m_covariance.item(1, 1)) * effnp
-            unc_sum = np.sqrt(unc_rawy_prompt**2 + unc_rawy_nonprompt**2 +
-                              2 * self.m_covariance.item(1, 0) * effp * effnp)
+            unc_sum = np.sqrt(
+                unc_rawy_prompt**2
+                + unc_rawy_nonprompt**2
+                + 2 * self.m_covariance.item(1, 0) * effp * effnp
+            )
 
             hist_raw_yield_prompt.SetBinContent(i_bin + 1, rawy_prompt)
             hist_raw_yield_prompt.SetBinError(i_bin + 1, unc_rawy_prompt)
@@ -310,13 +350,20 @@ class CutVarMinimiser:
             hist_raw_yield_sum.SetBinError(i_bin + 1, unc_sum)
 
         set_object_style(hist_raw_yield)
-        set_object_style(hist_raw_yield_prompt, color=ROOT.kRed+1, fillstyle=3145)
-        set_object_style(hist_raw_yield_nonprompt, color=ROOT.kAzure+4, fillstyle=3154)
-        set_object_style(hist_raw_yield_sum, color=ROOT.kGreen+2, fillstyle=0)
+        set_object_style(hist_raw_yield_prompt, color=ROOT.kRed + 1, fillstyle=3145)
+        set_object_style(
+            hist_raw_yield_nonprompt, color=ROOT.kAzure + 4, fillstyle=3154
+        )
+        set_object_style(hist_raw_yield_sum, color=ROOT.kGreen + 2, fillstyle=0)
 
         canvas = ROOT.TCanvas(f"cRawYieldVsCut{suffix}", "", 500, 500)
-        canvas.DrawFrame(-0.5, 0., self.n_sets - 0.5, hist_raw_yield.GetMaximum() * 1.2,
-                         ";cut set;raw yield")
+        canvas.DrawFrame(
+            -0.5,
+            0.0,
+            self.n_sets - 0.5,
+            hist_raw_yield.GetMaximum() * 1.2,
+            ";cut set;raw yield",
+        )
         leg = ROOT.TLegend(0.6, 0.65, 0.8, 0.9)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
@@ -366,7 +413,7 @@ class CutVarMinimiser:
             padleftmargin=0.14,
             padbottommargin=0.12,
             padrightmargin=0.12,
-            palette=ROOT.kRainBow
+            palette=ROOT.kRainBow,
         )
 
         hist_corr_matrix = ROOT.TH2F(
@@ -374,10 +421,10 @@ class CutVarMinimiser:
             ";cut set;cut set",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5,
+            self.n_sets - 0.5,
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
         for i_row, unc_row in enumerate(self.unc_raw_yields):
             for i_col, unc_col in enumerate(self.unc_raw_yields):
@@ -388,10 +435,10 @@ class CutVarMinimiser:
                         rho = unc_col / unc_row
                 else:
                     if i_row == i_col:
-                        rho = 1.
+                        rho = 1.0
                     else:
-                        rho = 0.
-                hist_corr_matrix.SetBinContent(i_row+1, i_col+1, rho)
+                        rho = 0.0
+                hist_corr_matrix.SetBinContent(i_row + 1, i_col + 1, rho)
 
         canvas = ROOT.TCanvas(f"cCorrMatrixCutSets{suffix}", "", 500, 500)
         hist_corr_matrix.Draw("colz")
@@ -426,18 +473,23 @@ class CutVarMinimiser:
             ";cut set;prompt acceptance #times efficiency",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
         hist_eff_nonprompt = ROOT.TH1F(
             f"hEffNonPromptVsCut{suffix}",
             ";cut set;non-prompt acceptance #times efficiency",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
 
         for i_bin, (effp, effnp, unc_effp, unc_effnp) in enumerate(
-            zip(self.eff_prompt, self.eff_nonprompt, self.unc_eff_prompt, self.unc_eff_nonprompt)
+            zip(
+                self.eff_prompt,
+                self.eff_nonprompt,
+                self.unc_eff_prompt,
+                self.unc_eff_nonprompt,
+            )
         ):
             hist_eff_prompt.SetBinContent(i_bin + 1, effp)
             hist_eff_prompt.SetBinError(i_bin + 1, unc_effp)
@@ -446,28 +498,30 @@ class CutVarMinimiser:
 
         set_object_style(
             hist_eff_prompt,
-            color=ROOT.kRed+1,
+            color=ROOT.kRed + 1,
             fillstyle=0,
             markerstyle=ROOT.kFullCircle,
-            linewidth=2
+            linewidth=2,
         )
         set_object_style(
             hist_eff_nonprompt,
-            color=ROOT.kAzure+4,
+            color=ROOT.kAzure + 4,
             fillstyle=0,
-            markerstyle=ROOT.kFullSquare
+            markerstyle=ROOT.kFullSquare,
         )
 
         canvas = ROOT.TCanvas(f"cEffVsCut{suffix}", "", 500, 500)
-        canvas.DrawFrame(-0.5, 1.e-5, self.n_sets - 0.5, 1.,
-                         ";cut set;acceptance #times efficiency")
+        canvas.DrawFrame(
+            -0.5,
+            1.0e-5,
+            self.n_sets - 0.5,
+            1.0,
+            ";cut set;acceptance #times efficiency",
+        )
         canvas.SetLogy()
         hist_eff_prompt.Draw("esame")
         hist_eff_nonprompt.Draw("esame")
-        histos = {
-            "prompt": hist_eff_prompt,
-            "nonprompt": hist_eff_nonprompt
-        }
+        histos = {"prompt": hist_eff_prompt, "nonprompt": hist_eff_nonprompt}
         leg = ROOT.TLegend(0.2, 0.2, 0.4, 0.3)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
@@ -506,14 +560,14 @@ class CutVarMinimiser:
             ";cut set;#it{f}_{prompt}",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
         hist_f_nonprompt = ROOT.TH1F(
             f"hFracNonPromptVsCut{suffix}",
             ";cut set;#it{f}_{non-prompt}",
             self.n_sets,
             -0.5,
-            self.n_sets-0.5
+            self.n_sets - 0.5,
         )
 
         for i_bin, (fracp, fracnp, unc_fp, unc_fnp) in enumerate(
@@ -521,7 +575,7 @@ class CutVarMinimiser:
                 self.frac_prompt,
                 self.frac_nonprompt,
                 self.unc_frac_prompt,
-                self.unc_frac_nonprompt
+                self.unc_frac_nonprompt,
             )
         ):
             hist_f_prompt.SetBinContent(i_bin + 1, fracp)
@@ -531,27 +585,23 @@ class CutVarMinimiser:
 
         set_object_style(
             hist_f_prompt,
-            color=ROOT.kRed+1,
+            color=ROOT.kRed + 1,
             fillstyle=0,
             markerstyle=ROOT.kFullCircle,
-            linewidth=2
+            linewidth=2,
         )
         set_object_style(
             hist_f_nonprompt,
-            color=ROOT.kAzure+4,
+            color=ROOT.kAzure + 4,
             fillstyle=0,
-            markerstyle=ROOT.kFullSquare
+            markerstyle=ROOT.kFullSquare,
         )
 
         canvas = ROOT.TCanvas(f"cFracVsCut{suffix}", "", 500, 500)
-        canvas.DrawFrame(-0.5, 0., self.n_sets - 0.5, 1.,
-                         ";cut set;fraction")
+        canvas.DrawFrame(-0.5, 0.0, self.n_sets - 0.5, 1.0, ";cut set;fraction")
         hist_f_prompt.Draw("esame")
         hist_f_nonprompt.Draw("esame")
-        histos = {
-            "prompt": hist_f_prompt,
-            "nonprompt": hist_f_nonprompt
-        }
+        histos = {"prompt": hist_f_prompt, "nonprompt": hist_f_nonprompt}
         leg = ROOT.TLegend(0.2, 0.8, 0.4, 0.9)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
