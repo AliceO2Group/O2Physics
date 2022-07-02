@@ -18,5 +18,7 @@
 #pragma link C++ class o2::pid::Parameters + ;
 #pragma link C++ class o2::pid::Parametrization + ;
 
+#pragma link C++ class o2::pid::tpc::Response + ;
+
 #pragma link C++ class o2::pid::tof::TOFReso + ;
 #pragma link C++ class OrbitRange + ;
