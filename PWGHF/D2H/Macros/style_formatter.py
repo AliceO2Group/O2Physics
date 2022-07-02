@@ -261,7 +261,7 @@ def set_object_style(obj, **kwargs):
     if "markersize" in kwargs:
         obj.SetMarkerSize(kwargs["markersize"])
     else:
-        obj.SetMarkerSize(1.)
+        obj.SetMarkerSize(1.0)
 
     if "markerstyle" in kwargs:
         obj.SetMarkerStyle(kwargs["markerstyle"])
