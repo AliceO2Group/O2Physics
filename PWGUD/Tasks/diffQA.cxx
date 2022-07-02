@@ -63,6 +63,8 @@ struct DiffQA {
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
+  Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -137,36 +139,41 @@ struct DiffQA {
     auto t1 = pc.inputs().get<TableConsumer>("BCs")->asArrowTable();
     auto t2 = pc.inputs().get<TableConsumer>("BcSels")->asArrowTable();
     auto t3 = pc.inputs().get<TableConsumer>("Run3MatchedToBCSparse")->asArrowTable();
-    auto t4 = pc.inputs().get<TableConsumer>("AmbiguousTracks")->asArrowTable();
     auto bcs = BCs({t1, t2, t3});
-    auto ambtracks = ATs({t4});
-    ambtracks.bindExternalIndices(&bcs);
 
-    // make sorted list of BC ranges which are associated with an ambiguous track.
-    // This is used to efficiently check whether a given BC is contained in one of these ranges
-    abcrs.reset();
-    LOGF(debug, "<DiffQA> size of ambiguous tracks table %i", ambtracks.size());
-    for (auto ambtrack : ambtracks) {
-      auto bcfirst = ambtrack.bc().rawIteratorAt(0);
-      auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
-      abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+    if (withAmbTrackAnalysis) {
+      auto t4 = pc.inputs().get<TableConsumer>("AmbiguousTracks")->asArrowTable();
+      auto ambtracks = ATs({t4});
+      ambtracks.bindExternalIndices(&bcs);
+
+      // make sorted list of BC ranges which are associated with an ambiguous track.
+      // This is used to efficiently check whether a given BC is contained in one of these ranges
+      abcrs.reset();
+      LOGF(debug, "<DiffQA> size of ambiguous tracks table %i", ambtracks.size());
+      for (auto ambtrack : ambtracks) {
+        auto bcfirst = ambtrack.bc().rawIteratorAt(0);
+        auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
+        abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      }
+      abcrs.merge();
     }
-    abcrs.merge();
 
-    // get ambiguous FwdTracks table
-    auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
-    auto ambfwdtracks = AFTs({t5});
-    ambfwdtracks.bindExternalIndices(&bcs);
+    if (withAmbFwdTrackAnalysis) {
+      // get ambiguous FwdTracks table
+      auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
+      auto ambfwdtracks = AFTs({t5});
+      ambfwdtracks.bindExternalIndices(&bcs);
 
-    // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
-    afbcrs.reset();
-    LOGF(debug, "<DiffQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
-    for (auto ambfwdtrack : ambfwdtracks) {
-      auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
-      auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
-      afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
+      afbcrs.reset();
+      LOGF(debug, "<DiffQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
+      for (auto ambfwdtrack : ambfwdtracks) {
+        auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
+        auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
+        afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      }
+      afbcrs.merge();
     }
-    afbcrs.merge();
   }
 
   void process(CC const& collision, BCs const& bct0s,
