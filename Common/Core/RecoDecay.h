@@ -587,7 +587,8 @@ class RecoDecay
 
     // vector of vectors with mother indices; each line corresponds to a "stage"
     std::vector<std::vector<long int>> arrayIds{};
-    arrayIds.push_back(std::vector{particle.globalIndex()}); // the first vector contains the index of the original particle
+    std::vector<long int> initVec{particle.globalIndex()};
+    arrayIds.push_back(initVec); // the first vector contains the index of the original particle
 
     while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
       // vector of mother indices for the current stage
@@ -595,7 +596,6 @@ class RecoDecay
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
-          auto motherIds = particleMother.mothersIds();
           for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
             if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
               continue;
