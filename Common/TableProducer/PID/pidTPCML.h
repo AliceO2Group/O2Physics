@@ -18,8 +18,8 @@
 /// \brief    A class for loading an ONNX neural network and evaluating it for the TPC PID response
 ///
 
-#ifndef O2_PID_TPC_NETWORK_H_
-#define O2_PID_TPC_NETWORK_H_
+#ifndef O2_PID_TPC_ML_H_
+#define O2_PID_TPC_ML_H_
 
 #include <vector>
 #include <boost/filesystem.hpp>
@@ -46,11 +46,15 @@ class Network
   Network& operator=(Network&); // copy a network into an existing class instance
 
   // Functions
-  template <typename T>
-  std::vector<float> createInputFromTrack(const T&, const uint8_t) const; // create a std::vector<float> with all the inputs for the network
-  std::vector<Ort::Value> createTensor(std::vector<float>) const;         // create a std::vector<Ort::Value> (= ONNX tensor) for model input
-  float* evalNetwork(std::vector<Ort::Value>);                            // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
-  float* evalNetwork(std::vector<float>);                                 // evaluate the network on a std::vector<float>
+  template <typename C, typename T>
+  std::vector<float> createInputFromTrack(const C&, const T&, const uint8_t) const; // create a std::vector<float> with all the inputs for the network
+  std::vector<Ort::Value> createTensor(std::vector<float>) const;                   // create a std::vector<Ort::Value> (= ONNX tensor) for model input
+  float* evalNetwork(std::vector<Ort::Value>);                                      // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
+  float* evalNetwork(std::vector<float>);                                           // evaluate the network on a std::vector<float>
+
+  // Getters & Setters
+  int getInputDimensions() const { return mInputShapes[0][1]; };
+  int getOutputDimensions() const { return mOutputShapes[0][1]; };
 
  private:
   // Environment variables for the ONNX runtime
@@ -75,7 +79,7 @@ class Network
   }
 
   // Class version
-  ClassDefNV(Network, 1);
+  ClassDefNV(Network, 2);
 
 }; // class Network
 
@@ -171,32 +175,32 @@ Network& Network::operator=(Network& inst)
 
 } // Network& Network::operator=(const Network &)
 
-template <typename T>
-std::vector<float> Network::createInputFromTrack(const T& track, const uint8_t id) const
+template <typename C, typename T>
+std::vector<float> Network::createInputFromTrack(const C& collision_it, const T& track, const uint8_t id) const
 {
 
   /*
   Function: Creating a std::vector<float> from a track with the variables that the network has been trained on
   - Input:
-    -- track:         const T&            ;   A track, typically from soa::Join<...> tables or of their iterators;
-    -- id:            uint8_t             ;   The id of a particle used for the mass assignment with o2::track::pid_constants::sMasses[id];
+    -- collisions_it    const C&            ;   An iterator of a collisions table of the form: soa::Join<aod::Collisions, aod::Mults>::iterator const& collision
+    -- track:           const T&            ;   A track, typically from soa::Join<...> tables or of their iterators;
+    -- id:              uint8_t             ;   The id of a particle used for the mass assignment with o2::track::pid_constants::sMasses[id];
   - Output:
-    -- inputValues:   std::vector<float>  ;   A std::vector<float> with the input variables for the network;
+    -- inputValues:     std::vector<float>  ;   A std::vector<float> with the input variables for the network;
   */
 
   const float p = track.tpcInnerParam();
   const float tgl = track.tgl();
   const float signed1Pt = track.signed1Pt();
-  const float eta = track.eta();
   const float mass = o2::track::pid_constants::sMasses[id];
-  const float bg = p / mass;
+  const float multTPC = collision_it.multTPC() / 11000.;
   const float ncl = std::sqrt(159. / track.tpcNClsFound());
 
-  std::vector<float> inputValues{p, tgl, signed1Pt, eta, mass, bg, ncl};
+  std::vector<float> inputValues{p, tgl, signed1Pt, mass, multTPC, ncl};
 
   return inputValues;
 
-} // std::vector<float> Network::createInputFromTrack(const T&, uint8_t)
+} // std::vector<float> Network::createInputFromTrack(const C&, const T&, uint8_t)
 
 std::vector<Ort::Value> Network::createTensor(std::vector<float> input) const
 {
@@ -285,4 +289,4 @@ float* Network::evalNetwork(std::vector<float> input)
 
 } // namespace o2::pid::tpc
 
-#endif // O2_PID_TPC_NETWORK_H_
+#endif // O2_PID_TPC_ML_H_
