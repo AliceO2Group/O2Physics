@@ -158,13 +158,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       /*for (auto& m : mcParticle.mothers_as<aod::McParticles_001>()) {
         LOGF(debug, "M2 %d %d", mcParticle.globalIndex(), m.globalIndex());
       }*/
-      // currentMCParticle = currentMCParticle.template mothers_first_as<U>();
       if (currentMCParticle.has_mothers() && j < fProngs[i].fNGenerations - 1) {
-        const auto& mothersSlice = currentMCParticle.template mothers_as<U>();
-        for (auto& mother : mothersSlice) {
-          currentMCParticle = mother;
-        }
-        // printf("changed to mother particle pdg = %i \n", currentMCParticle.pdgCode());
+        currentMCParticle = currentMCParticle.template mothers_first_as<U>();
         // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
         // currentMCParticle = currentMCParticle.template mother0_as<U>();
       }
