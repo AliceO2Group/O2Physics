@@ -69,7 +69,7 @@ struct tpcPidFull {
   o2::pid::tpc::Response* responseptr = nullptr;
   // Network correction for TPC PID response
   Network network;
-  std::string currentRunNumber = "-1";
+  int currentRunNumber = -1;
 
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -162,11 +162,14 @@ struct tpcPidFull {
   void process(Coll const& collisions, Trks const& tracks,
                aod::BCsWithTimestamps const&)
   {
-    auto reserveTable = [&tracks](const Configurable<int>& flag, auto& table) {
+
+    const unsigned long tracks_size = tracks.size();
+
+    auto reserveTable = [&tracks, &tracks_size](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
         return;
       }
-      table.reserve(tracks.size());
+      table.reserve(tracks_size);
     };
     // Prepare memory for enabled tables
     reserveTable(pidEl, tablePIDEl);
@@ -189,12 +192,12 @@ struct tpcPidFull {
 
         auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
 
-        if (currentRunNumber.c_str() != std::to_string(bc.runNumber())) { // fetches network only if the runnumbers change
-          currentRunNumber = std::to_string(bc.runNumber());
+        if (currentRunNumber != bc.runNumber()) { // fetches network only if the runnumbers change
+          currentRunNumber = bc.runNumber();
           LOG(info) << "Fetching network for runnumber: " << currentRunNumber;
           Network temp_net(networkPathLocally.value,
                            downloadNetworkFromAlien.value,
-                           networkSetAlienDir.value + "/network_" + currentRunNumber + ".onnx",
+                           Form("%s/network_%i.onnx", (networkSetAlienDir.value).c_str(), currentRunNumber),
                            enableNetworkOptimizations.value);
           network = temp_net;
 
@@ -203,14 +206,19 @@ struct tpcPidFull {
       }
 
       // Defining some network parameters
-      const int inputDimensions = network.getInputDimensions();
-      const int outputDimensions = network.getOutputDimensions();
-      const unsigned long track_prop_size = tracks.size() * 9;
+      int input_dimensions = network.getInputDimensions();
+      int output_dimensions = network.getOutputDimensions();
+      const unsigned long track_prop_size = input_dimensions * tracks_size;
+      const unsigned long prediction_size = output_dimensions * tracks_size;
 
-      network_prediction = std::vector<float>(outputDimensions * track_prop_size);
+      network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
 
-      std::vector<float> track_properties(inputDimensions * track_prop_size);
+      float duration_overhead = 0;
+      float duration_network = 0;
+
+      std::vector<float> track_properties(track_prop_size);
       unsigned long counter_track_props = 0;
+      int loop_counter = 0;
 
       // Filling a std::vector<float> to be evaluated by the network
       // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
@@ -222,32 +230,32 @@ struct tpcPidFull {
           track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
           track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
           track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
-          counter_track_props += inputDimensions;
+          counter_track_props += input_dimensions;
         }
+
+        auto stop_overhead = std::chrono::high_resolution_clock::now();
+        duration_overhead += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_overhead - start_overhead).count();
+
+        auto start_network = std::chrono::high_resolution_clock::now();
+        float* output_network = network.evalNetwork(track_properties);
+        for (unsigned long i = 0; i < prediction_size; i += output_dimensions) {
+          for (int j = 0; j < output_dimensions; j++) {
+            network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+          }
+        }
+        auto stop_network = std::chrono::high_resolution_clock::now();
+        duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network - start_network).count();
+
+        counter_track_props = 0;
+        loop_counter += 1;
       }
-
-      auto stop_overhead = std::chrono::high_resolution_clock::now();
-      float duration_overhead = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_overhead - start_overhead).count();
-      float time_per_track_overhead = duration_overhead / track_prop_size; // There are n (typically n=7) variables in each track which are being extracted in track_properties. Each network evaluation takes time_per_track_overhead/9 nano-seconds
-      LOG(info) << "Neural Network for the TPC PID response: Time per track (overhead): " << time_per_track_overhead << "ns ; Overhead total (all tracks): " << duration_overhead / 1000000000 << "s";
-
-      auto start_network = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalNetwork(track_properties);
       track_properties.clear();
-      for (unsigned long i = 0; i < (outputDimensions * track_prop_size); i += outputDimensions) {
-        for (int j = 0; j < outputDimensions; j++) {
-          network_prediction[i + j] = output_network[i + j];
-        }
-      }
-      auto stop_network = std::chrono::high_resolution_clock::now();
-      float duration_network = std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network - start_network).count();
-      float time_per_track_net = duration_network / track_prop_size;
-      LOG(info) << "Neural Network for the TPC PID response: Time per track (eval): " << time_per_track_net << "ns ; Evaluation total (all tracks): " << duration_network / 1000000000 << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
+      LOG(info) << "Neural Network for the TPC PID response: Time per track (overhead): " << duration_overhead / (tracks_size * 9) << "ns ; Overhead total (all tracks): " << duration_overhead / 1000000000 << "s";
+      LOG(info) << "Neural Network for the TPC PID response: Time per track (eval): " << duration_network / (tracks_size * 9) << "ns ; Evaluation total (all tracks): " << duration_network / 1000000000 << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
     unsigned long count_tracks = 0;
-    const int tracks_size = tracks.size();
 
     for (auto const& trk : tracks) {
       // Loop on Tracks
