@@ -101,6 +101,6 @@ class MCProng
   std::vector<uint64_t> fExcludeSource;
   std::vector<bool> fUseANDonSourceBitMap;
 
-  ClassDef(MCProng, 1);
+  ClassDef(MCProng, 2);
 };
 #endif
