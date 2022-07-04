@@ -33,7 +33,7 @@ using namespace o2::framework::expressions;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
-AxisSpec DCAAxis = {401, -2.01, 2.01};
+AxisSpec DCAAxis = {601, -3.01, 3.01};
 AxisSpec EtaAxis = {22, -2.2, 2.2};
 AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
@@ -59,7 +59,7 @@ struct MultiplicityCounter {
       {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                  //
       {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},             //
       {"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}}, //
-      {"Tracks/Control/DCAZPt", " ; p{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},    //
+      {"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},   //
       {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                            //
     }                                                                                                       //
   };
@@ -93,9 +93,8 @@ struct MultiplicityCounter {
 
       if (fillResponse) {
         registry.add({"Tracks/Response", " ; N_{gen}; N_{rec}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
-        registry.add({"Events/EfficiencyMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
-        registry.add({"Events/GeneratedMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
-        registry.add({"Events/SplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+        registry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
+        registry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
       }
 
       auto heff = registry.get<TH1>(HIST("Events/Efficiency"));
@@ -305,9 +304,6 @@ struct MultiplicityCounter {
     }
     registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, mcCollision.posZ());
     registry.fill(HIST("Events/Efficiency"), 1.);
-    if (fillResponse) {
-      registry.fill(HIST("Events/GeneratedMult"), nCharged);
-    }
 
     if (nCharged > 0) {
       registry.fill(HIST("Events/Efficiency"), 2.);
@@ -348,10 +344,10 @@ struct MultiplicityCounter {
     if (fillResponse) {
       registry.fill(HIST("Tracks/Response"), nCharged, Nrec, mcCollision.posZ());
       if (atLeastOne) {
-        registry.fill(HIST("Events/EfficiencyMult"), nCharged);
+        registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
       }
       if (moreThanOne > 1) {
-        registry.fill(HIST("Events/SplitMult"), nCharged);
+        registry.fill(HIST("Events/SplitMult"), nCharged, mcCollision.posZ());
       }
     }
     if (collisions.size() == 0) {
