@@ -137,79 +137,163 @@ struct HFCandidateCreatorB0 {
       int index2D = track2.globalIndex();
       //int charge = track0.sign() + track1.sign() + track2.sign();
       
-			// loop over pions      
-      for (auto& trackPion : tracks) {
-      	// minimum pT selection
-        if (trackPion.pt() < ptPionMin) {
-          continue;
-        }
-        // we reject pions that are D daughters
-        if (trackPion.globalIndex() == index0D || trackPion.globalIndex() == index1D || trackPion.globalIndex() == index2D) {
-          continue;
-        }
-        // we onnly keep pi+ to combine them with Dminus and reconstruct B0
-        if (trackPion.sign() < 0) {
-          continue;
-        }
-        
-        hPtPion->Fill(trackPion.pt());
-        array<float, 3> pvecPion;
-        auto trackParVarPi = getTrackParCov(trackPion);
+      
+      // loop on D-
+      // D- → π- K+ π-
+      // we don't have direct access to D sign so we use the sign of the daughters (the pion track0 here)
+      if (track0.sign() < 0) {
+				// loop over pions      
+		    for (auto& trackPion : tracks) {
+		    	// minimum pT selection
+		      if (trackPion.pt() < ptPionMin) {
+		        continue;
+		      }
+		      // we reject pions that are D daughters
+		      if (trackPion.globalIndex() == index0D || trackPion.globalIndex() == index1D || trackPion.globalIndex() == index2D) {
+		        continue;
+		      }
+		      // we only keep pi+ to combine them with Dminus and reconstruct B0
+		      if (trackPion.sign() < 0) {
+		        continue;
+		      }
+		      
+		      hPtPion->Fill(trackPion.pt());
+		      array<float, 3> pvecPion;
+		      auto trackParVarPi = getTrackParCov(trackPion);
 
-				// ---------------------------------
-        // reconstruct the 2-prong B0 vertex   
-        if (df2.process(trackD, trackParVarPi) == 0) {
-          continue;
-        }
+					// ---------------------------------
+		      // reconstruct the 2-prong B0 vertex   
+		      if (df2.process(trackD, trackParVarPi) == 0) {
+		        continue;
+		      }
 
-        // calculate relevant properties
-        const auto& secondaryVertexB0 = df2.getPCACandidate();
-        auto chi2PCA = df2.getChi2AtPCACandidate();
-        auto covMatrixPCA = df2.calcPCACovMatrixFlat();
+		      // calculate relevant properties
+		      const auto& secondaryVertexB0 = df2.getPCACandidate();
+		      auto chi2PCA = df2.getChi2AtPCACandidate();
+		      auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
-        df2.propagateTracksToVertex();
-        df2.getTrack(0).getPxPyPzGlo(pvecD);
-        df2.getTrack(1).getPxPyPzGlo(pvecPion);
+		      df2.propagateTracksToVertex();
+		      df2.getTrack(0).getPxPyPzGlo(pvecD);
+		      df2.getTrack(1).getPxPyPzGlo(pvecPion);
 
-        auto primaryVertex = getPrimaryVertex(collision);
-        auto covMatrixPV = primaryVertex.getCov();
-        o2::dataformats::DCA impactParameter0;
-        o2::dataformats::DCA impactParameter1;
-        trackD.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
-        trackParVarPi.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
+		      auto primaryVertex = getPrimaryVertex(collision);
+		      auto covMatrixPV = primaryVertex.getCov();
+		      o2::dataformats::DCA impactParameter0;
+		      o2::dataformats::DCA impactParameter1;
+		      trackD.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
+		      trackParVarPi.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
 
-        hCovSVXX->Fill(covMatrixPCA[0]);
-        hCovPVXX->Fill(covMatrixPV[0]);
+		      hCovSVXX->Fill(covMatrixPCA[0]);
+		      hCovPVXX->Fill(covMatrixPV[0]);
 
-        // get uncertainty of the decay length
-        double phi, theta;
-        getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
-        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+		      // get uncertainty of the decay length
+		      double phi, theta;
+		      getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
+		      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+		      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << hf_cand_b0::DecayType::B0ToDPi;
+		      int hfFlag = 1 << hf_cand_b0::DecayType::B0ToDPi;
 
-        // fill the candidate table for the B0 here:
-        rowCandidateBase(collision.globalIndex(),
-                         collision.posX(), collision.posY(), collision.posZ(),
-                         secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
-                         errorDecayLength, errorDecayLengthXY,
-                         chi2PCA,
-                         pvecD[0], pvecD[1], pvecD[2],
-                         pvecPion[0], pvecPion[1], pvecPion[2],
-                         impactParameter0.getY(), impactParameter1.getY(),
-                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                         dCand.globalIndex(), trackPion.globalIndex(),
-                         hfFlag);
+		      // fill the candidate table for the B0 here:
+		      rowCandidateBase(collision.globalIndex(),
+		                       collision.posX(), collision.posY(), collision.posZ(),
+		                       secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
+		                       errorDecayLength, errorDecayLengthXY,
+		                       chi2PCA,
+		                       pvecD[0], pvecD[1], pvecD[2],
+		                       pvecPion[0], pvecPion[1], pvecPion[2],
+		                       impactParameter0.getY(), impactParameter1.getY(),
+		                       std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+		                       dCand.globalIndex(), trackPion.globalIndex(),
+		                       hfFlag);
 
-        // calculate invariant mass
-        auto arrayMomenta = array{pvecD, pvecPion};
-        massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
-        if (dCand.isSelDplusToPiKPi() > 0) {
-          hMassB0ToDPi->Fill(massDPi);
-        }
-      } // pi+ loop
-    }   // Dminus loop
+		      // calculate invariant mass
+		      auto arrayMomenta = array{pvecD, pvecPion};
+		      massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
+		      if (dCand.isSelDplusToPiKPi() > 0) {
+		        hMassB0ToDPi->Fill(massDPi);
+		      }
+		    } // pi+ loop
+      } // if D-
+      
+      // loop on D+
+      // D+ → π+ K- π+
+      // we now loop on the D+
+      if (track0.sign() > 0) {
+				// loop over pions      
+		    for (auto& trackPion : tracks) {
+		    	// minimum pT selection
+		      if (trackPion.pt() < ptPionMin) {
+		        continue;
+		      }
+		      // we reject pions that are D daughters
+		      if (trackPion.globalIndex() == index0D || trackPion.globalIndex() == index1D || trackPion.globalIndex() == index2D) {
+		        continue;
+		      }
+		      // we onnly keep pi- to combine them with D+ and reconstruct B0bar
+		      if (trackPion.sign() > 0) {
+		        continue;
+		      }
+		      
+		      hPtPion->Fill(trackPion.pt());
+		      array<float, 3> pvecPion;
+		      auto trackParVarPi = getTrackParCov(trackPion);
+
+					// ---------------------------------
+		      // reconstruct the 2-prong B0bar vertex   
+		      if (df2.process(trackD, trackParVarPi) == 0) {
+		        continue;
+		      }
+
+		      // calculate relevant properties
+		      const auto& secondaryVertexB0 = df2.getPCACandidate();
+		      auto chi2PCA = df2.getChi2AtPCACandidate();
+		      auto covMatrixPCA = df2.calcPCACovMatrixFlat();
+
+		      df2.propagateTracksToVertex();
+		      df2.getTrack(0).getPxPyPzGlo(pvecD);
+		      df2.getTrack(1).getPxPyPzGlo(pvecPion);
+
+		      auto primaryVertex = getPrimaryVertex(collision);
+		      auto covMatrixPV = primaryVertex.getCov();
+		      o2::dataformats::DCA impactParameter0;
+		      o2::dataformats::DCA impactParameter1;
+		      trackD.propagateToDCA(primaryVertex, magneticField, &impactParameter0);
+		      trackParVarPi.propagateToDCA(primaryVertex, magneticField, &impactParameter1);
+
+		      hCovSVXX->Fill(covMatrixPCA[0]);
+		      hCovPVXX->Fill(covMatrixPV[0]);
+
+		      // get uncertainty of the decay length
+		      double phi, theta;
+		      getPointDirection(array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
+		      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+		      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+
+		      int hfFlag = 1 << hf_cand_b0::DecayType::B0ToDPi;
+
+		      // fill the candidate table for the B0 here:
+		      rowCandidateBase(collision.globalIndex(),
+		                       collision.posX(), collision.posY(), collision.posZ(),
+		                       secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
+		                       errorDecayLength, errorDecayLengthXY,
+		                       chi2PCA,
+		                       pvecD[0], pvecD[1], pvecD[2],
+		                       pvecPion[0], pvecPion[1], pvecPion[2],
+		                       impactParameter0.getY(), impactParameter1.getY(),
+		                       std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+		                       dCand.globalIndex(), trackPion.globalIndex(),
+		                       hfFlag);
+
+		      // calculate invariant mass
+		      auto arrayMomenta = array{pvecD, pvecPion};
+		      massDPi = RecoDecay::m(std::move(arrayMomenta), array{massD, massPi});
+		      if (dCand.isSelDplusToPiKPi() > 0) {
+		        hMassB0ToDPi->Fill(massDPi);
+		      }
+		    } // pi- loop
+      } // if D+
+    }   // D loop
   }     // process
 };      // struct
 
