@@ -18,8 +18,8 @@
 //          bit maps with a bit dedicated to each source (MCProng::Source), bit map on whether the specified source to be excluded,
 //          whether to use AND among all specified source requirements
 
-/* The PDG codes us the PYTHIA standard. 
-A few non-existent PYTHIA codes are used to select more than one PYTHIA code. 
+/* The PDG codes us the PYTHIA standard.
+A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 
 0 - default, accepts all PYTHIA codes
 100 - light unflavoured mesons in the code range 100-199
