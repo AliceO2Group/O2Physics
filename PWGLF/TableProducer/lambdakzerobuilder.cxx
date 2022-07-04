@@ -428,7 +428,7 @@ struct lambdakzeroBuilder {
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      registry.fill(HIST("hGoodIndices"), 0.5);
+      registry.fill(HIST("hV0Criteria"), 0.5);
       if (isRun2) {
         if (!(V0.posTrack_as<MyTracksIU>().trackType() & o2::aod::track::TPCrefit)) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
@@ -441,7 +441,7 @@ struct lambdakzeroBuilder {
           continue; // TPC refit
         }
       }
-      registry.fill(HIST("hGoodIndices"), 1.5);
+      registry.fill(HIST("hV0Criteria"), 1.5);
       if (V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() < mincrossedrows) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
@@ -452,7 +452,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      registry.fill(HIST("hGoodIndices"), 2.5);
+      registry.fill(HIST("hV0Criteria"), 2.5);
       if (fabs(V0.posTrack_as<MyTracksIU>().dcaXY()) < dcapostopv) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
@@ -464,7 +464,7 @@ struct lambdakzeroBuilder {
         continue;
       }
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-      registry.fill(HIST("hGoodIndices"), 3.5);
+      registry.fill(HIST("hV0Criteria"), 3.5);
 
       // Candidate building part
       std::array<float, 3> pos = {0.};
@@ -478,8 +478,6 @@ struct lambdakzeroBuilder {
 #endif
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "labelPos = " << labelPos << ", labelNeg = " << labelNeg);
-
-      registry.fill(HIST("hV0Candidate"), 0.5);
 
       auto pTrack = getTrackParCov(V0.posTrack_as<MyTracksIU>());
       auto nTrack = getTrackParCov(V0.negTrack_as<MyTracksIU>());
@@ -558,7 +556,6 @@ struct lambdakzeroBuilder {
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      registry.fill(HIST("hV0Candidate"), 1.5);
       v0data(
         V0.posTrackId(),
         V0.negTrackId(),
