@@ -227,6 +227,10 @@ struct DiffMCQA {
     LOGF(info, "<DiffMCQA> Size of abcrs %i and afbcrs %i", abcrs.size(), afbcrs.size());
   }
 
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::V0s> v0PerCollision = aod::v0::collisionId;
+  Preslice<aod::Cascades> cascadePerCollision = aod::cascade::collisionId;
+
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtarcks,
                aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
@@ -242,7 +246,7 @@ struct DiffMCQA {
     bool isGraniittiDiff = false;
     if (collision.has_mcCollision()) {
       auto MCCol = collision.mcCollision();
-      auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
+      auto MCPartSlice = McParts.sliceBy(perMcCollision, MCCol.globalIndex());
       isPythiaDiff = isPythiaCDE(MCPartSlice);
       isGraniittiDiff = isGraniittiCDE(MCPartSlice);
     }
@@ -404,7 +408,7 @@ struct DiffMCQA {
 
     // no V0s
     auto colId = collision.globalIndex();
-    const auto& V0Collision = v0s.sliceBy(aod::v0::collisionId, colId);
+    const auto& V0Collision = v0s.sliceBy(v0PerCollision, colId);
     isDGcandidate &= (V0Collision.size() == 0);
     if (isPythiaDiff) {
       registry.get<TH1>(HIST("StatDiff1"))->Fill(4., isDGcandidate * 1.);
@@ -415,7 +419,7 @@ struct DiffMCQA {
     }
 
     // no Cascades
-    const auto& CascadeCollision = cascades.sliceBy(aod::cascade::collisionId, colId);
+    const auto& CascadeCollision = cascades.sliceBy(cascadePerCollision, colId);
     isDGcandidate &= (CascadeCollision.size() == 0);
     if (isPythiaDiff) {
       registry.get<TH1>(HIST("StatDiff1"))->Fill(5., isDGcandidate * 1.);
