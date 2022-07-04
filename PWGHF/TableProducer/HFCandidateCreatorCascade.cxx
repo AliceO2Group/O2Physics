@@ -57,6 +57,7 @@ struct HFCandidateCreatorCascade {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> doValPlots{"doValPlots", true, "do validation plots"};
+  Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -106,7 +107,9 @@ struct HFCandidateCreatorCascade {
         continue;
       }
       if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) {
-        LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        if (!silenceV0DataWarning) {
+          LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        }
         continue;
       }
       LOGF(debug, "V0Data ID: %d", casc.v0_as<aod::V0sLinked>().v0DataId());
