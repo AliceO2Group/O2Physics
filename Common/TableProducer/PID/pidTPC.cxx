@@ -247,8 +247,8 @@ struct tpcPid {
         loop_counter += 1;
       }
       track_properties.clear();
-      LOG(info) << "Neural Network for the TPC PID response: Time per track (overhead): " << duration_overhead << "ns ; Overhead total (all tracks): " << duration_overhead / (tracks_size * 9 * 1000000000) << "s";
-      LOG(info) << "Neural Network for the TPC PID response: Time per track (eval): " << duration_network << "ns ; Evaluation total (all tracks): " << duration_network / (tracks_size * 9 * 1000000000) << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
+      LOG(info) << "Neural Network for the TPC PID response: Time per track (overhead): " << duration_overhead / (tracks_size * 9) << "ns ; Overhead total (all tracks): " << duration_overhead / 1000000000 << "s";
+      LOG(info) << "Neural Network for the TPC PID response: Time per track (eval): " << duration_network / (tracks_size * 9) << "ns ; Evaluation total (all tracks): " << duration_network / 1000000000 << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
