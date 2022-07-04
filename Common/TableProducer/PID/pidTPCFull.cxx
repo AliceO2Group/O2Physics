@@ -153,6 +153,8 @@ struct tpcPidFull {
                          networkPathAlien.value,
                          enableNetworkOptimizations.value);
         network = temp_net;
+
+        network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
       }
     }
   }
@@ -195,17 +197,17 @@ struct tpcPidFull {
                            networkSetAlienDir.value + "/network_" + currentRunNumber + ".onnx",
                            enableNetworkOptimizations.value);
           network = temp_net;
+
+          network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
         }
       }
 
       // Defining some network parameters
-      int inputDimensions = network.getInputDimensions();
-      int outputDimensions = network.getOutputDimensions();
+      const int inputDimensions = network.getInputDimensions();
+      const int outputDimensions = network.getOutputDimensions();
       const unsigned long track_prop_size = tracks.size() * 9;
 
       network_prediction = std::vector<float>(outputDimensions * track_prop_size);
-      std::vector<float> init_network(inputDimensions, 1.);
-      network.evalNetwork(init_network); // This is an initialisation and might reduce the overhead of the model
 
       std::vector<float> track_properties(inputDimensions * track_prop_size);
       unsigned long counter_track_props = 0;
