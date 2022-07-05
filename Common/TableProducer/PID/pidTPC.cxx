@@ -165,7 +165,7 @@ struct tpcPid {
   {
 
     const unsigned long tracks_size = tracks.size();
-    auto reserveTable = [&tracks, &tracks_size](const Configurable<int>& flag, auto& table) {
+    auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
         return;
       }
