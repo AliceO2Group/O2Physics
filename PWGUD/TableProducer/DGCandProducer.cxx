@@ -58,10 +58,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                      aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                      aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-
 template <typename TCs>
 int8_t netCharge(TCs tracks)
 {
