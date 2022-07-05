@@ -19,8 +19,6 @@
 ///         QA histograms for the TPC PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
-#include <boost/filesystem.hpp>
-
 // ROOT includes
 #include "TFile.h"
 
