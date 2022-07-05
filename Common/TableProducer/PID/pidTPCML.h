@@ -22,7 +22,6 @@
 #define O2_PID_TPC_ML_H_
 
 #include <vector>
-#include <boost/filesystem.hpp>
 
 #include "TSystem.h"
 
@@ -39,7 +38,7 @@ class Network
  public:
   // Constructor, destructor and copy-constructor
   Network() = default;
-  Network(std::string, bool, std::string, bool);
+  Network(std::string, bool);
   ~Network() = default;
 
   // Operators
@@ -83,9 +82,7 @@ class Network
 
 }; // class Network
 
-Network::Network(std::string pathLocally,
-                 bool loadFromAlien = false,
-                 std::string pathAlien = "alien:///alice/cern.ch/user/c/csonnabe/tpc_network_testing/net_onnx_0.onnx",
+Network::Network(std::string path,
                  bool enableOptimization = true)
 {
 
@@ -105,31 +102,7 @@ Network::Network(std::string pathLocally,
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
   }
 
-  if (loadFromAlien) {
-    boost::filesystem::path local_file{pathLocally};
-    if (boost::filesystem::exists(local_file)) {
-      LOG(info) << "Local file [" + pathLocally + "] exists! It will be overwritten.";
-      std::remove((pathLocally).c_str());
-      LOG(info) << "Removed local file [" + pathLocally + "]";
-    }
-    LOG(info) << "Downloading network-file from AliEn...";
-
-    if ((pathAlien).substr(0, 8) == "alien://") {
-      std::string download_command = "alien_cp " + pathAlien + " file://" + pathLocally;
-      LOG(info) << "Command executed for downloading: " + download_command;
-      gSystem->Exec(download_command.c_str());
-    } else {
-      LOG(info) << "Please start pathAlien with alien://...";
-      LOG(info) << "Continuing with path alien://" + pathAlien + " for now...";
-      std::string download_command = "alien_cp alien://" + pathAlien + " file://" + pathLocally;
-      LOG(info) << "Command executed for downloading: " + download_command;
-      gSystem->Exec(download_command.c_str());
-    }
-  } else {
-    LOG(info) << "Loading network from local file [" + pathLocally + "]";
-  }
-
-  mSession.reset(new Ort::Experimental::Session{*mEnv, pathLocally, sessionOptions});
+  mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
 
   mInputNames = mSession->GetInputNames();
   mInputShapes = mSession->GetInputShapes();

@@ -19,6 +19,8 @@
 ///         QA histograms for the TPC PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
+#include <boost/filesystem.hpp>
+
 // ROOT includes
 #include "TFile.h"
 
@@ -26,6 +28,7 @@
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "CCDB/CcdbApi.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Framework/AnalysisDataModel.h"
@@ -68,6 +71,7 @@ struct tpcPid {
   o2::pid::tpc::Response* responseptr = nullptr;
   // Network correction for TPC PID response
   Network network;
+  o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
 
   // Input parameters
@@ -78,11 +82,10 @@ struct tpcPid {
   Configurable<long> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
   // Parameters for loading network from a file / downloading the file
   Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
-  Configurable<bool> downloadNetworkFromAlien{"downloadNetworkFromAlien", 1, "(bool) Download network from AliEn. If true and networkPathAlien==false, then the networks are fetched automatically using the runnumber of the collisions"};
-  Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to local .onnx file containing the network, if downloadNetworkFromAlien is True, the network will be downloaded to this directory"};
-  Configurable<std::string> networkPathAlien{"networkPathAlien", "", "(std::string) Set this variable if you want to use a network from a specific path on AliEn for the full evaluation, generally: alien:///alice/cern.ch/user/c/csonnabe/TPC/NN_PID/network_[runnumber].onnx ; See https://alimonitor.cern.ch/catalogue/#/alice/cern.ch/user/c/csonnabe/TPC/NN_PID"};
-  Configurable<std::string> networkSetAlienDir{"networkSetAlienDir", "alien:///alice/cern.ch/user/c/csonnabe/TPC/NN_PID", "(std::string) Set the AliEn directory from which the network-files are fetched. Default: alien:///alice/cern.ch/user/c/csonnabe/TPC/NN_PID"};
+  Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
+  Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
+  Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
   // Configuration flags to include and exclude particle hypotheses
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -143,15 +146,17 @@ struct tpcPid {
     if (!useNetworkCorrection) {
       return;
     } else {
-      if (downloadNetworkFromAlien.value && networkPathAlien.value == "") {
+      ccdbApi.init(url);
+      if (autofetchNetworks) {
         return;
       } else {
+        if (networkPathLocally.value == "") {
+          LOG(fatal) << "Local path must be set (flag networkPathLocally)! Aborting...";
+        }
+        LOG(info) << "Using local file [" << networkPathLocally.value << "] for the TPC PID response correction.";
         Network temp_net(networkPathLocally.value,
-                         downloadNetworkFromAlien.value,
-                         networkPathAlien.value,
                          enableNetworkOptimizations.value);
         network = temp_net;
-
         network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
       }
     }
@@ -183,21 +188,20 @@ struct tpcPid {
 
     if (useNetworkCorrection) {
 
-      auto start_overhead = std::chrono::high_resolution_clock::now();
+      auto start_network_total = std::chrono::high_resolution_clock::now();
 
-      if (downloadNetworkFromAlien.value && networkPathAlien.value == "") {
+      if (autofetchNetworks) {
 
         auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
 
         if (currentRunNumber != bc.runNumber()) { // fetches network only if the runnumbers change
           currentRunNumber = bc.runNumber();
-          LOG(info) << "Fetching network for runnumber: " << currentRunNumber;
+          LOG(info) << "Fetching network for runnumber: " << currentRunNumber << " and timestamp: " << bc.timestamp();
+          std::map<std::string, std::string> metadata;
+          ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
           Network temp_net(networkPathLocally.value,
-                           downloadNetworkFromAlien.value,
-                           Form("%s/network_%i.onnx", (networkSetAlienDir.value).c_str(), currentRunNumber),
                            enableNetworkOptimizations.value);
           network = temp_net;
-
           network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
         }
       }
@@ -210,7 +214,6 @@ struct tpcPid {
 
       network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
 
-      float duration_overhead = 0;
       float duration_network = 0;
 
       std::vector<float> track_properties(track_prop_size);
@@ -230,25 +233,24 @@ struct tpcPid {
           counter_track_props += input_dimensions;
         }
 
-        auto stop_overhead = std::chrono::high_resolution_clock::now();
-        duration_overhead += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_overhead - start_overhead).count();
-
-        auto start_network = std::chrono::high_resolution_clock::now();
+        auto start_network_eval = std::chrono::high_resolution_clock::now();
         float* output_network = network.evalNetwork(track_properties);
+        auto stop_network_eval = std::chrono::high_resolution_clock::now();
+        duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
         for (unsigned long i = 0; i < prediction_size; i += output_dimensions) {
           for (int j = 0; j < output_dimensions; j++) {
             network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
           }
         }
-        auto stop_network = std::chrono::high_resolution_clock::now();
-        duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network - start_network).count();
 
         counter_track_props = 0;
         loop_counter += 1;
       }
       track_properties.clear();
-      LOG(info) << "Neural Network for the TPC PID response: Time per track (overhead): " << duration_overhead / (tracks_size * 9) << "ns ; Overhead total (all tracks): " << duration_overhead / 1000000000 << "s";
-      LOG(info) << "Neural Network for the TPC PID response: Time per track (eval): " << duration_network / (tracks_size * 9) << "ns ; Evaluation total (all tracks): " << duration_network / 1000000000 << "s"; // The time per track but with 9 particle mass hypotheses: So actual time per track is (time_per_track_net / 9)
+
+      auto stop_network_total = std::chrono::high_resolution_clock::now();
+      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (tracks_size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
+      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
     }
 
     int lastCollisionId = -1; // Last collision ID analysed
