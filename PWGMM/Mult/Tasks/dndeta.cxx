@@ -92,7 +92,7 @@ struct MultiplicityCounter {
       registry.add({"Events/ZposDiff", " ; Z_{rec} - Z_{gen} (cm)", {HistType::kTH1F, {DeltaZAxis}}});
 
       if (fillResponse) {
-        registry.add({"Tracks/Response", " ; N_{gen}; N_{rec}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
+        registry.add({"Events/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
         registry.add({"Events/EfficiencyMult", " ; N_{gen}; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
         registry.add({"Events/SplitMult", " ; N_{gen} ; Z_{vtx} (cm)", {HistType::kTH2F, {MultAxis, ZAxis}}});
       }
@@ -342,8 +342,8 @@ struct MultiplicityCounter {
       }
     }
     if (fillResponse) {
-      registry.fill(HIST("Tracks/Response"), nCharged, Nrec, mcCollision.posZ());
       if (atLeastOne) {
+        registry.fill(HIST("Events/Response"), Nrec, nCharged, mcCollision.posZ());
         registry.fill(HIST("Events/EfficiencyMult"), nCharged, mcCollision.posZ());
       }
       if (moreThanOne > 1) {
