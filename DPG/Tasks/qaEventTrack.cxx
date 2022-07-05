@@ -16,6 +16,7 @@
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
 /// \author Mario Krüger <mario.kruger@cern.ch>
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>, CERN
+/// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN, Padova, Italy
 /// \brief  Task to produce QA objects for the track and the event properties in the AOD.
 ///         This task can also be configured to produce a table with reduced information used for correlation studies for track selection
 ///
@@ -411,7 +412,7 @@ void qaEventTrack::init(InitContext const&)
   const AxisSpec axisVertexCov{100, -0.005, 0.005};
   const AxisSpec axisVertexPosReso{100, -0.5, 0.5};
   const AxisSpec axisTrackMultiplicity{binsTrackMultiplicity, "Track Multiplicity"};
-  const AxisSpec axisParX{200, -0.36, 0.36, "#it{x} [cm]"};
+  const AxisSpec axisParX{300, 0, 600, "#it{x} [cm]"};
   const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
   const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
   const AxisSpec axisParAlpha{36, -M_PI, M_PI, "#alpha [rad]"};
