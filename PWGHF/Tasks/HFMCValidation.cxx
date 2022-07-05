@@ -53,7 +53,7 @@ static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 /// - Momentum Conservation for these particles
 
 struct ValidationGenLevel {
-  std::shared_ptr<TH1> hPromptCharmHadronsPtDistr, hPromptCharmHadronsYDistr, hNonPromptCharmHadronsPtDistr, hNonPromptCharmHadronsYDistr;
+  std::shared_ptr<TH1> hPromptCharmHadronsPtDistr, hPromptCharmHadronsYDistr, hNonPromptCharmHadronsPtDistr, hNonPromptCharmHadronsYDistr, hPromptCharmHadronsDecLenDistr, hNonPromptCharmHadronsDecLenDistr, hQuarkPerEvent;
 
   HistogramRegistry registry{
     "registry",
@@ -88,13 +88,17 @@ struct ValidationGenLevel {
   {
     hPromptCharmHadronsPtDistr = registry.add<TH2>("hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
     hPromptCharmHadronsYDistr = registry.add<TH2>("hPromptCharmHadronsYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, -5., 5.}});
+    hPromptCharmHadronsDecLenDistr = registry.add<TH2>("hPromptCharmHadronsDecLDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 10000.}});
     hNonPromptCharmHadronsPtDistr = registry.add<TH2>("hNonPromptCharmHadronsPtDistr", "Pt distribution vs non-prompt charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
     hNonPromptCharmHadronsYDistr = registry.add<TH2>("hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, -5., 5.}});
+    hNonPromptCharmHadronsDecLenDistr = registry.add<TH2>("hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 10000.}});
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
       hPromptCharmHadronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       hPromptCharmHadronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      hPromptCharmHadronsDecLenDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       hNonPromptCharmHadronsPtDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       hNonPromptCharmHadronsYDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      hNonPromptCharmHadronsDecLenDistr->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
   }
 
@@ -174,6 +178,11 @@ struct ValidationGenLevel {
           }
           double pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
           double ptDiff = RecoDecay::pt(pxDiff, pyDiff);
+          auto daughter0 = particle.daughters_as<aod::McParticles>().begin();
+          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+          double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
+
+          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
           //Filling histograms with per-component momentum conservation
           registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
           registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
@@ -184,9 +193,11 @@ struct ValidationGenLevel {
           if (origin == OriginType::Prompt) {
             hPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
             hPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
+            hPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
           } else if (origin == OriginType::NonPrompt) {
             hNonPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
             hNonPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
+            hNonPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
           }
         }
       }

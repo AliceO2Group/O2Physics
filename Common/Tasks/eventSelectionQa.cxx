@@ -386,6 +386,8 @@ struct EventSelectionQaTask {
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
 
+  Preslice<aod::FullTracks> perCollision = aod::track::collisionId;
+
   void processRun3(
     soa::Join<aod::Collisions, aod::EvSels> const& cols,
     aod::FullTracks const& tracks,
@@ -576,7 +578,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hOrbitCol"), orbit);
       histos.fill(HIST("hBcCol"), localBC);
 
-      auto tracksGrouped = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
+      auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nTPCtracks = 0;
       int nTOFtracks = 0;
       for (auto& track : tracksGrouped) {
