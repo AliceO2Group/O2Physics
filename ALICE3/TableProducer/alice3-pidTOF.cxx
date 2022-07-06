@@ -22,7 +22,6 @@
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
 #include "ALICE3/Core/TOFResoALICE3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -125,8 +124,7 @@ struct ALICE3pidTOFTask {
       return -999.f;
     }
     return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - tof::ExpTimes<Trks::iterator, id>::ComputeExpectedTime(track.tofExpMom() / o2::pid::tof::kCSPEED,
-                                                                                                                                      track.length(),
-                                                                                                                                      o2::track::PID::getMass2Z(id))) /
+                                                                                                                                      track.length())) /
            sigma<id>(track);
   }
   void process(Trks const& tracks, Coll const&)

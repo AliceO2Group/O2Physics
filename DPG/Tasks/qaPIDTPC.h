@@ -10,16 +10,16 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaTPC.h
+/// \file   qaPIDTPC.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Header file for QA tasks of the TPC PID quantities
 ///
 
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;

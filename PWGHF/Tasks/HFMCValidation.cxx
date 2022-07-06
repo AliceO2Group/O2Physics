@@ -157,7 +157,7 @@ struct ValidationGenLevel {
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           int origin = -1;
           if (listDaughters.size() == arrayPDGsize) {
-            origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+            origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
             if (origin == OriginType::Prompt) {
               counterPrompt[iD]++;
             } else if (origin == OriginType::NonPrompt) {
@@ -293,7 +293,7 @@ struct ValidationRecLevel {
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
         if (cand2Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
@@ -358,7 +358,7 @@ struct ValidationRecLevel {
       if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand3Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
