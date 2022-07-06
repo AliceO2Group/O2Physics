@@ -22,8 +22,6 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/Array2D.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
