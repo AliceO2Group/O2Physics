@@ -29,4 +29,4 @@ o2physics_add_executable(pidparam-tpc-response
 o2physics_add_executable(tpcpid-qa
                   SOURCES handleTPCPIDQAReport.cxx
 		          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::Postscript
-                 )
+				  )
