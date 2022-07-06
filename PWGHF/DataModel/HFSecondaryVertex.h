@@ -292,7 +292,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
 
 // mapping of origin type
-enum OriginType { Prompt = 1,
+enum OriginType { None = 0,
+                  Prompt,
                   NonPrompt };
 } // namespace hf_cand
 
