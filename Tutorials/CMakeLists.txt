@@ -21,6 +21,10 @@ o2physics_add_dpl_workflow(track-iteration
                   SOURCES src/trackIteration.cxx
                   COMPONENT_NAME AnalysisTutorial)
 
+o2physics_add_dpl_workflow(pid
+                  SOURCES src/pid.cxx
+                  COMPONENT_NAME AnalysisTutorial)
+
 o2physics_add_dpl_workflow(full-track-iteration
                   SOURCES src/fullTrackIteration.cxx
                   COMPONENT_NAME AnalysisTutorial)
