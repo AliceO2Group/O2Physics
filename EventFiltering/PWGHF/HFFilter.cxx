@@ -418,6 +418,10 @@ struct HfFilter { // Main struct for HF triggers
       return kRejected;
     }
 
+    if (std::abs(track.dcaZ()) > 2.f) {
+      return kRejected;
+    }
+
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
       return kRejected; // minimum DCAxy
     }
@@ -467,6 +471,10 @@ struct HfFilter { // Main struct for HF triggers
 
     if (std::abs(track.eta()) > 0.8) {
       return false;
+    }
+
+    if (track.isGlobalTrack() != (uint8_t) true) {
+      return false; // use only global tracks
     }
 
     float NSigmaTPC = track.tpcNSigmaPr();
