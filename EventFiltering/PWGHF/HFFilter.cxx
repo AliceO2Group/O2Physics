@@ -418,6 +418,10 @@ struct HfFilter { // Main struct for HF triggers
       return kRejected;
     }
 
+    if (std::abs(track.dcaZ()) > 2.f) {
+      return kRejected;
+    }
+
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
       return kRejected; // minimum DCAxy
     }
@@ -428,9 +432,6 @@ struct HfFilter { // Main struct for HF triggers
     // below only regular beauty tracks, not required for soft pions
     if (pT < pTMinBeautyBachelor) {
       return kSoftPion;
-    }
-    if (track.isGlobalTrack() != (uint8_t) true) {
-      return kSoftPion; // use only global tracks except for
     }
 
     return kRegular;
@@ -663,8 +664,10 @@ struct HfFilter { // Main struct for HF triggers
 
   using HfTrackIndexProng2withColl = soa::Join<aod::Hf2Prongs, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::Hf3Prongs, aod::Colls3Prong>;
-  using BigTracksWithProtonPID = soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using BigTracksMCPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::BigTracksMC>;
+
+  Filter trackFilter = requireGlobalTrackWoDCAInFilter();
+  using BigTracksWithProtonPID = soa::Filtered<soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   void process(aod::Collision const& collision,
                HfTrackIndexProng2withColl const& cand2Prongs,
