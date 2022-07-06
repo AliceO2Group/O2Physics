@@ -415,7 +415,8 @@ struct MixedEventsLambdaBinning {
       };
 
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    BinningType binningWithLambda{{getTracksSize}, {axisMultiplicity, axisVertex}, true};
+    BinningType binningWithLambda{{getTracksSize}, {axisVertex, axisMultiplicity}, true};
+
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningWithLambda, 5, -1, collisions, tracksTuple}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
