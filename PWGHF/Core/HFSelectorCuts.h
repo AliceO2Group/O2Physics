@@ -409,7 +409,7 @@ static const std::vector<std::string> pTBinLabels = {
   "pT bin 11"};
 
 // column labels
-static const std::vector<std::string> cutVarLabels = {"deltaM", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP"};
+static const std::vector<std::string> cutVarLabels = {"m", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "max normalized deltaIP"};
 } // namespace hf_cuts_ds_tokkpi
 
 namespace hf_cuts_xic_topkpi
