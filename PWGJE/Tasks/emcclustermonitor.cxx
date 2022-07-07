@@ -65,15 +65,10 @@ struct ClusterMonitor {
   Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
-  Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
+
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
-
-  // define cluster filter. It selects only those clusters which are of the type
-  // specified in the string mClusterDefinition,e.g. kV3Default, which is V3 clusterizer with default
-  // clusterization parameters
-  o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -105,7 +100,7 @@ struct ClusterMonitor {
 
     // cluster properties (matched clusters)
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
-    mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100}});
+    mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{2000, 0, 200}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
     mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
     mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5}});
@@ -135,6 +130,12 @@ struct ClusterMonitor {
       }
     }
   }
+
+  // define cluster filter. It selects only those clusters which are of the type
+  // sadly passing of the string at runtime is not possible for technical region so cluster definition is
+  // an integer instead
+  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
+
   /// \brief Process EMCAL clusters that are matched to a collisions
   void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::BCs const& bcs)
   {
@@ -144,12 +145,7 @@ struct ClusterMonitor {
     // currently the event selection is hard coded to kINT7
     // but other selections are possible that are defined in TriggerAliases.h
     if (mDoEventSel && (!theCollision.alias()[kINT7])) {
-      LOG(debug) << "Event not selected becaus it is not kINT7, skipping";
-      return;
-    }
-    mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
-    if (mVertexCut > 0 && TMath::Abs(theCollision.posZ()) > mVertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << mVertexCut << " cm, skipping";
+      LOG(debug) << "Event not selected because it is not kINT7, skipping";
       return;
     }
     mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());

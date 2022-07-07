@@ -100,7 +100,7 @@ struct EmcalCorrectionTask {
       }
     }
     for (auto& clusterDefinition : mClusterDefinitions) {
-      mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, true, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
+      mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1E9, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, clusterDefinition.doGradientCut, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
       mClusterFactories.emplace_back(std::make_unique<o2::emcal::ClusterFactory<o2::emcal::Cell>>());
       LOG(info) << "Cluster definition initialized: " << clusterDefinition.toString();
       LOG(info) << "timeMin: " << clusterDefinition.timeMin;
@@ -108,6 +108,7 @@ struct EmcalCorrectionTask {
       LOG(info) << "gradientCut: " << clusterDefinition.gradientCut;
       LOG(info) << "seedEnergy: " << clusterDefinition.seedEnergy;
       LOG(info) << "minCellEnergy: " << clusterDefinition.minCellEnergy;
+      LOG(info) << "storageID" << clusterDefinition.storageID;
     }
     for (auto& clusterizer : mClusterizers) {
       clusterizer->setGeometry(geometry);
@@ -153,6 +154,7 @@ struct EmcalCorrectionTask {
         cell.time(),
         o2::emcal::intToChannelType(cell.cellType())));
     }
+    LOG(debug) << "Number of cells (CF): " << mEmcalCells.size();
 
     // Cell QA
     // For convenience, use the clusterizer stored geometry to get the eta-phi
@@ -197,6 +199,7 @@ struct EmcalCorrectionTask {
       for (int icl = 0; icl < mClusterFactories.at(i)->getNumberOfClusters(); icl++) {
         auto analysisCluster = mClusterFactories.at(i)->buildCluster(icl);
         mAnalysisClusters.emplace_back(analysisCluster);
+        LOG(debug) << "Cluster " << icl << ": E: " << analysisCluster.E() << ", NCells " << analysisCluster.getNCells();
       }
       LOG(debug) << "Converted to analysis clusters.";
 
