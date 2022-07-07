@@ -127,6 +127,7 @@ struct TaskHfCorrelations {
     //  histograms for event mixing
     const int maxMixBin = axisMultiplicity->size() * 14; // 14 bins for z-vertex
     registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("eventcountmixingcollisions", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("eventcountsame", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("hMultipliciyMixing", "hMultipliciyMixing", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("hVtxZMixing", "hVtxZMixing", {HistType::kTH1F, {{100, -10, 10}}});
@@ -434,14 +435,8 @@ struct TaskHfCorrelations {
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
-      return associatedTracks.size();
-    };
-    auto mult = getTracksSize(collision);
-
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), mult));
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("eventcountsame"), bin);
 
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -470,7 +465,6 @@ struct TaskHfCorrelations {
     auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
-      LOG(info) << "Lambda iterator: " << col.globalIndex() << " tracks size: " << size;
       return size;
     };
 
@@ -484,18 +478,18 @@ struct TaskHfCorrelations {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex());
       auto mult = associatedTracks.size();
       int bin1 = baseBinning.getBin(std::make_tuple(col.posZ(), mult));
-      LOG(info) << "Standard binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " tracks size: " << mult << " bin: " << bin1;
+      //LOG(info) << "Standard binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " tracks size: " << mult << " bin: " << bin1;
 
       auto binningValues = binningWithTracksSize.getBinningValues(col, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
-      LOG(info) << "Lambda binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " z from binning: " << std::get<0>(binningValues) << " mult from binning: " << std::get<1>(binningValues) << " bin: " << bin;
+      registry.fill(HIST("eventcountmixingcollisions"), bin);
+      //LOG(info) << "Lambda binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " z from binning: " << std::get<0>(binningValues) << " mult from binning: " << std::get<1>(binningValues) << " bin: " << bin;
     }
     // End of debuging code
     // =====================================
 
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithTracksSize, cfgNoMixedEvents, -1, collisions, tracksTuple};
-    LOG(info) << "Created mixed pair";
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -513,7 +507,7 @@ struct TaskHfCorrelations {
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
       registry.fill(HIST("eventcount"), bin);
-      LOG(info) << "Collisions: " << collision1.globalIndex() << ", " << collision2.globalIndex() << " z: " << collision1.posZ() << ", " << collision2.posZ() << " mult: " << tracks1.size() << ", " << tracks2.size() << " bin: " << bin;
+      //LOG(info) << "Collisions: " << collision1.globalIndex() << ", " << collision2.globalIndex() << " z: " << collision1.posZ() << ", " << collision2.posZ() << " mult: " << tracks1.size() << ", " << tracks2.size() << " bin: " << bin;
 
       if (processTPCTPChh) {
         fillMixingQA(multiplicity, tracks1);
