@@ -65,18 +65,22 @@ struct qaK0sTrackingEfficiency {
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
-  bool acceptV0(T1 v0, T2 ptrack, T2 ntrack, C collision) 
+  bool acceptV0(T1 v0, T2 ntrack, T2 ptrack, C collision)
   {
     // Apply selections on V0
-    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) return kFALSE;
-    if (TMath::Abs(v0.yK0Short()) > rapidity) return kFALSE;
+    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa)
+      return kFALSE;
+    if (TMath::Abs(v0.yK0Short()) > rapidity)
+      return kFALSE;
 
     // Apply selections on V0 daughters
-    if (!ptrack.hasTPC() || !ntrack.hasTPC()) return kFALSE;
-    if (ptrack.tpcNSigmaPi() > nSigTPC || ntrack.tpcNSigmaPi() > nSigTPC) return kFALSE;
+    if (!ntrack.hasTPC() || !ptrack.hasTPC())
+      return kFALSE;
+    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC)
+      return kFALSE;
     return kTRUE;
   }
-  
+
   void process(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, PIDTracks const& tracks)
   // TODO: add centrality
   {
@@ -88,10 +92,10 @@ struct qaK0sTrackingEfficiency {
 
     for (auto& v0 : fullV0s) {
 
-      auto recopostrack = v0.posTrack_as<PIDTracks>();
       auto reconegtrack = v0.negTrack_as<PIDTracks>();
+      auto recopostrack = v0.posTrack_as<PIDTracks>();
 
-      if (acceptV0(v0, recopostrack, reconegtrack, collision)) {
+      if (acceptV0(v0, reconegtrack, recopostrack, collision)) {
         registry.fill(HIST("Test/h_R"), v0.v0radius());
         registry.fill(HIST("Test/h_pT"), v0.pt());
         registry.fill(HIST("Test/h_mass"), v0.mK0Short());
