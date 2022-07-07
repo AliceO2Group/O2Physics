@@ -26,6 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi>;
+using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct qaK0sTrackingEfficiency {
 
@@ -60,7 +61,19 @@ struct qaK0sTrackingEfficiency {
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, PIDTracks const& tracks)
+  template <typename T1, typename T2, typename C>
+  bool acceptV0(T1 v0, T2 ptrack, T2 ntrack, C collision) 
+  {
+    // Apply selections on V0
+    if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) return kFALSE;
+    if (TMath::Abs(v0.yK0Short()) > rapidity) return kFALSE;
+
+    // Apply selections on V0 daughters
+    if (ptrack.tpcNSigmaPi() > nSigTPC || ntrack.tpcNSigmaPi() > nSigTPC) return kFALSE;
+    return kTRUE;
+  }
+  
+  void process(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, PIDTracks const& tracks)
   // TODO: add centrality
   {
     registry.fill(HIST("h_EventCounter"), 0.);
@@ -70,36 +83,32 @@ struct qaK0sTrackingEfficiency {
     registry.fill(HIST("h_EventCounter"), 1.);
 
     for (auto& v0 : fullV0s) {
-      if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
 
-        auto reconegtrack = v0.negTrack_as<PIDTracks>();
-        auto recopostrack = v0.posTrack_as<PIDTracks>();
+      auto recopostrack = v0.posTrack_as<PIDTracks>();
+      auto reconegtrack = v0.negTrack_as<PIDTracks>();
 
-        if (TMath::Abs(v0.yK0Short()) < rapidity) {
-          if (reconegtrack.tpcNSigmaPi() < nSigTPC && recopostrack.tpcNSigmaPi() < nSigTPC) {
-            registry.fill(HIST("Test/h_R"), v0.v0radius());
-            registry.fill(HIST("Test/h_pT"), v0.pt());
-            registry.fill(HIST("Test/h_mass"), v0.mK0Short());
+      if (acceptV0(v0, recopostrack, reconegtrack, collision)) {
+        registry.fill(HIST("Test/h_R"), v0.v0radius());
+        registry.fill(HIST("Test/h_pT"), v0.pt());
+        registry.fill(HIST("Test/h_mass"), v0.mK0Short());
 
-            int negIBNhits = 0, posIBNhits = 0;
-            for (unsigned int i = 0; i < 3; i++) {
-              if (reconegtrack.itsClusterMap() & (1 << i)) {
-                negIBNhits++;
-              }
-              if (recopostrack.itsClusterMap() & (1 << i)) {
-                posIBNhits++;
-              }
-            }
-            bool negHasIB = (bool)negIBNhits;
-            bool posHasIB = (bool)posIBNhits;
-            registry.fill(HIST("Test/h_negStatus"), negHasIB);
-            registry.fill(HIST("Test/h_posStatus"), posHasIB);
-            registry.fill(HIST("Test/h_negIBhits"), negIBNhits);
-            registry.fill(HIST("Test/h_posIBhits"), posIBNhits);
-
-            registry.fill(HIST("h5_RpTmassStatus"), v0.v0radius(), v0.pt(), v0.mK0Short(), negHasIB, posHasIB);
+        int negIBNhits = 0, posIBNhits = 0;
+        for (unsigned int i = 0; i < 3; i++) {
+          if (reconegtrack.itsClusterMap() & (1 << i)) {
+            negIBNhits++;
+          }
+          if (recopostrack.itsClusterMap() & (1 << i)) {
+            posIBNhits++;
           }
         }
+        bool negHasIB = (bool)negIBNhits;
+        bool posHasIB = (bool)posIBNhits;
+        registry.fill(HIST("Test/h_negStatus"), negHasIB);
+        registry.fill(HIST("Test/h_posStatus"), posHasIB);
+        registry.fill(HIST("Test/h_negIBhits"), negIBNhits);
+        registry.fill(HIST("Test/h_posIBhits"), posIBNhits);
+
+        registry.fill(HIST("h5_RpTmassStatus"), v0.v0radius(), v0.pt(), v0.mK0Short(), negHasIB, posHasIB);
       }
     }
   }
