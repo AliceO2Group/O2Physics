@@ -69,6 +69,7 @@ struct qaK0sTrackingEfficiency {
     if (TMath::Abs(v0.yK0Short()) > rapidity) return kFALSE;
 
     // Apply selections on V0 daughters
+    if (!ptrack.hasTPC() || !ntrack.hasTPC()) return kFALSE;
     if (ptrack.tpcNSigmaPi() > nSigTPC || ntrack.tpcNSigmaPi() > nSigTPC) return kFALSE;
     return kTRUE;
   }
