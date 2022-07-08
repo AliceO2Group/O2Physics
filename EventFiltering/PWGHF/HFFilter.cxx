@@ -982,10 +982,10 @@ struct HfFilter { // Main struct for HF triggers
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = RecoDecay::checkCharmHadronOrigin(particlesMC, particle, false);
         if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
-        } else {
+        } else if (origin == OriginType::Prompt) {
           flag = kPrompt;
         }
       } else {
@@ -1041,7 +1041,7 @@ struct HfFilter { // Main struct for HF triggers
 
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = RecoDecay::checkCharmHadronOrigin(particlesMC, particle, false);
         if (origin == OriginType::NonPrompt) {
           flag = kNonPrompt;
         } else {

@@ -950,14 +950,8 @@ class RecoDecay
 
             if (!searchUpToQuark) {
               if (
-                (PDGParticleIMother / 100 == 5 ||            // b mesons
-                 PDGParticleIMother / 1000 == 5 ||           // b baryons
-                 (PDGParticleIMother - 10000) / 100 == 5 ||  // bbbar resonances
-                 (PDGParticleIMother - 20000) / 100 == 5 ||  // bbbar resonances
-                 (PDGParticleIMother - 30000) / 100 == 5 ||  // bbbar resonances
-                 (PDGParticleIMother - 100000) / 100 == 5 || // bbbar resonances
-                 (PDGParticleIMother - 200000) / 100 == 5 || // bbbar resonances
-                 (PDGParticleIMother - 300000) / 100 == 5)   // bbbar resonances
+                (PDGParticleIMother / 100 == 5 || // b mesons
+                 PDGParticleIMother / 1000 == 5)  // b baryons
               ) {
                 return 2;
               }
