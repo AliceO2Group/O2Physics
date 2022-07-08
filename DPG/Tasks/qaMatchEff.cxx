@@ -28,7 +28,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 //
-struct qaMatcheff {
+struct qaMatchEff {
   //
   // histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -459,7 +459,7 @@ struct qaMatcheff {
       LOGF(info, "Tracks: %d, w/out MC: %d ", count, countNoMC);
   } // end processMC
   //
-  PROCESS_SWITCH(qaMatcheff, processMC, "process MC", false);
+  PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
   //
   //
   void processData(soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& jTracks)
@@ -522,12 +522,12 @@ struct qaMatcheff {
     //
   } // end processData
   //
-  PROCESS_SWITCH(qaMatcheff, processData, "process data", true);
+  PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
   //
   //
 }; // end of structure
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<qaMatcheff>(cfgc, TaskName{"qa-match-eff"})};
+  return WorkflowSpec{adaptAnalysisTask<qaMatchEff>(cfgc, TaskName{"qa-match-eff"})};
 }
