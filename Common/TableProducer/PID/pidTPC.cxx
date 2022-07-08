@@ -196,11 +196,15 @@ struct tpcPid {
           currentRunNumber = bc.runNumber();
           LOG(info) << "Fetching network for runnumber: " << currentRunNumber << " and timestamp: " << bc.timestamp();
           std::map<std::string, std::string> metadata;
-          ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
-          Network temp_net(networkPathLocally.value,
-                           enableNetworkOptimizations.value);
-          network = temp_net;
-          network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          bool retrieve_success = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
+          if (retrieve_success) {
+            Network temp_net(networkPathLocally.value,
+                             enableNetworkOptimizations.value);
+            network = temp_net;
+            network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          } else {
+            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          }
         }
       }
 
