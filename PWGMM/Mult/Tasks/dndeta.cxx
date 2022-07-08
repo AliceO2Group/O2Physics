@@ -118,6 +118,7 @@ struct MultiplicityCounter {
     if (doprocessTrackEfficiencyIndexed) {
       registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
     }
   }
@@ -229,13 +230,22 @@ struct MultiplicityCounter {
         registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
         if (particle.has_tracks()) {
           auto counted = false;
+          auto countedNoEtaCut = false;
+          auto counter = 0;
           auto relatedTracks = particle.tracks_as<soa::Filtered<LabeledTracksEx>>();
           for (auto& track : relatedTracks) {
+            ++counter;
+            if (!countedNoEtaCut) {
+              registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
+              countedNoEtaCut = true;
+            }
             if (std::abs(track.eta()) < estimatorEta) {
               if (!counted) {
                 registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
                 counted = true;
               }
+            }
+            if (counter > 1) {
               registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
             }
           }
