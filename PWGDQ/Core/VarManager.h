@@ -403,8 +403,8 @@ class VarManager : public TObject
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
-  template <int pairType, typename T>
-  static void FillPairVn(T const& t1, T const& t2, float* values = nullptr);
+  template <int pairType, typename T1, typename T2>
+  static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
 
  public:
   VarManager();
@@ -1279,8 +1279,8 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   values[kMultC] = normC;
 }
 
-template <int pairType, typename T>
-void VarManager::FillPairVn(T const& t1, T const& t2, float* values)
+template <int pairType, typename T1, typename T2>
+void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 {
 
   if (!values) {

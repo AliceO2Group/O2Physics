@@ -333,10 +333,19 @@ struct AnalysisQvector {
   }
 
   // Process to fill Q vector in a reduced event table for barrel/muon tracks flow related analyses
-  void process(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
+
+  // TODO: dummy function for the case when no process function is enabled
+  void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisQvector, processQvector, "Run q-vector task", false);
+  PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
