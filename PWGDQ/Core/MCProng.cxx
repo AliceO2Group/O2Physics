@@ -18,13 +18,13 @@ ClassImp(MCProng);
 
 //________________________________________________________________________________________________________________
 MCProng::MCProng() : fNGenerations(0),
-                     fCheckGenerationsInTime(0),
                      fPDGcodes({}),
                      fCheckBothCharges({}),
                      fExcludePDG({}),
                      fSourceBits({}),
                      fExcludeSource({}),
-                     fUseANDonSourceBitMap({})
+                     fUseANDonSourceBitMap({}),
+                     fCheckGenerationsInTime(0)
 {
 }
 
