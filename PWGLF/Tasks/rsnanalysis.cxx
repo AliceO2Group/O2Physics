@@ -25,25 +25,20 @@ using namespace std;
 using namespace o2;
 using namespace o2::framework;
 
-enum EventSelection { kNoSelection = 0,
-                      kTVXselection = 1,
-                      kVertexCut = 2 };
+enum EventSelection { kNoSelection = 0, kTVXselection = 1, kVertexCut = 2 };
 
 using kCollisionsTable = soa::Join<aod::Collisions, aod::EvSels>;
 using kTracksTable =
-  soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-            aod::TracksDCA, aod::pidTOFFullKa, aod::pidTPCFullKa,
-            aod::pidTOFFullPi, aod::pidTPCFullPi>;
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+              aod::TracksDCA, aod::pidTOFFullKa, aod::pidTPCFullKa,
+              aod::pidTOFFullPi, aod::pidTPCFullPi>;
 
 struct rsn_analysis {
   HistogramRegistry uHistograms{
-    "Histograms",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject};
+      "Histograms", {}, OutputObjHandlingPolicy::AnalysisObject};
   //
   // Create Output Objects
-  void init(o2::framework::InitContext&)
-  {
+  void init(o2::framework::InitContext &) {
     // Histogram is added to the ouput registry
     //
     //  Event QA
@@ -163,9 +158,8 @@ struct rsn_analysis {
                                      "TPC NSigma for Pions Standalone"};
   //
   //  Processing A02D
-  void process(kCollisionsTable::iterator const& kCollision,
-               kTracksTable const& kTracks)
-  {
+  void process(kCollisionsTable::iterator const &kCollision,
+               kTracksTable const &kTracks) {
     //
     //  Collision QA
     uHistograms.fill(HIST("QA/Event/EnumEvents"), EventSelection::kNoSelection);
@@ -218,19 +212,19 @@ struct rsn_analysis {
       if (uIsKaonSelected(kCurrentTrack)) {
         if (kCurrentTrack.sign() > 0)
           kPosSelectedKaons.push_back(std::tuple<Float_t, Float_t, Float_t>(
-            kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
+              kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
         else
           kNegSelectedKaons.push_back(std::tuple<Float_t, Float_t, Float_t>(
-            kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
+              kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
       }
       //
       if (uIsPionSelected(kCurrentTrack)) {
         if (kCurrentTrack.sign() > 0)
           kPosSelectedPions.push_back(std::tuple<Float_t, Float_t, Float_t>(
-            kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
+              kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
         else
           kNegSelectedPions.push_back(std::tuple<Float_t, Float_t, Float_t>(
-            kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
+              kCurrentTrack.px(), kCurrentTrack.py(), kCurrentTrack.pz()));
       }
     }
     //
@@ -298,8 +292,7 @@ struct rsn_analysis {
     }
   }
   //
-  bool uIsKaonSelected(kTracksTable::iterator const& kCurrentTrack)
-  {
+  bool uIsKaonSelected(kTracksTable::iterator const &kCurrentTrack) {
     //
     //  Utility variables
     Bool_t kHasTPC = kCurrentTrack.hasTPC();
@@ -325,8 +318,7 @@ struct rsn_analysis {
     return true;
   }
   //
-  bool uIsPionSelected(kTracksTable::iterator const& kCurrentTrack)
-  {
+  bool uIsPionSelected(kTracksTable::iterator const &kCurrentTrack) {
     //
     //  Utility variables
     Bool_t kHasTPC = kCurrentTrack.hasTPC();
@@ -356,7 +348,7 @@ struct rsn_analysis {
 };
 
 WorkflowSpec defineDataProcessing(
-  ConfigContext const& cfgc) // This puts your task in the DPL workflow
+    ConfigContext const &cfgc) // This puts your task in the DPL workflow
 {
   // Equivalent to the AddTask in AliPhysics
   WorkflowSpec workflow{adaptAnalysisTask<rsn_analysis>(cfgc)};
