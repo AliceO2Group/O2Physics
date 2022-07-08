@@ -475,6 +475,10 @@ struct TaskHfCorrelations {
     // Debugging code for mixing, not needed in real analysis
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     for (auto& col : collisions) {
+      if (!isCollisionSelected(col)) {
+        continue;
+      }
+
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex());
       auto mult = associatedTracks.size();
       int bin1 = baseBinning.getBin(std::make_tuple(col.posZ(), mult));
