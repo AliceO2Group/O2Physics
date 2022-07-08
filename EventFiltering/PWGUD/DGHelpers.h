@@ -111,7 +111,7 @@ struct DGSelector {
       if (diffCuts.globalTracksOnly() && !track.isGlobalTrack() && track.isPVContributor()) {
         return 4;
       }
-        
+
       // update fraction of PV tracks with TOF hit
       if (track.isPVContributor() && track.hasTOF()) {
         rgtrwTOF += 1.;
