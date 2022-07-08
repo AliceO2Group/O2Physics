@@ -69,6 +69,7 @@ struct qaEventTrackLite {
   // TOF selections
   Configurable<float> chi2TofMin{"chi2TofMin", -1001.f, "Max TOF chi2"};
   Configurable<float> lengthMin{"lengthMin", -1001.f, "Min length"};
+  Configurable<float> dcaXYmax{"dcaXYMax", 999., "Max dca XY"};
 
   // Selection 1
   // ITS selections
@@ -79,6 +80,8 @@ struct qaEventTrackLite {
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel1{"nCrossedRowsTpcOverFindableClustersTpcMinSel1", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel1"};
   Configurable<float> chi2TpcMaxSel1{"chi2TpcMaxSel1", 1000.f, "Max TPC chi2 Sel1"};
   Configurable<bool> bItsTpcMatchedSel1{"bItsTpcMatchedSel1", false, "Select ITS-TPC matched DPG tracks, sel1"};
+  Configurable<float> dcaXYmaxSel1{"dcaXYMaxSel1", 999., "Max dca XY sel1"};
+
   // Selection 2
   // ITS selections
   Configurable<float> chi2ItsMaxSel2{"chi2ItsMaxSel2", 1000.f, "Max ITS chi2 Sel2"};
@@ -88,6 +91,8 @@ struct qaEventTrackLite {
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel2{"nCrossedRowsTpcOverFindableClustersTpcMinSel2", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel2"};
   Configurable<float> chi2TpcMaxSel2{"chi2TpcMaxSel2", 1000.f, "Max TPC chi2 Sel2"};
   Configurable<bool> bItsTpcMatchedSel2{"bItsTpcMatchedSel2", false, "Select ITS-TPC matched DPG tracks, sel2"};
+  Configurable<float> dcaXYmaxSel2{"dcaXYMaxSel2", 999., "Max dca XY sel2"};
+
   // Selection 3
   // ITS selections
   Configurable<float> chi2ItsMaxSel3{"chi2ItsMaxSel3", 1000.f, "Max ITS chi2 Sel3"};
@@ -97,8 +102,11 @@ struct qaEventTrackLite {
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMinSel3{"nCrossedRowsTpcOverFindableClustersTpcMinSel3", -1, "Minimum ratio between TPC crossed rows and findable clusters Sel3"};
   Configurable<float> chi2TpcMaxSel3{"chi2TpcMaxSel3", 1000.f, "Max TPC chi2 Sel3"};
   Configurable<bool> bItsTpcMatchedSel3{"bItsTpcMatchedSel3", false, "Select ITS-TPC matched DPG tracks, sel3"};
+  Configurable<float> dcaXYmaxSel3{"dcaXYMaxSel3", 999., "Max dca XY sel3"};
+
   // MC selections
   Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection, 1 defines pi,K,p,mu,e, 2 all final-state charged particles including light (hyper)nuclei"};
+  Configurable<bool> checkPdgAtReco{"checkPdgAtReco", false, "check pdg code also at reco levo for data-like reference"};
 
   void init(InitContext const&)
   {
@@ -216,9 +224,10 @@ struct qaEventTrackLite {
     Bool_t sel1 = applyTrackSelectionsSel1(track);
     Bool_t sel2 = applyTrackSelectionsSel2(track);
     Bool_t sel3 = applyTrackSelectionsSel3(track);
-
+    Bool_t isPdgOk = true;
     if constexpr (isMC) {
-      if (track.productionMode() == 0 && isPdgSelected(track.pdgCode())) {
+      isPdgOk = isPdgSelected(track.pdgCode());
+      if (track.productionMode() == 0 && isPdgOk) {
         histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
         histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
 
@@ -286,28 +295,36 @@ struct qaEventTrackLite {
     }
 
     if constexpr (isMC) {
-      histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.ptMC(), track.etaMC(), track.phiMC());
+      if (isPdgOk || !checkPdgAtReco) {
+        histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.ptMC(), track.etaMC(), track.phiMC());
+      }
     } else {
       histos.fill(HIST("TrackCuts/selPtEtaPhiNoSel"), track.pt(), track.eta(), track.phi());
     }
 
     if (sel1) {
       if constexpr (isMC) {
-        histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.ptMC(), track.etaMC(), track.phiMC());
+        if (isPdgOk || !checkPdgAtReco) {
+          histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.ptMC(), track.etaMC(), track.phiMC());
+        }
       } else {
         histos.fill(HIST("TrackCuts/selPtEtaPhiSel1"), track.pt(), track.eta(), track.phi());
       }
     }
     if (sel2) {
       if constexpr (isMC) {
-        histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.ptMC(), track.etaMC(), track.phiMC());
+        if (isPdgOk || !checkPdgAtReco) {
+          histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.ptMC(), track.etaMC(), track.phiMC());
+        }
       } else {
         histos.fill(HIST("TrackCuts/selPtEtaPhiSel2"), track.pt(), track.eta(), track.phi());
       }
     }
     if (sel3) {
       if constexpr (isMC) {
-        histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.ptMC(), track.etaMC(), track.phiMC());
+        if (isPdgOk || !checkPdgAtReco) {
+          histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.ptMC(), track.etaMC(), track.phiMC());
+        }
       } else {
         histos.fill(HIST("TrackCuts/selPtEtaPhiSel3"), track.pt(), track.eta(), track.phi());
       }
@@ -365,6 +382,8 @@ struct qaEventTrackLite {
       return false;
     if (track.tpcNClsFound() < nClusterTpcMin)
       return false;
+    if (TMath::Abs(track.dcaXY()) > dcaXYmax)
+      return false;
     return true;
   }
 
@@ -382,6 +401,8 @@ struct qaEventTrackLite {
     if (track.itsChi2NCl() > chi2ItsMaxSel1)
       return false;
     if (track.tpcChi2NCl() > chi2TpcMaxSel1)
+      return false;
+    if (TMath::Abs(track.dcaXY()) > dcaXYmaxSel1)
       return false;
 
     return true;
@@ -401,6 +422,8 @@ struct qaEventTrackLite {
       return false;
     if (track.tpcChi2NCl() > chi2TpcMaxSel2)
       return false;
+    if (TMath::Abs(track.dcaXY()) > dcaXYmaxSel2)
+      return false;
 
     return true;
   }
@@ -418,6 +441,8 @@ struct qaEventTrackLite {
     if (track.itsChi2NCl() > chi2ItsMaxSel3)
       return false;
     if (track.tpcChi2NCl() > chi2TpcMaxSel3)
+      return false;
+    if (TMath::Abs(track.dcaXY()) > dcaXYmaxSel3)
       return false;
 
     return true;
