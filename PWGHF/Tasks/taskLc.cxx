@@ -43,6 +43,10 @@ struct TaskLc {
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hCPARecSig", "3-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
      {"hCPARecBg", "3-prong candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
+     {"hdeclengthRecSig", "3-prong candidates (matched);decay length (cm);entries", {HistType::kTH1F, {{200, 0, 1.0}}}},
+     {"hdeclengthRecBg", "3-prong candidates (unmatched);decay length (cm);entries", {HistType::kTH1F, {{200, 0, 1.0}}}},
+     {"hdca2RecSig", "3-prong candidates (matched);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{100, 0, 0.5}}}},
+     {"hdca2RecBg", "3-prong candidates (unmatched);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{100, 0, 0.5}}}},
      {"hEtaRecSig", "3-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
@@ -127,7 +131,7 @@ struct TaskLc {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter2(), candidate.pt());
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("hDecLenErr"), candidate.chi2PCA(), candidate.pt());
+      registry.fill(HIST("hdca2"), candidate.chi2PCA(), candidate.pt());
     }
   }
 
@@ -157,10 +161,14 @@ struct TaskLc {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
         }
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
+        registry.fill(HIST("hdeclengthRecSig"), candidate.decayLength());
+        registry.fill(HIST("hdca2RecSig"), candidate.chi2PCA());
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
+        registry.fill(HIST("hdeclengthRecBg"), candidate.decayLength());
+        registry.fill(HIST("hdca2RecBg"), candidate.chi2PCA());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
       }
     }

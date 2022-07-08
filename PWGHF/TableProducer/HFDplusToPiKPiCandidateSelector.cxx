@@ -107,14 +107,14 @@ struct HFDplusToPiKPiCandidateSelector {
 
   void process(aod::HfCandProng3 const& candidates, aod::BigTracksPID const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
+    TrackSelectorPID selectorPion(kPiPlus, track::PID::Pion);
     selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorPion.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorPion.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
     selectorPion.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
 
     TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus);
+    selectorKaon.setPDG(kKPlus, track::PID::Kaon);
 
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {

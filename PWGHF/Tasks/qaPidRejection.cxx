@@ -142,7 +142,7 @@ struct QaTrackingRejection {
                const o2::aod::McCollisions& mcCollisions,
                const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
+    TrackSelectorPID selectorElectron(kElectron, track::PID::Electron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
@@ -153,15 +153,15 @@ struct QaTrackingRejection {
     selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
 
     auto selectorPion(selectorElectron);
-    selectorPion.setPDG(kPiPlus);
+    selectorPion.setPDG(kPiPlus, track::PID::Pion);
 
     auto selectorKaon(selectorElectron);
-    selectorKaon.setPDG(kKPlus);
+    selectorKaon.setPDG(kKPlus, track::PID::Kaon);
 
     auto selectorProton(selectorElectron);
-    selectorProton.setPDG(kProton);
+    selectorProton.setPDG(kProton, track::PID::Proton);
 
-    TrackSelectorPID selectorMuon(kMuonPlus);
+    TrackSelectorPID selectorMuon(kMuonPlus, track::PID::Muon);
 
     std::vector<int64_t> recoEvt(collisions.size());
     std::vector<int64_t> recoTracks(tracks.size());
@@ -334,7 +334,7 @@ struct QaRejectionGeneral {
                const o2::aod::McCollisions& mcCollisions,
                const o2::aod::McParticles& mcParticles, aod::RICHs const&, aod::MIDs const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
+    TrackSelectorPID selectorElectron(kElectron, track::PID::Electron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
@@ -345,15 +345,15 @@ struct QaRejectionGeneral {
     selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
 
     auto selectorPion(selectorElectron);
-    selectorPion.setPDG(kPiPlus);
+    selectorPion.setPDG(kPiPlus, track::PID::Pion);
 
     auto selectorKaon(selectorElectron);
-    selectorKaon.setPDG(kKPlus);
+    selectorKaon.setPDG(kKPlus, track::PID::Kaon);
 
     auto selectorProton(selectorElectron);
-    selectorProton.setPDG(kProton);
+    selectorProton.setPDG(kProton, track::PID::Proton);
 
-    TrackSelectorPID selectorMuon(kMuonPlus);
+    TrackSelectorPID selectorMuon(kMuonPlus, track::PID::Muon);
 
     for (const auto& track : tracks) {
 

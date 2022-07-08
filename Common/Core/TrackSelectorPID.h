@@ -30,8 +30,8 @@ class TrackSelectorPID
   TrackSelectorPID() = default;
 
   /// Standard constructor with PDG code initialisation
-  explicit TrackSelectorPID(int pdg)
-    : mPdg(std::abs(pdg))
+  explicit TrackSelectorPID(int pdg, int species)
+    : mPdg(std::abs(pdg)), mSpecies(species)
   {
   }
 
@@ -46,7 +46,11 @@ class TrackSelectorPID
     PIDAccepted
   };
 
-  void setPDG(int pdg) { mPdg = std::abs(pdg); }
+  void setPDG(int pdg, int species)
+  {
+    mPdg = std::abs(pdg);
+    mSpecies = species;
+  }
 
   // TPC
 
@@ -477,8 +481,51 @@ class TrackSelectorPID
     return isSelRICH || isSelTOF;
   }
 
+  /// Set pT range where Bayes PID is applicable.
+  void setRangePtBayes(float ptMin, float ptMax)
+  {
+    mPtBayesMin = ptMin;
+    mPtBayesMax = ptMax;
+  }
+
+  /// Checks if track is OK for Bayesian PID.
+  /// \param track  track
+  /// \return true if track is OK for Bayesian PID
+  template <typename T>
+  bool isValidTrackBayesPID(const T& track)
+  {
+    auto pt = track.pt();
+    return (mPtBayesMin <= pt && pt <= mPtBayesMax);
+  }
+
+  /// Bayesian maximum probability algorithm.
+  template <typename T>
+  bool isSelectedTrackBayesPID(const T& track)
+  {
+    // Get index of the most probable species for a given track.
+    return track.bayesID() == mSpecies;
+  }
+
+  /// Returns status of Bayesian PID selection for a given track.
+  /// \param track  track
+  /// \return bayesian selection status (see TrackSelectorPID::Status)
+  template <typename T>
+  int getStatusTrackBayesPID(const T& track)
+  {
+    if (isValidTrackBayesPID(track)) {
+      if (isSelectedTrackBayesPID(track)) {
+        return Status::PIDAccepted; // accepted
+      } else {
+        return Status::PIDRejected; // rejected
+      }
+    } else {
+      return Status::PIDNotApplicable; // PID not applicable
+    }
+  }
+
  private:
   uint mPdg = kPiPlus; ///< PDG code of the expected particle
+  uint mSpecies = track::PID::Pion; ///< Species of the expected track
 
   // TPC
   float mPtTPCMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
@@ -503,6 +550,10 @@ class TrackSelectorPID
   float mNSigmaRICHMax = 3.;            ///< maximum number of RICH σ
   float mNSigmaRICHMinCondTOF = -1000.; ///< minimum number of RICH σ if combined with TOF
   float mNSigmaRICHMaxCondTOF = 1000.;  ///< maximum number of RICH σ if combined with TOF
+
+  //BAYES
+  float mPtBayesMin = 0;    ///< minimum pT for Bayesian PID [GeV/c]
+  float mPtBayesMax = 100.; ///< maximum pT for Bayesian PID [GeV/c]
 };
 
 #endif // O2_ANALYSIS_TRACKSELECTORPID_H_

@@ -133,7 +133,7 @@ struct HfBplusTod0piCandidateSelector {
 
   void process(aod::HfCandBPlus const& hfCandBs, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate> const&, aod::BigTracksPID const& tracks)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
+    TrackSelectorPID selectorPion(kPiPlus, o2::track::PID::Pion);
     selectorPion.setRangePtTPC(pidTPCMinpT, pidTPCMaxpT);
     selectorPion.setRangeNSigmaTPC(-nSigmaTPC, nSigmaTPC);
     selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTPCCombined, nSigmaTPCCombined);

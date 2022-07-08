@@ -142,7 +142,7 @@ struct HfJpsiCandidateSelector {
 
   void processAlice2(aod::HfCandProng2 const& candidates, aod::BigTracksPIDExtended const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
+    TrackSelectorPID selectorElectron(kElectron, track::PID::Electron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
@@ -221,7 +221,7 @@ struct HfJpsiCandidateSelector {
 
   void processAlice3(aod::HfCandProng2 const& candidates, ExtendedTracksPID const&, aod::RICHs const&, aod::MIDs const&)
   {
-    TrackSelectorPID selectorElectron(kElectron);
+    TrackSelectorPID selectorElectron(kElectron, track::PID::Electron);
     selectorElectron.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorElectron.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorElectron.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
@@ -231,7 +231,7 @@ struct HfJpsiCandidateSelector {
     selectorElectron.setRangeNSigmaRICH(-d_nSigmaRICH, d_nSigmaRICH);
     selectorElectron.setRangeNSigmaRICHCondTOF(-d_nSigmaRICHCombinedTOF, d_nSigmaRICHCombinedTOF);
 
-    TrackSelectorPID selectorMuon(kMuonMinus);
+    TrackSelectorPID selectorMuon(kMuonMinus, track::PID::Muon);
 
     // looping over 2-prong candidates
     for (auto& candidate : candidates) {
