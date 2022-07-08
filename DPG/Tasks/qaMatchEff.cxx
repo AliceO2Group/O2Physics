@@ -453,8 +453,8 @@ struct qaMatchEff {
       //
       //
     } //  end loop on tracks
-      //
-      //
+    //
+    //
     if (doDebug)
       LOGF(info, "Tracks: %d, w/out MC: %d ", count, countNoMC);
   } // end processMC
@@ -515,8 +515,8 @@ struct qaMatchEff {
       //
       //
     } //  end loop on tracks
-      //
-      //
+    //
+    //
     if (doDebug)
       LOGF(info, "Tracks: %d ", countData);
     //
