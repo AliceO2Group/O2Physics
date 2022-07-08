@@ -94,4 +94,7 @@ o2physics_add_dpl_workflow(track-checks
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
-
+o2physics_add_dpl_workflow(rsnanalysis
+                    SOURCES rsnanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
