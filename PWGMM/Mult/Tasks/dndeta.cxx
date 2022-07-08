@@ -86,6 +86,8 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
 
       registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"Tracks/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"Tracks/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{7, 0.5, 7.5}}}});
       registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
 
@@ -116,6 +118,8 @@ struct MultiplicityCounter {
     if (doprocessTrackEfficiencyIndexed) {
       registry.add({"Tracks/Control/PtGenI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
     }
   }
 
@@ -225,9 +229,30 @@ struct MultiplicityCounter {
         }
         registry.fill(HIST("Tracks/Control/PtGenI"), particle.pt());
         if (particle.has_tracks()) {
-          for (auto& track : particle.tracks_as<soa::Filtered<LabeledTracksEx>>()) {
+          auto counted = false;
+          auto countedNoEtaCut = false;
+          auto counter = 0;
+          auto relatedTracks = particle.tracks_as<soa::Filtered<LabeledTracksEx>>();
+          for (auto& track : relatedTracks) {
+            ++counter;
+            if (!countedNoEtaCut) {
+              registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
+              countedNoEtaCut = true;
+            }
             if (std::abs(track.eta()) < estimatorEta) {
-              registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
+              if (!counted) {
+                registry.fill(HIST("Tracks/Control/PtEfficiencyI"), particle.pt());
+                counted = true;
+              }
+            }
+            if (counter > 1) {
+              registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
+            }
+          }
+          if (relatedTracks.size() > 1) {
+            registry.fill(HIST("Tracks/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
+            for (auto& track : relatedTracks) {
+              registry.fill(HIST("Tracks/PhiEtaDuplicates"), track.phi(), track.eta());
             }
           }
         }
