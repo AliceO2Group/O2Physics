@@ -52,23 +52,12 @@
 #include "Framework/AnalysisTask.h"
 
 #include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/UDHelperFunctions.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-template <typename TCs>
-int8_t netCharge(TCs tracks)
-{
-  int8_t nch = 0;
-  for (auto track : tracks) {
-    if (track.isPVContributor()) {
-      nch += track.sign();
-    }
-  }
-  return nch;
-}
 
 struct DGCandProducer {
 
@@ -120,7 +109,7 @@ struct DGCandProducer {
       // update DGCandidates tables
       outputCollisions(bc.runNumber(), bc.timestamp(),
                        collision.posX(), collision.posY(), collision.posZ(),
-                       collision.numContrib(), netCharge(tracks));
+                       collision.numContrib(), netCharge(tracks), rPVtrwTOF(tracks, collision.numContrib()));
 
       // update DGTracks tables
       for (auto& track : tracks) {
