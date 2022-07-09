@@ -93,7 +93,10 @@ o2physics_add_dpl_workflow(track-checks
                     SOURCES trackchecks.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
-
+o2physics_add_dpl_workflow(rsnanalysis
+                    SOURCES rsnanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertritonanalysis
                    SOURCES hypertritonanalysis.cxx
@@ -104,4 +107,3 @@ o2physics_add_dpl_workflow(hypertritonanalysis-mc
                    SOURCES hypertritonanalysisMC.cxx
                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                    COMPONENT_NAME Analysis)
-

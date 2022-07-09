@@ -231,8 +231,8 @@ struct HFCandidateCreatorChicMC {
       if (indexRec > -1) {
         hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.index0()));
 
-        int indexMother = RecoDecay::getMother(particlesMC.rawIteratorAt(indexRec), pdg::Code::kChic1);
-        int indexMotherGamma = RecoDecay::getMother(particlesMC.rawIteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChic1);
+        int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(indexRec), pdg::Code::kChic1);
+        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChic1);
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.index1().e());
@@ -249,7 +249,7 @@ struct HFCandidateCreatorChicMC {
       }
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? NonPrompt : Prompt);
+        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? NonPrompt : Prompt);
       }
       rowMCMatchRec(flag, origin, channel);
     }

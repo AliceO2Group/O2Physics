@@ -64,6 +64,8 @@ struct DiffMCQA {
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
+  Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -187,39 +189,47 @@ struct DiffMCQA {
     auto t1 = pc.inputs().get<TableConsumer>("BCs")->asArrowTable();
     auto t2 = pc.inputs().get<TableConsumer>("BcSels")->asArrowTable();
     auto t3 = pc.inputs().get<TableConsumer>("Run3MatchedToBCSparse")->asArrowTable();
-    auto t4 = pc.inputs().get<TableConsumer>("AmbiguousTracks")->asArrowTable();
     auto bcs = BCs({t1, t2, t3});
-    auto ambtracks = ATs({t4});
-    ambtracks.bindExternalIndices(&bcs);
 
-    // make sorted list of BC ranges which are associated with an ambiguous track.
-    // This is used to efficiently check whether a given BC is contained in one of these ranges
-    abcrs.reset();
-    LOGF(info, "<DiffMCQA> size of ambiguous tracks table %i", ambtracks.size());
-    for (auto ambtrack : ambtracks) {
-      auto bcfirst = ambtrack.bc().rawIteratorAt(0);
-      auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
-      abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+    if (withAmbFwdTrackAnalysis) {
+      auto t4 = pc.inputs().get<TableConsumer>("AmbiguousTracks")->asArrowTable();
+      auto ambtracks = ATs({t4});
+      ambtracks.bindExternalIndices(&bcs);
+
+      // make sorted list of BC ranges which are associated with an ambiguous track.
+      // This is used to efficiently check whether a given BC is contained in one of these ranges
+      abcrs.reset();
+      LOGF(info, "<DiffMCQA> size of ambiguous tracks table %i", ambtracks.size());
+      for (auto ambtrack : ambtracks) {
+        auto bcfirst = ambtrack.bc().rawIteratorAt(0);
+        auto bclast = ambtrack.bc().rawIteratorAt(ambtrack.bc().size() - 1);
+        abcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      }
+      abcrs.merge();
     }
-    abcrs.merge();
 
-    // get ambiguous FwdTracks table
-    auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
-    auto ambfwdtracks = AFTs({t5});
-    ambfwdtracks.bindExternalIndices(&bcs);
+    if (withAmbFwdTrackAnalysis) {
+      // get ambiguous FwdTracks table
+      auto t5 = pc.inputs().get<TableConsumer>("AmbiguousFwdTracks")->asArrowTable();
+      auto ambfwdtracks = AFTs({t5});
+      ambfwdtracks.bindExternalIndices(&bcs);
 
-    // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
-    afbcrs.reset();
-    LOGF(info, "<DiffMCQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
-    for (auto ambfwdtrack : ambfwdtracks) {
-      auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
-      auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
-      afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      // make sorted list of BC ranges which are associated with an ambiguous FwdTrack.
+      afbcrs.reset();
+      LOGF(info, "<DiffMCQA> size of ambiguous fwd tracks table %i", ambfwdtracks.size());
+      for (auto ambfwdtrack : ambfwdtracks) {
+        auto bcfirst = ambfwdtrack.bc().rawIteratorAt(0);
+        auto bclast = ambfwdtrack.bc().rawIteratorAt(ambfwdtrack.bc().size() - 1);
+        afbcrs.add(bcfirst.globalIndex(), bclast.globalIndex());
+      }
+      afbcrs.merge();
     }
-    afbcrs.merge();
-
     LOGF(info, "<DiffMCQA> Size of abcrs %i and afbcrs %i", abcrs.size(), afbcrs.size());
   }
+
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::V0s> v0PerCollision = aod::v0::collisionId;
+  Preslice<aod::Cascades> cascadePerCollision = aod::cascade::collisionId;
 
   void process(CC const& collision, BCs const& bct0s,
                TCs& tracks, FWs& fwdtracks, ATs& ambtracks, AFTs& ambfwdtarcks,
@@ -236,7 +246,7 @@ struct DiffMCQA {
     bool isGraniittiDiff = false;
     if (collision.has_mcCollision()) {
       auto MCCol = collision.mcCollision();
-      auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
+      auto MCPartSlice = McParts.sliceBy(perMcCollision, MCCol.globalIndex());
       isPythiaDiff = isPythiaCDE(MCPartSlice);
       isGraniittiDiff = isGraniittiCDE(MCPartSlice);
     }
@@ -291,13 +301,13 @@ struct DiffMCQA {
       // update eta vs pt and dEdx histograms histogram
       if (isPythiaDiff) {
         registry.get<TH2>(HIST("etaptDiff1"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPCDiff1"))->Fill(track.pt(), track.tpcSignal());
+        registry.get<TH2>(HIST("dEdxTPCDiff1"))->Fill(track.p(), track.tpcSignal());
       } else if (isGraniittiDiff) {
         registry.get<TH2>(HIST("etaptDiff2"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPCDiff2"))->Fill(track.pt(), track.tpcSignal());
+        registry.get<TH2>(HIST("dEdxTPCDiff2"))->Fill(track.p(), track.tpcSignal());
       } else {
         registry.get<TH2>(HIST("etapt"))->Fill(track.eta(), track.pt());
-        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.pt(), track.tpcSignal());
+        registry.get<TH2>(HIST("dEdxTPC"))->Fill(track.p(), track.tpcSignal());
       }
       if (track.tpcSignal() > maxdEdxTPC) {
         maxdEdxTPC = track.tpcSignal();
@@ -307,11 +317,11 @@ struct DiffMCQA {
       // TOF hit?
       if (track.hasTOF()) {
         if (isPythiaDiff) {
-          registry.get<TH2>(HIST("dEdxTOFDiff1"))->Fill(track.pt(), track.tofSignal());
+          registry.get<TH2>(HIST("dEdxTOFDiff1"))->Fill(track.p(), track.tofSignal());
         } else if (isGraniittiDiff) {
-          registry.get<TH2>(HIST("dEdxTOFDiff2"))->Fill(track.pt(), track.tofSignal());
+          registry.get<TH2>(HIST("dEdxTOFDiff2"))->Fill(track.p(), track.tofSignal());
         } else {
-          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.pt(), track.tofSignal());
+          registry.get<TH2>(HIST("dEdxTOF"))->Fill(track.p(), track.tofSignal());
         }
         if (track.tofSignal() > maxdEdxTOF) {
           maxdEdxTOF = track.tofSignal();
@@ -398,7 +408,7 @@ struct DiffMCQA {
 
     // no V0s
     auto colId = collision.globalIndex();
-    const auto& V0Collision = v0s.sliceBy(aod::v0::collisionId, colId);
+    const auto& V0Collision = v0s.sliceBy(v0PerCollision, colId);
     isDGcandidate &= (V0Collision.size() == 0);
     if (isPythiaDiff) {
       registry.get<TH1>(HIST("StatDiff1"))->Fill(4., isDGcandidate * 1.);
@@ -409,7 +419,7 @@ struct DiffMCQA {
     }
 
     // no Cascades
-    const auto& CascadeCollision = cascades.sliceBy(aod::cascade::collisionId, colId);
+    const auto& CascadeCollision = cascades.sliceBy(cascadePerCollision, colId);
     isDGcandidate &= (CascadeCollision.size() == 0);
     if (isPythiaDiff) {
       registry.get<TH1>(HIST("StatDiff1"))->Fill(5., isDGcandidate * 1.);
@@ -679,24 +689,24 @@ struct DiffMCQA {
         if (track.isPVContributor()) {
           if (isPythiaDiff) {
             registry.get<TH2>(HIST("etaptDGDiff1"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDGDiff1"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("dEdxTPCDGDiff1"))->Fill(track.p(), track.tpcSignal());
             registry.get<TH2>(HIST("IVMptTrkDGDiff1"))->Fill(ivm.M(), track.pt());
           } else if (isGraniittiDiff) {
             registry.get<TH2>(HIST("etaptDGDiff2"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDGDiff2"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("dEdxTPCDGDiff2"))->Fill(track.p(), track.tpcSignal());
             registry.get<TH2>(HIST("IVMptTrkDGDiff2"))->Fill(ivm.M(), track.pt());
           } else {
             registry.get<TH2>(HIST("etaptDG"))->Fill(track.eta(), track.pt());
-            registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.pt(), track.tpcSignal());
+            registry.get<TH2>(HIST("dEdxTPCDG"))->Fill(track.p(), track.tpcSignal());
             registry.get<TH2>(HIST("IVMptTrkDG"))->Fill(ivm.M(), track.pt());
           }
           if (track.hasTOF()) {
             if (isPythiaDiff) {
-              registry.get<TH2>(HIST("dEdxTOFDGDiff1"))->Fill(track.pt(), track.tofSignal());
+              registry.get<TH2>(HIST("dEdxTOFDGDiff1"))->Fill(track.p(), track.tofSignal());
             } else if (isGraniittiDiff) {
-              registry.get<TH2>(HIST("dEdxTOFDGDiff2"))->Fill(track.pt(), track.tofSignal());
+              registry.get<TH2>(HIST("dEdxTOFDGDiff2"))->Fill(track.p(), track.tofSignal());
             } else {
-              registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.pt(), track.tofSignal());
+              registry.get<TH2>(HIST("dEdxTOFDG"))->Fill(track.p(), track.tofSignal());
             }
           }
         }

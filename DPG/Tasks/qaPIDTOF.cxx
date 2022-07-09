@@ -16,6 +16,7 @@
 ///
 
 #include "Framework/AnalysisTask.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "qaPIDTOF.h"
 #include "Framework/runDataProcessing.h"
 

@@ -22,7 +22,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 

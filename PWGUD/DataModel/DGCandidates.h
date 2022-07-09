@@ -16,7 +16,7 @@
 #ifndef O2_ANALYSIS_DGCANDIDATES_H
 #define O2_ANALYSIS_DGCANDIDATES_H
 
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 
 namespace o2::aod
 {

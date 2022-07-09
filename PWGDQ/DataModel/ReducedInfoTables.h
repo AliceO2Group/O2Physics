@@ -19,7 +19,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "MathUtils/Utils.h"
 #include <cmath>
 

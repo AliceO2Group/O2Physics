@@ -36,7 +36,7 @@
 #include <array>
 #include <map>
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
