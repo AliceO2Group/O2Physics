@@ -42,11 +42,11 @@
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "PID/PIDResponse.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 
 #include <TFile.h>

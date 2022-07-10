@@ -36,18 +36,17 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/PID/PIDResponse.h"
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
 //------------------copy from lamdakzerobuilder---------------------
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "PID/PIDResponse.h"
 //------------------copy from lamdakzerobuilder---------------------
 #include "DataFormatsTPC/BetheBlochAleph.h"
 
