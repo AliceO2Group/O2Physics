@@ -937,7 +937,7 @@ class RecoDecay
   template <typename T>
   static int getCharmHadronOrigin(const T& particlesMC,
                                   const typename T::iterator& particle,
-                                  const bool& searchUpToQuark = false)
+                                  const bool searchUpToQuark = false)
   {
     int stage = 0; // mother tree level (just for debugging)
 
