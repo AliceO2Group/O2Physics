@@ -83,10 +83,7 @@ struct TaskHfCorrelations {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  // ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0.0, 2.750, 5.250, 7.750, 12.750, 17.750, 22.750, 27.750, 32.750, 37.750, 42.750, //
-                                                         47.750, 52.750, 57.750, 62.750, 67.750, 72.750, 77.750, 82.750, 87.750, 92.750, 97.750, 250.1},
-                                    "multiplicity axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
@@ -96,11 +93,7 @@ struct TaskHfCorrelations {
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
-  // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>; //  example for usage of dynamic columns
-  using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-
   //  Charged track filters
-
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) &&
                        (aod::track::pt > cfgCutPt) &&
                        requireGlobalTrackWoPtEtaInFilter();
@@ -117,17 +110,18 @@ struct TaskHfCorrelations {
   void init(o2::framework::InitContext&)
   {
     //  EVENT HISTOGRAMS
-    registry.add("eventCounter", "eventCounter", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+    registry.add("eventCounter", "eventCounter", {HistType::kTH1F, {{3, 0.5, 3.5}}});
     //  set axes of the event counter histogram
-    const int nBins = 2;
+    const int nBins = 3;
     std::string labels[nBins];
     labels[0] = "all";
-    labels[1] = "after selection";
+    labels[1] = "after trigger selection (Run 2)";
+    labels[2] = "after Physics selection";
     for (int iBin = 0; iBin < nBins; iBin++) {
       registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
     registry.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
-    registry.add("hVtxZ", "hVtxZ", {HistType::kTH1F, {{100, -10, 10}}});
+    registry.add("hVtxZ", "hVtxZ", {HistType::kTH1F, {{400, -50, 50}}});
     registry.add("hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     //  histograms for event mixing
@@ -198,22 +192,28 @@ struct TaskHfCorrelations {
   //    templates
   //  ---------------
   template <typename TCollision>
-  bool isCollisionSelected(TCollision collision)
+  bool isCollisionSelected(TCollision collision, bool fillHistograms = false)
   {
     if (processRun2 == true) {
       //  Run 2: trigger selection for data case
+      if (fillHistograms) registry.fill(HIST("eventCounter"), 1);
       if (!collision.alias()[kINT7]) {
         return false;
       }
       //  Run 2: further offline selection
+      if (fillHistograms) registry.fill(HIST("eventCounter"), 2);
       if (!collision.sel7()) {
         return false;
       }
-    } else {
+      if (fillHistograms) registry.fill(HIST("eventCounter"), 3);
+    }
+    else {
       //  Run 3: selection
+      if (fillHistograms) registry.fill(HIST("eventCounter"), 1);
       if (!collision.sel8()) {
         return false;
       }
+      if (fillHistograms) registry.fill(HIST("eventCounter"), 3);
     }
     return true;
   }
@@ -307,6 +307,7 @@ struct TaskHfCorrelations {
     auto associatedWeight = 1;
 
     for (auto& track1 : tracks1) {
+
       float eta1 = track1.eta();
       float pt1 = track1.pt();
       float phi1 = track1.phi();
@@ -322,14 +323,16 @@ struct TaskHfCorrelations {
         fillingHFcontainer = true;
         invmass = InvMassD0(track1);
         //  TODO: Check how to put this into a Filter
-        if (isAcceptedCandidate(track1) == false) {
+        if (!(isAcceptedCandidate(track1))) {
           continue;
         }
       }
 
+      //  fill single-track distributions
       target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
 
       for (auto& track2 : tracks2) {
+
         if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) { // case of h-h correlations where the two types of tracks are the same
           if (track1 == track2) {
             continue;
@@ -349,7 +352,8 @@ struct TaskHfCorrelations {
         //  set range of delta phi in (-pi/2 , 3/2*pi)
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * M_PI);
 
-        if (fillingHFcontainer == false) {
+        //  fill pair correlations (HF case needs additional axis for invariant mass)
+        if (!(fillingHFcontainer)) {
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
@@ -370,19 +374,12 @@ struct TaskHfCorrelations {
                        aod::MFTTracks const& mfttracks,
                        hfCandidates const& candidates)
   {
-    // printf("Same: Collision global index: %ld \n", collision.globalIndex());
-    // printf("Same: Collision vz: %f \n", collision.posZ());
-    // printf("Same: Collision TPC mult: %d \n", collision.multTPC());
-    // printf("Same: Tracks size: %ld \n", tracks.size());
 
-    registry.fill(HIST("eventCounter"), 1);
-    if (isCollisionSelected(collision) == false) {
+    if (!(isCollisionSelected(collision, true))) {
       return;
     }
-    registry.fill(HIST("eventCounter"), 2);
 
     const auto multiplicity = tracks.size();
-    // const auto multiplicity = collision.multTPC(); //  multV0M ?
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
@@ -395,17 +392,17 @@ struct TaskHfCorrelations {
     sameTPCMFTCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    if (processTPCTPChh == true) {
+    if (processTPCTPChh) {
       fillQA(multiplicity, tracks);
       fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
     }
 
-    if (processTPCMFThh == true) {
+    if (processTPCMFThh) {
       fillMFTQA(multiplicity, mfttracks);
       fillCorrelations(sameTPCMFTCh, tracks, mfttracks, multiplicity, collision.posZ());
     }
 
-    if (processHFHadrons == true) {
+    if (processHFHadrons) {
       fillCandidateQA(multiplicity, candidates);
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
@@ -419,17 +416,11 @@ struct TaskHfCorrelations {
                        aodTracks const& tracks,
                        hfCandidates const& candidates)
   {
-    // printf("Same: Collision global index: %ld \n", collision.globalIndex());
-    // printf("Same: Collision vz: %f \n", collision.posZ());
-    // printf("Same: Collision TPC mult: %d \n", collision.multTPC());
-    // printf("Same: Tracks size: %ld \n", tracks.size());
 
-    registry.fill(HIST("eventCounter"), 1);
-    if (isCollisionSelected(collision) == false) {
+    if (!(isCollisionSelected(collision, true))) {
       return;
     }
-    registry.fill(HIST("eventCounter"), 2);
-
+ 
     const auto multiplicity = tracks.size();
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
@@ -442,12 +433,12 @@ struct TaskHfCorrelations {
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    if (processTPCTPChh == true) {
+    if (processTPCTPChh) {
       fillQA(multiplicity, tracks);
       fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
     }
 
-    if (processHFHadrons == true) {
+    if (processHFHadrons) {
       fillCandidateQA(multiplicity, candidates);
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
@@ -458,11 +449,11 @@ struct TaskHfCorrelations {
   //    process mixed event correlations
   // =====================================
   //  TODO: these collisions do not contain trigger selection, because SameKindPair needs table, not iterator -> check if it can be solved
-  //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3
+  //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3 because there is no MFT in Run2
   void processMixed(aodCollisions& collisions,
                     aodTracks& tracks)
   {
-    // Expand z-vertex binning from {14, -7, 7} to {VARIABLE_WIDTH, -7, -6, -5, ..., 5, 6, 7}
+    // Expand z-vertex binning from {14, -7, 7} to {VARIABLE_WIDTH, -7, -6, -5, ..., 5, 6, 7} -> ?
     // TODO: Separate faster bin calculation for constant binning, eliminate the need for expansion
     std::vector<double> axisVertexExpanded;
     binning_helpers::expandConstantBinning(axisVertex, axisVertexExpanded);
@@ -473,7 +464,6 @@ struct TaskHfCorrelations {
       int32_t colIndex = std::get<1>(data);
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, colIndex);                                             // it's cached, so slicing/grouping happens only once
       int bin = binning_helpers::getBin({axisVertexExpanded, axisMultiplicity}, std::make_tuple(posZ, associatedTracks.size()), true); // true is for 'ignore overflows' (true by default)
-      //LOG(info) << "Lambda function, z: " << posZ << " col index: " << colIndex << " track size: " << tracks.size() << " associated size: " << associatedTracks.size() << " bin: " << bin;
       return bin;
     };
 
@@ -483,19 +473,11 @@ struct TaskHfCorrelations {
     SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithLambda, cfgNoMixedEvents, -1, collisions, tracksTuple};
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
-      /*printf("Mixing: Collision 1 global index: %ld \n", collision1.globalIndex());
-      printf("Mixing: Collision 1 vz: %f \n", collision1.posZ());
-      printf("Mixing: Collision 1 TPC mult: %d \n", collision1.multTPC());
-      printf("Mixing: Tracks 1 size: %ld \n", tracks1.size());
-      printf("Mixing: Collision 2 global index: %ld \n", collision2.globalIndex());
-      printf("Mixing: Collision 2 vz: %f \n", collision2.posZ());
-      printf("Mixing: Collision 2 TPC mult: %d \n", collision2.multTPC());
-      printf("Mixing: Tracks 2 size: %ld \n", tracks2.size());
-*/
-      if (isCollisionSelected(collision1) == false) {
+
+      if (!(isCollisionSelected(collision1, false))) {
         continue;
       }
-      if (isCollisionSelected(collision2) == false) {
+      if (!(isCollisionSelected(collision2, false))) {
         continue;
       }
 
@@ -506,7 +488,7 @@ struct TaskHfCorrelations {
       int bin = binningWithLambda.getBin({collision1.posZ(), collision1.globalIndex()});
       registry.fill(HIST("eventcount"), bin);
 
-      if (processTPCTPChh == true) {
+      if (processTPCTPChh) {
         fillMixingQA(multiplicity, tracks1);
         fillCorrelations(mixedTPCTPCCh, tracks1, tracks2, multiplicity, collision1.posZ());
       }
