@@ -62,7 +62,9 @@ jobs:
 
       - name: Create pull request with applied fixes
         uses: alisw/pull-request@v2
-        if: steps.ml.outputs.has_updated_sources == 1 && ${{ github.event.repository.owner.login == 'AliceO2Group' }}
+        if: >-
+          steps.ml.outputs.has_updated_sources == 1 &&
+          github.event.repository.owner.login == 'AliceO2Group'
         with:
           source_branch: 'alibuild:alibot-cleanup-ml-${{ env.PR_NUMBER }}'
           destination_branch: '${{ github.event.pull_request.head.label }}'

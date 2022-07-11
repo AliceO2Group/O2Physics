@@ -15,23 +15,24 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
+// O2 includes
+#include <CCDB/BasicCCDBManager.h>
+#include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "ReconstructionDataFormats/Track.h"
+
+// O2Physics includes
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "TableHelper.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "pidTOFBase.h"
 
 using namespace o2;
-using namespace o2::pid;
-using namespace o2::track;
 using namespace o2::framework;
+using namespace o2::pid;
 using namespace o2::framework::expressions;
+using namespace o2::track;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -120,6 +121,10 @@ struct tofEventTime {
     }
     if (doprocessFT0 == true) {
       LOGF(info, "Enabling process function: processFT0");
+      nEnabled++;
+    }
+    if (doprocessOnlyFT0 == true) {
+      LOGF(info, "Enabling process function: processOnlyFT0");
       nEnabled++;
     }
     if (nEnabled > 1) {
@@ -232,7 +237,7 @@ struct tofEventTime {
   PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", true);
 
   ///
-  /// Process function to prepare the event for each track on Run 3 data without the FT0
+  /// Process function to prepare the event for each track on Run 3 data with the FT0
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   void processFT0(TrksEvTime& tracks,
                   aod::FT0s const&,
@@ -310,6 +315,41 @@ struct tofEventTime {
     }
   }
   PROCESS_SWITCH(tofEventTime, processFT0, "Process with FT0", false);
+
+  ///
+  /// Process function to prepare the event for each track on Run 3 data with only the FT0
+  void processOnlyFT0(TrksEvTime& tracks,
+                      aod::FT0s const&,
+                      EvTimeCollisions const&)
+  {
+    if (!enableTable) {
+      return;
+    }
+
+    tableEvTime.reserve(tracks.size());
+    tableFlags.reserve(tracks.size());
+
+    for (auto const& t : tracks) { // Loop on collisions
+      if (!t.has_collision()) {    // Track was not assigned, cannot compute event time
+        tableFlags(0);
+        tableEvTime(0.f, 999.f, -1);
+        continue;
+      }
+      const auto& collision = t.collision_as<EvTimeCollisions>();
+
+      if (collision.has_foundFT0()) { // T0 measurement is available
+        // const auto& ft0 = collision.foundFT0();
+        if (collision.t0ACValid()) {
+          tableFlags(o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC);
+          tableEvTime(collision.t0AC(), collision.t0resolution(), 1);
+          continue;
+        }
+      }
+      tableFlags(0);
+      tableEvTime(0.f, 999.f, -1);
+    }
+  }
+  PROCESS_SWITCH(tofEventTime, processOnlyFT0, "Process only with FT0", false);
 };
 
 /// Task that checks the TOF collision time

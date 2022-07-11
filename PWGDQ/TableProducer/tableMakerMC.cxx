@@ -213,6 +213,10 @@ struct TableMakerMC {
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
+  Preslice<aod::McParticles_001> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<MyBarrelTracks> perCollisionTracks = aod::track::collisionId;
+  Preslice<MyMuons> perCollisionMuons = aod::fwdtrack::collisionId;
+
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
   void fullSkimming(TEvent const& collisions, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon,
@@ -303,7 +307,7 @@ struct TableMakerMC {
       eventMClabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
       // loop over the MC truth tracks and find those that need to be written
-      auto groupedMcTracks = mcTracks.sliceBy(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
+      auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
       for (auto& mctrack : groupedMcTracks) {
         // check all the requested MC signals and fill a decision bit map
         mcflags = 0;
@@ -349,7 +353,7 @@ struct TableMakerMC {
           trackBarrelCov.reserve(tracksBarrel.size());
         }
 
-        auto groupedTracks = tracksBarrel.sliceBy(aod::track::collisionId, collision.globalIndex());
+        auto groupedTracks = tracksBarrel.sliceBy(perCollisionTracks, collision.globalIndex());
         // loop over tracks
         for (auto& track : groupedTracks) {
           trackFilteringTag = uint64_t(0);
@@ -460,7 +464,7 @@ struct TableMakerMC {
         }
         muonLabels.reserve(tracksMuon.size()); // TODO: enable this once we have fwdtrack labels
 
-        auto groupedMuons = tracksMuon.sliceBy(aod::fwdtrack::collisionId, collision.globalIndex());
+        auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
         // loop over muons
 
         // first we need to get the correct indices

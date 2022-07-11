@@ -139,6 +139,8 @@ struct LfTreeCreatorNuclei {
     }
   }
 
+  Preslice<soa::Filtered<TrackCandidates>> perCollision = aod::track::collisionId;
+
   void processData(soa::Filtered<EventCandidates> const& collisions,
                    soa::Filtered<TrackCandidates> const& tracks, aod::BCs const&)
   {
@@ -146,7 +148,7 @@ struct LfTreeCreatorNuclei {
       if (useEvsel && !collision.sel8()) {
         continue;
       }
-      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       fillForOneEvent<false>(collision, tracksInCollision);
     }
   }
@@ -161,7 +163,7 @@ struct LfTreeCreatorNuclei {
       if (useEvsel && !collision.sel8()) {
         continue;
       }
-      const auto& tracksInCollision = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       fillForOneEvent<true>(collision, tracksInCollision);
     }
   }
