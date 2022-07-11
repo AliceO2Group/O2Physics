@@ -21,6 +21,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "EventFiltering/filterTables.h"
 
@@ -39,7 +40,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
 
@@ -982,10 +982,10 @@ struct HfFilter { // Main struct for HF triggers
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, false);
-        if (origin == OriginType::NonPrompt) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           flag = kNonPrompt;
-        } else if (origin == OriginType::Prompt) {
+        } else if (origin == RecoDecay::OriginType::Prompt) {
           flag = kPrompt;
         }
       } else {
@@ -1041,8 +1041,8 @@ struct HfFilter { // Main struct for HF triggers
 
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, false);
-        if (origin == OriginType::NonPrompt) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           flag = kNonPrompt;
         } else {
           flag = kPrompt;

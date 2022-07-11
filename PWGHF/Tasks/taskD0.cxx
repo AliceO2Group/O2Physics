@@ -17,13 +17,13 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Common/Core/RecoDecay.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_d0_topik;
 
@@ -201,7 +201,7 @@ struct TaskD0 {
           registry.fill(HIST("hPtvsYRecSig_RecoPID"), ptRec, yRec);
         }
 
-        if (candidate.originMCRec() == OriginType::Prompt) {
+        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
           if (candidate.isRecoHFFlag() >= d_selectionHFFlag) {
             registry.fill(HIST("hPtvsYRecSigPrompt_RecoHFFlag"), ptRec, yRec);
@@ -314,7 +314,7 @@ struct TaskD0 {
         auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtvsYGen"), ptGen, yGen);
-        if (particle.originMCGen() == OriginType::Prompt) {
+        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hPtvsYGenPrompt"), ptGen, yGen);
         } else {

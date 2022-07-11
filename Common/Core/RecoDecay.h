@@ -41,20 +41,6 @@ using namespace o2::constants::math;
 /// - Monte Carlo matching of decays at track and particle level
 
 // mapping of charm-hadron origin type
-namespace o2
-{
-namespace aod
-{
-namespace hf_cand
-{
-enum OriginType { None = 0,
-                  Prompt,
-                  NonPrompt };
-} // namespace hf_cand
-} // namespace aod
-} // namespace o2
-
-using namespace o2::aod::hf_cand;
 
 class RecoDecay
 {
@@ -64,6 +50,10 @@ class RecoDecay
 
   /// Default destructor
   ~RecoDecay() = default;
+
+  enum OriginType { None = 0,
+                    Prompt,
+                    NonPrompt };
 
   // Auxiliary functions
 
