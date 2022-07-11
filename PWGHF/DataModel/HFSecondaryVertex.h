@@ -1032,7 +1032,7 @@ DECLARE_SOA_COLUMN(PtD, ptD, float);
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
 DECLARE_SOA_COLUMN(MD, mD, float);
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
-} // namespace hf_correlation_ddbar
+} // namespace hf_correlation_dplushadron
 DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPHDRONPAIR",
                   aod::hf_correlation_dplushadron::DeltaPhi,
                   aod::hf_correlation_dplushadron::DeltaEta,
@@ -1040,8 +1040,8 @@ DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPHDRONPAIR",
                   aod::hf_correlation_dplushadron::PtHadron);
 DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPHDRONRECINFO",
                   aod::hf_correlation_dplushadron::MD,
-                  aod::hf_correlation_dplushadron::SignalStatus);  
-                  
+                  aod::hf_correlation_dplushadron::SignalStatus);
+
 // specific Xicc candidate properties
 namespace hf_cand_xicc
 {
