@@ -157,7 +157,7 @@ struct ValidationGenLevel {
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           int origin = -1;
           if (listDaughters.size() == arrayPDGsize) {
-            origin = RecoDecay::checkCharmHadronOrigin(particlesMC, particle, false);
+            origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
             if (origin == OriginType::Prompt) {
               counterPrompt[iD]++;
             } else if (origin == OriginType::NonPrompt) {

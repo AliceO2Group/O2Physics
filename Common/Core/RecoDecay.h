@@ -40,6 +40,22 @@ using namespace o2::constants::math;
 /// - calculation of topological properties of secondary vertices
 /// - Monte Carlo matching of decays at track and particle level
 
+// mapping of charm-hadron origin type
+namespace o2
+{
+namespace aod
+{
+namespace hf_cand
+{
+enum OriginType { None = 0,
+                  Prompt,
+                  NonPrompt };
+} // namespace hf_cand
+} // namespace aod
+} // namespace o2
+
+using namespace o2::aod::hf_cand;
+
 class RecoDecay
 {
  public:
@@ -917,11 +933,11 @@ class RecoDecay
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on b-hadron
-  /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in hf_cand::OriginType (see PWGHF/DataModel/HFSecondaryVertex.h)
+  /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
   template <typename T>
-  static int checkCharmHadronOrigin(const T& particlesMC,
-                                    const typename T::iterator& particle,
-                                    const bool& searchUpToQuark = false)
+  static int getCharmHadronOrigin(const T& particlesMC,
+                                  const typename T::iterator& particle,
+                                  const bool& searchUpToQuark = false)
   {
     int stage = 0; // mother tree level (just for debugging)
 
@@ -948,19 +964,19 @@ class RecoDecay
             //   printf(" ");
             // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
 
-            if (!searchUpToQuark) {
+            if (searchUpToQuark) {
+              if (PDGParticleIMother == 5) { // b quark
+                return OriginType::NonPrompt;
+              }
+              if (PDGParticleIMother == 4) { // c quark
+                return OriginType::Prompt;
+              }
+            } else {
               if (
                 (PDGParticleIMother / 100 == 5 || // b mesons
                  PDGParticleIMother / 1000 == 5)  // b baryons
               ) {
-                return 2;
-              }
-            } else {
-              if (PDGParticleIMother == 5) { // b quark
-                return 2;
-              }
-              if (PDGParticleIMother == 4) { // c quark
-                return 1;
+                return OriginType::NonPrompt;
               }
             }
             // add mother index in the vector for the current stage
@@ -973,9 +989,9 @@ class RecoDecay
       stage--;
     }
     if (!searchUpToQuark) {
-      return 1;
+      return OriginType::Prompt;
     }
-    return 0;
+    return OriginType::None;
   }
 
  private:

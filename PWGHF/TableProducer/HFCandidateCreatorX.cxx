@@ -305,7 +305,7 @@ struct HFCandidateCreatorXMC {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::checkCharmHadronOrigin(particlesMC, particle, false);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchRec(flag, origin, channel);
@@ -338,7 +338,7 @@ struct HFCandidateCreatorXMC {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::checkCharmHadronOrigin(particlesMC, particle, false);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchGen(flag, origin, channel);
