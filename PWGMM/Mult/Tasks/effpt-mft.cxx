@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-AxisSpec PtAxis = {1001, -0.005, 10.005};
+//AxisSpec PtAxis = {1001, -0.005, 10.005};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -38,6 +38,7 @@ struct EffPtMFT {
   Service<TDatabasePDG> pdg;
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  ConfigurableAxis PtAxis{"PtAxis", {1001, -0.0005, 1.0005}, "pt axis for histograms"};
 
   HistogramRegistry registry{
     "registry",
