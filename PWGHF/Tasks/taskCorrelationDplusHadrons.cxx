@@ -58,9 +58,9 @@ const TString stringSideband = "sidebands;";
 const TString stringMCParticles = "MC gen - D,Hadron particles;";
 const TString stringMCReco = "MC reco - D,Hadron candidates ";
 
-//definition of vectors for standard ptbin and invariant mass configurables
-  //  int arr[] = { 10, 20, 30 };
-  //  vector<int> vect(arr, arr + n);  for (int x : vect) cout << x << " "; 10,20, 30
+// definition of vectors for standard ptbin and invariant mass configurables
+//   int arr[] = { 10, 20, 30 };
+//   vector<int> vect(arr, arr + n);  for (int x : vect) cout << x << " "; 10,20, 30
 const int npTBinsCorrelations = 8;
 const double pTBinsCorrelations[npTBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
 auto pTBinsCorrelations_v = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
@@ -68,8 +68,8 @@ const double signalRegionInnerDefault[npTBinsCorrelations] = {1.8490, 1.8490, 1.
 const double signalRegionOuterDefault[npTBinsCorrelations] = {1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890};
 const double sidebandLeftInnerDefault[npTBinsCorrelations] = {1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690};
 const double sidebandLeftOuterDefault[npTBinsCorrelations] = {1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250};
-const double sidebandRightInnerDefault[npTBinsCorrelations] = {1.9130,1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130};
-const double sidebandRightOuterDefault[npTBinsCorrelations] = {1.9690,1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690};
+const double sidebandRightInnerDefault[npTBinsCorrelations] = {1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130};
+const double sidebandRightOuterDefault[npTBinsCorrelations] = {1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690};
 auto signalRegionInner_v = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
 auto signalRegionOuter_v = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
 auto sidebandLeftInner_v = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
@@ -87,34 +87,34 @@ struct HfTaskCorrelationDplusHadrons {
 
   HistogramRegistry registry{
     "registry",
-    //NOTE: use hMassDplus (from correlator task) for normalisation, and hMass2DCorrelationPairs for 2D-sideband-subtraction purposes
-    {{"hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
-     {"hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, //note: axes 3 and 4 (the pT) are updated in the init()
-     {"hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
-     {"hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, //note: axes 3 and 4 (the pT) are updated in the init()
-     {"hDeltaEtaPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
-     {"hDeltaEtaPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hCorrel2DPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, 
-     {"hDeltaPhiPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
-     {"hCorrel2DPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, 
-     {"hDeltaEtaPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntMCGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
-     {"hCorrel2DPtIntMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD  + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, //note: axes 3 and 4 (the pT) are updated in the init()
-    }
-  };
-  //pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_topikpi (i.e. the mass pT bins), but can be redefined via json files
+    // NOTE: use hMassDplus (from correlator task) for normalisation, and hMass2DCorrelationPairs for 2D-sideband-subtraction purposes
+    {
+      {"hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+      {"hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
+      {"hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
+      {"hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+      {"hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+      {"hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
+      {"hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
+      {"hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+      {"hDeltaEtaPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+      {"hDeltaPhiPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
+      {"hDeltaEtaPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+      {"hCorrel2DPtIntSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
+      {"hCorrel2DVsPtSignalRegionMCRec", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}},
+      {"hDeltaPhiPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
+      {"hCorrel2DPtIntSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
+      {"hCorrel2DVsPtSidebandsMCRec", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}},
+      {"hDeltaEtaPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
+      {"hDeltaPhiPtIntMCGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}}}},
+      {"hCorrel2DPtIntMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {200, -10., 10.}}}},
+      {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PI / 2., 3. * o2::constants::math::PI / 2.}, {120, -6., 6.}, {10, 0., 10.}, {1000, 0., 100.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
+    }};
+  // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_topikpi (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsCorrelations{"ptBinsForCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
-  //pT bins for effiencies: same as above
+  // pT bins for effiencies: same as above
   Configurable<std::vector<double>> binsEfficiency{"ptBinsForEfficiency", std::vector<double>{o2::analysis::hf_cuts_dplus_topikpi::pTBins_v}, "pT bin limits for efficiency"};
-  //signal and sideband region edges, to be defined via json file (initialised to empty)
+  // signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
   Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInner_v}, "Inner values of left sideband vs pT"};
@@ -131,16 +131,16 @@ struct HfTaskCorrelationDplusHadrons {
     int nBinspTaxis = binsCorrelations->size() - 1;
     const double* valuespTaxis = binsCorrelations->data();
 
-    for (int i = 1; i < 2; i++) { 
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->GetAxis(i+1)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(i+1)->Set(nBinspTaxis, valuespTaxis);
+    for (int i = 1; i < 2; i++) {
+      registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->GetAxis(i + 1)->Set(nBinspTaxis, valuespTaxis);
+      registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(i + 1)->Set(nBinspTaxis, valuespTaxis);
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->Sumw2();
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRec"))->GetAxis(i+1)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRec"))->GetAxis(i+1)->Set(nBinspTaxis, valuespTaxis);
+      registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRec"))->GetAxis(i + 1)->Set(nBinspTaxis, valuespTaxis);
+      registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRec"))->GetAxis(i + 1)->Set(nBinspTaxis, valuespTaxis);
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMCRec"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRec"))->Sumw2();
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->GetAxis(i+1)->Set(nBinspTaxis, valuespTaxis);
+      registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->GetAxis(i + 1)->Set(nBinspTaxis, valuespTaxis);
       registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->Sumw2();
     }
   }
@@ -148,49 +148,49 @@ struct HfTaskCorrelationDplusHadrons {
   void processData(aod::DplusHadronPairFull const& pairEntries)
   {
     for (auto& pairEntry : pairEntries) {
-      //define variables for widely used quantities
+      // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
       double ptD = pairEntry.ptD();
-      double ptHadron= pairEntry.ptHadron();
+      double ptHadron = pairEntry.ptHadron();
       double massD = pairEntry.mD();
       int pTBinD = o2::analysis::findBin(binsCorrelations, ptD);
       double efficiencyWeight = 1.;
-     // if (flagApplyEfficiency) {
+      // if (flagApplyEfficiency) {
       //  efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD)) * efficiencyHadron->at(o2::analysis::findBin(binsEfficiency, ptHadron)));
-     // }
+      // }
 
-      //reject entries outside pT ranges of interest
-      if (pTBinD == -1) { //at least one particle outside accepted pT range
+      // reject entries outside pT ranges of interest
+      if (pTBinD == -1) { // at least one particle outside accepted pT range
         continue;
       }
 
-      //check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
+      // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if (massD > signalRegionInner->at(pTBinD) && massD < signalRegionOuter->at(pTBinD)) {
-        //in signal region
+        // in signal region
         registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
       }
 
-      if ((massD > sidebandLeftInner->at(pTBinD) && massD < sidebandLeftOuter->at(pTBinD))  ||
+      if ((massD > sidebandLeftInner->at(pTBinD) && massD < sidebandLeftOuter->at(pTBinD)) ||
           (massD > sidebandRightInner->at(pTBinD) && massD < sidebandRightOuter->at(pTBinD))) {
-        //in sideband region
+        // in sideband region
         registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
       }
-    } //end loop
+    } // end loop
   }
   PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processData, "Process data", false);
 
-/// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
+  /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRec(aod::DplusHadronPairFull const& pairEntries)
   {
     for (auto& pairEntry : pairEntries) {
-      //define variables for widely used quantities
+      // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
       double ptD = pairEntry.ptD();
@@ -198,46 +198,46 @@ struct HfTaskCorrelationDplusHadrons {
       double massD = pairEntry.mD();
       int pTBinD = o2::analysis::findBin(binsCorrelations, ptD);
       double efficiencyWeight = 1.;
-     //if (flagApplyEfficiency) {
-      // efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD)) * efficiencyHadron->at(o2::analysis::findBin(binsEfficiency, ptHadron)));
-     // }
+      // if (flagApplyEfficiency) {
+      //  efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD)) * efficiencyHadron->at(o2::analysis::findBin(binsEfficiency, ptHadron)));
+      // }
 
-      //reject entries outside pT ranges of interest
-      if (pTBinD == -1) { //at least one particle outside accepted pT range
+      // reject entries outside pT ranges of interest
+      if (pTBinD == -1) { // at least one particle outside accepted pT range
         continue;
       }
 
-      //check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
+      // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if (massD > signalRegionInner->at(pTBinD) && massD < signalRegionOuter->at(pTBinD)) {
-        //in signal region
+        // in signal region
         registry.fill(HIST("hCorrel2DVsPtSignalRegionMCRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionMCRec"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionMCRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMCRec"), deltaPhi, efficiencyWeight);
       }
- 
-      if (((massD > sidebandLeftInner->at(pTBinD)) && (massD < sidebandLeftOuter->at(pTBinD)))  ||
+
+      if (((massD > sidebandLeftInner->at(pTBinD)) && (massD < sidebandLeftOuter->at(pTBinD))) ||
           ((massD > sidebandRightInner->at(pTBinD) && massD < sidebandRightOuter->at(pTBinD)))) {
-        //in sideband region
+        // in sideband region
         registry.fill(HIST("hCorrel2DVsPtSidebandsMCRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsMCRec"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsMCRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsMCRec"), deltaPhi, efficiencyWeight);
       }
-    } //end loop
+    } // end loop
   }
   PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processMcRec, "Process MC Reco mode", true);
 
-/// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal) - Ok for both USL and LS analyses
+  /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal) - Ok for both USL and LS analyses
   void processMcGen(aod::DplusHadronPair const& pairEntries)
   {
     for (auto& pairEntry : pairEntries) {
-      //define variables for widely used quantities
+      // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
       double deltaEta = pairEntry.deltaEta();
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
-      //reject entries outside pT ranges of interest
+      // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsCorrelations, ptD) == -1) {
         continue;
       }
@@ -246,11 +246,10 @@ struct HfTaskCorrelationDplusHadrons {
       registry.fill(HIST("hCorrel2DPtIntMCGen"), deltaPhi, deltaEta);
       registry.fill(HIST("hDeltaEtaPtIntMCGen"), deltaEta);
       registry.fill(HIST("hDeltaPhiPtIntMCGen"), deltaPhi);
-    } //end loop
+    } // end loop
   }
-   PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processMcGen, "Process MC Gen mode", false);
+  PROCESS_SWITCH(HfTaskCorrelationDplusHadrons, processMcGen, "Process MC Gen mode", false);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
