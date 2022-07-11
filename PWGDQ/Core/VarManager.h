@@ -1326,7 +1326,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton Vn could be accessible after dividing this product with the Res factor
-  if (eventHasQvector && (values[kQ2X0A] * values[kQ2Y0A] != 0)) {
+  if (eventHasQvector && (values[kQ2X0A] * values[kQ2Y0A] != 0.0)) {
     values[kU2Q2] = values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi());
     values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
     values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - Psi2A));
