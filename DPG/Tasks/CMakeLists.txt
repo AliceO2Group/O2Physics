@@ -67,6 +67,10 @@ o2physics_add_dpl_workflow(pid-tpc-qa-mc
         SOURCES qaPIDTPCMC.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
+
+o2physics_add_executable(pid-tpc-qa-report
+        SOURCES qaPIDTPCReport.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::Postscript)
 ##FDD
   o2physics_add_dpl_workflow(fdd-qa
           SOURCES qaFDD.cxx
