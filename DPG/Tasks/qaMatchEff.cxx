@@ -462,7 +462,7 @@ struct qaMatchEff {
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
   //
   //
-  void processData(soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& jTracks)
+  void processData(soa::Join<aod::Tracks, aod::TracksExtra> const& jTracks)
   {
     //
     //
