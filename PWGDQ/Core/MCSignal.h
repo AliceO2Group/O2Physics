@@ -171,7 +171,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
       if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
         const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
         for (auto& d : daughtersSlice) {
-          if (abs(d.pdgCode()) == fProngs[i].fPDGcodes[j + 1]) {
+          if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
             currentMCParticle = d;
             break;
           }
@@ -244,6 +244,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         }*/
       } else {
         // move one generation further in history
+        // pong history will be moved to the branch of the first daughter that matches the PDG requirement
         // make sure that a daughter exists in the stack before moving one generation younger
         if (!currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
           return false;
@@ -255,7 +256,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
         if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
           const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
           for (auto& d : daughtersSlice) {
-            if (abs(d.pdgCode()) == fProngs[i].fPDGcodes[j + 1]) {
+            if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
               currentMCParticle = d;
               break;
             }
