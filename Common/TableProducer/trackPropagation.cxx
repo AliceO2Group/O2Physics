@@ -112,7 +112,7 @@ struct TrackPropagation {
       if (!grpo) {
         grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
         if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
+          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << bc.timestamp();
         }
         LOGF(info, "Setting magnetic field to current %d A for run %d from its GRPMagField CCDB object", grpmag->getL3Current(), bc.runNumber());
         o2::base::Propagator::initFieldFromGRP(grpmag);
