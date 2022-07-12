@@ -88,8 +88,8 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEtaGen", " ; p_{T} (GeV/c) ; #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}});
 
       registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Tracks/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Tracks/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"Tracks/Control/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"Tracks/Control/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{7, 0.5, 7.5}}}});
       registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
 
@@ -122,8 +122,8 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
-      registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{3, 0.5, 3.5}}}});
-      registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 1.5, 8.5}}}});
+      registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{17, -0.5, 16.5}}}});
+      registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 0.5, 8.5}}}});
     }
   }
 
@@ -158,7 +158,7 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
   expressions::Filter ITStracks = (aod::track::detectorMap & (uint8_t)o2::aod::track::ITS) != (uint8_t)0;
-  expressions::Filter tracksDCAcut = ifnode(useDCAZcut, true, nabs(aod::track::dcaZ) <= maxDCAZ);
+  expressions::Filter tracksDCAcut = ifnode(useDCAZcut.node() == false, true, nabs(aod::track::dcaZ) <= maxDCAZ);
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
@@ -267,20 +267,25 @@ struct MultiplicityCounter {
                   registry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
                 }
               }
-              for (auto bit = 0; bit < 3; ++bit) {
+              auto hasbit = false;
+              for (auto bit = 0; bit < 16; ++bit) {
                 if (track.mcMask() & (uint8_t(1) << bit)) {
-                  registry.fill(HIST("Tracks/Control/Mask"), bit + 1);
+                  registry.fill(HIST("Tracks/Control/Mask"), bit);
+                  hasbit = true;
                 }
+              }
+              if (!hasbit) {
+                registry.fill(HIST("Tracks/Control/Mask"), 16);
               }
             }
           }
           if (relatedTracks.size() > 1) {
-            registry.fill(HIST("Tracks/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
+            registry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
             for (auto& track : relatedTracks) {
               if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
                 continue;
               }
-              registry.fill(HIST("Tracks/PhiEtaDuplicates"), track.phi(), track.eta());
+              registry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
             }
           }
         }
