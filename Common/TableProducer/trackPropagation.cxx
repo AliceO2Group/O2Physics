@@ -122,7 +122,7 @@ struct TrackPropagation {
       }
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-      LOGF(info, "Setting magnetic field to current %d A for run %d from its GRPMagField CCDB object", grpmag->getL3Current(), bc.runNumber());
+      LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
     o2::base::Propagator::Instance()->setMatLUT(lut);
