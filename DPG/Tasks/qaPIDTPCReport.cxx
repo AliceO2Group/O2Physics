@@ -12,7 +12,7 @@
 ///
 /// \file   qaPIDTPCReport.cxx
 /// \author Tiantian Cheng
-/// \brief  Task to produce QA output of the TPC PID
+/// \brief  Tool to produce QA output of the TPC PID
 
 #include "TH1.h"
 #include "TH2.h"
@@ -37,7 +37,8 @@
 #include <string>
 #include "TFile.h"
 #include "Algorithm/RangeTokenizer.h"
-#include "Common/Tools/handleParamBase.h"
+#include <boost/program_options.hpp>
+#include <FairLogger.h>
 
 void SetupStyle();
 TH2* Get2DHistogramfromList(TDirectoryFile* pidqalist, const char* subdirname, TObject* histoname);
@@ -45,9 +46,15 @@ void AddFit(TH2* h2d);
 void PublishCanvas(TDirectoryFile* qaList, const char* subdirname);
 void SetupPadStyle();
 
+namespace bpo = boost::program_options;
+bpo::variables_map arguments;
+
 bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv[])
 {
-  options.add_options()("inputFileName", bpo::value<std::string>()->default_value("AnalysisResults.root"), "The name of input file")("outputFileName", bpo::value<std::string>()->default_value("TPCPIDQA.pdf"), "The name of output file")("help,h", "Produce help message");
+  options.add_options()(
+    "inputFileName", bpo::value<std::string>()->default_value("AnalysisResults.root"), "The name of input file")(
+    "outputFileName", bpo::value<std::string>()->default_value("TPCPIDQA.pdf"), "The name of output file")(
+    "help,h", "Produce help message");
   try {
     bpo::store(parse_command_line(argc, argv, options), arguments);
     // help
