@@ -140,28 +140,20 @@ struct HFLcCandidateSelector {
 
   void process(aod::HfCandProng3 const& candidates, TrksPID const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus, track::PID::Pion);
+    TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
     selectorPion.setRangeNSigmaTPC(-d_nSigmaTPC, d_nSigmaTPC);
     selectorPion.setRangeNSigmaTPCCondTOF(-d_nSigmaTPCCombined, d_nSigmaTPCCombined);
     selectorPion.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
     selectorPion.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
     selectorPion.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
+    selectorPion.setRangePtBayes(d_pidBayesMinpT, d_pidBayesMaxpT);
 
     TrackSelectorPID selectorKaon(selectorPion);
-    selectorKaon.setPDG(kKPlus, track::PID::Kaon);
+    selectorKaon.setPDG(kKPlus);
 
     TrackSelectorPID selectorProton(selectorPion);
-    selectorProton.setPDG(kProton, track::PID::Proton);
-
-    TrackSelectorPID selectorPionBayes(kPiPlus, track::PID::Pion);
-    selectorPionBayes.setRangePtBayes(d_pidBayesMinpT, d_pidBayesMaxpT);
-
-    TrackSelectorPID selectorKaonBayes(selectorPionBayes);
-    selectorKaonBayes.setPDG(kKPlus, track::PID::Kaon);
-
-    TrackSelectorPID selectorProtonBayes(selectorPionBayes);
-    selectorProtonBayes.setPDG(kProton, track::PID::Proton);
+    selectorProton.setPDG(kProton);
 
     // looping over 3-prong candidates
     for (auto& candidate : candidates) {

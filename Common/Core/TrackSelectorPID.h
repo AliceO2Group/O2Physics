@@ -30,8 +30,8 @@ class TrackSelectorPID
   TrackSelectorPID() = default;
 
   /// Standard constructor with PDG code initialisation
-  explicit TrackSelectorPID(int pdg, int species)
-    : mPdg(std::abs(pdg)), mSpecies(species)
+  explicit TrackSelectorPID(int pdg)
+    : mPdg(std::abs(pdg))
   {
   }
 
@@ -46,10 +46,35 @@ class TrackSelectorPID
     PIDAccepted
   };
 
-  void setPDG(int pdg, int species)
+  void setPDG(int pdg)
   {
     mPdg = std::abs(pdg);
-    mSpecies = species;
+    switch (mPdg) {
+      case kElectron: {
+        mSpecies = track::PID::Electron;
+        break;
+      }
+      case kMuonMinus: {
+        mSpecies = track::PID::Muon;
+        break;
+      }
+      case kPiPlus: {
+        mSpecies = track::PID::Pion;
+        break;
+      }
+      case kKPlus: {
+        mSpecies = track::PID::Kaon;
+        break;
+      }
+      case kProton: {
+        mSpecies = track::PID::Proton;
+        break;
+      }
+      default: {
+        LOGF(error, "ERROR: Species not implemented for PDG %d", mPdg);
+        assert(false);
+      }
+    }
   }
 
   // TPC
