@@ -46,6 +46,8 @@ struct MultiplicityCounter {
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  Configurable<float> maxDCAZ{"maxDCAZ", 0.3f, "max track DCAZ"};
+  Configurable<bool> useDCAZcut{"useDCAZcut", true, "apply track DCAZ cut"};
   Configurable<bool> useZDfiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{"maxZDiff", 1.0f, "max allowed Z difference for reconstruced collisions (cm)"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
@@ -120,6 +122,8 @@ struct MultiplicityCounter {
       registry.add({"Tracks/Control/PtEfficiencyI", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyINoEtaCut", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
       registry.add({"Tracks/Control/PtEfficiencyISecondaries", " ; p_{T} (GeV/c)", {HistType::kTH1F, {PtAxis}}});
+      registry.add({"Tracks/Control/Mask", " ; bit", {HistType::kTH1F, {{3, 0.5, 3.5}}}});
+      registry.add({"Tracks/Control/ITSClusters", " ; layer", {HistType::kTH1F, {{8, 1.5, 8.5}}}});
     }
   }
 
@@ -154,6 +158,7 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
   expressions::Filter ITStracks = (aod::track::detectorMap & (uint8_t)o2::aod::track::ITS) != (uint8_t)0;
+  expressions::Filter tracksDCAcut = ifnode(useDCAZcut, true, nabs(aod::track::dcaZ) <= maxDCAZ);
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
@@ -234,6 +239,9 @@ struct MultiplicityCounter {
           auto counter = 0;
           auto relatedTracks = particle.tracks_as<soa::Filtered<LabeledTracksEx>>();
           for (auto& track : relatedTracks) {
+            if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
+              continue;
+            }
             ++counter;
             if (!countedNoEtaCut) {
               registry.fill(HIST("Tracks/Control/PtEfficiencyINoEtaCut"), particle.pt());
@@ -249,9 +257,29 @@ struct MultiplicityCounter {
               registry.fill(HIST("Tracks/Control/PtEfficiencyISecondaries"), particle.pt());
             }
           }
+          if (counter > 1) {
+            for (auto& track : relatedTracks) {
+              if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
+                continue;
+              }
+              for (auto layer = 0; layer < 7; ++layer) {
+                if (track.itsClusterMap() & (uint8_t(1) << layer)) {
+                  registry.fill(HIST("Tracks/Control/ITSClusters"), layer + 1);
+                }
+              }
+              for (auto bit = 0; bit < 3; ++bit) {
+                if (track.mcMask() & (uint8_t(1) << bit)) {
+                  registry.fill(HIST("Tracks/Control/Mask"), bit + 1);
+                }
+              }
+            }
+          }
           if (relatedTracks.size() > 1) {
             registry.fill(HIST("Tracks/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
             for (auto& track : relatedTracks) {
+              if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
+                continue;
+              }
               registry.fill(HIST("Tracks/PhiEtaDuplicates"), track.phi(), track.eta());
             }
           }
