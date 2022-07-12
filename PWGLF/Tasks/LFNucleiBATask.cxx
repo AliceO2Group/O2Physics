@@ -253,7 +253,7 @@ struct LFNucleiBATask {
 
         if (std::abs(track.pdgCode()) == PDGDeuteron)
           histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrue"), track.pt());
-        
+
         if (std::abs(track.pdgCode()) == -PDGDeuteron)
           histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrue"), track.pt());
 
@@ -283,7 +283,7 @@ struct LFNucleiBATask {
     nCount++;
     histos.fill(HIST("spectraGen/histGenVetxZ"), mcCollision.posZ());
     for (auto& mcParticleGen : mcParticles) {
-      if (abs(mcParticleGen.y()) > std::abs(yCut)) { 
+      if (abs(mcParticleGen.y()) > std::abs(yCut)) {
         continue;
       }
 
