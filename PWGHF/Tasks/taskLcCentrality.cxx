@@ -21,7 +21,6 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::framework;

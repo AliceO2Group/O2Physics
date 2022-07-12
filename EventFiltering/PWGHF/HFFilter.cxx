@@ -21,7 +21,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/Core/RecoDecay.h"
 
 #include "EventFiltering/filterTables.h"
 
