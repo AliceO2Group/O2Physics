@@ -365,7 +365,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     histMan->AddHistClass(classStr.Data());
 
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent,res");
     }
   }
 }

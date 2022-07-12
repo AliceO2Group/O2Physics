@@ -384,6 +384,11 @@ class VarManager : public TObject
     fgFitterTwoProngFwd.setMinRelChi2Change(minRelChi2Change);
     fgFitterTwoProngFwd.setUseAbsDCA(useAbsDCA);
   }
+  static auto getEventPlane(int harm, float qnxa, float qnya)
+  {
+    // Compute event plane angle from qn vector components for the sub-event A
+    return (1.0 / harm) * TMath::ATan(qnya / qnxa);
+  };
 
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
@@ -596,6 +601,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ3Y0B] = event.q3y0b();
     values[kQ3X0C] = event.q3x0c();
     values[kQ3Y0C] = event.q3y0c();
+    values[kR2SP] = (event.q2x0b() * event.q2x0c() + event.q2y0b() * event.q2y0c());
+    values[kR3SP] = (event.q3x0b() * event.q3x0c() + event.q3y0b() * event.q3y0c());
+    values[kR2EP] = TMath::Cos(2 * (getEventPlane(2, event.q2x0b(), event.q2y0b()) - getEventPlane(2, event.q2x0c(), event.q2y0c())));
+    values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -1277,6 +1286,17 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   values[kMultA] = normA;
   values[kMultB] = normB;
   values[kMultC] = normC;
+
+  // TODO: provide different computations for R
+  // Compute the R factor using the 2 sub-events technique for second and third harmonic
+  auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
+  auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
+  auto Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
+  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
+  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
+  values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
 }
 
 template <int pairType, typename T1, typename T2>
@@ -1310,27 +1330,14 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
 
-  // TODO: provide different computations for Res and vn
-  // Compute the R factor using the 2 sub-events technique for second and third harmonic
-  double Psi2A = (1.0 / 2.0) * TMath::ATan(values[kQ2Y0A] / values[kQ2X0A]);
-  double Psi3A = (1.0 / 3.0) * TMath::ATan(values[kQ3Y0A] / values[kQ3X0A]);
-  double Psi2B = (1.0 / 2.0) * TMath::ATan(values[kQ2Y0B] / values[kQ2X0B]);
-  double Psi3B = (1.0 / 3.0) * TMath::ATan(values[kQ3Y0B] / values[kQ3X0B]);
-  double Psi2C = (1.0 / 2.0) * TMath::ATan(values[kQ2Y0C] / values[kQ2X0C]);
-  double Psi3C = (1.0 / 3.0) * TMath::ATan(values[kQ3Y0C] / values[kQ3X0C]);
-
-  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
-  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
-  values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
-  values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
-
+  // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
-  // Dilepton Vn could be accessible after dividing this product with the Res factor
+  // Dilepton vn could be accessible after dividing this product with the R factor
   if (eventHasQvector && (values[kQ2X0A] * values[kQ2Y0A] != 0.0)) {
     values[kU2Q2] = values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi());
     values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
-    values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - Psi2A));
-    values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - Psi3A));
+    values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
+    values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
   }
 }
 
