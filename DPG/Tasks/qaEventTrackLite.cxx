@@ -50,6 +50,7 @@ struct qaEventTrackLite {
   // Event selections
   Configurable<float> vtxZMax{"vtxZMax", 10.f, "Max VTX Z position"};
   // Track selections
+  Configurable<bool> bHasITS{"bHasITS", false, "Select only DPG tracks with ITS (no forcing on TPC information)"};
   Configurable<bool> bItsStandalone{"bItsStandalone", false, "Select only ITS standalone DPG tracks"};
   Configurable<bool> bTpcOnly{"bTpcOnly", false, "Select only TPC only DPG tracks"};
   Configurable<bool> bItsTpcMatched{"bItsTpcMatched", false, "Select ITS-TPC matched DPG tracks"};
@@ -117,9 +118,12 @@ struct qaEventTrackLite {
 
     // kine histograms
     histos.add("Tracks/VertexPositionZ", "", kTH1D, {{100, -20.f, 20.f, "Vertex Z (cm)"}});
+    histos.add("Tracks/VertexPositionZvsEta", "", kTH2D, {axisEta, {100, -20.f, 20.f, "Vertex Z (cm)"}});
+    histos.add("Tracks/VertexPositionZvsEtaHasITS", "", kTH2D, {axisEta, {100, -20.f, 20.f, "Vertex Z (cm)"}});
     histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
     histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/Kine/phi", "#phi", kTH1D, {axisPhi});
+    histos.add("Tracks/Kine/phiVsEta", "#phi", kTH2D, {axisPhi, axisEta});
     histos.add("Tracks/length", "track length in cm;#it{Length} (cm);", kTH1D, {{400, 0, 1000}});
     const AxisSpec axisImpParRPhi{binsImpPar, "#it{d}_{r#it{#varphi}} (#cm)"};
     const AxisSpec axisImpParZAxis{binsImpPar, "#it{d}_{z} (#cm)"};
@@ -192,6 +196,7 @@ struct qaEventTrackLite {
   Filter ptCut = o2::aod::dpgtrack::pt > ptMin;
   Filter etaCut = etaMin < o2::aod::dpgtrack::eta && o2::aod::dpgtrack::eta < etaMax;
   // Detector matching
+  Filter filterHasITS = (bHasITS.node() == false) || (bItsStandalone.node() == false && bTpcOnly.node() == false && bItsTpcMatched.node() == false && o2::aod::dpgtrack::hasITS == true);
   Filter itsStandaloneTracks = (bItsStandalone.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == false);
   Filter tpcOnlyTracks = (bTpcOnly.node() == false) || (o2::aod::dpgtrack::hasITS == false && o2::aod::dpgtrack::hasTPC == true);
   Filter itsTpcMatchedTracks = (bItsTpcMatched.node() == false) || (o2::aod::dpgtrack::hasITS == true && o2::aod::dpgtrack::hasTPC == true);
@@ -247,9 +252,14 @@ struct qaEventTrackLite {
       histos.fill(HIST("Particles/Kine/phi"), track.phiMC());
     }
     histos.fill(HIST("Tracks/VertexPositionZ"), track.dpgCollision().posZ());
+    histos.fill(HIST("Tracks/VertexPositionZvsEta"), track.eta(), track.dpgCollision().posZ());
+    if (track.hasITS()) {
+      histos.fill(HIST("Tracks/VertexPositionZvsEtaHasITS"), track.eta(), track.dpgCollision().posZ());
+    }
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
     histos.fill(HIST("Tracks/Kine/phi"), track.phi());
+    histos.fill(HIST("Tracks/Kine/phiVsEta"), track.phi(), track.eta());
     histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
     histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
     histos.fill(HIST("Tracks/dcaXYvsPt"), track.pt(), track.dcaXY());
