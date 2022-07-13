@@ -1012,13 +1012,13 @@ struct HfFilter { // Main struct for HF triggers
       int8_t origin = 0;
 
       // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign);
+      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec >= 0) {
         channel = kDplus;
       }
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign); // TODO: replace hard coded pdg code
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2); // TODO: replace hard coded pdg code
         if (indexRec >= 0) {
           channel = kDs;
         }
@@ -1032,7 +1032,7 @@ struct HfFilter { // Main struct for HF triggers
       }
       if (indexRec < 0) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kXic;
         }
