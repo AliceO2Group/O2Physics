@@ -26,23 +26,23 @@ using namespace o2::framework;
 using namespace std;
 
 // *) Global constants:
-#include "PWGCF/MultiparticleCorrelations/MuPa-GlobalConstants.h"
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) Enums:
-#include "PWGCF/MultiparticleCorrelations/MuPa-Enums.h"
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-Enums.h"
 
 // *) Main task:
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
 // *) Data members:
-#include "PWGCF/MultiparticleCorrelations/MuPa-DataMembers.h"
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-DataMembers.h"
 
 // *) Member functions:
-#include "PWGCF/MultiparticleCorrelations/MuPa-MemberFunctions.h"
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-MemberFunctions.h"
 
 // *) Configurables (cuts):
-#include "PWGCF/MultiparticleCorrelations/MuPa-Configurables.h"
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
 
   // -------------------------------------------
 
