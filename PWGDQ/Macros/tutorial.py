@@ -2,6 +2,7 @@
 \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 """
 import yaml
+import json
 import sys
 import argparse
 from array import array
