@@ -734,12 +734,15 @@ struct AnalysisSameEventPairing {
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
       }
+      constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
 
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
         VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
-        VarManager::FillPairVn<TPairType>(t1, t2);
+        if constexpr (eventHasQvector) {
+          VarManager::FillPairVn<TPairType>(t1, t2);
+        }
       }
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
@@ -751,9 +754,8 @@ struct AnalysisSameEventPairing {
         dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
       }
 
-      constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
       if constexpr (eventHasQvector) {
-        dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kR2SP], VarManager::fgValues[VarManager::kR3SP], VarManager::fgValues[VarManager::kR2EP], VarManager::fgValues[VarManager::kR3EP]);
+        dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
       }
 
       for (unsigned int icut = 0; icut < ncuts; icut++) {

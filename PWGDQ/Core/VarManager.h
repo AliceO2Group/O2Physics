@@ -68,6 +68,7 @@ class VarManager : public TObject
     ReducedEventVtxCov = BIT(6),
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
+    ReducedEventQvector = BIT(9),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -85,8 +86,7 @@ class VarManager : public TObject
     ReducedMuonExtra = BIT(14),
     ReducedMuonCov = BIT(15),
     ParticleMC = BIT(16),
-    Pair = BIT(17), // TODO: check whether we really need the Pair member here
-    ReducedEventQvector = BIT(18)
+    Pair = BIT(17) // TODO: check whether we really need the Pair member here
   };
 
   enum PairCandidateType {
@@ -1306,7 +1306,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   if (!values) {
     values = fgValues;
   }
-  constexpr bool eventHasQvector = (ReducedEventQvector > 0);
 
   float m1 = fgkElectronMass;
   float m2 = fgkElectronMass;
@@ -1324,21 +1323,13 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-  values[kMass] = v12.M();
-  values[kPt] = v12.Pt();
-  values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi();
-  values[kRap] = -v12.Rapidity();
-
   // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton vn could be accessible after dividing this product with the R factor
-  if (eventHasQvector && (values[kQ2X0A] * values[kQ2Y0A] != 0.0)) {
-    values[kU2Q2] = values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi());
-    values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
-    values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
-    values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
-  }
+  values[kU2Q2] = values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi());
+  values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
+  values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
+  values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
 }
 
 template <typename T1, typename T2>

@@ -413,11 +413,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::U2Q2,
                   reducedpair::U3Q3,
                   reducedpair::Cos2DeltaPhi,
-                  reducedpair::Cos3DeltaPhi,
-                  reducedpair::R2SP,
-                  reducedpair::R3SP,
-                  reducedpair::R2EP,
-                  reducedpair::R3EP);
+                  reducedpair::Cos3DeltaPhi);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ,
