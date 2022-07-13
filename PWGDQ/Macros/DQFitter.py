@@ -2,7 +2,6 @@
 \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 """
 from os.path import exists
-from traceback import print_tb
 import ROOT
 from ROOT import TCanvas, TFile, TH1F, RooRealVar, RooDataSet, RooWorkspace, RooDataHist, RooArgSet
 from ROOT import gPad, gROOT
