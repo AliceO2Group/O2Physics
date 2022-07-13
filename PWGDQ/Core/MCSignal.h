@@ -250,10 +250,6 @@ bool MCSignal::CheckProng(int i, bool checkSources, const U& mcStack, const T& t
           return false;
         }
         if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
-          // currentMCParticle = currentMCParticle.template mothers_first_as<U>();
-          // currentMCParticle = mcStack.iteratorAt(currentMCParticle.mothersIds()[0]);
-        }
-        if (currentMCParticle.has_daughters() && j < fProngs[i].fNGenerations - 1) {
           const auto& daughtersSlice = currentMCParticle.template daughters_as<U>();
           for (auto& d : daughtersSlice) {
             if (fProngs[i].TestPDG(j + 1, d.pdgCode())) {
