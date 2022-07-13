@@ -374,10 +374,6 @@ DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                //! Scalar product between
 DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
 DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float); //! Cosinus term using event plane angle (harmonic 3)
-DECLARE_SOA_COLUMN(R2SP, r2sp, float);                 //! Reference flow factor from different sub-events (harmonic 2)
-DECLARE_SOA_COLUMN(R3SP, r3sp, float);                 //! Reference flow factor from different sub-events (harmonic 3)
-DECLARE_SOA_COLUMN(R2EP, r2ep, float);                 //! Resolution factor from different sub-events (harmonic 2)
-DECLARE_SOA_COLUMN(R3EP, r3ep, float);                 //! Resolution factor from different sub-events (harmonic 3)
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
