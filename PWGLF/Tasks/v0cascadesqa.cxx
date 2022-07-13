@@ -256,9 +256,14 @@ struct v0cascadesQA {
       if (v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > V0_cosPA) {
         if (v0.v0radius() > V0_radius && v0.dcaV0daughters() < V0_dcav0dau && TMath::Abs(v0.dcapostopv()) > V0_dcapostopv && TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
 
-          auto mcnegtrack = v0.negTrack_as<MyTracksMC>().mcParticle_as<aod::McParticles>();
-          auto mcpostrack = v0.posTrack_as<MyTracksMC>().mcParticle_as<aod::McParticles>();
+          auto reconegtrack = v0.negTrack_as<MyTracksMC>();
+          auto recopostrack = v0.posTrack_as<MyTracksMC>();
+          if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle()) {
+            continue;
+          }
 
+          auto mcnegtrack = reconegtrack.mcParticle_as<aod::McParticles>();
+          auto mcpostrack = recopostrack.mcParticle_as<aod::McParticles>();
           if (!mcnegtrack.has_mothers() || !mcpostrack.has_mothers()) {
             continue;
           }
