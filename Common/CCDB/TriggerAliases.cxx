@@ -24,6 +24,8 @@ const char* aliasLabels[kNaliases] = {
   "kCUP9",
   "kMUP10",
   "kMUP11",
+  "kINT1",
+  "kUnbiased",
   "kALL"};
 
 void TriggerAliases::AddClassIdToAlias(uint32_t aliasId, int classId)
