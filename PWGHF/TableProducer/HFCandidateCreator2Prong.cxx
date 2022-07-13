@@ -210,7 +210,7 @@ struct HFCandidateCreator2ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchRec(flag, origin);
@@ -246,7 +246,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchGen(flag, origin);

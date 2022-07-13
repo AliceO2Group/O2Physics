@@ -49,6 +49,11 @@ class RecoDecay
   /// Default destructor
   ~RecoDecay() = default;
 
+  // mapping of charm-hadron origin type
+  enum OriginType { None = 0,
+                    Prompt,
+                    NonPrompt };
+
   // Auxiliary functions
 
   /// Sums numbers.
@@ -911,6 +916,71 @@ class RecoDecay
       *sign = sgn;
     }
     return true;
+  }
+
+  /// Finds the origin (from charm hadronisation or beauty-hadron decay) of charm hadrons.
+  /// \param particlesMC  table with MC particles
+  /// \param particle  MC particle
+  /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on b-hadron
+  /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
+  template <typename T>
+  static int getCharmHadronOrigin(const T& particlesMC,
+                                  const typename T::iterator& particle,
+                                  const bool searchUpToQuark = false)
+  {
+    int stage = 0; // mother tree level (just for debugging)
+
+    // vector of vectors with mother indices; each line corresponds to a "stage"
+    std::vector<std::vector<long int>> arrayIds{};
+    std::vector<long int> initVec{particle.globalIndex()};
+    arrayIds.push_back(initVec); // the first vector contains the index of the original particle
+
+    while (arrayIds[-stage].size() > 0) {
+      // vector of mother indices for the current stage
+      std::vector<long int> arrayIdsStage{};
+      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+              continue;
+            }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            // Check mother's PDG code.
+            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            // printf("getMother: ");
+            // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+            //   printf(" ");
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
+
+            if (searchUpToQuark) {
+              if (PDGParticleIMother == 5) { // b quark
+                return OriginType::NonPrompt;
+              }
+              if (PDGParticleIMother == 4) { // c quark
+                return OriginType::Prompt;
+              }
+            } else {
+              if (
+                (PDGParticleIMother / 100 == 5 || // b mesons
+                 PDGParticleIMother / 1000 == 5)  // b baryons
+              ) {
+                return OriginType::NonPrompt;
+              }
+            }
+            // add mother index in the vector for the current stage
+            arrayIdsStage.push_back(iMother);
+          }
+        }
+      }
+      // add vector of mother indices for the current stage
+      arrayIds.push_back(arrayIdsStage);
+      stage--;
+    }
+    if (!searchUpToQuark) {
+      return OriginType::Prompt;
+    }
+    return OriginType::None;
   }
 
  private:

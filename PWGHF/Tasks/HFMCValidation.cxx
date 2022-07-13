@@ -26,7 +26,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
 
@@ -157,10 +156,10 @@ struct ValidationGenLevel {
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           int origin = -1;
           if (listDaughters.size() == arrayPDGsize) {
-            origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-            if (origin == OriginType::Prompt) {
+            origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+            if (origin == RecoDecay::OriginType::Prompt) {
               counterPrompt[iD]++;
-            } else if (origin == OriginType::NonPrompt) {
+            } else if (origin == RecoDecay::OriginType::NonPrompt) {
               counterNonPrompt[iD]++;
             }
           }
@@ -190,13 +189,13 @@ struct ValidationGenLevel {
           registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
           registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
           registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
-          if (origin == OriginType::Prompt) {
+          if (origin == RecoDecay::OriginType::Prompt) {
             if (std::abs(particle.y()) < 0.5) {
               hPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
             }
             hPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
             hPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
-          } else if (origin == OriginType::NonPrompt) {
+          } else if (origin == RecoDecay::OriginType::NonPrompt) {
             if (std::abs(particle.y()) < 0.5) {
               hNonPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
             }
@@ -288,7 +287,7 @@ struct ValidationRecLevel {
         whichHad = 6;
       }
       int whichOrigin = -1;
-      if (cand2Prong.originMCRec() == OriginType::Prompt) {
+      if (cand2Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
@@ -353,7 +352,7 @@ struct ValidationRecLevel {
         whichHad = 5;
       }
       int whichOrigin = -1;
-      if (cand3Prong.originMCRec() == OriginType::Prompt) {
+      if (cand3Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;

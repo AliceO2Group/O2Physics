@@ -25,7 +25,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::analysis::hf_cuts_lc_topkpi;
 
@@ -160,7 +159,7 @@ struct TaskLcCentralityMC {
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        if (candidate.originMCRec() == OriginType::Prompt) {
+        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
         } else {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
@@ -182,7 +181,7 @@ struct TaskLcCentralityMC {
         }
         auto ptGen = particle.pt();
         registry.fill(HIST("hPtGen"), ptGen);
-        if (particle.originMCGen() == OriginType::Prompt) {
+        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
         } else {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
