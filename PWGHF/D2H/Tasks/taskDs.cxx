@@ -189,7 +189,7 @@ struct HfTaskDs {
     for (auto& particle : particlesMC) {
       if (std::abs(particle.flagMCMatchGen()) == 1 << DecayType::DsToKKPi) {
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::Y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
+        auto yGen = RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode()));
         if (cutYCandMax >= 0. && std::abs(yGen) > cutYCandMax) {
           continue;
         }
