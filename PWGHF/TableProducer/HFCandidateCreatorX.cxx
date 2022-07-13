@@ -255,7 +255,7 @@ struct HFCandidateCreatorXMC {
   Produces<aod::HfCandXMCGen> rowMCMatchGen;
 
   void process(aod::HfCandX const& candidates,
-               aod::HfCandProng2,
+               aod::HfCandProng2 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC)
   {
@@ -305,7 +305,7 @@ struct HFCandidateCreatorXMC {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particle, 5, true) > -1 ? NonPrompt : Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchRec(flag, origin, channel);
@@ -338,7 +338,7 @@ struct HFCandidateCreatorXMC {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particle, 5, true) > -1 ? NonPrompt : Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchGen(flag, origin, channel);

@@ -205,7 +205,7 @@ struct HFCandidateCreatorChicMC {
   OutputObj<TH1F> hEphotonMatched{TH1F("hEphotonMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassChicToJpsiToMuMuGammaMatched{TH1F("hMassChicToJpsiToMuMuGammaMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-) #gamma) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   void process(aod::HfCandChic const& candidates,
-               aod::HfCandProng2,
+               aod::HfCandProng2 const&,
                aod::BigTracksMC const& tracks,
                aod::McParticles const& particlesMC,
                aod::ECALs const& ecals)
@@ -231,8 +231,8 @@ struct HFCandidateCreatorChicMC {
       if (indexRec > -1) {
         hMassJpsiToMuMuMatched->Fill(InvMassJpsiToMuMu(candidate.index0()));
 
-        int indexMother = RecoDecay::getMother(particlesMC.rawIteratorAt(indexRec), pdg::Code::kChic1);
-        int indexMotherGamma = RecoDecay::getMother(particlesMC.rawIteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChic1);
+        int indexMother = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(indexRec), pdg::Code::kChic1);
+        int indexMotherGamma = RecoDecay::getMother(particlesMC, particlesMC.rawIteratorAt(candidate.index1().mcparticleId()), pdg::Code::kChic1);
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.index1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = particlesMC.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.index1().e());
@@ -249,7 +249,7 @@ struct HFCandidateCreatorChicMC {
       }
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? NonPrompt : Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
       rowMCMatchRec(flag, origin, channel);
     }

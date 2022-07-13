@@ -183,6 +183,8 @@ void chargedSpectra::processData(CollisionTableData::iterator const& collision, 
  * Entrypoint to processes mc.
  */
 //**************************************************************************************************
+Preslice<chargedSpectra::TrackTableMC> perCollision = aod::track::collisionId;
+
 void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
 {
   histos.fill(HIST("collision_ambiguity"), collisions.size());
@@ -202,7 +204,7 @@ void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision
     vars.isAcceptedEvent = false;
   } else {
     for (auto& collision : collisions) {
-      auto curTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       initEvent(collision, curTracks);
       processMeas<true>(collision, curTracks);
       break; // for now look only at first collision...

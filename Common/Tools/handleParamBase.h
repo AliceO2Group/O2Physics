@@ -23,7 +23,13 @@
 
 // Global executable arguments
 namespace bpo = boost::program_options;
-bpo::variables_map arguments;
+bpo::variables_map arguments;             // Command line arguments
+o2::ccdb::CcdbApi api;                    // Global CCDB api
+unsigned int minRunNumber = 0;            // Starting run validity
+unsigned int maxRunNumber = minRunNumber; // Ending run validity
+long ccdbTimestamp = 0;                   // Timestamp used for the retrieval
+long validityStart = 0;                   // Initial validity for the object
+long validityStop = 0;                    // End validity for the object
 
 std::string timeStampToHReadble(time_t rawtime)
 {
@@ -38,8 +44,34 @@ std::string timeStampToHReadble(time_t rawtime)
   return std::string(buffer);
 }
 
-// Global CCDB api
-o2::ccdb::CcdbApi api;
+// Initializer of the CCDB API
+void initCCDBApi()
+{
+  const auto url = arguments["url"].as<std::string>();
+  LOG(info) << "Init CCDB api to URL: " << url;
+  api.init(url);
+  if (!api.isHostReachable()) {
+    LOG(fatal) << "CCDB host " << url << " is not reacheable, cannot go forward";
+  }
+}
+
+void setStandardOpt(bpo::options_description& options)
+{
+  options.add_options()(
+    "dryrun,D", bpo::value<int>()->default_value(1), "Dryrun mode")(
+    "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database e.g. http://ccdb-test.cern.ch:8080 or http://alice-ccdb.cern.ch")(
+    "rct-path", bpo::value<std::string>()->default_value("RCT/Info/RunInformation"), "path to the ccdb RCT objects for the SOR/EOR timestamps")(
+    "start,s", bpo::value<long>()->default_value(0), "Start timestamp of object validity. If 0 and min-runnumber != 0 it will be set to the run SOR")(
+    "stop,S", bpo::value<long>()->default_value(0), "Stop timestamp of object validity. If 0 and max-runnumber != 0 it will be set to the run EOR")(
+    "timestamp,T", bpo::value<long>()->default_value(-1), "Timestamp of the object to retrieve, used in alternative to the run number")(
+    "min-runnumber,r", bpo::value<unsigned int>()->default_value(0), "Starting run number validity (included) corresponding to the parametrization")(
+    "max-runnumber,R", bpo::value<unsigned int>()->default_value(0), "Ending run number validity (included) corresponding to the parametrization. If not specified coincides with min-runnumber")(
+    "delete-previous,delete_previous,d", bpo::value<int>()->default_value(0), "Flag to delete previous versions of converter objects in the CCDB before uploading the new one so as to avoid proliferation on CCDB")(
+    "save-to-file,file,f,o", bpo::value<std::string>()->default_value(""), "Option to save parametrization to file instead of uploading to ccdb")(
+    "read-from-file,i", bpo::value<std::string>()->default_value(""), "Option to get parametrization from a file")(
+    "verbose,v", bpo::value<int>()->default_value(0), "Verbose level 0, 1")(
+    "help,h", "Produce help message.");
+}
 
 template <typename T>
 T* retrieveFromCCDB(const std::string path,
@@ -83,36 +115,55 @@ void setupTimestamps(long& timestamp,
                      long& start,
                      long& stop)
 {
+  ccdbTimestamp = arguments["timestamp"].as<long>();
+  validityStart = arguments["start"].as<long>();
+  validityStop = arguments["stop"].as<long>();
+  minRunNumber = arguments["min-runnumber"].as<unsigned int>();
+  auto mrun = arguments["max-runnumber"].as<unsigned int>();
+  maxRunNumber = mrun > 0 ? mrun : minRunNumber;
+  if (minRunNumber > maxRunNumber) {
+    LOG(fatal) << "Cannot have `min-runnumber` " << minRunNumber << " > `max-runnumber`" << maxRunNumber;
+  }
 
-  const auto runnumber = arguments["runnumber"].as<unsigned int>();
-  if (runnumber != 0) {
+  auto getSOREOR = [&](const unsigned int runnumber, long& sor, long& eor) {
     std::map<std::string, std::string> metadata, headers;
     const auto rct_path = arguments["rct-path"].as<std::string>();
     const std::string run_path = Form("%s/%i", rct_path.data(), runnumber);
 
-    LOG(info) << "Getting timestamp for run " << runnumber << " from CCDB in path " << run_path;
     headers = api.retrieveHeaders(run_path, metadata, -1);
-    if (headers.count("SOR") == 0) {
-      LOGF(fatal, "Cannot find run-number to timestamp in path '%s'.", run_path.data());
-    }
     if (headers.count("SOR") == 0) {
       LOGF(fatal, "Cannot find run-number SOR in path '%s'.", run_path.data());
     }
+    sor = atol(headers["SOR"].c_str());
     if (headers.count("EOR") == 0) {
       LOGF(fatal, "Cannot find run-number EOR in path '%s'.", run_path.data());
     }
-    timestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-    if (start == 0) {
+    eor = atol(headers["EOR"].c_str());
+    LOG(info) << "Getting timestamp for run " << runnumber << " from CCDB in path " << run_path << " -> SOR " << sor << " (" << timeStampToHReadble(sor) << ")"
+              << ", EOR " << eor << " (" << timeStampToHReadble(eor) << ")";
+  };
 
-      start = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-      LOG(info) << "Setting start of object from run number: " << start << " -> " << timeStampToHReadble(start);
+  if (minRunNumber != 0) {
+    long SOR = 0, EOR = 0;
+    getSOREOR(minRunNumber, SOR, EOR);
+    timestamp = SOR; // timestamp of the SOR in ms
+    LOG(info) << "Setting timestamp of object from run number " << minRunNumber << ": " << validityStart << " -> " << timeStampToHReadble(validityStart);
+    if (validityStart == 0) { // Start of validity from first run number
+      validityStart = SOR;
+      LOG(info) << "Setting validityStart of object from run number " << minRunNumber << ": " << validityStart << " -> " << timeStampToHReadble(validityStart);
     }
-    if (stop == 0) {
-      stop = atol(headers["EOR"].c_str()); // timestamp of the EOR in ms
-      LOG(info) << "Setting stop of object from run number: " << stop << " -> " << timeStampToHReadble(stop);
+    if (validityStop == 0) {
+      if (minRunNumber != maxRunNumber) {
+        getSOREOR(maxRunNumber, SOR, EOR);
+        validityStop = EOR;
+        LOG(info) << "Setting validityStop of object from run number " << maxRunNumber << ": " << validityStop << " -> " << timeStampToHReadble(validityStop) << " duration " << validityStop - validityStart << " ms, " << (validityStop - validityStart) / 1000 / 3600 << " hours";
+      } else {
+        validityStop = EOR;
+        LOG(info) << "Setting validityStop of object from run number " << minRunNumber << ": " << validityStop << " -> " << timeStampToHReadble(validityStop);
+      }
     }
   }
-  if (stop == 0) { //Default value for stop
-    stop = 4108971600000;
+  if (validityStop == 0) { //Default value for validityStop
+    validityStop = 4108971600000;
   }
 }

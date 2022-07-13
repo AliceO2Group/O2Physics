@@ -9,47 +9,50 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DIFFRACTION_HELPERS_
-#define O2_ANALYSIS_DIFFRACTION_HELPERS_
+#ifndef O2_ANALYSIS_DGHELPERS_
+#define O2_ANALYSIS_DGHELPERS_
 
+#include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
-#include "EventFiltering/PWGUD/cutHolder.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "EventFiltering/PWGUD/DGCutparHolder.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-float FV0AmplitudeA(aod::FV0A fv0);
+float FV0AmplitudeA(aod::FV0A&& fv0);
 template <typename T>
-bool cleanFV0(T bc, float limitA);
+bool cleanFV0(T& bc, float limitA);
 
-float FT0AmplitudeA(aod::FT0 ft0);
-float FT0AmplitudeC(aod::FT0 ft0);
+float FT0AmplitudeA(aod::FT0&& ft0);
+float FT0AmplitudeC(aod::FT0&& ft0);
 template <typename T>
-bool cleanFT0(T bc, float limitA, float limitC);
+bool cleanFT0(T& bc, float limitA, float limitC);
 
-int16_t FDDAmplitudeA(aod::FDD fdd);
-int16_t FDDAmplitudeC(aod::FDD fdd);
+int16_t FDDAmplitudeA(aod::FDD&& fdd);
+int16_t FDDAmplitudeC(aod::FDD&& fdd);
 template <typename T>
-bool cleanFDD(T bc, float limitA, float limitC);
-
-template <typename T>
-bool cleanFIT(T bc, std::vector<float> lims);
+bool cleanFDD(T& bc, float limitA, float limitC);
 
 template <typename T>
-bool cleanZDC(T bc, aod::Zdcs zdcs, std::vector<float> lims);
+bool cleanFIT(T& bc, std::vector<float>&& lims);
+template <typename T>
+bool cleanFIT(T& bc, std::vector<float>& lims);
 
 template <typename T>
-bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims);
+bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims);
+
+template <typename T>
+bool cleanCalo(T& bc, aod::Calos& calos, std::vector<float>& lims);
 
 template <typename TC>
-bool hasGoodPID(cutHolder diffCuts, TC track);
+bool hasGoodPID(DGCutparHolder diffCuts, TC track);
 
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs = 7);
@@ -59,11 +62,14 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 // Selector for Double Gap events
 struct DGSelector {
  public:
-  DGSelector() = default;
+  DGSelector()
+  {
+    fPDG = TDatabasePDG::Instance();
+  }
 
   // Function to check if collisions passes filter
   template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
-  int IsSelected(cutHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  int IsSelected(DGCutparHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
     LOGF(debug, "Collision %f BC %i", collision.collisionTime(), bc.globalBC());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
@@ -97,6 +103,7 @@ struct DGSelector {
 
     // no global tracks which are not vtx tracks
     // no vtx tracks which are not global tracks
+    auto rgtrwTOF = 0.;
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         return 3;
@@ -104,20 +111,32 @@ struct DGSelector {
       if (diffCuts.globalTracksOnly() && !track.isGlobalTrack() && track.isPVContributor()) {
         return 4;
       }
+
+      // update fraction of PV tracks with TOF hit
+      if (track.isPVContributor() && track.hasTOF()) {
+        rgtrwTOF += 1.;
+      }
+    }
+    if (collision.numContrib() > 0) {
+      rgtrwTOF /= collision.numContrib();
+    }
+    if (rgtrwTOF < diffCuts.minRgtrwTOF()) {
+      return 5;
     }
 
     // number of vertex tracks
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      return 5;
+      return 6;
     }
 
     // PID, pt, and eta of tracks, invariant mass, and net charge
     // consider only vertex tracks
 
     // which particle hypothesis?
-    auto mass2Use = constants::physics::MassPionCharged;
-    if (diffCuts.pidHypothesis() == 321) {
-      mass2Use = constants::physics::MassKaonCharged;
+    auto mass2Use = 0.;
+    TParticlePDG* pdgparticle = fPDG->GetParticle(diffCuts.pidHypothesis());
+    if (pdgparticle != nullptr) {
+      mass2Use = pdgparticle->Mass();
     }
 
     auto netCharge = 0;
@@ -128,18 +147,18 @@ struct DGSelector {
 
         // PID
         if (!hasGoodPID(diffCuts, track)) {
-          return 6;
+          return 7;
         }
 
         // pt
         lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
         if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-          return 7;
+          return 8;
         }
 
         // eta
         if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-          return 8;
+          return 9;
         }
         netCharge += track.sign();
         ivm += lvtmp;
@@ -148,16 +167,19 @@ struct DGSelector {
 
     // net charge
     if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
-      return 9;
+      return 10;
     }
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 10;
+      return 11;
     }
 
     // if we arrive here then the event is good!
     return 0;
   };
+
+ private:
+  TDatabasePDG* fPDG;
 };
 
 // -----------------------------------------------------------------------------
@@ -167,7 +189,7 @@ struct DGSelector {
 // reconstruct the vertex. t_coll has an uncertainty dt_coll.
 // Any BC with a BC time t_BC falling within a time window of +- ndt*dt_coll
 // around t_coll could potentially be the true BC. ndt is typically 4. The
-// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS
+// total width of the time window is required to be at least 2*nMinBCs* LHCBunchSpacingNS.
 
 template <typename T>
 T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, int ndt, T const& bcs, int nMinBCs)
@@ -221,7 +243,7 @@ T compatibleBCs(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collisi
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
 template <typename TC>
-bool hasGoodPID(cutHolder diffCuts, TC track)
+bool hasGoodPID(DGCutparHolder diffCuts, TC track)
 {
   // El, Mu, Pi, Ka, and Pr are considered
   // at least one nSigma must be within set limits
@@ -274,7 +296,7 @@ bool hasGoodPID(cutHolder diffCuts, TC track)
 }
 
 // -----------------------------------------------------------------------------
-float FV0AmplitudeA(aod::FV0A fv0)
+float FV0AmplitudeA(aod::FV0A&& fv0)
 {
   float totAmplitude = 0;
   for (auto amp : fv0.amplitude()) {
@@ -285,7 +307,7 @@ float FV0AmplitudeA(aod::FV0A fv0)
 }
 
 // -----------------------------------------------------------------------------
-float FT0AmplitudeA(aod::FT0 ft0)
+float FT0AmplitudeA(aod::FT0&& ft0)
 {
   float totAmplitude = 0;
   for (auto amp : ft0.amplitudeA()) {
@@ -296,7 +318,7 @@ float FT0AmplitudeA(aod::FT0 ft0)
 }
 
 // -----------------------------------------------------------------------------
-float FT0AmplitudeC(aod::FT0 ft0)
+float FT0AmplitudeC(aod::FT0&& ft0)
 {
   float totAmplitude = 0;
   for (auto amp : ft0.amplitudeC()) {
@@ -307,7 +329,7 @@ float FT0AmplitudeC(aod::FT0 ft0)
 }
 
 // -----------------------------------------------------------------------------
-int16_t FDDAmplitudeA(aod::FDD fdd)
+int16_t FDDAmplitudeA(aod::FDD&& fdd)
 {
   int16_t totAmplitude = 0;
   for (auto amp : fdd.chargeA()) {
@@ -318,7 +340,7 @@ int16_t FDDAmplitudeA(aod::FDD fdd)
 }
 
 // -----------------------------------------------------------------------------
-int16_t FDDAmplitudeC(aod::FDD fdd)
+int16_t FDDAmplitudeC(aod::FDD&& fdd)
 {
   int16_t totAmplitude = 0;
   for (auto amp : fdd.chargeC()) {
@@ -330,7 +352,7 @@ int16_t FDDAmplitudeC(aod::FDD fdd)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFV0(T bc, float limitA)
+bool cleanFV0(T& bc, float limitA)
 {
   if (bc.has_foundFV0()) {
     return (FV0AmplitudeA(bc.foundFV0()) < limitA);
@@ -341,7 +363,7 @@ bool cleanFV0(T bc, float limitA)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFT0(T bc, float limitA, float limitC)
+bool cleanFT0(T& bc, float limitA, float limitC)
 {
   if (bc.has_foundFT0()) {
     return (FT0AmplitudeA(bc.foundFT0()) < limitA) && (FT0AmplitudeC(bc.foundFT0()) < limitC);
@@ -352,7 +374,7 @@ bool cleanFT0(T bc, float limitA, float limitC)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFDD(T bc, float limitA, float limitC)
+bool cleanFDD(T& bc, float limitA, float limitC)
 {
   if (bc.has_foundFDD()) {
     return (FDDAmplitudeA(bc.foundFDD()) < limitA) && (FDDAmplitudeC(bc.foundFDD()) < limitC);
@@ -363,26 +385,32 @@ bool cleanFDD(T bc, float limitA, float limitC)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFIT(T bc, std::vector<float> lims)
+bool cleanFIT(T& bc, std::vector<float>&& lims)
+{
+  return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
+}
+
+template <typename T>
+bool cleanFIT(T& bc, std::vector<float>& lims)
 {
   return cleanFV0(bc, lims[0]) && cleanFT0(bc, lims[1], lims[2]) && cleanFDD(bc, lims[3], lims[4]);
 }
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T bc, aod::Zdcs zdcs, std::vector<float> lims)
+bool cleanZDC(T& bc, aod::Zdcs& zdcs, std::vector<float>& lims)
 {
-  const auto& ZdcBC = zdcs.sliceBy(aod::zdc::bcId, bc.globalIndex());
+  const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex());
   return (ZdcBC.size() == 0);
 }
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T bc, aod::Calos calos, std::vector<float> lims)
+bool cleanCalo(T& bc, aod::Calos& calos, std::vector<float>& lims)
 {
-  const auto& CaloBC = calos.sliceBy(aod::calo::bcId, bc.globalIndex());
+  const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex());
   return (CaloBC.size() == 0);
 }
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_DIFFRACTION_HELPERS_
+#endif // O2_ANALYSIS_DGHELPERS_

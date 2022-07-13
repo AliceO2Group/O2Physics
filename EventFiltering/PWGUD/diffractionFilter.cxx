@@ -46,13 +46,13 @@
 //               o2-analysis-pid-tof-full $copts |
 //               o2-analysis-diffraction-filter $copts $kopts > diffractionFilter.log
 
-// \author P. Buehler , paul.buehler@oeaw.ac.at
+// \author P. Buehler, paul.buehler@oeaw.ac.at
 // \since June 1, 2021
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
-#include "diffHelpers.h"
+#include "DGHelpers.h"
 #include "../filterTables.h"
 
 using namespace o2;
@@ -65,13 +65,13 @@ struct DGFilterRun3 {
   // Productions
   Produces<aod::DiffractionFilters> filterTable;
 
-  // cutHolders
-  cutHolder diffCuts = cutHolder();
+  // DGCutparHolders
+  DGCutparHolder diffCuts = DGCutparHolder();
   static constexpr std::string_view cutNames[4] = {"DiffCuts2pi", "DiffCuts4pi", "DiffCuts2K", "DiffCuts4K"};
-  MutableConfigurable<cutHolder> diffCuts2pi{cutNames[0].data(), {}, "Diffractive 2pi events cuts"};
-  MutableConfigurable<cutHolder> diffCuts4pi{cutNames[1].data(), {}, "Diffractive 4pi events cuts"};
-  MutableConfigurable<cutHolder> diffCuts2K{cutNames[2].data(), {}, "Diffractive 2K events cuts"};
-  MutableConfigurable<cutHolder> diffCuts4K{cutNames[3].data(), {}, "Diffractive 4K events cuts"};
+  MutableConfigurable<DGCutparHolder> diffCuts2pi{cutNames[0].data(), {}, "Diffractive 2pi events cuts"};
+  MutableConfigurable<DGCutparHolder> diffCuts4pi{cutNames[1].data(), {}, "Diffractive 4pi events cuts"};
+  MutableConfigurable<DGCutparHolder> diffCuts2K{cutNames[2].data(), {}, "Diffractive 2K events cuts"};
+  MutableConfigurable<DGCutparHolder> diffCuts4K{cutNames[3].data(), {}, "Diffractive 4K events cuts"};
 
   // DG selector
   DGSelector dgSelector;
@@ -84,20 +84,21 @@ struct DGFilterRun3 {
   //   4: number of FwdTracks > 0
   //   5: not all global tracks are vtx tracks
   //   6: not all vtx tracks are global tracks
-  //   7: number of vtx tracks out of range
-  //   8: has not good PID information
-  //   9: track pt out of range
-  //  10: track eta out of range
-  //  11: net charge out of range
-  //  12: IVM out of range
+  //   7: fraction of tracks with TOF hit too low
+  //   8: number of vtx tracks out of range
+  //   9: has not good PID information
+  //  10: track pt out of range
+  //  11: track eta out of range
+  //  12: net charge out of range
+  //  13: IVM out of range
   static constexpr std::string_view histNames[4] = {"aftercut2pi", "aftercut4pi", "aftercut2K", "aftercut4K"};
   HistogramRegistry registry{
     "registry",
     {
-      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
+      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
     }};
 
   void init(InitContext&)
@@ -137,19 +138,19 @@ struct DGFilterRun3 {
       // different cases
       switch (ii) {
         case 0:
-          diffCuts = (cutHolder)diffCuts2pi;
+          diffCuts = (DGCutparHolder)diffCuts2pi;
           registry.fill(HIST(histNames[0]), 0.);
           break;
         case 1:
-          diffCuts = (cutHolder)diffCuts4pi;
+          diffCuts = (DGCutparHolder)diffCuts4pi;
           registry.fill(HIST(histNames[1]), 0.);
           break;
         case 2:
-          diffCuts = (cutHolder)diffCuts2K;
+          diffCuts = (DGCutparHolder)diffCuts2K;
           registry.fill(HIST(histNames[2]), 0.);
           break;
         case 3:
-          diffCuts = (cutHolder)diffCuts4K;
+          diffCuts = (DGCutparHolder)diffCuts4K;
           registry.fill(HIST(histNames[3]), 0.);
           break;
         default:

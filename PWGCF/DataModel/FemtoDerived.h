@@ -19,7 +19,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include <cmath>
 
 namespace o2::aod

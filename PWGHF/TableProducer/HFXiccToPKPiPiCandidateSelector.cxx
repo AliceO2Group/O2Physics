@@ -124,7 +124,7 @@ struct HfXiccToPKPiPiCandidateSelector {
     return true;
   }
 
-  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCandProng3, aod::BigTracksPID const&)
+  void process(aod::HfCandXicc const& hfCandXiccs, aod::HfCandProng3 const&, aod::BigTracksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);

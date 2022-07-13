@@ -51,41 +51,26 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
-#include "EventFiltering/PWGUD/diffHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/UDHelperFunctions.h"
 #include "PWGUD/DataModel/DGCandidates.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
-                      aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                      aod::TOFSignal, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-
-template <typename TCs>
-int8_t netCharge(TCs tracks)
-{
-  int8_t nch = 0;
-  for (auto track : tracks) {
-    if (track.isPVContributor()) {
-      nch += track.sign();
-    }
-  }
-  return nch;
-}
-
 struct DGCandProducer {
 
-  // get a cutHolder
-  cutHolder diffCuts = cutHolder();
-  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
 
   // DG selector
   DGSelector dgSelector;
 
   void init(InitContext&)
   {
-    diffCuts = (cutHolder)DGCuts;
+    diffCuts = (DGCutparHolder)DGCuts;
   }
 
   Produces<aod::DGCandidates> outputCollisions;
@@ -124,7 +109,7 @@ struct DGCandProducer {
       // update DGCandidates tables
       outputCollisions(bc.runNumber(), bc.timestamp(),
                        collision.posX(), collision.posY(), collision.posZ(),
-                       collision.numContrib(), netCharge(tracks));
+                       collision.numContrib(), netCharge(tracks), rPVtrwTOF(tracks, collision.numContrib()));
 
       // update DGTracks tables
       for (auto& track : tracks) {

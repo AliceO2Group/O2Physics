@@ -15,8 +15,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/DataModel/McPIDTable.h"
-#include "EventFiltering/PWGUD/diffHelpers.h"
-#include "PWGUD/Core/diffMCHelpers.h"
+#include "EventFiltering/PWGUD/DGHelpers.h"
+#include "PWGUD/Core/DGMCHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -345,6 +345,8 @@ struct MCTracks {
   using CCs = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using CC = CCs::iterator;
 
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+
   void process(CCs const& collisions, aod::McCollisions& McCols, aod::McParticles& McParts)
   {
 
@@ -357,7 +359,7 @@ struct MCTracks {
            collision.globalIndex(), MCCol.globalIndex(), MCCol.generatorsID());
 
       // get MCParticles which belong to MCCol
-      auto MCPartSlice = McParts.sliceBy(aod::mcparticle::mcCollisionId, MCCol.globalIndex());
+      auto MCPartSlice = McParts.sliceBy(perMcCollision, MCCol.globalIndex());
       LOGF(info, "  Number of McParticles %i", MCPartSlice.size());
 
       // loop over particles

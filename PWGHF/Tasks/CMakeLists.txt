@@ -105,26 +105,6 @@ o2physics_add_dpl_workflow(task-lc-tok0sp
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(correlator-d0d0bar
-                    SOURCES HFCorrelatorD0D0bar.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(correlator-d0d0bar-barrel-full-pid
-                    SOURCES HFCorrelatorD0D0barBarrelFullPID.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(correlator-dplusdminus
-                    SOURCES HFCorrelatorDplusDminus.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(task-correlation-ddbar
-                    SOURCES taskCorrelationDDbar.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(sel-optimisation
                     SOURCES HFSelOptimisation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing

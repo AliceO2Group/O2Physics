@@ -24,7 +24,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong3;
 
 #include "Framework/runDataProcessing.h"
@@ -144,7 +143,7 @@ struct TaskDPlus {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::DPlusToPiKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kDPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kDPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
@@ -159,7 +158,7 @@ struct TaskDPlus {
         if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
           registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         }
-        if (candidate.originMCRec() == OriginType::Prompt) {
+        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtvsYRecSigPrompt_RecoSkim"), ptRec, yRec);
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
             registry.fill(HIST("hPtvsYRecSigPrompt_RecoTopol"), ptRec, yRec);
@@ -201,7 +200,7 @@ struct TaskDPlus {
         }
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtvsYGen"), ptGen, yGen);
-        if (particle.originMCGen() == OriginType::Prompt) {
+        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hPtvsYGenPrompt"), ptGen, yGen);
         } else {

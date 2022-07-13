@@ -26,7 +26,7 @@
 #include <Common/DataModel/Centrality.h>
 #include <Common/DataModel/Multiplicity.h>
 #include <Common/DataModel/TrackSelectionTables.h>
-#include <Common/Core/PID/PIDResponse.h>
+#include <Common/DataModel/PIDResponse.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPObject.h>
 

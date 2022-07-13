@@ -213,7 +213,7 @@ struct Pi0QCTask {
 
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
-  void processAmbiguous(o2::aod::BC const bc, selectedAmbiguousClusters const& clusters)
+  void processAmbiguous(o2::aod::BC const& bc, selectedAmbiguousClusters const& clusters)
   {
     // loop over bc , if requested (mVetoBCID >= 0), reject everything from a certain BC
     // this can be used as alternative to event selection (e.g. for pilot beam data)

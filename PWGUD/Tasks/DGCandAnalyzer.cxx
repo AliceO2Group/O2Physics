@@ -36,10 +36,10 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
-#include "Common/Core/PID/PIDResponse.h"
-#include "EventFiltering/PWGUD/cutHolder.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "EventFiltering/PWGUD/DGCutparHolder.h"
 #include "PWGUD/DataModel/DGCandidates.h"
-#include "PWGUD/Core/pidSelector.h"
+#include "PWGUD/Core/DGPIDSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,14 +47,14 @@ using namespace o2::framework::expressions;
 
 struct DGCandAnalyzer {
 
-  // get a cutHolder and anaparHolder
-  cutHolder diffCuts = cutHolder();
-  MutableConfigurable<cutHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-  anaparHolder anaPars = anaparHolder();
-  MutableConfigurable<anaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
+  // get a DGCutparHolder and DGAnaparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  MutableConfigurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  DGAnaparHolder anaPars = DGAnaparHolder();
+  MutableConfigurable<DGAnaparHolder> DGPars{"AnaPars", {}, "Analysis parameters"};
 
   // PID selector
-  pidSelector pidsel = pidSelector();
+  DGPIDSelector pidsel = DGPIDSelector();
 
   // define histograms
   HistogramRegistry registry{
@@ -67,8 +67,8 @@ struct DGCandAnalyzer {
 
   void init(InitContext&)
   {
-    diffCuts = (cutHolder)DGCuts;
-    anaPars = (anaparHolder)DGPars;
+    diffCuts = (DGCutparHolder)DGCuts;
+    anaPars = (DGAnaparHolder)DGPars;
     pidsel.init(anaPars);
   }
 
@@ -82,6 +82,11 @@ struct DGCandAnalyzer {
 
     // skip events with out-of-range net charge
     if (dgcand.netCharge() < diffCuts.minNetCharge() || dgcand.netCharge() > diffCuts.maxNetCharge()) {
+      return;
+    }
+
+    // skip events with out-of-range rgtrwTOF
+    if (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF()) {
       return;
     }
 
