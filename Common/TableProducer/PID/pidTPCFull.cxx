@@ -33,6 +33,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
+#include "pidTPCBase.h"
 #include "DPG/Tasks/qaPIDTPC.h"
 
 using namespace o2;
@@ -101,6 +102,10 @@ struct tpcPidFull {
 
   void init(o2::framework::InitContext& initContext)
   {
+    if (doprocessStandard == true && doprocessCustom == true) {
+      LOGF(fatal, "Cannot enable processStandard and processCustom at the same time. Please choose one.");
+    }
+
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
       enableFlagIfTableRequired(initContext, "pidTPCFull" + particle, flag);
@@ -162,8 +167,8 @@ struct tpcPidFull {
     }
   }
 
-  void process(Coll const& collisions, Trks const& tracks,
-               aod::BCsWithTimestamps const&)
+  void processStandard(Coll const& collisions, Trks const& tracks,
+                       aod::BCsWithTimestamps const&)
   {
 
     const unsigned long tracks_size = tracks.size();
@@ -311,6 +316,158 @@ struct tpcPidFull {
       count_tracks++;
     }
   }
+  PROCESS_SWITCH(tpcPidFull, processStandard, "Standard processing", true);
+
+  void processCustom(soa::Join<aod::Collisions, aod::TPCMult> const& collisions, Trks const& tracks,
+                     aod::BCsWithTimestamps const&)
+  {
+
+    const unsigned long tracks_size = tracks.size();
+
+    auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
+      }
+      table.reserve(tracks_size);
+    };
+    // Prepare memory for enabled tables
+    reserveTable(pidEl, tablePIDEl);
+    reserveTable(pidMu, tablePIDMu);
+    reserveTable(pidPi, tablePIDPi);
+    reserveTable(pidKa, tablePIDKa);
+    reserveTable(pidPr, tablePIDPr);
+    reserveTable(pidDe, tablePIDDe);
+    reserveTable(pidTr, tablePIDTr);
+    reserveTable(pidHe, tablePIDHe);
+    reserveTable(pidAl, tablePIDAl);
+
+    std::vector<float> network_prediction;
+
+    if (useNetworkCorrection) {
+
+      auto start_network_total = std::chrono::high_resolution_clock::now();
+
+      if (autofetchNetworks) {
+
+        auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+
+        if (currentRunNumber != bc.runNumber()) { // fetches network only if the runnumbers change
+          currentRunNumber = bc.runNumber();
+          LOG(info) << "Fetching network for runnumber: " << currentRunNumber << " and timestamp: " << bc.timestamp();
+          std::map<std::string, std::string> metadata;
+          ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
+          Network temp_net(networkPathLocally.value,
+                           enableNetworkOptimizations.value);
+          network = temp_net;
+          network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+        }
+      }
+
+      // Defining some network parameters
+      int input_dimensions = network.getInputDimensions();
+      int output_dimensions = network.getOutputDimensions();
+      const unsigned long track_prop_size = input_dimensions * tracks_size;
+      const unsigned long prediction_size = output_dimensions * tracks_size;
+
+      network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+
+      float duration_network = 0;
+
+      std::vector<float> track_properties(track_prop_size);
+      unsigned long counter_track_props = 0;
+      int loop_counter = 0;
+
+      // Filling a std::vector<float> to be evaluated by the network
+      // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
+      for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
+        for (auto const& trk : tracks) {
+          track_properties[counter_track_props] = trk.tpcInnerParam();
+          track_properties[counter_track_props + 1] = trk.tgl();
+          track_properties[counter_track_props + 2] = trk.signed1Pt();
+          track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+          track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
+          track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
+          counter_track_props += input_dimensions;
+        }
+
+        auto start_network_eval = std::chrono::high_resolution_clock::now();
+        float* output_network = network.evalNetwork(track_properties);
+        auto stop_network_eval = std::chrono::high_resolution_clock::now();
+        duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
+        for (unsigned long i = 0; i < prediction_size; i += output_dimensions) {
+          for (int j = 0; j < output_dimensions; j++) {
+            network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+          }
+        }
+
+        counter_track_props = 0;
+        loop_counter += 1;
+      }
+      track_properties.clear();
+
+      auto stop_network_total = std::chrono::high_resolution_clock::now();
+      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (tracks_size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
+      LOG(info) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (tracks_size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
+    }
+
+    int lastCollisionId = -1; // Last collision ID analysed
+    unsigned long count_tracks = 0;
+
+    for (auto const& trk : tracks) {
+      // Loop on Tracks
+      if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
+        lastCollisionId = trk.collisionId();
+        const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
+        response.SetParameters(ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp()));
+      }
+      // Check and fill enabled tables
+      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracks_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
+        if (flag.value != 1) {
+          return;
+        }
+
+        if (useNetworkCorrection) {
+
+          // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+          // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
+          if (network.getOutputDimensions() == 1) {
+            table(response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+                  (trk.tpcSignal() - network_prediction[count_tracks + tracks_size * pid] * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+          } else if (network.getOutputDimensions() == 2) {
+            table((network_prediction[2 * (count_tracks + tracks_size * pid) + 1] - network_prediction[2 * (count_tracks + tracks_size * pid)]) * response.GetExpectedSignal(trk, pid),
+                  (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[2 * (count_tracks + tracks_size * pid)]) / (network_prediction[2 * (count_tracks + tracks_size * pid) + 1] - network_prediction[2 * (count_tracks + tracks_size * pid)]));
+          } else if (network.getOutputDimensions() == 3) {
+            if (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) >= network_prediction[3 * (count_tracks + tracks_size * pid)]) {
+              table((network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]) * response.GetExpectedSignal(trk, pid),
+                    (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]));
+            } else {
+              table((network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]) * response.GetExpectedSignal(trk, pid),
+                    (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]));
+            }
+          } else {
+            LOGF(fatal, "Network output-dimensions incompatible!");
+          }
+        } else {
+          table(response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+                response.GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+        }
+      };
+
+      // const o2::pid::tpc::Response& response;
+      makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
+      makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
+      makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
+      makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
+      makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
+      makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
+      makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
+      makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
+      makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
+
+      count_tracks++;
+    }
+  }
+  PROCESS_SWITCH(tpcPidFull, processCustom, "Custom processing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
