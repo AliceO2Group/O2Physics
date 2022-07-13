@@ -142,7 +142,7 @@ void BookWeightsHistograms()
   fWeightsFlagsPro->GetXaxis()->SetBinLabel(3, "w_{#eta}");
   /*
  for(Int_t w=0;w<gWeights;w++) // use weights [phi,pt,eta]
- { 
+ {
   if(fUseWeights[w])fWeightsFlagsPro->Fill(w+0.5,1.);
  }
  */
