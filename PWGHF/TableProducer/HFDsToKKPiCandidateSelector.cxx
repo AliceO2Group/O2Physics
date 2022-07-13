@@ -165,7 +165,5 @@ struct HfDsToKKPiCandidateSelector {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{};
-  workflow.push_back(adaptAnalysisTask<HfDsTokkpiCandidateSelector>(cfgc));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<HfDsTokkpiCandidateSelector>(cfgc)};
 }
