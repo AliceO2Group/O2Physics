@@ -26,7 +26,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::aod::hf_cand_prong3;
 
@@ -86,10 +85,10 @@ struct ValidationGenLevel {
 
   void init(o2::framework::InitContext&)
   {
-    hPromptCharmHadronsPtDistr = registry.add<TH2>("hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
+    hPromptCharmHadronsPtDistr = registry.add<TH2>("hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
     hPromptCharmHadronsYDistr = registry.add<TH2>("hPromptCharmHadronsYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, -5., 5.}});
     hPromptCharmHadronsDecLenDistr = registry.add<TH2>("hPromptCharmHadronsDecLDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 10000.}});
-    hNonPromptCharmHadronsPtDistr = registry.add<TH2>("hNonPromptCharmHadronsPtDistr", "Pt distribution vs non-prompt charm hadron; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
+    hNonPromptCharmHadronsPtDistr = registry.add<TH2>("hNonPromptCharmHadronsPtDistr", "Pt distribution vs non-prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 50.}});
     hNonPromptCharmHadronsYDistr = registry.add<TH2>("hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", HistType::kTH2F, {{7, -0.5, 6.5}, {100, -5., 5.}});
     hNonPromptCharmHadronsDecLenDistr = registry.add<TH2>("hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", HistType::kTH2F, {{7, -0.5, 6.5}, {100, 0., 10000.}});
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
@@ -157,10 +156,10 @@ struct ValidationGenLevel {
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           int origin = -1;
           if (listDaughters.size() == arrayPDGsize) {
-            origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-            if (origin == OriginType::Prompt) {
+            origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+            if (origin == RecoDecay::OriginType::Prompt) {
               counterPrompt[iD]++;
-            } else if (origin == OriginType::NonPrompt) {
+            } else if (origin == RecoDecay::OriginType::NonPrompt) {
               counterNonPrompt[iD]++;
             }
           }
@@ -190,12 +189,16 @@ struct ValidationGenLevel {
           registry.fill(HIST("hPzDiffMotherDaughterGen"), pzDiff);
           registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
           registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
-          if (origin == OriginType::Prompt) {
-            hPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
+          if (origin == RecoDecay::OriginType::Prompt) {
+            if (std::abs(particle.y()) < 0.5) {
+              hPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
+            }
             hPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
             hPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
-          } else if (origin == OriginType::NonPrompt) {
-            hNonPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
+          } else if (origin == RecoDecay::OriginType::NonPrompt) {
+            if (std::abs(particle.y()) < 0.5) {
+              hNonPromptCharmHadronsPtDistr->Fill(whichHadron, particle.pt());
+            }
             hNonPromptCharmHadronsYDistr->Fill(whichHadron, particle.y());
             hNonPromptCharmHadronsDecLenDistr->Fill(whichHadron, decayLength * 10000);
           }
@@ -284,7 +287,7 @@ struct ValidationRecLevel {
         whichHad = 6;
       }
       int whichOrigin = -1;
-      if (cand2Prong.originMCRec() == OriginType::Prompt) {
+      if (cand2Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
@@ -293,7 +296,7 @@ struct ValidationRecLevel {
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
         if (cand2Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
@@ -349,7 +352,7 @@ struct ValidationRecLevel {
         whichHad = 5;
       }
       int whichOrigin = -1;
-      if (cand3Prong.originMCRec() == OriginType::Prompt) {
+      if (cand3Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
@@ -358,7 +361,7 @@ struct ValidationRecLevel {
       if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand3Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());

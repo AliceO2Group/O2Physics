@@ -17,11 +17,7 @@
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
@@ -41,6 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Task to produce the TPC QA plots
 template <o2::track::PID::ID pid_type>
 struct pidTPCTaskQA {
 

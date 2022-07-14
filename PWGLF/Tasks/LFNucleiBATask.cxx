@@ -42,6 +42,7 @@ struct LFNucleiBATask {
   Configurable<float> nsigmaTPCcut{"nsigmaTPCcut", 5.f, "Value of the Nsigma TPC cut"};
   Configurable<float> nsigmaTOFcut{"nsigmaTOFcut", 5.f, "Value of the Nsigma TOF cut"};
   Configurable<float> etaCut{"etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
+  Configurable<float> yCut{"yCut", 0.5f, "Value of the rapidity selection for spectra (default 0.5)"};
   Configurable<float> cfgCutVertex{"cfgCutVSertex", 10.0f, "Accepted z-vertex range"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, ""};
   static constexpr int PDGPion = 211;
@@ -89,8 +90,11 @@ struct LFNucleiBATask {
 
     if (doprocessMCReco) {
       histos.add<TH1>("tracks/proton/h1ProtonSpectraTrue", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
+      histos.add<TH1>("tracks/proton/h1antiProtonSpectraTrue", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/deuteron/h1DeuteronSpectraTrue", "#it{p}_{T} (d)", HistType::kTH1F, {ptAxis});
+      histos.add<TH1>("tracks/deuteron/h1antiDeuteronSpectraTrue", "#it{p}_{T} (d)", HistType::kTH1F, {ptAxis});
       histos.add<TH1>("tracks/helium/h1HeliumSpectraTrue", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
+      histos.add<TH1>("tracks/helium/h1antiHeliumSpectraTrue", "#it{p}_{T} (He)", HistType::kTH1F, {ptAxis});
     }
 
     histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "-dE/dX vs p; p (GeV/c); -dE/dx (a.u.)", HistType::kTH2F, {{500, 0.0, 5.0}, {81000, 0.0, 1E3}});
@@ -132,6 +136,11 @@ struct LFNucleiBATask {
     histos.add("spectraGen/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
     histos.add("spectraGen/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
     histos.add("spectraGen/histSecTransportPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+
+    histos.add("spectraGen/histGenPtantiProton", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histGenPtantiProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
+    histos.add("spectraGen/histSecTransportPtantiProton", "generated particles", HistType::kTH1F, {ptAxis});
 
     histos.add("spectraGen/histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
     histos.add("spectraGen/histGenPtDPrim", "generated particles", HistType::kTH1F, {ptAxis});
@@ -239,8 +248,14 @@ struct LFNucleiBATask {
         if (std::abs(track.pdgCode()) == PDGProton)
           histos.fill(HIST("tracks/proton/h1ProtonSpectraTrue"), track.pt());
 
+        if (std::abs(track.pdgCode()) == -PDGProton)
+          histos.fill(HIST("tracks/proton/h1antiProtonSpectraTrue"), track.pt());
+
         if (std::abs(track.pdgCode()) == PDGDeuteron)
           histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrue"), track.pt());
+
+        if (std::abs(track.pdgCode()) == -PDGDeuteron)
+          histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrue"), track.pt());
 
         if (std::abs(track.pdgCode()) == PDGHelium)
           histos.fill(HIST("tracks/helium/h1HeliumSpectraTrue"), track.pt());
@@ -268,7 +283,7 @@ struct LFNucleiBATask {
     nCount++;
     histos.fill(HIST("spectraGen/histGenVetxZ"), mcCollision.posZ());
     for (auto& mcParticleGen : mcParticles) {
-      if (abs(mcParticleGen.y()) > std::abs(etaCut)) {
+      if (abs(mcParticleGen.y()) > std::abs(yCut)) {
         continue;
       }
 
@@ -300,6 +315,15 @@ struct LFNucleiBATask {
           histos.fill(HIST("spectraGen/histGenPtProtonSec"), mcParticleGen.pt());
         if (!isPhysPrim && !isProdByGen)
           histos.fill(HIST("spectraGen/histSecTransportPtProton"), mcParticleGen.pt());
+      }
+      if (std::abs(mcParticleGen.pdgCode()) == -PDGProton) {
+        histos.fill(HIST("spectraGen/histGenPtantiProton"), mcParticleGen.pt());
+        if (isPhysPrim)
+          histos.fill(HIST("spectraGen/histGenPtantiProtonPrim"), mcParticleGen.pt());
+        if (!isPhysPrim && isProdByGen)
+          histos.fill(HIST("spectraGen/histGenPtantiProtonSec"), mcParticleGen.pt());
+        if (!isPhysPrim && !isProdByGen)
+          histos.fill(HIST("spectraGen/histSecTransportPtantiProton"), mcParticleGen.pt());
       }
       if (mcParticleGen.pdgCode() == PDGDeuteron) {
         histos.fill(HIST("spectraGen/histGenPtD"), mcParticleGen.pt());

@@ -172,13 +172,15 @@ struct Alice3CDeuteron {
 #undef MakeHistos
   }
 
+  Preslice<aod::McParticles_000> perMcCollision = aod::mcparticle::mcCollisionId;
+
   void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
                const o2::aod::McCollisions& Mccoll,
                const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov,
                                aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullDe>& tracks,
                const aod::McParticles_000& mcParticles)
   {
-    const auto particlesInCollision = mcParticles.sliceBy(aod::mcparticle::mcCollisionId, coll.mcCollision().globalIndex());
+    const auto particlesInCollision = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
     for (const auto& i : particlesInCollision) {
       histos.get<TH1>(HIST("event/particlespdg"))->Fill(Form("%i", i.pdgCode()), 1);
       if (i.pdgCode() != 12345) {

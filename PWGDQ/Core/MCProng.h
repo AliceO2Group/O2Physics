@@ -18,8 +18,8 @@
 //          bit maps with a bit dedicated to each source (MCProng::Source), bit map on whether the specified source to be excluded,
 //          whether to use AND among all specified source requirements
 
-/* The PDG codes us the PYTHIA standard. 
-A few non-existent PYTHIA codes are used to select more than one PYTHIA code. 
+/* The PDG codes us the PYTHIA standard.
+A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 
 0 - default, accepts all PYTHIA codes
 100 - light unflavoured mesons in the code range 100-199
@@ -79,7 +79,7 @@ class MCProng
   MCProng();
   MCProng(int n);
   MCProng(int n, std::vector<int> pdgs, std::vector<bool> checkBothCharges, std::vector<bool> excludePDG,
-          std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap);
+          std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap, bool fCheckGenerationsInTime = false);
   MCProng(const MCProng& c) = default;
   virtual ~MCProng() = default;
 
@@ -87,6 +87,7 @@ class MCProng
   void SetSources(int generation, uint64_t bits, uint64_t exclude = 0, bool useANDonSourceBits = true);
   void SetSourceBit(int generation, int sourceBit, bool exclude = false);
   void SetUseANDonSourceBits(int generation, bool option = true);
+  void SetSignalInTime(bool intime = false); // set variable to check generations in time or back in time (default)
   void Print() const;
   bool TestPDG(int i, int pdgCode) const;
   bool ComparePDG(int pdg, int prongPDG, bool checkBothCharges = false, bool exclude = false) const;
@@ -98,7 +99,8 @@ class MCProng
   std::vector<uint64_t> fSourceBits;
   std::vector<uint64_t> fExcludeSource;
   std::vector<bool> fUseANDonSourceBitMap;
+  bool fCheckGenerationsInTime;
 
-  ClassDef(MCProng, 1);
+  ClassDef(MCProng, 2);
 };
 #endif

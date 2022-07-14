@@ -25,7 +25,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong3;
 using namespace o2::analysis::hf_cuts_lc_topkpi;
 
@@ -155,12 +154,12 @@ struct TaskLcCentralityMC {
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1 << DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kLambdaCPlus, true);
+        auto indexMother = RecoDecay::getMother(particlesMC, candidate.index0_as<aod::BigTracksMC>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandProng3MCGen>>(), pdg::Code::kLambdaCPlus, true);
         auto particleMother = particlesMC.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
         registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
-        if (candidate.originMCRec() == OriginType::Prompt) {
+        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
         } else {
           registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
@@ -182,7 +181,7 @@ struct TaskLcCentralityMC {
         }
         auto ptGen = particle.pt();
         registry.fill(HIST("hPtGen"), ptGen);
-        if (particle.originMCGen() == OriginType::Prompt) {
+        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
         } else {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);

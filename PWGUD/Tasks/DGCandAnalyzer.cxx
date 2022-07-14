@@ -85,6 +85,11 @@ struct DGCandAnalyzer {
       return;
     }
 
+    // skip events with out-of-range rgtrwTOF
+    if (dgcand.rgtrwTOF() < diffCuts.minRgtrwTOF()) {
+      return;
+    }
+
     // find track combinations which are compatible with anaPars.TPCnSigmas()
     auto nIVMs = pidsel.computeIVMs(anaPars.nCombine(), dgtracks);
 

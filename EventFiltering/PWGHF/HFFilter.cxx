@@ -39,7 +39,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
 
@@ -418,6 +417,10 @@ struct HfFilter { // Main struct for HF triggers
       return kRejected;
     }
 
+    if (std::abs(track.dcaZ()) > 2.f) {
+      return kRejected;
+    }
+
     if (std::abs(track.dcaXY()) < cutsSingleTrackBeauty[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
       return kRejected; // minimum DCAxy
     }
@@ -428,9 +431,6 @@ struct HfFilter { // Main struct for HF triggers
     // below only regular beauty tracks, not required for soft pions
     if (pT < pTMinBeautyBachelor) {
       return kSoftPion;
-    }
-    if (track.isGlobalTrack() != (uint8_t) true) {
-      return kSoftPion; // use only global tracks except for
     }
 
     return kRegular;
@@ -663,8 +663,10 @@ struct HfFilter { // Main struct for HF triggers
 
   using HfTrackIndexProng2withColl = soa::Join<aod::Hf2Prongs, aod::Colls2Prong>;
   using HfTrackIndexProng3withColl = soa::Join<aod::Hf3Prongs, aod::Colls3Prong>;
-  using BigTracksWithProtonPID = soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using BigTracksMCPID = soa::Join<aod::BigTracksExtended, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::BigTracksMC>;
+
+  Filter trackFilter = requireGlobalTrackWoDCAInFilter();
+  using BigTracksWithProtonPID = soa::Filtered<soa::Join<aod::BigTracksExtended, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   void process(aod::Collision const& collision,
                HfTrackIndexProng2withColl const& cand2Prongs,
@@ -979,10 +981,10 @@ struct HfFilter { // Main struct for HF triggers
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-        if (origin == OriginType::NonPrompt) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           flag = kNonPrompt;
-        } else {
+        } else if (origin == RecoDecay::OriginType::Prompt) {
           flag = kPrompt;
         }
       } else {
@@ -1010,13 +1012,13 @@ struct HfFilter { // Main struct for HF triggers
       int8_t origin = 0;
 
       // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign);
+      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec >= 0) {
         channel = kDplus;
       }
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign); // TODO: replace hard coded pdg code
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2); // TODO: replace hard coded pdg code
         if (indexRec >= 0) {
           channel = kDs;
         }
@@ -1030,7 +1032,7 @@ struct HfFilter { // Main struct for HF triggers
       }
       if (indexRec < 0) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kXic;
         }
@@ -1038,8 +1040,8 @@ struct HfFilter { // Main struct for HF triggers
 
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-        if (origin == OriginType::NonPrompt) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           flag = kNonPrompt;
         } else {
           flag = kPrompt;
