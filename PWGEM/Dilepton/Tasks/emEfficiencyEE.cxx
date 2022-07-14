@@ -512,7 +512,7 @@ struct AnalysisTrackSelection {
 
         // All reconstructed leptons matched to a 1 prong signal or MC 1 prong signal directly
         std::vector<TString> mcnamesreco;
-        for (int isig = 0; isig < fMCSignals.size(); ++isig) {
+        for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
           TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName());
           mcnamesreco.push_back(nameStr2);
           histClassesQA += Form("%s;", nameStr2.Data());
@@ -522,7 +522,7 @@ struct AnalysisTrackSelection {
 
       // Add histogram classes for each MC signal at generated level
       std::vector<TString> mcnamesgen;
-      for (int isig = 0; isig < fMCSignals.size(); ++isig) {
+      for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
         TString nameStr2 = Form("MCTruthGen_%s", fMCSignals.at(isig).GetName());
         mcnamesgen.push_back(nameStr2);
         histClassesQA += Form("%s;", nameStr2.Data());
