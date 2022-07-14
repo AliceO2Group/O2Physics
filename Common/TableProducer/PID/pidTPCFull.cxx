@@ -33,7 +33,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "DPG/Tasks/qaPIDTPC.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
