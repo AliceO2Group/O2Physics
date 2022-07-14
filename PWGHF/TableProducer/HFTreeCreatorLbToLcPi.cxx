@@ -257,23 +257,27 @@ struct HfTreeCreatorLbToLcPi {
             RICHPi0 = track0.rich().richNsigmaPi();
           if (track1.has_rich()) {
             RICHTrk1Pi = track1.rich().richNsigmaPi();
-            RICHTrk1p = track1.rich().richNsigmaPr();}
+            RICHTrk1p = track1.rich().richNsigmaPr();
+          }
           if (track2.has_rich())
             RICHTrk2K = track2.rich().richNsigmaKa();
           if (track3.has_rich()) {
             RICHTrk3Pi = track3.rich().richNsigmaPi();
-            RICHTrk3p = track3.rich().richNsigmaPr();}
+            RICHTrk3p = track3.rich().richNsigmaPr();
+          }
 
           if (track0.has_frich())
             fRICHPi0 = track0.frich().frichNsigmaPi();
           if (track1.has_frich()) {
             fRICHTrk1Pi = track1.frich().frichNsigmaPi();
-            fRICHTrk1p = track1.frich().frichNsigmaPr();}
+            fRICHTrk1p = track1.frich().frichNsigmaPr();
+          }
           if (track2.has_frich())
             fRICHTrk2K = track2.frich().frichNsigmaKa();
           if (track3.has_frich()) {
             fRICHTrk3Pi = track3.frich().frichNsigmaPi();
-            fRICHTrk3p = track3.frich().frichNsigmaPr();}
+            fRICHTrk3p = track3.frich().frichNsigmaPr();
+          }
 
           rowCandidateFull(
             candidate.rSecondaryVertex(),
