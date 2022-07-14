@@ -24,10 +24,10 @@
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/TrackSelectorPID.h"
-#include "ALICE3/DataModel/RICH.h"
 #include "Common/Core/PID/PIDResponse.h"
+#include "ALICE3/DataModel/RICH.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/PID.h"
 
 using namespace o2;
@@ -235,9 +235,9 @@ struct HfTreeCreatorLbToLcPi {
         if (FunctionSelection >= 1) {
           auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
           auto track0 = candidate.index1_as<ExtendedTracksPID>(); // daughter pion track
-          auto track1 = LcCand.index0_as<ExtendedTracksPID>();    // granddaughter tracks (lc decay particles)
-          auto track2 = LcCand.index1_as<ExtendedTracksPID>();
-          auto track3 = LcCand.index2_as<ExtendedTracksPID>();
+          auto track1 = candLc.index0_as<ExtendedTracksPID>();    // granddaughter tracks (lc decay particles)
+          auto track2 = candLc.index1_as<ExtendedTracksPID>();
+          auto track3 = candLc.index2_as<ExtendedTracksPID>();
 
           auto RICHTrk0Pi = -5000.0;
           auto RICHTrk1Pi = -5000.0;
@@ -246,38 +246,34 @@ struct HfTreeCreatorLbToLcPi {
           auto RICHTrk3Pi = -5000.0;
           auto RICHTrk3P = -5000.0;
 
-          auto fRICHPi0 = -5000.0;
+          auto fRICHTrk0Pi = -5000.0;
           auto fRICHTrk1Pi = -5000.0;
-          auto fRICHTrk1p = -5000.0;
+          auto fRICHTrk1P = -5000.0;
           auto fRICHTrk2K = -5000.0;
           auto fRICHTrk3Pi = -5000.0;
-          auto fRICHTrk3p = -5000.0;
+          auto fRICHTrk3P = -5000.0;
 
           if (track0.has_rich())
             RICHPi0 = track0.rich().richNsigmaPi();
-          if (track1.has_rich())
+          if (track1.has_rich()) {
             RICHTrk1Pi = track1.rich().richNsigmaPi();
-          if (track1.has_rich())
-            RICHTrk1p = track1.rich().richNsigmaPr();
+            RICHTrk1p = track1.rich().richNsigmaPr();}
           if (track2.has_rich())
             RICHTrk2K = track2.rich().richNsigmaKa();
-          if (track3.has_rich())
+          if (track3.has_rich()) {
             RICHTrk3Pi = track3.rich().richNsigmaPi();
-          if (track3.has_rich())
-            RICHTrk3p = track3.rich().richNsigmaPr();
+            RICHTrk3p = track3.rich().richNsigmaPr();}
 
           if (track0.has_frich())
             fRICHPi0 = track0.frich().frichNsigmaPi();
-          if (track1.has_frich())
+          if (track1.has_frich()) {
             fRICHTrk1Pi = track1.frich().frichNsigmaPi();
-          if (track1.has_frich())
-            fRICHTrk1p = track1.frich().frichNsigmaPr();
+            fRICHTrk1p = track1.frich().frichNsigmaPr();}
           if (track2.has_frich())
             fRICHTrk2K = track2.frich().frichNsigmaKa();
-          if (track3.has_frich())
+          if (track3.has_frich()) {
             fRICHTrk3Pi = track3.frich().frichNsigmaPi();
-          if (track3.has_frich())
-            fRICHTrk3p = track3.frich().frichNsigmaPr();
+            fRICHTrk3p = track3.frich().frichNsigmaPr();}
 
           rowCandidateFull(
             candidate.rSecondaryVertex(),
@@ -303,37 +299,37 @@ struct HfTreeCreatorLbToLcPi {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             track0.tofNSigmaPi(),
-            RICHPi0,
+            RICHTrk0Pi,
             RICHTrk1Pi,
-            RICHTrk1p,
+            RICHTrk1P,
             RICHTrk2K,
             RICHTrk3Pi,
-            RICHTrk3p,
-            fRICHPi0,
+            RICHTrk3P,
+            fRICHTrk0Pi,
             fRICHTrk1Pi,
-            fRICHTrk1p,
+            fRICHTrk1P,
             fRICHTrk2K,
             fRICHTrk3Pi,
-            fRICHTrk3p,
+            fRICHTrk3P,
             track1.tofNSigmaPi(),
             track1.tofNSigmaPr(),
             track2.tofNSigmaKa(),
             track3.tofNSigmaPi(),
             track3.tofNSigmaPr(),
-            o2::aod::hf_cand_prong3::InvMassLcpKpi(LcCand),
+            o2::aod::hf_cand_prong3::InvMassLcpKpi(candLc),
             o2::aod::hf_cand_prong3::CtLc(LcCand),
             o2::aod::hf_cand_prong3::YLc(LcCand),
             o2::aod::hf_cand_prong3::ELc(LcCand),
-            LcCand.eta(),
-            LcCand.cpa(),
-            LcCand.cpaXY(),
-            LcCand.chi2PCA(),
-            LcCand.decayLength(),
-            LcCand.decayLengthXY(),
-            LcCand.decayLengthXYNormalised(),
-            LcCand.impactParameter0(),
-            LcCand.impactParameter1(),
-            LcCand.impactParameter2(),
+            candLc.eta(),
+            candLc.cpa(),
+            candLc.cpaXY(),
+            candLc.chi2PCA(),
+            candLc.decayLength(),
+            candLc.decayLengthXY(),
+            candLc.decayLengthXYNormalised(),
+            candLc.impactParameter0(),
+            candLc.impactParameter1(),
+            candLc.impactParameter2(),
             FunctionSelection,
             FunctionInvMass,
             candidate.pt(),
