@@ -47,8 +47,8 @@ using namespace o2::analysis::hf_cuts_d0_topik;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct TaskHfCorrelations {
-
   HistogramRegistry registry{"registry"};
+
   OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
   OutputObj<CorrelationContainer> sameTPCMFTCh{"sameEventTPCMFTChHadrons"};
   OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
@@ -100,9 +100,9 @@ struct TaskHfCorrelations {
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
 
   //  HF candidate filter
-  Filter candidateFilter = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 ||
-                            aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
-  using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>;
+  //Filter candidateFilter = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 ||
+  //                          aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
+  using hfCandidates = soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>;
 
   //  =========================
   //      init()
@@ -156,7 +156,7 @@ struct TaskHfCorrelations {
 
     registry.add("hptcand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
     registry.add("hptprong0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("hptprong1", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("hptprong1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
     registry.add("hmass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hdeclength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hdeclengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -278,10 +278,10 @@ struct TaskHfCorrelations {
 
   //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
   template <typename TTracks>
-  void fillCandidateQA(float multiplicity, TTracks candidates)
+  void fillCandidateQA(TTracks candidates)
   {
     for (auto& candidate : candidates) {
-      if (isAcceptedCandidate(candidate) == false) {
+      if (!isAcceptedCandidate(candidate)) {
         continue;
       }
       registry.fill(HIST("hptcand"), candidate.pt());
@@ -328,7 +328,7 @@ struct TaskHfCorrelations {
         fillingHFcontainer = true;
         invmass = InvMassD0(track1);
         //  TODO: Check how to put this into a Filter
-        if (!(isAcceptedCandidate(track1))) {
+        if (!isAcceptedCandidate(track1)) {
           continue;
         }
       }
@@ -379,7 +379,6 @@ struct TaskHfCorrelations {
                        aod::MFTTracks const& mfttracks,
                        hfCandidates const& candidates)
   {
-
     if (!(isCollisionSelected(collision, true))) {
       return;
     }
@@ -413,7 +412,7 @@ struct TaskHfCorrelations {
     }
 
     if (processHFHadrons) {
-      fillCandidateQA(multiplicity, candidates);
+      fillCandidateQA(candidates);
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
@@ -426,7 +425,6 @@ struct TaskHfCorrelations {
                        aodTracks& tracks,
                        hfCandidates const& candidates)
   {
-
     if (!(isCollisionSelected(collision, true))) {
       return;
     }
@@ -448,7 +446,7 @@ struct TaskHfCorrelations {
     }
 
     if (processHFHadrons) {
-      fillCandidateQA(multiplicity, candidates);
+      fillCandidateQA(candidates);
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
