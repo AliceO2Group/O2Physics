@@ -11,9 +11,9 @@
 
 add_subdirectory(Core)
 # add_subdirectory(DataModel)
-#add_subdirectory(GenericFramework)
-#add_subdirectory(FemtoDream)
-#add_subdirectory(MultiparticleCorrelations)
-#add_subdirectory(Tasks)
-#add_subdirectory(TableProducer)
+add_subdirectory(GenericFramework)
+add_subdirectory(FemtoDream)
+add_subdirectory(MultiparticleCorrelations)
+add_subdirectory(Tasks)
+add_subdirectory(TableProducer)
 
