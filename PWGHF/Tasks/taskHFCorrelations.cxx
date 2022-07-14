@@ -471,27 +471,6 @@ struct TaskHfCorrelations {
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
     BinningType binningWithTracksSize{{getTracksSize}, {axisVertex, axisMultiplicity}, true};
 
-    // =====================================
-    // Debugging code for mixing, not needed in real analysis
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    for (auto& col : collisions) {
-      if (!isCollisionSelected(col)) {
-        continue;
-      }
-
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex());
-      auto mult = associatedTracks.size();
-      int bin1 = baseBinning.getBin(std::make_tuple(col.posZ(), mult));
-      //LOG(info) << "Standard binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " tracks size: " << mult << " bin: " << bin1;
-
-      auto binningValues = binningWithTracksSize.getBinningValues(col, collisions);
-      int bin = binningWithTracksSize.getBin(binningValues);
-      registry.fill(HIST("eventcountmixingcollisions"), bin);
-      //LOG(info) << "Lambda binning: z: " << col.posZ() << " col index: " << col.globalIndex() << " z from binning: " << std::get<0>(binningValues) << " mult from binning: " << std::get<1>(binningValues) << " bin: " << bin;
-    }
-    // End of debuging code
-    // =====================================
-
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithTracksSize, cfgNoMixedEvents, -1, collisions, tracksTuple};
 
@@ -511,7 +490,6 @@ struct TaskHfCorrelations {
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
       registry.fill(HIST("eventcount"), bin);
-      //LOG(info) << "Collisions: " << collision1.globalIndex() << ", " << collision2.globalIndex() << " z: " << collision1.posZ() << ", " << collision2.posZ() << " mult: " << tracks1.size() << ", " << tracks2.size() << " bin: " << bin;
 
       if (processTPCTPChh) {
         fillMixingQA(multiplicity, tracks1);
