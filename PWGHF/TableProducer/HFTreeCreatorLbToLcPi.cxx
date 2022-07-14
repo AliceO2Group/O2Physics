@@ -216,16 +216,11 @@ struct HfTreeCreatorLbToLcPi {
   {
   }
 
-  using TracksPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
-  using ExtendedTracksPID = soa::Join<TracksPID, aod::TracksExtended>;
+  using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID, aod::TracksExtended>;
 
-  void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
-               soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HFSelLbToLcPiCandidate> const& candidates,
-               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const& Lccandidates,
-               soa::Join<aod::McParticles, aod::HfCandLbMCGen> const& particles,
-               aod::BigTracksMC const& bigtracksmc,
-               ExtendedTracksPID const&,
+  void process(soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HFSelLbToLcPiCandidate> const& candidates,
+               soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const&,
+               TracksExtendedPID const&,
                aod::FRICHs const&,
                aod::RICHs const&)
   {
@@ -238,18 +233,18 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionCt,
                            float FunctionY) {
         if (FunctionSelection >= 1) {
-          auto LcCand = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
+          auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
           auto track0 = candidate.index1_as<ExtendedTracksPID>(); // daughter pion track
           auto track1 = LcCand.index0_as<ExtendedTracksPID>();    // granddaughter tracks (lc decay particles)
           auto track2 = LcCand.index1_as<ExtendedTracksPID>();
           auto track3 = LcCand.index2_as<ExtendedTracksPID>();
 
-          auto RICHPi0 = -5000.0;
+          auto RICHTrk0Pi = -5000.0;
           auto RICHTrk1Pi = -5000.0;
-          auto RICHTrk1p = -5000.0;
+          auto RICHTrk1P = -5000.0;
           auto RICHTrk2K = -5000.0;
           auto RICHTrk3Pi = -5000.0;
-          auto RICHTrk3p = -5000.0;
+          auto RICHTrk3P = -5000.0;
 
           auto fRICHPi0 = -5000.0;
           auto fRICHTrk1Pi = -5000.0;
@@ -293,10 +288,10 @@ struct HfTreeCreatorLbToLcPi {
             candidate.chi2PCA(),
             candidate.impactParameterNormalised0(),
             candidate.ptProng0(),
-            RecoDecay::P(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
             candidate.impactParameterNormalised1(),
             candidate.ptProng1(),
-            RecoDecay::P(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
             candidate.pxProng0(),
             candidate.pyProng0(),
             candidate.pzProng0(),
