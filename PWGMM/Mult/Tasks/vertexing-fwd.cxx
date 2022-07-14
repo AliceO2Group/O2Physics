@@ -208,7 +208,7 @@ struct vertexingfwd {
       registry.fill(HIST("CollisionsMatchIndicesMC"), mcCollAmbiID, indexMCcoll);
 
       if (collCounter == 1) {
-        printf("strange ambiguous track of mfttrackId %d and trackGI %lld\n", ambitrack.mfttrackId(), track.globalIndex());
+        printf("strange ambiguous track of mfttrackId %d\n", ambitrack.mfttrackId());
         if (mcCollAmbiID == indexMCcoll) {
           printf("and this is a correct match for the ambiguous track of mfttrackid %d\n", ambitrack.mfttrackId());
         }
