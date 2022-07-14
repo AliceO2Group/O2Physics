@@ -30,7 +30,6 @@
 #include "Common/Core/PID/PIDResponse.h"
 #include "ReconstructionDataFormats/PID.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand;
@@ -65,7 +64,7 @@ DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
 DECLARE_SOA_COLUMN(NSigRICHPi0, nsigRICHPi0, float);
 DECLARE_SOA_COLUMN(NSigfRICHPi0, nsigfRICHPi0, float);
 DECLARE_SOA_COLUMN(NSigTOFPi0, nsigTOFPi0, float);
-//Lc selection parameters
+// Lc selection parameters
 DECLARE_SOA_COLUMN(LcM, lcM, float);
 DECLARE_SOA_COLUMN(LcCt, lcCt, float);
 DECLARE_SOA_COLUMN(LcY, lcY, float);
@@ -187,25 +186,25 @@ DECLARE_SOA_TABLE(HfCandLbFullParticles, "AOD", "HFCANDLbFullP",
 
 } // namespace o2::aod
 
- namespace o2::aod
+namespace o2::aod
 {
- namespace hf_track_index_alice3_pid
+namespace hf_track_index_alice3_pid
 {
- DECLARE_SOA_INDEX_COLUMN(Track, track); //!
- DECLARE_SOA_INDEX_COLUMN(RICH, rich);   //!
- DECLARE_SOA_INDEX_COLUMN(FRICH, frich);   //!
- } // namespace hf_track_index_alice3_pid
+DECLARE_SOA_INDEX_COLUMN(Track, track); //!
+DECLARE_SOA_INDEX_COLUMN(RICH, rich);   //!
+DECLARE_SOA_INDEX_COLUMN(FRICH, frich); //!
+} // namespace hf_track_index_alice3_pid
 
- DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
-                              hf_track_index_alice3_pid::TrackId,
-                              hf_track_index_alice3_pid::RICHId,
-                              hf_track_index_alice3_pid::FRICHId);
- } // namespace o2::aod
+DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
+                             hf_track_index_alice3_pid::TrackId,
+                             hf_track_index_alice3_pid::RICHId,
+                             hf_track_index_alice3_pid::FRICHId);
+} // namespace o2::aod
 
- struct Alice3PidIndexBuilder {
-   Builds<o2::aod::HfTrackIndexALICE3PID> index;
-   void init(o2::framework::InitContext&) {}
- };
+struct Alice3PidIndexBuilder {
+  Builds<o2::aod::HfTrackIndexALICE3PID> index;
+  void init(o2::framework::InitContext&) {}
+};
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
@@ -238,40 +237,52 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        if (FunctionSelection >= 1) { 
-           auto LcCand = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
-           auto track0 = candidate.index1_as<ExtendedTracksPID>(); //daughter pion track
-           auto track1 = LcCand.index0_as<ExtendedTracksPID>(); //granddaughter tracks (lc decay particles)
-           auto track2 = LcCand.index1_as<ExtendedTracksPID>();
-           auto track3 = LcCand.index2_as<ExtendedTracksPID>();
+        if (FunctionSelection >= 1) {
+          auto LcCand = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
+          auto track0 = candidate.index1_as<ExtendedTracksPID>(); // daughter pion track
+          auto track1 = LcCand.index0_as<ExtendedTracksPID>();    // granddaughter tracks (lc decay particles)
+          auto track2 = LcCand.index1_as<ExtendedTracksPID>();
+          auto track3 = LcCand.index2_as<ExtendedTracksPID>();
 
-           auto RICHPi0 = -5000.0;
-           auto RICHTrk1Pi = -5000.0;
-           auto RICHTrk1p = -5000.0;
-           auto RICHTrk2K = -5000.0;
-           auto RICHTrk3Pi = -5000.0;
-           auto RICHTrk3p = -5000.0;
+          auto RICHPi0 = -5000.0;
+          auto RICHTrk1Pi = -5000.0;
+          auto RICHTrk1p = -5000.0;
+          auto RICHTrk2K = -5000.0;
+          auto RICHTrk3Pi = -5000.0;
+          auto RICHTrk3p = -5000.0;
 
-           auto fRICHPi0 = -5000.0;
-           auto fRICHTrk1Pi = -5000.0;
-           auto fRICHTrk1p = -5000.0;
-           auto fRICHTrk2K = -5000.0;
-           auto fRICHTrk3Pi = -5000.0;
-           auto fRICHTrk3p = -5000.0;
+          auto fRICHPi0 = -5000.0;
+          auto fRICHTrk1Pi = -5000.0;
+          auto fRICHTrk1p = -5000.0;
+          auto fRICHTrk2K = -5000.0;
+          auto fRICHTrk3Pi = -5000.0;
+          auto fRICHTrk3p = -5000.0;
 
-          if (track0.has_rich()) RICHPi0 = track0.rich().richNsigmaPi();
-          if (track1.has_rich()) RICHTrk1Pi = track1.rich().richNsigmaPi();
-          if (track1.has_rich()) RICHTrk1p = track1.rich().richNsigmaPr();
-          if (track2.has_rich()) RICHTrk2K = track2.rich().richNsigmaKa();
-          if (track3.has_rich()) RICHTrk3Pi = track3.rich().richNsigmaPi();
-          if (track3.has_rich()) RICHTrk3p = track3.rich().richNsigmaPr();
+          if (track0.has_rich())
+            RICHPi0 = track0.rich().richNsigmaPi();
+          if (track1.has_rich())
+            RICHTrk1Pi = track1.rich().richNsigmaPi();
+          if (track1.has_rich())
+            RICHTrk1p = track1.rich().richNsigmaPr();
+          if (track2.has_rich())
+            RICHTrk2K = track2.rich().richNsigmaKa();
+          if (track3.has_rich())
+            RICHTrk3Pi = track3.rich().richNsigmaPi();
+          if (track3.has_rich())
+            RICHTrk3p = track3.rich().richNsigmaPr();
 
-          if (track0.has_frich()) fRICHPi0 = track0.frich().frichNsigmaPi();
-          if (track1.has_frich()) fRICHTrk1Pi = track1.frich().frichNsigmaPi();
-          if (track1.has_frich()) fRICHTrk1p = track1.frich().frichNsigmaPr();
-          if (track2.has_frich()) fRICHTrk2K = track2.frich().frichNsigmaKa();
-          if (track3.has_frich()) fRICHTrk3Pi = track3.frich().frichNsigmaPi();
-          if (track3.has_frich()) fRICHTrk3p = track3.frich().frichNsigmaPr();
+          if (track0.has_frich())
+            fRICHPi0 = track0.frich().frichNsigmaPi();
+          if (track1.has_frich())
+            fRICHTrk1Pi = track1.frich().frichNsigmaPi();
+          if (track1.has_frich())
+            fRICHTrk1p = track1.frich().frichNsigmaPr();
+          if (track2.has_frich())
+            fRICHTrk2K = track2.frich().frichNsigmaKa();
+          if (track3.has_frich())
+            fRICHTrk3Pi = track3.frich().frichNsigmaPi();
+          if (track3.has_frich())
+            fRICHTrk3p = track3.frich().frichNsigmaPr();
 
           rowCandidateFull(
             candidate.rSecondaryVertex(),
