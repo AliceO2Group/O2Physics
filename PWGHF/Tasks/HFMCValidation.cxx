@@ -281,7 +281,7 @@ struct ValidationRecLevel {
     // loop over tracks
     for (auto& track : collNonAssociatedTracks) {
       if (track.has_mcParticle()) {
-        auto particle = arrDaughters[iProng].mcParticle(); // ith daughter particle
+        auto particle = arrDaughters[iProng].mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginNonAssociatedTracks->Fill(origin);
       } else {
