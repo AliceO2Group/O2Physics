@@ -288,19 +288,7 @@ struct HfTagSelTracks {
   HistogramRegistry registry{
     "registry",
     {{"hRejTracks", "Tracks;;entries", {HistType::kTH1F, {{15, 0.5, 15.5}}}},
-     {"hPtNoCuts", "all tracks;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     // 2-prong histograms
-     {"hPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hDCAToPrimXYVsPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}}},
-     {"hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaMax2Prong * 100), -1.2 * etaMax2Prong, 1.2 * etaMax2Prong}}}},
-     // 3-prong histograms
-     {"hPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hDCAToPrimXYVsPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}}},
-     {"hEtaCuts3Prong", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaMax3Prong * 100), -1.2 * etaMax3Prong, 1.2 * etaMax3Prong}}}},
-     // bachelor (for cascades) histograms
-     {"hPtCutsV0bachelor", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hDCAToPrimXYVsPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{100, 0., 10.}, {400, -2., 2.}}}},
-     {"hEtaCutsV0bachelor", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaMaxBach * 100), -1.2 * etaMaxBach, 1.2 * etaMaxBach}}}}}};
+     {"hPtNoCuts", "all tracks;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}}};
 
   static const int nCuts = 4;
 
@@ -309,6 +297,19 @@ struct HfTagSelTracks {
 
   void init(InitContext const&)
   {
+    // 2-prong histograms
+    registry.add("hPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    registry.add("hDCAToPrimXYVsPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+    registry.add("hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaMax2Prong * 100), -1.2 * etaMax2Prong, 1.2 * etaMax2Prong}}});
+    // 3-prong histograms
+    registry.add("hPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    registry.add("hDCAToPrimXYVsPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+    registry.add("hEtaCuts3Prong", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaMax3Prong * 100), -1.2 * etaMax3Prong, 1.2 * etaMax3Prong}}});
+    // bachelor (for cascades) histograms
+    registry.add("hPtCutsV0bachelor", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    registry.add("hDCAToPrimXYVsPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+    registry.add("hEtaCutsV0bachelor", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1F, {{static_cast<int>(1.2 * etaMaxBach * 100), -1.2 * etaMaxBach, 1.2 * etaMaxBach}}});
+
     cutsSingleTrack = {cutsTrack2Prong, cutsTrack3Prong, cutsTrackBach};
     std::string cutNames[nCuts + 1] = {"selected", "rej pT", "rej eta", "rej track quality", "rej dca"};
     std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor"};
@@ -864,19 +865,19 @@ struct HfTrackIndexSkimsCreator {
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hNCand2Prong", "2-prong candidates preselected;# of candidates;entries", {HistType::kTH1F, {{2000, 0., 200000.}}}},
      {"hNCand2ProngVsNTracks", "2-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2F, {{2500, 0., 25000.}, {2000, 0., 200000.}}}},
-     {"hmassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hmassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hmassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
      // 3-prong histograms
      {"hVtx3ProngX", "3-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx3ProngY", "3-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx3ProngZ", "3-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
      {"hNCand3Prong", "3-prong candidates preselected;# of candidates;entries", {HistType::kTH1F, {{5000, 0., 500000.}}}},
      {"hNCand3ProngVsNTracks", "3-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2F, {{2500, 0., 25000.}, {5000, 0., 500000.}}}},
-     {"hmassDPlusToPiKPi", "D^{#plus} candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hmassLcToPKPi", "#Lambda_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hmassDsToPiKK", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
-     {"hmassXicToPKPi", "#Xi_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
+     {"hMassDPlusToPiKPi", "D^{#plus} candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassLcToPKPi", "#Lambda_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassDsToPiKK", "D_{s} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}},
+     {"hMassXicToPKPi", "#Xi_{c} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
   static const int n2ProngDecays = hf_cand_prong2::DecayType::N2ProngDecays; // number of 2-prong hadron types
   static const int n3ProngDecays = hf_cand_prong3::DecayType::N3ProngDecays; // number of 3-prong hadron types
@@ -1626,20 +1627,20 @@ struct HfTrackIndexSkimsCreator {
                       auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][0]);
                       switch (iDecay2P) {
                         case hf_cand_prong2::DecayType::D0ToPiK:
-                          registry.fill(HIST("hmassD0ToPiK"), mass2Prong);
+                          registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
                           break;
                         case hf_cand_prong2::DecayType::JpsiToEE:
-                          registry.fill(HIST("hmassJpsiToEE"), mass2Prong);
+                          registry.fill(HIST("hMassJpsiToEE"), mass2Prong);
                           break;
                         case hf_cand_prong2::DecayType::JpsiToMuMu:
-                          registry.fill(HIST("hmassJpsiToMuMu"), mass2Prong);
+                          registry.fill(HIST("hMassJpsiToMuMu"), mass2Prong);
                           break;
                       }
                     }
                     if (whichHypo2Prong[iDecay2P] >= 2) {
                       auto mass2Prong = RecoDecay::m(arrMom, arrMass2Prong[iDecay2P][1]);
                       if (iDecay2P == hf_cand_prong2::DecayType::D0ToPiK) {
-                        registry.fill(HIST("hmassD0ToPiK"), mass2Prong);
+                        registry.fill(HIST("hMassD0ToPiK"), mass2Prong);
                       }
                     }
                   }
@@ -1828,16 +1829,16 @@ struct HfTrackIndexSkimsCreator {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
-                        registry.fill(HIST("hmassDPlusToPiKPi"), mass3Prong);
+                        registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hmassDsToPiKK"), mass3Prong);
+                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
-                        registry.fill(HIST("hmassLcToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::XicToPKPi:
-                        registry.fill(HIST("hmassXicToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
                         break;
                     }
                   }
@@ -1845,13 +1846,13 @@ struct HfTrackIndexSkimsCreator {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hmassDsToPiKK"), mass3Prong);
+                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
-                        registry.fill(HIST("hmassLcToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::XicToPKPi:
-                        registry.fill(HIST("hmassXicToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
                         break;
                     }
                   }
@@ -2031,16 +2032,16 @@ struct HfTrackIndexSkimsCreator {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][0]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DPlusToPiKPi:
-                        registry.fill(HIST("hmassDPlusToPiKPi"), mass3Prong);
+                        registry.fill(HIST("hMassDPlusToPiKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hmassDsToPiKK"), mass3Prong);
+                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
-                        registry.fill(HIST("hmassLcToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::XicToPKPi:
-                        registry.fill(HIST("hmassXicToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
                         break;
                     }
                   }
@@ -2048,13 +2049,13 @@ struct HfTrackIndexSkimsCreator {
                     auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[iDecay3P][1]);
                     switch (iDecay3P) {
                       case hf_cand_prong3::DecayType::DsToPiKK:
-                        registry.fill(HIST("hmassDsToPiKK"), mass3Prong);
+                        registry.fill(HIST("hMassDsToPiKK"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::LcToPKPi:
-                        registry.fill(HIST("hmassLcToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassLcToPKPi"), mass3Prong);
                         break;
                       case hf_cand_prong3::DecayType::XicToPKPi:
-                        registry.fill(HIST("hmassXicToPKPi"), mass3Prong);
+                        registry.fill(HIST("hMassXicToPKPi"), mass3Prong);
                         break;
                     }
                   }
@@ -2148,7 +2149,7 @@ struct HfTrackIndexSkimsCreatorCascades {
     {{"hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}}},
      {"hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}}},
-     {"hmass2", "2-prong candidates;inv. mass (K0s p) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
+     {"hMass2", "2-prong candidates;inv. mass (K0s p) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}}}}};
 
   // using MyTracks = aod::BigTracksMC;
   // Partition<MyTracks> selectedTracks = aod::hf_seltrack::isSelProng >= 4;
@@ -2341,7 +2342,7 @@ struct HfTrackIndexSkimsCreatorCascades {
           registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
           registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
           registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
-          registry.fill(HIST("hmass2"), mass2K0sP);
+          registry.fill(HIST("hMass2"), mass2K0sP);
         }
 
       } // loop over V0s
