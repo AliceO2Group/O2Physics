@@ -249,7 +249,7 @@ struct ValidationRecLevel {
   {
     histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
     histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
-    for (int iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
+    for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(3, "charm");
