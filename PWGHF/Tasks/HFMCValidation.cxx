@@ -108,7 +108,7 @@ struct ValidationGenLevel {
     int bPerCollision = 0;
     int bBarPerCollision = 0;
 
-    //Particles and their decay checked in the second part of the task
+    // Particles and their decay checked in the second part of the task
     std::array<int, nCharmHadrons> PDGArrayParticle = {pdg::Code::kDPlus, 413, pdg::Code::kD0, 431, pdg::Code::kLambdaCPlus, pdg::Code::kXiCPlus, pdg::Code::kJpsi};
     std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
@@ -182,7 +182,7 @@ struct ValidationGenLevel {
           double vertexPrimary[3] = {mccollision.posX(), mccollision.posY(), mccollision.posZ()};
 
           auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
-          //Filling histograms with per-component momentum conservation
+          // Filling histograms with per-component momentum conservation
           registry.fill(HIST("hMomentumCheck"), float(momentumCheck));
           registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
           registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
@@ -204,7 +204,7 @@ struct ValidationGenLevel {
           }
         }
       }
-    } //end particles
+    } // end particles
     registry.fill(HIST("hCountAverageC"), cPerCollision);
     registry.fill(HIST("hCountAverageB"), bPerCollision);
     registry.fill(HIST("hCountAverageCbar"), cBarPerCollision);
@@ -246,6 +246,11 @@ struct ValidationRecLevel {
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
+    auto histOriginNonAssociatedTracks = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
+    histOriginNonAssociatedTracks->SetBinLabel(1, "no MC particle");
+    histOriginNonAssociatedTracks->SetBinLabel(2, "no quark");
+    histOriginNonAssociatedTracks->SetBinLabel(3, "charm");
+    histOriginNonAssociatedTracks->SetBinLabel(4, "beauty");
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
       histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
       histDeltaPx[iHad] = registry.add<TH1>(Form("histDeltaPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
@@ -269,8 +274,21 @@ struct ValidationRecLevel {
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
 
+  Partition<aod::McParticles> collNonAssociatedTracks = aod::track::collisionId < 0;
+
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
   {
+    // loop over tracks
+    for (auto& track : collNonAssociatedTracks) {
+      if (track.has_mcParticle()) {
+        auto particle = arrDaughters[iProng].mcParticle(); // ith daughter particle
+        auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
+        histOriginNonAssociatedTracks->Fill(origin);
+      } else {
+        histOriginNonAssociatedTracks->Fill(-1.);
+      }
+    }
+
     // loop over 2-prong candidates
     for (auto& cand2Prong : cand2Prongs) {
 
@@ -303,7 +321,7 @@ struct ValidationRecLevel {
         histDeltaPx[whichHad]->Fill(cand2Prong.px() - mother.px());
         histDeltaPy[whichHad]->Fill(cand2Prong.py() - mother.py());
         histDeltaPz[whichHad]->Fill(cand2Prong.pz() - mother.pz());
-        //Compare Secondary vertex and decay length with MC
+        // Compare Secondary vertex and decay length with MC
         auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
@@ -327,7 +345,7 @@ struct ValidationRecLevel {
         histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::eta(momDau1));
         histImpactParameterDau[whichHad][whichOrigin][1]->Fill(cand2Prong.impactParameter1());
       }
-    } //end loop on 2-prong candidates
+    } // end loop on 2-prong candidates
 
     // loop over 3-prong candidates
     for (auto& cand3Prong : cand3Prongs) {
@@ -368,7 +386,7 @@ struct ValidationRecLevel {
         histDeltaPx[whichHad]->Fill(cand3Prong.px() - mother.px());
         histDeltaPy[whichHad]->Fill(cand3Prong.py() - mother.py());
         histDeltaPz[whichHad]->Fill(cand3Prong.pz() - mother.pz());
-        //Compare Secondary vertex and decay length with MC
+        // Compare Secondary vertex and decay length with MC
         auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
@@ -398,8 +416,8 @@ struct ValidationRecLevel {
         histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::eta(momDau2));
         histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());
       }
-    } //end loop on 3-prong candidates
-  }   //end process
+    } // end loop on 3-prong candidates
+  }   // end process
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
