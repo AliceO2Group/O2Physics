@@ -209,8 +209,6 @@ struct Alice3PidIndexBuilder {
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFull> rowCandidateFull;
-  Produces<o2::aod::HfCandLbFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandLbFullParticles> rowCandidateFullParticles;
 
   void init(InitContext const&)
   {
