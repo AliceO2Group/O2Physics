@@ -124,7 +124,7 @@ std::array<float, 6> Network::createInputFromTrack(const C& collision_it, const 
   const float signed1Pt = track.signed1Pt();
   const float mass = o2::track::pid_constants::sMasses[id];
   const float multTPC = collision_it.multTPC() / 11000.;
-  const float ncl = std::sqrt(159. / track.tpcNClsFound());
+  const float ncl = std::sqrt(nClNorm / track.tpcNClsFound());
 
   return {p, tgl, signed1Pt, mass, multTPC, ncl};
 }

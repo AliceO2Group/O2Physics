@@ -103,6 +103,7 @@ struct TreeWriterTpcV0 {
   /// Configurables
   Configurable<float> cutPAV0{"cutPAV0", 0., "Cut on the cos(pointing angle) of the decay"};
   Configurable<float> nSigmaTOFdautrack{"nSigmaTOFdautrack", 5., "n-sigma TOF cut on the daughter tracks. Set 0 to switch it off."};
+  Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactor_Pi{"dwnSmplFactor_Pi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactor_Pr{"dwnSmplFactor_Pr", 1., "downsampling factor for protons, default fraction to keep is 1."};
@@ -175,7 +176,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Pion downsampling
-    if(downsamplingTsalisPions>0. && downsampleTsalisCharged(track.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])==0) {
+    if (downsamplingTsalisPions > 0. && downsampleTsalisCharged(track.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion]) == 0) {
       return false;
     }
     return true;
@@ -216,7 +217,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Proton downsampling
-    if(downsamplingTsalisProtons>0. && downsampleTsalisCharged(track.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])==0) {
+    if (downsamplingTsalisProtons > 0. && downsampleTsalisCharged(track.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton]) == 0) {
       return false;
     }
     return true;
@@ -286,7 +287,7 @@ struct TreeWriterTpcV0 {
   bool selectionElectron(T const& track)
   {
     /// Electron downsampling
-    if(downsamplingTsalisElectrons>0. && downsampleTsalisCharged(track.pt(), downsamplingTsalisElectrons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Electron])==0) {
+    if (downsamplingTsalisElectrons > 0. && downsampleTsalisCharged(track.pt(), downsamplingTsalisElectrons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Electron]) == 0) {
       return false;
     }
     return true;
@@ -315,41 +316,41 @@ struct TreeWriterTpcV0 {
                  mass,
                  bg,
                  multTPC / 11000.,
-                 std::sqrt(159. / ncl),
+                 std::sqrt(nClNorm / ncl),
                  id,
                  nSigmaTPC,
                  nSigmaTOF);
     }
   };
 
-
-
-  double tsalisCharged(double pt, double mass, double sqrts){
-    const double a=6.81,   b=59.24;
-    const double c=0.082,  d=0.151;
-    double mt=sqrt(mass*mass+pt*pt);
-    double n=a+b/sqrts;
-    double T=c+d/sqrts;
-    double p0 = n*T;
-    double result=pow((1.+mt/p0),-n);
+  double tsalisCharged(double pt, double mass, double sqrts)
+  {
+    const double a = 6.81, b = 59.24;
+    const double c = 0.082, d = 0.151;
+    double mt = sqrt(mass * mass + pt * pt);
+    double n = a + b / sqrts;
+    double T = c + d / sqrts;
+    double p0 = n * T;
+    double result = pow((1. + mt / p0), -n);
     return result;
   };
 
   /// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
   /// as in https://iopscience.iop.org/article/10.1088/2399-6528/aab00f/pdf
   TRandom3* fRndm = new TRandom3(0);
-  int downsampleTsalisCharged(double pt, double factor1Pt, double sqrts, double mass){
-    double prob=tsalisCharged(pt,mass,sqrts)*pt;
-    double probNorm=tsalisCharged(1.,mass,sqrts);
-    int triggerMask=0;
-    if ((fRndm->Rndm()*((prob/probNorm)*pt*pt))<factor1Pt) triggerMask=1;
+  int downsampleTsalisCharged(double pt, double factor1Pt, double sqrts, double mass)
+  {
+    double prob = tsalisCharged(pt, mass, sqrts) * pt;
+    double probNorm = tsalisCharged(1., mass, sqrts);
+    int triggerMask = 0;
+    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) < factor1Pt)
+      triggerMask = 1;
     return triggerMask;
   };
 
   void init(o2::framework::InitContext& initContext)
   {
   }
-
 
   void process(Coll::iterator const& collision, Trks const& tracks, aod::V0Datas const& v0s)
   {
@@ -361,45 +362,37 @@ struct TreeWriterTpcV0 {
       auto negTrack = v0.negTrack_as<Trks>();
       /// Fill table for Kaons
       if (selectionKaon(collision, v0)) {
-        if (selectionPion(posTrack))
-        {
+        if (selectionPion(posTrack)) {
           fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
-        if (selectionPion(negTrack))
-        {
+        if (selectionPion(negTrack)) {
           fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
       }
       /// Fill table for Lambdas
       if (selectionLambda(collision, v0)) {
-        if (selectionProton(posTrack))
-        {
+        if (selectionProton(posTrack)) {
           fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(), o2::track::PID::Proton, dwnSmplFactor_Pr);
         }
-        if (selectionPion(negTrack))
-        {
+        if (selectionPion(negTrack)) {
           fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
       }
       /// Fill table for Antilambdas
       if (selectionAntiLambda(collision, v0)) {
-        if (selectionPion(posTrack))
-        {
+        if (selectionPion(posTrack)) {
           fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
-        if (selectionProton(negTrack))
-        {
+        if (selectionProton(negTrack)) {
           fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(), o2::track::PID::Proton, dwnSmplFactor_Pr);
         }
       }
       /// Fill table for Gammas
       if (selectionGamma(collision, v0)) {
-        if (selectionElectron(posTrack))
-        {
+        if (selectionElectron(posTrack)) {
           fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(), o2::track::PID::Electron, dwnSmplFactor_El);
         }
-        if (selectionElectron(negTrack))
-        {
+        if (selectionElectron(negTrack)) {
           fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(), o2::track::PID::Electron, dwnSmplFactor_El);
         }
       }
@@ -415,6 +408,7 @@ struct TreeWriterTPCTOF {
   Produces<o2::aod::SkimmedTPCTOFTree> rowTPCTOFTree;
 
   /// Configurables
+  Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   /// Proton
   Configurable<float> maxMomTPCOnlyPr{"maxMomTPCOnlyPr", 0.6, "Maximum momentum for TPC only cut proton"};
   Configurable<float> nSigmaTPCOnlyPr{"nSigmaTPCOnlyPr", 4., "number of sigma for TPC only cut proton"};
@@ -439,32 +433,32 @@ struct TreeWriterTPCTOF {
   Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
 
-  double tsalisCharged(double pt, double mass, double sqrts){
-    const double a=6.81,   b=59.24;
-    const double c=0.082,  d=0.151;
-    double mt=sqrt(mass*mass+pt*pt);
-    double n=a+b/sqrts;
-    double T=c+d/sqrts;
-    double p0 = n*T;
-    double result=pow((1.+mt/p0),-n);
+  double tsalisCharged(double pt, double mass, double sqrts)
+  {
+    const double a = 6.81, b = 59.24;
+    const double c = 0.082, d = 0.151;
+    double mt = sqrt(mass * mass + pt * pt);
+    double n = a + b / sqrts;
+    double T = c + d / sqrts;
+    double p0 = n * T;
+    double result = pow((1. + mt / p0), -n);
     return result;
   };
 
   /// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
   /// as in https://iopscience.iop.org/article/10.1088/2399-6528/aab00f/pdf
   TRandom3* fRndm = new TRandom3(0);
-  bool downsampleTsalisCharged(double pt, float factor1Pt, double sqrts, double mass){
-    if (factor1Pt<0.) return true;
-    double prob=tsalisCharged(pt,mass,sqrts)*pt;
-    double probNorm=tsalisCharged(1.,mass,sqrts);
-    if ((fRndm->Rndm()*((prob/probNorm)*pt*pt))>factor1Pt)
-    {
-      return false;
-    }
-    else {
+  bool downsampleTsalisCharged(double pt, float factor1Pt, double sqrts, double mass)
+  {
+    if (factor1Pt < 0.)
       return true;
-    } 
-
+    double prob = tsalisCharged(pt, mass, sqrts) * pt;
+    double probNorm = tsalisCharged(1., mass, sqrts);
+    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
+      return false;
+    } else {
+      return true;
+    }
   };
 
   template <typename T, typename C>
@@ -490,7 +484,7 @@ struct TreeWriterTPCTOF {
                     mass,
                     bg,
                     multTPC / 11000.,
-                    std::sqrt(159. / ncl),
+                    std::sqrt(nClNorm / ncl),
                     id,
                     nSigmaTPC,
                     nSigmaTOF);

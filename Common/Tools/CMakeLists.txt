@@ -25,7 +25,4 @@ o2physics_add_executable(pidparam-tpc-response
                   SOURCES handleParamTPCResponse.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                  )
-o2physics_add_dpl_workflow(pid-tpc-skimscreation
-                 SOURCES tpcSkimsTableCreator.cxx
-                 PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                 COMPONENT_NAME Analysis)
+
