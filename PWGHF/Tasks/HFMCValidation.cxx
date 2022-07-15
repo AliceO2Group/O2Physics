@@ -247,13 +247,13 @@ struct ValidationRecLevel {
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    auto histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
-    auto histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
+    histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
+    histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
     for (int iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
-      histOriginTracks[iHist]->SetBinLabel(1, "no MC particle");
-      histOriginTracks[iHist]->SetBinLabel(2, "no quark");
-      histOriginTracks[iHist]->SetBinLabel(3, "charm");
-      histOriginTracks[iHist]->SetBinLabel(4, "beauty");
+      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
+      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
+      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(3, "charm");
+      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(4, "beauty");
     }
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
       histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
@@ -278,15 +278,15 @@ struct ValidationRecLevel {
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
 
-  Partition<aod::McParticles> collNonAssociatedTracks = aod::track::collisionId < 0;
-  Partition<aod::McParticles> collAssociatedTracks = aod::track::collisionId >= 0;
+  Partition<aod::BigTracksMC> collNonAssociatedTracks = aod::track::collisionId < 0;
+  Partition<aod::BigTracksMC> collAssociatedTracks = aod::track::collisionId >= 0;
 
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
   {
     // loop over tracks without collision association
     for (auto& track : collNonAssociatedTracks) {
       if (track.has_mcParticle()) {
-        auto particle = arrDaughters[iProng].mcParticle(); // get corresponding MC particle to check origin
+        auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[0]->Fill(origin);
       } else {
@@ -296,7 +296,7 @@ struct ValidationRecLevel {
     // loop over tracks with collision association
     for (auto& track : collAssociatedTracks) {
       if (track.has_mcParticle()) {
-        auto particle = arrDaughters[iProng].mcParticle(); // get corresponding MC particle to check origin
+        auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[1]->Fill(origin);
       } else {
