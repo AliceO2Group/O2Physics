@@ -45,7 +45,7 @@ using namespace o2::analysis::hf_cuts_d0_topik;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct TaskHfCorrelations {
+struct TaskCorrelationD0 {
   HistogramRegistry registry{"registry"};
 
   OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
@@ -98,9 +98,9 @@ struct TaskHfCorrelations {
                        requireGlobalTrackWoPtEtaInFilter();
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
 
-  using hfCandidates = soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>;
-  //  HF candidate partition
-  Partition<hfCandidates> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
+  //  HF candidate filter
+  Filter candidateFilter = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
+  using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>;
 
   //  =========================
   //      init()
@@ -127,7 +127,7 @@ struct TaskHfCorrelations {
     registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("eventcountmixingcollisions", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("eventcountsame", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
-    registry.add("hMultipliciyMixing", "hMultipliciyMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("hMultiplicityMixing", "hMultiplicityMixing", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("hVtxZMixing", "hVtxZMixing", {HistType::kTH1F, {{100, -10, 10}}});
     registry.add("hNtracksMixing", "hNtracksMixing", {HistType::kTH1F, {{500, 0, 500}}});
 
@@ -278,7 +278,7 @@ struct TaskHfCorrelations {
   template <typename TTracks>
   void fillCandidateQA(TTracks candidates)
   {
-    for (auto& candidate : selectedD0Candidates) {
+    for (auto& candidate : candidates) {
       if (!isAcceptedCandidate(candidate)) {
         continue;
       }
@@ -421,7 +421,7 @@ struct TaskHfCorrelations {
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
-  PROCESS_SWITCH(TaskHfCorrelations, processSameRun3, "Process same event for Run 3", true);
+  PROCESS_SWITCH(TaskCorrelationD0, processSameRun3, "Process same event for Run 3", true);
 
   // =====================================
   //    process same event correlations
@@ -455,7 +455,7 @@ struct TaskHfCorrelations {
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
-  PROCESS_SWITCH(TaskHfCorrelations, processSameRun2, "Process same event for Run 2", false);
+  PROCESS_SWITCH(TaskCorrelationD0, processSameRun2, "Process same event for Run 2", false);
 
   // =====================================
   //    process mixed event correlations
@@ -487,7 +487,7 @@ struct TaskHfCorrelations {
       }
 
       const auto multiplicity = tracks1.size();
-      registry.fill(HIST("hMultipliciyMixing"), multiplicity);
+      registry.fill(HIST("hMultiplicityMixing"), multiplicity);
       registry.fill(HIST("hVtxZMixing"), collision1.posZ());
 
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
@@ -500,11 +500,11 @@ struct TaskHfCorrelations {
       }
     }
   }
-  PROCESS_SWITCH(TaskHfCorrelations, processMixed, "Process mixed event", true);
+  PROCESS_SWITCH(TaskCorrelationD0, processMixed, "Process mixed event", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TaskHfCorrelations>(cfgc)};
+    adaptAnalysisTask<TaskCorrelationD0>(cfgc)};
 }
