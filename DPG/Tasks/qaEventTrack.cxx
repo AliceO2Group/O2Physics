@@ -103,6 +103,7 @@ struct qaEventTrack {
   HistogramRegistry histos;
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perRecoCollision = aod::track::collisionId;
 
   void init(InitContext const&);
 
@@ -176,8 +177,8 @@ struct qaEventTrack {
     fillRecoHistogramsAllTracks<false>(tracks);
     /// work with collision grouping
     for (auto const& collision : collisions) {
-      const auto& tracksColl = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(aod::track::collisionId, collision.globalIndex());
+      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
       fillRecoHistogramsGroupedTracks<false>(collision, tracksColl, tracksUnfilteredColl);
     }
   }
@@ -262,8 +263,8 @@ struct qaEventTrack {
     fillRecoHistogramsAllTracks<true>(tracks);
     /// work with collision grouping
     for (auto const& collision : collisions) {
-      const auto& tracksColl = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
-      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(aod::track::collisionId, collision.globalIndex());
+      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
       fillRecoHistogramsGroupedTracks<true>(collision, tracksColl, tracksUnfilteredColl);
     }
   }
