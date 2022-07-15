@@ -288,7 +288,7 @@ struct ValidationRecLevel {
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[index]->Fill(origin);
       } else {
-        histOriginTracks[index]->Fill(origin);
+        histOriginTracks[index]->Fill(-1.);
       }
     }
 
