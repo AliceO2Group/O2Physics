@@ -68,6 +68,7 @@ class VarManager : public TObject
     ReducedEventVtxCov = BIT(6),
     CollisionMC = BIT(7),
     ReducedEventMC = BIT(8),
+    ReducedEventQvector = BIT(9),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -85,8 +86,7 @@ class VarManager : public TObject
     ReducedMuonExtra = BIT(14),
     ReducedMuonCov = BIT(15),
     ParticleMC = BIT(16),
-    Pair = BIT(17), // TODO: check whether we really need the Pair member here
-    ReducedEventQvector = BIT(18)
+    Pair = BIT(17) // TODO: check whether we really need the Pair member here
   };
 
   enum PairCandidateType {
@@ -150,6 +150,16 @@ class VarManager : public TObject
     kMultA, // Multiplicity of the sub-event A
     kMultB,
     kMultC,
+    kQ3X0A, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
+    kQ3Y0A, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ3X0B,
+    kQ3Y0B,
+    kQ3X0C,
+    kQ3Y0C,
+    kR2SP,
+    kR3SP,
+    kR2EP,
+    kR3EP,
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
@@ -284,6 +294,10 @@ class VarManager : public TObject
     kImpParXYK,
     kDCATrackProd,
     kDCATrackVtxProd,
+    kU2Q2,
+    kU3Q3,
+    kCos2DeltaPhi,
+    kCos3DeltaPhi,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -370,6 +384,11 @@ class VarManager : public TObject
     fgFitterTwoProngFwd.setMinRelChi2Change(minRelChi2Change);
     fgFitterTwoProngFwd.setUseAbsDCA(useAbsDCA);
   }
+  static auto getEventPlane(int harm, float qnxa, float qnya)
+  {
+    // Compute event plane angle from qn vector components for the sub-event A
+    return (1.0 / harm) * TMath::ATan(qnya / qnxa);
+  };
 
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
@@ -387,8 +406,10 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
-  template <typename C, typename A1, typename A2, typename A3>
-  static void FillQVectorFromGFW(C const& collision, A1 const& compA, A2 const& compB, A3 const& compC, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
+  template <typename C, typename A>
+  static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
+  template <int pairType, typename T1, typename T2>
+  static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
 
  public:
   VarManager();
@@ -562,6 +583,28 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxCovYZ] = event.covYZ();
     values[kVtxCovZZ] = event.covZZ();
     values[kVtxChi2] = event.chi2();
+  }
+
+  if constexpr ((fillMap & ReducedEventQvector) > 0) {
+    values[kQ2X0A] = event.q2x0a();
+    values[kQ2Y0A] = event.q2y0a();
+    values[kQ2X0B] = event.q2x0b();
+    values[kQ2Y0B] = event.q2y0b();
+    values[kQ2X0C] = event.q2x0c();
+    values[kQ2Y0C] = event.q2y0c();
+    values[kMultA] = event.multa();
+    values[kMultB] = event.multb();
+    values[kMultC] = event.multc();
+    values[kQ3X0A] = event.q3x0a();
+    values[kQ3Y0A] = event.q3y0a();
+    values[kQ3X0B] = event.q3x0b();
+    values[kQ3Y0B] = event.q3y0b();
+    values[kQ3X0C] = event.q3x0c();
+    values[kQ3Y0C] = event.q3y0c();
+    values[kR2SP] = (event.q2x0b() * event.q2x0c() + event.q2y0b() * event.q2y0c());
+    values[kR3SP] = (event.q3x0b() * event.q3x0c() + event.q3y0b() * event.q3y0c());
+    values[kR2EP] = TMath::Cos(2 * (getEventPlane(2, event.q2x0b(), event.q2y0b()) - getEventPlane(2, event.q2x0c(), event.q2y0c())));
+    values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -1220,23 +1263,73 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   }
 }
 
-template <typename C, typename A1, typename A2, typename A3>
-void VarManager::FillQVectorFromGFW(C const& collision, A1 const& compA, A2 const& compB, A3 const& compC, float normA, float normB, float normC, float* values)
+template <typename C, typename A>
+void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA, float normB, float normC, float* values)
 {
   if (!values) {
     values = fgValues;
   }
 
-  // Fill Q vector from generic flow framework for different eta gap A, B, C
-  values[kQ2X0A] = compA.Re() / normA;
-  values[kQ2Y0A] = compA.Im() / normA;
-  values[kQ2X0B] = compB.Re() / normB;
-  values[kQ2Y0B] = compB.Im() / normB;
-  values[kQ2X0C] = compC.Re() / normC;
-  values[kQ2Y0C] = compC.Im() / normC;
+  // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=2,3)
+  values[kQ2X0A] = compA2.Re() / normA;
+  values[kQ2Y0A] = compA2.Im() / normA;
+  values[kQ2X0B] = compB2.Re() / normB;
+  values[kQ2Y0B] = compB2.Im() / normB;
+  values[kQ2X0C] = compC2.Re() / normC;
+  values[kQ2Y0C] = compC2.Im() / normC;
+  values[kQ3X0A] = compA3.Re() / normA;
+  values[kQ3Y0A] = compA3.Im() / normA;
+  values[kQ3X0B] = compB3.Re() / normB;
+  values[kQ3Y0B] = compB3.Im() / normB;
+  values[kQ3X0C] = compC3.Re() / normC;
+  values[kQ3Y0C] = compC3.Im() / normC;
   values[kMultA] = normA;
   values[kMultB] = normB;
   values[kMultC] = normC;
+
+  // TODO: provide different computations for R
+  // Compute the R factor using the 2 sub-events technique for second and third harmonic
+  auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
+  auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
+  auto Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
+  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
+  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
+  values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
+}
+
+template <int pairType, typename T1, typename T2>
+void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
+{
+
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1 = fgkElectronMass;
+  float m2 = fgkElectronMass;
+  if constexpr (pairType == kJpsiToMuMu) {
+    m1 = fgkMuonMass;
+    m2 = fgkMuonMass;
+  }
+
+  if constexpr (pairType == kElectronMuon) {
+    m2 = fgkMuonMass;
+  }
+
+  // Fill dilepton information
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+  // TODO: provide different computations for vn
+  // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
+  // Dilepton vn could be accessible after dividing this product with the R factor
+  values[kU2Q2] = values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi());
+  values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
+  values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
+  values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
 }
 
 template <typename T1, typename T2>
