@@ -21,7 +21,6 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
@@ -99,10 +98,9 @@ struct TaskHfCorrelations {
                        requireGlobalTrackWoPtEtaInFilter();
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
 
-  //  HF candidate filter
-  //Filter candidateFilter = (aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 ||
-  //                          aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar);
   using hfCandidates = soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>;
+  //  HF candidate partition
+  Partition<hfCandidates> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
 
   //  =========================
   //      init()
@@ -280,14 +278,21 @@ struct TaskHfCorrelations {
   template <typename TTracks>
   void fillCandidateQA(TTracks candidates)
   {
-    for (auto& candidate : candidates) {
+    for (auto& candidate : selectedD0Candidates) {
       if (!isAcceptedCandidate(candidate)) {
         continue;
       }
+
+      if (candidate.isSelD0() >= d_selectionFlagD0) {
+        registry.fill(HIST("hmass"), InvMassD0(candidate), candidate.pt());
+      }
+      if (candidate.isSelD0bar() >= d_selectionFlagD0bar) {
+        registry.fill(HIST("hmass"), InvMassD0bar(candidate), candidate.pt());
+      }
+
       registry.fill(HIST("hptcand"), candidate.pt());
       registry.fill(HIST("hptprong0"), candidate.ptProng0());
       registry.fill(HIST("hptprong1"), candidate.ptProng1());
-      registry.fill(HIST("hmass"), InvMassD0(candidate), candidate.pt());
       registry.fill(HIST("hdeclength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hdeclengthxy"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
