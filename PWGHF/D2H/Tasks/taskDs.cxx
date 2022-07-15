@@ -129,7 +129,7 @@ struct HfTaskDs {
   Partition<soa::Join<aod::HfCandProng3, aod::HFSelDsToKKPiCandidate, aod::HfCandProng3MCRec>> recoFlagDsCandidates = aod::hf_selcandidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_selcandidate_ds::isSelDsTPiKK >= selectionFlagDs;
 
   void processMC(soa::Join<aod::HfCandProng3, aod::HFSelDsToKKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+                 soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
     for (auto& candidate : recoFlagDsCandidates) {
