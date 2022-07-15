@@ -278,29 +278,17 @@ struct ValidationRecLevel {
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
 
-  Partition<aod::BigTracksMC> collNonAssociatedTracks = aod::track::collisionId < 0;
-  Partition<aod::BigTracksMC> collAssociatedTracks = aod::track::collisionId >= 0;
-
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
   {
-    // loop over tracks without collision association
-    for (auto& track : collNonAssociatedTracks) {
+    // loop over tracks
+    for (auto& track : tracks) {
+      uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
-        histOriginTracks[0]->Fill(origin);
+        histOriginTracks[index]->Fill(origin);
       } else {
-        histOriginTracks[0]->Fill(-1.);
-      }
-    }
-    // loop over tracks with collision association
-    for (auto& track : collAssociatedTracks) {
-      if (track.has_mcParticle()) {
-        auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
-        histOriginTracks[1]->Fill(origin);
-      } else {
-        histOriginTracks[1]->Fill(-1.);
+        histOriginTracks[index]->Fill(origin);
       }
     }
 
