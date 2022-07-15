@@ -9,11 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-# add_subdirectory(DataModel)
-add_subdirectory(GenericFramework)
-add_subdirectory(FemtoDream)
-add_subdirectory(MultiparticleCorrelations)
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
-
+o2physics_add_dpl_workflow(multiparticle-correlations-ab
+                    SOURCES multiparticle-correlations-ab.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
