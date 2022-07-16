@@ -9,8 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Dilepton)
 
-add_subdirectory(PhotonMeson)
-add_subdirectory(Tasks)
-
+o2physics_add_dpl_workflow(efficiency-ee
+                    SOURCES emEfficiencyEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
