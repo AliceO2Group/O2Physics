@@ -95,10 +95,10 @@ DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELDPLUSCAND", //!
 
 namespace hf_selcandidate_ds
 {
-DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
+DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); // Ds candidates in KKpi decay channel column
+DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); // Ds candidates in piKK decay channel column
 } // namespace hf_selcandidate_ds
-DECLARE_SOA_TABLE(HFSelDsToKKPiCandidate, "AOD", "HFSELDSCAND", //!
+DECLARE_SOA_TABLE(HFSelDsToKKPiCandidate, "AOD", "HFSELDSCAND", // Ds candidates selection table
                   hf_selcandidate_ds::IsSelDsToKKPi, hf_selcandidate_ds::IsSelDsToPiKK);
 
 namespace hf_selcandidate_lc
