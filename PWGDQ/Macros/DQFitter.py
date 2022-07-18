@@ -88,7 +88,7 @@ class DQFitter:
         for parName in self.fParNames:
             histResults.GetXaxis().SetBinLabel(index, parName)
             histResults.SetBinContent(index, self.fRooWorkspace.var(parName).getVal())
-            histResults.SetBinContent(index, self.fRooWorkspace.var(parName).getError())
+            histResults.SetBinError(index, self.fRooWorkspace.var(parName).getError())
             index += 1
 
         rooDs.plotOn(fRooPlot)
