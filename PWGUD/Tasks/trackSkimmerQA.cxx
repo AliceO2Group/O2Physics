@@ -41,7 +41,7 @@ struct TrackSkimmerQa {
   };
 
   void process(soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
-               soa::Join<o2::aod::SkimmedBarTracks, o2::aod::SkimmedBarTracksExtra, o2::aod::SkimmedBarTrackLabels> const& barTracks,
+               soa::Join<o2::aod::SkimmedBarrelTracks, o2::aod::SkimmedBarrelTracksExtra, o2::aod::SkimmedBarrelTrackLabels> const& barTracks,
                o2::aod::SkimmedMCParticles const& mcParticles)
   {
     for (const auto& track : muonTracks) {

@@ -21,6 +21,8 @@ using namespace o2::framework::expressions;
 
 struct CandidateCreator {
   Produces<o2::aod::EventCandidates> eventCandidates;
+  Produces<o2::aod::SkimmedBarrelTracksCandidateIDs> barrelCandIds;
+  Produces<o2::aod::SkimmedMuonsCandidateIDs> muonCandIds;
 
   bool fDoSemiFwd{false};
 
@@ -43,6 +45,10 @@ struct CandidateCreator {
                         TBCs const& bcs,
                         TFT0s const& ft0s)
   {
+    // map track IDs to the respective event candidate IDs
+    std::vector<int32_t> barTrackCandIds;
+    std::vector<int32_t> fwdTrackCandIds;
+
     std::map<uint64_t, int32_t> BCsWithFT0;
     // collect BCs with FT0 signals
     for (const auto& ft0 : ft0s) {
@@ -56,8 +62,9 @@ struct CandidateCreator {
 
     // forward matching
     if (fwdTracks != nullptr) {
+      fwdTrackCandIds.resize(fwdTracks->size(), -1);
       for (const auto& fwdTr : *fwdTracks) {
-        uint64_t bc = std::trunc(fwdTr.trackTime() / o2::constants::lhc::LHCBunchSpacingNS); // absolute time to BC
+        uint64_t bc = fwdTr.globalBC();
         // search for BC:
         //  if found -> store track ID to vector of matched tracks
         //  else make a new vector of matched tracks and store track ID
@@ -72,8 +79,9 @@ struct CandidateCreator {
 
     // central barrel tracks
     if (barTracks != nullptr) {
+      barTrackCandIds.resize(barTracks->size(), -1);
       for (const auto& barTr : *barTracks) {
-        uint64_t bc = std::trunc(barTr.trackTime() / o2::constants::lhc::LHCBunchSpacingNS); // absolute time to BC
+        uint64_t bc = barTr.globalBC();
         // search for BC:
         //  if found -> store track ID to vector of matched tracks
         //  else make a new vector of matched tracks and store track ID
@@ -87,6 +95,7 @@ struct CandidateCreator {
     }
 
     // storing n-prong matches
+    int32_t candID = 0;
     for (const auto& item : bcsMatchedFwdTrIds) {
       uint64_t bc = item.first;
       const std::vector<int32_t>& fwdTrackIDs = item.second.first;
@@ -96,6 +105,12 @@ struct CandidateCreator {
       // skip candidate if it does not pass `number of tracks` requirement
       if (!(nFwdTracks == fNFwdProngs && nBarTracks == fNBarProngs)) {
         continue;
+      }
+      for (auto id : fwdTrackIDs) {
+        fwdTrackCandIds[id] = candID;
+      }
+      for (auto id : barTrackIDs) {
+        barTrackCandIds[id] = candID;
       }
       // fetching FT0 information
       // if there is no FT0 signal, dummy info will be used
@@ -118,11 +133,25 @@ struct CandidateCreator {
         ft0Info.triggerMask = ft0.triggerMask();
       }
       int32_t runNumber = bcs.iteratorAt(0).runNumber();
-      eventCandidates(bc, runNumber, fwdTrackIDs, barTrackIDs,
-                      ft0Info.amplitudeA, ft0Info.amplitudeC, ft0Info.timeA, ft0Info.timeC, ft0Info.triggerMask);
+      eventCandidates(bc, runNumber, ft0Info.amplitudeA, ft0Info.amplitudeC, ft0Info.timeA, ft0Info.timeC, ft0Info.triggerMask);
+      candID++;
     }
     bcsMatchedFwdTrIds.clear();
     BCsWithFT0.clear();
+
+    if (fwdTracks != nullptr) {
+      for (const auto& fwdTr : *fwdTracks) {
+        muonCandIds(fwdTrackCandIds[fwdTr.globalIndex()]);
+      }
+    }
+
+    fwdTrackCandIds.clear();
+
+    if (barTracks != nullptr) {
+      for (const auto& barTr : *barTracks) {
+        barrelCandIds(barTrackCandIds[barTr.globalIndex()]);
+      }
+    }
   }
 
   // create candidates for forward region
@@ -130,12 +159,12 @@ struct CandidateCreator {
                   o2::aod::BCs const& bcs,
                   o2::aod::FT0s const& ft0s)
   {
-    createCandidates(&muonTracks, (o2::aod::SkimmedBarTracks*)nullptr, bcs, ft0s);
+    createCandidates(&muonTracks, (o2::aod::SkimmedBarrelTracks*)nullptr, bcs, ft0s);
   }
 
   // create candidates for semiforward region
   void processSemiFwd(o2::aod::SkimmedMuons const& muonTracks,
-                      o2::aod::SkimmedBarTracks const& barTracks,
+                      o2::aod::SkimmedBarrelTracks const& barTracks,
                       o2::aod::BCs const& bcs,
                       o2::aod::FT0s const& ft0s)
   {

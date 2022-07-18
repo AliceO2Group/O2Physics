@@ -68,34 +68,69 @@ DECLARE_SOA_TABLE_FULL(SkimmedMCParticles, "SkimmedMCParticles", "AOD", "SKMCPAR
 
 using SkimmedMCParticle = SkimmedMCParticles::iterator;
 
+namespace eventcand
+{
+// general information
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
+// FT0 information
+DECLARE_SOA_COLUMN(TotalAmplitudeAFT0, totalAmplitudeAFT0, float); //! sum of amplitudes on A side of FT0
+DECLARE_SOA_COLUMN(TotalAmplitudeCFT0, totalAmplitudeCFT0, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(TimeAFT0, timeAFT0, float);                     //! FT0A average time
+DECLARE_SOA_COLUMN(TimeCFT0, timeCFT0, float);                     //! FT0C average time
+DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
+DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0,                         //! has FT0 signal in the same BC
+                           [](float TimeAFT0, float TimeCFT0) -> bool { return TimeAFT0 > -999. && TimeCFT0 > -999.; });
+} // namespace eventcand
+
+DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
+                  o2::soa::Index<>,
+                  eventcand::GlobalBC,
+                  eventcand::RunNumber,
+                  //
+                  eventcand::TotalAmplitudeAFT0,
+                  eventcand::TotalAmplitudeCFT0,
+                  eventcand::TimeAFT0,
+                  eventcand::TimeCFT0,
+                  eventcand::TriggerMaskFT0,
+                  eventcand::HasFT0<eventcand::TimeAFT0, eventcand::TimeCFT0>);
+
+using EventCanditate = EventCandidates::iterator;
+
 namespace skimbartrack
 {
-DECLARE_SOA_COLUMN(Px, px, float);                     //!
-DECLARE_SOA_COLUMN(Py, py, float);                     //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //! absolute time in ns
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
+DECLARE_SOA_INDEX_COLUMN(EventCandidate, eventCandidate); //!
+DECLARE_SOA_COLUMN(Px, px, float);                        //!
+DECLARE_SOA_COLUMN(Py, py, float);                        //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                        //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);         //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);         //!
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);    //! time resolution
 } // namespace skimbartrack
 
 // Barrel track kinematics
-DECLARE_SOA_TABLE(SkimmedBarTracks, "AOD", "SKIMBARTRACK",
+DECLARE_SOA_TABLE(SkimmedBarrelTracks, "AOD", "SKIMBARTRACK",
                   o2::soa::Index<>,
                   skimbartrack::Px,
                   skimbartrack::Py,
                   skimbartrack::Pz,
                   skimbartrack::Sign,
+                  skimbartrack::GlobalBC,
                   skimbartrack::TrackTime,
                   skimbartrack::TrackTimeRes);
 
-DECLARE_SOA_TABLE(SkimmedBarTracksCov, "AOD", "SKIMBARTRCOV", //!
+DECLARE_SOA_TABLE(SkimmedBarrelTracksCandidateIDs, "AOD", "SKIMBARTRCANDID",
+                  skimbartrack::EventCandidateId);
+
+DECLARE_SOA_TABLE(SkimmedBarrelTracksCov, "AOD", "SKIMBARTRCOV", //!
                   track::X, track::Alpha,
                   track::Y, track::Z, track::Snp, track::Tgl, track::Signed1Pt,
                   track::CYY, track::CZY, track::CZZ, track::CSnpY, track::CSnpZ,
                   track::CSnpSnp, track::CTglY, track::CTglZ, track::CTglSnp, track::CTglTgl,
                   track::C1PtY, track::C1PtZ, track::C1PtSnp, track::C1PtTgl, track::C1Pt21Pt2);
 
-DECLARE_SOA_TABLE(SkimmedBarTracksExtra, "AOD", "SKIMBARTREXTRA",
+DECLARE_SOA_TABLE(SkimmedBarrelTracksExtra, "AOD", "SKIMBARTREXTRA",
                   track::Flags,
                   track::ITSClusterMap,
                   track::TPCNClsFindable,
@@ -111,9 +146,10 @@ DECLARE_SOA_TABLE(SkimmedBarTracksExtra, "AOD", "SKIMBARTREXTRA",
                   track::ITSNCls<track::ITSClusterMap>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
-using SkimmedBarTrack = SkimmedBarTracks::iterator;
-using SkimmedBarTrackCov = SkimmedBarTracksCov::iterator;
-using SkimmedBarTrackExtra = SkimmedBarTracksExtra::iterator;
+using SkimmedBarrelTrack = SkimmedBarrelTracks::iterator;
+using SkimmedBarrelTracksCandidateID = SkimmedBarrelTracksCandidateIDs::iterator;
+using SkimmedBarrelTrackCov = SkimmedBarrelTracksCov::iterator;
+using SkimmedBarrelTrackExtra = SkimmedBarrelTracksExtra::iterator;
 
 namespace skimbartracklabel
 {
@@ -121,21 +157,23 @@ DECLARE_SOA_INDEX_COLUMN(SkimmedMCParticle, skimmedMCParticle);
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 } // namespace skimbartracklabel
 
-DECLARE_SOA_TABLE(SkimmedBarTrackLabels, "AOD", "SKBARTRLABEL",
+DECLARE_SOA_TABLE(SkimmedBarrelTrackLabels, "AOD", "SKBARTRLABEL",
                   skimbartracklabel::SkimmedMCParticleId,
                   skimbartracklabel::McMask);
 
-using SkimmedBarTrackLabel = SkimmedBarTrackLabels::iterator;
+using SkimmedBarrelTrackLabel = SkimmedBarrelTrackLabels::iterator;
 
 // only MCH-MID tracks
 namespace skimmuontrack
 {
-DECLARE_SOA_COLUMN(Px, px, float);                     //!
-DECLARE_SOA_COLUMN(Py, py, float);                     //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //! absolute time in ns
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
+DECLARE_SOA_INDEX_COLUMN(EventCandidate, eventCandidate); //!
+DECLARE_SOA_COLUMN(Px, px, float);                        //!
+DECLARE_SOA_COLUMN(Py, py, float);                        //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                        //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);         //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);         //!
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);    //! time resolution
 
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh1, midBoardCh1, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>(midBoards & 0xFF); });
@@ -154,8 +192,12 @@ DECLARE_SOA_TABLE(SkimmedMuons, "AOD", "SKIMMUONTRACK",
                   skimmuontrack::Py,
                   skimmuontrack::Pz,
                   skimmuontrack::Sign,
+                  skimmuontrack::GlobalBC,
                   skimmuontrack::TrackTime,
                   skimmuontrack::TrackTimeRes);
+
+DECLARE_SOA_TABLE(SkimmedMuonsCandidateIDs, "AOD", "SKIMMUONCANDID",
+                  skimmuontrack::EventCandidateId);
 
 // Muon track quality details
 DECLARE_SOA_TABLE(SkimmedMuonsExtra, "AOD", "SKIMMUONEXTRA",
@@ -192,6 +234,7 @@ DECLARE_SOA_TABLE(SkimmedMuonsCov, "AOD", "SKIMMUONCOV",
                   fwdtrack::C1Pt21Pt2);
 
 using SkimmedMuon = SkimmedMuons::iterator;
+using SkimmedMuonsCandidateID = SkimmedMuonsCandidateIDs::iterator;
 using SkimmedMuonExtra = SkimmedMuonsExtra::iterator;
 using SkimmedMuonCov = SkimmedMuonsCov::iterator;
 
@@ -206,40 +249,6 @@ DECLARE_SOA_TABLE(SkimmedMuonTrackLabels, "AOD", "SKMUONTRLABEL",
                   skimmuontracklabel::McMask);
 
 using SkimmedMuonTrackLabel = SkimmedMuonTrackLabels::iterator;
-
-namespace eventcand
-{
-// general information
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
-// FT0 information
-DECLARE_SOA_COLUMN(TotalAmplitudeAFT0, totalAmplitudeAFT0, float); //! sum of amplitudes on A side of FT0
-DECLARE_SOA_COLUMN(TotalAmplitudeCFT0, totalAmplitudeCFT0, float); //! sum of amplitudes on C side of FT0
-DECLARE_SOA_COLUMN(TimeAFT0, timeAFT0, float);                     //! FT0A average time
-DECLARE_SOA_COLUMN(TimeCFT0, timeCFT0, float);                     //! FT0C average time
-DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
-DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0,                         //! has FT0 signal in the same BC
-                           [](float TimeAFT0, float TimeCFT0) -> bool { return TimeAFT0 > -999. && TimeCFT0 > -999.; });
-// matched IDs
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedFwdTracks, matchedFwdTracks); //! array of matched forward tracks
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(MatchedBarTracks, matchedBarTracks); //! array of matched barrel tracks
-} // namespace eventcand
-
-DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
-                  o2::soa::Index<>,
-                  eventcand::GlobalBC,
-                  eventcand::RunNumber,
-                  eventcand::MatchedFwdTracksIds,
-                  eventcand::MatchedBarTracksIds,
-                  //
-                  eventcand::TotalAmplitudeAFT0,
-                  eventcand::TotalAmplitudeCFT0,
-                  eventcand::TimeAFT0,
-                  eventcand::TimeCFT0,
-                  eventcand::TriggerMaskFT0,
-                  eventcand::HasFT0<eventcand::TimeAFT0, eventcand::TimeCFT0>);
-
-using EventCanditate = EventCandidates::iterator;
 
 } // namespace o2::aod
 

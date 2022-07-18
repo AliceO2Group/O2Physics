@@ -36,10 +36,10 @@ struct TrackSkimmer {
   Produces<o2::aod::SkimmedMuonsCov> muonsCov;
   Produces<o2::aod::SkimmedMuonTrackLabels> muonLabels;
 
-  Produces<o2::aod::SkimmedBarTracks> barTracks;
-  Produces<o2::aod::SkimmedBarTracksCov> barsCov;
-  Produces<o2::aod::SkimmedBarTracksExtra> barsExtra;
-  Produces<o2::aod::SkimmedBarTrackLabels> barLabels;
+  Produces<o2::aod::SkimmedBarrelTracks> barTracks;
+  Produces<o2::aod::SkimmedBarrelTracksCov> barsCov;
+  Produces<o2::aod::SkimmedBarrelTracksExtra> barsExtra;
+  Produces<o2::aod::SkimmedBarrelTrackLabels> barLabels;
 
   // cuts for forward tracks
   Configurable<int> fUseFwdCuts{"useFwdCuts", 1, "Use cuts for forward tracks"};
@@ -275,8 +275,10 @@ struct TrackSkimmer {
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
       uint64_t firstBC = first.globalBC();
-      double trTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double)tr.trackTime(); // using absolute time
-      muonTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), trTime, tr.trackTimeRes());
+      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double) tr.trackTime(); // "real" = relative to start of TF
+      uint64_t bc = realTime > 0. ? std::round(realTime / o2::constants::lhc::LHCBunchSpacingNS) : 0;
+      double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
+      muonTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
       muonsCov(tr.x(), tr.y(), tr.z(), tr.tgl(), tr.signed1Pt(), tr.cXX(), tr.cXY(),
                tr.cYY(), tr.cPhiX(), tr.cPhiY(), tr.cPhiPhi(), tr.cTglX(), tr.cTglY(),
                tr.cTglPhi(), tr.cTglTgl(), tr.c1PtX(), tr.c1PtY(), tr.c1PtPhi(), tr.c1PtTgl(),
@@ -323,8 +325,10 @@ struct TrackSkimmer {
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
       uint64_t firstBC = first.globalBC();
-      double trTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double)tr.trackTime(); // using absolute time
-      barTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), trTime, tr.trackTimeRes());
+      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double) tr.trackTime(); // "real" = relative to start of TF
+      uint64_t bc = realTime > 0. ? std::round(realTime / o2::constants::lhc::LHCBunchSpacingNS) : 0;
+      double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
+      barTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
       barsCov(tr.x(), tr.alpha(), tr.y(), tr.z(), tr.snp(), tr.tgl(), tr.signed1Pt(),
               tr.cYY(), tr.cZY(), tr.cZZ(), tr.cSnpY(), tr.cSnpZ(), tr.cSnpSnp(), tr.cTglY(),
               tr.cTglZ(), tr.cTglSnp(), tr.cTglTgl(), tr.c1PtY(), tr.c1PtZ(), tr.c1PtSnp(),
