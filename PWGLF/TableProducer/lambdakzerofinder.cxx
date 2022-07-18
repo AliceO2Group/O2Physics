@@ -277,7 +277,7 @@ struct lambdakzerofinderQa {
     },
   };
 
-  void init(InitContext const&) 
+  void init(InitContext const&)
   {
     if (processRun3 && processRun2) {
       LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
