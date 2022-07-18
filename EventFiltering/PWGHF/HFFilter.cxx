@@ -953,7 +953,7 @@ struct HfFilter { // Main struct for HF triggers
 
     tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
 
-    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && !keepEvent[kDoubleCharm]) {
+    if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
       hProcessedEvents->Fill(1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersHF; ++iTrigger) {
