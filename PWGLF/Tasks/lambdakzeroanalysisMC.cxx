@@ -56,7 +56,7 @@ using std::array;
 using MyTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCPr>;
 
 struct lambdakzeroQa {
-  //Basic checks
+  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -180,8 +180,8 @@ struct lambdakzeroAnalysisMc {
     registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(10, "K0S Armenteros cut");
   }
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -209,7 +209,7 @@ struct lambdakzeroAnalysisMc {
     }
     registry.fill(HIST("hSel8Counter"), 0.5);
 
-    if (eventSelection_posZ && abs(collision.posZ()) > 10.f) {//10cm
+    if (eventSelection_posZ && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
@@ -234,8 +234,8 @@ struct lambdakzeroAnalysisMc {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
 
-            //Lambda
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
+            // Lambda
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
               registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               // registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());
@@ -268,7 +268,7 @@ struct lambdakzeroAnalysisMc {
             }
 
             // AntiLambda
-            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
+            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
               registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               // registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
@@ -344,7 +344,7 @@ struct lambdakzeroAnalysisMc {
     }
     registry.fill(HIST("hSel8Counter"), 0.5);
 
-    if (eventSelection_posZ && abs(collision.posZ()) > 10.f) {//10cm
+    if (eventSelection_posZ && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
@@ -424,7 +424,7 @@ struct lambdakzeroAnalysisMc {
 };
 
 struct lambdakzeroParticleCountMc {
-  //Basic checks
+  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -434,7 +434,6 @@ struct lambdakzeroParticleCountMc {
       {"hK0ShortCount_PtDiff", "hK0ShortCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hLambdaCount_PtDiff", "hLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hAntiLambdaCount_PtDiff", "hAntiLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
-
 
       {"hXsiPlusCount", "hXsiPlusCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hXsiMinusCount", "hXsiMinusCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
@@ -478,7 +477,7 @@ struct lambdakzeroParticleCountMc {
 
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
 
-    if (eventSelectionMC_posZ && abs(mcCollision.posZ()) > 10.f) {//10cm
+    if (eventSelectionMC_posZ && abs(mcCollision.posZ()) > 10.f) { // 10cm
       return;
     }
 
@@ -553,7 +552,7 @@ struct lambdakzeroParticleCountMc {
             registry.fill(HIST("hXsi0Count"), 0.5);
             for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
               for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
-                if (mcparticleDaughter0.pdgCode() == 111 && mcparticleDaughter1.pdgCode() == 3122) {//right
+                if (mcparticleDaughter0.pdgCode() == 111 && mcparticleDaughter1.pdgCode() == 3122) { // right
                   registry.fill(HIST("hXsi0Count"), 1.5);
                   registry.fill(HIST("hXsi0Count_PtDiff"), mcparticle.pt());
                 }
