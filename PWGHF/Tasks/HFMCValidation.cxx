@@ -247,8 +247,8 @@ struct ValidationRecLevel {
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
-    histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;entries", HistType::kTH1F, {{4, -1.5, 2.5}});
+    histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
+    histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
@@ -286,9 +286,9 @@ struct ValidationRecLevel {
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
-        histOriginTracks[index]->Fill(origin);
+        histOriginTracks[index]->Fill(origin, track.pt());
       } else {
-        histOriginTracks[index]->Fill(-1.);
+        histOriginTracks[index]->Fill(-1., track.pt());
       }
     }
 
