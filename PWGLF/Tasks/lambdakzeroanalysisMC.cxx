@@ -180,10 +180,10 @@ struct lambdakzeroAnalysisMc {
     registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(9, "K0S lifetime cut");
     registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(10, "K0S Armenteros cut");
 
-    if (processRun3 && processRun2) {
+    if (doprocessRun3 && doprocessRun2) {
       LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
     }
-    if (!processRun3 && !processRun2) {
+    if (!doprocessRun3 && !doprocessRun2) {
       LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
     }
   }

@@ -121,10 +121,10 @@ struct lambdakzeroAnalysis {
     registry.add("h3dMassLambdaDca", "h3dMassLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
     registry.add("h3dMassAntiLambdaDca", "h3dMassAntiLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
 
-    if (processRun3 && processRun2) {
+    if (doprocessRun3 && doprocessRun2) {
       LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
     }
-    if (!processRun3 && !processRun2) {
+    if (!doprocessRun3 && !doprocessRun2) {
       LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
     }
   }

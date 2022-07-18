@@ -161,10 +161,10 @@ struct lambdakzeroBuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
 
-    if (processRun3 && processRun2) {
+    if (doprocessRun3 && doprocessRun2) {
       LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
     }
-    if (!processRun3 && !processRun2) {
+    if (!doprocessRun3 && !doprocessRun2) {
       LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
     }
   }
