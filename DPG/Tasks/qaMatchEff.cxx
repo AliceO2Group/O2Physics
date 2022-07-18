@@ -238,7 +238,7 @@ struct qaMatchEff {
   //////////////////////////////////////////////// PROCESS FUNCTIONS //////////////////////////////////////////////////
   //
   //
-  void processMC(soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& jTracks, aod::McParticles const& mcParticles)
+  void processMC(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& jTracks, aod::McParticles const& mcParticles)
   {
     //
     //
@@ -462,7 +462,7 @@ struct qaMatchEff {
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
   //
   //
-  void processData(soa::Join<aod::Tracks, aod::TracksExtra> const& jTracks)
+  void processData(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& jTracks)
   {
     //
     //
