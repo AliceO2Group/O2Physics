@@ -277,6 +277,16 @@ struct lambdakzerofinderQa {
     },
   };
 
+  void init(InitContext const&) 
+  {
+    if (processRun3 && processRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!processRun3 && !processRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
+  }
+
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   /// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!

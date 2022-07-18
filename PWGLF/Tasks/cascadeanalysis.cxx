@@ -119,6 +119,13 @@ struct cascadeAnalysis {
     registry.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisXi}});
     registry.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
     registry.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
+
+    if (processRun3 && processRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!processRun3 && !processRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
   }
 
   //Selection criteria
