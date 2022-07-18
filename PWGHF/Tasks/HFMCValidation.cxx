@@ -242,13 +242,13 @@ struct ValidationRecLevel {
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
   std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
-  std::array<std::shared_ptr<TH1>, 2> histOriginTracks;
+  std::array<std::shared_ptr<TH2>, 2> histOriginTracks;
 
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
-    histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
+    histOriginTracks[0] = registry.add<TH2>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
+    histOriginTracks[1] = registry.add<TH2>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
