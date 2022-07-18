@@ -859,7 +859,9 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      n3Prongs++;
+      if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
+        n3Prongs++;
+      } // end multiple 3-prong selection
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
