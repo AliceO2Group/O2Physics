@@ -1,12 +1,9 @@
 """
 \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 """
-import yaml
-import sys
+import json
 import argparse
 from array import array
-from os import path
-import ROOT
 from ROOT import TFile, TF1, TH1F, TTree
 from ROOT import gRandom
 from DQFitter import DQFitter
@@ -56,8 +53,8 @@ def main():
     args = parser.parse_args()
 
     print('Loading task configuration: ...', end='\r')
-    with open(args.cfgFileName, 'r') as ymlCfgFile:
-        inputCfg = yaml.load(ymlCfgFile, yaml.FullLoader)
+    with open(args.cfgFileName, 'r') as jsonCfgFile:
+        inputCfg = json.load(jsonCfgFile)
     print('Loading task configuration: Done!')
 
     if args.gen_tutorial:
