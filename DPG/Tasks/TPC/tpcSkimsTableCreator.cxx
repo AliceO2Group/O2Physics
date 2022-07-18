@@ -147,10 +147,10 @@ struct TreeWriterTpcV0 {
   bool selectionKaon(C const& collision, V0 const& v0)
   {
     // initialise dynamic variables
-    float alpha = v0.alpha();
-    float qt = v0.qtarm();
-    float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-    float q_K = {cutAPK0pinner * sqrt(abs(1 - ((alpha * alpha) / (cutAPK0alinner * cutAPK0alinner))))};
+    const float alpha = v0.alpha();
+    const float qt = v0.qtarm();
+    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float q_K = {cutAPK0pinner * sqrt(abs(1 - ((alpha * alpha) / (cutAPK0alinner * cutAPK0alinner))))};
     /// Armenteros-Podolanski cut
     if ((qt < cutQTK0min) || (qt > cutQTK0max) || (qt < q_K)) {
       return false;
@@ -188,11 +188,11 @@ struct TreeWriterTpcV0 {
   {
     // initialise dynamic variables
 
-    float alpha = v0.alpha();
-    float qt = v0.qtarm();
-    float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float alpha = v0.alpha();
+    const float qt = v0.qtarm();
+    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    float q_L = cutAPL0 * sqrt(abs(1 - (((alpha - cutAPL1) * (alpha - cutAPL1)) / (cutAPL2 * cutAPL2))));
+    const float q_L = cutAPL0 * sqrt(abs(1 - (((alpha - cutAPL1) * (alpha - cutAPL1)) / (cutAPL2 * cutAPL2))));
     /// Armenteros-Podolanski cut
     if ((alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < cutQTmin) || (qt > q_L)) {
       return false;
@@ -228,11 +228,11 @@ struct TreeWriterTpcV0 {
   bool selectionAntiLambda(C const& collision, V0 const& v0)
   {
     // initialise dynamic variables
-    float alpha = v0.alpha();
-    float qt = v0.qtarm();
-    float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float alpha = v0.alpha();
+    const float qt = v0.qtarm();
+    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    float q_L = cutAPL0 * sqrt(abs(1 - (((alpha + cutAPL1) * (alpha + cutAPL1)) / (cutAPL2 * cutAPL2))));
+    const float q_L = cutAPL0 * sqrt(abs(1 - (((alpha + cutAPL1) * (alpha + cutAPL1)) / (cutAPL2 * cutAPL2))));
     /// Armenteros-Podolanski cut
     if ((alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < cutQTmin) || (qt > q_L)) {
       return false;
@@ -253,10 +253,10 @@ struct TreeWriterTpcV0 {
   bool selectionGamma(C const& collision, V0 const& v0)
   {
     // initialise dynamic variables
-    float alpha = v0.alpha();
-    float qt = v0.qtarm();
-    float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-    float pT = v0.pt();
+    const float alpha = v0.alpha();
+    const float qt = v0.qtarm();
+    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float pT = v0.pt();
     float lQtMaxPtDep = gammaQtPtMultiplicator * pT;
     if (lQtMaxPtDep > gammaQtMax) {
       lQtMaxPtDep = gammaQtMax;
@@ -450,8 +450,9 @@ struct TreeWriterTPCTOF {
   TRandom3* fRndm = new TRandom3(0);
   bool downsampleTsalisCharged(double pt, float factor1Pt, double sqrts, double mass)
   {
-    if (factor1Pt < 0.)
+    if (factor1Pt < 0.) {
       return true;
+    }
     double prob = tsalisCharged(pt, mass, sqrts) * pt;
     double probNorm = tsalisCharged(1., mass, sqrts);
     if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {

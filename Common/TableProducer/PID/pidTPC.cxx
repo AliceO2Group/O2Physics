@@ -184,7 +184,7 @@ struct tpcPid {
     reserveTable(pidAl, tablePIDAl);
 
     std::vector<float> network_prediction;
-    float nNclNormalization = response.GetNClNormalization();
+    const float nNclNormalization = response.GetNClNormalization();
 
     if (useNetworkCorrection) {
 

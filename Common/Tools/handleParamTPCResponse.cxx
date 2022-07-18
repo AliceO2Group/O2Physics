@@ -50,7 +50,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "paramMIP", bpo::value<float>()->default_value(50.f), "MIP parameter value")(
     "paramChargeFactor", bpo::value<float>()->default_value(2.299999952316284f), "Charge factor value")(
     "paramMultNormalization", bpo::value<float>()->default_value(11000.), "Multiplicity Normalization")(
-    "paramnClNormalization", bpo::value<float>()->default_value(152.), "Multiplicity Normalization")(
+    "paramnClNormalization", bpo::value<float>()->default_value(152.), "Maximum nClusters for normalisation (159 for run 2, 152 for run 3)")(
     "useDefaultParam", bpo::value<bool>()->default_value(true), "Use default sigma parametrisation")(
     "dryrun,D", bpo::value<int>()->default_value(0), "Perform a dryrun check before uploading")(
     "mode", bpo::value<string>()->default_value(""), "Running mode ('read' from file, 'write' to file, 'pull' from CCDB, 'push' to CCDB)")(

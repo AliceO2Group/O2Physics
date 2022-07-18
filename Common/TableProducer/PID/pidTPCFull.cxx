@@ -215,7 +215,7 @@ struct tpcPidFull {
       const unsigned long prediction_size = output_dimensions * tracks_size;
 
       network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
-      float nNclNormalization = response.GetNClNormalization();
+      const float nNclNormalization = response.GetNClNormalization();
       float duration_network = 0;
 
       std::vector<float> track_properties(track_prop_size);
@@ -277,7 +277,7 @@ struct tpcPidFull {
           // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
           if (network.getOutputDimensions() == 1) {
             table(response.GetExpectedSignal(trk, pid),
-                response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
+                  response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid),
                   (trk.tpcSignal() - network_prediction[count_tracks + tracks_size * pid] * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
           } else if (network.getOutputDimensions() == 2) {
             table(response.GetExpectedSignal(trk, pid), (network_prediction[2 * (count_tracks + tracks_size * pid) + 1] - network_prediction[2 * (count_tracks + tracks_size * pid)]) * response.GetExpectedSignal(trk, pid),
@@ -287,7 +287,7 @@ struct tpcPidFull {
               table(response.GetExpectedSignal(trk, pid), (network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]) * response.GetExpectedSignal(trk, pid),
                     (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid) + 1] - network_prediction[3 * (count_tracks + tracks_size * pid)]));
             } else {
-              table(response.GetExpectedSignal(trk, pid),(network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]) * response.GetExpectedSignal(trk, pid),
+              table(response.GetExpectedSignal(trk, pid), (network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]) * response.GetExpectedSignal(trk, pid),
                     (trk.tpcSignal() / response.GetExpectedSignal(trk, pid) - network_prediction[3 * (count_tracks + tracks_size * pid)]) / (network_prediction[3 * (count_tracks + tracks_size * pid)] - network_prediction[3 * (count_tracks + tracks_size * pid) + 2]));
             }
           } else {
