@@ -281,7 +281,7 @@ struct lambdakzerofinderQa {
 
   /// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
   void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& fullV0s)
+                   soa::Filtered<aod::V0Datas> const& fullV0s)
   {
     if (!collision.sel8()) {
       return;
@@ -311,7 +311,7 @@ struct lambdakzerofinderQa {
   PROCESS_SWITCH(lambdakzerofinderQa, processRun3, "Process Run 3 data", true);
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& fullV0s)
+                   soa::Filtered<aod::V0Datas> const& fullV0s)
   {
     if (!collision.alias()[kINT7]) {
       return;
