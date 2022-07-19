@@ -23,7 +23,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 
 namespace
 {
@@ -273,7 +272,7 @@ struct HfSelOptimisation {
       for (int iDecay{0}; iDecay < n2Prong; ++iDecay) {
         if (TESTBIT(cand2Prong.hfflag(), iDecay)) {
           if (std::abs(cand2Prong.flagMCMatchRec()) == BIT(iDecay)) {
-            if (cand2Prong.originMCRec() == OriginType::Prompt) {
+            if (cand2Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
                 case o2::aod::hf_cand_prong2::DecayType::D0ToPiK:
@@ -283,7 +282,7 @@ struct HfSelOptimisation {
                   testSelections2Prong<o2::aod::hf_cand_prong2::DecayType::JpsiToEE, 0>(cand2Prong, tracks);
                   break;
               }
-            } else if (cand2Prong.originMCRec() == OriginType::NonPrompt) {
+            } else if (cand2Prong.originMCRec() == RecoDecay::OriginType::NonPrompt) {
               isNonPrompt = true;
               switch (iDecay) {
                 case o2::aod::hf_cand_prong2::DecayType::D0ToPiK:
@@ -329,7 +328,7 @@ struct HfSelOptimisation {
       for (int iDecay{0}; iDecay < n3Prong; ++iDecay) {
         if (TESTBIT(cand3Prong.hfflag(), iDecay)) {
           if (std::abs(cand3Prong.flagMCMatchRec()) == BIT(iDecay)) {
-            if (cand3Prong.originMCRec() == OriginType::Prompt) {
+            if (cand3Prong.originMCRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
                 case o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi:
@@ -345,7 +344,7 @@ struct HfSelOptimisation {
                   testSelections3Prong<o2::aod::hf_cand_prong3::DecayType::XicToPKPi, 0>(cand3Prong, tracks);
                   break;
               }
-            } else if (cand3Prong.originMCRec() == OriginType::NonPrompt) {
+            } else if (cand3Prong.originMCRec() == RecoDecay::OriginType::NonPrompt) {
               isNonPrompt = true;
               switch (iDecay) {
                 case o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi:

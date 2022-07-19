@@ -39,7 +39,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace hf_cuts_single_track;
 using namespace hf_cuts_bdt_multiclass;
 
@@ -860,7 +859,9 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      n3Prongs++;
+      if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
+        n3Prongs++;
+      } // end multiple 3-prong selection
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
@@ -926,7 +927,7 @@ struct HfFilter { // Main struct for HF triggers
         // 3-prong femto
         if (isSelectedProton4Femto(track)) {
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
-            if (isCharmTagged[iHypo] && ((iHypo != 1 && is3Prong[iHypo]) || (iHypo == 1 && is3Prong[iHypo] && (TESTBIT(is3Prong[iHypo], 2) || TESTBIT(is3Prong[iHypo], 3))))) {
+            if (isCharmTagged[iHypo] && ((iHypo != 1 && is3Prong[iHypo]) || (iHypo == 1 && is3Prong[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 2) || TESTBIT(is3ProngInMass[iHypo], 3))))) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
@@ -952,7 +953,7 @@ struct HfFilter { // Main struct for HF triggers
 
     tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
 
-    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && !keepEvent[kDoubleCharm]) {
+    if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
       hProcessedEvents->Fill(1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersHF; ++iTrigger) {
@@ -982,10 +983,10 @@ struct HfFilter { // Main struct for HF triggers
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-        if (origin == OriginType::NonPrompt) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           flag = kNonPrompt;
-        } else {
+        } else if (origin == RecoDecay::OriginType::Prompt) {
           flag = kPrompt;
         }
       } else {
@@ -1013,13 +1014,13 @@ struct HfFilter { // Main struct for HF triggers
       int8_t origin = 0;
 
       // D± → π± K∓ π±
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign);
+      auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec >= 0) {
         channel = kDplus;
       }
       if (indexRec < 0) {
         // Ds± → K± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign); // TODO: replace hard coded pdg code
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, 431, array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2); // TODO: replace hard coded pdg code
         if (indexRec >= 0) {
           channel = kDs;
         }
@@ -1033,7 +1034,7 @@ struct HfFilter { // Main struct for HF triggers
       }
       if (indexRec < 0) {
         // Ξc± → p± K∓ π±
-        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign);
+        indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kXiCPlus, array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec >= 0) {
           channel = kXic;
         }
@@ -1041,8 +1042,8 @@ struct HfFilter { // Main struct for HF triggers
 
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
-        if (origin == OriginType::NonPrompt) {
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           flag = kNonPrompt;
         } else {
           flag = kPrompt;

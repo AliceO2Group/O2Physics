@@ -103,6 +103,7 @@ struct DGSelector {
 
     // no global tracks which are not vtx tracks
     // no vtx tracks which are not global tracks
+    auto rgtrwTOF = 0.;
     for (auto& track : tracks) {
       if (track.isGlobalTrack() && !track.isPVContributor()) {
         return 3;
@@ -110,11 +111,22 @@ struct DGSelector {
       if (diffCuts.globalTracksOnly() && !track.isGlobalTrack() && track.isPVContributor()) {
         return 4;
       }
+
+      // update fraction of PV tracks with TOF hit
+      if (track.isPVContributor() && track.hasTOF()) {
+        rgtrwTOF += 1.;
+      }
+    }
+    if (collision.numContrib() > 0) {
+      rgtrwTOF /= collision.numContrib();
+    }
+    if (rgtrwTOF < diffCuts.minRgtrwTOF()) {
+      return 5;
     }
 
     // number of vertex tracks
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      return 5;
+      return 6;
     }
 
     // PID, pt, and eta of tracks, invariant mass, and net charge
@@ -135,18 +147,18 @@ struct DGSelector {
 
         // PID
         if (!hasGoodPID(diffCuts, track)) {
-          return 6;
+          return 7;
         }
 
         // pt
         lvtmp.SetXYZM(track.px(), track.py(), track.pz(), mass2Use);
         if (lvtmp.Perp() < diffCuts.minPt() || lvtmp.Perp() > diffCuts.maxPt()) {
-          return 7;
+          return 8;
         }
 
         // eta
         if (lvtmp.Eta() < diffCuts.minEta() || lvtmp.Eta() > diffCuts.maxEta()) {
-          return 8;
+          return 9;
         }
         netCharge += track.sign();
         ivm += lvtmp;
@@ -155,11 +167,11 @@ struct DGSelector {
 
     // net charge
     if (netCharge < diffCuts.minNetCharge() || netCharge > diffCuts.maxNetCharge()) {
-      return 9;
+      return 10;
     }
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
-      return 10;
+      return 11;
     }
 
     // if we arrive here then the event is good!

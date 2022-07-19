@@ -51,7 +51,7 @@ struct HfCandidateCreatorXicc {
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
-  OutputObj<TH1F> hmassXic{TH1F("hmassXic", "xic candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.6)};
+  OutputObj<TH1F> hMassXic{TH1F("hMassXic", "xic candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.6)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx position (cm^{2});entries", 100, 0., 0.2)};
 
@@ -93,10 +93,10 @@ struct HfCandidateCreatorXicc {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= d_selectionFlagXic) {
-        hmassXic->Fill(InvMassXicToPKPi(xicCand), xicCand.pt());
+        hMassXic->Fill(InvMassXicToPKPi(xicCand), xicCand.pt());
       }
       if (xicCand.isSelXicToPiKP() >= d_selectionFlagXic) {
-        hmassXic->Fill(InvMassXicToPiKP(xicCand), xicCand.pt());
+        hMassXic->Fill(InvMassXicToPiKP(xicCand), xicCand.pt());
       }
       auto track0 = xicCand.index0_as<aod::BigTracks>();
       auto track1 = xicCand.index1_as<aod::BigTracks>();

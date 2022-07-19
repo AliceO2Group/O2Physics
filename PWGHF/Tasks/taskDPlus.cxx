@@ -24,7 +24,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong3;
 
 #include "Framework/runDataProcessing.h"
@@ -75,18 +74,18 @@ struct TaskDPlus {
     registry.add("hPtGenSig", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hPtGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtvsYRecSig_RecoPID", "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSigPrompt_RecoPID", "3-prong candidates (RecoPID - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSigNonPrompt_RecoPID", "3-prong candidates (RecoPID - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSig_RecoTopol", "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSigPrompt_RecoTopol", "3-prong candidates (RecoTopol - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSigNonPrompt_RecoTopol", "3-prong candidates (RecoTopol - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSig_RecoSkim", "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSigPrompt_RecoSkim", "3-prong candidates (RecoSkim - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYRecSigNonPrompt_RecoSkim", "3-prong candidates (RecoSkim - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYGen", "MC particles (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("hPtvsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSig_RecoPID", "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigPromptRecoPID", "3-prong candidates (RecoPID - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigNonPromptRecoPID", "3-prong candidates (RecoPID - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigRecoTopol", "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigPromptRecoTopol", "3-prong candidates (RecoTopol - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigNonPromptRecoTopol", "3-prong candidates (RecoTopol - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSig_RecoSkim", "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigPrompt_RecoSkim", "3-prong candidates (RecoSkim - matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYRecSigNonPrompt_RecoSkim", "3-prong candidates (RecoSkim - matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYGen", "MC particles (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+    registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
   Partition<soa::Join<aod::HfCandProng3, aod::HFSelDplusToPiKPiCandidate>> selectedDPlusCandidates = aod::hf_selcandidate_dplus::isSelDplusToPiKPi >= d_selectionFlagDPlus;
@@ -149,34 +148,34 @@ struct TaskDPlus {
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = YDPlus(candidate);
-        registry.fill(HIST("hPtvsYRecSig_RecoSkim"), ptRec, yRec);
+        registry.fill(HIST("hPtVsYRecSig_RecoSkim"), ptRec, yRec);
         if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
-          registry.fill(HIST("hPtvsYRecSig_RecoTopol"), ptRec, yRec);
+          registry.fill(HIST("hPtVsYRecSigRecoTopol"), ptRec, yRec);
         }
         if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
-          registry.fill(HIST("hPtvsYRecSig_RecoPID"), ptRec, yRec);
+          registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
         }
         if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
           registry.fill(HIST("hPtRecSig"), ptRec); // rec. level pT
         }
-        if (candidate.originMCRec() == OriginType::Prompt) {
-          registry.fill(HIST("hPtvsYRecSigPrompt_RecoSkim"), ptRec, yRec);
+        if (candidate.originMCRec() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hPtVsYRecSigPrompt_RecoSkim"), ptRec, yRec);
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
-            registry.fill(HIST("hPtvsYRecSigPrompt_RecoTopol"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), ptRec, yRec);
           }
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
-            registry.fill(HIST("hPtvsYRecSigPrompt_RecoPID"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
           }
           if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
             registry.fill(HIST("hPtRecSigPrompt"), ptRec); // rec. level pT, prompt
           }
         } else {
-          registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoSkim"), ptRec, yRec);
+          registry.fill(HIST("hPtVsYRecSigNonPrompt_RecoSkim"), ptRec, yRec);
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoTopol)) {
-            registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoTopol"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigNonPromptRecoTopol"), ptRec, yRec);
           }
           if (TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoPID)) {
-            registry.fill(HIST("hPtvsYRecSigNonPrompt_RecoPID"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
           }
           if (candidate.isSelDplusToPiKPi() >= d_selectionFlagDPlus) {
             registry.fill(HIST("hPtRecSigNonPrompt"), ptRec); // rec. level pT, non-prompt
@@ -200,13 +199,13 @@ struct TaskDPlus {
           continue;
         }
         registry.fill(HIST("hPtGen"), ptGen);
-        registry.fill(HIST("hPtvsYGen"), ptGen, yGen);
-        if (particle.originMCGen() == OriginType::Prompt) {
+        registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
+        if (particle.originMCGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
-          registry.fill(HIST("hPtvsYGenPrompt"), ptGen, yGen);
+          registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
         } else {
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
-          registry.fill(HIST("hPtvsYGenNonPrompt"), ptGen, yGen);
+          registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
       }

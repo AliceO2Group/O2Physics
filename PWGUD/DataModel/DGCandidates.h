@@ -23,11 +23,13 @@ namespace o2::aod
 namespace dgcand
 {
 DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t); //! Sum of track signs
+DECLARE_SOA_COLUMN(RgtrwTOF, rgtrwTOF, float);    //! Fraction of global tracks with TOF hit
+
 } // namespace dgcand
 DECLARE_SOA_TABLE(DGCandidates, "AOD", "DGCANDIDATES", //! Table with DG candidates
                   o2::soa::Index<>, bc::RunNumber, timestamp::Timestamp,
                   collision::PosX, collision::PosY, collision::PosZ,
-                  collision::NumContrib, dgcand::NetCharge);
+                  collision::NumContrib, dgcand::NetCharge, dgcand::RgtrwTOF);
 using DGCandidate = DGCandidates::iterator;
 
 namespace dgtrack

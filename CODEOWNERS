@@ -28,10 +28,10 @@
 /PWGEM @alibuild @mikesas @rbailhac
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
-/PWGHF @alibuild @ginnocen @vkucera @fcolamar
+/PWGHF @alibuild @ginnocen @vkucera @fcolamar @cterrevo
 /PWGHF/D2H @alibuild @ginnocen @vkucera @fcolamar @cterrevo @xinyepeng @lvermunt
 /PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
-/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh
+/PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh @rvertesi
 /PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo @NicoleBastid @mvolkl
 /PWGLF @alibuild @njacazio
 /PWGMM @alibuild @aalkin

@@ -45,76 +45,108 @@ const char* selectionLabels[kNsel] = {
   "kNoInconsistentVtx",
   "kNoPileupInMultBins",
   "kNoPilupMV",
-  "kNoPileupTPC"};
+  "kNoPileupTPC"
+  "kIsTriggerTVX",
+  "kIsINT1"};
 }
 
-EventSelectionParams::EventSelectionParams(int system)
+EventSelectionParams::EventSelectionParams(int system, int run)
 {
   memset(selectionBarrel, 0, sizeof(selectionBarrel));
   memset(selectionMuonWithPileupCuts, 0, sizeof(selectionMuonWithPileupCuts));
   memset(selectionMuonWithoutPileupCuts, 0, sizeof(selectionMuonWithoutPileupCuts));
 
-  if (system == 0 || system == 1 || system == 2) { // pp, pA or Ap
-    // default barrel selection
+  if (run == 1) {
     selectionBarrel[kIsBBV0A] = 1;
     selectionBarrel[kIsBBV0C] = 1;
-    selectionBarrel[kNoV0MOnVsOfPileup] = 1;
-    selectionBarrel[kNoSPDOnVsOfPileup] = 1;
-    selectionBarrel[kNoV0Casymmetry] = 1;
-    selectionBarrel[kIsGoodTimeRange] = 1;
+    selectionBarrel[kNoTPCHVdip] = 1;
     selectionBarrel[kNoIncompleteDAQ] = 1;
-    selectionBarrel[kNoTPCHVdip] = 1;
-    selectionBarrel[kNoPileupFromSPD] = 1;
-    selectionBarrel[kNoV0PFPileup] = 1;
-    selectionBarrel[kNoSPDClsVsTklBG] = 1;
-    selectionBarrel[kNoV0C012vsTklBG] = 1;
-
-    // similar to Barrel but without kNoTPCHVdip and kIsGoodTimeRange checks
-    selectionMuonWithPileupCuts[kIsBBV0A] = 1;
-    selectionMuonWithPileupCuts[kIsBBV0C] = 1;
-    selectionMuonWithPileupCuts[kNoV0MOnVsOfPileup] = 1;
-    selectionMuonWithPileupCuts[kNoSPDOnVsOfPileup] = 1;
-    selectionMuonWithPileupCuts[kNoV0Casymmetry] = 1;
-    selectionMuonWithPileupCuts[kNoIncompleteDAQ] = 1;
-    selectionMuonWithPileupCuts[kNoPileupFromSPD] = 1;
-    selectionMuonWithPileupCuts[kNoV0PFPileup] = 1;
-    selectionMuonWithPileupCuts[kNoSPDClsVsTklBG] = 1;
-    selectionMuonWithPileupCuts[kNoV0C012vsTklBG] = 1;
-
-    // basic checks for muon analyses without in/out-of-bunch pileup rejection
-    selectionMuonWithoutPileupCuts[kIsBBV0A] = 1;
-    selectionMuonWithoutPileupCuts[kIsBBV0C] = 1;
-    selectionMuonWithoutPileupCuts[kNoV0Casymmetry] = 1;
-    selectionMuonWithoutPileupCuts[kNoIncompleteDAQ] = 1;
-    selectionMuonWithoutPileupCuts[kNoV0C012vsTklBG] = 1;
-  }
-
-  if (system == 1) { // additional ZDC checks in pA
-    selectionBarrel[kNoBGZNA] = 1;
-    selectionMuonWithPileupCuts[kNoBGZNA] = 1;
-    selectionBarrel[kNoBGZNA] = 1;
-  }
-
-  if (system == 2) { // additional ZDC checks in Ap
-    selectionBarrel[kNoBGZNC] = 1;
-    selectionMuonWithPileupCuts[kNoBGZNC] = 1;
-    selectionBarrel[kNoBGZNC] = 1;
-  }
-
-  if (system == 3) { // AA
-    selectionBarrel[kIsBBV0A] = 1;
-    selectionBarrel[kIsBBV0C] = 1;
-    selectionBarrel[kIsBBZAC] = 1;
-    selectionBarrel[kIsGoodTimeRange] = 1;
-    selectionBarrel[kNoTPCHVdip] = 1;
+    selectionBarrel[kNoTPCLaserWarmUp] = 1;
 
     selectionMuonWithPileupCuts[kIsBBV0A] = 1;
     selectionMuonWithPileupCuts[kIsBBV0C] = 1;
-    selectionMuonWithPileupCuts[kIsBBZAC] = 1;
 
     selectionMuonWithoutPileupCuts[kIsBBV0A] = 1;
     selectionMuonWithoutPileupCuts[kIsBBV0C] = 1;
-    selectionMuonWithoutPileupCuts[kIsBBZAC] = 1;
+
+    if (system == 1) { // additional ZDC checks in pA
+      selectionBarrel[kNoBGZNA] = 1;
+      selectionMuonWithPileupCuts[kNoBGZNA] = 1;
+      selectionMuonWithoutPileupCuts[kNoBGZNA] = 1;
+    }
+    if (system == 2) { // additional ZDC checks in Ap
+      selectionBarrel[kNoBGZNC] = 1;
+      selectionMuonWithPileupCuts[kNoBGZNC] = 1;
+      selectionMuonWithoutPileupCuts[kNoBGZNC] = 1;
+    }
+    if (system == 3) { // AA
+      selectionBarrel[kIsBBZAC] = 1;
+      selectionMuonWithPileupCuts[kIsBBZAC] = 1;
+      selectionMuonWithoutPileupCuts[kIsBBZAC] = 1;
+    }
+  } else if (run == 2) {
+    if (system == 0 || system == 1 || system == 2) { // pp, pA or Ap
+      // default barrel selection
+      selectionBarrel[kIsBBV0A] = 1;
+      selectionBarrel[kIsBBV0C] = 1;
+      selectionBarrel[kNoV0MOnVsOfPileup] = 1;
+      selectionBarrel[kNoSPDOnVsOfPileup] = 1;
+      selectionBarrel[kNoV0Casymmetry] = 1;
+      selectionBarrel[kIsGoodTimeRange] = 1;
+      selectionBarrel[kNoIncompleteDAQ] = 1;
+      selectionBarrel[kNoTPCHVdip] = 1;
+      selectionBarrel[kNoPileupFromSPD] = 1;
+      selectionBarrel[kNoV0PFPileup] = 1;
+      selectionBarrel[kNoSPDClsVsTklBG] = 1;
+      selectionBarrel[kNoV0C012vsTklBG] = 1;
+
+      // similar to Barrel but without kNoTPCHVdip and kIsGoodTimeRange checks
+      selectionMuonWithPileupCuts[kIsBBV0A] = 1;
+      selectionMuonWithPileupCuts[kIsBBV0C] = 1;
+      selectionMuonWithPileupCuts[kNoV0MOnVsOfPileup] = 1;
+      selectionMuonWithPileupCuts[kNoSPDOnVsOfPileup] = 1;
+      selectionMuonWithPileupCuts[kNoV0Casymmetry] = 1;
+      selectionMuonWithPileupCuts[kNoIncompleteDAQ] = 1;
+      selectionMuonWithPileupCuts[kNoPileupFromSPD] = 1;
+      selectionMuonWithPileupCuts[kNoV0PFPileup] = 1;
+      selectionMuonWithPileupCuts[kNoSPDClsVsTklBG] = 1;
+      selectionMuonWithPileupCuts[kNoV0C012vsTklBG] = 1;
+
+      // basic checks for muon analyses without in/out-of-bunch pileup rejection
+      selectionMuonWithoutPileupCuts[kIsBBV0A] = 1;
+      selectionMuonWithoutPileupCuts[kIsBBV0C] = 1;
+      selectionMuonWithoutPileupCuts[kNoV0Casymmetry] = 1;
+      selectionMuonWithoutPileupCuts[kNoIncompleteDAQ] = 1;
+      selectionMuonWithoutPileupCuts[kNoV0C012vsTklBG] = 1;
+    }
+
+    if (system == 1) { // additional ZDC checks in pA
+      selectionBarrel[kNoBGZNA] = 1;
+      selectionMuonWithPileupCuts[kNoBGZNA] = 1;
+      selectionMuonWithoutPileupCuts[kNoBGZNA] = 1;
+    }
+
+    if (system == 2) { // additional ZDC checks in Ap
+      selectionBarrel[kNoBGZNC] = 1;
+      selectionMuonWithPileupCuts[kNoBGZNC] = 1;
+      selectionMuonWithoutPileupCuts[kNoBGZNC] = 1;
+    }
+
+    if (system == 3) { // AA
+      selectionBarrel[kIsBBV0A] = 1;
+      selectionBarrel[kIsBBV0C] = 1;
+      selectionBarrel[kIsBBZAC] = 1;
+      selectionBarrel[kIsGoodTimeRange] = 1;
+      selectionBarrel[kNoTPCHVdip] = 1;
+
+      selectionMuonWithPileupCuts[kIsBBV0A] = 1;
+      selectionMuonWithPileupCuts[kIsBBV0C] = 1;
+      selectionMuonWithPileupCuts[kIsBBZAC] = 1;
+
+      selectionMuonWithoutPileupCuts[kIsBBV0A] = 1;
+      selectionMuonWithoutPileupCuts[kIsBBV0C] = 1;
+      selectionMuonWithoutPileupCuts[kIsBBZAC] = 1;
+    }
   }
 }
 

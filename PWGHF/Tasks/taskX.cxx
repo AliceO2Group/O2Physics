@@ -56,8 +56,8 @@ struct TaskX {
   void init(o2::framework::InitContext&)
   {
     registry.add("hMass", "3-prong candidates;inv. mass (J/#psi #pi+ #pi-) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 3., 4.}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hdeclength", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hdeclengthxy", "3-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLength", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hDecLengthxy", "3-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.01}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hd0Prong2", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{400, -0.002, 0.002}, {(std::vector<double>)bins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -86,8 +86,8 @@ struct TaskX {
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hPtProng2"), candidate.ptProng2());
-      registry.fill(HIST("hdeclength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hdeclengthxy"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
+      registry.fill(HIST("hDecLengthxy"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), candidate.pt());

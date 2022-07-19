@@ -33,6 +33,48 @@ void upload_event_selection_params()
   bool isNew[nPeriodsMax] = {0};
 
   int n = 0;
+  period[n] = "pp2010";
+  par[n] = new EventSelectionParams(0, 1);
+  runFirst[n] = 114786;
+  runLast[n] = 136377;
+
+  n++;
+  period[n] = "PbPb_10h";
+  par[n] = new EventSelectionParams(3, 1);
+  runFirst[n] = 137135;
+  runLast[n] = 139517;
+
+  n++;
+  period[n] = "pp2011";
+  par[n] = new EventSelectionParams(0, 1);
+  runFirst[n] = 144871;
+  runLast[n] = 159582;
+
+  n++;
+  period[n] = "PbPb_11h";
+  par[n] = new EventSelectionParams(3, 1);
+  runFirst[n] = 167915;
+  runLast[n] = 170593;
+
+  n++;
+  period[n] = "pp2012";
+  par[n] = new EventSelectionParams(0, 2);
+  runFirst[n] = 176661;
+  runLast[n] = 193752;
+
+  n++;
+  period[n] = "pPb2013";
+  par[n] = new EventSelectionParams(1, 1);
+  runFirst[n] = 195344;
+  runLast[n] = 196310;
+
+  n++;
+  period[n] = "Pbp2013";
+  par[n] = new EventSelectionParams(2, 1);
+  runFirst[n] = 196433;
+  runLast[n] = 197388;
+
+  n++;
   period[n] = "defaultRun2";
   par[n] = new EventSelectionParams(0);
   runFirst[n] = 209122;
@@ -213,7 +255,7 @@ void upload_event_selection_params()
     ccdb.storeAsTFileAny(par[i], "EventSelection/EventSelectionParams", metadata, sor, eor);
   }
 
-  if (1) { // Default Run 3 object
+  if (0) { // Default Run 3 object
     ULong64_t sorRun3 = 1543767116001;
     ULong64_t eorRun3 = 1893445200000;
     metadata["period"] = "Default Run 3";

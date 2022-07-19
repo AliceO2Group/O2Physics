@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(qa-efficiency
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(qa-match-eff
+        SOURCES qaMatchEff.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(qa-impact-parameter
         SOURCES qaImpPar.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework
