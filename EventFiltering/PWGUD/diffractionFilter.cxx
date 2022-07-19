@@ -84,20 +84,21 @@ struct DGFilterRun3 {
   //   4: number of FwdTracks > 0
   //   5: not all global tracks are vtx tracks
   //   6: not all vtx tracks are global tracks
-  //   7: number of vtx tracks out of range
-  //   8: has not good PID information
-  //   9: track pt out of range
-  //  10: track eta out of range
-  //  11: net charge out of range
-  //  12: IVM out of range
+  //   7: fraction of tracks with TOF hit too low
+  //   8: number of vtx tracks out of range
+  //   9: has not good PID information
+  //  10: track pt out of range
+  //  11: track eta out of range
+  //  12: net charge out of range
+  //  13: IVM out of range
   static constexpr std::string_view histNames[4] = {"aftercut2pi", "aftercut4pi", "aftercut2K", "aftercut4K"};
   HistogramRegistry registry{
     "registry",
     {
-      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
-      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{12, -0.5, 11.5}}}},
+      {histNames[0].data(), "#aftercut2pi", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[1].data(), "#aftercut4pi", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[2].data(), "#aftercut2K", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
+      {histNames[3].data(), "#aftercut4K", {HistType::kTH1F, {{13, -0.5, 12.5}}}},
     }};
 
   void init(InitContext&)

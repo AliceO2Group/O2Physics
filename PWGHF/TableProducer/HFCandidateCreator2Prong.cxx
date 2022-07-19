@@ -41,7 +41,7 @@ struct HFCandidateCreator2Prong {
   Configurable<double> d_minrelchi2change{"d_minrelchi2change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> b_dovalplots{"b_dovalplots", true, "do validation plots"};
 
-  OutputObj<TH1F> hmass2{TH1F("hmass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
@@ -148,8 +148,8 @@ struct HFCandidateCreator2Prong {
         auto arrayMomenta = array{pvec0, pvec1};
         massPiK = RecoDecay::m(arrayMomenta, array{massPi, massK});
         massKPi = RecoDecay::m(arrayMomenta, array{massK, massPi});
-        hmass2->Fill(massPiK);
-        hmass2->Fill(massKPi);
+        hMass2->Fill(massPiK);
+        hMass2->Fill(massKPi);
       }
     }
   }
@@ -210,7 +210,7 @@ struct HFCandidateCreator2ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchRec(flag, origin);
@@ -246,7 +246,7 @@ struct HFCandidateCreator2ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = (RecoDecay::getMother(particlesMC, particle, kBottom, true) > -1 ? OriginType::NonPrompt : OriginType::Prompt);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
       }
 
       rowMCMatchGen(flag, origin);

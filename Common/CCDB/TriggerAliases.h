@@ -29,6 +29,8 @@ enum triggerAliases {
   kCUP9,
   kMUP10,
   kMUP11,
+  kINT1,
+  kUnbiased,
   kALL,
   kNaliases
 };
@@ -52,7 +54,7 @@ class TriggerAliases
   std::map<uint32_t, std::string> mAliasToClassNames;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMask;
   std::map<uint32_t, ULong64_t> mAliasToTriggerMaskNext50;
-  ClassDefNV(TriggerAliases, 3)
+  ClassDefNV(TriggerAliases, 4)
 };
 
 #endif

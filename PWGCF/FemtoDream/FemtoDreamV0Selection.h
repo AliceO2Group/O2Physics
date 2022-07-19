@@ -305,7 +305,6 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   if ((invMassLambda < fInvMassLowLimit or invMassLambda > fInvMassUpLimit) and (invMassAntiLambda < fInvMassLowLimit or invMassAntiLambda > fInvMassUpLimit)) {
     return false;
   }
-
   if (nPtV0MinSel > 0 && pT < pTV0Min) {
     return false;
   }
@@ -329,15 +328,25 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
       return false;
     }
   }
-  // const auto dcaXYpos = posTrack.dcaXY();
-  // const auto dcaZpos = posTrack.dcaZ();
-  // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
   if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
+
+  // check that track combinations for V0 or antiV0 would be fulfilling PID
+  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  // antiV0
+  auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
+  auto nSigmaPiPos = posTrack.tpcNSigmaPi();
+  // v0
+  auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
+  auto nSigmaPrPos = posTrack.tpcNSigmaPr();
+  if (!(abs(nSigmaPrNeg) < nSigmaPIDMax and abs(nSigmaPiPos) < nSigmaPIDMax) and !(abs(nSigmaPrPos) < nSigmaPIDMax and abs(nSigmaPiNeg) < nSigmaPIDMax)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -411,16 +420,17 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamV0Selection::kV0Sign) {
+      int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
       if (sel.getSelectionValue() < 0) {
         auto nSigmaPr = negTrack.tpcNSigmaPr();
         auto nSigmaPi = posTrack.tpcNSigmaPi();
-        if (abs(nSigmaPr) < 5 && abs(nSigmaPi) < 5) {
+        if (abs(nSigmaPr) < nSigmaPIDMax && abs(nSigmaPi) < nSigmaPIDMax) {
           sign = -1.;
         }
       } else {
         auto nSigmaPi = negTrack.tpcNSigmaPi();
         auto nSigmaPr = posTrack.tpcNSigmaPr();
-        if (abs(nSigmaPr) < 5 && abs(nSigmaPi) < 5) {
+        if (abs(nSigmaPr) < nSigmaPIDMax && abs(nSigmaPi) < nSigmaPIDMax) {
           sign = 1.;
         }
       }
