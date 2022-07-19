@@ -76,6 +76,8 @@ DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                             //! DCA_xy
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                               //! DCA_z
 DECLARE_SOA_COLUMN(X, x, float);                                     //! x position of the track
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                             //! alpha position of the track
+DECLARE_SOA_COLUMN(TPCPIDselection, tpcPIDselection, uint8_t);       //! TPC PID selection
+DECLARE_SOA_COLUMN(TOFPIDselection, tofPIDselection, uint8_t);       //! TOF PID selection
 DECLARE_SOA_COLUMN(TPCnSigmaPi, tpcNSigmaPi, float);                 //! Pion TPC nSigma
 DECLARE_SOA_COLUMN(TPCnSigmaKa, tpcNSigmaKa, float);                 //! Kaon TPC nSigma
 DECLARE_SOA_COLUMN(TPCnSigmaPr, tpcNSigmaPr, float);                 //! Proton TPC nSigma
@@ -126,6 +128,8 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::DcaZ,
                   resodaughter::X,
                   resodaughter::Alpha,
+                  resodaughter::TPCPIDselection,
+                  resodaughter::TOFPIDselection,
                   resodaughter::TPCnSigmaPi,
                   resodaughter::TPCnSigmaKa,
                   resodaughter::TPCnSigmaPr,
@@ -244,9 +248,9 @@ DECLARE_SOA_EXTENDED_TABLE_USER(Reso2TrackTrackDatas, StoredReso2TrackTrackDatas
 
 using Reso2TrackTrackData = Reso2TrackTrackDatas::iterator;
 
-using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA>;
-using Reso2TracksMC = soa::Join<aod::FullTracks, aod::TracksCov, McTrackLabels>;
-using Reso2TracksPID = soa::Join<aod::FullTracks, aod::TracksCov, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>;
+using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
+using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA>;
 
 /// Reconstruction of track-v0 decay resonance candidates

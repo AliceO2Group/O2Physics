@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file LFResonanceCandidateProducer.cxx
+/// \file LFResonanceInitializer.cxx
 /// \brief Initializes variables for the resonance candidate producers
 ///
 ///
@@ -91,7 +91,7 @@ struct reso2initializer {
     colCuts.init(&qaRegistry);
   }
 
-  void process(const soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentRun2V0Ms, aod::Mults>::iterator& collision,
+  void process(const soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::Mults>::iterator& collision,
                soa::Filtered<aod::Reso2TracksPIDExt> const& tracks, o2::aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
@@ -103,13 +103,35 @@ struct reso2initializer {
     if (ConfIsRun3) {
       resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     } else {
-      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
+      resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0M(), colCuts.computeSphericity(collision, tracks), bc.timestamp());
     }
 
     int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     // Loop over tracks
     for (auto& track : tracks) {
       // Tracks are already filtered by the pre-filters
+      qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
+
+      // Add PID selection criteria here
+      uint8_t tpcPIDselections = 0;
+      uint8_t tofPIDselections = 0;
+      // TPC PID
+      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
+        tpcPIDselections &= BIT(0);
+      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
+        tpcPIDselections &= BIT(1);
+      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
+        tpcPIDselections &= BIT(2);
+      // TOF PID
+      if (track.hasTOF()) {
+        if (std::abs(track.tofNSigmaPi()) < pidnSigmaPreSelectionCut)
+          tofPIDselections &= BIT(0);
+        if (std::abs(track.tofNSigmaKa()) < pidnSigmaPreSelectionCut)
+          tofPIDselections &= BIT(1);
+        if (std::abs(track.tofNSigmaPr()) < pidnSigmaPreSelectionCut)
+          tofPIDselections &= BIT(2);
+      }
+
       reso2tracks(resoCollisions.lastIndex(),
                   track.pt(),
                   track.eta(),
@@ -123,6 +145,8 @@ struct reso2initializer {
                   track.dcaZ(),
                   track.x(),
                   track.alpha(),
+                  tpcPIDselections,
+                  tofPIDselections,
                   track.tpcNSigmaPi(),
                   track.tpcNSigmaKa(),
                   track.tpcNSigmaPr(),
@@ -170,7 +194,7 @@ struct reso2initializer {
                     0,
                     v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     0,
-                    v0.x(), 0, 0, 0, 0, 0, 0, 0,
+                    v0.x(), 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     v0.dcaV0daughters(), v0.mLambda(), v0.mAntiLambda(),
                     v0.v0radius(), v0.x(), v0.y(), v0.z());
       }
