@@ -25,7 +25,7 @@
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelectorPID.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "ALICE3/DataModel/RICH.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/PID.h"
@@ -120,14 +120,14 @@ DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLbFull",
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
-                  full::NSigTOFPi0,
-                  full::NSigRICHPi0,
+                  full::NSigTOFTrk0Pi,
+                  full::NSigRICHTrk0Pi,
                   full::NSigRICHTrk1Pi,
                   full::NSigRICHTrk1Pr,
                   full::NSigRICHTrk2Ka,
                   full::NSigRICHTrk3Pi,
                   full::NSigRICHTrk3Pr,
-                  full::NSigfRICHPi0,
+                  full::NSigfRICHTrk0Pi,
                   full::NSigfRICHTrk1Pi,
                   full::NSigfRICHTrk1Pr,
                   full::NSigfRICHTrk2Ka,
@@ -190,11 +190,7 @@ struct Alice3PidIndexBuilder {
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFull> rowCandidateFull;
 
-  void init(InitContext const&)
-  {
-  }
-
-  using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID, aod::TracksExtended>;
+  using TracksExtendedPID = soa::Join<aod::BigTracksPID, aod::HfTrackIndexALICE3PID>;
 
   void process(soa::Join<aod::HfCandLb, aod::HfCandLbMCRec, aod::HFSelLbToLcPiCandidate> const& candidates,
                soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate> const&,
@@ -212,10 +208,10 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionY) {
         if (FunctionSelection >= 1) {
           auto candLc = candidate.index0_as<soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec, aod::HFSelLcCandidate>>();
-          auto track0 = candidate.index1_as<ExtendedTracksPID>(); // daughter pion track
-          auto track1 = candLc.index0_as<ExtendedTracksPID>();    // granddaughter tracks (lc decay particles)
-          auto track2 = candLc.index1_as<ExtendedTracksPID>();
-          auto track3 = candLc.index2_as<ExtendedTracksPID>();
+          auto track0 = candidate.index1_as<TracksExtendedPID>(); // daughter pion track
+          auto track1 = candLc.index0_as<TracksExtendedPID>();    // granddaughter tracks (lc decay particles)
+          auto track2 = candLc.index1_as<TracksExtendedPID>();
+          auto track3 = candLc.index2_as<TracksExtendedPID>();
 
           auto RICHTrk0Pi = -5000.0;
           auto RICHTrk1Pi = -5000.0;
@@ -235,26 +231,26 @@ struct HfTreeCreatorLbToLcPi {
             RICHTrk0Pi = track0.rich().richNsigmaPi();
           if (track1.has_rich()) {
             RICHTrk1Pi = track1.rich().richNsigmaPi();
-            RICHTrk1p = track1.rich().richNsigmaPr();
+            RICHTrk1P = track1.rich().richNsigmaPr();
           }
           if (track2.has_rich())
             RICHTrk2K = track2.rich().richNsigmaKa();
           if (track3.has_rich()) {
             RICHTrk3Pi = track3.rich().richNsigmaPi();
-            RICHTrk3p = track3.rich().richNsigmaPr();
+            RICHTrk3P = track3.rich().richNsigmaPr();
           }
 
           if (track0.has_frich())
-            fRICHPi0 = track0.frich().frichNsigmaPi();
+            fRICHTrk0Pi = track0.frich().frichNsigmaPi();
           if (track1.has_frich()) {
             fRICHTrk1Pi = track1.frich().frichNsigmaPi();
-            fRICHTrk1p = track1.frich().frichNsigmaPr();
+            fRICHTrk1P = track1.frich().frichNsigmaPr();
           }
           if (track2.has_frich())
             fRICHTrk2K = track2.frich().frichNsigmaKa();
           if (track3.has_frich()) {
             fRICHTrk3Pi = track3.frich().frichNsigmaPi();
-            fRICHTrk3p = track3.frich().frichNsigmaPr();
+            fRICHTrk3P = track3.frich().frichNsigmaPr();
           }
 
           rowCandidateFull(
@@ -299,9 +295,9 @@ struct HfTreeCreatorLbToLcPi {
             track3.tofNSigmaPi(),
             track3.tofNSigmaPr(),
             o2::aod::hf_cand_prong3::InvMassLcpKpi(candLc),
-            o2::aod::hf_cand_prong3::CtLc(LcCand),
-            o2::aod::hf_cand_prong3::YLc(LcCand),
-            o2::aod::hf_cand_prong3::ELc(LcCand),
+            o2::aod::hf_cand_prong3::CtLc(candLc),
+            o2::aod::hf_cand_prong3::YLc(candLc),
+            o2::aod::hf_cand_prong3::ELc(candLc),
             candLc.eta(),
             candLc.cpa(),
             candLc.cpaXY(),
