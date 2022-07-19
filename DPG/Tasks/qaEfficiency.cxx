@@ -1020,7 +1020,7 @@ struct QaEfficiency {
     if (!doSumPDG) {
       return;
     }
-    constexpr char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
+    const char* partName = id == o2::track::PID::NIDs ? "All" : o2::track::PID::getName(id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
     TList* subList = static_cast<TList*>(listEfficiencyMC->FindObject(partName));
     if (!subList) {
