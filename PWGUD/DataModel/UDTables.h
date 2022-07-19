@@ -16,6 +16,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
+#include "Common/DataModel/PIDResponse.h"
 #include <cmath>
 
 namespace o2::aod
@@ -75,16 +76,16 @@ namespace udcollision
 // general information
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
-DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t); //! Sum of track signs
-DECLARE_SOA_COLUMN(RgtrwTOF, rgtrwTOF, float);    //! Fraction of global tracks with TOF hit
+DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t);  //! Sum of track signs
+DECLARE_SOA_COLUMN(RgtrwTOF, rgtrwTOF, float);     //! Fraction of global tracks with TOF hit
 // FT0 information
-DECLARE_SOA_COLUMN(TotalAmplitudeAFT0, totalAmplitudeAFT0, float); //! sum of amplitudes on A side of FT0
-DECLARE_SOA_COLUMN(TotalAmplitudeCFT0, totalAmplitudeCFT0, float); //! sum of amplitudes on C side of FT0
-DECLARE_SOA_COLUMN(TimeAFT0, timeAFT0, float);                     //! FT0A average time
-DECLARE_SOA_COLUMN(TimeCFT0, timeCFT0, float);                     //! FT0C average time
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float); //! sum of amplitudes on A side of FT0
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);                     //! FT0A average time
+DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);                     //! FT0C average time
 DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
 DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0,                         //! has FT0 signal in the same BC
-                           [](float TimeAFT0, float TimeCFT0) -> bool { return TimeAFT0 > -999. && TimeCFT0 > -999.; });
+                           [](float TimeFT0A, float TimeFT0C) -> bool { return TimeFT0A > -999. && TimeFT0C > -999.; });
 } // namespace udcollision
 
 DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
@@ -97,12 +98,12 @@ DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
                   collision::NumContrib,
                   udcollision::NetCharge,
                   udcollision::RgtrwTOF,
-                  udcollision::TotalAmplitudeAFT0,
-                  udcollision::TotalAmplitudeCFT0,
-                  udcollision::TimeAFT0,
-                  udcollision::TimeCFT0,
+                  udcollision::TotalFT0AmplitudeA,
+                  udcollision::TotalFT0AmplitudeC,
+                  udcollision::TimeFT0A,
+                  udcollision::TimeFT0C,
                   udcollision::TriggerMaskFT0,
-                  udcollision::HasFT0<udcollision::TimeAFT0, udcollision::TimeCFT0>);
+                  udcollision::HasFT0<udcollision::TimeFT0A, udcollision::TimeFT0C>);
 
 using UDCollision = UDCollisions::iterator;
 
@@ -117,6 +118,10 @@ DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
 DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
 DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                     //!
+                           [](float px, float py) -> float {
+                             return std::sqrt(px * px + py * py);
+                           });
 } // namespace udtrack
 
 // Barrel track kinematics
@@ -128,7 +133,12 @@ DECLARE_SOA_TABLE(UDTracks, "AOD", "UDTRACK",
                   udtrack::Sign,
                   udtrack::GlobalBC,
                   udtrack::TrackTime,
-                  udtrack::TrackTimeRes);
+                  udtrack::TrackTimeRes,
+                  udtrack::Pt<udtrack::Px, udtrack::Py>);
+
+DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
+                  pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
 
 DECLARE_SOA_TABLE(UDTrackCollisionIDs, "AOD", "UDTRCOLID",
                   udtrack::UDCollisionId);

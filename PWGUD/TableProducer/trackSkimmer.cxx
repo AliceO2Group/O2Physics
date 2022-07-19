@@ -31,6 +31,7 @@ struct TrackSkimmer {
 
   Produces<o2::aod::UDTracks> udTracks;
   Produces<o2::aod::UDTracksExtra> udTracksExtra;
+  Produces<o2::aod::UDTracksPID> udTracksPID;
   Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
 
   // cuts for forward tracks
@@ -315,6 +316,8 @@ struct TrackSkimmer {
       udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
                     tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
                     tr.tpcSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
+      udTracksPID(tr.tpcNSigmaEl(), tr.tpcNSigmaMu(), tr.tpcNSigmaPi(), tr.tpcNSigmaKa(), tr.tpcNSigmaPr(),
+                  tr.tofNSigmaEl(), tr.tofNSigmaMu(), tr.tofNSigmaPi(), tr.tofNSigmaKa(), tr.tofNSigmaPr());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trId);
@@ -328,6 +331,10 @@ struct TrackSkimmer {
       }
     }
   }
+
+  using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
+                                     o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
+                                     o2::aod::TOFSignal, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
 
   // process only MCH-MID tracks with MC information
   void processFwdMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& tracks,
@@ -359,11 +366,10 @@ struct TrackSkimmer {
   }
 
   // process both barrel and muon tracks with MC information
-  // todo: switch to propagated tracks?
   void processAllMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& fwdTracks,
                     o2::aod::McFwdTrackLabels const& mcFwdTrackLabels,
                     o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                    o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA> const& barTracks,
+                    BarrelTracks const& barTracks,
                     o2::aod::McTrackLabels const& mcBarTrackLabels,
                     o2::aod::AmbiguousTracks const& ambBarTracks,
                     o2::aod::McCollisions const& mcCollisions,
@@ -380,9 +386,10 @@ struct TrackSkimmer {
     newPartIDs.clear();
   }
 
+  // process both barrel and muon tracks without MC information
   void processAll(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& fwdTracks,
                   o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                  o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA> const& barTracks,
+                  BarrelTracks const& barTracks,
                   o2::aod::AmbiguousTracks const& ambBarTracks,
                   o2::aod::BCs const& bcs)
   {

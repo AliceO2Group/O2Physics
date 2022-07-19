@@ -127,12 +127,12 @@ struct DimuonsAnalysis {
       if (hasFT0) {
         registry.fill(HIST("TracksWithFT0/Eta"), p1.Eta());
         registry.fill(HIST("TracksWithFT0/Eta"), p2.Eta());
-        registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeAFT0());
-        registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeCFT0());
+        registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeFT0A());
+        registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeFT0C());
         // if there is a signal, candidate passes if timeA is dummy
         // and timeC is between +/- 1 ns
-        bool checkA = std::abs(cand.timeAFT0() - ft0DummyTime) < 1e-3;
-        bool checkC = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
+        bool checkA = std::abs(cand.timeFT0A() - ft0DummyTime) < 1e-3;
+        bool checkC = cand.timeFT0C() > -1. && cand.timeFT0C() < 1.;
         passFT0 = checkA && checkC;
       } else {
         passFT0 = true;
@@ -222,12 +222,12 @@ struct DimuonsAnalysis {
       if (hasFT0) {
         registry.fill(HIST("TracksWithFT0/Eta"), p1.Eta());
         registry.fill(HIST("TracksWithFT0/Eta"), p2.Eta());
-        registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeAFT0());
-        registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeCFT0());
+        registry.fill(HIST("TracksWithFT0/TimeFT0A"), cand.timeFT0A());
+        registry.fill(HIST("TracksWithFT0/TimeFT0C"), cand.timeFT0C());
         // if there is a signal, candidate passes if timeA is dummy
         // and timeC is between +/- 1 ns
-        bool checkA = std::abs(cand.timeAFT0() - ft0DummyTime) < 1e-3;
-        bool checkC = cand.timeCFT0() > -1. && cand.timeCFT0() < 1.;
+        bool checkA = std::abs(cand.timeFT0A() - ft0DummyTime) < 1e-3;
+        bool checkC = cand.timeFT0C() > -1. && cand.timeFT0C() < 1.;
         passFT0 = checkA && checkC;
       } else {
         passFT0 = true;
