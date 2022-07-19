@@ -53,7 +53,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 struct cascadeQa {
-  //Basic checks
+  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -79,14 +79,14 @@ struct cascadeQa {
   void process(aod::Collision const& collision, aod::CascDataExt const& Cascades)
   {
     for (auto& casc : Cascades) {
-      if (casc.sign() < 0) { //FIXME: could be done better...
+      if (casc.sign() < 0) { // FIXME: could be done better...
         registry.fill(HIST("hMassXiMinus"), casc.mXi());
         registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
       } else {
         registry.fill(HIST("hMassXiPlus"), casc.mXi());
         registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
       }
-      //The basic eleven!
+      // The basic eleven!
       registry.fill(HIST("hV0Radius"), casc.v0radius());
       registry.fill(HIST("hCascRadius"), casc.cascradius());
       registry.fill(HIST("hV0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
@@ -119,11 +119,18 @@ struct cascadeAnalysis {
     registry.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisXi}});
     registry.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
     registry.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
+
+    if (doprocessRun3 && doprocessRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!doprocessRun3 && !doprocessRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
   }
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.999, "V0 CosPA"};       //double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<double> casccospa{"casccospa", 0.999, "Casc CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.999, "V0 CosPA"};       // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<double> casccospa{"casccospa", 0.999, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcacascdau{"dcacascdau", .3, "DCA Casc Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
@@ -145,13 +152,13 @@ struct cascadeAnalysis {
       return;
     }
     for (auto& casc : Cascades) {
-      //FIXME: dynamic columns cannot be filtered on?
+      // FIXME: dynamic columns cannot be filtered on?
       if (casc.v0radius() > v0radius &&
           casc.cascradius() > cascradius &&
           casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
           casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa &&
           casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
-        if (casc.sign() < 0) { //FIXME: could be done better...
+        if (casc.sign() < 0) { // FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
             registry.fill(HIST("h3dMassXiMinus"), 0., casc.pt(), casc.mXi());
           }
@@ -180,13 +187,13 @@ struct cascadeAnalysis {
       return;
     }
     for (auto& casc : Cascades) {
-      //FIXME: dynamic columns cannot be filtered on?
+      // FIXME: dynamic columns cannot be filtered on?
       if (casc.v0radius() > v0radius &&
           casc.cascradius() > cascradius &&
           casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
           casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa &&
           casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) {
-        if (casc.sign() < 0) { //FIXME: could be done better...
+        if (casc.sign() < 0) { // FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
             registry.fill(HIST("h3dMassXiMinus"), collision.centRun2V0M(), casc.pt(), casc.mXi());
           }
