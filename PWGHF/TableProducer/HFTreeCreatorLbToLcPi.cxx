@@ -94,9 +94,6 @@ DECLARE_SOA_COLUMN(NSigTOFTrk1Pr, nSigTOFrk1Pr, float);
 DECLARE_SOA_COLUMN(NSigTOFTrk2Ka, nSigTOFrk2Ka, float);
 DECLARE_SOA_COLUMN(NSigTOFTrk3Pi, nSigTOFrk3Pi, float);
 DECLARE_SOA_COLUMN(NSigTOFTrk3Pr, nSigTOFrk3Pr, float);
-// Events
-DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
 // put the arguments into the table
@@ -162,23 +159,6 @@ DECLARE_SOA_TABLE(HfCandLbFull, "AOD", "HFCANDLbFull",
                   full::CPA,
                   full::CPAXY,
                   full::Ct,
-                  full::Eta,
-                  full::Phi,
-                  full::Y,
-                  full::MCflag);
-
-DECLARE_SOA_TABLE(HfCandLbFullEvents, "AOD", "HFCANDLbFullE",
-                  collision::BCId,
-                  collision::NumContrib,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-                  full::IsEventReject,
-                  full::RunNumber);
-
-DECLARE_SOA_TABLE(HfCandLbFullParticles, "AOD", "HFCANDLbFullP",
-                  collision::BCId,
-                  full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
