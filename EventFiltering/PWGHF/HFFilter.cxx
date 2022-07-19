@@ -859,7 +859,9 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      n3Prongs++;
+      if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
+        n3Prongs++;
+      } // end multiple 3-prong selection
 
       std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
       std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
@@ -925,7 +927,7 @@ struct HfFilter { // Main struct for HF triggers
         // 3-prong femto
         if (isSelectedProton4Femto(track)) {
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
-            if (isCharmTagged[iHypo] && ((iHypo != 1 && is3Prong[iHypo]) || (iHypo == 1 && is3Prong[iHypo] && (TESTBIT(is3Prong[iHypo], 2) || TESTBIT(is3Prong[iHypo], 3))))) {
+            if (isCharmTagged[iHypo] && ((iHypo != 1 && is3Prong[iHypo]) || (iHypo == 1 && is3Prong[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 2) || TESTBIT(is3ProngInMass[iHypo], 3))))) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
@@ -951,7 +953,7 @@ struct HfFilter { // Main struct for HF triggers
 
     tags(keepEvent[kHighPt], keepEvent[kBeauty], keepEvent[kFemto], keepEvent[kDoubleCharm]);
 
-    if (!keepEvent[kHighPt] && !keepEvent[kBeauty] && !keepEvent[kFemto] && !keepEvent[kDoubleCharm]) {
+    if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
       hProcessedEvents->Fill(1);
     } else {
       for (int iTrigger{0}; iTrigger < kNtriggersHF; ++iTrigger) {
