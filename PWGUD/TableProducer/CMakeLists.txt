@@ -15,11 +15,11 @@ o2physics_add_dpl_workflow(dgcand-producer
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-skimmer
-        SOURCES trackSkimmer.cxx
+        SOURCES UDTrackSkimmer.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator
-        SOURCES UPCCandidateCreator.cxx
+        SOURCES UDCandidateCreator.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
