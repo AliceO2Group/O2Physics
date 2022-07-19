@@ -98,9 +98,7 @@ Network::Network(std::string path,
   /*
   Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
   - Input:
-    -- pathLocally:         std::string   ; Path to the model file;
-    -- loadFromAlien:       bool          ; Download network from AliEn directory (true) or use local file (false)
-    -- pathAlien:           std::string   ; if loadFromAlien is true, then the network will be downloaded from pathAlien
+    -- path:                std::string   ; Local path to the model file;
     -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
   */
 
@@ -141,9 +139,9 @@ Network::Network(std::string path,
   /*
   Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
   - Input:
-    -- pathLocally:         std::string   ; Path to the model file;
-    -- loadFromAlien:       bool          ; Download network from AliEn directory (true) or use local file (false)
-    -- pathAlien:           std::string   ; if loadFromAlien is true, then the network will be downloaded from pathAlien
+    -- path:                std::string   ; Local path to the model file;
+    -- start:               unsigned long ; Timestamp validity of model (start)
+    -- pathAlien:           unsigned long ; Timestamp validity of model (end)
     -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
   */
 
@@ -177,7 +175,7 @@ Network::Network(std::string path,
 
   LOG(info) << "--- Network initialized! ---";
 
-} // Network::Network(std::string, bool, unsigned long, unsigned long)
+} // Network::Network(std::string, unsigned long, unsigned long, bool)
 
 Network& Network::operator=(Network& inst)
 {
