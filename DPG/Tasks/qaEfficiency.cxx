@@ -31,7 +31,9 @@
 #include "TEfficiency.h"
 #include "TList.h"
 
+using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 struct QaEfficiency {
   // Particle information
@@ -63,8 +65,8 @@ struct QaEfficiency {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
-  // Track only selection
-  Configurable<bool> applyTrackSelection{"applyTrackSelection", false, "Flag to use the standard track selection when selecting numerator and denominator"};
+  // options to select only specific tracks
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
@@ -1094,10 +1096,18 @@ struct QaEfficiency {
     isCollisionSelected<true>(collision);
   }
 
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  
   // MC process
+  using TrackTableMC = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>;
   void processMC(const o2::aod::McParticles& mcParticles,
                  const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
-                 const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>& tracks,
+                 soa::Filtered<TrackTableMC> const& tracks,
                  const o2::aod::McCollisions&)
   {
 
@@ -1165,7 +1175,7 @@ struct QaEfficiency {
       }
 
       histos.fill(HIST("MC/trackSelection"), 10);
-      if (applyTrackSelection && !track.isGlobalTrack()) { // Check general cuts
+      if (trackSelection < 0) { // Check general cuts
         continue;
       }
       histos.fill(HIST("MC/trackSelection"), 11);
@@ -1322,9 +1332,10 @@ struct QaEfficiency {
     }
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
-
+ 
+  using TrackTableData = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>;
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-                   const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>& tracks)
+                   soa::Filtered<TrackTableData> const& tracks)
   {
 
     if (!isCollisionSelected<false>(collision)) {
@@ -1347,7 +1358,7 @@ struct QaEfficiency {
         continue;
       }
       histos.fill(HIST("Data/trackSelection"), 4);
-      if (applyTrackSelection) { // Check general cuts
+      if (trackSelection > 0) { // Check general cuts
         if (!track.passedTrackType()) {
           continue;
         }
