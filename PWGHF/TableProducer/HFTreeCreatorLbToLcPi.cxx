@@ -61,9 +61,9 @@ DECLARE_SOA_COLUMN(CPA, cpa, float);
 DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
-DECLARE_SOA_COLUMN(NSigRICHPi0, nsigRICHPi0, float);
-DECLARE_SOA_COLUMN(NSigfRICHPi0, nsigfRICHPi0, float);
-DECLARE_SOA_COLUMN(NSigTOFPi0, nsigTOFPi0, float);
+DECLARE_SOA_COLUMN(NSigRICHTrk0Pi, nsigRICHTrk0Pi, float);
+DECLARE_SOA_COLUMN(NSigfRICHTrk0Pi, nsigfRICHTrk0Pi, float);
+DECLARE_SOA_COLUMN(NSigTOFTrk0Pi, nsigTOFTrk0Pi, float);
 // Lc selection parameters
 DECLARE_SOA_COLUMN(LcM, lcM, float);
 DECLARE_SOA_COLUMN(LcCt, lcCt, float);
@@ -232,7 +232,7 @@ struct HfTreeCreatorLbToLcPi {
           auto fRICHTrk3P = -5000.0;
 
           if (track0.has_rich())
-            RICHPi0 = track0.rich().richNsigmaPi();
+            RICHTrk0Pi = track0.rich().richNsigmaPi();
           if (track1.has_rich()) {
             RICHTrk1Pi = track1.rich().richNsigmaPi();
             RICHTrk1p = track1.rich().richNsigmaPr();
