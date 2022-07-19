@@ -40,18 +40,14 @@ using namespace o2::soa;
 /// Reconstruction of track-track decay resonance candidates
 struct reso2trktrkbuilder {
   Produces<aod::StoredReso2TrackTrackDatas> reso2trktrkdata;
-
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"hReso2trktrckCandidate", "hReso2trktrckCandidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-      {"hCandidateDCAd", "hCandidateDCAd", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-      {"hCandidateCPA", "hCandidateCPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}}},
-      {"hCandidateRadius", "hCandidateRadius", {HistType::kTH1F, {{200, 0.0f, 200.0f}}}},
-    },
-    OutputObjHandlingPolicy::QAObject
-  };
-
+  HistogramRegistry qaRegistry{"QAHistos", {
+                                             {"hReso2trktrckEvents", "hReso2trktrckEvents", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+                                             {"hReso2trktrckCandidate", "hReso2trktrckCandidate", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+                                             {"hCandidateDCAd", "hCandidateDCAd", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+                                             {"hCandidateCPA", "hCandidateCPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}}},
+                                             {"hCandidateRadius", "hCandidateRadius", {HistType::kTH1F, {{200, 0.0f, 200.0f}}}},
+                                           },
+                               OutputObjHandlingPolicy::QAObject};
   // Configurables
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   /// Selection criteria
@@ -77,8 +73,6 @@ struct reso2trktrkbuilder {
                                         && (nabs(aod::resodaughter::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut))
                                         && (nabs(aod::resodaughter::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) 
                                         && (nabs(aod::resodaughter::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
-
-  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
   
   void process(aod::ResoCollision& collision,
                aod::ResoDaughters const&, aod::Reso2TracksPIDExt const&)
@@ -86,13 +80,14 @@ struct reso2trktrkbuilder {
     // LOGF(info, "event id: %d", collision.bcId());
     auto group1 = parts1->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
     auto group2 = parts2->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
-
+    qaRegistry.fill(HIST("hReso2trktrckEvents"), 0.5);
+    
     for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(group1, group2))) {
-      registry.fill(HIST("hReso2trktrckCandidate"), 0.5);
+      qaRegistry.fill(HIST("hReso2trktrckCandidate"), 0.5);
       // Un-like sign pair only
       if (selectUnLikeSignOnly && (trk1.sign() * trk2.sign() > 0))
         continue;
-      registry.fill(HIST("hReso2trktrckCandidate"), 1.5);
+      qaRegistry.fill(HIST("hReso2trktrckCandidate"), 1.5);
       reso2trktrkdata(
         trk1.globalIndex(),
         trk2.globalIndex(),
