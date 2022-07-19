@@ -859,7 +859,7 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
+      if (std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
         n3Prongs++;
       } // end multiple 3-prong selection
 
