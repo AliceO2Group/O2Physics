@@ -15,8 +15,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "TH1I.h"
-
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -24,22 +22,16 @@ struct TrackSkimmer {
   int32_t fSignalGenID{1};
   bool fDoMC;
 
-  // histograms for debug checks, to be removed
-  OutputObj<TH1I> hNSig{TH1I("hNSig", ";n tracks;", 2, 0, 2)};
-  OutputObj<TH1I> hNSigITSTPC{TH1I("hNSigITSTPC", ";n tracks;", 2, 0, 2)};
+  Produces<o2::aod::UDMcCollisions> udMCCollisions;
+  Produces<o2::aod::UDMcParticles> udMCParticles;
 
-  Produces<o2::aod::SkimmedMCEvents> skMCEvents;
-  Produces<o2::aod::SkimmedMCParticles> skMCParticles;
+  Produces<o2::aod::UDFwdTracks> fwdTracks;
+  Produces<o2::aod::UDFwdTracksExtra> fwdTracksExtra;
+  Produces<o2::aod::UDMcFwdTrackLabels> fwdTrackLabels;
 
-  Produces<o2::aod::SkimmedMuons> muonTracks;
-  Produces<o2::aod::SkimmedMuonsExtra> muonsExtra;
-  Produces<o2::aod::SkimmedMuonsCov> muonsCov;
-  Produces<o2::aod::SkimmedMuonTrackLabels> muonLabels;
-
-  Produces<o2::aod::SkimmedBarrelTracks> barTracks;
-  Produces<o2::aod::SkimmedBarrelTracksCov> barsCov;
-  Produces<o2::aod::SkimmedBarrelTracksExtra> barsExtra;
-  Produces<o2::aod::SkimmedBarrelTrackLabels> barLabels;
+  Produces<o2::aod::UDTracks> udTracks;
+  Produces<o2::aod::UDTracksExtra> udTracksExtra;
+  Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
 
   // cuts for forward tracks
   Configurable<int> fUseFwdCuts{"useFwdCuts", 1, "Use cuts for forward tracks"};
@@ -73,10 +65,10 @@ struct TrackSkimmer {
   Configurable<int> fTPCNClusCRHigh{"TPCNClusCRHigh", 161, "Maximal number of TPC clusters (crossed rows)"};
   Configurable<float> fTPCChi2Low{"TPCChi2Low", 0., "Minimal Chi2 in TPC per cluster"};
   Configurable<float> fTPCChi2High{"TPCChi2High", 4., "Maximal Chi2 in TPC per cluster"};
-  // todo: quality: DCA
-  // Configurable<int> fCheckMaxDcaXY{"checkMaxDCACut", 1, "Apply cut on maximal DCA_xy"};
-  // Configurable<float> fDcaZLow{"dcaZLow", -3., "Minimal DCA_z for barrel tracks"};
-  // Configurable<float> fDcaZHigh{"dcaZHigh", 3., "Maximal DCA_z for barrel tracks"};
+  // quality: DCA
+  Configurable<int> fCheckMaxDcaXY{"checkMaxDCACut", 1, "Apply cut on maximal DCA_xy"};
+  Configurable<float> fDcaZLow{"dcaZLow", -3., "Minimal DCA_z for barrel tracks"};
+  Configurable<float> fDcaZHigh{"dcaZHigh", 3., "Maximal DCA_z for barrel tracks"};
 
   template <typename TFwdTrack>
   bool applyFwdCuts(TFwdTrack const& track)
@@ -155,18 +147,18 @@ struct TrackSkimmer {
     if (!checkChi2TPC) {
       return false;
     }
-    // todo: check DCA
-    // if (fCheckMaxDcaXY) {
-    //   float dca = track.dcaXY();
-    //   float maxDCA = 0.0105f + 0.0350f / pow(pt, 1.1f);
-    //   if (dca < maxDCA) {
-    //     return false;
-    //   }
-    // }
-    // bool checkDCAZ = track.dcaZ() > fDcaZLow && track.dcaZ() < fDcaZHigh;
-    // if (!checkDCAZ) {
-    //   return false;
-    // }
+    // check DCA
+    if (fCheckMaxDcaXY) {
+      float dca = track.dcaXY();
+      float maxDCA = 0.0105f + 0.0350f / pow(pt, 1.1f);
+      if (dca < maxDCA) {
+        return false;
+      }
+    }
+    bool checkDCAZ = track.dcaZ() > fDcaZLow && track.dcaZ() < fDcaZHigh;
+    if (!checkDCAZ) {
+      return false;
+    }
     return true;
   }
 
@@ -234,7 +226,7 @@ struct TrackSkimmer {
           newDaughterIDs[1] = newPartIDs.at(daughterIDs.back());
         }
       }
-      skMCParticles(newEventID, mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
+      udMCParticles(newEventID, mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
                     mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
     }
 
@@ -244,8 +236,8 @@ struct TrackSkimmer {
         continue;
       }
       const auto& mcEvent = mcCollisions.iteratorAt(i);
-      skMCEvents(mcEvent.bc().globalBC(), mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
-                 mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
+      udMCCollisions(mcEvent.bc().globalBC(), mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
+                     mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
     }
 
     newEventIDs.clear();
@@ -275,16 +267,12 @@ struct TrackSkimmer {
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
       uint64_t firstBC = first.globalBC();
-      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double) tr.trackTime(); // "real" = relative to start of TF
+      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double)tr.trackTime(); // "real" = relative to start of TF
       uint64_t bc = realTime > 0. ? std::round(realTime / o2::constants::lhc::LHCBunchSpacingNS) : 0;
       double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
-      muonTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
-      muonsCov(tr.x(), tr.y(), tr.z(), tr.tgl(), tr.signed1Pt(), tr.cXX(), tr.cXY(),
-               tr.cYY(), tr.cPhiX(), tr.cPhiY(), tr.cPhiPhi(), tr.cTglX(), tr.cTglY(),
-               tr.cTglPhi(), tr.cTglTgl(), tr.c1PtX(), tr.c1PtY(), tr.c1PtPhi(), tr.c1PtTgl(),
-               tr.c1Pt21Pt2());
-      muonsExtra(tr.nClusters(), tr.pDca(), tr.rAtAbsorberEnd(), tr.chi2(), tr.chi2MatchMCHMID(),
-                 tr.mchBitMap(), tr.midBitMap(), tr.midBoards());
+      fwdTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
+      fwdTracksExtra(tr.nClusters(), tr.pDca(), tr.rAtAbsorberEnd(), tr.chi2(), tr.chi2MatchMCHMID(),
+                     tr.mchBitMap(), tr.midBitMap(), tr.midBoards());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trId);
@@ -293,7 +281,7 @@ struct TrackSkimmer {
         // signal tracks should always have an MC particle
         // background tracks have label == -1
         int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
-        muonLabels(newPartID, mcMask);
+        fwdTrackLabels(newPartID, mcMask);
       }
     }
   }
@@ -303,13 +291,8 @@ struct TrackSkimmer {
                      TAmbBarTracks const& ambTracks,
                      TBCs const& bcs,
                      TMcBarTrackLabels* mcTrackLabels,
-                     std::map<int32_t, int32_t> const& newPartIDs,
-                     o2::aod::McParticles const& mcParticles,
-                     o2::aod::McCollisions const& mcCollisions)
+                     std::map<int32_t, int32_t> const& newPartIDs)
   {
-    // debug
-    LOGF(info, "n barrel tracks = %d", tracks.size());
-
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.trackId();
       const auto& tr = tracks.iteratorAt(trId);
@@ -325,40 +308,23 @@ struct TrackSkimmer {
       const auto& bcSlice = ambTr.bc();
       auto first = bcSlice.begin();
       uint64_t firstBC = first.globalBC();
-      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double) tr.trackTime(); // "real" = relative to start of TF
+      double realTime = firstBC * o2::constants::lhc::LHCBunchSpacingNS + (double)tr.trackTime(); // "real" = relative to start of TF
       uint64_t bc = realTime > 0. ? std::round(realTime / o2::constants::lhc::LHCBunchSpacingNS) : 0;
       double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
-      barTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
-      barsCov(tr.x(), tr.alpha(), tr.y(), tr.z(), tr.snp(), tr.tgl(), tr.signed1Pt(),
-              tr.cYY(), tr.cZY(), tr.cZZ(), tr.cSnpY(), tr.cSnpZ(), tr.cSnpSnp(), tr.cTglY(),
-              tr.cTglZ(), tr.cTglSnp(), tr.cTglTgl(), tr.c1PtY(), tr.c1PtZ(), tr.c1PtSnp(),
-              tr.c1PtTgl(), tr.c1Pt21Pt2());
-      barsExtra(tr.flags(), tr.itsClusterMap(), tr.tpcNClsFindable(),
-                tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
-                tr.tpcNClsShared(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.tofChi2(),
-                tr.tpcSignal(), tr.length(), tr.tofExpMom());
+      udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
+      udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
+                    tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
+                    tr.tpcSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trId);
         uint16_t mcMask = label.mcMask();
         int32_t mcPartID = label.mcParticleId();
-        // debug checks
-        // todo: remove
-        if (mcPartID >= 0) {
-          const auto& mcPart = mcParticles.iteratorAt(mcPartID);
-          bool isSignal = mcPart.mcCollision().generatorsID() == fSignalGenID;
-          if (isSignal && mcPart.producedByGenerator()) {
-            hNSig->Fill(1);
-            if (tr.hasITS() && tr.hasTPC())
-              hNSigITSTPC->Fill(1);
-          }
-        }
-        //
         auto it = newPartIDs.find(mcPartID);
         // signal tracks should always have an MC particle
         // background tracks have label == -1
         int32_t newPartID = it != newPartIDs.end() ? it->second : -1;
-        barLabels(newPartID, mcMask);
+        udTrackLabels(newPartID, mcMask);
       }
     }
   }
@@ -397,7 +363,7 @@ struct TrackSkimmer {
   void processAllMC(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& fwdTracks,
                     o2::aod::McFwdTrackLabels const& mcFwdTrackLabels,
                     o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                    o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU, o2::aod::TracksExtra> const& barTracks,
+                    o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA> const& barTracks,
                     o2::aod::McTrackLabels const& mcBarTrackLabels,
                     o2::aod::AmbiguousTracks const& ambBarTracks,
                     o2::aod::McCollisions const& mcCollisions,
@@ -410,15 +376,28 @@ struct TrackSkimmer {
     std::map<int32_t, int32_t> newPartIDs;
     skimMCInfo(mcCollisions, mcParticles, bcs, newPartIDs);
     skimFwdTracks<trType>(fwdTracks, ambFwdTracks, bcs, &mcFwdTrackLabels, newPartIDs);
-    skimBarTracks(barTracks, ambBarTracks, bcs, &mcBarTrackLabels, newPartIDs, mcParticles, mcCollisions);
+    skimBarTracks(barTracks, ambBarTracks, bcs, &mcBarTrackLabels, newPartIDs);
     newPartIDs.clear();
+  }
+
+  void processAll(o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov> const& fwdTracks,
+                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                  o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA> const& barTracks,
+                  o2::aod::AmbiguousTracks const& ambBarTracks,
+                  o2::aod::BCs const& bcs)
+  {
+    fDoMC = true;
+    using namespace o2::aod::fwdtrack;
+    const int32_t trType = ForwardTrackTypeEnum::MuonStandaloneTrack;
+    std::map<int32_t, int32_t> dummyMap;
+    skimFwdTracks<trType>(fwdTracks, ambFwdTracks, bcs, (o2::aod::McFwdTrackLabels*)nullptr, dummyMap);
+    skimBarTracks(barTracks, ambBarTracks, bcs, (o2::aod::McTrackLabels*)nullptr, dummyMap);
   }
 
   PROCESS_SWITCH(TrackSkimmer, processFwdMC, "Produce only muon tracks with MC information", false);
   PROCESS_SWITCH(TrackSkimmer, processFwd, "Produce only muon tracks", false);
   PROCESS_SWITCH(TrackSkimmer, processAllMC, "Produce barrel and muon tracks with MC information", false);
-  // todo: process without MC info once debug checks are removed from skimBarTracks()
-  // PROCESS_SWITCH(TrackSkimmer, processAll, "Produce barrel and muon tracks", false);
+  PROCESS_SWITCH(TrackSkimmer, processAll, "Produce barrel and muon tracks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

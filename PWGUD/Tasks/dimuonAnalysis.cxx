@@ -28,18 +28,13 @@ using namespace o2::framework::expressions;
 #define muonPDG 13
 
 struct DimuonsAnalysis {
-  Preslice<o2::aod::SkimmedMCParticles> perMcCollision = o2::aod::skimmcpart::skimmedMCEventId;
-  Preslice<o2::aod::SkimmedBarrelTracksCandidateIDs> barPerCandidate = o2::aod::skimbartrack::eventCandidateId;
-  Preslice<o2::aod::SkimmedMuonsCandidateIDs> muonPerCandidate = o2::aod::skimmuontrack::eventCandidateId;
+  Preslice<o2::aod::UDMcParticles> perMcCollision = o2::aod::udmcparticle::udMcCollisionId;
 
   float ft0DummyTime = 32.767f;
 
   HistogramRegistry registry{
     "registry",
-    {{"BCs/Candidates", ";BC;", {HistType::kTH1D, {{1000000, 0., 1000000.}}}},
-     {"BCs/FT0Signals", ";BC;", {HistType::kTH1D, {{1000000, 0., 1000000.}}}},
-     //
-     {"TracksWithFT0/Eta", ";#eta;", {HistType::kTH1D, {{80, -4., 4.}}}},
+    {{"TracksWithFT0/Eta", ";#eta;", {HistType::kTH1D, {{80, -4., 4.}}}},
      {"TracksWithFT0/TimeFT0A", ";time A, ns;", {HistType::kTH1D, {{1000, -50., 50.}}}},
      {"TracksWithFT0/TimeFT0C", ";time C, ns;", {HistType::kTH1D, {{1000, -50., 50.}}}},
      //
@@ -55,14 +50,15 @@ struct DimuonsAnalysis {
      {"PairSelection/EtaMu", ";#eta_{#mu};", {HistType::kTH1D, {{100, -6., 6.}}}},
      //
      {"PairSelection/MassNoFT0", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+     {"PairSelection/MassNoFT0Contam", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/MassNoFT0MC", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/PtNoFT0", ";#it{p}_{T}^{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}}}};
 
   // process candidates with 2 muon tracks
-  void processFwd(o2::aod::EventCandidates const& eventCandidates,
-                  soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonsCandidateIDs, ::aod::SkimmedMuonsExtra, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
-                  o2::aod::SkimmedMCEvents const& mcEvents,
-                  o2::aod::SkimmedMCParticles const& mcParticles)
+  void processFwd(o2::aod::UDCollisions const& eventCandidates,
+                  soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
+                  o2::aod::UDMcCollisions const& mcEvents,
+                  o2::aod::UDMcParticles const& mcParticles)
   {
     int32_t nMCEvents = mcEvents.size();
     // collect MC distributions
@@ -95,7 +91,7 @@ struct DimuonsAnalysis {
     // assuming that candidates have exatly 2 muon tracks and 0 barrel tracks
     for (const auto& cand : eventCandidates) {
       auto candID = cand.globalIndex();
-      auto muonTracksPerCand = muonTracks.select(o2::aod::skimmuontrack::eventCandidateId == candID);
+      auto muonTracksPerCand = muonTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
       const auto& tr1 = muonTracksPerCand.iteratorAt(0);
       const auto& tr2 = muonTracksPerCand.iteratorAt(1);
       TLorentzVector p1, p2, pPair;
@@ -110,8 +106,8 @@ struct DimuonsAnalysis {
         continue;
       }
       //
-      int mcPartId1 = tr1.skimmedMCParticleId();
-      int mcPartId2 = tr2.skimmedMCParticleId();
+      int mcPartId1 = tr1.udMcParticleId();
+      int mcPartId2 = tr2.udMcParticleId();
       const auto& mcPart1 = mcParticles.iteratorAt(mcPartId1);
       const auto& mcPart2 = mcParticles.iteratorAt(mcPartId2);
       TLorentzVector mcP1, mcP2, pPairMC;
@@ -145,16 +141,18 @@ struct DimuonsAnalysis {
         registry.fill(HIST("PairSelection/MassNoFT0"), pPair.M());
         registry.fill(HIST("PairSelection/MassNoFT0MC"), pPairMC.M());
         registry.fill(HIST("PairSelection/PtNoFT0"), pPair.Pt());
+        if (mcPartId1 == -1 || mcPartId2 == -1)
+          registry.fill(HIST("PairSelection/MassNoFT0Contam"), pPair.M());
       }
     }
   }
 
   // process candidates with 1 muon and 1 barrel tracks
-  void processSemiFwd(o2::aod::EventCandidates const& eventCandidates,
-                      soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonsCandidateIDs, o2::aod::SkimmedMuonsExtra, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
-                      soa::Join<o2::aod::SkimmedBarrelTracks, o2::aod::SkimmedBarrelTracksCandidateIDs, o2::aod::SkimmedBarrelTracksExtra, o2::aod::SkimmedBarrelTrackLabels> const& barTracks,
-                      o2::aod::SkimmedMCEvents const& mcEvents,
-                      o2::aod::SkimmedMCParticles const& mcParticles)
+  void processSemiFwd(o2::aod::UDCollisions const& eventCandidates,
+                      soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
+                      soa::Join<o2::aod::UDTracks, o2::aod::UDTrackCollisionIDs, o2::aod::UDTracksExtra, o2::aod::UDMcTrackLabels> const& barTracks,
+                      o2::aod::UDMcCollisions const& mcEvents,
+                      o2::aod::UDMcParticles const& mcParticles)
   {
     int32_t nMCEvents = mcEvents.size();
     // collect MC distributions
@@ -187,8 +185,8 @@ struct DimuonsAnalysis {
     // assuming that candidates have exatly 1 muon track and 1 barrel track
     for (const auto& cand : eventCandidates) {
       auto candID = cand.globalIndex();
-      auto muonTracksPerCand = muonTracks.select(o2::aod::skimmuontrack::eventCandidateId == candID);
-      auto barTracksPerCand = barTracks.select(o2::aod::skimbartrack::eventCandidateId == candID);
+      auto muonTracksPerCand = muonTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
+      auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
       const auto& tr1 = muonTracksPerCand.iteratorAt(0);
       const auto& tr2 = barTracksPerCand.iteratorAt(0);
       TLorentzVector p1, p2, pPair;
@@ -203,8 +201,8 @@ struct DimuonsAnalysis {
         continue;
       }
       //
-      int mcPartId1 = tr1.skimmedMCParticleId();
-      int mcPartId2 = tr2.skimmedMCParticleId();
+      int mcPartId1 = tr1.udMcParticleId();
+      int mcPartId2 = tr2.udMcParticleId();
       const auto& mcPart1 = mcParticles.iteratorAt(mcPartId1);
       const auto& mcPart2 = mcParticles.iteratorAt(mcPartId2);
       TLorentzVector mcP1, mcP2, pPairMC;

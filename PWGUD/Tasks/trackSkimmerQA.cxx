@@ -40,12 +40,12 @@ struct TrackSkimmerQa {
     }
   };
 
-  void process(soa::Join<o2::aod::SkimmedMuons, o2::aod::SkimmedMuonTrackLabels> const& muonTracks,
-               soa::Join<o2::aod::SkimmedBarrelTracks, o2::aod::SkimmedBarrelTracksExtra, o2::aod::SkimmedBarrelTrackLabels> const& barTracks,
-               o2::aod::SkimmedMCParticles const& mcParticles)
+  void process(soa::Join<o2::aod::UDFwdTracks, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
+               soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra, o2::aod::UDMcTrackLabels> const& barTracks,
+               o2::aod::UDMcParticles const& mcParticles)
   {
     for (const auto& track : muonTracks) {
-      int32_t mcPartId = track.skimmedMCParticleId();
+      int32_t mcPartId = track.udMcParticleId();
       if (mcPartId < 0) {
         continue;
       }
@@ -61,7 +61,7 @@ struct TrackSkimmerQa {
     }
 
     for (const auto& track : barTracks) {
-      int32_t mcPartId = track.skimmedMCParticleId();
+      int32_t mcPartId = track.udMcParticleId();
       if (mcPartId < 0) {
         continue;
       }

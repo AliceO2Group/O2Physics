@@ -21,14 +21,14 @@
 namespace o2::aod
 {
 
-namespace skimmcevent
+namespace udmccollision
 {
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
-}
+} // namespace udmccollision
 
-DECLARE_SOA_TABLE(SkimmedMCEvents, "AOD", "SKMCEVENTS",
+DECLARE_SOA_TABLE(UDMcCollisions, "AOD", "UDMCCOLLISIONS",
                   o2::soa::Index<>,
-                  skimmcevent::GlobalBC,
+                  udmccollision::GlobalBC,
                   mccollision::GeneratorsID,
                   mccollision::PosX,
                   mccollision::PosY,
@@ -37,42 +37,46 @@ DECLARE_SOA_TABLE(SkimmedMCEvents, "AOD", "SKMCEVENTS",
                   mccollision::Weight,
                   mccollision::ImpactParameter);
 
-namespace skimmcpart
+using UDMcCollision = UDMcCollisions::iterator;
+
+namespace udmcparticle
 {
-DECLARE_SOA_INDEX_COLUMN(SkimmedMCEvent, skimmedMCEvent);  //!
+DECLARE_SOA_INDEX_COLUMN(UDMcCollision, udMcCollision);    //!
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters); //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
 DECLARE_SOA_COLUMN(Px, px, float);                         //!
 DECLARE_SOA_COLUMN(Py, py, float);                         //!
 DECLARE_SOA_COLUMN(Pz, pz, float);                         //!
 DECLARE_SOA_COLUMN(E, e, float);                           //!
-} // namespace skimmcpart
+} // namespace udmcparticle
 
-DECLARE_SOA_TABLE_FULL(SkimmedMCParticles, "SkimmedMCParticles", "AOD", "SKMCPARTICLES", //!  MC track information (on disk)
-                       o2::soa::Index<>, skimmcpart::SkimmedMCEventId,
+DECLARE_SOA_TABLE_FULL(UDMcParticles, "UDMcParticles", "AOD", "UDMCPARTICLES", //!
+                       o2::soa::Index<>, udmcparticle::UDMcCollisionId,
                        mcparticle::PdgCode,
                        mcparticle::StatusCode,
                        mcparticle::Flags,
-                       skimmcpart::MothersIds,
-                       skimmcpart::DaughtersIdSlice,
+                       udmcparticle::MothersIds,
+                       udmcparticle::DaughtersIdSlice,
                        mcparticle::Weight,
-                       skimmcpart::Px,
-                       skimmcpart::Py,
-                       skimmcpart::Pz,
-                       skimmcpart::E,
+                       udmcparticle::Px,
+                       udmcparticle::Py,
+                       udmcparticle::Pz,
+                       udmcparticle::E,
                        mcparticle::ProducedByGenerator<mcparticle::Flags>,
                        mcparticle::FromBackgroundEvent<mcparticle::Flags>,
                        mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                        mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
-using SkimmedMCParticle = SkimmedMCParticles::iterator;
+using SkimmedMCParticle = UDMcParticles::iterator;
 
-namespace eventcand
+namespace udcollision
 {
 // general information
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t); //! run number
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);  //! global BC instead of BC ID since candidate may not have a corresponding record in BCs table
+DECLARE_SOA_COLUMN(NetCharge, netCharge, int8_t); //! Sum of track signs
+DECLARE_SOA_COLUMN(RgtrwTOF, rgtrwTOF, float);    //! Fraction of global tracks with TOF hit
 // FT0 information
 DECLARE_SOA_COLUMN(TotalAmplitudeAFT0, totalAmplitudeAFT0, float); //! sum of amplitudes on A side of FT0
 DECLARE_SOA_COLUMN(TotalAmplitudeCFT0, totalAmplitudeCFT0, float); //! sum of amplitudes on C side of FT0
@@ -81,99 +85,104 @@ DECLARE_SOA_COLUMN(TimeCFT0, timeCFT0, float);                     //! FT0C aver
 DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
 DECLARE_SOA_DYNAMIC_COLUMN(HasFT0, hasFT0,                         //! has FT0 signal in the same BC
                            [](float TimeAFT0, float TimeCFT0) -> bool { return TimeAFT0 > -999. && TimeCFT0 > -999.; });
-} // namespace eventcand
+} // namespace udcollision
 
-DECLARE_SOA_TABLE(EventCandidates, "AOD", "EVENTCAND",
+DECLARE_SOA_TABLE(UDCollisions, "AOD", "UDCOLLISION",
                   o2::soa::Index<>,
-                  eventcand::GlobalBC,
-                  eventcand::RunNumber,
-                  //
-                  eventcand::TotalAmplitudeAFT0,
-                  eventcand::TotalAmplitudeCFT0,
-                  eventcand::TimeAFT0,
-                  eventcand::TimeCFT0,
-                  eventcand::TriggerMaskFT0,
-                  eventcand::HasFT0<eventcand::TimeAFT0, eventcand::TimeCFT0>);
+                  udcollision::GlobalBC,
+                  udcollision::RunNumber,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  collision::NumContrib,
+                  udcollision::NetCharge,
+                  udcollision::RgtrwTOF,
+                  udcollision::TotalAmplitudeAFT0,
+                  udcollision::TotalAmplitudeCFT0,
+                  udcollision::TimeAFT0,
+                  udcollision::TimeCFT0,
+                  udcollision::TriggerMaskFT0,
+                  udcollision::HasFT0<udcollision::TimeAFT0, udcollision::TimeCFT0>);
 
-using EventCanditate = EventCandidates::iterator;
+using UDCollision = UDCollisions::iterator;
 
-namespace skimbartrack
+namespace udtrack
 {
-DECLARE_SOA_INDEX_COLUMN(EventCandidate, eventCandidate); //!
-DECLARE_SOA_COLUMN(Px, px, float);                        //!
-DECLARE_SOA_COLUMN(Py, py, float);                        //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                        //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);         //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);         //!
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);    //! time resolution
-} // namespace skimbartrack
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
+DECLARE_SOA_COLUMN(Px, px, float);                     //!
+DECLARE_SOA_COLUMN(Py, py, float);                     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //!
+} // namespace udtrack
 
 // Barrel track kinematics
-DECLARE_SOA_TABLE(SkimmedBarrelTracks, "AOD", "SKIMBARTRACK",
+DECLARE_SOA_TABLE(UDTracks, "AOD", "UDTRACK",
                   o2::soa::Index<>,
-                  skimbartrack::Px,
-                  skimbartrack::Py,
-                  skimbartrack::Pz,
-                  skimbartrack::Sign,
-                  skimbartrack::GlobalBC,
-                  skimbartrack::TrackTime,
-                  skimbartrack::TrackTimeRes);
+                  udtrack::Px,
+                  udtrack::Py,
+                  udtrack::Pz,
+                  udtrack::Sign,
+                  udtrack::GlobalBC,
+                  udtrack::TrackTime,
+                  udtrack::TrackTimeRes);
 
-DECLARE_SOA_TABLE(SkimmedBarrelTracksCandidateIDs, "AOD", "SKIMBARTRCANDID",
-                  skimbartrack::EventCandidateId);
+DECLARE_SOA_TABLE(UDTrackCollisionIDs, "AOD", "UDTRCOLID",
+                  udtrack::UDCollisionId);
 
-DECLARE_SOA_TABLE(SkimmedBarrelTracksCov, "AOD", "SKIMBARTRCOV", //!
-                  track::X, track::Alpha,
-                  track::Y, track::Z, track::Snp, track::Tgl, track::Signed1Pt,
-                  track::CYY, track::CZY, track::CZZ, track::CSnpY, track::CSnpZ,
-                  track::CSnpSnp, track::CTglY, track::CTglZ, track::CTglSnp, track::CTglTgl,
-                  track::C1PtY, track::C1PtZ, track::C1PtSnp, track::C1PtTgl, track::C1Pt21Pt2);
-
-DECLARE_SOA_TABLE(SkimmedBarrelTracksExtra, "AOD", "SKIMBARTREXTRA",
-                  track::Flags,
+DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::ITSClusterMap,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
                   track::TPCNClsShared,
+                  track::TRDPattern,
                   track::ITSChi2NCl,
                   track::TPCChi2NCl,
+                  track::TRDChi2,
                   track::TOFChi2,
                   track::TPCSignal,
+                  track::TRDSignal,
                   track::Length,
                   track::TOFExpMom,
+                  udtrack::DetectorMap,
+                  track::HasITS<udtrack::DetectorMap>,
+                  track::HasTPC<udtrack::DetectorMap>,
+                  track::HasTRD<udtrack::DetectorMap>,
+                  track::HasTOF<udtrack::DetectorMap>,
                   track::ITSNCls<track::ITSClusterMap>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
-using SkimmedBarrelTrack = SkimmedBarrelTracks::iterator;
-using SkimmedBarrelTracksCandidateID = SkimmedBarrelTracksCandidateIDs::iterator;
-using SkimmedBarrelTrackCov = SkimmedBarrelTracksCov::iterator;
-using SkimmedBarrelTrackExtra = SkimmedBarrelTracksExtra::iterator;
+using UDTrack = UDTracks::iterator;
+using UDTrackExtra = UDTracksExtra::iterator;
+using UDTrackCollisionID = UDTrackCollisionIDs::iterator;
 
-namespace skimbartracklabel
+namespace udmctracklabel
 {
-DECLARE_SOA_INDEX_COLUMN(SkimmedMCParticle, skimmedMCParticle);
+DECLARE_SOA_INDEX_COLUMN(UDMcParticle, udMcParticle);
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
-} // namespace skimbartracklabel
+} // namespace udmctracklabel
 
-DECLARE_SOA_TABLE(SkimmedBarrelTrackLabels, "AOD", "SKBARTRLABEL",
-                  skimbartracklabel::SkimmedMCParticleId,
-                  skimbartracklabel::McMask);
+DECLARE_SOA_TABLE(UDMcTrackLabels, "AOD", "UDMCTRACKLABEL",
+                  udmctracklabel::UDMcParticleId,
+                  udmctracklabel::McMask);
 
-using SkimmedBarrelTrackLabel = SkimmedBarrelTrackLabels::iterator;
+using UDMcTrackLabel = UDMcTrackLabels::iterator;
 
 // only MCH-MID tracks
-namespace skimmuontrack
+namespace udfwdtrack
 {
-DECLARE_SOA_INDEX_COLUMN(EventCandidate, eventCandidate); //!
-DECLARE_SOA_COLUMN(Px, px, float);                        //!
-DECLARE_SOA_COLUMN(Py, py, float);                        //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                        //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                      //!
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);         //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);         //!
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);    //! time resolution
+DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
+DECLARE_SOA_COLUMN(Px, px, float);                     //!
+DECLARE_SOA_COLUMN(Py, py, float);                     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
+DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
+DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
 
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh1, midBoardCh1, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>(midBoards & 0xFF); });
@@ -183,24 +192,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 16) & 0xFF); });
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
-} // namespace skimmuontrack
+} // namespace udfwdtrack
 
 // Muon track kinematics
-DECLARE_SOA_TABLE(SkimmedMuons, "AOD", "SKIMMUONTRACK",
+DECLARE_SOA_TABLE(UDFwdTracks, "AOD", "UDFWDTRACK",
                   o2::soa::Index<>,
-                  skimmuontrack::Px,
-                  skimmuontrack::Py,
-                  skimmuontrack::Pz,
-                  skimmuontrack::Sign,
-                  skimmuontrack::GlobalBC,
-                  skimmuontrack::TrackTime,
-                  skimmuontrack::TrackTimeRes);
+                  udfwdtrack::Px,
+                  udfwdtrack::Py,
+                  udfwdtrack::Pz,
+                  udfwdtrack::Sign,
+                  udfwdtrack::GlobalBC,
+                  udfwdtrack::TrackTime,
+                  udfwdtrack::TrackTimeRes);
 
-DECLARE_SOA_TABLE(SkimmedMuonsCandidateIDs, "AOD", "SKIMMUONCANDID",
-                  skimmuontrack::EventCandidateId);
+DECLARE_SOA_TABLE(UDFwdTrackCollisionIDs, "AOD", "UDFWDTRCOLID",
+                  udfwdtrack::UDCollisionId);
 
 // Muon track quality details
-DECLARE_SOA_TABLE(SkimmedMuonsExtra, "AOD", "SKIMMUONEXTRA",
+DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
                   fwdtrack::NClusters,
                   fwdtrack::PDca,
                   fwdtrack::RAtAbsorberEnd,
@@ -210,45 +219,21 @@ DECLARE_SOA_TABLE(SkimmedMuonsExtra, "AOD", "SKIMMUONEXTRA",
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);
 
-// Muon covariance
-DECLARE_SOA_TABLE(SkimmedMuonsCov, "AOD", "SKIMMUONCOV",
-                  fwdtrack::X,
-                  fwdtrack::Y,
-                  fwdtrack::Z,
-                  fwdtrack::Tgl,
-                  fwdtrack::Signed1Pt,
-                  fwdtrack::CXX,
-                  fwdtrack::CXY,
-                  fwdtrack::CYY,
-                  fwdtrack::CPhiX,
-                  fwdtrack::CPhiY,
-                  fwdtrack::CPhiPhi,
-                  fwdtrack::CTglX,
-                  fwdtrack::CTglY,
-                  fwdtrack::CTglPhi,
-                  fwdtrack::CTglTgl,
-                  fwdtrack::C1PtX,
-                  fwdtrack::C1PtY,
-                  fwdtrack::C1PtPhi,
-                  fwdtrack::C1PtTgl,
-                  fwdtrack::C1Pt21Pt2);
+using UDFwdTrack = UDFwdTracks::iterator;
+using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
+using UDFwdTrackCollisionID = UDFwdTrackCollisionIDs::iterator;
 
-using SkimmedMuon = SkimmedMuons::iterator;
-using SkimmedMuonsCandidateID = SkimmedMuonsCandidateIDs::iterator;
-using SkimmedMuonExtra = SkimmedMuonsExtra::iterator;
-using SkimmedMuonCov = SkimmedMuonsCov::iterator;
-
-namespace skimmuontracklabel
+namespace udmcfwdtracklabel
 {
-DECLARE_SOA_INDEX_COLUMN(SkimmedMCParticle, skimmedMCParticle);
+DECLARE_SOA_INDEX_COLUMN(UDMcParticle, udMcParticle);
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
-} // namespace skimmuontracklabel
+} // namespace udmcfwdtracklabel
 
-DECLARE_SOA_TABLE(SkimmedMuonTrackLabels, "AOD", "SKMUONTRLABEL",
-                  skimmuontracklabel::SkimmedMCParticleId,
-                  skimmuontracklabel::McMask);
+DECLARE_SOA_TABLE(UDMcFwdTrackLabels, "AOD", "UDMCFWDTRLABEL",
+                  udmcfwdtracklabel::UDMcParticleId,
+                  udmcfwdtracklabel::McMask);
 
-using SkimmedMuonTrackLabel = SkimmedMuonTrackLabels::iterator;
+using UDMcFwdTrackLabel = UDMcFwdTrackLabels::iterator;
 
 } // namespace o2::aod
 

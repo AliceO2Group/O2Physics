@@ -20,9 +20,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct CandidateCreator {
-  Produces<o2::aod::EventCandidates> eventCandidates;
-  Produces<o2::aod::SkimmedBarrelTracksCandidateIDs> barrelCandIds;
-  Produces<o2::aod::SkimmedMuonsCandidateIDs> muonCandIds;
+  Produces<o2::aod::UDCollisions> eventCandidates;
+  Produces<o2::aod::UDTrackCollisionIDs> barrelCandIds;
+  Produces<o2::aod::UDFwdTrackCollisionIDs> muonCandIds;
 
   bool fDoSemiFwd{false};
 
@@ -94,6 +94,11 @@ struct CandidateCreator {
       }
     }
 
+    // todo: calculate position of UD collision?
+    float dummyX = 0.;
+    float dummyY = 0.;
+    float dummyZ = 0.;
+
     // storing n-prong matches
     int32_t candID = 0;
     for (const auto& item : bcsMatchedFwdTrIds) {
@@ -106,12 +111,23 @@ struct CandidateCreator {
       if (!(nFwdTracks == fNFwdProngs && nBarTracks == fNBarProngs)) {
         continue;
       }
+      int8_t netCharge = 0;
+      uint16_t numContrib = nFwdTracks + nBarTracks;
+      float RgtrwTOF = 0.;
       for (auto id : fwdTrackIDs) {
         fwdTrackCandIds[id] = candID;
+        const auto& tr = fwdTracks->iteratorAt(id);
+        netCharge += tr.sign();
       }
       for (auto id : barTrackIDs) {
         barTrackCandIds[id] = candID;
+        const auto& tr = barTracks->iteratorAt(id);
+        netCharge += tr.sign();
+        if (0/*tr.hasTOF()*/) {
+          RgtrwTOF++;
+        }
       }
+      RgtrwTOF /= nBarTracks;
       // fetching FT0 information
       // if there is no FT0 signal, dummy info will be used
       FT0Info ft0Info;
@@ -133,7 +149,8 @@ struct CandidateCreator {
         ft0Info.triggerMask = ft0.triggerMask();
       }
       int32_t runNumber = bcs.iteratorAt(0).runNumber();
-      eventCandidates(bc, runNumber, ft0Info.amplitudeA, ft0Info.amplitudeC, ft0Info.timeA, ft0Info.timeC, ft0Info.triggerMask);
+      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF,
+                      ft0Info.amplitudeA, ft0Info.amplitudeC, ft0Info.timeA, ft0Info.timeC, ft0Info.triggerMask);
       candID++;
     }
     bcsMatchedFwdTrIds.clear();
@@ -152,19 +169,21 @@ struct CandidateCreator {
         barrelCandIds(barTrackCandIds[barTr.globalIndex()]);
       }
     }
+
+    barTrackCandIds.clear();
   }
 
   // create candidates for forward region
-  void processFwd(o2::aod::SkimmedMuons const& muonTracks,
+  void processFwd(o2::aod::UDFwdTracks const& muonTracks,
                   o2::aod::BCs const& bcs,
                   o2::aod::FT0s const& ft0s)
   {
-    createCandidates(&muonTracks, (o2::aod::SkimmedBarrelTracks*)nullptr, bcs, ft0s);
+    createCandidates(&muonTracks, (o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra>*)nullptr, bcs, ft0s);
   }
 
   // create candidates for semiforward region
-  void processSemiFwd(o2::aod::SkimmedMuons const& muonTracks,
-                      o2::aod::SkimmedBarrelTracks const& barTracks,
+  void processSemiFwd(o2::aod::UDFwdTracks const& muonTracks,
+                      o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra> const& barTracks,
                       o2::aod::BCs const& bcs,
                       o2::aod::FT0s const& ft0s)
   {
