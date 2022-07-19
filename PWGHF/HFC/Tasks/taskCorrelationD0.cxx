@@ -291,7 +291,7 @@ struct HfTaskCorrelationD0 {
       registry.fill(HIST("hpTProng0"), candidate.ptProng0());
       registry.fill(HIST("hpTProng1"), candidate.ptProng1());
       registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hDecLengthxXY"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
