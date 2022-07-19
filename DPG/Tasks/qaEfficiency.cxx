@@ -1102,7 +1102,6 @@ struct QaEfficiency {
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-  
   // MC process
   using TrackTableMC = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::McTrackLabels, o2::aod::TrackSelection>;
   void processMC(const o2::aod::McParticles& mcParticles,
@@ -1332,7 +1331,6 @@ struct QaEfficiency {
     }
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
- 
   using TrackTableData = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection>;
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
                    soa::Filtered<TrackTableData> const& tracks)
