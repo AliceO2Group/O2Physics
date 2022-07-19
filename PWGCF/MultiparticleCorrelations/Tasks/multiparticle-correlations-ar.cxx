@@ -13,7 +13,9 @@
 /// \brief multiparticle-correlations-ar - Task belonging to Anton Riedel for computing multiparticle correlations
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include <fairlogger/Logger.h>
+#include "fairlogger/Logger.h"
+#include <string_view>
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Centrality.h"
@@ -25,6 +27,30 @@ using namespace o2::framework;
 
 namespace MultiParticleCorrelationsARTaskGlobalConfig
 {
+// useful enums
+enum BA {
+  kBEFORE,
+  kAFTER,
+  kLAST_BA
+};
+static constexpr std::string_view BeforeAfter[kLAST_BA] = {"before/", "after/"};
+
+enum RS {
+  kRECO,
+  kSIM,
+  kLAST_RS
+};
+static constexpr std::string_view RecoSim[kLAST_RS] = {"reco/", "sim/"};
+// enum HistConfig {
+//   kBIN,
+//   kLEDGE,
+//   kUEDGE,
+//   kLCUT,
+//   kHCUT,
+//   kOCUT,
+//   kLAST_HistConfig
+// };
+
 // setup for event variables
 enum EventVariable {
   kVX,
@@ -71,18 +97,9 @@ static constexpr std::string_view TrackVariableNames[kLAST_TrackVariable] = {"Pt
                                                                              "TPCCrossedRows",
                                                                              "TPCChi2",
                                                                              "ITSClusters"};
-// prefixes
-static constexpr std::string_view ECrecoBefore = std::string_view("reco/EventControl/before/RB_");
-static constexpr std::string_view ECrecoAfter = std::string_view("reco/EventControl/after/RA_");
-static constexpr std::string_view ECsimBefore = std::string_view("sim/EventControl/before/SB_");
-static constexpr std::string_view ECsimAfter = std::string_view("sim/EventControl/after/SA_");
-static constexpr std::string_view TCrecoBefore = std::string_view("reco/TrackControl/before/RB_");
-static constexpr std::string_view TCrecoAfter = std::string_view("reco/TrackControl/after/RA_");
-static constexpr std::string_view TCsimBefore = std::string_view("sim/TrackControl/before/SB_");
-static constexpr std::string_view TCsimAfter = std::string_view("sim/TrackControl/after/SA_");
 
+// info string for configurables
 std::string info = std::string(": Hist bins, Hist lower edge, Hist upper edge, lower cut, upper cut, cut ON(1)/OFF(-1)");
-
 }; // namespace MultiParticleCorrelationsARTaskGlobalConfig
 
 namespace AR = MultiParticleCorrelationsARTaskGlobalConfig;
@@ -118,6 +135,7 @@ struct MultiParticleCorrelationsARTask {
   Configurable<std::vector<double>> cfgMULTPC = {std::string(AR::EventVariableNames[AR::kMULTPC]),
                                                  {3000., 0., 3000., 12., 3000., 1.},
                                                  std::string("Multiplicity (TPC)") + AR::info};
+  // write all event configurables into a vector
   std::vector<Configurable<std::vector<double>>> cfgEvent = {cfgVX, cfgVY, cfgVZ, cfgVABS, cfgCEN, cfgMULQ, cfgMULW, cfgMULNC, cfgMULTPC};
 
   // for track variables
@@ -151,6 +169,7 @@ struct MultiParticleCorrelationsARTask {
   Configurable<std::vector<double>> cfgITSCLUSTERS = {std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]),
                                                       {6., 0., 6., 0, 7., 1.},
                                                       std::string("ITS clusters") + AR::info};
+  // write all track configurables into a vector
   std::vector<Configurable<std::vector<double>>> cfgTrack = {cfgPT, cfgPHI, cfgETA, cfgCHARGE, cfgDCAZ, cfgDCAXY, cfgTPCCLUSTERS, cfgTPCCROSSEDROWS, cfgTPCCHI2, cfgITSCLUSTERS};
 
   // declare histogram registry
@@ -159,48 +178,56 @@ struct MultiParticleCorrelationsARTask {
   void init(InitContext&)
   {
 
-    // add control histograms for event observables to registry
-    for (auto cfg : cfgEvent) {
-      registry.add((std::string(AR::ECrecoBefore) + cfg.name).c_str(), "", HistType::kTH1D, {{static_cast<Int_t>(cfg.value.at(0)), cfg.value.at(1), cfg.value.at(2)}});
-      registry.addClone((std::string(AR::ECrecoBefore) + cfg.name).c_str(), (std::string(AR::ECrecoAfter) + cfg.name).c_str());
-      registry.addClone((std::string(AR::ECrecoBefore) + cfg.name).c_str(), (std::string(AR::ECsimBefore) + cfg.name).c_str());
-      registry.addClone((std::string(AR::ECrecoBefore) + cfg.name).c_str(), (std::string(AR::ECsimAfter) + cfg.name).c_str());
-    }
+    // add control histograms for event/track observables to registry
+    for (int rs = 0; rs < AR::kLAST_RS; rs++) {
+      for (int ba = 0; ba < AR::kLAST_BA; ba++) {
 
-    // add control histograms for track observables to registry
-    for (auto cfg : cfgTrack) {
-      registry.add((std::string(AR::TCrecoBefore) + cfg.name).c_str(), "", HistType::kTH1D, {{static_cast<Int_t>(cfg.value.at(0)), cfg.value.at(1), cfg.value.at(2)}});
-      registry.addClone((std::string(AR::TCrecoBefore) + cfg.name).c_str(), (std::string(AR::TCrecoAfter) + cfg.name).c_str());
-      registry.addClone((std::string(AR::TCrecoBefore) + cfg.name).c_str(), (std::string(AR::TCsimBefore) + cfg.name).c_str());
-      registry.addClone((std::string(AR::TCrecoBefore) + cfg.name).c_str(), (std::string(AR::TCsimAfter) + cfg.name).c_str());
+        // iterate over event configurables
+        for (auto cfg : cfgEvent) {
+          registry.add((std::string(AR::RecoSim[rs]) + std::string("EventControl/") + std::string(AR::BeforeAfter[ba]) + cfg.name).c_str(),
+                       "",
+                       HistType::kTH1D,
+                       {{static_cast<Int_t>(cfg.value.at(0)), cfg.value.at(1), cfg.value.at(2)}});
+        }
+        // iterate over event configurables
+        for (auto cfg : cfgTrack) {
+          registry.add((std::string(AR::RecoSim[rs]) + std::string("TrackControl/") + std::string(AR::BeforeAfter[ba]) + cfg.name).c_str(),
+                       "",
+                       HistType::kTH1D,
+                       {{static_cast<Int_t>(cfg.value.at(0)), cfg.value.at(1), cfg.value.at(2)}});
+        }
+      }
     }
   }
 
-  template <typename CollisionInstance>
-  void FillEventControlHistBC(CollisionInstance const& collision, HistogramRegistry& registry)
+  template <AR::RS rs, AR::BA ba, typename CollisionInstance>
+  void FillEventControlHist(CollisionInstance const& collision, HistogramRegistry& registry)
   {
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kVX]), collision.posX());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kVY]), collision.posY());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kVZ]), collision.posZ());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kVABS]), std::sqrt(std::pow(collision.posX(), 2) + std::pow(collision.posY(), 2) + std::pow(collision.posZ(), 2)));
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kCEN]), collision.centRun2V0M());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kMULQ]), collision.size());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kMULW]), collision.size());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kMULNC]), collision.numContrib());
-    registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kMULTPC]), collision.multTPC());
+    // registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kPT]),
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kVX]),
+                  collision.posX());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kVY]),
+                  collision.posY());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kVZ]),
+                  collision.posZ());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kVABS]),
+                  std::sqrt(std::pow(collision.posX(), 2) + std::pow(collision.posY(), 2) + std::pow(collision.posZ(), 2)));
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kCEN]),
+                  collision.centRun2V0M());
+    // registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULQ]), collision.size()); fill separately
+    // registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULW]), collision.size()); fill separately
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULNC]),
+                  collision.numContrib());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULTPC]),
+                  collision.multTPC());
   }
-  template <typename CollisionInstance>
-  void FillEventControlHistAC(CollisionInstance const& collision, HistogramRegistry& registry)
+  template <AR::RS rs, AR::BA ba>
+  void FillEventControlHistMul(HistogramRegistry& registry, double mulQvector, double mulWeights)
   {
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kVX]), collision.posX());
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kVY]), collision.posY());
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kVZ]), collision.posZ());
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kVABS]), std::sqrt(std::pow(collision.posX(), 2) + std::pow(collision.posY(), 2) + std::pow(collision.posZ(), 2)));
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kCEN]), collision.centRun2V0M());
-    // registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kMULQ]), collision.size()); not here
-    // registry.fill(HIST(AR::ECrecoBefore) + HIST(AR::EventVariableNames[AR::kMULW]), collision.size()); not here
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kMULNC]), collision.numContrib());
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kMULTPC]), collision.multTPC());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULQ]),
+                  mulQvector);
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULW]),
+                  mulWeights);
   }
 
   template <typename CollisionInstance>
@@ -257,33 +284,29 @@ struct MultiParticleCorrelationsARTask {
     return SurviveCut;
   }
 
-  template <typename TrackInstance>
-  void FillTrackControlHistBC(TrackInstance const& track, HistogramRegistry& registry)
+  template <AR::RS rs, AR::BA ba, typename TrackInstance>
+  void FillTrackControlHist(TrackInstance const& track, HistogramRegistry& registry)
   {
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kPT]), track.pt());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kPHI]), track.phi());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kETA]), track.eta());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kCHARGE]), track.sign());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kDCAZ]), track.dcaZ());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kDCAXY]), track.dcaXY());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kTPCCLUSTERS]), track.tpcNClsFound());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]), track.tpcNClsCrossedRows());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kTPCCHI2]), track.tpcChi2NCl());
-    registry.fill(HIST(AR::TCrecoBefore) + HIST(AR::TrackVariableNames[AR::kITSCLUSTERS]), track.itsNCls());
-  }
-  template <typename TrackInstance>
-  void FillTrackControlHistAC(TrackInstance const& track, HistogramRegistry& registry)
-  {
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kPT]), track.pt());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kPHI]), track.phi());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kETA]), track.eta());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kCHARGE]), track.sign());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kDCAZ]), track.dcaZ());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kDCAXY]), track.dcaXY());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kTPCCLUSTERS]), track.tpcNClsFound());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]), track.tpcNClsCrossedRows());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kTPCCHI2]), track.tpcChi2NCl());
-    registry.fill(HIST(AR::TCrecoAfter) + HIST(AR::TrackVariableNames[AR::kITSCLUSTERS]), track.itsNCls());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kPT]),
+                  track.pt());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kPHI]),
+                  track.phi());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kETA]),
+                  track.eta());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kCHARGE]),
+                  track.sign());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kDCAZ]),
+                  track.dcaZ());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kDCAXY]),
+                  track.dcaXY());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kTPCCLUSTERS]),
+                  track.tpcNClsFound());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]),
+                  track.tpcNClsCrossedRows());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kTPCCHI2]),
+                  track.tpcChi2NCl());
+    registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kITSCLUSTERS]),
+                  track.itsNCls());
   }
   template <typename TrackInstance>
   bool SurviveTrackCut(TrackInstance const& track)
@@ -346,7 +369,10 @@ struct MultiParticleCorrelationsARTask {
     LOGF(info, "Collision Index : %d/%d", collision.index(), collision.size());
 
     // fill event control histograms before cutting on the collision
-    FillEventControlHistBC<CollisionsInstanceIterator>(collision, registry);
+    FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, registry);
+    FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(registry, collision.size(), collision.size());
+
+    // fill multiplicity for qvector and weights separately
 
     // cut event
     if (!SurviveCollisionCut<CollisionsInstanceIterator>(collision)) {
@@ -355,7 +381,7 @@ struct MultiParticleCorrelationsARTask {
     }
 
     // fill event control histograms after cutting on the collision
-    FillEventControlHistAC<CollisionsInstanceIterator>(collision, registry);
+    FillEventControlHist<AR::kRECO, AR::kAFTER, CollisionsInstanceIterator>(collision, registry);
 
     LOGF(info, "Number of Tracks: %d", tracks.size());
     UInt_t NumberOfTracks = 0;
@@ -363,22 +389,22 @@ struct MultiParticleCorrelationsARTask {
     for (auto const& track : tracks) {
 
       // fill track control histograms before track cut
-      FillTrackControlHistBC<TracksInstanceIterator>(track, registry);
+      FillTrackControlHist<AR::kRECO, AR::kBEFORE, TracksInstanceIterator>(track, registry);
 
       // cut track
-      if (!SurviveTrackCut<TracksInstance::iterator>(track)) {
+      if (!SurviveTrackCut<TracksInstanceIterator>(track)) {
         // LOGF(info, "Cut Track %d -> Continue", track.index());
         continue;
       }
 
       // fill track control histograms after surviving track cut
-      FillTrackControlHistAC<TracksInstanceIterator>(track, registry);
+      FillTrackControlHist<AR::kRECO, AR::kAFTER, TracksInstanceIterator>(track, registry);
 
       NumberOfTracks++;
     }
+
+    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(registry, NumberOfTracks, NumberOfTracks);
     LOGF(info, "Surviving Tracks: %d ", NumberOfTracks);
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kMULQ]), NumberOfTracks);
-    registry.fill(HIST(AR::ECrecoAfter) + HIST(AR::EventVariableNames[AR::kMULW]), NumberOfTracks);
   }
 };
 
