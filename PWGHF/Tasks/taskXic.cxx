@@ -30,7 +30,7 @@ using namespace o2::analysis::hf_cuts_xic_topkpi;
 #include "Framework/runDataProcessing.h"
 
 /// Ξc± analysis task
-struct TaskXic {
+struct HfTaskXic {
   HistogramRegistry registry{
     "registry",
     {
@@ -130,13 +130,13 @@ struct TaskXic {
     }
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> recoFlag3Prong = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);
 
   void processMC(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
-    for (auto& candidate : recoFlag3Prong) {
+    for (auto& candidate : selectedXicCandidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
       }
@@ -214,10 +214,10 @@ struct TaskXic {
     }
   }
 
-  PROCESS_SWITCH(TaskXic, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskXic, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskXic>(cfgc, TaskName{"hf-task-xic"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskXic>(cfgc, TaskName{"hf-task-xic"})};
 }
