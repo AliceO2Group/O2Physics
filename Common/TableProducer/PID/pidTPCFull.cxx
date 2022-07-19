@@ -237,27 +237,14 @@ struct tpcPidFull {
       // Filling a std::vector<float> to be evaluated by the network
       // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
       for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
-        if (input_dimensions == 6) {
-          for (auto const& trk : tracks) {
-            track_properties[counter_track_props] = trk.tpcInnerParam();
-            track_properties[counter_track_props + 1] = trk.tgl();
-            track_properties[counter_track_props + 2] = trk.signed1Pt();
-            track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
-            track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
-            track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
-            counter_track_props += input_dimensions;
-          }
-        } else if (input_dimensions == 5) {
-          for (auto const& trk : tracks) {
-            track_properties[counter_track_props] = trk.tpcInnerParam();
-            track_properties[counter_track_props + 1] = trk.tgl();
-            track_properties[counter_track_props + 2] = trk.signed1Pt();
-            track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
-            track_properties[counter_track_props + 4] = std::sqrt(159. / trk.tpcNClsFound());
-            counter_track_props += input_dimensions;
-          }
-        } else {
-          LOG(fatal) << "Incompatible number of inputs! Either 5 or 6 inputs must be chosen.";
+        for (auto const& trk : tracks) {
+          track_properties[counter_track_props] = trk.tpcInnerParam();
+          track_properties[counter_track_props + 1] = trk.tgl();
+          track_properties[counter_track_props + 2] = trk.signed1Pt();
+          track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+          track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
+          track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
+          counter_track_props += input_dimensions;
         }
 
         auto start_network_eval = std::chrono::high_resolution_clock::now();
