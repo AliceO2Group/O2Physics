@@ -28,7 +28,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
   options.add_options()(
     "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path for storage/retrieval")(
     "objname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be stored in file")(
-    "inobjname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be read from file in 'push' mode")(
+    "inobjname", bpo::value<std::string>()->default_value("Response"), "Object name to be read from file in 'push' mode")(
     "bb0", bpo::value<float>()->default_value(0.03209809958934784f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768009185791f), "Bethe-Bloch parameter 1")(
     "bb2", bpo::value<float>()->default_value(2.5266601063857674e-16f), "Bethe-Bloch parameter 2")(
