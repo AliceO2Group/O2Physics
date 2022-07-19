@@ -12,8 +12,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-
-#include "CommonConstants/LHCConstants.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2::framework;
@@ -123,7 +121,7 @@ struct CandidateCreator {
         barTrackCandIds[id] = candID;
         const auto& tr = barTracks->iteratorAt(id);
         netCharge += tr.sign();
-        if (0/*tr.hasTOF()*/) {
+        if (tr.hasTOF()) {
           RgtrwTOF++;
         }
       }

@@ -37,8 +37,7 @@ struct TrackSkimmerQa {
       {"Barrels/ITS/nClusters", ";n clusters;", {HistType::kTH1I, {{10, 0, 10}}}},
       {"Barrels/TPC/chi2", ";chi2;", {HistType::kTH1D, {{110, -10., 100.}}}},
       {"Barrels/TPC/nClusters", ";n clusters;", {HistType::kTH1I, {{200, 0, 200}}}},
-    }
-  };
+    }};
 
   void process(soa::Join<o2::aod::UDFwdTracks, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
                soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra, o2::aod::UDMcTrackLabels> const& barTracks,
