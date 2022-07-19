@@ -19,6 +19,8 @@
 ///         QA histograms for the TPC PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
+#include <stdlib.h>
+
 // ROOT includes
 #include "TFile.h"
 
@@ -70,7 +72,6 @@ struct tpcPid {
   // Network correction for TPC PID response
   Network network;
   o2::ccdb::CcdbApi ccdbApi;
-  int currentRunNumber = -1;
 
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -192,13 +193,21 @@ struct tpcPid {
 
         auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
 
-        if (currentRunNumber != bc.runNumber()) { // fetches network only if the runnumbers change
-          currentRunNumber = bc.runNumber();
-          LOG(info) << "Fetching network for runnumber: " << currentRunNumber << " and timestamp: " << bc.timestamp();
+        if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
+          LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
           std::map<std::string, std::string> metadata;
           bool retrieve_success = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
           if (retrieve_success) {
+            std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
+            if (headers.count("Valid-From") == 0) {
+              LOG(fatal) << "Valid-From not found in metadata";
+            }
+            if (headers.count("Valid-Until") == 0) {
+              LOG(fatal) << "Valid-Until not found in metadata";
+            }
             Network temp_net(networkPathLocally.value,
+                             strtoul(headers["Valid-From"].c_str(), NULL, 0),
+                             strtoul(headers["Valid-Until"].c_str(), NULL, 0),
                              enableNetworkOptimizations.value);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
@@ -225,14 +234,27 @@ struct tpcPid {
       // Filling a std::vector<float> to be evaluated by the network
       // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
       for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
-        for (auto const& trk : tracks) {
-          track_properties[counter_track_props] = trk.tpcInnerParam();
-          track_properties[counter_track_props + 1] = trk.tgl();
-          track_properties[counter_track_props + 2] = trk.signed1Pt();
-          track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
-          track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
-          track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
-          counter_track_props += input_dimensions;
+        if (input_dimensions == 6) {
+          for (auto const& trk : tracks) {
+            track_properties[counter_track_props] = trk.tpcInnerParam();
+            track_properties[counter_track_props + 1] = trk.tgl();
+            track_properties[counter_track_props + 2] = trk.signed1Pt();
+            track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+            track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
+            track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
+            counter_track_props += input_dimensions;
+          }
+        } else if (input_dimensions == 5) {
+          for (auto const& trk : tracks) {
+            track_properties[counter_track_props] = trk.tpcInnerParam();
+            track_properties[counter_track_props + 1] = trk.tgl();
+            track_properties[counter_track_props + 2] = trk.signed1Pt();
+            track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+            track_properties[counter_track_props + 4] = std::sqrt(159. / trk.tpcNClsFound());
+            counter_track_props += input_dimensions;
+          }
+        } else {
+          LOG(fatal) << "Incompatible number of inputs! Either 5 or 6 inputs must be chosen.";
         }
 
         auto start_network_eval = std::chrono::high_resolution_clock::now();
