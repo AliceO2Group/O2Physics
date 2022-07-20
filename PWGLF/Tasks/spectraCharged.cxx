@@ -250,13 +250,9 @@ bool chargedSpectra::initTrack(const T& track)
   if (track.pt() <= ptMinCut || track.pt() >= ptMaxCut) {
     return false;
   }
-  // TODO: with Filters we could skip this in data, but not in MC (maybe add IS_MC template paramter so we can skip it in data via if constexpr)
-  if (!track.isGlobalTrack() || (isRun3 && track.trackType() != o2::aod::track::Track)) {
+  if (!track.isGlobalTrackWoPtEta()) {
     return false;
-    // MEMO: current version of the track selection cuts too harshly (to be studied why) and therefore many events have multMeas==0
-    // as temporary workaround to look at unselected tracks use the commented out condition instead
   }
-
   return true;
 }
 
