@@ -17,7 +17,7 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct CandidateCreator {
+struct UpcCandProducer {
   Produces<o2::aod::UDCollisions> eventCandidates;
   Produces<o2::aod::UDTrackCollisionIDs> barrelCandIds;
   Produces<o2::aod::UDFwdTrackCollisionIDs> muonCandIds;
@@ -189,12 +189,12 @@ struct CandidateCreator {
     createCandidates(&muonTracks, &barTracks, bcs, ft0s);
   }
 
-  PROCESS_SWITCH(CandidateCreator, processFwd, "Produce candidates for forward rapidities", false);
-  PROCESS_SWITCH(CandidateCreator, processSemiFwd, "Produce candidates in semiforward region", false);
+  PROCESS_SWITCH(UpcCandProducer, processFwd, "Produce candidates for forward rapidities", false);
+  PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward region", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CandidateCreator>(cfgc)};
+    adaptAnalysisTask<UpcCandProducer>(cfgc)};
 }

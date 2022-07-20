@@ -69,7 +69,7 @@ DECLARE_SOA_TABLE_FULL(UDMcParticles, "UDMcParticles", "AOD", "UDMCPARTICLES", /
                        mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
-using SkimmedMCParticle = UDMcParticles::iterator;
+using UDMcParticle = UDMcParticles::iterator;
 
 namespace udcollision
 {

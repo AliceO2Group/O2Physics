@@ -18,7 +18,7 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct TrackSkimmer {
+struct UpcTrackSkimmer {
   int32_t fSignalGenID{1};
   bool fDoMC;
 
@@ -401,14 +401,14 @@ struct TrackSkimmer {
     skimBarTracks(barTracks, ambBarTracks, bcs, (o2::aod::McTrackLabels*)nullptr, dummyMap);
   }
 
-  PROCESS_SWITCH(TrackSkimmer, processFwdMC, "Produce only muon tracks with MC information", false);
-  PROCESS_SWITCH(TrackSkimmer, processFwd, "Produce only muon tracks", false);
-  PROCESS_SWITCH(TrackSkimmer, processAllMC, "Produce barrel and muon tracks with MC information", false);
-  PROCESS_SWITCH(TrackSkimmer, processAll, "Produce barrel and muon tracks", false);
+  PROCESS_SWITCH(UpcTrackSkimmer, processFwdMC, "Produce only muon tracks with MC information", false);
+  PROCESS_SWITCH(UpcTrackSkimmer, processFwd, "Produce only muon tracks", false);
+  PROCESS_SWITCH(UpcTrackSkimmer, processAllMC, "Produce barrel and muon tracks with MC information", false);
+  PROCESS_SWITCH(UpcTrackSkimmer, processAll, "Produce barrel and muon tracks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    o2::framework::adaptAnalysisTask<TrackSkimmer>(cfgc)};
+    o2::framework::adaptAnalysisTask<UpcTrackSkimmer>(cfgc)};
 }

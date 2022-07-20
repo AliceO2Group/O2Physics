@@ -22,7 +22,7 @@ using namespace o2::framework::expressions;
 
 #define mmuon 0.1056583745
 
-struct TrackSkimmerQa {
+struct UpcTrackSkimmerQa {
   HistogramRegistry registry{
     "registry",
     {
@@ -84,5 +84,5 @@ struct TrackSkimmerQa {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TrackSkimmerQa>(cfgc)};
+    adaptAnalysisTask<UpcTrackSkimmerQa>(cfgc)};
 }
