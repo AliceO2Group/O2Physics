@@ -85,6 +85,7 @@ struct phisample {
     
     // 3d histogram
     histos.add("h3phiinvmass", "Invariant mass of Phi", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 0.8, 1.3}});
+    histos.add("h3phiinvmassME", "Invariant mass of Phi mixed event", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 0.8, 1.3}});
   }
 
   double massKa = TDatabasePDG::Instance()->GetParticle(kKPlus)->Mass();
@@ -145,17 +146,18 @@ struct phisample {
         continue;
       }
       for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(group1, group2))) {
-      if (trk1.sign() * trk2.sign() > 0)
-        continue;
+        // Un-like sign pair only
+        if (trk1.sign() * trk2.sign() > 0)
+          continue;
 
-      auto arrMom = array{
-        array{trk1.px(), trk1.py(), trk1.pz()},
-        array{trk2.px(), trk2.py(), trk2.pz()}};
-      auto resoPt = RecoDecay::sqrtSumOfSquares(trk1.px() + trk2.px(), trk1.py() + trk2.py());
-      auto arrMass = array{massKa, massKa};
-      auto mass = RecoDecay::m(arrMom, arrMass);
-      histos.fill(HIST("phiinvmass"), mass);
-      histos.fill(HIST("h3phiinvmass"), collision1.multV0M(), resoPt, mass);
+        auto arrMom = array{
+          array{trk1.px(), trk1.py(), trk1.pz()},
+          array{trk2.px(), trk2.py(), trk2.pz()}};
+        auto resoPt = RecoDecay::sqrtSumOfSquares(trk1.px() + trk2.px(), trk1.py() + trk2.py());
+        auto arrMass = array{massKa, massKa};
+        auto mass = RecoDecay::m(arrMom, arrMass);
+        histos.fill(HIST("phiinvmassME"), mass);
+        histos.fill(HIST("h3phiinvmassME"), collision1.multV0M(), resoPt, mass);
       }
     }
   };
