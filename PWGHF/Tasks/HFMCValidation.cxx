@@ -287,7 +287,7 @@ struct ValidationRecLevel {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        uint index2 = uint(std::abs(track.collisionId() - particle.collisionId()) > 0) + 1;
+        uint index2 = uint(std::abs(track.collisionId() - particle.mcCollisionId()) > 0) + 1;
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[index]->Fill(origin, track.pt());
         histOriginTracks[index + index2]->Fill(origin, track.pt());
