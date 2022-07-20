@@ -135,6 +135,9 @@ struct reso2initializer {
 
       reso2tracks(resoCollisions.lastIndex(),
                   track.pt(),
+                  track.px(),
+                  track.py(),
+                  track.pz(),
                   track.eta(),
                   track.phi(),
                   aod::resodaughter::DaughterType::kTrack,
@@ -186,6 +189,9 @@ struct reso2initializer {
         childIDs[1] = v0.negTrackId();
         reso2tracks(resoCollisions.lastIndex(),
                     v0.pt(),
+                    v0.px(),
+                    v0.py(),
+                    v0.pz(),
                     v0.eta(),
                     v0.phi(),
                     aod::resodaughter::DaughterType::kV0,
