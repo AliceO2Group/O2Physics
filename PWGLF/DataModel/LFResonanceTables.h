@@ -58,10 +58,10 @@ enum DaughterType {
 static constexpr std::string_view DaughterTypeName[kNDaughterTypes] = {"Tracks", "V0", "Cascade"}; //! Naming of the different particle types
 
 enum PDGtype {
-    kPion = BIT(0),
-    kKaon = BIT(1),
-    kProton = BIT(2),
-    kHasTOF = BIT(6) // Save hasTOF info for TOF selection
+  kPion = BIT(0),
+  kKaon = BIT(1),
+  kProton = BIT(2),
+  kHasTOF = BIT(6) // Save hasTOF info for TOF selection
 };
 
 #define requireTPCPIDCutInFilter(mask) ((aod::resodaughter::tpcPIDselectionFlag & (uint8_t)aod::resodaughter::mask) == (uint8_t)aod::resodaughter::mask)
@@ -74,59 +74,46 @@ enum PDGtype {
 #define requireTOFPIDProtonCutInFilter() requireTOFPIDCutInFilter(PDGtype::kProton)
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);                                   //! p_T (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);                                 //! Eta
-DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! Phi
-DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                     //! Type of the particle, according to resodaughter::ParticleType
-DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                   //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
-DECLARE_SOA_COLUMN(Indices, indices, int[2]);                        //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                              //! Sign of the track charge
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                             //! DCA_xy
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                               //! DCA_z
-DECLARE_SOA_COLUMN(X, x, float);                                     //! x position of the track
-DECLARE_SOA_COLUMN(Alpha, alpha, float);                             //! alpha position of the track
-DECLARE_SOA_COLUMN(TPCPIDselectionFlag, tpcPIDselectionFlag, uint8_t);       //! TPC PID selection
-DECLARE_SOA_COLUMN(TOFPIDselectionFlag, tofPIDselectionFlag, uint8_t);       //! TOF PID selection
-DECLARE_SOA_COLUMN(TPCnSigmaPi, tpcNSigmaPi, float);                 //! Pion TPC nSigma
-DECLARE_SOA_COLUMN(TPCnSigmaKa, tpcNSigmaKa, float);                 //! Kaon TPC nSigma
-DECLARE_SOA_COLUMN(TPCnSigmaPr, tpcNSigmaPr, float);                 //! Proton TPC nSigma
-DECLARE_SOA_COLUMN(TOFnSigmaPi, tofNSigmaPi, float);                 //! Pion TOF nSigma
-DECLARE_SOA_COLUMN(TOFnSigmaKa, tofNSigmaKa, float);                 //! Kaon TOF nSigma
-DECLARE_SOA_COLUMN(TOFnSigmaPr, tofNSigmaPr, float);                 //! Proton TOF nSigma
-DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                       //! DCA between daughters
-DECLARE_SOA_COLUMN(MLambda, mLambda, float);                         //! The invariant mass of V0 candidate, assuming lambda
-DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                 //! The invariant mass of V0 candidate, assuming antilambda
-DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                 //! Transverse radius of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                     //! X position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                     //! Y position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                     //! Z position of the decay vertex
-
-DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
-                           [](float eta) -> float {
-                             return 2.f * std::atan(std::exp(-eta));
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Compute the momentum in x in GeV/c
-                           [](float pt, float phi) -> float {
-                             return pt * std::sin(phi);
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Compute the momentum in y in GeV/c
-                           [](float pt, float phi) -> float {
-                             return pt * std::cos(phi);
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Compute the momentum in z in GeV/c
-                           [](float pt, float eta) -> float {
-                             return pt * std::sinh(eta);
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
-                           [](float pt, float eta) -> float {
-                             return pt * std::cosh(eta);
-                           });
+DECLARE_SOA_COLUMN(Pt, pt, float);                                     //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Px, px, float);                                     //! p_x (GeV/c)
+DECLARE_SOA_COLUMN(Py, py, float);                                     //! p_y (GeV/c)
+DECLARE_SOA_COLUMN(Pz, pz, float);                                     //! p_z (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                       //! p (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! Phi
+DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                       //! Type of the particle, according to resodaughter::ParticleType
+DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                     //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
+DECLARE_SOA_COLUMN(Indices, indices, int[2]);                          //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //! Sign of the track charge
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);   //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                               //! DCA_xy
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                                 //! DCA_z
+DECLARE_SOA_COLUMN(X, x, float);                                       //! x position of the track
+DECLARE_SOA_COLUMN(Alpha, alpha, float);                               //! alpha position of the track
+DECLARE_SOA_COLUMN(TPCPIDselectionFlag, tpcPIDselectionFlag, uint8_t); //! TPC PID selection
+DECLARE_SOA_COLUMN(TOFPIDselectionFlag, tofPIDselectionFlag, uint8_t); //! TOF PID selection
+DECLARE_SOA_COLUMN(TPCnSigmaPi, tpcNSigmaPi, float);                   //! Pion TPC nSigma
+DECLARE_SOA_COLUMN(TPCnSigmaKa, tpcNSigmaKa, float);                   //! Kaon TPC nSigma
+DECLARE_SOA_COLUMN(TPCnSigmaPr, tpcNSigmaPr, float);                   //! Proton TPC nSigma
+DECLARE_SOA_COLUMN(TOFnSigmaPi, tofNSigmaPi, float);                   //! Pion TOF nSigma
+DECLARE_SOA_COLUMN(TOFnSigmaKa, tofNSigmaKa, float);                   //! Kaon TOF nSigma
+DECLARE_SOA_COLUMN(TOFnSigmaPr, tofNSigmaPr, float);                   //! Proton TOF nSigma
+DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                         //! DCA between daughters
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);                           //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                   //! The invariant mass of V0 candidate, assuming antilambda
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                   //! Transverse radius of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                       //! X position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                       //! Y position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                       //! Z position of the decay vertex
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
                   resodaughter::Pt,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodaughter::P,
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::PartType,
@@ -152,12 +139,7 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::TransRadius,
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
-                  resodaughter::DecayVtxZ,
-                  resodaughter::Theta<resodaughter::Eta>,
-                  resodaughter::Px<resodaughter::Pt, resodaughter::Phi>,
-                  resodaughter::Py<resodaughter::Pt, resodaughter::Phi>,
-                  resodaughter::Pz<resodaughter::Pt, resodaughter::Eta>,
-                  resodaughter::P<resodaughter::Pt, resodaughter::Eta>);
+                  resodaughter::DecayVtxZ);
 using ResoDaughter = ResoDaughters::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA>;
