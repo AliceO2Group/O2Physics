@@ -322,7 +322,7 @@ struct ValidationRecLevel {
         if (index) {
           auto collision = collisions.rawIteratorAt(track.collisionId());
           auto mcCollision = mcCollisions.rawIteratorAt(particle.mcCollisionId());
-          if (std::abs(collision.mcCollisionId() - particle.mcCollisionId()) == 0 && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
+          if (collision.mcCollisionId() == particle.mcCollisionId() && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
             index2 = 1;
           } else {
             index2 = 2;
