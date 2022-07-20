@@ -78,7 +78,6 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                                     //! p_T (
 DECLARE_SOA_COLUMN(Px, px, float);                                     //! p_x (GeV/c)
 DECLARE_SOA_COLUMN(Py, py, float);                                     //! p_y (GeV/c)
 DECLARE_SOA_COLUMN(Pz, pz, float);                                     //! p_z (GeV/c)
-DECLARE_SOA_COLUMN(P, p, float);                                       //! p (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! Phi
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                       //! Type of the particle, according to resodaughter::ParticleType
@@ -113,7 +112,6 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::P,
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::PartType,
