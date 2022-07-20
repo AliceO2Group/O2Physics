@@ -63,8 +63,8 @@ struct QaEfficiency {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
-  // Track only selection
-  Configurable<bool> applyTrackSelection{"applyTrackSelection", false, "Flag to use the standard track selection when selecting numerator and denominator"};
+  // Track only selection, options to select only specific tracks
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
@@ -1094,6 +1094,27 @@ struct QaEfficiency {
     isCollisionSelected<true>(collision);
   }
 
+  // Function to apply track selection
+  template <typename trackType>
+  bool isTrackSelected(trackType track)
+  {
+    switch (trackSelection.value) {
+      case 0:
+        return true;
+      case 1:
+        return track.isGlobalTrack();
+      case 2:
+        return track.isGlobalTrackWoPtEta();
+      case 3:
+        return track.isGlobalTrackWoDCA();
+      case 4:
+        return track.isQualityTrack();
+      case 5:
+        return track.isInAcceptanceTrack();
+    }
+    return false;
+  }
+
   // MC process
   void processMC(const o2::aod::McParticles& mcParticles,
                  const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions,
@@ -1165,7 +1186,7 @@ struct QaEfficiency {
       }
 
       histos.fill(HIST("MC/trackSelection"), 10);
-      if (applyTrackSelection && !track.isGlobalTrack()) { // Check general cuts
+      if (!isTrackSelected(track)) { // Check general cuts
         continue;
       }
       histos.fill(HIST("MC/trackSelection"), 11);
@@ -1347,7 +1368,7 @@ struct QaEfficiency {
         continue;
       }
       histos.fill(HIST("Data/trackSelection"), 4);
-      if (applyTrackSelection) { // Check general cuts
+      if (trackSelection.value > 0) { // Check general cuts
         if (!track.passedTrackType()) {
           continue;
         }

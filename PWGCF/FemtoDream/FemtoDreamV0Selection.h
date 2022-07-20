@@ -165,6 +165,15 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
     fInvMassUpLimit = upLimit;
   }
 
+  void setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
+  {
+    if (child == femtoDreamV0Selection::kPosTrack) {
+      PosDaughTrack.setRejectNotPropagatedTracks(reject);
+    } else if (child == femtoDreamV0Selection::kNegTrack) {
+      NegDaughTrack.setRejectNotPropagatedTracks(reject);
+    }
+  }
+
  private:
   int nPtV0MinSel;
   int nPtV0MaxSel;
