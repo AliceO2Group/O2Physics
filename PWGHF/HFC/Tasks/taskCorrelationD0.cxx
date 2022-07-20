@@ -132,12 +132,12 @@ struct HfTaskCorrelationD0 {
     //  histograms for associated particles
     registry.add("hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * PI, "#varphi"}}});
-    registry.add("hpT", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("hPt", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
     registry.add("hEta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("hPhi", "phi", {HistType::kTH1F, {{100, 0, 2 * PI, "#varphi"}}});
 
     //  histograms for particles in event mixing
-    registry.add("hpTMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("hPtMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
     registry.add("hEtaMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("hPhiMixing", "phi", {HistType::kTH1F, {{100, 0, 2 * PI, "#varphi"}}});
 
@@ -149,9 +149,9 @@ struct HfTaskCorrelationD0 {
     //  histograms for candidates
     auto vbins = (std::vector<double>)bins;
 
-    registry.add("hpTCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("hpTProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("hpTProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -224,7 +224,7 @@ struct HfTaskCorrelationD0 {
     int Ntracks = 0;
     for (auto& track1 : tracks) {
       Ntracks++;
-      registry.fill(HIST("hpT"), track1.pt());
+      registry.fill(HIST("hPt"), track1.pt());
       registry.fill(HIST("hEta"), track1.eta());
       registry.fill(HIST("hPhi"), track1.phi());
       registry.fill(HIST("hYields"), multiplicity, track1.pt(), track1.eta());
@@ -239,7 +239,7 @@ struct HfTaskCorrelationD0 {
     int Ntracks = 0;
     for (auto& track1 : tracks) {
       Ntracks++;
-      registry.fill(HIST("hpTMixing"), track1.pt());
+      registry.fill(HIST("hPtMixing"), track1.pt());
       registry.fill(HIST("hEtaMixing"), track1.eta());
       registry.fill(HIST("hPhiMixing"), track1.phi());
     }
@@ -287,9 +287,9 @@ struct HfTaskCorrelationD0 {
         registry.fill(HIST("hMass"), InvMassD0bar(candidate), candidate.pt());
       }
 
-      registry.fill(HIST("hpTCand"), candidate.pt());
-      registry.fill(HIST("hpTProng0"), candidate.ptProng0());
-      registry.fill(HIST("hpTProng1"), candidate.ptProng1());
+      registry.fill(HIST("hPtCand"), candidate.pt());
+      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
+      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
@@ -377,7 +377,7 @@ struct HfTaskCorrelationD0 {
   //    process same event correlations
   // =====================================
   void processSameRun3(aodCollisions::iterator const& collision,
-                       aodTracks& tracks,
+                       aodTracks const& tracks,
                        aod::MFTTracks const& mfttracks,
                        hfCandidates const& candidates)
   {
@@ -389,14 +389,8 @@ struct HfTaskCorrelationD0 {
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
-      return associatedTracks.size();
-    };
-    auto mult = getTracksSize(collision);
-
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), mult));
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("hEventCountSame"), bin);
 
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -424,7 +418,7 @@ struct HfTaskCorrelationD0 {
   //    process same event correlations
   // =====================================
   void processSameRun2(aodCollisions::iterator const& collision,
-                       aodTracks& tracks,
+                       aodTracks const& tracks,
                        hfCandidates const& candidates)
   {
     if (!(isCollisionSelected(collision, true))) {
