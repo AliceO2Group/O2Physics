@@ -37,23 +37,18 @@ struct chargedSpectra {
   HistogramRegistry histos;
   Service<TDatabasePDG> pdg;
 
-  // TODO: can we derive this from config context resp from meta data in the file to avoid having to specify this option?
-  Configurable<bool> isMC{"isMC", false, "option to flag mc"};
-  Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
-
   // task settings that can be steered via hyperloop
-  Configurable<uint32_t> maxMultMeas{"measMult", 100, "max measured multiplicity."};
-  Configurable<uint32_t> maxMultTrue{"measTrue", 100, "max true multiplicity."};
-
-  // TODO: better use 2d configurables here
-  Configurable<float> etaCut{"etaCut", 0.8f, "Eta cut."};
-  Configurable<float> ptMinCut{"ptMinCut", 0.15f, "Pt min cut."};
-  Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "Pt max cut."};
+  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
+  Configurable<uint32_t> maxMultMeas{"maxMultMeas", 100, "max measured multiplicity"};
+  Configurable<uint32_t> maxMultTrue{"maxMultTrue", 100, "max true multiplicity"};
+  Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
+  Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
+  Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
 
   // helper struct to store transient properties
   struct varContainer {
-    uint32_t multMeas{0};
-    uint32_t multTrue{0};
+    uint32_t multMeas{0u};
+    uint32_t multTrue{0u};
     bool isAcceptedEvent{false};
     bool isAcceptedEventMC{false};
     bool isChargedPrimary{false};
@@ -138,7 +133,7 @@ void chargedSpectra::init(InitContext const&)
   histos.add("multDist_evt_meas", "", kTH1D, {multMeasAxis});               // measured event distribution (contains contamination from events not in specified class or with wrong vertex position)
   histos.add("multPtSpec_trk_meas", "", kTH2D, {multMeasAxis, ptMeasAxis}); // measured tracks (contains contamination from secondary particles, particles smeared into acceptance and tracks originating from background events as defined above )
 
-  if (isMC) {
+  if (doprocessMC) {
 
     const AxisSpec ptTrueAxis{ptBinEdges, "#it{p}_{T} (GeV/c)", "pt_true"};
 
@@ -274,7 +269,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   vars.isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < 10.f) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || isMC) ? true : collision.alias()[kINT7]) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
         vars.isAcceptedEvent = true;
       }
     }
@@ -296,7 +291,6 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
     }
     ++vars.multTrue;
   }
-  // TODO: also determine event class and check if true z vtx positin is good
   vars.isAcceptedEventMC = ((std::abs(collision.posZ()) < 10.f) && (vars.multTrue > 0));
 }
 
