@@ -52,6 +52,14 @@ static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 /// - Momentum Conservation for these particles
 
 struct ValidationGenLevel {
+
+  Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
+  Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of generated primary vertex [cm]"};
+  Configurable<double> yVertexMin{"yVertexMin", -100., "min. y of generated primary vertex [cm]"};
+  Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of generated primary vertex [cm]"};
+  Configurable<double> zVertexMin{"zVertexMin", -10., "min. z of generated primary vertex [cm]"};
+  Configurable<double> zVertexMax{"zVertexMax", 10., "max. z of generated primary vertex [cm]"};
+
   std::shared_ptr<TH1> hPromptCharmHadronsPtDistr, hPromptCharmHadronsYDistr, hNonPromptCharmHadronsPtDistr, hNonPromptCharmHadronsYDistr, hPromptCharmHadronsDecLenDistr, hNonPromptCharmHadronsDecLenDistr, hQuarkPerEvent;
 
   HistogramRegistry registry{
@@ -101,6 +109,26 @@ struct ValidationGenLevel {
     }
   }
 
+  /// Primary-vertex selection
+  /// \param collision  mccollision table row
+  template <typename Col>
+  bool selectVertex(const Col& collision)
+  {
+    // x position
+    if (collision.posX() < xVertexMin || collision.posX() > xVertexMax) {
+      return false;
+    }
+    // y position
+    if (collision.posY() < yVertexMin || collision.posY() > yVertexMax) {
+      return false;
+    }
+    // z position
+    if (collision.posZ() < zVertexMin || collision.posZ() > zVertexMax) {
+      return false;
+    }
+    return true;
+  }
+
   void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
   {
     int cPerCollision = 0;
@@ -115,6 +143,9 @@ struct ValidationGenLevel {
     std::vector<int> listDaughters{};
 
     for (auto& particle : particlesMC) {
+      if (!selectVertex(mccollision))
+        continue;
+
       int particlePdgCode = particle.pdgCode();
       if (!particle.has_mothers()) {
         continue;
@@ -280,14 +311,23 @@ struct ValidationRecLevel {
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
+  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions)
   {
     // loop over tracks
     for (auto& track : tracks) {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        uint index2 = uint(std::abs(track.collisionId() - particle.mcCollisionId()) > 0) + 1;
+        uint index2 = 0;
+        if (index) {
+          auto collision = collisions.rawIteratorAt(track.collisionId());
+          auto mcCollision = mcCollisions.rawIteratorAt(particle.mcCollisionId());
+          if (std::abs(collision.mcCollisionId() - particle.mcCollisionId()) == 0 && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
+            index2 = 1;
+          } else {
+            index2 = 2;
+          }
+        }
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[index]->Fill(origin, track.pt());
         histOriginTracks[index + index2]->Fill(origin, track.pt());
