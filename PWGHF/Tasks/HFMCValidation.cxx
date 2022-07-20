@@ -310,28 +310,26 @@ struct ValidationRecLevel {
 
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
+  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions)
+  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, CollisionsWithMCLabels const& collisions)
   {
     // loop over tracks
     for (auto& track : tracks) {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        uint index2 = 0;
-        if (index) {
-          auto collision = collisions.rawIteratorAt(track.collisionId());
-          auto mcCollision = mcCollisions.rawIteratorAt(particle.mcCollisionId());
-          if (collision.mcCollisionId() == particle.mcCollisionId() && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
-            index2 = 1;
-          } else {
-            index2 = 2;
-          }
-        }
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[index]->Fill(origin, track.pt());
-        histOriginTracks[index + index2]->Fill(origin, track.pt());
-        histOriginTracks[index + index2]->Fill(origin, track.pt());
+        if (index) {
+          auto collision = collisions.rawIteratorAt(track.collisionId());
+          auto mcCollision = particle.mcCollision();
+          uint index2 = 2;
+          if (collision.mcCollisionId() - particle.mcCollisionId() == 0 && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
+            index2 = 1;
+          }
+          histOriginTracks[index + index2]->Fill(origin, track.pt());
+        }
       } else {
         histOriginTracks[index]->Fill(-1., track.pt());
       }
