@@ -62,7 +62,9 @@ struct MultiplicityCounter {
       {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},             //
       {"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}}, //
       {"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},   //
-      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                            //
+      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                           //
+      {"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}},                         //
+      {"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}}              //
     }                                                                                                       //
   };
 
@@ -150,6 +152,10 @@ struct MultiplicityCounter {
           if (cols.size() > 1) {
             registry.fill(HIST("Events/Selection"), 7.);
           }
+        }
+        for (auto& col : cols) {
+          registry.fill(HIST("Events/Control/Chi2"), col.chi2());
+          registry.fill(HIST("Events/Control/TimeResolution"), col.collisionTimeRes());
         }
       }
     }
