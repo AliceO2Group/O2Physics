@@ -80,7 +80,7 @@ struct reso2initializer {
                                OutputObjHandlingPolicy::QAObject};
 
   // Pre-filters for efficient process
-  Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
+  // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut;                                                                           // TPC
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                                                                                              // Eta cut
   Filter trackCutFilter = requireGlobalTrackInFilter();                                                                                                                                                                                                                                // Global track cuts
@@ -117,19 +117,20 @@ struct reso2initializer {
       uint8_t tofPIDselections = 0;
       // TPC PID
       if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections &= BIT(0);
+        tpcPIDselections |= aod::resodaughter::PDGtype::kPion;
       if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections &= BIT(1);
+        tpcPIDselections |= aod::resodaughter::PDGtype::kKaon;
       if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
-        tpcPIDselections &= BIT(2);
+        tpcPIDselections |= aod::resodaughter::PDGtype::kProton;
       // TOF PID
       if (track.hasTOF()) {
+        tofPIDselections |= aod::resodaughter::PDGtype::kHasTOF;
         if (std::abs(track.tofNSigmaPi()) < pidnSigmaPreSelectionCut)
-          tofPIDselections &= BIT(0);
+          tofPIDselections |= aod::resodaughter::PDGtype::kPion;
         if (std::abs(track.tofNSigmaKa()) < pidnSigmaPreSelectionCut)
-          tofPIDselections &= BIT(1);
+          tofPIDselections |= aod::resodaughter::PDGtype::kKaon;
         if (std::abs(track.tofNSigmaPr()) < pidnSigmaPreSelectionCut)
-          tofPIDselections &= BIT(2);
+          tofPIDselections |= aod::resodaughter::PDGtype::kProton;
       }
 
       reso2tracks(resoCollisions.lastIndex(),
