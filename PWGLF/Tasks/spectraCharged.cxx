@@ -42,8 +42,8 @@ struct chargedSpectra {
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
 
   // task settings that can be steered via hyperloop
-  Configurable<uint32_t> maxMultMeas{"measMult", 100, "max measured multiplicity."};
-  Configurable<uint32_t> maxMultTrue{"measTrue", 100, "max true multiplicity."};
+  Configurable<uint32_t> maxMultMeas{"maxMultMeas", 100, "max measured multiplicity."};
+  Configurable<uint32_t> maxMultTrue{"maxMultTrue", 100, "max true multiplicity."};
 
   // TODO: better use 2d configurables here
   Configurable<float> etaCut{"etaCut", 0.8f, "Eta cut."};
