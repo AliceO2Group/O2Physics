@@ -46,7 +46,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("pionPrimary")) {
-    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false});      // define 1-generation prong using the full constructor
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false});     // define 1-generation prong using the full constructor
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                // set source to be ALICE primary particles
     signal = new MCSignal(name, "Primary electrons", {prong}, {-1}); // define the signal using the full constructor
     return signal;
@@ -366,8 +366,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("HFdecayToE")) {
     MCProng prong(2, {902, 11}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     // prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
-    prong.SetSignalInTime(true);                                                       // set direction to check for daughters (true, in time) or for mothers (false, back in time)
-    signal = new MCSignal(name, "Open charm and beauty to electrons", {prong}, {-1}); 
+    prong.SetSignalInTime(true); // set direction to check for daughters (true, in time) or for mothers (false, back in time)
+    signal = new MCSignal(name, "Open charm and beauty to electrons", {prong}, {-1});
     return signal;
   }
   //   if (!nameStr.compare("LFQtoPC")) {
