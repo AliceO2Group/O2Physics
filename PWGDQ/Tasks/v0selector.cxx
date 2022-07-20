@@ -31,6 +31,10 @@
 #include "Common/Core/RecoDecay.h"
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <Math/Vector4D.h>
 #include <array>
@@ -230,7 +234,7 @@ struct v0selector {
   };
 
   // Configurables
-  Configurable<double> d_bz{"d_bz", -5.0, "bz field"};
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 0.3, "DCA V0 Daughters"};
   Configurable<float> v0Rmin{"v0Rmin", 0.0, "v0Rmin"};
@@ -239,27 +243,66 @@ struct v0selector {
   Configurable<float> dcamax{"dcamax", 1e+10, "dcamax"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
+  int mRunNumber;
+  float d_bz;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  // aod::Collision  gives you tracks matched with collision.
-  // aod::Collisions gives you all tracks.
-  // void process(aod::Collisions const& collision, FullTracksExt const& tracks, aod::V0s const& V0s)
-  // void process(FullTracksExt const& tracks, aod::Collisions const& collision, aod::V0s const& V0s)
-  // void process(FullTracksExt const& tracks, aod::Collisions const&, aod::V0s const& V0s)
-  void process(aod::Collisions const&, FullTracksExt const& tracks, aod::V0s const& V0s, aod::Cascades const& Cascades)
-  // void process(FullTracksExt const& tracks, soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s)
+  void init(InitContext& context)
+  {
+    // using namespace analysis::lambdakzerobuilder;
+    mRunNumber = 0;
+    d_bz = 0;
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
+      /* it seems this is needed at this level for the material LUT to work properly */
+      /* but what happens if the run changes while doing the processing?             */
+      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
+
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+  }
+
+  float getMagneticField(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = grpo->getNominalL3Field();
+    return output;
+  }
+
+  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
+  {
+    if (lRunNumber != mRunNumber) {
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = getMagneticField(lTimeStamp);
+      } else {
+        d_bz = d_bz_input;
+      }
+      mRunNumber = lRunNumber;
+    }
+  }
+
+  void process(aod::Collisions const&, aod::BCsWithTimestamps const&, FullTracksExt const& tracks, aod::V0s const& V0s, aod::Cascades const& Cascades)
   {
     registry.fill(HIST("hEventCounter"), 0.5);
-
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(d_bz);
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
     std::map<int, uint8_t> pidmap;
 
@@ -313,6 +356,18 @@ struct v0selector {
         continue;
       }
       auto const& collision = V0.posTrack_as<FullTracksExt>().collision();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      CheckAndUpdate(bc.runNumber(), bc.timestamp());
+      // Define o2 fitter, 2-prong
+      o2::vertexing::DCAFitterN<2> fitter;
+      fitter.setBz(d_bz);
+      fitter.setPropagateToPCA(true);
+      fitter.setMaxR(200.);
+      fitter.setMinParamChange(1e-3);
+      fitter.setMinRelChi2Change(0.9);
+      fitter.setMaxDZIni(1e9);
+      fitter.setMaxChi2(1e9);
+      fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
 
       if (V0.collisionId() != collision.globalIndex()) {
         continue;
@@ -428,17 +483,6 @@ struct v0selector {
 
     } // end of V0 loop
 
-    // next, cascade, Omega -> LK
-    o2::vertexing::DCAFitterN<2> fitterCasc;
-    fitterCasc.setBz(d_bz);
-    fitterCasc.setPropagateToPCA(true);
-    fitterCasc.setMaxR(200.);
-    fitterCasc.setMinParamChange(1e-3);
-    fitterCasc.setMinRelChi2Change(0.9);
-    fitterCasc.setMaxDZIni(1e9);
-    fitterCasc.setMaxChi2(1e9);
-    fitterCasc.setUseAbsDCA(true);
-
     // cascade loop
     for (auto& casc : Cascades) {
       registry.fill(HIST("hCascCandidate"), 0.5);
@@ -468,6 +512,30 @@ struct v0selector {
         continue;
       }
 
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      CheckAndUpdate(bc.runNumber(), bc.timestamp());
+      // Define o2 fitter, 2-prong
+      o2::vertexing::DCAFitterN<2> fitterV0;
+      fitterV0.setBz(d_bz);
+      fitterV0.setPropagateToPCA(true);
+      fitterV0.setMaxR(200.);
+      fitterV0.setMinParamChange(1e-3);
+      fitterV0.setMinRelChi2Change(0.9);
+      fitterV0.setMaxDZIni(1e9);
+      fitterV0.setMaxChi2(1e9);
+      fitterV0.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
+
+      // next, cascade, Omega -> LK
+      o2::vertexing::DCAFitterN<2> fitterCasc;
+      fitterCasc.setBz(d_bz);
+      fitterCasc.setPropagateToPCA(true);
+      fitterCasc.setMaxR(200.);
+      fitterCasc.setMinParamChange(1e-3);
+      fitterCasc.setMinRelChi2Change(0.9);
+      fitterCasc.setMaxDZIni(1e9);
+      fitterCasc.setMaxChi2(1e9);
+      fitterCasc.setUseAbsDCA(true);
+
       std::array<float, 3> pos = {0.};
       std::array<float, 3> pvecpos = {0.};
       std::array<float, 3> pvecneg = {0.};
@@ -485,18 +553,18 @@ struct v0selector {
         nTrack = getTrackParCov(casc.v0_as<aod::V0s>().posTrack_as<FullTracksExt>());
       }
 
-      int nCand = fitter.process(pTrack, nTrack);
+      int nCand = fitterV0.process(pTrack, nTrack);
       if (nCand != 0) {
-        fitter.propagateTracksToVertex();
+        fitterV0.propagateTracksToVertex();
       } else {
         continue;
       }
-      const auto& v0vtx = fitter.getPCACandidate();
+      const auto& v0vtx = fitterV0.getPCACandidate();
       for (int i = 0; i < 3; i++) {
         pos[i] = v0vtx[i];
       }
 
-      auto V0dca = fitter.getChi2AtPCACandidate(); // distance between 2 legs.
+      auto V0dca = fitterV0.getChi2AtPCACandidate(); // distance between 2 legs.
       registry.fill(HIST("hDCAV0Dau_Casc"), V0dca);
       // if (V0dca > 1.0) {
       //   continue;
@@ -509,16 +577,16 @@ struct v0selector {
 
       // Covariance matrix calculation
       const int momInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      fitter.getTrack(0).getPxPyPzGlo(pvecpos);
-      fitter.getTrack(1).getPxPyPzGlo(pvecneg);
-      fitter.getTrack(0).getCovXYZPxPyPzGlo(cov0);
-      fitter.getTrack(1).getCovXYZPxPyPzGlo(cov1);
+      fitterV0.getTrack(0).getPxPyPzGlo(pvecpos);
+      fitterV0.getTrack(1).getPxPyPzGlo(pvecneg);
+      fitterV0.getTrack(0).getCovXYZPxPyPzGlo(cov0);
+      fitterV0.getTrack(1).getCovXYZPxPyPzGlo(cov1);
 
       for (int i = 0; i < 6; i++) {
         int j = momInd[i];
         covV0[j] = cov0[j] + cov1[j];
       }
-      auto covVtxV0 = fitter.calcPCACovMatrix();
+      auto covVtxV0 = fitterV0.calcPCACovMatrix();
       covV0[0] = covVtxV0(0, 0);
       covV0[1] = covVtxV0(1, 0);
       covV0[2] = covVtxV0(1, 1);
@@ -652,7 +720,7 @@ struct trackPIDQA {
     },
   };
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks)
+  void processQA(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<FullTracksExt, aod::V0Bits> const& tracks)
   {
 
     registry.fill(HIST("hEventCounter"), 1.0); // all
@@ -660,15 +728,15 @@ struct trackPIDQA {
     //  return;
     //}
     // registry.fill(HIST("hEventCounter"), 2.0); //INT7
+    if (collision.numContrib() < 0.5) {
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), 3.0); // Ncontrib > 0
 
     if (abs(collision.posZ()) > 10.0) {
       return;
     }
-    registry.fill(HIST("hEventCounter"), 3.0); //|Zvtx| < 10 cm
-    if (collision.numContrib() < 0.5) {
-      return;
-    }
-    registry.fill(HIST("hEventCounter"), 4.0); // accepted
+    registry.fill(HIST("hEventCounter"), 4.0); //|Zvtx| < 10 cm
 
     for (auto& track : tracks) {
       if (!track.has_collision()) {
@@ -733,6 +801,14 @@ struct trackPIDQA {
 
     } // end of track loop
   }   // end of process
+
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(trackPIDQA, processQA, "Run PID QA for barrel tracks", true);
+  PROCESS_SWITCH(trackPIDQA, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
