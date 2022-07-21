@@ -130,13 +130,13 @@ struct HfTaskXic {
     }
   }
 
-  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);
+  Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec>> selectedMCXicCandidates = (aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic);
 
   void processMC(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate, aod::HfCandProng3MCRec> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandProng3MCGen> const& particlesMC, aod::BigTracksMC const&)
   {
     // MC rec.
-    for (auto& candidate : selectedXicCandidates) {
+    for (auto& candidate : selectedMCXicCandidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
         continue;
       }
