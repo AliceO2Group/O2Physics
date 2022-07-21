@@ -24,7 +24,7 @@ float particleMass(TDatabasePDG* pdg, int pid)
 };
 
 // -----------------------------------------------------------------------------
-DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb)
+DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, UDTracksFull const& tracks, std::vector<uint> comb)
 {
   // compute invariant mass
   TLorentzVector lvtmp;
@@ -35,8 +35,8 @@ DGParticle::DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks 
   auto cnt = -1;
   for (auto ind : comb) {
     cnt++;
-    auto track = dgtracks.rawIteratorAt(ind);
-    lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), particleMass(pdg, pidinfo[cnt * 12]));
+    auto track = tracks.rawIteratorAt(ind);
+    lvtmp.SetXYZM(track.px(), track.py(), track.pz(), particleMass(pdg, pidinfo[cnt * 12]));
     mIVM += lvtmp;
   }
 
@@ -60,7 +60,7 @@ DGPIDSelector::DGPIDSelector()
 }
 
 // -----------------------------------------------------------------------------
-float DGPIDSelector::getTPCnSigma(aod::DGTrack track, int hypo)
+float DGPIDSelector::getTPCnSigma(UDTrackFull track, int hypo)
 {
   switch (hypo) {
     case 0:
@@ -79,7 +79,7 @@ float DGPIDSelector::getTPCnSigma(aod::DGTrack track, int hypo)
 }
 
 // -----------------------------------------------------------------------------
-bool DGPIDSelector::isGoodTrack(aod::DGTrack track, int cnt)
+bool DGPIDSelector::isGoodTrack(UDTrackFull track, int cnt)
 {
   // extract PID information
   auto pidinfo = mAnaPars.TPCnSigmas();
@@ -121,22 +121,22 @@ bool DGPIDSelector::isGoodTrack(aod::DGTrack track, int cnt)
 }
 
 // -----------------------------------------------------------------------------
-int DGPIDSelector::computeIVMs(int nCombine, aod::DGTracks const& dgtracks)
+int DGPIDSelector::computeIVMs(int nCombine, UDTracksFull const& tracks)
 {
   // reset
   mIVMs.clear();
 
   // create combinations including permutations
-  auto combs = combinations(nCombine, dgtracks.size());
+  auto combs = combinations(nCombine, tracks.size());
 
   // loop over combinations
   for (auto comb : combs) {
-    // is dgtracks compatible with PID requirements?
+    // is tracks compatible with PID requirements?
     bool isGoodComb = true;
     auto cnt = -1;
     for (auto ind : comb) {
       cnt++;
-      if (!isGoodTrack(dgtracks.rawIteratorAt(ind), cnt)) {
+      if (!isGoodTrack(tracks.rawIteratorAt(ind), cnt)) {
         isGoodComb = false;
         break;
       }
@@ -144,7 +144,7 @@ int DGPIDSelector::computeIVMs(int nCombine, aod::DGTracks const& dgtracks)
 
     // update list of IVMs
     if (isGoodComb) {
-      DGParticle IVM(fPDG, mAnaPars, dgtracks, comb);
+      DGParticle IVM(fPDG, mAnaPars, tracks, comb);
       mIVMs.push_back(IVM);
     }
   }

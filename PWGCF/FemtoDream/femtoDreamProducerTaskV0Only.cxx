@@ -93,7 +93,7 @@ struct femtoDreamProducerTaskV0Only {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
-
+  Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   FemtoDreamV0Selection v0Cuts;
   /// \todo Labeled array (see Track-Track task)
 
@@ -152,6 +152,8 @@ struct femtoDreamProducerTaskV0Only {
       v0Cuts.setChildPIDSpecies(femtoDreamV0Selection::kNegTrack, ConfV0DaughTPIDspecies);
       v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
+      v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack, ConfRejectNotPropagatedTracks);
+      v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kNegTrack, ConfRejectNotPropagatedTracks);
     }
   }
 

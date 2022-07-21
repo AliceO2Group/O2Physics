@@ -33,7 +33,7 @@ struct HFLcCandidateSelector {
 
   Configurable<double> d_pTCandMin{"d_pTCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> d_pTCandMax{"d_pTCandMax", 36., "Upper bound of candidate pT"};
-  Configurable<bool> d_FilterPID{"d_FilterPID", true, "Bool to use or not the PID at filtering level"};
+  Configurable<bool> d_FilterPID{"d_FilterPID", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
   // TPC
   Configurable<double> d_pidTPCMinpT{"d_pidTPCMinpT", 0.1, "Lower bound of track pT for TPC PID"};
   Configurable<double> d_pidTPCMaxpT{"d_pidTPCMaxpT", 1., "Upper bound of track pT for TPC PID"};
@@ -45,6 +45,10 @@ struct HFLcCandidateSelector {
   Configurable<double> d_pidTOFMaxpT{"d_pidTOFMaxpT", 2.5, "Upper bound of track pT for TOF PID"};
   Configurable<double> d_nSigmaTOF{"d_nSigmaTOF", 3., "Nsigma cut on TOF only"};
   Configurable<double> d_nSigmaTOFCombined{"d_nSigmaTOFCombined", 5., "Nsigma cut on TOF combined with TPC"};
+  // Bayesian
+  Configurable<bool> d_BayesPID{"d_BayesPID", true, "Bool to use or not the PID based on Bayesian probability cut at filtering level"};
+  Configurable<double> d_pidBayesMinpT{"d_pidBayesMinpT", 0., "Lower bound of track pT for Bayesian PID"};
+  Configurable<double> d_pidBayesMaxpT{"d_pidBayesMaxpT", 100, "Upper bound of track pT for Bayesian PID"};
   // topological cuts
   Configurable<std::vector<double>> pTBins{"pTBins", std::vector<double>{hf_cuts_lc_topkpi::pTBins_v}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"Lc_to_p_K_pi_cuts", {hf_cuts_lc_topkpi::cuts[0], npTBins, nCutVars, pTBinLabels, cutVarLabels}, "Lc candidate selection per pT bin"};
@@ -132,7 +136,9 @@ struct HFLcCandidateSelector {
     return true;
   }
 
-  void process(aod::HfCandProng3 const& candidates, aod::BigTracksPID const&)
+  using TrksPID = soa::Join<aod::BigTracksPID, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+
+  void process(aod::HfCandProng3 const& candidates, TrksPID const&)
   {
     TrackSelectorPID selectorPion(kPiPlus);
     selectorPion.setRangePtTPC(d_pidTPCMinpT, d_pidTPCMaxpT);
@@ -141,6 +147,7 @@ struct HFLcCandidateSelector {
     selectorPion.setRangePtTOF(d_pidTOFMinpT, d_pidTOFMaxpT);
     selectorPion.setRangeNSigmaTOF(-d_nSigmaTOF, d_nSigmaTOF);
     selectorPion.setRangeNSigmaTOFCondTPC(-d_nSigmaTOFCombined, d_nSigmaTOFCombined);
+    selectorPion.setRangePtBayes(d_pidBayesMinpT, d_pidBayesMaxpT);
 
     TrackSelectorPID selectorKaon(selectorPion);
     selectorKaon.setPDG(kKPlus);
@@ -160,9 +167,9 @@ struct HFLcCandidateSelector {
         continue;
       }
 
-      auto trackPos1 = candidate.index0_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.index1_as<aod::BigTracksPID>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.index2_as<aod::BigTracksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.index0_as<TrksPID>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.index1_as<TrksPID>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.index2_as<TrksPID>(); // positive daughter (negative for the antiparticles)
 
       /*
       // daughter track validity selection
@@ -192,6 +199,8 @@ struct HFLcCandidateSelector {
 
       auto pidLcpKpi = -1;
       auto pidLcpiKp = -1;
+      auto pidBayesLcpKpi = -1;
+      auto pidBayesLcpiKp = -1;
 
       if (!d_FilterPID) {
         // PID non applied
@@ -225,15 +234,51 @@ struct HFLcCandidateSelector {
         }
       }
 
+      if (!d_BayesPID) {
+        // PID non applied
+        pidBayesLcpKpi = 1;
+        pidBayesLcpiKp = 1;
+      } else {
+        int pidBayesTrackPos1Proton = selectorProton.getStatusTrackBayesPID(trackPos1);
+        int pidBayesTrackPos2Proton = selectorProton.getStatusTrackBayesPID(trackPos2);
+        int pidBayesTrackPos1Pion = selectorPion.getStatusTrackBayesPID(trackPos1);
+        int pidBayesTrackPos2Pion = selectorPion.getStatusTrackBayesPID(trackPos2);
+        int pidBayesTrackNegKaon = selectorKaon.getStatusTrackBayesPID(trackNeg);
+
+        if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDAccepted &&
+            pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+            pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
+          pidBayesLcpKpi = 1; // accept LcpKpi
+        } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Status::PIDRejected ||
+                   pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
+                   pidBayesTrackPos2Pion == TrackSelectorPID::Status::PIDRejected) {
+          pidBayesLcpKpi = 0; // exclude LcpKpi
+        }
+        if (pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDAccepted &&
+            pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+            pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted) {
+          pidBayesLcpiKp = 1; // accept LcpiKp
+        } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Status::PIDRejected ||
+                   pidBayesTrackNegKaon == TrackSelectorPID::Status::PIDRejected ||
+                   pidBayesTrackPos2Proton == TrackSelectorPID::Status::PIDRejected) {
+          pidBayesLcpiKp = 0; // exclude LcpiKp
+        }
+      }
+
       if (pidLcpKpi == 0 && pidLcpiKp == 0) {
         hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
         continue;
       }
 
-      if ((pidLcpKpi == -1 || pidLcpKpi == 1) && topolLcpKpi) {
+      if (pidBayesLcpKpi == 0 && pidBayesLcpiKp == 0) {
+        hfSelLcCandidate(statusLcpKpi, statusLcpiKp);
+        continue;
+      }
+
+      if ((pidLcpKpi == -1 || pidLcpKpi == 1) && (pidBayesLcpKpi == -1 || pidBayesLcpKpi == 1) && topolLcpKpi) {
         statusLcpKpi = 1; // identified as LcpKpi
       }
-      if ((pidLcpiKp == -1 || pidLcpiKp == 1) && topolLcpiKp) {
+      if ((pidLcpiKp == -1 || pidLcpiKp == 1) && (pidBayesLcpiKp == -1 || pidBayesLcpiKp == 1) && topolLcpiKp) {
         statusLcpiKp = 1; // identified as LcpiKp
       }
 

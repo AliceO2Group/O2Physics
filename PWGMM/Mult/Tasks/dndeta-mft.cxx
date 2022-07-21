@@ -33,6 +33,7 @@ using namespace o2::framework::expressions;
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec MultAxis = {301, -0.5, 300.5};
+AxisSpec ZAxis = {301, -30.1, 30.1};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -47,12 +48,12 @@ struct PseudorapidityDensityMFT {
   HistogramRegistry registry{
     "registry",
     {
-      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}}, //
-      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}},        //
-      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {18, -4.6, -1.}}}},         //
-      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}},                       //
-      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                                       //
-    }                                                                                                                //
+      {"EventsNtrkZvtx", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}},      //
+      {"TracksEtaZvtx", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, ZAxis}}},             //
+      {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {18, -4.6, -1.}}}}, //
+      {"TracksPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}},               //
+      {"EventSelection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}}                               //
+    }                                                                                                        //
   };
 
   void init(InitContext&)
@@ -68,16 +69,16 @@ struct PseudorapidityDensityMFT {
     x->SetBinLabel(7, "BCs with pile-up/splitting");
 
     if (doprocessGen) {
-      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}});
-      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, {201, -20.1, 20.1}}}});
-      registry.add({"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}});
-      registry.add({"TracksEtaZvtxGen_t", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, {201, -20.1, 20.1}}}});
+      registry.add({"EventsNtrkZvtxGen", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
+      registry.add({"EventsNtrkZvtxGen_t", "; N_{trk}; Z_{vtx}; events", {HistType::kTH2F, {{301, -0.5, 300.5}, ZAxis}}});
+      registry.add({"TracksEtaZvtxGen", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, ZAxis}}});
+      registry.add({"TracksEtaZvtxGen_t", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{18, -4.6, -1.}, ZAxis}}});
       registry.add({"TracksPhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {18, -4.6, -1.}}}});
       registry.add({"TracksToPartPtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}}); //
       registry.add({"TracksPtEtaGen", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});
       registry.add({"TracksPtEtaGen_t", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, {18, -4.6, -1.}}}});
       registry.add({"EventEfficiency", "; status; events", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
-      registry.add({"NotFoundEventZvtx", " ; Z_{vtx}", {HistType::kTH1F, {{201, -20.1, 20.1}}}});
+      registry.add({"NotFoundEventZvtx", " ; Z_{vtx}", {HistType::kTH1F, {ZAxis}}});
       registry.add({"EventsZposDiff", " ; Z_{rec} - Z_{gen} (cm)", {HistType::kTH1F, {DeltaZAxis}}});
       registry.add({"EventsSplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
 

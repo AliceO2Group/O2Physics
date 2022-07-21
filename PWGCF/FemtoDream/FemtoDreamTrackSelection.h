@@ -59,7 +59,8 @@ enum TrackContainerPosition {
 class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDreamTrackSelection::TrackSel>
 {
  public:
-  FemtoDreamTrackSelection() : nPtMinSel(0),
+  FemtoDreamTrackSelection() : nRejectNotPropagatedTracks(false),
+                               nPtMinSel(0),
                                nPtMaxSel(0),
                                nEtaSel(0),
                                nTPCnMinSel(0),
@@ -193,7 +194,13 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
     return nSigmaPIDMax;
   }
 
+  void setRejectNotPropagatedTracks(bool reject)
+  {
+    nRejectNotPropagatedTracks = reject;
+  }
+
  private:
+  bool nRejectNotPropagatedTracks;
   int nPtMinSel;
   int nPtMaxSel;
   int nEtaSel;
@@ -415,7 +422,7 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   if (nDCAMinSel > 0 && std::abs(dca) < dcaMin) {
     return false;
   }
-  if (std::abs(dca) > 1e3) {
+  if (nRejectNotPropagatedTracks && std::abs(dca) > 1e3) {
     return false;
   }
 

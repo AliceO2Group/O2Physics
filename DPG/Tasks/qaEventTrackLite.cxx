@@ -30,6 +30,10 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include "TF1.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -67,6 +71,10 @@ struct qaEventTrackLite {
   Configurable<float> nCrossedRowsTpcOverFindableClustersTpcMin{"nCrossedRowsTpcOverFindableClustersTpcMin", -1, "Minimum ratio between TPC crossed rows and findable clusters"};
   Configurable<float> chi2TpcMin{"chi2TpcMin", -1001.f, "Max TPC chi2"};
   Configurable<float> chi2TpcMax{"chi2TpcMax", 1000.f, "Max TPC chi2"};
+  Configurable<std::string> tpcSplinesPeriod{"tpcSplinesPeriod", std::string(""), "Period of used TPC dEdx splines"};
+  Configurable<bool> b_tpcResProton{"b_tpcResProton", false, "Do TPC dEdx residuals around proton hypothesis"};
+  Configurable<bool> b_tpcResKaon{"b_tpcResKaon", false, "Do TPC dEdx residuals around kaon hypothesis"};
+  Configurable<bool> b_tpcResPion{"b_tpcResPion", false, "Do TPC dEdx residuals around pion hypothesis"};
   // TOF selections
   Configurable<float> chi2TofMin{"chi2TofMin", -1001.f, "Max TOF chi2"};
   Configurable<float> lengthMin{"lengthMin", -1001.f, "Min length"};
@@ -109,12 +117,79 @@ struct qaEventTrackLite {
   Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection, 1 defines pi,K,p,mu,e, 2 all final-state charged particles including light (hyper)nuclei"};
   Configurable<bool> checkPdgAtReco{"checkPdgAtReco", false, "check pdg code also at reco levo for data-like reference"};
 
+  // TPC dEdx splines
+  struct BBAleph {
+
+    // --- data members ---
+    double mMip = 0;
+    std::vector<double> mBetheBlockAleph = {0., 0., 0., 0., 0.};
+    double mChargeFactor = 0;
+    bool initBBok = false;
+
+    // --- functions ---
+    double operator()(double* x, double* par)
+    {
+      /// === Parameters ===
+      ///  [0]: mass
+      ///  [1]: charge
+      ///
+      /// From A. Kalteyer:
+      /// const float bethe = mMIP
+      ///                   * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id]
+      ///                   , mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4])
+      ///                   * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
+      ///
+      return initBBok ? mMip * o2::tpc::BetheBlochAleph(x[0] / par[0], mBetheBlockAleph[0], mBetheBlockAleph[1], mBetheBlockAleph[2], mBetheBlockAleph[3], mBetheBlockAleph[4]) * std::pow(par[1], mChargeFactor) : 0.;
+    }
+    void setUpBetheBlockAleph(std::string str_case)
+    {
+      if (str_case.find("LHC22c") != std::string::npos) {
+        // From A. Kalteyer (2022 Jul 18)
+        mMip = 52.35295;
+        mChargeFactor = 4.382516;
+        mBetheBlockAleph[0] = 0.038508328324810444;
+        mBetheBlockAleph[1] = 20.173734667349745;
+        mBetheBlockAleph[2] = 7.811839314098901e-10;
+        mBetheBlockAleph[3] = 2.3572347501513162;
+        mBetheBlockAleph[4] = 3.896773574265881;
+        initBBok = true;
+      } else if (str_case.find("LHC22d") != std::string::npos) {
+        // From A. Kalteyer (2022 Jul 18)
+        mMip = 52.35295;
+        mChargeFactor = 4.382516;
+        mBetheBlockAleph[0] = 0.0370972540453123;
+        mBetheBlockAleph[1] = 21.29155104648775;
+        mBetheBlockAleph[2] = 1.2702695962030138e-10;
+        mBetheBlockAleph[3] = 2.3297081952872936;
+        mBetheBlockAleph[4] = 4.1832594396288725;
+        initBBok = true;
+      } else {
+        LOG(info) << "===> WARNING: no Bethe Block parameters defined for " << str_case << ". Ignoring it." << std::endl;
+        return;
+      }
+      LOG(info) << "=== Bethe Block Alep parametrization loaded for period " << str_case << ":" << std::endl;
+      LOG(info) << "mMip                = " << mMip << std::endl;
+      LOG(info) << "mChargeFactor       = " << mChargeFactor << std::endl;
+      LOG(info) << "mBetheBlockAleph[0] = " << mBetheBlockAleph[0] << std::endl;
+      LOG(info) << "mBetheBlockAleph[1] = " << mBetheBlockAleph[1] << std::endl;
+      LOG(info) << "mBetheBlockAleph[2] = " << mBetheBlockAleph[2] << std::endl;
+      LOG(info) << "mBetheBlockAleph[3] = " << mBetheBlockAleph[3] << std::endl;
+      LOG(info) << "mBetheBlockAleph[4] = " << mBetheBlockAleph[4] << std::endl;
+      LOG(info) << "initBBok            = " << initBBok << std::endl;
+    }
+  };
+  BBAleph betheBlock;
+  TF1 funcBBpion, funcBBkaon, funcBBproton; // TPC dEdx splines
+
   void init(InitContext const&)
   {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axis1overPt{bins1overPt, "1/#it{p}_{T} (GeV/c)^{-1}"};
     const AxisSpec axisEta{binsEta, "#it{#eta}"};
     const AxisSpec axisPhi{binsPhi, "#it{#phi} (rad)"};
+
+    // TPC dEdx splines
+    betheBlock.setUpBetheBlockAleph(tpcSplinesPeriod);
 
     // kine histograms
     histos.add("Tracks/VertexPositionZ", "", kTH1D, {{100, -20.f, 20.f, "Vertex Z (cm)"}});
@@ -150,6 +225,35 @@ struct qaEventTrackLite {
     histos.add("Tracks/TPC/TPCnClstvsEtavsPt", "profile2D;", kTProfile2D, {axisEta, axisPt});
     histos.add("Tracks/TPC/dEdxvsP", "", kTH2D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {500, 0, 1000, "d#it{E}/d#it{x} (a.u.)"}});
     histos.add("Tracks/TPC/dEdxvsPvsEta", "", kTH3D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {20, -2, 2, "#it{#eta}"}, {500, 0, 1000, "d#it{E}/d#it{x} (a.u.)"}});
+    if (betheBlock.initBBok) {
+      if (b_tpcResProton) {
+        // Bethe-Block parametrization proton
+        funcBBproton = TF1("funcBBproton", betheBlock, 0.1, 20, 3);
+        funcBBproton.SetParameter(0, o2::track::pid_constants::sMasses[o2::track::PID::Proton]);  // mass
+        funcBBproton.SetParameter(1, o2::track::pid_constants::sCharges[o2::track::PID::Proton]); // electric charge (units of e)
+        // histograms of residuals
+        histos.add("Tracks/TPC/dEdxvsPproton", "", kTH2D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {500, -100, 100, "d#it{E}/d#it{x}-d#it{E}/d#it{x}|_{proton} (a.u.)"}});
+        histos.add("Tracks/TPC/dEdxvsPprotonvsEta", "", kTH3D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {20, -2, 2, "#it{#eta}"}, {500, -100, 100, "d#it{E}/d#it{x}-d#it{E}/d#it{x}|_{proton} (a.u.)"}});
+      }
+      if (b_tpcResKaon) {
+        // Bethe-Block parametrization kaon
+        funcBBkaon = TF1("funcBBkaon", betheBlock, 0.1, 20, 3);
+        funcBBkaon.SetParameter(0, o2::track::pid_constants::sMasses[o2::track::PID::Kaon]);  // mass
+        funcBBkaon.SetParameter(1, o2::track::pid_constants::sCharges[o2::track::PID::Kaon]); // electric charge (units of e)
+        // histograms of residuals
+        histos.add("Tracks/TPC/dEdxvsPkaon", "", kTH2D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {500, -100, 100, "d#it{E}/d#it{x}-d#it{E}/d#it{x}|_{kaon} (a.u.)"}});
+        histos.add("Tracks/TPC/dEdxvsPkaonvsEta", "", kTH3D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {20, -2, 2, "#it{#eta}"}, {500, -100, 100, "d#it{E}/d#it{x}-d#it{E}/d#it{x}|_{kaon} (a.u.)"}});
+      }
+      if (b_tpcResPion) {
+        // Bethe-Block parametrization pion
+        funcBBpion = TF1("funcBBpion", betheBlock, 0.1, 20, 3);
+        funcBBpion.SetParameter(0, o2::track::pid_constants::sMasses[o2::track::PID::Pion]);  // mass
+        funcBBpion.SetParameter(1, o2::track::pid_constants::sCharges[o2::track::PID::Pion]); // electric charge (units of e)
+        // histograms of residuals
+        histos.add("Tracks/TPC/dEdxvsPpion", "", kTH2D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {500, -100, 100, "d#it{E}/d#it{x}-d#it{E}/d#it{x}|_{pion} (a.u.)"}});
+        histos.add("Tracks/TPC/dEdxvsPpionvsEta", "", kTH3D, {{5000, 0, 10, "#it{p} (GeV/#it{c})"}, {20, -2, 2, "#it{#eta}"}, {500, -100, 100, "d#it{E}/d#it{x}-d#it{E}/d#it{x}|_{pion} (a.u.)"}});
+      }
+    }
     // trd histograms
     histos.add("Tracks/TRD/trdChi2", "chi2 in TRD", kTH1D, {{100, 0, 10, "chi2 / cluster TRD"}});
     // tof histograms
@@ -277,8 +381,24 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/TPC/tpcNClsFoundvsPt"), track.pt(), track.tpcNClsFound());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsvsPt"), track.pt(), track.tpcNClsCrossedRows());
     histos.fill(HIST("Tracks/TPC/tpcCrossedRowsOverFindableClsvsPt"), track.pt(), track.tpcCrossedRowsOverFindableCls());
-    histos.fill(HIST("Tracks/TPC/dEdxvsP"), track.pt() / (sin(2 * atan2(1, exp(track.eta())))), track.tpcSignal());
-    histos.fill(HIST("Tracks/TPC/dEdxvsPvsEta"), track.pt() / (sin(2 * atan2(1, exp(track.eta())))), track.eta(), track.tpcSignal());
+    const double p = track.pt() / (sin(2 * atan2(1, exp(track.eta()))));
+    histos.fill(HIST("Tracks/TPC/dEdxvsP"), p, track.tpcSignal());
+    histos.fill(HIST("Tracks/TPC/dEdxvsPvsEta"), p, track.eta(), track.tpcSignal());
+    if (betheBlock.initBBok) {
+      auto tpcdEdxRes = [&](TF1 func) { return track.tpcSignal() - func.Eval(p); };
+      if (b_tpcResProton) {
+        histos.fill(HIST("Tracks/TPC/dEdxvsPproton"), p, tpcdEdxRes(funcBBproton));
+        histos.fill(HIST("Tracks/TPC/dEdxvsPprotonvsEta"), p, track.eta(), tpcdEdxRes(funcBBproton));
+      }
+      if (b_tpcResKaon) {
+        histos.fill(HIST("Tracks/TPC/dEdxvsPkaon"), p, tpcdEdxRes(funcBBkaon));
+        histos.fill(HIST("Tracks/TPC/dEdxvsPkaonvsEta"), p, track.eta(), tpcdEdxRes(funcBBkaon));
+      }
+      if (b_tpcResPion) {
+        histos.fill(HIST("Tracks/TPC/dEdxvsPpion"), p, tpcdEdxRes(funcBBpion));
+        histos.fill(HIST("Tracks/TPC/dEdxvsPpionvsEta"), p, track.eta(), tpcdEdxRes(funcBBpion));
+      }
+    }
     histos.fill(HIST("Tracks/TRD/trdChi2"), track.trdChi2());
     histos.fill(HIST("Tracks/TOF/tofChi2"), track.tofChi2());
     if (track.hasTPC()) {
