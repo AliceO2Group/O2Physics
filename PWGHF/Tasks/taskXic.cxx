@@ -92,7 +92,7 @@ struct HfTaskXic {
 
   Partition<soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>> selectedXicCandidates = aod::hf_selcandidate_xic::isSelXicToPKPi >= d_selectionFlagXic || aod::hf_selcandidate_xic::isSelXicToPiKP >= d_selectionFlagXic;
 
-  void process(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate>& candidates)
+  void process(soa::Join<aod::HfCandProng3, aod::HFSelXicToPKPiCandidate> const& candidates)
   {
     for (auto& candidate : selectedXicCandidates) {
       if (!(candidate.hfflag() & 1 << DecayType::XicToPKPi)) {
@@ -219,5 +219,5 @@ struct HfTaskXic {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskXic>(cfgc, TaskName{"hf-task-xic"})};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskXic>(cfgc)};
 }
