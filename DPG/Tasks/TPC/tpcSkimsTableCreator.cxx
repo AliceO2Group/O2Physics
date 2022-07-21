@@ -26,6 +26,9 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "tpcSkimsTableCreator.h"
 /// ROOT
 #include "TRandom3.h"
 #include <cmath>
@@ -36,66 +39,10 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::dataformats;
 
-// void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-// {
-//   std::vector<ConfigParamSpec> options{// runtime customisation goes here
-//                                        {"useV0", VariantType::Int, 0, {"Use V0 information for QA"}}};
-//   std::swap(workflowOptions, options);
-// }
-
-namespace o2::aod
-{
-namespace tpcskims
-{
-DECLARE_SOA_COLUMN(InvDeDxExpV0, invdEdxExpV0, float);
-DECLARE_SOA_COLUMN(InvDeDxExpTPC, invdEdxExpTPC, float);
-DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(BetaGamma, bg, float);
-DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
-DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
-DECLARE_SOA_COLUMN(PidIndex, pidIndexTPC, uint8_t);
-DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
-DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
-} // namespace tpcskims
-DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
-                  o2::aod::track::TPCSignal,
-                  tpcskims::InvDeDxExpV0,
-                  o2::aod::track::TPCInnerParam,
-                  o2::aod::track::Tgl,
-                  o2::aod::track::Signed1Pt,
-                  o2::aod::track::Eta,
-                  o2::aod::track::Phi,
-                  o2::aod::track::Y,
-                  tpcskims::Mass,
-                  tpcskims::BetaGamma,
-                  tpcskims::NormMultTPC,
-                  tpcskims::NormNClustersTPC,
-                  tpcskims::PidIndex,
-                  tpcskims::NSigTPC,
-                  tpcskims::NSigTOF);
-
-DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
-                  o2::aod::track::TPCSignal,
-                  tpcskims::InvDeDxExpTPC,
-                  o2::aod::track::TPCInnerParam,
-                  o2::aod::track::Tgl,
-                  o2::aod::track::Signed1Pt,
-                  o2::aod::track::Eta,
-                  o2::aod::track::Phi,
-                  o2::aod::track::Y,
-                  tpcskims::Mass,
-                  tpcskims::BetaGamma,
-                  tpcskims::NormMultTPC,
-                  tpcskims::NormNClustersTPC,
-                  tpcskims::PidIndex,
-                  tpcskims::NSigTPC,
-                  tpcskims::NSigTOF);
-} // namespace o2::aod
-
 struct TreeWriterTpcV0 {
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults>;
+  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
   /// Tables to be produced
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
@@ -104,6 +51,7 @@ struct TreeWriterTpcV0 {
   Configurable<float> cutPAV0{"cutPAV0", 0., "Cut on the cos(pointing angle) of the decay"};
   Configurable<float> nSigmaTOFdautrack{"nSigmaTOFdautrack", 5., "n-sigma TOF cut on the daughter tracks. Set 0 to switch it off."};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactor_Pi{"dwnSmplFactor_Pi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactor_Pr{"dwnSmplFactor_Pr", 1., "downsampling factor for protons, default fraction to keep is 1."};
@@ -293,8 +241,9 @@ struct TreeWriterTpcV0 {
     return true;
   }
 
-  template <typename T, typename C>
-  void fillSkimmedV0Table(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, double dwnSmplFactor)
+  /// Funktion to fill skimmed tables
+  template <typename T, typename C, typename V0>
+  void fillSkimmedV0Table(V0 const& v0, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, double dwnSmplFactor)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -302,6 +251,11 @@ struct TreeWriterTpcV0 {
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
+
+    const float alpha = v0.alpha();
+    const float qt = v0.qtarm();
+    const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    const float pT = v0.pt();
 
     double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -319,7 +273,11 @@ struct TreeWriterTpcV0 {
                  std::sqrt(nClNorm / ncl),
                  id,
                  nSigmaTPC,
-                 nSigmaTOF);
+                 nSigmaTOF,
+                 alpha,
+                 qt,
+                 cosPA,
+                 pT);
     }
   };
 
@@ -348,12 +306,33 @@ struct TreeWriterTpcV0 {
     return triggerMask;
   };
 
+  /// Event selection
+  template <typename CollisionType, typename TrackType>
+  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
+  {
+    if (applyEvSel == 1) {
+      if (!collision.sel7()) {
+        return false;
+      }
+    } else if (applyEvSel == 2) {
+      if (!collision.sel8()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   void init(o2::framework::InitContext& initContext)
   {
   }
 
   void process(Coll::iterator const& collision, Trks const& tracks, aod::V0Datas const& v0s)
   {
+    /// Check event slection
+    if (!isEventSelected(collision, tracks)) {
+      return;
+    }
+
     rowTPCTree.reserve(tracks.size());
 
     /// Loop over v0 candidates
@@ -363,37 +342,37 @@ struct TreeWriterTpcV0 {
       /// Fill table for Kaons
       if (selectionKaon(collision, v0)) {
         if (selectionPion(posTrack)) {
-          fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
         if (selectionPion(negTrack)) {
-          fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
       }
       /// Fill table for Lambdas
       if (selectionLambda(collision, v0)) {
         if (selectionProton(posTrack)) {
-          fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(), o2::track::PID::Proton, dwnSmplFactor_Pr);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
         }
         if (selectionPion(negTrack)) {
-          fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
       }
       /// Fill table for Antilambdas
       if (selectionAntiLambda(collision, v0)) {
         if (selectionPion(posTrack)) {
-          fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
         }
         if (selectionProton(negTrack)) {
-          fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(), o2::track::PID::Proton, dwnSmplFactor_Pr);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(negTrack.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
         }
       }
       /// Fill table for Gammas
       if (selectionGamma(collision, v0)) {
         if (selectionElectron(posTrack)) {
-          fillSkimmedV0Table(posTrack, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(), o2::track::PID::Electron, dwnSmplFactor_El);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(posTrack.tpcSignal()), o2::track::PID::Electron, dwnSmplFactor_El);
         }
         if (selectionElectron(negTrack)) {
-          fillSkimmedV0Table(negTrack, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(), o2::track::PID::Electron, dwnSmplFactor_El);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(negTrack.tpcSignal()), o2::track::PID::Electron, dwnSmplFactor_El);
         }
       }
     } /// Loop V0 candidates
@@ -402,13 +381,14 @@ struct TreeWriterTpcV0 {
 
 struct TreeWriterTPCTOF {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
-  using Coll = soa::Join<aod::Collisions, aod::Mults>;
+  using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
   /// Tables to be produced
   Produces<o2::aod::SkimmedTPCTOFTree> rowTPCTOFTree;
 
   /// Configurables
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   /// Proton
   Configurable<float> maxMomTPCOnlyPr{"maxMomTPCOnlyPr", 0.6, "Maximum momentum for TPC only cut proton"};
   Configurable<float> nSigmaTPCOnlyPr{"nSigmaTPCOnlyPr", 4., "number of sigma for TPC only cut proton"};
@@ -462,6 +442,7 @@ struct TreeWriterTPCTOF {
     }
   };
 
+  /// Function to fill trees
   template <typename T, typename C>
   void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, double dwnSmplFactor)
   {
@@ -492,30 +473,71 @@ struct TreeWriterTPCTOF {
     }
   };
 
+  /// Event selection
+  template <typename CollisionType, typename TrackType>
+  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
+  {
+    if (applyEvSel == 1) {
+      if (!collision.sel7()) {
+        return false;
+      }
+    } else if (applyEvSel == 2) {
+      if (!collision.sel8()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  /// Track selection
+  template <typename CollisionType, typename TrackType>
+  bool isTrackSelected(const CollisionType& collision, const TrackType& track)
+  {
+    if (!track.isGlobalTrack()) { // Skipping non global tracks
+      return false;
+    }
+    if (!track.hasITS()) { // Skipping tracks without ITS
+      return false;
+    }
+    if (!track.hasTPC()) { // Skipping tracks without TPC
+      return false;
+    }
+    return true;
+  };
+
   void init(o2::framework::InitContext& initContext)
   {
   }
   void process(Coll::iterator const& collision, Trks const& tracks)
   {
+    /// Check event selection
+    if (!isEventSelected(collision, tracks)) {
+      return;
+    }
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
+
+      /// Check track selection
+      if (!isTrackSelected(collision, trk)) {
+        continue;
+      }
       /// Fill tree for protons
       if (trk.tpcInnerParam() < maxMomTPCOnlyPr && abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(), o2::track::PID::Proton, dwnSmplFactor_Pr);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
       } else if (trk.tpcInnerParam() > maxMomTPCOnlyPr && abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(), o2::track::PID::Proton, dwnSmplFactor_Pr);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
       }
       /// Fill tree for kaons
       if (trk.tpcInnerParam() < maxMomTPCOnlyKa && abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(), o2::track::PID::Kaon, dwnSmplFactor_Ka);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, dwnSmplFactor_Ka);
       } else if (trk.tpcInnerParam() > maxMomTPCOnlyKa && abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(), o2::track::PID::Kaon, dwnSmplFactor_Ka);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, dwnSmplFactor_Ka);
       }
       /// Fill tree pions
       if (trk.tpcInnerParam() < maxMomTPCOnlyPi && abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
       } else if (trk.tpcInnerParam() > maxMomTPCOnlyPi && abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(), o2::track::PID::Pion, dwnSmplFactor_Pi);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
       }
     } /// Loop tracks
   }   /// process
@@ -523,11 +545,7 @@ struct TreeWriterTPCTOF {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  // const int useV0 = cfgc.options().get<int>("useV0");
   auto workflow = WorkflowSpec{adaptAnalysisTask<TreeWriterTPCTOF>(cfgc)};
   workflow.push_back(adaptAnalysisTask<TreeWriterTpcV0>(cfgc));
-  // if (useV0) {
-
-  // }
   return workflow;
 }

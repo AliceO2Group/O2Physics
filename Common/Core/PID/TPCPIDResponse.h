@@ -104,10 +104,10 @@ template <typename TrackType>
 inline float Response::GetExpectedSignal(const TrackType& track, const o2::track::PID::ID id) const
 {
   if (!track.hasTPC()) {
-    return 0.f;
+    return -999.f;
   }
   const float bethe = mMIP * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
-  return bethe >= 0.f ? bethe : 0.f;
+  return bethe >= 0.f ? bethe : -999.f;
 }
 
 /// Gets the expected resolution of the measurement
@@ -115,12 +115,12 @@ template <typename CollisionType, typename TrackType>
 inline float Response::GetExpectedSigma(const CollisionType& collision, const TrackType& track, const o2::track::PID::ID id) const
 {
   if (!track.hasTPC()) {
-    return 0.f;
+    return -999.f;
   }
   float resolution = 0.;
   if (mUseDefaultResolutionParam) {
     const float reso = track.tpcSignal() * mResolutionParamsDefault[0] * ((float)track.tpcNClsFound() > 0 ? std::sqrt(1. + mResolutionParamsDefault[1] / (float)track.tpcNClsFound()) : 1.f);
-    reso >= 0.f ? resolution = reso : resolution = 0.f;
+    reso >= 0.f ? resolution = reso : resolution = -999.f;
   } else {
 
     const double ncl = nClNorm / track.tpcNClsFound(); //
@@ -133,7 +133,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
     const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), collision.multTPC() / mMultNormalization};
 
     const float reso = sqrt(pow(mResolutionParams[0], 2) * values[0] + pow(mResolutionParams[1], 2) * (values[2] * mResolutionParams[5]) * pow(values[0] / sqrt(1 + pow(values[1], 2)), mResolutionParams[2]) + values[2] * pow(values[3], 2) + pow(mResolutionParams[4] * values[4], 2) + pow(values[5] * mResolutionParams[6], 2) + pow(values[5] * (values[0] / sqrt(1 + pow(values[1], 2))) * mResolutionParams[7], 2)) * dEdx * mMIP;
-    reso >= 0.f ? resolution = reso : resolution = 0.f;
+    reso >= 0.f ? resolution = reso : resolution = -999.f;
   }
   return resolution;
 }
@@ -143,6 +143,9 @@ template <typename CollisionType, typename TrackType>
 inline float Response::GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const
 {
   if (GetExpectedSigma(collision, trk, id) < 0.) {
+    return -999.f;
+  }
+  if (GetExpectedSignal(trk, id) < 0.) {
     return -999.f;
   }
   if (!trk.hasTPC()) {
@@ -155,6 +158,12 @@ inline float Response::GetNumberOfSigma(const CollisionType& collision, const Tr
 template <typename TrackType>
 inline float Response::GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const
 {
+  if (GetExpectedSignal(trk, id) < 0.) {
+    return -999.f;
+  }
+  if (!trk.hasTPC()) {
+    return -999.f;
+  }
   return (trk.tpcSignal() - GetExpectedSignal(trk, id));
 }
 
