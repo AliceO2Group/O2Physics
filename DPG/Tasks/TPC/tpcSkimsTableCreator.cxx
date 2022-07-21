@@ -98,7 +98,7 @@ struct TreeWriterTpcV0 {
     const float alpha = v0.alpha();
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-    const float q_K = {cutAPK0pinner * sqrt(abs(1 - ((alpha * alpha) / (cutAPK0alinner * cutAPK0alinner))))};
+    const float q_K = {cutAPK0pinner * std::sqrt(std::abs(1 - ((alpha * alpha) / (cutAPK0alinner * cutAPK0alinner))))};
     /// Armenteros-Podolanski cut
     if ((qt < cutQTK0min) || (qt > cutQTK0max) || (qt < q_K)) {
       return false;
@@ -108,7 +108,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Invariant mass cut
-    if (abs(v0.mK0Short() - 0.497611) > invariantMassCutK0Short) {
+    if (std::abs(v0.mK0Short() - 0.497611) > invariantMassCutK0Short) {
       return false;
     }
 
@@ -120,7 +120,7 @@ struct TreeWriterTpcV0 {
   bool selectionPion(T const& track)
   {
     /// TOF cut daughter tracks
-    if (nSigmaTOFdautrack != 0. && abs(track.tofNSigmaPi()) > nSigmaTOFdautrack) {
+    if (nSigmaTOFdautrack != 0. && std::abs(track.tofNSigmaPi()) > nSigmaTOFdautrack) {
       return false;
     }
     /// Pion downsampling
@@ -140,7 +140,7 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    const float q_L = cutAPL0 * sqrt(abs(1 - (((alpha - cutAPL1) * (alpha - cutAPL1)) / (cutAPL2 * cutAPL2))));
+    const float q_L = cutAPL0 * std::sqrt(std::abs(1 - (((alpha - cutAPL1) * (alpha - cutAPL1)) / (cutAPL2 * cutAPL2))));
     /// Armenteros-Podolanski cut
     if ((alpha < cutAlphaminL) || (alpha > cutAlphamaxL) || (qt < cutQTmin) || (qt > q_L)) {
       return false;
@@ -150,7 +150,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Invariant mass cut
-    if (abs(v0.mLambda() - 1.115683) > invariantMassCutLambda) {
+    if (std::abs(v0.mLambda() - 1.115683) > invariantMassCutLambda) {
       return false;
     }
     return true;
@@ -161,7 +161,7 @@ struct TreeWriterTpcV0 {
   bool selectionProton(T const& track)
   {
     /// TOF cut daughter tracks
-    if (nSigmaTOFdautrack != 0. && abs(track.tofNSigmaPr()) > nSigmaTOFdautrack) {
+    if (nSigmaTOFdautrack != 0. && std::abs(track.tofNSigmaPr()) > nSigmaTOFdautrack) {
       return false;
     }
     /// Proton downsampling
@@ -180,7 +180,7 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
 
-    const float q_L = cutAPL0 * sqrt(abs(1 - (((alpha + cutAPL1) * (alpha + cutAPL1)) / (cutAPL2 * cutAPL2))));
+    const float q_L = cutAPL0 * std::sqrt(std::abs(1 - (((alpha + cutAPL1) * (alpha + cutAPL1)) / (cutAPL2 * cutAPL2))));
     /// Armenteros-Podolanski cut
     if ((alpha < cutAlphaminAL) || (alpha > cutAlphamaxAL) || (qt < cutQTmin) || (qt > q_L)) {
       return false;
@@ -190,7 +190,7 @@ struct TreeWriterTpcV0 {
       return false;
     }
     /// Invariant mass cut
-    if (abs(v0.mAntiLambda() - 1.115683) > invariantMassCutLambda) {
+    if (std::abs(v0.mAntiLambda() - 1.115683) > invariantMassCutLambda) {
       return false;
     }
     return true;
@@ -211,10 +211,10 @@ struct TreeWriterTpcV0 {
     }
 
     /// Armenteros-Podolanski cut
-    if ((((qt > gammaQtMax) || (TMath::Abs(alpha) > cutAlphaG1)) || ((qt > cutQTG) || (TMath::Abs(alpha) < cutAlphaG2min) || (TMath::Abs(alpha) > cutAlphaG2max)))) {
+    if ((((qt > gammaQtMax) || (std::abs(alpha) > cutAlphaG1)) || ((qt > cutQTG) || (std::abs(alpha) < cutAlphaG2min) || (std::abs(alpha) > cutAlphaG2max)))) {
       return false;
     }
-    if ((TMath::Power(alpha / gammaAsymmetryMax, 2) + TMath::Power(qt / lQtMaxPtDep, 2)) < 1) {
+    if ((std::pow(alpha / gammaAsymmetryMax, 2) + std::pow(qt / lQtMaxPtDep, 2)) < 1) {
       return false;
     }
     if (v0.v0radius() < gammaV0RadiusMin || v0.v0radius() > gammaV0RadiusMax) {
@@ -224,7 +224,7 @@ struct TreeWriterTpcV0 {
     if (cosPA < cutPAV0) {
       return false;
     }
-    if ((TMath::Abs(v0.psipair()) < gammaPsiPairMax)) {
+    if ((std::abs(v0.psipair()) < gammaPsiPairMax)) {
       return false;
     }
     return true;
@@ -423,7 +423,7 @@ struct TreeWriterTPCTOF {
   {
     const double a = 6.81, b = 59.24;
     const double c = 0.082, d = 0.151;
-    double mt = sqrt(mass * mass + pt * pt);
+    double mt = std::sqrt(mass * mass + pt * pt);
     double n = a + b / sqrts;
     double T = c + d / sqrts;
     double p0 = n * T;
@@ -528,21 +528,21 @@ struct TreeWriterTPCTOF {
         continue;
       }
       /// Fill tree for protons
-      if (trk.tpcInnerParam() < maxMomTPCOnlyPr && abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
+      if (trk.tpcInnerParam() < maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
-      } else if (trk.tpcInnerParam() > maxMomTPCOnlyPr && abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
+      } else if (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, dwnSmplFactor_Pr);
       }
       /// Fill tree for kaons
-      if (trk.tpcInnerParam() < maxMomTPCOnlyKa && abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
+      if (trk.tpcInnerParam() < maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, dwnSmplFactor_Ka);
-      } else if (trk.tpcInnerParam() > maxMomTPCOnlyKa && abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
+      } else if (trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, dwnSmplFactor_Ka);
       }
       /// Fill tree pions
-      if (trk.tpcInnerParam() < maxMomTPCOnlyPi && abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
+      if (trk.tpcInnerParam() < maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
-      } else if (trk.tpcInnerParam() > maxMomTPCOnlyPi && abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
+      } else if (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, dwnSmplFactor_Pi);
       }
     } /// Loop tracks
