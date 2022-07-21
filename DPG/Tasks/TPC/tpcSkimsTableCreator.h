@@ -36,6 +36,8 @@ DECLARE_SOA_COLUMN(AlphaV0, alphaV0, float);
 DECLARE_SOA_COLUMN(QtV0, qtV0, float);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
 DECLARE_SOA_COLUMN(PtV0, ptV0, float);
+DECLARE_SOA_COLUMN(RadiusV0, radiusV0, float);
+DECLARE_SOA_COLUMN(GammaPsiPair, gammaPsiPair, float);
 } // namespace tpcskims
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   o2::aod::track::TPCSignal,
@@ -56,7 +58,9 @@ DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   tpcskims::AlphaV0,
                   tpcskims::QtV0,
                   tpcskims::CosPAV0,
-                  tpcskims::PtV0);
+                  tpcskims::PtV0,
+                  tpcskims::RadiusV0,
+                  tpcskims::GammaPsiPair);
 
 DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   o2::aod::track::TPCSignal,

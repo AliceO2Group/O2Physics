@@ -256,8 +256,10 @@ struct TreeWriterTpcV0 {
     const float qt = v0.qtarm();
     const float cosPA = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
     const float pT = v0.pt();
+    const float v0radius = v0.v0radius();
+    const float gammapsipair = v0.psipair();
 
-    double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTree(track.tpcSignal(),
                  1. / dEdxExp,
@@ -277,7 +279,9 @@ struct TreeWriterTpcV0 {
                  alpha,
                  qt,
                  cosPA,
-                 pT);
+                 pT,
+                 v0radius,
+                 gammapsipair);
     }
   };
 
@@ -285,11 +289,11 @@ struct TreeWriterTpcV0 {
   {
     const double a = 6.81, b = 59.24;
     const double c = 0.082, d = 0.151;
-    double mt = sqrt(mass * mass + pt * pt);
-    double n = a + b / sqrts;
-    double T = c + d / sqrts;
-    double p0 = n * T;
-    double result = pow((1. + mt / p0), -n);
+    const double mt = std::sqrt(mass * mass + pt * pt);
+    const double n = a + b / sqrts;
+    const double T = c + d / sqrts;
+    const double p0 = n * T;
+    const double result = std::pow((1. + mt / p0), -n);
     return result;
   };
 
@@ -298,11 +302,13 @@ struct TreeWriterTpcV0 {
   TRandom3* fRndm = new TRandom3(0);
   int downsampleTsalisCharged(double pt, double factor1Pt, double sqrts, double mass)
   {
-    double prob = tsalisCharged(pt, mass, sqrts) * pt;
-    double probNorm = tsalisCharged(1., mass, sqrts);
+    const double prob = tsalisCharged(pt, mass, sqrts) * pt;
+    const double probNorm = tsalisCharged(1., mass, sqrts);
     int triggerMask = 0;
-    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) < factor1Pt)
+    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) < factor1Pt) {
       triggerMask = 1;
+    }
+
     return triggerMask;
   };
 
@@ -433,8 +439,8 @@ struct TreeWriterTPCTOF {
     if (factor1Pt < 0.) {
       return true;
     }
-    double prob = tsalisCharged(pt, mass, sqrts) * pt;
-    double probNorm = tsalisCharged(1., mass, sqrts);
+    const double prob = tsalisCharged(pt, mass, sqrts) * pt;
+    const double probNorm = tsalisCharged(1., mass, sqrts);
     if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
       return false;
     } else {
@@ -453,7 +459,7 @@ struct TreeWriterTPCTOF {
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
 
-    double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - (long)(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
                     1. / dEdxExp,
