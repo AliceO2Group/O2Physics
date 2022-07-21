@@ -248,6 +248,7 @@ struct HfTagSelTracks {
   // quality cut
   Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
   Configurable<bool> useIsGlobalTrack{"useIsGlobalTrack", false, "check isGlobalTrack status for tracks, for Run3 studies"};
+  Configurable<bool> useIsGlobalTrackWoDCA{"useIsGlobalTrackWoDCA", false, "check isGlobalTrackWoDCA status for tracks, for Run3 studies"};
   Configurable<int> tpcNClsFound{"tpcNClsFound", 70, ">= min. number of TPC clusters needed"};
   // pT bins for single-track cuts
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for 2-prong DCAXY pT-depentend cut"};
@@ -696,6 +697,10 @@ struct HfTagSelTracks {
         bool hasGoodQuality = true;
         if (useIsGlobalTrack) {
           if (track.isGlobalTrack() != (uint8_t) true) {
+            hasGoodQuality = false;
+          }
+        } else if (useIsGlobalTrackWoDCA) {
+          if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
             hasGoodQuality = false;
           }
         } else {

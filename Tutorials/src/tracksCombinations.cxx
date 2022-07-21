@@ -51,7 +51,7 @@ struct TrackCombinations {
 struct BinnedTrackCombinations {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-  BinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}, true};
+  ColumnBinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}, true};
 
   void process(aod::Tracks const& tracks)
   {
@@ -73,7 +73,7 @@ struct ConfigurableBinnedCollisionCombinations {
 
   void process(soa::Join<aod::Collisions, aod::Mults> const& collisions)
   {
-    using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
+    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
     BinningType colBinning{{axisVertex, axisMultiplicity}, true};
 
     int count = 0;

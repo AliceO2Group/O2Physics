@@ -115,7 +115,7 @@ struct CorrelationTask {
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using derivedCollisions = soa::Filtered<aod::CFCollisions>;
-  using BinningType = BinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
 
   void init(o2::framework::InitContext&)
   {

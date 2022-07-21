@@ -162,6 +162,7 @@ struct BcSelectionTask {
       selection[kNoPileupMV] = (eventCuts & 1 << aod::kPileUpMV) > 0;
       selection[kNoPileupTPC] = (eventCuts & 1 << aod::kTPCPileUp) > 0;
       selection[kIsTriggerTVX] = bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0;
+      selection[kIsINT1] = bbV0A || bbV0C || ofSPD > 0;
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
@@ -383,16 +384,17 @@ struct EventSelectionTask {
       sel7 &= applySelection[i] ? selection[i] : 1;
     }
 
-    // TODO apply other cuts for sel8
-    // TODO introduce sel1 etc?
     // TODO introduce array of sel[0]... sel[8] or similar?
-    bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C];
+    bool sel8 = selection[kIsBBT0A] & selection[kIsBBT0C]; // TODO apply other cuts for sel8
+    bool sel1 = selection[kIsINT1] & selection[kNoBGV0A] & selection[kNoBGV0C] & selection[kNoTPCLaserWarmUp] & selection[kNoTPCHVdip];
+
+    // INT1 (SPDFO>0 | V0A | V0C) mimimum bias trigger logic used in pp2010 and pp2011
+    bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
 
     // fill counters
-
-    if (isMC || alias[kINT7]) {
+    if (isMC || (!isINT1period && alias[kINT7]) || (isINT1period && alias[kINT1])) {
       histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
-      if (sel7) {
+      if ((!isINT1period && sel7) || (isINT1period && sel1)) {
         histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
       }
     }

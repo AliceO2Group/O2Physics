@@ -251,7 +251,7 @@ struct lambdakzerofinder {
   }
 };
 
-struct lambdakzerofinderQA {
+struct lambdakzerofinderQa {
   // Basic checks
   // Selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -277,11 +277,51 @@ struct lambdakzerofinderQA {
     },
   };
 
+  void init(InitContext const&)
+  {
+    if (doprocessRun3 && doprocessRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!doprocessRun3 && !doprocessRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
+  }
+
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   /// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& fullV0s)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision,
+                   soa::Filtered<aod::V0Datas> const& fullV0s)
+  {
+    if (!collision.sel8()) {
+      return;
+    }
+
+    Long_t lNCand = 0;
+    for (auto& v0 : fullV0s) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("hV0Radius"), v0.v0radius());
+        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+        registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
+        registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
+        registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
+
+        if (TMath::Abs(v0.yLambda()) < 0.5) {
+          registry.fill(HIST("h3dMassLambda"), collision.centFV0A(), v0.pt(), v0.mLambda());
+          registry.fill(HIST("h3dMassAntiLambda"), collision.centFV0A(), v0.pt(), v0.mAntiLambda());
+        }
+        if (TMath::Abs(v0.yK0Short()) < 0.5) {
+          registry.fill(HIST("h3dMassK0Short"), collision.centFV0A(), v0.pt(), v0.mK0Short());
+        }
+        lNCand++;
+      }
+    }
+    registry.fill(HIST("hCandPerEvent"), lNCand);
+  }
+  PROCESS_SWITCH(lambdakzerofinderQa, processRun3, "Process Run 3 data", true);
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
+                   soa::Filtered<aod::V0Datas> const& fullV0s)
   {
     if (!collision.alias()[kINT7]) {
       return;
@@ -311,6 +351,7 @@ struct lambdakzerofinderQA {
     }
     registry.fill(HIST("hCandPerEvent"), lNCand);
   }
+  PROCESS_SWITCH(lambdakzerofinderQa, processRun2, "Process Run 2 data", false);
 };
 
 /// Extends the v0data table with expression columns
@@ -324,6 +365,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroprefilter>(cfgc, TaskName{"lf-lambdakzeroprefilter"}),
     adaptAnalysisTask<lambdakzerofinder>(cfgc, TaskName{"lf-lambdakzerofinder"}),
-    adaptAnalysisTask<lambdakzerofinderQA>(cfgc, TaskName{"lf-lambdakzerofinderQA"}),
+    adaptAnalysisTask<lambdakzerofinderQa>(cfgc, TaskName{"lf-lambdakzerofinderQA"}),
     adaptAnalysisTask<lambdakzeroinitializer>(cfgc, TaskName{"lf-lambdakzeroinitializer"})};
 }

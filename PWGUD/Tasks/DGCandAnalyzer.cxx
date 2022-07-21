@@ -38,7 +38,7 @@
 
 #include "Common/DataModel/PIDResponse.h"
 #include "EventFiltering/PWGUD/DGCutparHolder.h"
-#include "PWGUD/DataModel/DGCandidates.h"
+#include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 
 using namespace o2;
@@ -72,7 +72,9 @@ struct DGCandAnalyzer {
     pidsel.init(anaPars);
   }
 
-  void process(aod::DGCandidate const& dgcand, aod::DGTracks const& dgtracks)
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>;
+
+  void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
   {
 
     // skip events with too few/many tracks

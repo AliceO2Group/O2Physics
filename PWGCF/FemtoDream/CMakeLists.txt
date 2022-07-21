@@ -49,3 +49,7 @@ o2physics_add_executable(femtodream-cutculator
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-producer-v0
+          SOURCES femtoDreamProducerTaskV0Only.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)

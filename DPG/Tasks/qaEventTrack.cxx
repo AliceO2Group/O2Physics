@@ -103,6 +103,7 @@ struct qaEventTrack {
   HistogramRegistry histos;
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perRecoCollision = aod::track::collisionId;
 
   void init(InitContext const&);
 
@@ -161,16 +162,25 @@ struct qaEventTrack {
     return true;
   }
 
-  // General function to fill data and MC histograms
-  template <bool IS_MC, typename C, typename T>
-  void fillRecoHistograms(const C& collision, const T& tracks, aod::FullTracks const& tracksUnfiltered);
+  // General functions to fill data and MC histograms
+  template <bool IS_MC, typename T>
+  void fillRecoHistogramsAllTracks(const T& tracks);
+  template <bool IS_MC, typename C, typename T, typename T_UNF>
+  void fillRecoHistogramsGroupedTracks(const C& collision, const T& tracks, const T_UNF& tracksUnfiltered);
 
   // Process function for data
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
-  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
+  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
   {
-    fillRecoHistograms<false>(collision, tracks, tracksUnfiltered);
+    /// work with all tracks
+    fillRecoHistogramsAllTracks<false>(tracks);
+    /// work with collision grouping
+    for (auto const& collision : collisions) {
+      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
+      fillRecoHistogramsGroupedTracks<false>(collision, tracksColl, tracksUnfilteredColl);
+    }
   }
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
@@ -246,10 +256,17 @@ struct qaEventTrack {
   // Process function for MC
   using CollisionTableMC = soa::Join<CollisionTableData, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
-  void processMC(CollisionTableMC::iterator const& collision, soa::Filtered<TrackTableMC> const& tracks, aod::FullTracks const& tracksUnfiltered,
+  void processMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::FullTracks const& tracksUnfiltered,
                  aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    fillRecoHistograms<true>(collision, tracks, tracksUnfiltered);
+    /// work with all tracks
+    fillRecoHistogramsAllTracks<true>(tracks);
+    /// work with collision grouping
+    for (auto const& collision : collisions) {
+      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
+      fillRecoHistogramsGroupedTracks<true>(collision, tracksColl, tracksUnfilteredColl);
+    }
   }
   PROCESS_SWITCH(qaEventTrack, processMC, "process mc", true); // FIXME: would like to disable this by default and swich on via --processMC but currently this crashes -> ask experts
 
@@ -473,6 +490,17 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
   histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
+  // count tracks matched to a collision
+  auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Track - collision matching", kTH1F, {{4, 0.5, 4.5, ""}});
+  h1->GetXaxis()->SetBinLabel(h1->FindBin(1), "all tracks");
+  h1->GetXaxis()->SetBinLabel(h1->FindBin(2), "tracks matched to coll.");
+  h1->GetXaxis()->SetBinLabel(h1->FindBin(3), "tracks unmatched");
+  h1->GetXaxis()->SetBinLabel(h1->FindBin(4), "(MC) fake tracks");
+  // kine histograms for tracks not matched to collisions
+  histos.add("Tracks/KineUnmatchTracks/pt", "#it{p}_{T}", kTH1D, {axisPt});
+  histos.add("Tracks/KineUnmatchTracks/eta", "#eta", kTH1D, {axisEta});
+  histos.add("Tracks/KineUnmatchTracks/phi", "#varphi", kTH1D, {axisPhi});
+
   // track histograms
   auto hselAxis = histos.add<TH1>("Tracks/selection", "trackSelection", kTH1F, {{40, 0.5, 40.5}})->GetXaxis();
   hselAxis->SetBinLabel(1, "Tracks read");
@@ -621,8 +649,33 @@ void qaEventTrack::init(InitContext const&)
  * Fill reco level histograms.
  */
 //**************************************************************************************************
-template <bool IS_MC, typename C, typename T>
-void qaEventTrack::fillRecoHistograms(const C& collision, const T& tracks, const aod::FullTracks& tracksUnfiltered)
+template <bool IS_MC, typename T>
+void qaEventTrack::fillRecoHistogramsAllTracks(const T& tracks)
+{
+  for (const auto& track : tracks) {
+    /// all tracks
+    histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 1.f);
+    if (track.has_collision()) {
+      /// tracks assigned to a collision
+      histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 2.f);
+    } else {
+      /// tracks not assigned to any reconsructed collision
+      histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 3.f);
+      if constexpr (IS_MC) {
+        if (!track.has_mcParticle()) {
+          /// fake track
+          histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 4.f);
+        }
+      }
+      histos.fill(HIST("Tracks/KineUnmatchTracks/pt"), track.pt());
+      histos.fill(HIST("Tracks/KineUnmatchTracks/eta"), track.eta());
+      histos.fill(HIST("Tracks/KineUnmatchTracks/phi"), track.phi());
+    }
+  }
+}
+///////////////////////////////////////////////////////////////
+template <bool IS_MC, typename C, typename T, typename T_UNF>
+void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& tracks, const T_UNF& tracksUnfiltered)
 {
   // fill reco collision related histograms
   if (!isSelectedCollision<true>(collision)) {
