@@ -12,9 +12,6 @@
 // task for charged particle pt spectra vs multiplicity analysis with 2d unfolding for run3+
 // mimics https://github.com/alisw/AliPhysics/blob/master/PWGLF/SPECTRA/ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTask.cxx
 
-// run for data as: o2-analysis-timestamp | o2-analysis-event-selection | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_data.root
-// run for mc as: o2-analysis-timestamp --isRun2MC | o2-analysis-event-selection --isMC | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_mc.root --isMC
-
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -38,7 +35,7 @@ struct chargedSpectra {
   Service<TDatabasePDG> pdg;
 
   // task settings that can be steered via hyperloop
-  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
+  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<uint32_t> maxMultMeas{"maxMultMeas", 100, "max measured multiplicity"};
   Configurable<uint32_t> maxMultTrue{"maxMultTrue", 100, "max true multiplicity"};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
@@ -84,6 +81,7 @@ struct chargedSpectra {
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>;
   using ParticleTableMC = aod::McParticles;
+  Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
   PROCESS_SWITCH(chargedSpectra, processMC, "process mc", true);
 
@@ -178,8 +176,6 @@ void chargedSpectra::processData(CollisionTableData::iterator const& collision, 
  * Entrypoint to processes mc.
  */
 //**************************************************************************************************
-Preslice<chargedSpectra::TrackTableMC> perCollision = aod::track::collisionId;
-
 void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
 {
   histos.fill(HIST("collision_ambiguity"), collisions.size());
