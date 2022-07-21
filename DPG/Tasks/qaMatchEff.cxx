@@ -40,15 +40,15 @@ struct qaMatchEff {
   // Histogram configuration
   //
   // histo x axes limits
-  Configurable<float> etaMin{"eta-min", -0.8f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 0.8f, "Upper limit in eta"};
+  Configurable<float> etaMin{"eta-min", -2.0f, "Lower limit in eta"};
+  Configurable<float> etaMax{"eta-max", 2.0f, "Upper limit in eta"};
   Configurable<float> phiMin{"phi-min", 0.0f, "Lower limit in phi"};
   Configurable<float> phiMax{"phi-max", 1.0f * TwoPI, "Upper limit in phi"};
   Configurable<float> ptMin{"pt-min", 0.0f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 15.f, "Upper limit in pT"};
   // histos bins
   Configurable<int> ptBins{"pt-bins", 16, "Number of pT bins"};
-  Configurable<int> etaBins{"eta-bins", 16, "Number of eta bins"};
+  Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
   // histo axes
   //
