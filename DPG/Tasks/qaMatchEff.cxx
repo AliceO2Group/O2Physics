@@ -40,20 +40,17 @@ struct qaMatchEff {
   // Histogram configuration
   //
   // histo x axes limits
-  Configurable<float> etaMin{"eta-min", -0.8f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 0.8f, "Upper limit in eta"};
+  Configurable<float> etaMin{"eta-min", -2.0f, "Lower limit in eta"};
+  Configurable<float> etaMax{"eta-max", 2.0f, "Upper limit in eta"};
   Configurable<float> phiMin{"phi-min", 0.0f, "Lower limit in phi"};
   Configurable<float> phiMax{"phi-max", 1.0f * TwoPI, "Upper limit in phi"};
-  Configurable<float> ptMin{"pt-min", 0.0f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 15.f, "Upper limit in pT"};
   // histos bins
-  Configurable<int> ptBins{"pt-bins", 16, "Number of pT bins"};
-  Configurable<int> etaBins{"eta-bins", 16, "Number of eta bins"};
+  Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
   // histo axes
   //
   // non uniform pt binning
-  std::vector<double> ptBinning = {0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
+  std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
   AxisSpec axisPt{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
   // const AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
   //
