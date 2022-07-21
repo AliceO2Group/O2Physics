@@ -322,10 +322,10 @@ struct ValidationRecLevel {
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histOriginTracks[index]->Fill(origin, track.pt());
         if (index) {
-          auto collision = collisions.rawIteratorAt(track.collisionId());
+          auto collision = track.collision_as<CollisionsWithMCLabels>();
           auto mcCollision = particle.mcCollision();
           uint index2 = 2;
-          if (collision.mcCollisionId() - particle.mcCollisionId() == 0 && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
+          if ((collision.mcCollisionId() == particle.mcCollisionId()) && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
             index2 = 1;
           }
           histOriginTracks[index + index2]->Fill(origin, track.pt());
