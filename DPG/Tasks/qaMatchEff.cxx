@@ -47,13 +47,13 @@ struct qaMatchEff {
   Configurable<float> ptMin{"pt-min", 0.0f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 15.f, "Upper limit in pT"};
   // histos bins
-  Configurable<int> ptBins{"pt-bins", 16, "Number of pT bins"};
+  Configurable<int> ptBins{"pt-bins", 29, "Number of pT bins"};
   Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
   // histo axes
   //
   // non uniform pt binning
-  std::vector<double> ptBinning = {0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
+  std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
   AxisSpec axisPt{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
   // const AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
   //
