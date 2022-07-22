@@ -23,12 +23,12 @@
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "FemtoWorldParticleHisto.h"
-#include "FemtoWorldEventHisto.h"
-#include "FemtoWorldPairCleaner.h"
-#include "FemtoWorldContainer.h"
-#include "FemtoWorldDetaDphiStar.h"
-#include "FemtoWorldUtils.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldEventHisto.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldContainer.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldDetaDphiStar.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
