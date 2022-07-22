@@ -114,7 +114,9 @@ struct qaEventTrackLite {
   Configurable<float> dcaXYmaxSel3{"dcaXYMaxSel3", 999., "Max dca XY sel3"};
 
   // MC selections
-  Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection. Either provide a PDG code required for particles OR `1` defines pi,K,p,mu,e, `2` all final-state charged particles including light (hyper)nuclei"};
+  Configurable<int> pdgCodeSel{"pdgCodeSel", 0, "pdgCode based particle selection. Provide a PDG code required for particles to have. To be used in combo with pdgCodeSelMode"};
+  Configurable<int> pdgCodeMode{"pdgCodeSelMode", 2, "multiple pdgCode based particle selection. `1` accepts pi,K,p,mu,e, `2` accepts all final-state charged particles including light (hyper)nuclei"};
+
   Configurable<bool> checkPdgAtReco{"checkPdgAtReco", false, "check pdg code also at reco levo for data-like reference"};
 
   // TPC dEdx splines
@@ -585,7 +587,7 @@ struct qaEventTrackLite {
       return true;
     }
     const int abspdgcode = abs(pdgcode);
-    if (pdgCodeSel == 1 || pdgCodeSel == 2) {
+    if (pdgCodeSelMode == 1 || pdgCodeSelMode == 2) {
       switch (abspdgcode) {
         case 11:   // electron
         case 13:   // muon
@@ -595,7 +597,7 @@ struct qaEventTrackLite {
           return true;
       }
 
-      if (pdgCodeSel == 2) {
+      if (pdgCodeSelMode == 2) {
         switch (abspdgcode) {
           case 3222:       // Σ+
           case 3112:       // Σ−
