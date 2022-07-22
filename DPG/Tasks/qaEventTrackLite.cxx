@@ -114,7 +114,9 @@ struct qaEventTrackLite {
   Configurable<float> dcaXYmaxSel3{"dcaXYMaxSel3", 999., "Max dca XY sel3"};
 
   // MC selections
-  Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection, 1 defines pi,K,p,mu,e, 2 all final-state charged particles including light (hyper)nuclei"};
+  Configurable<int> pdgCodeSel{"pdgCodeSel", 0, "pdgCode based particle selection. Provide a PDG code required for particles to have. To be used in combo with pdgCodeSelMode"};
+  Configurable<int> pdgCodeSelMode{"pdgCodeSelMode", 2, "multiple pdgCode based particle selection. `1` accepts pi,K,p,mu,e, `2` accepts all final-state charged particles including light (hyper)nuclei"};
+
   Configurable<bool> checkPdgAtReco{"checkPdgAtReco", false, "check pdg code also at reco levo for data-like reference"};
 
   // TPC dEdx splines
@@ -578,17 +580,37 @@ struct qaEventTrackLite {
     return true;
   }
 
-  bool isPdgSelected(const Int_t pdgcode)
+  bool isPdgSelected(const int pdgcode)
   { // mimics selection of charged particles or id particles
-    Int_t abspdgcode = TMath::Abs(pdgcode);
-    if (abspdgcode == pdgCodeSel)
+
+    if (pdgcode == pdgCodeSel) { // Check that the pdg code is exactly what was asked
       return true;
-    if (pdgCodeSel == 1 || pdgCodeSel == 2) {
-      if (abspdgcode == 211 || abspdgcode == 321 || abspdgcode == 2212 || abspdgcode == 11 || abspdgcode == 13)
-        return true;
-      if (pdgCodeSel == 2) {
-        if (abspdgcode == 3222 || abspdgcode == 3112 || abspdgcode == 3312 || abspdgcode == 3334 || abspdgcode == 1000010020 || abspdgcode == 1000010030 || abspdgcode == 1000020030 || abspdgcode == 1000020040 || abspdgcode == 1010010030 || abspdgcode == 1010020040)
+    }
+    const int abspdgcode = abs(pdgcode);
+    if (pdgCodeSelMode == 1 || pdgCodeSelMode == 2) {
+      switch (abspdgcode) {
+        case 11:   // electron
+        case 13:   // muon
+        case 211:  // pion
+        case 321:  // kaon
+        case 2212: // proton
           return true;
+      }
+
+      if (pdgCodeSelMode == 2) {
+        switch (abspdgcode) {
+          case 3222:       // Σ+
+          case 3112:       // Σ−
+          case 3312:       // Ξ−
+          case 3334:       // Ω−
+          case 1000010020: // deuteron
+          case 1000010030: // triton
+          case 1000020030: // helium3
+          case 1000020040: // helium4
+          case 1010010030: // hyper triton
+          case 1010020040: // hyper helium4
+            return true;
+        }
       }
     }
     return false;

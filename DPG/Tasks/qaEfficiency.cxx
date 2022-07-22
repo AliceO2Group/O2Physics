@@ -142,10 +142,10 @@ struct QaEfficiency {
                                                               "MC/ka/pos/prm/pt/num", "MC/pr/pos/prm/pt/num", "MC/de/pos/prm/pt/num",
                                                               "MC/tr/pos/prm/pt/num", "MC/he/pos/prm/pt/num", "MC/al/pos/prm/pt/num",
                                                               "MC/all/pos/prm/pt/num",
-                                                              "MC/el/den/prm/pt/num", "MC/mu/den/prm/pt/num", "MC/pi/den/prm/pt/num",
-                                                              "MC/ka/den/prm/pt/num", "MC/pr/den/prm/pt/num", "MC/de/den/prm/pt/num",
-                                                              "MC/tr/den/prm/pt/num", "MC/he/den/prm/pt/num", "MC/al/den/prm/pt/num",
-                                                              "MC/all/den/prm/pt/num"};
+                                                              "MC/el/neg/prm/pt/num", "MC/mu/neg/prm/pt/num", "MC/pi/neg/prm/pt/num",
+                                                              "MC/ka/neg/prm/pt/num", "MC/pr/neg/prm/pt/num", "MC/de/neg/prm/pt/num",
+                                                              "MC/tr/neg/prm/pt/num", "MC/he/neg/prm/pt/num", "MC/al/neg/prm/pt/num",
+                                                              "MC/all/neg/prm/pt/num"};
   static constexpr std::string_view hPtPrmNumTrk[nHistograms] = {"MC/el/sum/prm/pt/numtrk", "MC/mu/sum/prm/pt/numtrk", "MC/pi/sum/prm/pt/numtrk",
                                                                  "MC/ka/sum/prm/pt/numtrk", "MC/pr/sum/prm/pt/numtrk", "MC/de/sum/prm/pt/numtrk",
                                                                  "MC/tr/sum/prm/pt/numtrk", "MC/he/sum/prm/pt/numtrk", "MC/al/sum/prm/pt/numtrk",
@@ -191,10 +191,10 @@ struct QaEfficiency {
                                                               "MC/ka/pos/dec/pt/num", "MC/pr/pos/dec/pt/num", "MC/de/pos/dec/pt/num",
                                                               "MC/tr/pos/dec/pt/num", "MC/he/pos/dec/pt/num", "MC/al/pos/dec/pt/num",
                                                               "MC/all/pos/dec/pt/num",
-                                                              "MC/el/den/dec/pt/num", "MC/mu/den/dec/pt/num", "MC/pi/den/dec/pt/num",
-                                                              "MC/ka/den/dec/pt/num", "MC/pr/den/dec/pt/num", "MC/de/den/dec/pt/num",
-                                                              "MC/tr/den/dec/pt/num", "MC/he/den/dec/pt/num", "MC/al/den/dec/pt/num",
-                                                              "MC/all/den/dec/pt/num"};
+                                                              "MC/el/neg/dec/pt/num", "MC/mu/neg/dec/pt/num", "MC/pi/neg/dec/pt/num",
+                                                              "MC/ka/neg/dec/pt/num", "MC/pr/neg/dec/pt/num", "MC/de/neg/dec/pt/num",
+                                                              "MC/tr/neg/dec/pt/num", "MC/he/neg/dec/pt/num", "MC/al/neg/dec/pt/num",
+                                                              "MC/all/neg/dec/pt/num"};
   static constexpr std::string_view hPtDecNumTrk[nHistograms] = {"MC/el/sum/dec/pt/numtrk", "MC/mu/sum/dec/pt/numtrk", "MC/pi/sum/dec/pt/numtrk",
                                                                  "MC/ka/sum/dec/pt/numtrk", "MC/pr/sum/dec/pt/numtrk", "MC/de/sum/dec/pt/numtrk",
                                                                  "MC/tr/sum/dec/pt/numtrk", "MC/he/sum/dec/pt/numtrk", "MC/al/sum/dec/pt/numtrk",
@@ -240,10 +240,10 @@ struct QaEfficiency {
                                                               "MC/ka/pos/mat/pt/num", "MC/pr/pos/mat/pt/num", "MC/de/pos/mat/pt/num",
                                                               "MC/tr/pos/mat/pt/num", "MC/he/pos/mat/pt/num", "MC/al/pos/mat/pt/num",
                                                               "MC/all/pos/mat/pt/num",
-                                                              "MC/el/den/mat/pt/num", "MC/mu/den/mat/pt/num", "MC/pi/den/mat/pt/num",
-                                                              "MC/ka/den/mat/pt/num", "MC/pr/den/mat/pt/num", "MC/de/den/mat/pt/num",
-                                                              "MC/tr/den/mat/pt/num", "MC/he/den/mat/pt/num", "MC/al/den/mat/pt/num",
-                                                              "MC/all/den/mat/pt/num"};
+                                                              "MC/el/neg/mat/pt/num", "MC/mu/neg/mat/pt/num", "MC/pi/neg/mat/pt/num",
+                                                              "MC/ka/neg/mat/pt/num", "MC/pr/neg/mat/pt/num", "MC/de/neg/mat/pt/num",
+                                                              "MC/tr/neg/mat/pt/num", "MC/he/neg/mat/pt/num", "MC/al/neg/mat/pt/num",
+                                                              "MC/all/neg/mat/pt/num"};
   static constexpr std::string_view hPtMatNumTrk[nHistograms] = {"MC/el/sum/mat/pt/numtrk", "MC/mu/sum/mat/pt/numtrk", "MC/pi/sum/mat/pt/numtrk",
                                                                  "MC/ka/sum/mat/pt/numtrk", "MC/pr/sum/mat/pt/numtrk", "MC/de/sum/mat/pt/numtrk",
                                                                  "MC/tr/sum/mat/pt/numtrk", "MC/he/sum/mat/pt/numtrk", "MC/al/sum/mat/pt/numtrk",
@@ -1189,11 +1189,11 @@ struct QaEfficiency {
       if (!isTrackSelected(track)) { // Check general cuts
         continue;
       }
-      histos.fill(HIST("MC/trackSelection"), 11);
+      histos.fill(HIST("MC/trackSelection"), 9);
       if (!track.has_collision()) {
         continue;
       }
-      histos.fill(HIST("MC/trackSelection"), 12);
+      histos.fill(HIST("MC/trackSelection"), 10);
       // Filling variable histograms
       histos.fill(HIST("MC/trackLength"), track.length());
       if (doEl) {
