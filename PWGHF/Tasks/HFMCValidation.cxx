@@ -326,7 +326,7 @@ struct ValidationRecLevel {
           auto mcCollision = particle.mcCollision();
           deltaZ = collision.posZ() - mcCollision.posZ();
           uint index2 = 2;
-          if (collision.mcCollisionId() == particle.mcCollisionId()) { // 200 microns compatibility of Z vertex position also required
+          if (collision.mcCollisionId() == particle.mcCollisionId()) {
             index2 = 1;
           }
           histOriginTracks[index + index2]->Fill(origin, track.pt(), deltaZ);
