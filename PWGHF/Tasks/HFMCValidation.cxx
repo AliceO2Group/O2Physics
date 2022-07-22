@@ -278,10 +278,10 @@ struct ValidationRecLevel {
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<TH3>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});   // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<TH3>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});      // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<TH3>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});  // tracks associated to the correct collision (considering the MC collision index)
-    histOriginTracks[3] = registry.add<TH3>("histOriginWrongAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}}); // tracks associated to the wrong collision (considering the MC collision index)
+    histOriginTracks[0] = registry.add<TH3>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});   // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<TH3>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});      // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<TH3>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});  // tracks associated to the correct collision (considering the MC collision index)
+    histOriginTracks[3] = registry.add<TH3>("histOriginWrongAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}}); // tracks associated to the wrong collision (considering the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
