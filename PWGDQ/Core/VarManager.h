@@ -667,7 +667,7 @@ void VarManager::FillTrack(T const& track, float* values)
     if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = 0.0;
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 7; ++i) {
           values[kITSncls] += ((track.itsClusterMap() & (1 << i)) ? 1 : 0);
         }
       }

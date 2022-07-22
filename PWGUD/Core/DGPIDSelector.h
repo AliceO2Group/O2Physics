@@ -15,10 +15,13 @@
 #include <gandiva/projector.h>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "PWGUD/DataModel/DGCandidates.h"
+#include "PWGUD/DataModel/UDTables.h"
 #include "DGAnaparHolder.h"
 
 using namespace o2;
+
+using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>;
+using UDTrackFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>::iterator;
 
 float particleMass(TDatabasePDG* pdg, int pid);
 
@@ -27,7 +30,7 @@ float particleMass(TDatabasePDG* pdg, int pid);
 struct DGParticle {
  public:
   DGParticle() = default;
-  DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, aod::DGTracks const& dgtracks, std::vector<uint> comb);
+  DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, UDTracksFull const& tracks, std::vector<uint> comb);
 
   // getter
   std::vector<uint> trkinds() { return mtrkinds; }
@@ -60,9 +63,9 @@ struct DGPIDSelector {
 
   // getters
   std::vector<DGParticle> IVMs() { return mIVMs; }
-  float getTPCnSigma(aod::DGTrack track, int hypo);
-  bool isGoodTrack(aod::DGTrack track, int cnt);
-  int computeIVMs(int nCombine, aod::DGTracks const& dgtracks);
+  float getTPCnSigma(UDTrackFull track, int hypo);
+  bool isGoodTrack(UDTrackFull track, int cnt);
+  int computeIVMs(int nCombine, UDTracksFull const& tracks);
 
  private:
   // analysis parameters

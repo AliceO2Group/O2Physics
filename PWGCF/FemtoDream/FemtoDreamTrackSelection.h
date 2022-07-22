@@ -59,7 +59,8 @@ enum TrackContainerPosition {
 class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDreamTrackSelection::TrackSel>
 {
  public:
-  FemtoDreamTrackSelection() : nPtMinSel(0),
+  FemtoDreamTrackSelection() : nRejectNotPropagatedTracks(false),
+                               nPtMinSel(0),
                                nPtMaxSel(0),
                                nEtaSel(0),
                                nTPCnMinSel(0),
@@ -188,7 +189,18 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
     return outString;
   }
 
+  int getSigmaPIDMax()
+  {
+    return nSigmaPIDMax;
+  }
+
+  void setRejectNotPropagatedTracks(bool reject)
+  {
+    nRejectNotPropagatedTracks = reject;
+  }
+
  private:
+  bool nRejectNotPropagatedTracks;
   int nPtMinSel;
   int nPtMaxSel;
   int nEtaSel;
@@ -410,13 +422,15 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   if (nDCAMinSel > 0 && std::abs(dca) < dcaMin) {
     return false;
   }
+  if (nRejectNotPropagatedTracks && std::abs(dca) > 1e3) {
+    return false;
+  }
+
   if (nPIDnSigmaSel > 0) {
     bool isFulfilled = false;
     for (size_t i = 0; i < pidTPC.size(); ++i) {
       auto pidTPCVal = pidTPC.at(i);
-      auto pidTOFVal = pidTOF.at(i);
-      auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
-      if (std::abs(pidTPCVal) < nSigmaPIDMax || pidComb < nSigmaPIDMax) {
+      if (std::abs(pidTPCVal) < nSigmaPIDMax) {
         isFulfilled = true;
       }
     }
