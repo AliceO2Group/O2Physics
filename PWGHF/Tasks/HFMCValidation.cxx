@@ -311,11 +311,15 @@ struct ValidationRecLevel {
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection>;
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, CollisionsWithMCLabels const& collisions)
+  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, CollisionsWithMCLabels const& collisions)
   {
     // loop over tracks
     for (auto& track : tracks) {
+      if (!track.isGlobalTrackWoDCA() != (uint8_t) true) {
+        continue;
+      }
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
@@ -361,8 +365,8 @@ struct ValidationRecLevel {
 
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
-        if (cand2Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand2Prong.index0_as<TracksWithSel>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
@@ -426,8 +430,8 @@ struct ValidationRecLevel {
 
       if (whichHad >= 0) {
         int indexParticle = 0;
-        if (cand3Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand3Prong.index0_as<TracksWithSel>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
