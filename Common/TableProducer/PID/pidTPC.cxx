@@ -19,6 +19,8 @@
 ///         QA histograms for the TPC PID can be produced by adding `--add-qa 1` to the workflow
 ///
 
+#include <stdlib.h>
+
 // ROOT includes
 #include "TFile.h"
 
@@ -70,7 +72,6 @@ struct tpcPid {
   // Network correction for TPC PID response
   Network network;
   o2::ccdb::CcdbApi ccdbApi;
-  int currentRunNumber = -1;
 
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -192,15 +193,27 @@ struct tpcPid {
 
         auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
 
-        if (currentRunNumber != bc.runNumber()) { // fetches network only if the runnumbers change
-          currentRunNumber = bc.runNumber();
-          LOG(info) << "Fetching network for runnumber: " << currentRunNumber << " and timestamp: " << bc.timestamp();
+        if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
+          LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
           std::map<std::string, std::string> metadata;
-          ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
-          Network temp_net(networkPathLocally.value,
-                           enableNetworkOptimizations.value);
-          network = temp_net;
-          network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          bool retrieve_success = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
+          if (retrieve_success) {
+            std::map<std::string, std::string> headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
+            if (headers.count("Valid-From") == 0) {
+              LOG(fatal) << "Valid-From not found in metadata";
+            }
+            if (headers.count("Valid-Until") == 0) {
+              LOG(fatal) << "Valid-Until not found in metadata";
+            }
+            Network temp_net(networkPathLocally.value,
+                             strtoul(headers["Valid-From"].c_str(), NULL, 0),
+                             strtoul(headers["Valid-Until"].c_str(), NULL, 0),
+                             enableNetworkOptimizations.value);
+            network = temp_net;
+            network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          } else {
+            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          }
         }
       }
 

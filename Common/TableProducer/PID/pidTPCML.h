@@ -39,6 +39,7 @@ class Network
   // Constructor, destructor and copy-constructor
   Network() = default;
   Network(std::string, bool);
+  Network(std::string, unsigned long, unsigned long, bool); // initialization with timestamps
   ~Network() = default;
 
   // Operators
@@ -54,8 +55,16 @@ class Network
   // Getters & Setters
   int getInputDimensions() const { return mInputShapes[0][1]; };
   int getOutputDimensions() const { return mOutputShapes[0][1]; };
+  unsigned long getValidityFrom() const { return valid_from; };
+  unsigned long getValidityUntil() const { return valid_until; };
+  void setValidityFrom(unsigned long t) { valid_from = t; };
+  void setValidityUntil(unsigned long t) { valid_until = t; };
 
  private:
+  // Range of validity in timestamps
+  unsigned long valid_from = 0;
+  unsigned long valid_until = 0;
+
   // Environment variables for the ONNX runtime
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   std::shared_ptr<Ort::Experimental::Session> mSession = nullptr;
@@ -78,7 +87,7 @@ class Network
   }
 
   // Class version
-  ClassDefNV(Network, 2);
+  ClassDefNV(Network, 3);
 
 }; // class Network
 
@@ -89,9 +98,7 @@ Network::Network(std::string path,
   /*
   Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
   - Input:
-    -- pathLocally:         std::string   ; Path to the model file;
-    -- loadFromAlien:       bool          ; Download network from AliEn directory (true) or use local file (false)
-    -- pathAlien:           std::string   ; if loadFromAlien is true, then the network will be downloaded from pathAlien
+    -- path:                std::string   ; Local path to the model file;
     -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
   */
 
@@ -123,6 +130,53 @@ Network::Network(std::string path,
 
 } // Network::Network(std::string, bool)
 
+Network::Network(std::string path,
+                 unsigned long start,
+                 unsigned long end,
+                 bool enableOptimization = true)
+{
+
+  /*
+  Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
+  - Input:
+    -- path:                std::string   ; Local path to the model file;
+    -- start:               unsigned long ; Timestamp validity of model (start)
+    -- pathAlien:           unsigned long ; Timestamp validity of model (end)
+    -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
+  */
+
+  LOG(info) << "--- Neural Network for the TPC PID response correction ---";
+
+  mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
+  if (enableOptimization) {
+    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+
+  mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
+
+  mInputNames = mSession->GetInputNames();
+  mInputShapes = mSession->GetInputShapes();
+  mOutputNames = mSession->GetOutputNames();
+  mOutputShapes = mSession->GetOutputShapes();
+
+  LOG(info) << "Input Nodes:";
+  for (size_t i = 0; i < mInputNames.size(); i++) {
+    LOG(info) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);
+  }
+
+  LOG(info) << "Output Nodes:";
+  for (size_t i = 0; i < mOutputNames.size(); i++) {
+    LOG(info) << "\t" << mOutputNames[i] << " : " << printShape(mOutputShapes[i]);
+  }
+
+  valid_from = start;
+  valid_until = end;
+  LOG(info) << "Range of validity: Valid-From: " << valid_from << " Valid-Until: " << valid_until;
+
+  LOG(info) << "--- Network initialized! ---";
+
+} // Network::Network(std::string, unsigned long, unsigned long, bool)
+
 Network& Network::operator=(Network& inst)
 {
 
@@ -141,6 +195,9 @@ Network& Network::operator=(Network& inst)
   mInputShapes = inst.mInputShapes;
   mOutputNames = inst.mOutputNames;
   mOutputShapes = inst.mOutputShapes;
+
+  valid_from = inst.valid_from;
+  valid_until = inst.valid_until;
 
   LOG(debug) << "Network copied!";
 
