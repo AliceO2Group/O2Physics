@@ -13,3 +13,8 @@ o2physics_add_dpl_workflow(task-correlation-ddbar
                     SOURCES taskCorrelationDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-correlation-d0
+                    SOURCES taskCorrelationD0.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
