@@ -104,8 +104,8 @@ struct lambdakzeroBuilder {
 
   int mRunNumber;
   float d_bz;
-  float maxSnp;  //max sine phi for propagation
-  float maxStep; //max step size (cm) for propagation
+  float maxSnp;  // max sine phi for propagation
+  float maxStep; // max step size (cm) for propagation
 
   // for debugging
 #ifdef MY_DEBUG
@@ -148,8 +148,8 @@ struct lambdakzeroBuilder {
     // using namespace analysis::lambdakzerobuilder;
     mRunNumber = 0;
     d_bz = 0;
-    maxSnp = 0.85f;  //could be changed later
-    maxStep = 2.00f; //could be changed later
+    maxSnp = 0.85f;  // could be changed later
+    maxStep = 2.00f; // could be changed later
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -174,6 +174,13 @@ struct lambdakzeroBuilder {
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(4, "hasSV");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(5, "Dcav0Dau");
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(6, "CosPA");
+
+    if (doprocessRun3 && doprocessRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!doprocessRun3 && !doprocessRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
   }
 
   float getMagneticField(uint64_t timestamp)
@@ -240,7 +247,7 @@ struct lambdakzeroBuilder {
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      //value 0.5: any considered V0
+      // value 0.5: any considered V0
       registry.fill(HIST("hV0Criteria"), 0.5);
       registry.fill(HIST("hV0CutCounter"), 0.5);
 
@@ -256,7 +263,7 @@ struct lambdakzeroBuilder {
           continue; // TPC refit
         }
       }
-      //Passes TPC refit
+      // Passes TPC refit
       registry.fill(HIST("hV0Criteria"), 1.5);
 
       if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
@@ -309,7 +316,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //passes diff coll check
+
+      // passes diff coll check
       registry.fill(HIST("hV0Criteria"), 4.5);
       registry.fill(HIST("hV0CutCounter"), 2.5);
 
@@ -324,7 +332,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //passes V0 fitter minimization successfully
+
+      // passes V0 fitter minimization successfully
       registry.fill(HIST("hV0Criteria"), 5.5);
 
       double finalXpos = fitter.getTrack(0).getX();
@@ -349,7 +358,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //Passes step 2 of V0 fitter
+
+      // Passes step 2 of V0 fitter
       registry.fill(HIST("hV0Criteria"), 6.5);
       registry.fill(HIST("hV0CutCounter"), 3.5);
 
@@ -381,7 +391,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //Passes DCA between daughters check
+
+      // Passes DCA between daughters check
       registry.fill(HIST("hV0Criteria"), 7.5);
       registry.fill(HIST("hV0CutCounter"), 4.5);
 
@@ -391,7 +402,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //Passes CosPA check
+
+      // Passes CosPA check
       registry.fill(HIST("hV0Criteria"), 8.5);
       registry.fill(HIST("hV0CutCounter"), 5.5);
 
@@ -402,7 +414,7 @@ struct lambdakzeroBuilder {
         continue;
       }*/
 
-      //Passes radius check
+      // Passes radius check
       registry.fill(HIST("hV0Criteria"), 9.5);
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
@@ -459,7 +471,7 @@ struct lambdakzeroBuilder {
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
-      //value 0.5: any considered V0
+      // value 0.5: any considered V0
       registry.fill(HIST("hV0Criteria"), 0.5);
       registry.fill(HIST("hV0CutCounter"), 0.5);
 
@@ -475,7 +487,7 @@ struct lambdakzeroBuilder {
           continue; // TPC refit
         }
       }
-      //Passes TPC refit
+      // Passes TPC refit
       registry.fill(HIST("hV0Criteria"), 1.5);
       if (V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() < mincrossedrows) {
         MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
@@ -487,7 +499,7 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //passes crossed rows
+      // passes crossed rows
       registry.fill(HIST("hV0Criteria"), 2.5);
       registry.fill(HIST("hV0CutCounter"), 1.5);
 
@@ -502,7 +514,7 @@ struct lambdakzeroBuilder {
         continue;
       }
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);*/
-      //passes DCAxy
+      // passes DCAxy
       registry.fill(HIST("hV0Criteria"), 3.5);
 
       // Candidate building part
@@ -526,7 +538,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //passes diff coll check
+
+      // passes diff coll check
       registry.fill(HIST("hV0Criteria"), 4.5);
       registry.fill(HIST("hV0CutCounter"), 2.5);
 
@@ -542,7 +555,7 @@ struct lambdakzeroBuilder {
         continue;
       }
 
-      //passes V0 fitter minimization successfully
+      // passes V0 fitter minimization successfully
       registry.fill(HIST("hV0Criteria"), 5.5);
 
       double finalXpos = fitter.getTrack(0).getX();
@@ -567,7 +580,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //Passes step 2 of V0 fitter
+
+      // Passes step 2 of V0 fitter
       registry.fill(HIST("hV0Criteria"), 6.5);
       registry.fill(HIST("hV0CutCounter"), 3.5);
 
@@ -604,7 +618,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //Passes DCA between daughters check
+
+      // Passes DCA between daughters check
       registry.fill(HIST("hV0Criteria"), 7.5);
       registry.fill(HIST("hV0CutCounter"), 4.5);
 
@@ -614,7 +629,8 @@ struct lambdakzeroBuilder {
         v0dataLink(-1);
         continue;
       }
-      //Passes CosPA check
+
+      // Passes CosPA check
       registry.fill(HIST("hV0Criteria"), 8.5);
       registry.fill(HIST("hV0CutCounter"), 5.5);
 
@@ -625,7 +641,7 @@ struct lambdakzeroBuilder {
         continue;
       }*/
 
-      //Passes radius check
+      // Passes radius check
       registry.fill(HIST("hV0Criteria"), 9.5);
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
