@@ -273,15 +273,15 @@ struct ValidationRecLevel {
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
   std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
-  std::array<std::shared_ptr<TH2>, 4> histOriginTracks;
+  std::array<std::shared_ptr<TH3>, 4> histOriginTracks;
 
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<TH2>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});   // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<TH2>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});      // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<TH2>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});  // tracks associated to the correct collision (considering the MC collision index)
-    histOriginTracks[3] = registry.add<TH2>("histOriginWrongAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}}); // tracks associated to the wrong collision (considering the MC collision index)
+    histOriginTracks[0] = registry.add<TH3>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});   // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<TH3>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});      // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<TH3>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}});  // tracks associated to the correct collision (considering the MC collision index)
+    histOriginTracks[3] = registry.add<TH3>("histOriginWrongAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH3F, {{4, -1.5, 2.5}, {50, 0., 10.}, {200, -1., 1.}}); // tracks associated to the wrong collision (considering the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
@@ -320,18 +320,20 @@ struct ValidationRecLevel {
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
-        histOriginTracks[index]->Fill(origin, track.pt());
+        float deltaZ = -999.f;
         if (index) {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
           auto mcCollision = particle.mcCollision();
+          deltaZ = collision.posZ() - mcCollision.posZ();
           uint index2 = 2;
-          if ((collision.mcCollisionId() == particle.mcCollisionId()) && std::abs(collision.posZ() - mcCollision.posZ()) < 0.02) { // 200 microns compatibility of Z vertex position also required
+          if (collision.mcCollisionId() == particle.mcCollisionId()) { // 200 microns compatibility of Z vertex position also required
             index2 = 1;
           }
-          histOriginTracks[index + index2]->Fill(origin, track.pt());
+          histOriginTracks[index + index2]->Fill(origin, track.pt(), deltaZ);
         }
+        histOriginTracks[index]->Fill(origin, track.pt(), deltaZ);
       } else {
-        histOriginTracks[index]->Fill(-1., track.pt());
+        histOriginTracks[index]->Fill(-1.f, track.pt(), -999.f);
       }
     }
 
