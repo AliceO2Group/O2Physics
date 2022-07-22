@@ -114,7 +114,7 @@ struct qaEventTrackLite {
   Configurable<float> dcaXYmaxSel3{"dcaXYMaxSel3", 999., "Max dca XY sel3"};
 
   // MC selections
-  Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection, PDG code required for particles to have OR: 1 defines pi,K,p,mu,e, 2 all final-state charged particles including light (hyper)nuclei"};
+  Configurable<int> pdgCodeSel{"pdgCodeSel", 2, "pdgCode based particle selection. Either provide a PDG code required for particles OR `1` defines pi,K,p,mu,e, `2` all final-state charged particles including light (hyper)nuclei"};
   Configurable<bool> checkPdgAtReco{"checkPdgAtReco", false, "check pdg code also at reco levo for data-like reference"};
 
   // TPC dEdx splines
