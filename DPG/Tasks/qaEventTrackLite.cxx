@@ -48,6 +48,7 @@ struct qaEventTrackLite {
   ConfigurableAxis binsImpPar{"binsImpPar", {200, -0.15, 0.15}, "Impact parameter binning (cm)"};
   ConfigurableAxis binsEta{"binsEta", {200, -2., 2.}, "Eta binning"};
   ConfigurableAxis binsPhi{"binsPhi", {180, 0., 2 * M_PI}, "Phi binning"};
+  ConfigurableAxis binsVtxZ{"binsVtxZ", {100, -20., 20.}, "Vtx Z binning"};
 
   HistogramRegistry histos;
 
@@ -189,14 +190,15 @@ struct qaEventTrackLite {
     const AxisSpec axis1overPt{bins1overPt, "1/#it{p}_{T} (GeV/c)^{-1}"};
     const AxisSpec axisEta{binsEta, "#it{#eta}"};
     const AxisSpec axisPhi{binsPhi, "#it{#phi} (rad)"};
+    const AxisSpec axisVtxZ{binsVtxZ, "Vertex Z (cm)"};
 
     // TPC dEdx splines
     betheBlock.setUpBetheBlockAleph(tpcSplinesPeriod);
 
     // kine histograms
-    histos.add("Tracks/VertexPositionZ", "", kTH1D, {{100, -20.f, 20.f, "Vertex Z (cm)"}});
-    histos.add("Tracks/VertexPositionZvsEta", "", kTH2D, {axisEta, {100, -20.f, 20.f, "Vertex Z (cm)"}});
-    histos.add("Tracks/VertexPositionZvsEtaHasITS", "", kTH2D, {axisEta, {100, -20.f, 20.f, "Vertex Z (cm)"}});
+    histos.add("Tracks/VertexPositionZ", "", kTH1D, {axisVtxZ});
+    histos.add("Tracks/VertexPositionZvsEta", "", kTH2D, {axisEta, axisVtxZ});
+    histos.add("Tracks/VertexPositionZvsEtaHasITS", "", kTH2D, {axisEta, axisVtxZ});
     histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
     histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/Kine/phi", "#phi", kTH1D, {axisPhi});
@@ -283,11 +285,17 @@ struct qaEventTrackLite {
       histos.add("Particles/Kine/pt", "Particle #it{p}_{T}", kTH1D, {axisPt});
       histos.add("Particles/Kine/eta", "Particle #eta", kTH1D, {axisEta});
       histos.add("Particles/Kine/phi", "Particle #phi", kTH1D, {axisPhi});
-      histos.add("Particle/selPtEtaPhiMCGenPrimary", "pt eta phi map MC gen Primary; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoNoSelPrimary", "pt eta phi map MC gen Primary sel0; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC gen Primary sel1; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC gen Primary sel2; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
-      histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC gen Primary sel3; pt,eta,phi", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCGenPrimary", "pt eta phi map MC gen Primary", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoNoSelPrimary", "pt eta phi map MC reco Primary sel0", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel1Primary", "pt eta phi map MC reco Primary sel1", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel2Primary", "pt eta phi map MC reco Primary sel2", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+      histos.add("Particle/selPtEtaPhiMCRecoSel3Primary", "pt eta phi map MC reco Primary sel3", kTH3D, {axisPt, {50, -1.2, 1.2, "#eta"}, {30, 0., 2 * M_PI, "#varphi"}});
+
+      histos.add("Particle/selPtEtaVtxzMCGenPrimary", "pt eta VtxZ map MC gen Primary", kTH3F, {axisPt, axisEta, axisVtxZ});
+      histos.add("Particle/selPtEtaVtxzMCRecoNoSelPrimary", "pt eta VtxZ map MC reco Primary sel0", kTH3F, {axisPt, axisEta, axisVtxZ});
+      histos.add("Particle/selPtEtaVtxzMCRecoSel1Primary", "pt eta VtxZ map MC reco Primary sel1", kTH3F, {axisPt, axisEta, axisVtxZ});
+      histos.add("Particle/selPtEtaVtxzMCRecoSel2Primary", "pt eta VtxZ map MC reco Primary sel2", kTH3F, {axisPt, axisEta, axisVtxZ});
+      histos.add("Particle/selPtEtaVtxzMCRecoSel3Primary", "pt eta VtxZ map MC reco Primary sel3", kTH3F, {axisPt, axisEta, axisVtxZ});
       histos.add("Tracks/resoPhivsPtvsEta", "#varphi(reco)-#varphi(gen);", kTH3D, {axisPt, axisEta, {180, -M_PI, M_PI, "#varphi(reco)-#varphi(gen)"}});
       histos.add("Tracks/phiRecovsphiGen", "#varphi(reco) vs. #varphi(gen);", kTH2D, {axisPhi, axisPhi});
       histos.get<TH2>(HIST("Tracks/phiRecovsphiGen"))->GetXaxis()->SetTitle("#varphi(reco)");
@@ -316,16 +324,17 @@ struct qaEventTrackLite {
   // TOF
   Filter tofChi = o2::aod::track::tofChi2 > chi2TofMin;
   Filter length = o2::aod::track::length > lengthMin;
-
   template <bool isMC, typename trackType>
   void fillHistograms(trackType const& track)
   {
-
-    if (TMath::Abs(track.dpgCollision().posZ()) > vtxZMax)
+    const float vtxZ = track.dpgCollision().posZ();
+    if (TMath::Abs(vtxZ) > vtxZMax) {
       return;
+    }
     if constexpr (isMC) {
-      if (track.productionMode() == 0 && isPdgSelected(track.pdgCode())) {
+      if (track.isPhysicalPrimary() && isPdgSelected(track.pdgCode())) {
         histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
+        histos.fill(HIST("Particle/selPtEtaVtxzMCGenPrimary"), track.ptMC(), track.etaMC(), vtxZ);
       }
     }
     // temporary additional selections
@@ -338,18 +347,22 @@ struct qaEventTrackLite {
     Bool_t isPdgOk = true;
     if constexpr (isMC) {
       isPdgOk = isPdgSelected(track.pdgCode());
-      if (track.productionMode() == 0 && isPdgOk) {
+      if (track.isPhysicalPrimary() && isPdgOk) {
         histos.get<TH1>(HIST("Particles/PDGs"))->Fill(Form("%i", track.pdgCode()), 1);
         histos.fill(HIST("Particle/selPtEtaPhiMCRecoNoSelPrimary"), track.ptMC(), track.etaMC(), track.phiMC());
+        histos.fill(HIST("Particle/selPtEtaVtxzMCRecoNoSelPrimary"), track.ptMC(), track.etaMC(), vtxZ);
 
         if (sel1) {
           histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel1Primary"), track.ptMC(), track.etaMC(), track.phiMC());
+          histos.fill(HIST("Particle/selPtEtaVtxzMCRecoSel1Primary"), track.ptMC(), track.etaMC(), vtxZ);
         }
         if (sel2) {
           histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel2Primary"), track.ptMC(), track.etaMC(), track.phiMC());
+          histos.fill(HIST("Particle/selPtEtaVtxzMCRecoSel2Primary"), track.ptMC(), track.etaMC(), vtxZ);
         }
         if (sel3) {
           histos.fill(HIST("Particle/selPtEtaPhiMCRecoSel3Primary"), track.ptMC(), track.etaMC(), track.phiMC());
+          histos.fill(HIST("Particle/selPtEtaVtxzMCRecoSel3Primary"), track.ptMC(), track.etaMC(), vtxZ);
         }
       }
 
@@ -473,22 +486,27 @@ struct qaEventTrackLite {
   PROCESS_SWITCH(qaEventTrackLite, processDataLite, "process data lite", true);
 
   // Process MC
-  void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGRecoParticles>> const& tracks, aod::DPGCollisions const&, aod::DPGNonRecoParticles const& particles)
+  void processMCLite(o2::soa::Filtered<soa::Join<aod::DPGTracks, aod::DPGRecoParticles>> const& tracks, aod::DPGCollisions const&,
+                     aod::DPGNonRecoParticles const& nonRecoParticles)
   {
     for (const auto& track : tracks) {
       fillHistograms<true>(track);
     }
 
-    for (const auto& particle : particles) {
-      if (TMath::Abs(particle.dpgCollision().posZ()) > vtxZMax)
+    for (const auto& particle : nonRecoParticles) {
+      const float vtxZ = particle.dpgCollision().posZ();
+      if (TMath::Abs(vtxZ) > vtxZMax) {
         continue;
+      }
 
       histos.fill(HIST("Particles/Kine/pt"), particle.ptMC());
       histos.fill(HIST("Particles/Kine/eta"), particle.etaMC());
       histos.fill(HIST("Particles/Kine/phi"), particle.phiMC());
 
-      if (particle.productionMode() == 0 && isPdgSelected(particle.pdgCode()))
+      if (particle.isPhysicalPrimary() && isPdgSelected(particle.pdgCode())) {
         histos.fill(HIST("Particle/selPtEtaPhiMCGenPrimary"), particle.ptMC(), particle.etaMC(), particle.phiMC());
+        histos.fill(HIST("Particle/selPtEtaVtxzMCGenPrimary"), particle.ptMC(), particle.etaMC(), vtxZ);
+      }
     }
   }
   PROCESS_SWITCH(qaEventTrackLite, processMCLite, "process MC lite", false);
