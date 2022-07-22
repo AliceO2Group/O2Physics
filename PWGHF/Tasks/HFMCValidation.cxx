@@ -317,7 +317,7 @@ struct ValidationRecLevel {
   {
     // loop over tracks
     for (auto& track : tracks) {
-      if (!track.isGlobalTrackWoDCA() != (uint8_t) true) {
+      if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
         continue;
       }
       uint index = uint(track.collisionId() >= 0);
