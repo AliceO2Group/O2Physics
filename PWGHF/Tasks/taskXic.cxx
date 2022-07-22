@@ -15,6 +15,7 @@
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 /// \author Anton Alkin <anton.alkin@cern.ch>, CERN
+/// \author Jinjoo Seo <jin.joo.seo@cern.ch>, Inha University
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
