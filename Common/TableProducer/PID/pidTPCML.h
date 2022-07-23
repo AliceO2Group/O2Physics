@@ -54,6 +54,8 @@ class Network
   // Getters & Setters
   int getInputDimensions() const { return mInputShapes[0][1]; };
   int getOutputDimensions() const { return mOutputShapes[0][1]; };
+  void SetNClNormalization(const float nclnorm) { nClNorm = nclnorm; }
+  const float GetNClNormalization() const { return nClNorm; }
 
  private:
   // Environment variables for the ONNX runtime
@@ -66,6 +68,8 @@ class Network
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;
   std::vector<std::vector<int64_t>> mOutputShapes;
+
+  float nClNorm = 152.f;
 
   // Internal function for printing the shape of tensors: See https://github.com/saganatt/PID_ML_in_O2 or O2Physics/Tools/PIDML/simpleApplyPidOnnxModel.cxx
   std::string printShape(const std::vector<int64_t>& v)
@@ -167,7 +171,7 @@ std::vector<float> Network::createInputFromTrack(const C& collision_it, const T&
   const float signed1Pt = track.signed1Pt();
   const float mass = o2::track::pid_constants::sMasses[id];
   const float multTPC = collision_it.multTPC() / 11000.;
-  const float ncl = std::sqrt(159. / track.tpcNClsFound());
+  const float ncl = std::sqrt(nClNorm / track.tpcNClsFound());
 
   std::vector<float> inputValues{p, tgl, signed1Pt, mass, multTPC, ncl};
 
