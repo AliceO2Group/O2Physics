@@ -93,6 +93,14 @@ DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
 DECLARE_SOA_TABLE(HFSelDplusToPiKPiCandidate, "AOD", "HFSELDPLUSCAND", //!
                   hf_selcandidate_dplus::IsSelDplusToPiKPi);
 
+namespace hf_selcandidate_ds
+{
+DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); // Ds candidates in KKpi decay channel column
+DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); // Ds candidates in piKK decay channel column
+} // namespace hf_selcandidate_ds
+DECLARE_SOA_TABLE(HFSelDsToKKPiCandidate, "AOD", "HFSELDSCAND", // Ds candidates selection table
+                  hf_selcandidate_ds::IsSelDsToKKPi, hf_selcandidate_ds::IsSelDsToPiKK);
+
 namespace hf_selcandidate_lc
 {
 DECLARE_SOA_COLUMN(IsSelLcpKpi, isSelLcpKpi, int); //!
