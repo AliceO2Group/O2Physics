@@ -269,6 +269,7 @@ struct qaEventTrack {
     }
 
     /// check correct track-to-vertex matching exploiting MC info
+    std::vector<int> vec_coll_index_mismatched = {};
     for (auto& track : tracks) {
       histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/ptAllTracks"), track.pt());
       bool has_MCparticle = track.has_mcParticle();
@@ -301,6 +302,20 @@ struct qaEventTrack {
               histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchSecondary"), pvZdiff, track.pt());
             } else {
               histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchMaterial"), pvZdiff, track.pt());
+            }
+            /// event properties for collisions containing mismathced tracks
+            auto it = std::find(vec_coll_index_mismatched.begin(), vec_coll_index_mismatched.end(), collReco.globalIndex());
+            if (it == vec_coll_index_mismatched.end()) {
+              /// collision not yet considered, fill the distributions
+              // LOG(info) << "===> collision " << collReco.globalIndex() << " not found yet! Fill the distributions";
+              // LOG(info) << "     vector dim: " << vec_coll_index_mismatched.size();
+              const double nTracksInColl = tracks.sliceBy(perRecoCollision, collReco.globalIndex()).size();
+              histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/hPVxCollWithMismTrk"), collReco.posX());
+              histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/hPVyCollWithMismTrk"), collReco.posY());
+              histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/hPVzCollWithMismTrk"), collReco.posZ());
+              histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/hPVcontrCollWithMismTrk"), collReco.numContrib());
+              histos.fill(HIST("Tracks/TestMCtrackToVtxMatch/hNTracksCollWithMismTrk"), nTracksInColl);
+              vec_coll_index_mismatched.push_back(collReco.globalIndex());
             }
           }
         }
@@ -556,21 +571,30 @@ void qaEventTrack::init(InitContext const&)
   histos.add("Tracks/KineUnmatchTracks/eta", "#eta", kTH1D, {axisEta});
   histos.add("Tracks/KineUnmatchTracks/phi", "#varphi", kTH1D, {axisPhi});
 
-  /// check correct track-to-vertex matching
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptAllTracks", "all tracks (MC)", kTH1D, {axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptAllTracksInColl", "all tracks in collision (MC)", kTH1D, {axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptAllTracksWoColl", "all tracks w/o collision (MC)", kTH1D, {axisPt});
-  auto hUnmatched = histos.add<TH2>("Tracks/TestMCtrackToVtxMatch/ptVsOriginUnmatchedwithMCpart", "tracks with part. not matched to reco. coll. (MC)", kTH2D, {{4, -1.5, 2.5}, axisPt});
-  hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(-1.), "not found");
-  hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(0.), "Phys. prim.");
-  hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(1.), "Secondary");
-  hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(2.), "Material");
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZgoodMatchPhysPrim", "good track-to-vtx matching phys. prim. (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchPhysPrim", "bad track-to-vtx matching phys. prim. (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZgoodMatchSecondary", "good track-to-vtx matching secondary (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchSecondary", "bad track-to-vtx matching secondary (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZgoodMatchMaterial", "good track-to-vtx matching material (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
-  histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchMaterial", "bad track-to-vtx matching material (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+  /// check correct track-to-vertex matching (MC)
+  if (doprocessMC) {
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptAllTracks", "all tracks (MC)", kTH1D, {axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptAllTracksInColl", "all tracks in collision (MC)", kTH1D, {axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptAllTracksWoColl", "all tracks w/o collision (MC)", kTH1D, {axisPt});
+    auto hUnmatched = histos.add<TH2>("Tracks/TestMCtrackToVtxMatch/ptVsOriginUnmatchedwithMCpart", "tracks with part. not matched to reco. coll. (MC)", kTH2D, {{4, -1.5, 2.5}, axisPt});
+    hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(-1.), "not found");
+    hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(0.), "Phys. prim.");
+    hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(1.), "Secondary");
+    hUnmatched->GetXaxis()->SetBinLabel(hUnmatched->GetXaxis()->FindBin(2.), "Material");
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZgoodMatchPhysPrim", "good track-to-vtx matching phys. prim. (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchPhysPrim", "bad track-to-vtx matching phys. prim. (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZgoodMatchSecondary", "good track-to-vtx matching secondary (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchSecondary", "bad track-to-vtx matching secondary (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZgoodMatchMaterial", "good track-to-vtx matching material (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+    histos.add("Tracks/TestMCtrackToVtxMatch/ptVsDpvZbadMatchMaterial", "bad track-to-vtx matching material (MC)", kTH2D, {{100, -0.1, 0.1, "pvZ(reco coll.) - pvZ(MC coll.)"}, axisPt});
+
+    // event properties for collisions containing mismathced tracks
+    histos.add("Tracks/TestMCtrackToVtxMatch/hPVxCollWithMismTrk", "x coordinate of PV for collisions containing a mismatched track;;counts;", kTH1D, {axisVertexPosX});
+    histos.add("Tracks/TestMCtrackToVtxMatch/hPVyCollWithMismTrk", "y coordinate of PV for collisions containing a mismatched track;;counts;", kTH1D, {axisVertexPosY});
+    histos.add("Tracks/TestMCtrackToVtxMatch/hPVzCollWithMismTrk", "z coordinate of PV for collisions containing a mismatched track;;counts;", kTH1D, {axisVertexPosZ});
+    histos.add("Tracks/TestMCtrackToVtxMatch/hPVcontrCollWithMismTrk", "number of PV contributors for collisions containing a mismatched track;;counts;", kTH1D, {axisVertexNumContrib});
+    histos.add("Tracks/TestMCtrackToVtxMatch/hNTracksCollWithMismTrk", "number of tracks for collisions containing a mismatched track;;counts;", kTH1D, {axisTrackMultiplicity});
+  }
 
   // track histograms
   auto hselAxis = histos.add<TH1>("Tracks/selection", "trackSelection", kTH1F, {{40, 0.5, 40.5}})->GetXaxis();
