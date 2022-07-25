@@ -30,6 +30,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::track;
 
 AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
@@ -38,6 +39,16 @@ AxisSpec EtaAxis = {22, -2.2, 2.2};
 AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
+
+static constexpr TrackSelectionFlags::flagtype trackSelectionPattern = TrackSelectionFlags::kTrackType |
+                                                                       TrackSelectionFlags::kTPCNCls |
+                                                                       TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+                                                                       TrackSelectionFlags::kTPCChi2NDF |
+                                                                       TrackSelectionFlags::kITSChi2NDF |
+                                                                       TrackSelectionFlags::kITSHits |
+                                                                       TrackSelectionFlags::kGoldenChi2 |
+                                                                       TrackSelectionFlags::kDCAz |
+                                                                       TrackSelectionFlags::kDCAxy;
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
@@ -157,10 +168,9 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
-  expressions::Filter ITStracks = (aod::track::detectorMap & (uint8_t)o2::aod::track::ITS) != (uint8_t)0;
-  expressions::Filter tracksDCAcut = ifnode(useDCAZcut.node() == false, true, nabs(aod::track::dcaZ) <= maxDCAZ);
+  expressions::Filter trackSelectionFilter = (aod::track::trackCutFlag & trackSelectionPattern) == trackSelectionPattern;
 
-  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+  using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
   Partition<FiTracks> sample = nabs(aod::track::eta) < estimatorEta;
 
