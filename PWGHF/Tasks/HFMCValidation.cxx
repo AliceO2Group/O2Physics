@@ -52,6 +52,14 @@ static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 /// - Momentum Conservation for these particles
 
 struct ValidationGenLevel {
+
+  Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
+  Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of generated primary vertex [cm]"};
+  Configurable<double> yVertexMin{"yVertexMin", -100., "min. y of generated primary vertex [cm]"};
+  Configurable<double> yVertexMax{"yVertexMax", 100., "max. y of generated primary vertex [cm]"};
+  Configurable<double> zVertexMin{"zVertexMin", -10., "min. z of generated primary vertex [cm]"};
+  Configurable<double> zVertexMax{"zVertexMax", 10., "max. z of generated primary vertex [cm]"};
+
   std::shared_ptr<TH1> hPromptCharmHadronsPtDistr, hPromptCharmHadronsYDistr, hNonPromptCharmHadronsPtDistr, hNonPromptCharmHadronsYDistr, hPromptCharmHadronsDecLenDistr, hNonPromptCharmHadronsDecLenDistr, hQuarkPerEvent;
 
   HistogramRegistry registry{
@@ -101,6 +109,26 @@ struct ValidationGenLevel {
     }
   }
 
+  /// Primary-vertex selection
+  /// \param collision  mccollision table row
+  template <typename Col>
+  bool selectVertex(const Col& collision)
+  {
+    // x position
+    if (collision.posX() < xVertexMin || collision.posX() > xVertexMax) {
+      return false;
+    }
+    // y position
+    if (collision.posY() < yVertexMin || collision.posY() > yVertexMax) {
+      return false;
+    }
+    // z position
+    if (collision.posZ() < zVertexMin || collision.posZ() > zVertexMax) {
+      return false;
+    }
+    return true;
+  }
+
   void process(aod::McCollision const& mccollision, aod::McParticles const& particlesMC)
   {
     int cPerCollision = 0;
@@ -115,6 +143,9 @@ struct ValidationGenLevel {
     std::vector<int> listDaughters{};
 
     for (auto& particle : particlesMC) {
+      if (!selectVertex(mccollision))
+        continue;
+
       int particlePdgCode = particle.pdgCode();
       if (!particle.has_mothers()) {
         continue;
@@ -242,18 +273,20 @@ struct ValidationRecLevel {
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
   std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
-  std::array<std::shared_ptr<TH1>, 2> histOriginTracks;
+  std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
 
   HistogramRegistry registry{"registry", {}};
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<TH1>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
-    histOriginTracks[1] = registry.add<TH1>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c})", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
+    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}});   // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}});      // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}});  // tracks associated to the correct collision (considering the MC collision index)
+    histOriginTracks[3] = registry.add<THnSparse>("histOriginWrongAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}}); // tracks associated to the wrong collision (considering the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
-      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(1, "no MC particle");
-      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(2, "no quark");
-      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(3, "charm");
-      histOriginTracks[iHist]->GetXaxis()->SetBinLabel(4, "beauty");
+      histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(1, "no MC particle");
+      histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(2, "no quark");
+      histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(3, "charm");
+      histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(4, "beauty");
     }
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
       histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
@@ -277,18 +310,34 @@ struct ValidationRecLevel {
 
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
+  using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection>;
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, aod::BigTracksMC const& tracks, aod::McParticles const& particlesMC)
+  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, CollisionsWithMCLabels const& collisions)
   {
     // loop over tracks
     for (auto& track : tracks) {
+      if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
+        continue;
+      }
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
-        histOriginTracks[index]->Fill(origin, track.pt());
+        float deltaZ = -999.f;
+        if (index) {
+          auto collision = track.collision_as<CollisionsWithMCLabels>();
+          auto mcCollision = particle.mcCollision();
+          deltaZ = collision.posZ() - mcCollision.posZ();
+          uint index2 = 2;
+          if (collision.mcCollisionId() == particle.mcCollisionId()) {
+            index2 = 1;
+          }
+          histOriginTracks[index + index2]->Fill(origin, track.pt(), track.eta(), deltaZ);
+        }
+        histOriginTracks[index]->Fill(origin, track.pt(), track.eta(), deltaZ);
       } else {
-        histOriginTracks[index]->Fill(-1., track.pt());
+        histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f);
       }
     }
 
@@ -316,8 +365,8 @@ struct ValidationRecLevel {
 
       if (whichHad >= 0 && whichOrigin >= 0) {
         int indexParticle = 0;
-        if (cand2Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand2Prong.index0_as<TracksWithSel>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, cand2Prong.index0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
@@ -381,8 +430,8 @@ struct ValidationRecLevel {
 
       if (whichHad >= 0) {
         int indexParticle = 0;
-        if (cand3Prong.index0_as<aod::BigTracksMC>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<aod::BigTracksMC>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand3Prong.index0_as<TracksWithSel>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(particlesMC, cand3Prong.index0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = particlesMC.rawIteratorAt(indexParticle);
         histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());

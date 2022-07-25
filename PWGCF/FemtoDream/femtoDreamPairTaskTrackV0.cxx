@@ -186,7 +186,7 @@ struct femtoDreamPairTaskTrackV0 {
   void processMixedEvent(o2::aod::FemtoDreamCollisions& cols,
                          o2::aod::FemtoDreamParticles& parts)
   {
-    BinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 

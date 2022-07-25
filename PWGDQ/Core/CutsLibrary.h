@@ -284,6 +284,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmee_TPCTrackRun3_lowPt")) {
+    cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
+    cut->AddCut(GetAnalysisCut("TightTPCTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
+    return cut;
+  }
+
   if (!nameStr.compare("lmee_GlobalTrackRun3_TPC_ePID_lowPt")) {
     cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -457,6 +464,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
     cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
     cut->AddCut(VarManager::kITSncls, 3.5, 9.);
+    return cut;
+  }
+
+  if (!nameStr.compare("TightTPCTrackRun3")) {
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
     return cut;
   }
 
