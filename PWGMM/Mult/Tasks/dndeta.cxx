@@ -204,7 +204,7 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processCounting, "Count tracks", false);
 
   using Particles = soa::Filtered<aod::McParticles>;
-  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TracksDCA>;
+  using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using Particle = Particles::iterator;
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
   expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
