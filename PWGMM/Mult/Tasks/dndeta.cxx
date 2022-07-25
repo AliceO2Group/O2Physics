@@ -48,8 +48,6 @@ struct MultiplicityCounter {
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<float> maxDCAZ{"maxDCAZ", 0.3f, "max track DCAZ"};
   Configurable<bool> useDCAZcut{"useDCAZcut", true, "apply track DCAZ cut"};
-  Configurable<bool> useZDfiffCut{"useZDiffCut", true, "use Z difference cut"};
-  Configurable<float> maxZDiff{"maxZDiff", 1.0f, "max allowed Z difference for reconstruced collisions (cm)"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
 
   HistogramRegistry registry{
@@ -92,10 +90,8 @@ struct MultiplicityCounter {
       registry.add({"Tracks/PhiEtaGen", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"Tracks/Control/PhiEtaGenDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"Tracks/Control/PhiEtaDuplicates", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}});
-      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{7, 0.5, 7.5}}}});
+      registry.add({"Events/Efficiency", "; status; events", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
       registry.add({"Events/NotFoundEventZvtx", " ; Z_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
-
-      registry.add({"Events/ZposDiff", " ; Z_{rec} - Z_{gen} (cm)", {HistType::kTH1F, {DeltaZAxis}}});
 
       if (fillResponse) {
         registry.add({"Events/Response", " ; N_{rec}; N_{gen}; Z_{vtx} (cm)", {HistType::kTH3F, {MultAxis, MultAxis, ZAxis}}});
@@ -110,8 +106,6 @@ struct MultiplicityCounter {
       x->SetBinLabel(3, "Reconstructed");
       x->SetBinLabel(4, "Selected");
       x->SetBinLabel(5, "Selected INEL>0");
-      x->SetBinLabel(6, "Selected (Zdiff)");
-      x->SetBinLabel(7, "Selected INEL>0 (ZDiff)");
     }
 
     if (doprocessTrackEfficiency) {
@@ -221,11 +215,6 @@ struct MultiplicityCounter {
         continue;
       }
       auto mcCollision = collision.mcCollision();
-      if (useZDfiffCut) {
-        if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
-          continue;
-        }
-      }
       auto particlesI = primariesI->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
       particlesI.bindExternalIndices(&tracks);
 
@@ -315,11 +304,6 @@ struct MultiplicityCounter {
         continue;
       }
       auto mcCollision = collision.mcCollision();
-      if (useZDfiffCut) {
-        if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
-          continue;
-        }
-      }
       auto particles = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
       auto tracks = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex());
       tracks.bindExternalIndices(&mcParticles);
@@ -388,12 +372,6 @@ struct MultiplicityCounter {
           registry.fill(HIST("Events/Efficiency"), 5.);
         }
 
-        registry.fill(HIST("Events/ZposDiff"), collision.posZ() - mcCollision.posZ());
-        if (useZDfiffCut) {
-          if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
-            continue;
-          }
-        }
         registry.fill(HIST("Events/Efficiency"), 6.);
         ++moreThanOne;
         atLeastOne = true;
