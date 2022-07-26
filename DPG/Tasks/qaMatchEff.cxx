@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \brief A task for basic checks on track matching efficiency
+/// \brief A task for basic checks on ITS-TPC track matching efficiency
 /// \author Rosario Turrisi (rosario.turrisi@pd.infn.it)
-/// \since 1887
+/// \since 2022
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -50,13 +50,19 @@ struct qaMatchEff {
   // histo axes
   //
   // non uniform pt binning
-  std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
-  AxisSpec axisPt{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-  // const AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
+  //  std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
+  std::vector<double> ptBinning = {0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
   //
-  AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
+  // pdg codes histo
+  std::vector<double> pdgBinning = {0.0, 110.0, 400.0, 1000.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0, 10000.0, 100000.0, 1000000.0};
+  //
+  AxisSpec axisPDG{pdgBinning, "PDG code"};
+  //
+  AxisSpec axisPt{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+  //
+  AxisSpec axisEta{etaBins, etaMin, etaMax, "#eta"};
   AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
-  AxisSpec axisDEta{etaBins, etaMin, etaMax, "D#it{#eta}"};
+  AxisSpec axisDEta{etaBins, etaMin, etaMax, "D#eta"};
   AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
   //
   // Init function
@@ -84,23 +90,31 @@ struct qaMatchEff {
     // data histos
     // tpc request and tpc+its request for all, positive and negative charges vs pt, phi, eta (18 histos tot)
     histos.add("data/pthist_tpc", "#it{p}_{T} distribution - data TPC tag", kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpc", "#it{#eta} distribution - data TPC tag", kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpc", "#it{#phi} distribution - data TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("data/etahist_tpc", "#eta distribution - data TPC tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc", "#phi distribution - data TPC tag", kTH1F, {axisPhi}, true);
     histos.add("data/pthist_tpcits", "#it{p}_{T} distribution - data TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpcits", "#it{#eta} distribution - data TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpcits", "#it{#phi} distribution - data TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("data/etahist_tpcits", "#eta distribution - data TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits", "#phi distribution - data TPC+ITS tag", kTH1F, {axisPhi}, true);
     histos.add("data/pthist_tpc_pos", "#it{p}_{T} distribution - data q>0 TPC tag", kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpc_pos", "#it{#eta} distribution - data q>0 TPC tag", kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpc_pos", "#it{#phi} distribution - data q>0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("data/etahist_tpc_pos", "#eta distribution - data q>0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc_pos", "#phi distribution - data q>0 TPC tag", kTH1F, {axisPhi}, true);
     histos.add("data/pthist_tpcits_pos", "#it{p}_{T} distribution - data q>0 TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpcits_pos", "#it{#eta} distribution - data q>0 TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpcits_pos", "#it{#phi} distribution - data q>0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("data/etahist_tpcits_pos", "#eta distribution - data q>0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits_pos", "#phi distribution - data q>0 TPC+ITS tag", kTH1F, {axisPhi}, true);
     histos.add("data/pthist_tpc_neg", "#it{p}_{T} distribution - data q<0 TPC tag", kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpc_neg", "#it{#eta} distribution - data q<0 TPC tag", kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpc_neg", "#it{#phi} distribution - data q<0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("data/etahist_tpc_neg", "#eta distribution - data q<0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc_neg", "#phi distribution - data q<0 TPC tag", kTH1F, {axisPhi}, true);
     histos.add("data/pthist_tpcits_neg", "#it{p}_{T} distribution - data q<0 TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("data/etahist_tpcits_neg", "#it{#eta} distribution - data q<0 TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("data/phihist_tpcits_neg", "#it{#phi} distribution - data q<0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("data/etahist_tpcits_neg", "#eta distribution - data q<0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits_neg", "#phi distribution - data q<0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    //
+    // pt>0.5 GeV/c threshold
+    histos.add("data/pthist_tpc_05", "#it{p}_{T} distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpc_05", "#eta distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpc_05", "#phi distribution - data TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
+    histos.add("data/pthist_tpcits_05", "#it{p}_{T} distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("data/etahist_tpcits_05", "#eta distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("data/phihist_tpcits_05", "#phi distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
   }
   //
   // Init MC function
@@ -118,99 +132,119 @@ struct qaMatchEff {
     //
     // all, positive, negative
     histos.add("MC/pthist_tpc", "#it{p}_{T} distribution - MC TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc", "#it{#eta} distribution - MC TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc", "#it{#phi} distribution - MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc", "#eta distribution - MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc", "#phi distribution - MC TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits", "#it{p}_{T} distribution - MC TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits", "#it{#eta} distribution - MC TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits", "#it{#phi} distribution - MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits", "#eta distribution - MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits", "#phi distribution - MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpc_pos", "#it{p}_{T} distribution - MC q>0 TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pos", "#it{#eta} distribution - MC q>0 TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_pos", "#it{#phi} distribution - MC q>0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_pos", "#eta distribution - MC q>0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pos", "#phi distribution - MC q>0 TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_pos", "#it{p}_{T} distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pos", "#it{#eta} distribution - MC q>0 TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pos", "#it{#phi} distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_pos", "#eta distribution - MC q>0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pos", "#phi distribution - MC q>0 TPC+ITS tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpc_neg", "#it{p}_{T} distribution - MC q<0 TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_neg", "#it{#eta} distribution - MC q<0 TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_neg", "#it{#phi} distribution - MC q<0 TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_neg", "#eta distribution - MC q<0 TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_neg", "#phi distribution - MC q<0 TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_neg", "#it{p}_{T} distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_neg", "#it{#eta} distribution - MC q<0 TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_neg", "#it{#phi} distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_neg", "#eta distribution - MC q<0 TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_neg", "#phi distribution - MC q<0 TPC+ITS tag", kTH1F, {axisPhi}, true);
     //
     // primaries, secondaries
     histos.add("MC/pthist_tpc_prim", "#it{p}_{T} distribution - MC prim TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_prim", "#it{#eta} distribution - MC prim TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_prim", "#it{#phi} distribution - MC prim TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_prim", "#eta distribution - MC prim TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_prim", "#phi distribution - MC prim TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_prim", "#it{p}_{T} distribution - MC prim TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_prim", "#it{#eta} distribution - MC prim TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_prim", "#it{#phi} distribution - MC prim TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_prim", "#eta distribution - MC prim TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_prim", "#phi distribution - MC prim TPC+ITS tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpc_secd", "#it{p}_{T} distribution - MC dec. sec. TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_secd", "#it{#eta} distribution - MC dec. sec. TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_secd", "#it{#phi} distribution - MC dec. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_secd", "#eta distribution - MC dec. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_secd", "#phi distribution - MC dec. sec. TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_secd", "#it{p}_{T} distribution - MC dec.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_secd", "#it{#eta} distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_secd", "#it{#phi} distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_secd", "#eta distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_secd", "#phi distribution - MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpc_secm", "#it{p}_{T} distribution - MC mat. sec. TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_secm", "#it{#eta} distribution - MC mat. sec. TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_secm", "#it{#phi} distribution - MC mat. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_secm", "#eta distribution - MC mat. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_secm", "#phi distribution - MC mat. sec. TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_secm", "#it{p}_{T} distribution - MC mat.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_secm", "#it{#eta} distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_secm", "#it{#phi} distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_secm", "#eta distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_secm", "#phi distribution - MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
     //
     // pions only
     // all
-    histos.add("MC/pthist_tpc_pi", "#it{p}_{T} distribution - {#pi} MC TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi", "#it{#eta} distribution - {#pi} MC TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_pi", "#it{#phi} distribution - {#pi} MC TPC tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_pi", "#it{p}_{T} distribution - {#pi} MC TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi", "#it{#eta} distribution - {#pi} MC TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi", "#it{#phi} distribution - {#pi} MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi", "#it{p}_{T} distribution - #pi MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi", "#eta distribution - #pi MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi", "#phi distribution - #pi MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi", "#it{p}_{T} distribution - #pi MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi", "#eta distribution - #pi MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi", "#phi distribution - #pi MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     // split in prim secd secm
-    histos.add("MC/pthist_tpc_pi_prim", "#it{p}_{T} distribution - {#pi} MC prim TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi_prim", "#it{#eta} distribution - {#pi} MC prim TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_pi_prim", "#it{#phi} distribution - {#pi} MC prim TPC tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_pi_prim", "#it{p}_{T} distribution - {#pi} MC prim TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi_prim", "#it{#eta} distribution - {#pi} MC prim TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi_prim", "#it{#phi} distribution - {#pi} MC prim TPC+ITS tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpc_pi_secd", "#it{p}_{T} distribution - {#pi} MC dec. sec. TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi_secd", "#it{#eta} distribution - {#pi} MC dec. sec. TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_pi_secd", "#it{#phi} distribution - {#pi} MC dec. sec. TPC tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_pi_secd", "#it{p}_{T} distribution - {#pi} MC dec.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi_secd", "#it{#eta} distribution - {#pi} MC dec. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi_secd", "#it{#phi} distribution - {#pi} MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpc_pi_secm", "#it{p}_{T} distribution - {#pi} MC mat. sec. TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_pi_secm", "#it{#eta} distribution - {#pi} MC mat. sec. TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_pi_secm", "#it{#phi} distribution - {#pi} MC mat. sec. TPC tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_pi_secm", "#it{p}_{T} distribution - {#pi} MC mat.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_pi_secm", "#it{#eta} distribution - {#pi} MC mat. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_pi_secm", "#it{#phi} distribution - {#pi} MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi_prim", "#it{p}_{T} distribution - #pi MC prim TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi_prim", "#eta distribution - #pi MC prim TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi_prim", "#phi distribution - #pi MC prim TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi_prim", "#it{p}_{T} distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi_prim", "#eta distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi_prim", "#phi distribution - #pi MC prim TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi_secd", "#it{p}_{T} distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi_secd", "#eta distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi_secd", "#phi distribution - #pi MC dec. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi_secd", "#it{p}_{T} distribution - #pi MC dec.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi_secd", "#eta distribution - #pi MC dec. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi_secd", "#phi distribution - #pi MC dec. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_pi_secm", "#it{p}_{T} distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_pi_secm", "#eta distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_pi_secm", "#phi distribution - #pi MC mat. sec. TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_pi_secm", "#it{p}_{T} distribution - #pi MC mat.sec. TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_pi_secm", "#eta distribution - #pi MC mat. sec. TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_pi_secm", "#phi distribution - #pi MC mat. sec. TPC+ITS tag", kTH1F, {axisPhi}, true);
     // protons only
     // all
     histos.add("MC/pthist_tpc_P", "#it{p}_{T} distribution - prot MC TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_P", "#it{#eta} distribution - prot MC TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_P", "#it{#phi} distribution - prot MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_P", "#eta distribution - prot MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_P", "#phi distribution - prot MC TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_P", "#it{p}_{T} distribution - prot MC TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_P", "#it{#eta} distribution - prot MC TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_P", "#it{#phi} distribution - prot MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_P", "#eta distribution - prot MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_P", "#phi distribution - prot MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     // kaons only
     // all
     histos.add("MC/pthist_tpc_K", "#it{p}_{T} distribution - kaons MC TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_K", "#it{#eta} distribution - kaons MC TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_K", "#it{#phi} distribution - kaons MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpc_K", "#eta distribution - kaons MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_K", "#phi distribution - kaons MC TPC tag", kTH1F, {axisPhi}, true);
     histos.add("MC/pthist_tpcits_K", "#it{p}_{T} distribution - kaons MC TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_K", "#it{#eta} distribution - kaons MC TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_K", "#it{#phi} distribution - kaons MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/etahist_tpcits_K", "#eta distribution - kaons MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_K", "#phi distribution - kaons MC TPC+ITS tag", kTH1F, {axisPhi}, true);
     // pions+kaons
     // all
-    histos.add("MC/pthist_tpc_piK", "#it{p}_{T} distribution - {#pi}+kaons MC TPC tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpc_piK", "#it{#eta} distribution - {#pi}+kaons MC TPC tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpc_piK", "#it{#phi} distribution - {#pi}+kaons MC TPC tag", kTH1F, {axisPhi}, true);
-    histos.add("MC/pthist_tpcits_piK", "#it{p}_{T} distribution - {#pi}+kaons MC TPC+ITS tag", kTH1F, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_piK", "#it{#eta} distribution - {#pi}+kaons MC TPC+ITS tag", kTH1F, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_piK", "#it{#phi} distribution - {#pi}+kaons MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpc_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_piK", "#eta distribution - #pi+kaons MC TPC tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_piK", "#phi distribution - #pi+kaons MC TPC tag", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_piK", "#eta distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_piK", "#phi distribution - #pi+kaons MC TPC+ITS tag", kTH1F, {axisPhi}, true);
+    //
+    // pt>0.5 GeV/c threshold
+    histos.add("MC/pthist_tpc_05", "#it{p}_{T} distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_05", "#eta distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_05", "#phi distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_05", "#it{p}_{T} distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_05", "#eta distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_05", "#phi distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1F, {axisPhi}, true);
+    //
+    // all but primary/secondary pions
+    histos.add("MC/pthist_tpc_nopi", "#it{p}_{T} distribution - MC TPC tag ! prim/secd #pi", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpc_nopi", "#eta distribution - MC TPC tag ! prim/secd #pi", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpc_nopi", "#phi distribution - MC TPC tag ! prim/secd #pi", kTH1F, {axisPhi}, true);
+    histos.add("MC/pthist_tpcits_nopi", "#it{p}_{T} distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F, {axisPt}, true);
+    histos.add("MC/etahist_tpcits_nopi", "#eta distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F, {axisEta}, true);
+    histos.add("MC/phihist_tpcits_nopi", "#phi distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1F, {axisPhi}, true);
     //
     // extras: difference between reconstructed and MC truth for eta, phi
-    histos.add("MC/etahist_diff", "#it{#eta} difference track-MC ", kTH1F, {axisDEta}, true);
-    histos.add("MC/phihist_diff", "#it{#phi} difference track-MC", kTH1F, {axisDPh}, true);
+    histos.add("MC/etahist_diff", "#eta difference track-MC ", kTH1F, {axisDEta}, true);
+    histos.add("MC/phihist_diff", "#phi difference track-MC", kTH1F, {axisDPh}, true);
+    //
+    // hist sorting out PDG codes in wide bins
+    histos.add("MC/pdghist_num", "PDG code - when non primary/sec-d #pi TPC+ITS tag", kTH1F, {axisPDG}, true);
+    histos.add("MC/pdghist_den", "PDG code - when non primary/sec-d #pi TPC tag", kTH1F, {axisPDG}, true);
   }
   // //
   // // fill histos for TPC (all tracks)
@@ -272,6 +306,20 @@ struct qaMatchEff {
           histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
         } //  end if ITS
       }   //  end if TPC
+      //
+      // all tracks with pt>0.5
+      if (jT.pt()>0.5) {
+	if (jT.hasTPC()) {
+	  histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(jT.pt());
+	  histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
+	  histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
+	  if (jT.hasITS()) {
+	    histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(jT.pt());
+	    histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
+	    histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
+	  } //  end if ITS
+	}   //  end if TPC
+      }   //  end if pt > 0.5
       //
       // positive only
       if (jT.signed1Pt() > 0) {
@@ -419,6 +467,23 @@ struct qaMatchEff {
         } // end if secondaries from decay
           //
       }   // end pions only
+      //
+      // no primary/sec-d pions
+      if (!((TMath::Abs(mcpart.pdgCode()) == 211) && (mcpart.isPhysicalPrimary())) && !((TMath::Abs(mcpart.pdgCode()) == 211) && (!mcpart.isPhysicalPrimary() &&  (mcpart.getProcess() == 4))) )
+	{
+	  if (jT.hasTPC()) {
+	    histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(jT.pt());
+	    histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
+	    histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
+	    histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(TMath::Abs(mcpart.pdgCode()));
+	    if (jT.hasITS()) {
+	      histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(jT.pt());
+	      histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
+	      histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
+	      histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(TMath::Abs(mcpart.pdgCode()));
+	    } //  end if ITS
+	  }   //  end if TPC  
+	}  // end if not prim/sec-d pi
       //
       // kaons only
       if (TMath::Abs(mcpart.pdgCode()) == 321) {
