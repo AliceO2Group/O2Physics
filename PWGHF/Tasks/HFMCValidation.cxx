@@ -42,7 +42,7 @@ static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 /// Add relevant information about ambiguous tracks
 namespace o2::aod
 {
-// Columns to store the DCA to the primary vertex
+// Columns to store the information about ambiguous tracks joinable with the track table
 DECLARE_SOA_COLUMN(IsAmbiguousTrack, isAmbiguousTrack, bool);                              //!
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousCollisionIndices, ambiguousCollisionIndices); //!
 DECLARE_SOA_TABLE(TracksWithAmbiguousCollisionInfo, "AOD", "TRACKSWAMBINFO",               //!
