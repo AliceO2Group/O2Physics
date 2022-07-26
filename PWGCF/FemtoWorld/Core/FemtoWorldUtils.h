@@ -14,8 +14,8 @@
 ///
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTOWORLD_UTILS_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTOWORLD_UTILS_H_
+#ifndef FEMTOWORLDUTILS_H_
+#define FEMTOWORLDUTILS_H_
 
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
