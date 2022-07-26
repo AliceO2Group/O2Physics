@@ -168,6 +168,8 @@ struct CFFilter {
 
       registry.add("fPtPPL", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fPtAntiPPL", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fMinvLambda", "Invariant mass of lambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
+      registry.add("fMinvAntiLambda", "Invariant mass of antilambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
     }
 
     /// Initializing CCDB
@@ -205,6 +207,7 @@ struct CFFilter {
     auto partsLambda0 = partsLambda0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsProton1 = partsProton1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsLambda1 = partsLambda1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
+
     auto tmstamp = col.timestamp();
     auto mafneticField = getMagneticFieldTesla(tmstamp);
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
@@ -302,6 +305,7 @@ struct CFFilter {
         if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
           for (auto& partLambda : partsLambda0) {
             registry.get<TH1>(HIST("fPtPPL"))->Fill(partLambda.pt());
+            registry.get<TH1>(HIST("fMinvLambda"))->Fill(partLambda.mLambda());
             if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
               continue;
             }
@@ -331,6 +335,7 @@ struct CFFilter {
           if (partsLambda1.size() >= 1 && partsProton1.size() >= 2) {
             for (auto& partLambda : partsLambda1) {
               registry.get<TH1>(HIST("fPtAntiPPL"))->Fill(partLambda.pt());
+              registry.get<TH1>(HIST("fMinvAntiLambda"))->Fill(partLambda.mAntiLambda());
               if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
                 continue;
               }
