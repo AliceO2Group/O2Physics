@@ -348,6 +348,14 @@ struct ValidationRecLevel {
     }
     histAmbiguousTracks = registry.add<TH2>("histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
     histTracks = registry.add<TH2>("histTracks", "Tracks vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
+    histTracks->GetXaxis()->SetBinLabel(1, "no MC particle");
+    histTracks->GetXaxis()->SetBinLabel(2, "no quark");
+    histTracks->GetXaxis()->SetBinLabel(3, "charm");
+    histTracks->GetXaxis()->SetBinLabel(4, "beauty");
+    histAmbiguousTracks->GetXaxis()->SetBinLabel(1, "no MC particle");
+    histAmbiguousTracks->GetXaxis()->SetBinLabel(2, "no quark");
+    histAmbiguousTracks->GetXaxis()->SetBinLabel(3, "charm");
+    histAmbiguousTracks->GetXaxis()->SetBinLabel(4, "beauty");
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
       histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
       histDeltaPx[iHad] = registry.add<TH1>(Form("histDeltaPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
