@@ -56,7 +56,7 @@ struct qaMatchEff {
   // non uniform pt binning
   std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
   //
-  AxisSpec axisPDG{pdgBins, 0, pdgBins+1.000, "pdgclass"};
+  AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
   //
   AxisSpec axisPt{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
   //
@@ -248,8 +248,8 @@ struct qaMatchEff {
     //
     // hist sorting out PDG codes in wide bins
     histos.add("MC/pdghist_num", "PDG code - when non primary #pi TPC+ITS tag", kTH1F, {axisPDG}, true);
-    histos.add("MC/pdghist_den", "PDG code - when non primary #pi TPC tag",     kTH1F, {axisPDG}, true);
-    
+    histos.add("MC/pdghist_den", "PDG code - when non primary #pi TPC tag", kTH1F, {axisPDG}, true);
+
   } // end initMC
   //
   // //
@@ -273,7 +273,7 @@ struct qaMatchEff {
   int countNoMC = 0;
   int tpPDGCode = 0;
   std::vector<int>::iterator itr_pdg;
-  float pdg_fill=0.0;
+  float pdg_fill = 0.0;
   //
   //////////////////////////////////////////////// PROCESS FUNCTIONS //////////////////////////////////////////////////
   //
@@ -290,7 +290,7 @@ struct qaMatchEff {
         continue;
       }
       auto mcpart = jT.mcParticle();
-      tpPDGCode=TMath::Abs(mcpart.pdgCode());
+      tpPDGCode = TMath::Abs(mcpart.pdgCode());
       if (mcpart.isPhysicalPrimary()) {
         histos.get<TH1>(HIST("MC/etahist_diff"))->Fill(mcpart.eta() - jT.eta());
         auto delta = mcpart.phi() - jT.phi();
@@ -318,18 +318,18 @@ struct qaMatchEff {
       }   //  end if TPC
       //
       // all tracks with pt>0.5
-      if (jT.pt()>0.5) {
-	if (jT.hasTPC()) {
-	  histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(jT.pt());
-	  histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
-	  histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
-	  if (jT.hasITS()) {
-	    histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(jT.pt());
-	    histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
-	    histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
-	  } //  end if ITS
-	}   //  end if TPC
-      }   //  end if pt > 0.5
+      if (jT.pt() > 0.5) {
+        if (jT.hasTPC()) {
+          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
+          histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
+          if (jT.hasITS()) {
+            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
+          } //  end if ITS
+        }   //  end if TPC
+      }     //  end if pt > 0.5
       //
       // positive only
       if (jT.signed1Pt() > 0) {
@@ -479,28 +479,28 @@ struct qaMatchEff {
       }   // end pions only
       //
       // no primary/sec-d pions
-      if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary())))
-	{
-	  // gets the pdg code and finds its index in our vector
-	  itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
-	  if (itr_pdg != pdgChoice.cend())
-	    // index from zero, so increase by 1 to put in the right bin (and 0.5 not needed but just not to sit in the edge)
-	    pdg_fill=(float)std::distance(pdgChoice.begin(), itr_pdg)+1.5; 
-	  else pdg_fill=-10.0;
-	  //
-	  if (jT.hasTPC()) {
-	    histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(jT.pt());
-	    histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
-	    histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
-	    histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
-	    if (jT.hasITS()) {
-	      histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(jT.pt());
-	      histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
-	      histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
-	      histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
-	    } //  end if ITS
-	  }   //  end if TPC  
-	}  // end if not prim/sec-d pi
+      if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
+        // gets the pdg code and finds its index in our vector
+        itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
+        if (itr_pdg != pdgChoice.cend())
+          // index from zero, so increase by 1 to put in the right bin (and 0.5 not needed but just not to sit in the edge)
+          pdg_fill = (float)std::distance(pdgChoice.begin(), itr_pdg) + 1.5;
+        else
+          pdg_fill = -10.0;
+        //
+        if (jT.hasTPC()) {
+          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
+          histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
+          histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
+          if (jT.hasITS()) {
+            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
+            histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
+            histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
+          } //  end if ITS
+        }   //  end if TPC
+      }     // end if not prim/sec-d pi
       //
       // kaons only
       if (tpPDGCode == 321) {
