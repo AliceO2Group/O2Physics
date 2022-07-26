@@ -297,7 +297,7 @@ struct CentralityTable {
       centRun2CL1(cCL1);
     }
   }
-  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", false);
+  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
 
   using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
