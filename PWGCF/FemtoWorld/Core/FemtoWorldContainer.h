@@ -70,7 +70,6 @@ class FemtoWorldContainer
     std::string femtoObs;
     if constexpr (mFemtoObs == femtoWorldContainer::Observable::kstar) {
       femtoObs = "#it{k*} (GeV/#it{c})";
-      // dphi =
     }
     std::vector<double> tmpVecMult = multBins;
     framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
