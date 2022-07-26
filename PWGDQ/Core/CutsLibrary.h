@@ -220,6 +220,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCompositeCut* cut_tpc_hadrej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", kTRUE);
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_electron"));
+    cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_pion_band_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_pion_rejection_highp"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_kaon_rejection"));
     cut_tpc_hadrej->AddCut(GetAnalysisCut("tpc_proton_rejection"));
@@ -607,6 +608,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("tpc_pion_band_rejection")) {
+    TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
+    f1minPi->SetParameters(135, -450);
+    TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*x", 0, 10);
+    f1maxPi->SetParameters(140, -330);
+    cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.05, 0.3, false);
+    return cut;
+  }
+
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
     TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
     f1minPi->SetParameters(60, 4.);
@@ -633,7 +643,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("tpc_electron")) {
-    cut->AddCut(VarManager::kTPCsignal, 70, 90, false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCsignal, 70, 100, false, VarManager::kPin, 0.0, 1e+10, false);
     return cut;
   }
 
