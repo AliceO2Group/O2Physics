@@ -395,6 +395,7 @@ struct TreeWriterTPCTOF {
   /// Configurables
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
   /// Proton
   Configurable<float> maxMomTPCOnlyPr{"maxMomTPCOnlyPr", 0.6, "Maximum momentum for TPC only cut proton"};
   Configurable<float> nSigmaTPCOnlyPr{"nSigmaTPCOnlyPr", 4., "number of sigma for TPC only cut proton"};
@@ -524,7 +525,7 @@ struct TreeWriterTPCTOF {
     for (auto const& trk : tracks) {
 
       /// Check track selection
-      if (!isTrackSelected(collision, trk)) {
+      if (applyTrkSel == 1 && !isTrackSelected(collision, trk)) {
         continue;
       }
       /// Fill tree for protons
