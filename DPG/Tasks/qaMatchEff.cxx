@@ -47,16 +47,16 @@ struct qaMatchEff {
   // histos bins
   Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
+  //
+  // special histo, few particles explicitly stored, then pdg>3000
+  Configurable<int> pdgBins{"pdg-bins", 14, "Number of pdg values counted"};
+  //
   // histo axes
   //
   // non uniform pt binning
-  //  std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
-  std::vector<double> ptBinning = {0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
+  std::vector<double> ptBinning = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
   //
-  // pdg codes histo
-  std::vector<double> pdgBinning = {0.0, 110.0, 400.0, 1000.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0, 10000.0, 100000.0, 1000000.0};
-  //
-  AxisSpec axisPDG{pdgBinning, "PDG code"};
+  AxisSpec axisPDG{pdgBins, 0, pdgBins+1.000, "pdgclass"};
   //
   AxisSpec axisPt{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
   //
@@ -64,6 +64,10 @@ struct qaMatchEff {
   AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
   AxisSpec axisDEta{etaBins, etaMin, etaMax, "D#eta"};
   AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
+  //
+  // pdg codes vector
+  std::vector<int> pdgChoice = {211, 213, 215, 217, 219, 221, 223, 321, 411, 521, 2212, 1114, 2214};
+  //
   //
   // Init function
   //
@@ -243,9 +247,11 @@ struct qaMatchEff {
     histos.add("MC/phihist_diff", "#phi difference track-MC", kTH1F, {axisDPh}, true);
     //
     // hist sorting out PDG codes in wide bins
-    histos.add("MC/pdghist_num", "PDG code - when non primary/sec-d #pi TPC+ITS tag", kTH1F, {axisPDG}, true);
-    histos.add("MC/pdghist_den", "PDG code - when non primary/sec-d #pi TPC tag", kTH1F, {axisPDG}, true);
-  }
+    histos.add("MC/pdghist_num", "PDG code - when non primary #pi TPC+ITS tag", kTH1F, {axisPDG}, true);
+    histos.add("MC/pdghist_den", "PDG code - when non primary #pi TPC tag",     kTH1F, {axisPDG}, true);
+    
+  } // end initMC
+  //
   // //
   // // fill histos for TPC (all tracks)
   // void fillAllTPC(){
@@ -265,6 +271,9 @@ struct qaMatchEff {
   int count = 0;
   int countData = 0;
   int countNoMC = 0;
+  int tpPDGCode = 0;
+  std::vector<int>::iterator itr_pdg;
+  float pdg_fill=0.0;
   //
   //////////////////////////////////////////////// PROCESS FUNCTIONS //////////////////////////////////////////////////
   //
@@ -281,6 +290,7 @@ struct qaMatchEff {
         continue;
       }
       auto mcpart = jT.mcParticle();
+      tpPDGCode=TMath::Abs(mcpart.pdgCode());
       if (mcpart.isPhysicalPrimary()) {
         histos.get<TH1>(HIST("MC/etahist_diff"))->Fill(mcpart.eta() - jT.eta());
         auto delta = mcpart.phi() - jT.phi();
@@ -395,7 +405,7 @@ struct qaMatchEff {
       }       // end if secondaries from decay
       //
       // protons only
-      if (TMath::Abs(mcpart.pdgCode()) == 2212) {
+      if (tpPDGCode == 2212) {
         if (jT.hasTPC()) {
           histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(jT.pt());
           histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(jT.phi());
@@ -409,7 +419,7 @@ struct qaMatchEff {
       }
       //
       // pions only
-      if (TMath::Abs(mcpart.pdgCode()) == 211) {
+      if (tpPDGCode == 211) {
         //
         // all tracks
         if (jT.hasTPC()) {
@@ -469,24 +479,31 @@ struct qaMatchEff {
       }   // end pions only
       //
       // no primary/sec-d pions
-      if (!((TMath::Abs(mcpart.pdgCode()) == 211) && (mcpart.isPhysicalPrimary())) && !((TMath::Abs(mcpart.pdgCode()) == 211) && (!mcpart.isPhysicalPrimary() &&  (mcpart.getProcess() == 4))) )
+      if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary())))
 	{
+	  // gets the pdg code and finds its index in our vector
+	  itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
+	  if (itr_pdg != pdgChoice.cend())
+	    // index from zero, so increase by 1 to put in the right bin (and 0.5 not needed but just not to sit in the edge)
+	    pdg_fill=(float)std::distance(pdgChoice.begin(), itr_pdg)+1.5; 
+	  else pdg_fill=-10.0;
+	  //
 	  if (jT.hasTPC()) {
 	    histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(jT.pt());
 	    histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
 	    histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
-	    histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(TMath::Abs(mcpart.pdgCode()));
+	    histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
 	    if (jT.hasITS()) {
 	      histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(jT.pt());
 	      histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
 	      histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
-	      histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(TMath::Abs(mcpart.pdgCode()));
+	      histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
 	    } //  end if ITS
 	  }   //  end if TPC  
 	}  // end if not prim/sec-d pi
       //
       // kaons only
-      if (TMath::Abs(mcpart.pdgCode()) == 321) {
+      if (tpPDGCode == 321) {
         if (jT.hasTPC()) {
           histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(jT.pt());
           histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(jT.phi());
@@ -500,7 +517,7 @@ struct qaMatchEff {
       }
       //
       // pions and kaons together
-      if (TMath::Abs(mcpart.pdgCode()) == 211 || TMath::Abs(mcpart.pdgCode()) == 321) {
+      if (tpPDGCode == 211 || tpPDGCode == 321) {
         if (jT.hasTPC()) {
           histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(jT.pt());
           histos.get<TH1>(HIST("MC/phihist_tpc_piK"))->Fill(jT.phi());
