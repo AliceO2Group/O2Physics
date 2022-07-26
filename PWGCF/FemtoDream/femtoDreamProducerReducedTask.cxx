@@ -186,6 +186,7 @@ struct femtoDreamProducerReducedTask {
                           -999.,
                           -999.,
                           -999.,
+                          -999.,
                           -999.);
       }
     }
