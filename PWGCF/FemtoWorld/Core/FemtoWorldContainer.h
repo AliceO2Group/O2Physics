@@ -77,10 +77,10 @@ class FemtoWorldContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    PHI_LO = (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
-    PHI_HI = 2 * TMath::Pi() + (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
+    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
+    mPhiHigh = 2 * TMath::Pi() + (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
 
-    framework::AxisSpec phiAxis = {phiBins, PHI_LO, PHI_HI};
+    framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]);
@@ -124,10 +124,10 @@ class FemtoWorldContainer
     double delta_eta = part1.eta() - part2.eta();
 
     double delta_phi = part1.phi() - part2.phi();
-    while (delta_phi < PHI_LO) {
+    while (delta_phi < mPhiLow) {
       delta_phi += PIT;
     }
-    while (delta_phi > PHI_HI) {
+    while (delta_phi > mPhiHigh) {
       delta_phi -= PIT;
     }
 
@@ -153,9 +153,9 @@ class FemtoWorldContainer
   static constexpr int mEventType = eventType;                                        ///< Type of the event (same/mixed, according to femtoWorldContainer::EventType)
   float mMassOne = 0.f;                                                               ///< PDG mass of particle 1
   float mMassTwo = 0.f;                                                               ///< PDG mass of particle 2
-  double PHI_LO;
-  double PHI_HI;
-  double PIT = 6.28318530717958623;
+  double mPhiLow;
+  double mPhiHigh;
+  static constexpr double PIT = 6.28318530717958623;
 };
 
 } // namespace o2::analysis::femtoWorld
