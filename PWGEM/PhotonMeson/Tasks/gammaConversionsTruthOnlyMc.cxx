@@ -31,6 +31,8 @@ struct gammaConversionsTruthOnlyMc {
 
   Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
   Configurable<float> fEtaMax{"fEtaMax", 0.8, "aMaximum photon eta"};
+  Configurable<float> fV0RMin{"fV0RMin", 0., "minimum conversion radius of the V0s"};
+  Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
 
   HistogramRegistry registry{
     "registry",
@@ -76,7 +78,7 @@ struct gammaConversionsTruthOnlyMc {
     registry.fill(HIST("hGammaConvertedXY_MCTrue"), theMcConvGamma.conversionX(), theMcConvGamma.conversionY());
     registry.fill(HIST("hGammaConvertedZP_MCTrue"), theMcConvGamma.conversionZ(), theMcConvGamma.p());
 
-    if (lConversionRadius > 5. && lConversionRadius < 180.) {
+    if (lConversionRadius > fV0RMin && lConversionRadius < fV0RMax) {
       registry.fill(HIST("hGammaConvertedP_Rsel_MCTrue"), theMcConvGamma.p());
       registry.fill(HIST("hGammaConvertedPt_Rsel_MCTrue"), theMcConvGamma.pt());
     }
