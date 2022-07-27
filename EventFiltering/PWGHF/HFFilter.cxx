@@ -1003,7 +1003,7 @@ struct HfFilter { // Main struct for HF triggers
       std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
       auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
       auto pt2Prong = RecoDecay::pt(pVec2Prong);
-      
+
       int8_t sign = 0;
       int8_t flag = 0;
       int8_t origin = 0;
@@ -1042,8 +1042,8 @@ struct HfFilter { // Main struct for HF triggers
       std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
 
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
-      auto pt3Prong = RecoDecay::pt(pVec3Prong);      
-      
+      auto pt3Prong = RecoDecay::pt(pVec3Prong);
+
       int8_t sign = 0;
       int8_t flag = 0;
       int8_t channel = -1;
