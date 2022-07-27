@@ -80,6 +80,53 @@ Network::Network(std::string path,
 
 } // Network::Network(std::string, bool)
 
+Network::Network(std::string path,
+                 unsigned long start,
+                 unsigned long end,
+                 bool enableOptimization = true)
+{
+
+  /*
+  Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
+  - Input:
+    -- path:                std::string   ; Local path to the model file;
+    -- start:               unsigned long ; Timestamp validity of model (start)
+    -- pathAlien:           unsigned long ; Timestamp validity of model (end)
+    -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
+  */
+
+  LOG(info) << "--- Neural Network for the TPC PID response correction ---";
+
+  mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
+  if (enableOptimization) {
+    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+
+  mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
+
+  mInputNames = mSession->GetInputNames();
+  mInputShapes = mSession->GetInputShapes();
+  mOutputNames = mSession->GetOutputNames();
+  mOutputShapes = mSession->GetOutputShapes();
+
+  LOG(info) << "Input Nodes:";
+  for (size_t i = 0; i < mInputNames.size(); i++) {
+    LOG(info) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);
+  }
+
+  LOG(info) << "Output Nodes:";
+  for (size_t i = 0; i < mOutputNames.size(); i++) {
+    LOG(info) << "\t" << mOutputNames[i] << " : " << printShape(mOutputShapes[i]);
+  }
+
+  valid_from = start;
+  valid_until = end;
+  LOG(info) << "Range of validity: Valid-From: " << valid_from << " Valid-Until: " << valid_until;
+
+  LOG(info) << "--- Network initialized! ---";
+
+} // Network::Network(std::string, unsigned long, unsigned long, bool)
+
 Network& Network::operator=(Network& inst)
 {
 
@@ -98,6 +145,9 @@ Network& Network::operator=(Network& inst)
   mInputShapes = inst.mInputShapes;
   mOutputNames = inst.mOutputNames;
   mOutputShapes = inst.mOutputShapes;
+
+  valid_from = inst.valid_from;
+  valid_until = inst.valid_until;
 
   LOG(debug) << "Network copied!";
 
