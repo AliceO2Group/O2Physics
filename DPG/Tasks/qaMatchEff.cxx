@@ -11,6 +11,7 @@
 //
 /// \brief A task for basic checks on ITS-TPC track matching efficiency
 /// \author Rosario Turrisi (rosario.turrisi@pd.infn.it)
+/// \author Mattia Faggin (mfaggin@cern.ch)
 /// \since 2022
 
 #include "Framework/runDataProcessing.h"
