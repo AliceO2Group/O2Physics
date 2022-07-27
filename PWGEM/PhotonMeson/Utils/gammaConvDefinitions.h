@@ -18,15 +18,20 @@ using namespace o2::framework;
 
 AxisSpec const gAxis_zColl{800, -50.f, 50.f};
 AxisSpec const gAxis_pT{800, 0.f, 25.f};
+AxisSpec const gAxis_pT_armenteros{400, 0.f, 1.f};
 AxisSpec const gAxis_pT2d{400, 0.f, 25.f};
 AxisSpec const gAxis_eta{800, -PIHalf, PIHalf};
 AxisSpec const gAxis_eta2d{400, -PIHalf, PIHalf};
 AxisSpec const gAxis_phi{800, 0.f, TwoPI};
-AxisSpec const gAxis_r{800, 0.f, 250.f};
+AxisSpec const gAxis_r{800, 0.f, 200.f};
+AxisSpec const gAxis_r_extended{800, 0.f, 500.f};
+AxisSpec const gAxis_dr{200, -100.f, 100.f};
 AxisSpec const gAxis_r2d{400, 0.f, 250.f};
 AxisSpec const gAxis_z2d{400, -250.f, 250.f};
 AxisSpec const gAxis_TPCdEdxSig{800, -10.f, 10.f};
 AxisSpec const gAxis_radRes{800, -PI, PI};
+AxisSpec const gAxis_xyz{2400, -300.f, 300.f};
+AxisSpec gAxis_pT_log{800, 0.01f, 25.f};
 
 HistogramSpec const gHistoSpec_hCollisionZ_all_MCTrue{"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
 HistogramSpec const gHistoSpec_hCollisionZ_MCTrue{"hCollisionZ_MCTrue", "hCollisionZ_MCTrue;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}};
