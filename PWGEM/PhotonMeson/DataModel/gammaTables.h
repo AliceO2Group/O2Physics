@@ -27,6 +27,9 @@ DECLARE_SOA_COLUMN(PositivelyCharged, positivelyCharged, bool);                 
 DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float); //! Ratio  crossed rows over findable clusters
 DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);             //! Ratio of found over findable clusters
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);                       //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float);                           //! Recalculated conversion point
+DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float);                           //! Recalculated conversion point
+DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float);                           //! Recalculated conversion point
 } // namespace gammatrackreco
 
 DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
@@ -41,6 +44,9 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
                   gammatrackreco::TpcCrossedRowsOverFindableCls,
                   gammatrackreco::TpcFoundOverFindableCls,
                   gammatrackreco::TpcNClsCrossedRows,
+                  gammatrackreco::RecalculatedVtxX,
+                  gammatrackreco::RecalculatedVtxY,
+                  gammatrackreco::RecalculatedVtxZ,
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCNSigmaPi,
                   track::TPCSignal);
