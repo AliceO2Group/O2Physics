@@ -71,7 +71,7 @@ struct TrackPropagation {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<bool> checkGRPObject{"checkGRPObject", false, "Flag to check the CCDB for GRPObject before asking for the GRPMagField"};
+  Configurable<bool> isRun2{"isRun2", false, "Flag to check the CCDB for GRPObject before asking for the GRPMagField"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -97,9 +97,6 @@ struct TrackPropagation {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(geoPath);
     }
-    if (checkGRPObject) {
-      ccdb->setFatalWhenNull(false);
-    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -107,19 +104,10 @@ struct TrackPropagation {
     if (runNumber == bc.runNumber()) {
       return;
     }
-    if (checkGRPObject) {
+    if (isRun2) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, bc.timestamp());
-      if (!grpo) {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-        if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << bc.timestamp();
-        }
-        LOGF(info, "Setting magnetic field to current %d A for run %d from its GRPMagField CCDB object", grpmag->getL3Current(), bc.runNumber());
-        o2::base::Propagator::initFieldFromGRP(grpmag);
-      } else {
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-        o2::base::Propagator::initFieldFromGRP(grpo);
-      }
+      LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+      o2::base::Propagator::initFieldFromGRP(grpo);
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
       LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
