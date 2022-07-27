@@ -93,6 +93,7 @@ struct femtoDreamProducerTaskV0Only {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
+  // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   FemtoDreamV0Selection v0Cuts;
   /// \todo Labeled array (see Track-Track task)
@@ -116,6 +117,10 @@ struct femtoDreamProducerTaskV0Only {
 
   Configurable<float> ConfInvMassLowLimit{"ConfInvMassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
   Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.30, "Upper limit of the V0 invariant mass"};
+
+  Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
+  Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
+  Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
@@ -154,6 +159,9 @@ struct femtoDreamProducerTaskV0Only {
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack, ConfRejectNotPropagatedTracks);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kNegTrack, ConfRejectNotPropagatedTracks);
+      if (ConfRejectKaons) {
+        v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit, ConfInvKaonMassUpLimit);
+      }
     }
   }
 
@@ -245,6 +253,7 @@ struct femtoDreamProducerTaskV0Only {
                              -999.,
                              -999.,
                              -999.,
+                             -999.,
                              -999.); // QA for positive daughter
             outputDebugParts(negtrack.sign(),
                              (uint8_t)negtrack.tpcNClsFound(),
@@ -267,6 +276,7 @@ struct femtoDreamProducerTaskV0Only {
                              negtrack.tofNSigmaStoreKa(),
                              negtrack.tofNSigmaStorePr(),
                              negtrack.tofNSigmaStoreDe(),
+                             -999.,
                              -999.,
                              -999.,
                              -999.,
@@ -297,7 +307,8 @@ struct femtoDreamProducerTaskV0Only {
                              v0.v0radius(),
                              v0.x(),
                              v0.y(),
-                             v0.z()); // QA for V0
+                             v0.z(),
+                             v0.mK0Short()); // QA for V0
           }
         }
       }

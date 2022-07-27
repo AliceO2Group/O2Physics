@@ -67,7 +67,7 @@ struct tofPidQa {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
-  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
@@ -482,6 +482,8 @@ struct tofPidBetaQa {
   Configurable<int> nBinsBeta{"nBinsBeta", 4000, "Number of bins for the beta"};
   Configurable<float> minBeta{"minBeta", 0, "Minimum beta in range"};
   Configurable<float> maxBeta{"maxBeta", 2.f, "Maximum beta in range"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
 
   void init(o2::framework::InitContext&)
   {
@@ -502,11 +504,24 @@ struct tofPidBetaQa {
     // Event properties
     histos.add("event/tofsignal", "", HistType::kTH2F, {pAxis, tofAxis});
     histos.add("event/tofbeta", "", HistType::kTH2F, {pAxis, betaAxis});
-    histos.add("event/tofbetaEvTimeTOF", "", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("event/tofbetaEvTimeTOF", "Ev. Time TOF", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("event/tofbetaEvTimeTOFOnly", "Ev. Time TOF Only", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("event/tofbetaEvTimeT0AC", "Ev. Time T0AC", HistType::kTH2F, {pAxis, betaAxis});
+    histos.add("event/tofbetaEvTimeT0ACOnly", "Ev. Time T0AC Only", HistType::kTH2F, {pAxis, betaAxis});
     histos.add("event/eta", "", HistType::kTH1F, {etaAxis});
     histos.add("event/length", "", HistType::kTH1F, {lAxis});
     histos.add("event/pt", "", HistType::kTH1F, {ptAxis});
     histos.add("event/p", "", HistType::kTH1F, {pAxis});
+    auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
+    h->GetXaxis()->SetBinLabel(1, "Events read");
+    h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
+    h->GetXaxis()->SetBinLabel(3, "Passed mult.");
+    h->GetXaxis()->SetBinLabel(4, "Passed vtx Z");
+
+    h = histos.add<TH1>("event/trackselection", "", kTH1F, {{10, 0.5, 10.5, "Selection passed"}});
+    h->GetXaxis()->SetBinLabel(1, "Tracks read");
+    h->GetXaxis()->SetBinLabel(2, "hasTOF");
+    h->GetXaxis()->SetBinLabel(3, "isGlobalTrack");
   }
 
   template <uint8_t i, typename T>
@@ -516,19 +531,61 @@ struct tofPidBetaQa {
     histos.fill(HIST(hexpected_diff[i]), t.p(), exp_diff);
     histos.fill(HIST(hnsigma[i]), t.p(), nsigma);
   }
-  void process(soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::pidEvTimeFlags> const& tracks,
-               aod::Collisions const&)
-  {
-    for (auto const& track : tracks) {
 
+  using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  void process(CollisionCandidate const& collision,
+               soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::pidEvTimeFlags> const& tracks)
+  {
+
+    histos.fill(HIST("event/evsel"), 1);
+    if (applyEvSel == 1) {
+      if (!collision.sel7()) {
+        return;
+      }
+    } else if (applyEvSel == 2) {
+      if (!collision.sel8()) {
+        return;
+      }
+    }
+
+    histos.fill(HIST("event/evsel"), 2);
+
+    // Computing Multiplicity first
+    float ntracks = 0;
+    for (auto t : tracks) {
+      if (applyTrackCut && !t.isGlobalTrack()) {
+        continue;
+      }
+      ntracks += 1;
+    }
+    histos.fill(HIST("event/evsel"), 3);
+    if (abs(collision.posZ()) > 10.f) {
+      return;
+    }
+
+    histos.fill(HIST("event/evsel"), 4);
+
+    for (auto const& track : tracks) {
+      histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.hasTOF()) { // Skipping tracks without TOF
         continue;
       }
+      histos.fill(HIST("event/trackselection"), 2.f);
       if (!track.isGlobalTrack()) {
         continue;
       }
+      histos.fill(HIST("event/trackselection"), 3.f);
       if (track.isEvTimeTOF()) {
         histos.fill(HIST("event/tofbetaEvTimeTOF"), track.p(), track.beta());
+      }
+      if (track.isEvTimeTOF() && !track.isEvTimeT0AC()) {
+        histos.fill(HIST("event/tofbetaEvTimeTOFOnly"), track.p(), track.beta());
+      }
+      if (track.isEvTimeT0AC()) {
+        histos.fill(HIST("event/tofbetaEvTimeT0AC"), track.p(), track.beta());
+      }
+      if (track.isEvTimeT0AC() && !track.isEvTimeTOF()) {
+        histos.fill(HIST("event/tofbetaEvTimeT0ACOnly"), track.p(), track.beta());
       }
       histos.fill(HIST("event/tofbeta"), track.p(), track.beta());
       histos.fill(HIST("event/length"), track.length());

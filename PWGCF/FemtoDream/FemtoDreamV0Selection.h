@@ -26,6 +26,8 @@
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
 
+#include <iostream>
+
 using namespace o2::framework;
 
 namespace o2::analysis::femtoDream
@@ -75,7 +77,10 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
                             TranRadV0Max(-9999999.),
                             DecVtxMax(-9999999.),
                             fInvMassLowLimit(1.05),
-                            fInvMassUpLimit(1.3){};
+                            fInvMassUpLimit(1.3),
+                            fRejectKaon(false),
+                            fInvMassKaonLowLimit(0.48),
+                            fInvMassKaonUpLimit(0.515){};
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -165,6 +170,16 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
     fInvMassUpLimit = upLimit;
   }
 
+  /// Set limit for the kaon rejection on the invariant mass
+  /// \param lowLimit Lower limit for the invariant mass distribution
+  /// \param upLimit Upper limit for the invariant mass distribution
+  void setKaonInvMassLimits(float lowLimit, float upLimit)
+  {
+    fRejectKaon = true;
+    fInvMassKaonLowLimit = lowLimit;
+    fInvMassKaonUpLimit = upLimit;
+  }
+
   void setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
@@ -192,6 +207,10 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
 
   float fInvMassLowLimit;
   float fInvMassUpLimit;
+
+  bool fRejectKaon;
+  float fInvMassKaonLowLimit;
+  float fInvMassKaonUpLimit;
 
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
@@ -314,6 +333,12 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   if ((invMassLambda < fInvMassLowLimit or invMassLambda > fInvMassUpLimit) and (invMassAntiLambda < fInvMassLowLimit or invMassAntiLambda > fInvMassUpLimit)) {
     return false;
   }
+  if (fRejectKaon) {
+    const float invMassKaon = v0.mK0Short();
+    if (invMassKaon > fInvMassKaonLowLimit && invMassKaon < fInvMassKaonUpLimit) {
+      return false;
+    }
+  }
   if (nPtV0MinSel > 0 && pT < pTV0Min) {
     return false;
   }
@@ -418,7 +443,33 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   cutContainerType output = 0;
   size_t counter = 0;
 
+  auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
+  auto lambdaMassHypothesis = v0.mLambda();
+  auto antiLambdaMassHypothesis = v0.mAntiLambda();
+  auto diffLambda = abs(lambdaMassNominal - lambdaMassHypothesis);
+  auto diffAntiLambda = abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
+
   float sign = 0.;
+  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
+  auto nSigmaPiPos = posTrack.tpcNSigmaPi();
+  auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
+  auto nSigmaPrPos = posTrack.tpcNSigmaPr();
+  // check the mass and the PID of daughters
+  if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
+    sign = -1.;
+  } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
+    sign = 1.;
+  }
+  // if it happens that none of these are true, ignore the invariant mass
+  else {
+    if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) {
+      sign = -1.;
+    } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {
+      sign = 1.;
+    }
+  }
+
   const auto pT = v0.pt();
   const auto tranRad = v0.v0radius();
   const auto dcaDaughv0 = v0.dcaV0daughters();
@@ -428,23 +479,8 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
-    if (selVariable == femtoDreamV0Selection::kV0Sign) {
-      int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-      if (sel.getSelectionValue() < 0) {
-        auto nSigmaPr = negTrack.tpcNSigmaPr();
-        auto nSigmaPi = posTrack.tpcNSigmaPi();
-        if (abs(nSigmaPr) < nSigmaPIDMax && abs(nSigmaPi) < nSigmaPIDMax) {
-          sign = -1.;
-        }
-      } else {
-        auto nSigmaPi = negTrack.tpcNSigmaPi();
-        auto nSigmaPr = posTrack.tpcNSigmaPr();
-        if (abs(nSigmaPr) < nSigmaPIDMax && abs(nSigmaPi) < nSigmaPIDMax) {
-          sign = 1.;
-        }
-      }
-      sel.checkSelectionSetBit(sign, output, counter);
-    } else if (selVariable == femtoDreamV0Selection::kDecVtxMax) {
+
+    if (selVariable == femtoDreamV0Selection::kDecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);
         sel.checkSelectionSetBit(decVtxValue, output, counter);
