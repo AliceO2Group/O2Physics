@@ -163,7 +163,7 @@ DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
 
 namespace hftraining3p
 {
-DECLARE_SOA_COLUMN(PT3Prong, pT3prong, float);         //!
+DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);         //!
 DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
