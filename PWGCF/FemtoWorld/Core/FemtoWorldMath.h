@@ -13,8 +13,8 @@
 /// \brief Definition of the FemtoWorldMath Container for math calculations of quantities related to pairs
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 
-#ifndef ANALYSIS_TASKS_PWGCF_O2FEMTO_O2FEMTOMATH_H_
-#define ANALYSIS_TASKS_PWGCF_O2FEMTO_O2FEMTOMATH_H_
+#ifndef FEMTOWORLDMATH_H_
+#define FEMTOWORLDMATH_H_
 
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
@@ -139,4 +139,4 @@ class FemtoWorldMath
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* ANALYSIS_TASKS_PWGCF_O2FEMTO_O2FEMTOMATH_H_ */
+#endif /* FEMTOWORLDMATH_H_ */

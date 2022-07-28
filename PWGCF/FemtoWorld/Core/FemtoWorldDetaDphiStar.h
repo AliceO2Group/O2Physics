@@ -13,8 +13,8 @@
 /// \brief FemtoWorldDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_O2FEMTO_O2FEMTODETADPHISTAR_H_
-#define ANALYSIS_TASKS_PWGCF_O2FEMTO_O2FEMTODETADPHISTAR_H_
+#ifndef FEMTOWORLDDETADPHISTAR_H_
+#define FEMTOWORLDDETADPHISTAR_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
@@ -200,4 +200,4 @@ class FemtoWorldDetaDphiStar
 } /* namespace femtoWorld */
 } /* namespace o2::analysis */
 
-#endif /* ANALYSIS_TASKS_PWGCF_O2FEMTO_O2FEMTODETADPHISTAR_H_ */
+#endif /* FEMTOWORLDDETADPHISTAR_H_ */

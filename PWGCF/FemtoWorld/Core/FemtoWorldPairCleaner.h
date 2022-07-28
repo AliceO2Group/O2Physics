@@ -13,8 +13,8 @@
 /// \brief FemtoWorldPairCleaner - Makes sure only proper candidates are paired
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTOWORLD_INCLUDE_FEMTOWORLD_FEMTOWORLDPAIRCLEANER_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTOWORLD_INCLUDE_FEMTOWORLD_FEMTOWORLDPAIRCLEANER_H_
+#ifndef FEMTOWORLDPAIRCLEANER_H_
+#define FEMTOWORLDPAIRCLEANER_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
@@ -90,4 +90,4 @@ class FemtoWorldPairCleaner
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTOWORLD_INCLUDE_FEMTOWORLD_FEMTOWORLDPAIRCLEANER_H_ */
+#endif /* FEMTOWORLDPAIRCLEANER_H_ */

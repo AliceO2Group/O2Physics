@@ -13,8 +13,8 @@
 /// \brief FemtoWorldEventHisto - Histogram class for tracks, V0s and cascades
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef ANALYSIS_TASKS_PWGCF_FEMTOWORLD_INCLUDE_FEMTOWORLD_FEMTOEVENTHISTO_H_
-#define ANALYSIS_TASKS_PWGCF_FEMTOWORLD_INCLUDE_FEMTOWORLD_FEMTOEVENTHISTO_H_
+#ifndef FEMTOWORLDEVENTHISTO_H_
+#define FEMTOWORLDEVENTHISTO_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
@@ -56,4 +56,4 @@ class FemtoWorldEventHisto
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* ANALYSIS_TASKS_PWGCF_FEMTOWORLD_INCLUDE_FEMTOWORLD_FEMTOEVENTHISTO_H_ */
+#endif /* FEMTOWORLDEVENTHISTO_H_ */
