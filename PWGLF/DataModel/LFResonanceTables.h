@@ -85,18 +85,8 @@ DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                     //! Obser
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                          //! Field for the track indices to remove auto-correlations
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);   //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                               //! DCA_xy
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                                 //! DCA_z
-DECLARE_SOA_COLUMN(X, x, float);                                       //! x position of the track
-DECLARE_SOA_COLUMN(Alpha, alpha, float);                               //! alpha position of the track
 DECLARE_SOA_COLUMN(TPCPIDselectionFlag, tpcPIDselectionFlag, uint8_t); //! TPC PID selection
 DECLARE_SOA_COLUMN(TOFPIDselectionFlag, tofPIDselectionFlag, uint8_t); //! TOF PID selection
-DECLARE_SOA_COLUMN(TPCnSigmaPi, tpcNSigmaPi, float);                   //! Pion TPC nSigma
-DECLARE_SOA_COLUMN(TPCnSigmaKa, tpcNSigmaKa, float);                   //! Kaon TPC nSigma
-DECLARE_SOA_COLUMN(TPCnSigmaPr, tpcNSigmaPr, float);                   //! Proton TPC nSigma
-DECLARE_SOA_COLUMN(TOFnSigmaPi, tofNSigmaPi, float);                   //! Pion TOF nSigma
-DECLARE_SOA_COLUMN(TOFnSigmaKa, tofNSigmaKa, float);                   //! Kaon TOF nSigma
-DECLARE_SOA_COLUMN(TOFnSigmaPr, tofNSigmaPr, float);                   //! Proton TOF nSigma
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                         //! DCA between daughters
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                           //! The invariant mass of V0 candidate, assuming lambda
 DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                   //! The invariant mass of V0 candidate, assuming antilambda
@@ -119,18 +109,18 @@ DECLARE_SOA_TABLE(ResoDaughters, "AOD", "RESODAUGHTERS",
                   resodaughter::Indices,
                   resodaughter::Sign,
                   resodaughter::TPCNClsCrossedRows,
-                  resodaughter::DcaXY,
-                  resodaughter::DcaZ,
-                  resodaughter::X,
-                  resodaughter::Alpha,
+                  o2::aod::track::DcaXY,
+                  o2::aod::track::DcaZ,
+                  o2::aod::track::X,
+                  o2::aod::track::Alpha,
                   resodaughter::TPCPIDselectionFlag,
                   resodaughter::TOFPIDselectionFlag,
-                  resodaughter::TPCnSigmaPi,
-                  resodaughter::TPCnSigmaKa,
-                  resodaughter::TPCnSigmaPr,
-                  resodaughter::TOFnSigmaPi,
-                  resodaughter::TOFnSigmaKa,
-                  resodaughter::TOFnSigmaPr,
+                  o2::aod::pidtpc::TPCNSigmaPi,
+                  o2::aod::pidtpc::TPCNSigmaKa,
+                  o2::aod::pidtpc::TPCNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaPi,
+                  o2::aod::pidtof::TOFNSigmaKa,
+                  o2::aod::pidtof::TOFNSigmaPr,
                   resodaughter::DaughDCA,
                   resodaughter::MLambda,
                   resodaughter::MAntiLambda,
