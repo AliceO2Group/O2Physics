@@ -34,7 +34,7 @@ struct phianalysis {
   framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
   // Configurables
@@ -51,18 +51,8 @@ struct phianalysis {
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
 
   /// Partition for firstTrack
-  Partition<aod::ResoDaughters> parts1 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack))
-                                        && requireTPCPIDKaonCutInFilter()
-                                        && requireTOFPIDKaonCutInFilter()
-                                        && (nabs(aod::resodaughter::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut))
-                                        && (nabs(aod::resodaughter::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) 
-                                        && (nabs(aod::resodaughter::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts  
-  Partition<aod::ResoDaughters> parts2 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack))
-                                        && requireTPCPIDKaonCutInFilter()
-                                        && requireTOFPIDKaonCutInFilter()
-                                        && (nabs(aod::resodaughter::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut))
-                                        && (nabs(aod::resodaughter::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) 
-                                        && (nabs(aod::resodaughter::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
+  Partition<aod::ResoDaughters> parts1 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter() && (nabs(aod::resodaughter::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(aod::resodaughter::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(aod::resodaughter::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
+  Partition<aod::ResoDaughters> parts2 = (aod::resodaughter::partType == uint8_t(aod::resodaughter::DaughterType::kTrack)) && requireTPCPIDKaonCutInFilter() && requireTOFPIDKaonCutInFilter() && (nabs(aod::resodaughter::dcaZ) > static_cast<float_t>(cMinDCAzToPVcut)) && (nabs(aod::resodaughter::dcaZ) < static_cast<float_t>(cMaxDCAzToPVcut)) && (nabs(aod::resodaughter::dcaXY) < static_cast<float_t>(cMaxDCArToPVcut)); // Basic DCA cuts
   void init(o2::framework::InitContext&)
   {
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -81,7 +71,7 @@ struct phianalysis {
     // Mass QA (quick check)
     histos.add("phiinvmass", "Invariant mass of Phi", kTH1F, {{500, 0.8, 1.3, "Invariant Mass (GeV/#it{c}^2)"}});
     histos.add("phiinvmassME", "Invariant mass of Phi mixed event", kTH1F, {{500, 0.8, 1.3, "Invariant Mass (GeV/#it{c}^2)"}});
-    
+
     // 3d histogram
     histos.add("h3phiinvmass", "Invariant mass of Phi", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 0.8, 1.3}});
     histos.add("h3phiinvmassME", "Invariant mass of Phi mixed event", kTH3F, {{100, 0.0f, 100.0f}, {100, 0.0f, 10.0f}, {500, 0.8, 1.3}});
@@ -95,7 +85,7 @@ struct phianalysis {
     // LOGF(info, "event id: %d", collision.bcId());
     auto group1 = parts1->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
     auto group2 = parts2->sliceByCached(aod::resodaughter::resoCollisionId, collision.globalIndex());
-    
+
     for (auto& [trk1, trk2] : combinations(CombinationsStrictlyUpperIndexPolicy(group1, group2))) {
       // Un-like sign pair only
       if (trk1.sign() * trk2.sign() > 0)
@@ -140,7 +130,7 @@ struct phianalysis {
 
       auto group1 = parts1->sliceByCached(aod::resodaughter::resoCollisionId, collision1.globalIndex());
       auto group2 = parts2->sliceByCached(aod::resodaughter::resoCollisionId, collision2.globalIndex());
-      
+
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }

@@ -130,6 +130,6 @@ class CollisonCuts
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
-} // namespace o2::analysis::femtoDream
+} // namespace o2::analysis
 
 #endif /* ANALYSIS_TASKS_PWGLF_COLLISIONCUTS_H_ */
