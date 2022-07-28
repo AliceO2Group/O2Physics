@@ -30,7 +30,7 @@ This tutorial is made and tested for pilot-beam data (reconstruction pass4). You
 <!-- markdown-link-check-disable-next-line -->
 A lot of Run 2 data converted into the Run 3 format can be found [here](https://alimonitor.cern.ch/trains/train.jsp?train_id=132). A detailed description of how to download converted Run 2 data is reported in the [offifial documentation](https://aliceo2group.github.io/analysis-framework/docs/download/)
 
-In summary, to download a bunch of data, do the following: <br> 
+In summary, to download a bunch of data, do the following: <br>
 1. scroll all the way down, choose the train number you are interested in and click on run number. <br>
 2. A pop-up window appears: click on the **Test Results**. <br>
 3. Scroll down, find the **Full Train** option and then click on **output**. <br>
@@ -44,7 +44,7 @@ ____________________________
 ____________________________
 # Create your task in O2Physics
 
-There are many examples of simple introductory tasks in O2Physics that can be found in `O2Physics/Tutorials`. 
+There are many examples of simple introductory tasks in O2Physics that can be found in `O2Physics/Tutorials`.
 All the information about how to write a task can be found in the [official documentation](https://aliceo2group.github.io/analysis-framework/docs/tutorials/).
 
 We hope that this hands-on tutorial will help you learning to write your analysis tasks starting from scratch.
@@ -58,7 +58,7 @@ In addition, the task can also have an `init` funcion, which is used to initiali
 
 In the same source file where the `struct` is defined, one has to add a `defineDataProcessing` method, which is necessary to include the task to the workflow, assigning it a specific name.
 
-The task must be added to the `CMakeLists.txt` file in the same directory. For our tutorial, the first task has name `cf-tutorial-0` and it is defined in the source file `CFTutorialTask0.cxx`. The corresponfing lines in the `CMakeLists.txt` file are: 
+The task must be added to the `CMakeLists.txt` file in the same directory. For our tutorial, the first task has name `cf-tutorial-0` and it is defined in the source file `CFTutorialTask0.cxx`. The corresponfing lines in the `CMakeLists.txt` file are:
 
 ```
 o2physics_add_dpl_workflow(cf-tutorial-0
@@ -87,7 +87,7 @@ Go to `~/alice/sw/BUILD/O2Physics-latest-master/O2Physics`.
 </details>
 
 In `~/alice/sw/BUILD/O2Physics-latest-master/O2Physics` enter ninja and O2Physics environment (`alienv load ninja/latest O2Physics/latest`). Then build your task using `ninja stage/bin/<your-analysis-file>`. If you don't know what you should type in `<your-analysis-file>` place, open `CMakeList.txt` and see how your analysis is called there. <br>
-Keep in mind that if you add a new file or modify CMakeList you need to use `cmake .` 
+Keep in mind that if you add a new file or modify CMakeList you need to use `cmake .`
 Then, after building part, copy this builded file to directory with AOD file (`cp stage/bin/<your-analysis-file>`). You can skip this step (copying) when you use `ninja install` instead of `ninja` or you can use alibuild.
 ____________________
 ## How to run your code?
@@ -119,17 +119,17 @@ o2-analysis-mytask --configuration json://<config_file_name>
 ```
 In the following, we will use configuration files.
 
- ### Possible errors
+### Possible errors
 <details><summary>Couldn't get TTree.</summary>
 <p>
 
-Sometimes you may get an error, for example: 
+Sometimes you may get an error, for example:
  ```c
  [ERROR] Exception caught: Couldn't get TTree "DF_2853960297589372650/O2v0dataext from <your AOD file>"
  ```
 It means that `v0dataext` couldn't be found in your AOD file or it has not been produced by any attached helper task.
 So now you know which table is missing. There are two paths you can choose; <br>
-1. **EASIEST**: follow the instructions reported in  [ ALICE O2 documentation- Tree not found ](https://aliceo2group.github.io/analysis-framework/docs/troubleshooting/treenotfound.html). After entering [ALICE O2 documentation - helper task tables](https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html), you search the table that you are missing and you will find the task you need to attach as dependency.<br>
+1. **EASIEST**: follow the instructions reported in  [ALICE O2 documentation- Tree not found](https://aliceo2group.github.io/analysis-framework/docs/troubleshooting/treenotfound.html). After entering [ALICE O2 documentation - helper task tables](https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html), you search the table that you are missing and you will find the task you need to attach as dependency.<br>
 2. More difficult: enter directory `alice/O2Physics` and look for the missing table. </br>
 For example, if you are missing `pidtofka` table, you should type:
 ```c
@@ -145,15 +145,15 @@ o2physics_add_dpl_workflow(<task-name>
                     COMPONENT_NAME Analysis)
 ```
 So you need to find the **task-name** which will correspond to the **C++ file** you've found using grep ;) <br>
- 
- 
+
+
 </p>
 </details>
 <details><summary>Fatal errors with non-existing CCDB entries.</summary>
 <p>
 While trying to run various O2 tasks/tutorials, you can run into fatal errors with non-existing CCDB entries for specific data. <br>
 The reason is often the incorrect configuration of the paramenters. For example, for some executables such as `o2-analysis-timestamp` duging the option `--isRun2MC` could solve the problem. Or, simialary, using the oprion `--isMC` for o2-analysis-event-selection. <br>
-For example: 
+For example:
 
 ```c
 o2-analysis-mm-dndeta --aod-file AODmc2.root --aod-memory-rate-limit 100000000000000 -b | \
@@ -178,7 +178,7 @@ _____________________________
 # Tutorial checkpoints
 ## First task
  We will be using [CFTutorialTask0.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask0.cxx). It's an example task illustrating how to create histograms and fill them with basic information. We will also apply basic event selection.<br>
- 
+
  Here you can see a structure of a typical analysis task in the O2:<br>
  ```c
  struct myTask{
@@ -197,7 +197,7 @@ _____________________________
  ```
 Each part will be described in greater detail further on during this tutorial.<br>
 
-The first element of the task is `init` (equivalent to *UserCreateOutputObjects* in *AliPhysics*). It looks like this:
+The first element of the task is `init` (equivalent to _UserCreateOutputObjects_ in _AliPhysics_). It looks like this:
 
   ```c
    void init(o2::framework::InitContext&)
@@ -218,7 +218,7 @@ The first element of the task is `init` (equivalent to *UserCreateOutputObjects*
  ```
 `init` is used to initialise objects, e.g. histograms, which will be used later in the process.
 
-The second element is `process`, equivalent to the *UserExec* in *AliPhysics*. It looks like this:
+The second element is `process`, equivalent to the _UserExec_ in _AliPhysics_. It looks like this:
 
 ```c
     void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
@@ -237,7 +237,7 @@ The second element is `process`, equivalent to the *UserExec* in *AliPhysics*. I
   }
  ```
 
-The arguments of `process` are the data *tables* that we analyse, i.e. the tables to which we *subscribe*. In the snippet above, the subscripion is to the tables of collisions and tracks.
+The arguments of `process` are the data _tables_ that we analyse, i.e. the tables to which we _subscribe_. In the snippet above, the subscripion is to the tables of collisions and tracks.
   
 Finally, `WorkflowSpec` is necessay to add the task to the DPL workflow . And it looks like:
 
@@ -253,7 +253,7 @@ Finally, `WorkflowSpec` is necessay to add the task to the DPL workflow . And it
 ## Second task
 
 We will be using [CFTutorialTask1.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask1.cxx). In this part of the tutorial, we will focus on how to access information from different tables. Sets of information stored in different tables can be put together using `Join`:
- 
+
 ```c
 namespace o2::aod
 {
@@ -264,7 +264,7 @@ using MyTracks = soa::Join<aod::FullTracks,
                            aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                            aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe>;
 } // namespace o2::aod
- ``` 
+ ```
 The data model provides some predifined joins, suche as `FullTracks = soa::Join<Tracks, TracksExtra>`. The complete list of predefined joins can be found in [ALICE O2 documentation - The Data Model, Joins and iterators](https://aliceo2group.github.io/analysis-framework/docs/datamodel/joinsAndIterators.html).
 
 Joined tables can be normally used as agruments of process.
@@ -297,7 +297,7 @@ Note that configurables can be used in the definition of a filters.
 
 We will be using [CFTutorialTask3.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask3.cxx). In this part of the tutorial, we will focus on how to create and use **partitions**.<br>
 
-A `Partition` is a subset of a given table that satisfies particular requirements. In the following, a partition obtained from the table *Tracks*:
+A `Partition` is a subset of a given table that satisfies particular requirements. In the following, a partition obtained from the table _Tracks_:
 
 ```c
 Partition<o2::aod::Tracks> positive = (nabs(aod::track::eta) < ConfEtaCut) && (aod::track::pt > ConfMinPtCut) && (aod::track::pt < ConfMaxPtCut) && (aod::track::signed1Pt > ConfChargeCut);
@@ -320,12 +320,12 @@ void process(MyFilteredCollision const& coll, o2::aod::Tracks const& tracks)
   ...
 }
 ```
-**WARNING**: using a `Partition` of the table `Tracks`, you are considering **ALL** the tracks (which satisfy the requirements) of **ALL** the collisions. In order to select the elements corresponding to the relevant collision, one must use `sliceByCached`, as shown in the example above. 
+**WARNING**: using a `Partition` of the table `Tracks`, you are considering **ALL** the tracks (which satisfy the requirements) of **ALL** the collisions. In order to select the elements corresponding to the relevant collision, one must use `sliceByCached`, as shown in the example above.
 
 </p>
 </details>
 
-## Fifth task 
+## Fifth task
 
 We will be using [CFTutorialTask4.cxx](https://github.com/CF-tutorials/O2Physics/blob/tutorial/PWGCF/Tutorial/CFTutorialTask4.cxx). In this part of the tutorial, we will focus on how to use and combine elements of different **partitions**. In the following, you can see the invariant mass of two pions, a negative one and a positive one, belonging to two different partitions.
 
@@ -347,7 +347,7 @@ for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPosit
       sumVec += negVec;
       histos.fill(HIST("hInvariantMass"), sumVec.M());
     }
-```   
+```
   
 
 ## Sixth task
@@ -367,6 +367,6 @@ PROCESS_SWITCH(<name-of-your-structure>, processSameEvent, "Enable processing sa
 
 void processMixed(){}
 PROCESS_SWITCH(<name-of-your-structure>, processMixed, "Enable processing mixed event", true);
-```   
+```
 
 The process functions can be activated using `PROCESS_SWITCH`, setting the last parameter as `true`. This parameter can be configured via command line, json file or in the hyperloop interface.
