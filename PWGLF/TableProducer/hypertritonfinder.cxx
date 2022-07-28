@@ -175,7 +175,7 @@ struct hypertritonfinder {
         {"hV0CutCounter", "hV0CutCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
       },
   };
-//------------------copy from lamdakzerobuilder---------------------
+  //------------------copy from lamdakzerobuilder---------------------
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
@@ -243,7 +243,7 @@ struct hypertritonfinder {
       mRunNumber = lRunNumber;
     }
   }
-//------------------------------------------------------------------
+  //------------------------------------------------------------------
 
   void process(aod::Collision const& collision, MyTracksIU const& tracks,
       aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::BCsWithTimestamps const&)
@@ -287,38 +287,38 @@ struct hypertritonfinder {
         }
         registry.fill(HIST("hV0CutCounter"), 1.5);
 
-//------------------copy from lamdakzerobuilder---------------------
-      double finalXpos = fitter.getTrack(0).getX();
-      double finalXneg = fitter.getTrack(1).getX();
+        //------------------copy from lamdakzerobuilder---------------------
+        double finalXpos = fitter.getTrack(0).getX();
+        double finalXneg = fitter.getTrack(1).getX();
 
-      // Rotate to desired alpha
-      pTrack.rotateParam(fitter.getTrack(0).getAlpha());
-      nTrack.rotateParam(fitter.getTrack(1).getAlpha());
+        // Rotate to desired alpha
+        pTrack.rotateParam(fitter.getTrack(0).getAlpha());
+        nTrack.rotateParam(fitter.getTrack(1).getAlpha());
 
-      // Retry closer to minimum with material corrections
-      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-      if (useMatCorrType == 1)
-        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-      if (useMatCorrType == 2)
-        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+        // Retry closer to minimum with material corrections
+        o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+        if (useMatCorrType == 1)
+          matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+        if (useMatCorrType == 2)
+          matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
-      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
+        o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
+        o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
 
-      nCand = fitter.process(pTrack, nTrack);
-      if (nCand == 0) {
-        continue;
-      }
+        nCand = fitter.process(pTrack, nTrack);
+        if (nCand == 0) {
+          continue;
+        }
         registry.fill(HIST("hV0CutCounter"), 2.5);
 
-//------------------------------------------------------------------
-        
+        //------------------------------------------------------------------
+
         const auto& vtx = fitter.getPCACandidate();
         // Fiducial: min radius
         /*auto thisv0radius = TMath::Sqrt(TMath::Power(vtx[0], 2) + TMath::Power(vtx[1], 2));
-        if (thisv0radius < v0radius) {
+          if (thisv0radius < v0radius) {
           continue;
-        }*/
+          }*/
 
         // DCA V0 daughters
         auto thisdcav0dau = fitter.getChi2AtPCACandidate();
@@ -336,10 +336,10 @@ struct hypertritonfinder {
         //fitter.getTrack(0).getPxPyPzGlo(pvec0);
         //fitter.getTrack(1).getPxPyPzGlo(pvec1);
 
-//------------------copy from lamdakzerobuilder---------------------
-      pTrack.getPxPyPzGlo(pvec0);
-      nTrack.getPxPyPzGlo(pvec1);
-//------------------------------------------------------------------
+        //------------------copy from lamdakzerobuilder---------------------
+        pTrack.getPxPyPzGlo(pvec0);
+        nTrack.getPxPyPzGlo(pvec1);
+        //------------------------------------------------------------------
         /*uint32_t pTrackPID = t0.pidForTracking();
           uint32_t nTrackPID = t1.pidForTracking();
           int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
@@ -348,17 +348,17 @@ struct hypertritonfinder {
           pvec0[i] = pvec0[i] * pTrackCharge;
           pvec1[i] = pvec1[i] * nTrackCharge;
           }*/
-    int pTrackCharge = 1, nTrackCharge = 1;
-      if (TMath::Abs( GetTPCNSigmaHe3( 2*t0.p(), t0.tpcSignal()) ) < 5){
-        pTrackCharge = 2;
-      } 
-      if (TMath::Abs( GetTPCNSigmaHe3( 2*t1.p(), t1.tpcSignal()) ) < 5){
-        nTrackCharge = 2;
-      } 
-      for (int i=0; i<3; i++){
-        pvec0[i] = pvec0[i] * pTrackCharge;
-        pvec1[i] = pvec1[i] * nTrackCharge;
-      }
+        int pTrackCharge = 1, nTrackCharge = 1;
+        if (TMath::Abs( GetTPCNSigmaHe3( 2*t0.p(), t0.tpcSignal()) ) < 5){
+          pTrackCharge = 2;
+        } 
+        if (TMath::Abs( GetTPCNSigmaHe3( 2*t1.p(), t1.tpcSignal()) ) < 5){
+          nTrackCharge = 2;
+        } 
+        for (int i=0; i<3; i++){
+          pvec0[i] = pvec0[i] * pTrackCharge;
+          pvec1[i] = pvec1[i] * nTrackCharge;
+        }
 
 
         auto thisv0cospa = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()},
@@ -386,65 +386,92 @@ struct hypertritonfinder {
 };
 
 /*struct hypertritonfinderQA {
-// Basic checks
-// Selection criteria
-Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-Configurable<float> dcav0dau{"dcav0dau", .6, "DCA V0 Daughters"};
-Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
-Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
+  // Basic checks
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.998, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> dcav0dau{"dcav0dau", .6, "DCA V0 Daughters"};
+  Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
+  Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
 
-HistogramRegistry registry{
-"registry",
-{
-{"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
+  HistogramRegistry registry{
+    "registry",
+      {
+        {"hCandPerEvent", "hCandPerEvent", {HistType::kTH1F, {{1000, 0.0f, 1000.0f}}}},
 
-{"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
-{"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
-{"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-{"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-{"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+        {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f}}}},
+        {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
+        {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+        {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
+        {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
 
-{"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 0.450f, 0.550f}}}},
-{"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
-{"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f}, {200, 0.0f, 10.0f}, {200, 1.015f, 1.215f}}}},
-},
-};
+        {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+        {"h3dMassAntiHypertriton", "h3dMassAntiHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      },
+  };
 
-Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
+  //Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-/// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
-void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
-soa::Filtered<aod::V0Datas> const& fullV0s)
-{
-if (!collision.alias()[kINT7]) {
-return;
-}
-if (!collision.sel7()) {
-return;
-}
+  /// Connect to V0Data: newly indexed, note: V0Datas table incompatible with standard V0 table!
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision,
+      //soa::Filtered<aod::V0Datas> const& fullV0s)
+      aod::V0Datas const& fullV0s)
+  {
+    if (!collision.sel8()) {
+      return;
+    }
 
-Long_t lNCand = 0;
-for (auto& v0 : fullV0s) {
-if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
-registry.fill(HIST("hV0Radius"), v0.v0radius());
-registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
-registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
-registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
+    Long_t lNCand = 0;
+    for (auto& v0 : fullV0s) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("hV0Radius"), v0.v0radius());
+        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+        registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
+        registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
+        registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
 
-if (TMath::Abs(v0.yLambda()) < 0.5) {
-registry.fill(HIST("h3dMassLambda"), collision.centRun2V0M(), v0.pt(), v0.mLambda());
-registry.fill(HIST("h3dMassAntiLambda"), collision.centRun2V0M(), v0.pt(), v0.mAntiLambda());
-}
-if (TMath::Abs(v0.yK0Short()) < 0.5) {
-registry.fill(HIST("h3dMassK0Short"), collision.centRun2V0M(), v0.pt(), v0.mK0Short());
-}
-lNCand++;
-}
-}
-registry.fill(HIST("hCandPerEvent"), lNCand);
-}
+        if (TMath::Abs(v0.yHypertriton()) < 0.5) {
+          registry.fill(HIST("h3dMassHypertriton"), collision.centFV0A(), v0.pt(), v0.mLambda());
+          registry.fill(HIST("h3dMassAntiHypertriton"), collision.centFV0A(), v0.pt(), v0.mAntiLambda());
+        }
+        lNCand++;
+      }
+    }
+    registry.fill(HIST("hCandPerEvent"), lNCand);
+  }
+  PROCESS_SWITCH(hypertritonfinderQA, processRun3, "Process Run 3 data", true);
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision,
+      //soa::Filtered<aod::V0Datas> const& fullV0s)
+      aod::V0Datas const& fullV0s)
+  {
+    if (!collision.alias()[kINT7]) {
+      return;
+    }
+    if (!collision.sel7()) {
+      return;
+    }
+
+    Long_t lNCand = 0;
+    for (auto& v0 : fullV0s) {
+      if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("hV0Radius"), v0.v0radius());
+        registry.fill(HIST("hV0CosPA"), v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+        registry.fill(HIST("hDCAPosToPV"), v0.dcapostopv());
+        registry.fill(HIST("hDCANegToPV"), v0.dcanegtopv());
+        registry.fill(HIST("hDCAV0Dau"), v0.dcaV0daughters());
+
+        if (TMath::Abs(v0.yHypertriton()) < 0.5) {
+          registry.fill(HIST("h3dMassHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mHypertriton());
+          registry.fill(HIST("h3dMassAntiHypertriton"), collision.centRun2V0M(), v0.pt(), v0.mAntiHypertriton());
+        }
+        lNCand++;
+      }
+    }
+    registry.fill(HIST("hCandPerEvent"), lNCand);
+  }
+  PROCESS_SWITCH(hypertritonfinderQA, processRun2, "Process Run 2 data", false);
+
 };*/
 
 /// Extends the v0data table with expression columns
