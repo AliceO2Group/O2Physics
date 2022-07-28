@@ -1020,6 +1020,25 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
                   aod::hf_correlation_ddbar::MDbar,
                   aod::hf_correlation_ddbar::SignalStatus);
 
+// definition of columns and tables for Dplus-Hadron correlation pairs
+namespace hf_correlation_dplushadron
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(PtD, ptD, float);
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
+DECLARE_SOA_COLUMN(MD, mD, float);
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+} // namespace hf_correlation_dplushadron
+DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR",
+                  aod::hf_correlation_dplushadron::DeltaPhi,
+                  aod::hf_correlation_dplushadron::DeltaEta,
+                  aod::hf_correlation_dplushadron::PtD,
+                  aod::hf_correlation_dplushadron::PtHadron);
+DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
+                  aod::hf_correlation_dplushadron::MD,
+                  aod::hf_correlation_dplushadron::SignalStatus);
+
 // specific Xicc candidate properties
 namespace hf_cand_xicc
 {
