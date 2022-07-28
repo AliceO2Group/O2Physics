@@ -17,9 +17,6 @@
 // the hypertritonfinder or the hypertritonproducer tasks
 // to have been executed in the workflow (before).
 //
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    david.dobrigkeit.chinellato@cern.ch
 //
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

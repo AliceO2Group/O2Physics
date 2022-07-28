@@ -23,9 +23,6 @@
 // In both cases, any analysis should loop over the "V0Data"
 // table as that table contains all information.
 //
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    david.dobrigkeit.chinellato@cern.ch
 //
 
 #include "Framework/runDataProcessing.h"
