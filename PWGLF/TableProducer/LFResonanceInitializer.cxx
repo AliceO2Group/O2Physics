@@ -17,7 +17,6 @@
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"

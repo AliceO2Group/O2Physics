@@ -9,14 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file phisample.cxx
+/// \file phianalysis.cxx
 /// \brief Reconstruction of track-track decay resonance candidates
 ///
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/AnalysisTask.h"
@@ -31,7 +30,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct phisample {
+struct phianalysis {
   framework::Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -161,10 +160,10 @@ struct phisample {
       }
     }
   };
-  PROCESS_SWITCH(phisample, processME, "Process EventMixing", false);
+  PROCESS_SWITCH(phianalysis, processME, "Process EventMixing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<phisample>(cfgc, TaskName{"lf-phisample"})};
+  return WorkflowSpec{adaptAnalysisTask<phianalysis>(cfgc, TaskName{"lf-phianalysis"})};
 }
