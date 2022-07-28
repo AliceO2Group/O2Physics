@@ -162,7 +162,7 @@ o2-analysis-pid-tof -b | \
 o2-analysis-trackselection -b | \
 o2-analysis-trackextension -b | \
 o2-analysis-event-selection --isMC -b | \
-o2-analysis-timestamp --isRun2MC -b 
+o2-analysis-timestamp --isRun2MC -b
 ```
 
 </p>
@@ -193,7 +193,7 @@ _____________________________
  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc){
     WorkflowSpec workflow{};
     return workflow;
- } 
+ }
  ```
 Each part will be described in greater detail further on during this tutorial.<br>
 
@@ -238,7 +238,7 @@ The second element is `process`, equivalent to the _UserExec_ in _AliPhysics_. I
  ```
 
 The arguments of `process` are the data _tables_ that we analyse, i.e. the tables to which we _subscribe_. In the snippet above, the subscripion is to the tables of collisions and tracks.
-  
+
 Finally, `WorkflowSpec` is necessay to add the task to the DPL workflow . And it looks like:
 
  ```c
@@ -274,7 +274,7 @@ Joined tables can be normally used as agruments of process.
  void process(aod::MyCollision const& coll, aod::MyTracks const& inputTracks){...}
  // CFTutorialTask0.cxx version
  void process(aod::Collision const& coll, aod::Tracks const& inputTracks){...}
-```  
+```
 
 ## Third task
 
@@ -286,7 +286,7 @@ In the following, an example for the configurable used for the selection on the 
 Configurable<float> ConfZvtxCut{"ConfZvtxCut", 10, "Z vtx cut"};
 ```
 In the task, tha value of the configurable can be accesses simply by calling the Configurable itself.
-  
+
 A `Filter` is used to select the rows of a table which satisfy particular requirements. For example:
 ```c
 Filter trackFilter = (nabs(aod::track::eta) < ConfEtaCut) && (aod::track::pt > ConfMinPtCut) && (aod::track::pt < ConfMaxPtCut);
@@ -311,12 +311,12 @@ void process(MyFilteredCollision const& coll, o2::aod::Tracks const& tracks)
 
   ...
 
-  auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex()); 
-  
+  auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex());
+
   for (auto track : groupPositive) {
     histos.fill(HIST("hChargePos"), track.sign());
   }
-  
+
   ...
 }
 ```
@@ -333,7 +333,7 @@ We will be using [CFTutorialTask4.cxx](https://github.com/CF-tutorials/O2Physics
 
 ```c
 for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPositive, groupNegative))) {
-      
+
       if (fabs(pos.tpcNSigmaPi()) > 3 or fabs(neg.tpcNSigmaPi()) > 3) {
         continue;
       }
@@ -348,7 +348,7 @@ for (auto& [pos, neg] : combinations(soa::CombinationsFullIndexPolicy(groupPosit
       histos.fill(HIST("hInvariantMass"), sumVec.M());
     }
 ```
-  
+
 
 ## Sixth task
 
