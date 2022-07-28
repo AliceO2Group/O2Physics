@@ -561,11 +561,6 @@ struct HfFilter { // Main struct for HF triggers
     auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
     auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
 
-    if (activateQA) {
-      hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
-      hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
-    }
-
     int retValue = 0;
     if (std::abs(invMassDsToKKPi - massDs) < 0.04) {
       retValue |= BIT(0);
@@ -575,9 +570,15 @@ struct HfFilter { // Main struct for HF triggers
     }
     if (std::abs(invMassKKFirst - massPhi) < 0.02) {
       retValue |= BIT(2);
+      if (activateQA) {
+        hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
+      }
     }
     if (std::abs(invMassKKSecond - massPhi) < 0.02) {
       retValue |= BIT(3);
+      if (activateQA) {
+        hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
+      }
     }
 
     return retValue;
@@ -841,9 +842,9 @@ struct HfFilter { // Main struct for HF triggers
             auto scores = outputTensor[1].GetTensorMutableData<float>();
 
             if (applyML && activateQA) {
-              hBDTScoreBkg[iCharmPart]->Fill(scores[0]);
-              hBDTScorePrompt[iCharmPart]->Fill(scores[1]);
-              hBDTScoreNonPrompt[iCharmPart]->Fill(scores[2]);
+              hBDTScoreBkg[iCharmPart + 1]->Fill(scores[0]);
+              hBDTScorePrompt[iCharmPart + 1]->Fill(scores[1]);
+              hBDTScoreNonPrompt[iCharmPart + 1]->Fill(scores[2]);
             }
 
             int tagBDT = isBDTSelected(scores, iCharmPart + 1);
@@ -872,17 +873,17 @@ struct HfFilter { // Main struct for HF triggers
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
-      std::array<int, kNCharmParticles - 1> is3ProngInMass{};
-      if (is3Prong[0]) {
+      std::array<int, kNCharmParticles - 1> is3ProngInMass{0};
+      if (is3Prong[0] && (isCharmTagged[0] || isBeautyTagged[0])) {
         is3ProngInMass[0] = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[1]) {
+      if (is3Prong[1] && (isCharmTagged[1] || isBeautyTagged[1])) {
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[2]) {
+      if (is3Prong[2] && (isCharmTagged[2] || isBeautyTagged[2])) {
         is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[3]) {
+      if (is3Prong[3] && (isCharmTagged[3] || isBeautyTagged[3])) {
         is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
 
@@ -890,7 +891,7 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kHighPt] = true;
         if (activateQA) {
           for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-            if (is3Prong[iCharmPart - 1]) {
+            if (is3Prong[iCharmPart - 1] && (isCharmTagged[iCharmPart - 1] || isBeautyTagged[iCharmPart - 1])) {
               hCharmHighPt[iCharmPart]->Fill(pt3Prong);
             }
           }
