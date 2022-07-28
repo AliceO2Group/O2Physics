@@ -441,6 +441,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // LMEE pair signals for HF
+  // c->e and c->e (no check)
+  if (!nameStr.compare("eeFromCCNoCheck")) {
+    MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "ee pairs from c->e and c->e without check", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
   // c->e and c->e (prompt)
   if (!nameStr.compare("eeFromCC")) {
     MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
