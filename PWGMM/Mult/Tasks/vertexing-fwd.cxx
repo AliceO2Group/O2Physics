@@ -16,7 +16,6 @@
 ///
 /// \brief This code loops over every ambiguous MFT tracks and associates 
 /// them to a collision that has the smallest DCAxy
-
 #include <cmath>
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Math/MatrixFunctions.h"
