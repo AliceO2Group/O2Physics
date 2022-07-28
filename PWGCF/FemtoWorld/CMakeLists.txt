@@ -9,12 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(task-correlation-ddbar
-                    SOURCES taskCorrelationDDbar.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)
+add_subdirectory(Core)
+add_subdirectory(DataModel)
+add_subdirectory(TableProducer)
+add_subdirectory(Tasks)
 
-o2physics_add_dpl_workflow(task-correlation-dplus-hadrons
-                    SOURCES taskCorrelationDplusHadrons.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing
-                    COMPONENT_NAME Analysis)

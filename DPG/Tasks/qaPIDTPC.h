@@ -36,6 +36,20 @@ struct tpcPidQa {
   static constexpr std::string_view hexpected_diff[Np] = {"expected_diff/El", "expected_diff/Mu", "expected_diff/Pi",
                                                           "expected_diff/Ka", "expected_diff/Pr", "expected_diff/De",
                                                           "expected_diff/Tr", "expected_diff/He", "expected_diff/Al"};
+  static constexpr std::string_view hexpected_diffptpos[Np] = {"expected_diffptpos/El", "expected_diffptpos/Mu", "expected_diffptpos/Pi",
+                                                               "expected_diffptpos/Ka", "expected_diffptpos/Pr", "expected_diffptpos/De",
+                                                               "expected_diffptpos/Tr", "expected_diffptpos/He", "expected_diffptpos/Al"};
+  static constexpr std::string_view hexpected_diffptneg[Np] = {"expected_diffptneg/El", "expected_diffptneg/Mu", "expected_diffptneg/Pi",
+                                                               "expected_diffptneg/Ka", "expected_diffptneg/Pr", "expected_diffptneg/De",
+                                                               "expected_diffptneg/Tr", "expected_diffptneg/He", "expected_diffptneg/Al"};
+  // With TOF
+  static constexpr std::string_view hexpectedwtof[Np] = {"expectedwtof/El", "expectedwtof/Mu", "expectedwtof/Pi",
+                                                         "expectedwtof/Ka", "expectedwtof/Pr", "expectedwtof/De",
+                                                         "expectedwtof/Tr", "expectedwtof/He", "expectedwtof/Al"};
+  static constexpr std::string_view hexpected_diffwtof[Np] = {"expected_diffwtof/El", "expected_diffwtof/Mu", "expected_diffwtof/Pi",
+                                                              "expected_diffwtof/Ka", "expected_diffwtof/Pr", "expected_diffwtof/De",
+                                                              "expected_diffwtof/Tr", "expected_diffwtof/He", "expected_diffwtof/Al"};
+
   static constexpr std::string_view hexpsigma[Np] = {"expsigma/El", "expsigma/Mu", "expsigma/Pi",
                                                      "expsigma/Ka", "expsigma/Pr", "expsigma/De",
                                                      "expsigma/Tr", "expsigma/He", "expsigma/Al"};
@@ -51,9 +65,24 @@ struct tpcPidQa {
   static constexpr std::string_view hnsigmanegpt[Np] = {"nsigmanegpt/El", "nsigmanegpt/Mu", "nsigmanegpt/Pi",
                                                         "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
                                                         "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
+  // With TOF
+  static constexpr std::string_view hexpsigmawtof[Np] = {"expsigmawtof/El", "expsigmawtof/Mu", "expsigmawtof/Pi",
+                                                         "expsigmawtof/Ka", "expsigmawtof/Pr", "expsigmawtof/De",
+                                                         "expsigmawtof/Tr", "expsigmawtof/He", "expsigmawtof/Al"};
+  static constexpr std::string_view hnsigmawtof[Np] = {"nsigmawtof/El", "nsigmawtof/Mu", "nsigmawtof/Pi",
+                                                       "nsigmawtof/Ka", "nsigmawtof/Pr", "nsigmawtof/De",
+                                                       "nsigmawtof/Tr", "nsigmawtof/He", "nsigmawtof/Al"};
+  static constexpr std::string_view hnsigmaptwtof[Np] = {"nsigmaptwtof/El", "nsigmaptwtof/Mu", "nsigmaptwtof/Pi",
+                                                         "nsigmaptwtof/Ka", "nsigmaptwtof/Pr", "nsigmaptwtof/De",
+                                                         "nsigmaptwtof/Tr", "nsigmaptwtof/He", "nsigmaptwtof/Al"};
+
   static constexpr std::string_view hsignal[Np] = {"signal/El", "signal/Mu", "signal/Pi",
                                                    "signal/Ka", "signal/Pr", "signal/De",
                                                    "signal/Tr", "signal/He", "signal/Al"};
+  // With TOF
+  static constexpr std::string_view hsignalwtof[Np] = {"signalwtof/El", "signalwtof/Mu", "signalwtof/Pi",
+                                                       "signalwtof/Ka", "signalwtof/Pr", "signalwtof/De",
+                                                       "signalwtof/Tr", "signalwtof/He", "signalwtof/Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -70,7 +99,7 @@ struct tpcPidQa {
   Configurable<int> nBinsNSigma{"nBinsNSigma", 200, "Number of bins for the NSigma"};
   Configurable<float> minNSigma{"minNSigma", -10.f, "Minimum NSigma in range"};
   Configurable<float> maxNSigma{"maxNSigma", 10.f, "Maximum NSigma in range"};
-  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<bool> applyTrackCut{"applyTrackCut", false, "Flag to apply standard track cuts"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
@@ -105,6 +134,8 @@ struct tpcPidQa {
     // Signal - Expected signal
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
     histos.add(hexpected_diff[id].data(), "", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptpos[id].data(), "Positive", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptneg[id].data(), "Negative", kTH2F, {pAxis, deltaAxis});
 
     // Exp Sigma
     const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
@@ -132,13 +163,14 @@ struct tpcPidQa {
     const AxisSpec phiAxis{100, 0, TMath::TwoPi(), "#it{#phi}"};
     const AxisSpec lAxis{100, 0, 500, "Track length (cm)"};
     const AxisSpec pAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p} (GeV/#it{c})"};
+    const AxisSpec ptAxisPosNeg{nBinsP, -maxP, maxP, "Signed #it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
       ptAxis.makeLogaritmic();
       pAxis.makeLogaritmic();
     }
-    const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} A.U."};
+    const AxisSpec dedxAxis{5000, 0, 5000, "d#it{E}/d#it{x} A.U."};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1F, {{10, 0.5, 10.5, "Ev. Sel."}});
@@ -161,6 +193,8 @@ struct tpcPidQa {
     histos.add("event/trackmultiplicity", "", kTH1F, {multAxis});
     histos.add("event/tpcsignal", "", kTH2F, {pAxis, dedxAxis});
     histos.add("event/signedtpcsignal", "", kTH2F, {pAxisPosNeg, dedxAxis});
+    histos.add("event/tpcsignalvspt", "", kTH2F, {ptAxis, dedxAxis});
+    histos.add("event/signedtpcsignalvspt", "", kTH2F, {ptAxisPosNeg, dedxAxis});
     histos.add("event/eta", "", kTH1F, {etaAxis});
     histos.add("event/phi", "", kTH1F, {phiAxis});
     histos.add("event/etaphi", "", kTH2F, {etaAxis, phiAxis});
@@ -237,6 +271,8 @@ struct tpcPidQa {
       histos.fill(HIST("event/particlehypo"), track.pidForTracking());
       histos.fill(HIST("event/tpcsignal"), track.tpcInnerParam(), track.tpcSignal());
       histos.fill(HIST("event/signedtpcsignal"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      histos.fill(HIST("event/tpcsignalvspt"), track.pt(), track.tpcSignal());
+      histos.fill(HIST("event/signedtpcsignalvspt"), track.pt() * track.sign(), track.tpcSignal());
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/phi"), track.phi());
       histos.fill(HIST("event/etaphi"), track.eta(), track.phi());
@@ -291,21 +327,26 @@ struct tpcPidQa {
         // Fill histograms
         histos.fill(HIST(hexpected[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
         histos.fill(HIST(hexpected_diff[id]), t.tpcInnerParam(), diff);
+        if (t.sign() > 0) {
+          histos.fill(HIST(hexpected_diffptpos[id]), t.pt(), diff);
+        } else {
+          histos.fill(HIST(hexpected_diffptneg[id]), t.pt(), diff);
+        }
         histos.fill(HIST(hexpsigma[id]), t.tpcInnerParam(), o2::aod::pidutils::tpcExpSigma<id>(t));
         if constexpr (fillWithTOFHistograms) {
           if (std::abs(o2::aod::pidutils::tofNSigma<id>(t)) < 3.f) {
-            histos.fill(HIST(hexpected[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
-            histos.fill(HIST(hexpected_diff[id]), t.tpcInnerParam(), diff);
-            histos.fill(HIST(hexpsigma[id]), t.p(), o2::aod::pidutils::tpcExpSigma<id>(t));
+            histos.fill(HIST(hexpectedwtof[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
+            histos.fill(HIST(hexpected_diffwtof[id]), t.tpcInnerParam(), diff);
+            histos.fill(HIST(hexpsigmawtof[id]), t.p(), o2::aod::pidutils::tpcExpSigma<id>(t));
           }
         }
       }
       if constexpr (fillWithTOFHistograms) {
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
-          histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
-          histos.fill(HIST(hsignal[id]), t.tpcInnerParam(), t.tpcSignal());
+          histos.fill(HIST(hnsigmawtof[id]), t.p(), nsigma);
+          histos.fill(HIST(hnsigmaptwtof[id]), t.pt(), nsigma);
+          histos.fill(HIST(hsignalwtof[id]), t.tpcInnerParam(), t.tpcSignal());
           // histos.fill(HIST("event/signedtpcsignal"), t.tpcInnerParam() * t.sign(), t.tpcSignal());
         }
       }

@@ -12,9 +12,6 @@
 // task for charged particle pt spectra vs multiplicity analysis with 2d unfolding for run3+
 // mimics https://github.com/alisw/AliPhysics/blob/master/PWGLF/SPECTRA/ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTask.cxx
 
-// run for data as: o2-analysis-timestamp | o2-analysis-event-selection | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_data.root
-// run for mc as: o2-analysis-timestamp --isRun2MC | o2-analysis-event-selection --isMC | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_mc.root --isMC
-
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -38,12 +35,14 @@ struct chargedSpectra {
   Service<TDatabasePDG> pdg;
 
   // task settings that can be steered via hyperloop
-  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
+  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<uint32_t> maxMultMeas{"maxMultMeas", 100, "max measured multiplicity"};
   Configurable<uint32_t> maxMultTrue{"maxMultTrue", 100, "max true multiplicity"};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
+
+  Configurable<bool> normINELGT0{"normINELGT0", false, "normalize INEL>0 according to MC"};
 
   // helper struct to store transient properties
   struct varContainer {
@@ -51,6 +50,7 @@ struct chargedSpectra {
     uint32_t multTrue{0u};
     bool isAcceptedEvent{false};
     bool isAcceptedEventMC{false};
+    bool isINELGT0EventMC{false};
     bool isChargedPrimary{false};
   };
   varContainer vars;
@@ -84,6 +84,7 @@ struct chargedSpectra {
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>;
   using ParticleTableMC = aod::McParticles;
+  Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
   PROCESS_SWITCH(chargedSpectra, processMC, "process mc", true);
 
@@ -178,8 +179,6 @@ void chargedSpectra::processData(CollisionTableData::iterator const& collision, 
  * Entrypoint to processes mc.
  */
 //**************************************************************************************************
-Preslice<chargedSpectra::TrackTableMC> perCollision = aod::track::collisionId;
-
 void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
 {
   histos.fill(HIST("collision_ambiguity"), collisions.size());
@@ -222,6 +221,10 @@ bool chargedSpectra::initParticle(const P& particle)
     return false;
   }
   vars.isChargedPrimary = particle.isPhysicalPrimary();
+
+  // event class is INEL>0 in case it has a charged particle in abs(eta) < 1
+  vars.isINELGT0EventMC = vars.isINELGT0EventMC || (vars.isChargedPrimary && (std::abs(particle.eta()) < 1.));
+
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
@@ -284,6 +287,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
 template <typename C, typename P>
 void chargedSpectra::initEventMC(const C& collision, const P& particles)
 {
+  vars.isINELGT0EventMC = false; // will be set to true in case a charged particle within eta +-1 is found
   vars.multTrue = 0;
   for (auto& particle : particles) {
     if (!initParticle(particle) || !vars.isChargedPrimary) {
@@ -291,7 +295,8 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
     }
     ++vars.multTrue;
   }
-  vars.isAcceptedEventMC = ((std::abs(collision.posZ()) < 10.f) && (vars.multTrue > 0));
+  bool isGoodEventClass = (normINELGT0) ? vars.isINELGT0EventMC : (vars.multTrue > 0);
+  vars.isAcceptedEventMC = isGoodEventClass && (std::abs(collision.posZ()) < 10.f);
 }
 
 //**************************************************************************************************
