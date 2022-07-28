@@ -9,8 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//Code written by Robin Caron and Sarah Herrmann
-//This code loops over every ambiguous MFT tracks and associates them to a collision that has the smallest DCAxy
+///
+/// \file   vertexing-fwd.cxx
+/// \author Robin Caron <robin.caron@cern.ch>
+/// \author Sarah Herrmann <sarah.herrmann@cern.ch>
+///
+/// \brief This code loops over every ambiguous MFT tracks and associates 
+/// them to a collision that has the smallest DCAxy
 
 #include <cmath>
 #include "ReconstructionDataFormats/TrackFwd.h"
