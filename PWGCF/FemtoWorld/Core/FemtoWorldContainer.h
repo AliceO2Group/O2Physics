@@ -24,6 +24,9 @@
 #include "TMath.h"
 #include "TDatabasePDG.h"
 
+#include "CommonConstants/MathConstants.h"
+using namespace o2::constants::math;
+
 using namespace o2::framework;
 
 namespace o2::analysis::femtoWorld
@@ -77,8 +80,8 @@ class FemtoWorldContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
-    mPhiHigh = 2 * TMath::Pi() + (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
+    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiHigh = 2 * PI + (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
 
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
@@ -125,10 +128,10 @@ class FemtoWorldContainer
 
     double delta_phi = part1.phi() - part2.phi();
     while (delta_phi < mPhiLow) {
-      delta_phi += PIT;
+      delta_phi += TwoPI;
     }
     while (delta_phi > mPhiHigh) {
-      delta_phi -= PIT;
+      delta_phi -= TwoPI;
     }
 
     if (mHistogramRegistry) {
@@ -155,7 +158,6 @@ class FemtoWorldContainer
   float mMassTwo = 0.f;                                                               ///< PDG mass of particle 2
   double mPhiLow;
   double mPhiHigh;
-  static constexpr double PIT = 6.28318530717958623;
 };
 
 } // namespace o2::analysis::femtoWorld

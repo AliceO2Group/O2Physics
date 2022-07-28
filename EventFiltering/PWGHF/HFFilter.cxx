@@ -327,6 +327,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> outputShapesML{};
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
   std::array<Ort::SessionOptions, kNCharmParticles> sessionOptions{};
+  std::array<int, kNCharmParticles> dataTypeML{};
   std::array<Ort::Env, kNCharmParticles> env = {
     Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-d0-triggers"},
     Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-dplus-triggers"},
@@ -392,6 +393,10 @@ struct HfFilter { // Main struct for HF triggers
           }
           outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
           outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
+
+          Ort::TypeInfo typeInfo = sessionML[iCharmPart]->GetInputTypeInfo(0);
+          auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
+          dataTypeML[iCharmPart] = tensorInfo.GetElementType();
         }
       }
     }
@@ -561,11 +566,6 @@ struct HfFilter { // Main struct for HF triggers
     auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
     auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
 
-    if (activateQA) {
-      hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
-      hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
-    }
-
     int retValue = 0;
     if (std::abs(invMassDsToKKPi - massDs) < 0.04) {
       retValue |= BIT(0);
@@ -575,9 +575,15 @@ struct HfFilter { // Main struct for HF triggers
     }
     if (std::abs(invMassKKFirst - massPhi) < 0.02) {
       retValue |= BIT(2);
+      if (activateQA) {
+        hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
+      }
     }
     if (std::abs(invMassKKSecond - massPhi) < 0.02) {
       retValue |= BIT(3);
+      if (activateQA) {
+        hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
+      }
     }
 
     return retValue;
@@ -697,9 +703,16 @@ struct HfFilter { // Main struct for HF triggers
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
         // TODO: add more feature configurations
-        std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
         std::vector<Ort::Value> inputTensorD0;
-        inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeaturesD0.data(), inputFeaturesD0.size(), inputShapesML[kD0][0]));
+        std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        std::vector<double> inputFeaturesDoD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        if (dataTypeML[kD0] == 1) {
+          inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeaturesD0.data(), inputFeaturesD0.size(), inputShapesML[kD0][0]));
+        } else if (dataTypeML[kD0] == 11) {
+          inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesDoD0.data(), inputFeaturesDoD0.size(), inputShapesML[kD0][0]));
+        } else {
+          LOG(fatal) << "Error running model inference: Unexpected input data type.";
+        }
 
         // double-check the dimensions of the input tensor
         if (inputTensorD0[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
@@ -825,9 +838,16 @@ struct HfFilter { // Main struct for HF triggers
       if (applyML) {
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
+        std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         for (auto iCharmPart{0}; (iCharmPart < kNCharmParticles - 1) && is3Prong[iCharmPart] && onnxFiles[iCharmPart + 1] != ""; ++iCharmPart) {
           std::vector<Ort::Value> inputTensor;
-          inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
+          if (dataTypeML[iCharmPart + 1] == 1) {
+            inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
+          } else if (dataTypeML[iCharmPart + 1] == 11) {
+            inputTensor.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesD.data(), inputFeaturesD.size(), inputShapesML[iCharmPart + 1][0]));
+          } else {
+            LOG(error) << "Error running model inference: Unexpected input data type.";
+          }
 
           // double-check the dimensions of the input tensor
           if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
@@ -841,9 +861,9 @@ struct HfFilter { // Main struct for HF triggers
             auto scores = outputTensor[1].GetTensorMutableData<float>();
 
             if (applyML && activateQA) {
-              hBDTScoreBkg[iCharmPart]->Fill(scores[0]);
-              hBDTScorePrompt[iCharmPart]->Fill(scores[1]);
-              hBDTScoreNonPrompt[iCharmPart]->Fill(scores[2]);
+              hBDTScoreBkg[iCharmPart + 1]->Fill(scores[0]);
+              hBDTScorePrompt[iCharmPart + 1]->Fill(scores[1]);
+              hBDTScoreNonPrompt[iCharmPart + 1]->Fill(scores[2]);
             }
 
             int tagBDT = isBDTSelected(scores, iCharmPart + 1);
@@ -872,17 +892,17 @@ struct HfFilter { // Main struct for HF triggers
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
-      std::array<int, kNCharmParticles - 1> is3ProngInMass{};
-      if (is3Prong[0]) {
+      std::array<int, kNCharmParticles - 1> is3ProngInMass{0};
+      if (is3Prong[0] && (isCharmTagged[0] || isBeautyTagged[0])) {
         is3ProngInMass[0] = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[1]) {
+      if (is3Prong[1] && (isCharmTagged[1] || isBeautyTagged[1])) {
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[2]) {
+      if (is3Prong[2] && (isCharmTagged[2] || isBeautyTagged[2])) {
         is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[3]) {
+      if (is3Prong[3] && (isCharmTagged[3] || isBeautyTagged[3])) {
         is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
 
@@ -890,7 +910,7 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kHighPt] = true;
         if (activateQA) {
           for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-            if (is3Prong[iCharmPart - 1]) {
+            if (is3Prong[iCharmPart - 1] && (isCharmTagged[iCharmPart - 1] || isBeautyTagged[iCharmPart - 1])) {
               hCharmHighPt[iCharmPart]->Fill(pt3Prong);
             }
           }
