@@ -177,10 +177,9 @@ struct HfTaskCorrelationD0 {
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
                                      {axisVertexEfficiency, "z-vtx (cm)"}};
-    std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
     sameTPCTPCCh.setObject(new CorrelationContainer("sameEventTPCTPCChHadrons", "sameEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
-    sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
+    sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, {}));
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
   }
 
@@ -360,15 +359,9 @@ struct HfTaskCorrelationD0 {
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * PI);
 
         //  fill pair correlations (HF case needs additional axis for invariant mass)
-        if (!(fillingHFcontainer)) {
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                      triggerWeight * associatedWeight);
-        } else {
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-        }
+        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                    eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+                                    triggerWeight * associatedWeight);
       }
     }
   }
