@@ -17,5 +17,3 @@ add_subdirectory(D2H)
 add_subdirectory(HFC)
 add_subdirectory(HFJ)
 add_subdirectory(HFL)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/PWGCF/Core)
