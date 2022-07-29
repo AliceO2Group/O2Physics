@@ -110,10 +110,11 @@ struct tpcPidQa {
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
 
   template <o2::track::PID::ID id>
-  void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
+  void initPerParticle(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
     bool enableTOFHistos = false;
+    bool enableFullHistos = false;
     int enabledProcesses = 0;
     switch (id) { // Skipping disabled particles
 #define particleCase(particleId)                                                                     \
@@ -125,9 +126,11 @@ struct tpcPidQa {
       enabledProcesses++;                                                                            \
     }                                                                                                \
     if (!doprocessFull##particleId) {                                                                \
+      enableFullHistos = true;                                                                       \
       enabledProcesses++;                                                                            \
     }                                                                                                \
     if (!doprocessFullWithTOF##particleId) {                                                         \
+      enableFullHistos = true;                                                                       \
       enableTOFHistos = true;                                                                        \
       enabledProcesses++;                                                                            \
     }                                                                                                \
@@ -148,6 +151,19 @@ struct tpcPidQa {
     if (enabledProcesses != 1) {
       LOG(fatal) << "Cannot enable more than one process function per particle, check and retry!";
     }
+
+    // NSigma
+    const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[id]);
+    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
+    histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+
+    if (!enableFullHistos) { // Enabling only NSigma for tiny tables
+      return;
+    }
+
     // Exp signal
     const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[id])};
     histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
@@ -161,14 +177,6 @@ struct tpcPidQa {
     // Exp Sigma
     const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
     histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
-
-    // NSigma
-    const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[id]);
-    const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
-    histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigmapt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmapospt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmanegpt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
 
     if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
       return;
@@ -190,7 +198,6 @@ struct tpcPidQa {
 
   void init(o2::framework::InitContext&)
   {
-
     const AxisSpec multAxis{1000, 0.f, 1000.f, "Track multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
@@ -237,7 +244,7 @@ struct tpcPidQa {
     histos.add("event/p", "", kTH1F, {pAxis});
 
     static_for<0, 8>([&](auto i) {
-      addParticleHistos<i>(pAxis, ptAxis);
+      initPerParticle<i>(pAxis, ptAxis);
     });
   }
 
@@ -245,7 +252,9 @@ struct tpcPidQa {
   bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
   {
 
-    histos.fill(HIST("event/evsel"), 1);
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("event/evsel"), 1);
+    }
     if (applyEvSel == 1) {
       if (!collision.sel7()) {
         return false;
@@ -256,21 +265,24 @@ struct tpcPidQa {
       }
     }
 
-    histos.fill(HIST("event/evsel"), 2);
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("event/evsel"), 2);
+    }
 
     // Computing Multiplicity first
-    float ntracks = 0;
-    for (auto t : tracks) {
-      if (applyTrackCut && !t.isGlobalTrack()) {
-        continue;
+    int ntracks = 0;
+    if constexpr (fillHistograms) {
+      for (auto t : tracks) {
+        if (applyTrackCut && !t.isGlobalTrack()) {
+          continue;
+        }
+        ntracks += 1;
       }
-      ntracks += 1;
+      histos.fill(HIST("event/evsel"), 3);
     }
-    histos.fill(HIST("event/evsel"), 3);
     if (abs(collision.posZ()) > 10.f) {
       return false;
     }
-
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/evsel"), 4);
       histos.fill(HIST("event/vertexz"), collision.posZ());
@@ -320,7 +332,8 @@ struct tpcPidQa {
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>::iterator;
   void process(CollisionCandidate const& collision,
-               soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks)
+               soa::Join<aod::Tracks, aod::TracksExtra,
+                         aod::TrackSelection> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
@@ -328,7 +341,9 @@ struct tpcPidQa {
     }
   }
 
-  template <o2::track::PID::ID id, bool fillFullHistograms, bool fillWithTOFHistograms, typename TrackType>
+  template <o2::track::PID::ID id, bool fillFullHistograms,
+            bool fillWithTOFHistograms,
+            typename TrackType>
   void processSingleParticle(CollisionCandidate const& collision,
                              TrackType const& tracks)
   {
@@ -347,7 +362,7 @@ struct tpcPidQa {
         }
       }
 
-      const auto& nsigma = o2::aod::pidutils::tpcNSigma<id>(t);
+      const auto nsigma = o2::aod::pidutils::tpcNSigma<id>(t);
       histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
       histos.fill(HIST(hnsigmapt[id]), t.pt(), nsigma);
       if (t.sign() > 0) {
@@ -374,7 +389,8 @@ struct tpcPidQa {
             histos.fill(HIST(hexpsigmaWithTOF[id]), t.p(), o2::aod::pidutils::tpcExpSigma<id>(t));
           }
         }
-      } else if constexpr (fillWithTOFHistograms) {
+      }
+      if constexpr (fillWithTOFHistograms) { // Filling nsigma (common to full and tiny)
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
           histos.fill(HIST(hnsigmaWithTOF[id]), t.p(), nsigma);
