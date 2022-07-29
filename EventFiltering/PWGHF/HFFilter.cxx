@@ -327,6 +327,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> outputShapesML{};
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
   std::array<Ort::SessionOptions, kNCharmParticles> sessionOptions{};
+  std::array<int, kNCharmParticles> dataTypeML{};
   std::array<Ort::Env, kNCharmParticles> env = {
     Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-d0-triggers"},
     Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-dplus-triggers"},
@@ -392,6 +393,10 @@ struct HfFilter { // Main struct for HF triggers
           }
           outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
           outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
+
+          Ort::TypeInfo typeInfo = sessionML[iCharmPart]->GetInputTypeInfo(0);
+          auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
+          dataTypeML[iCharmPart] = tensorInfo.GetElementType();
         }
       }
     }
@@ -698,9 +703,16 @@ struct HfFilter { // Main struct for HF triggers
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
         // TODO: add more feature configurations
-        std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
         std::vector<Ort::Value> inputTensorD0;
-        inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeaturesD0.data(), inputFeaturesD0.size(), inputShapesML[kD0][0]));
+        std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        std::vector<double> inputFeaturesDoD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        if (dataTypeML[kD0] == 1) {
+          inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeaturesD0.data(), inputFeaturesD0.size(), inputShapesML[kD0][0]));
+        } else if (dataTypeML[kD0] == 11) {
+          inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesDoD0.data(), inputFeaturesDoD0.size(), inputShapesML[kD0][0]));
+        } else {
+          LOG(fatal) << "Error running model inference: Unexpected input data type.";
+        }
 
         // double-check the dimensions of the input tensor
         if (inputTensorD0[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
@@ -826,9 +838,16 @@ struct HfFilter { // Main struct for HF triggers
       if (applyML) {
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
+        std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         for (auto iCharmPart{0}; (iCharmPart < kNCharmParticles - 1) && is3Prong[iCharmPart] && onnxFiles[iCharmPart + 1] != ""; ++iCharmPart) {
           std::vector<Ort::Value> inputTensor;
-          inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
+          if (dataTypeML[iCharmPart + 1] == 1) {
+            inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
+          } else if (dataTypeML[iCharmPart + 1] == 11) {
+            inputTensor.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesD.data(), inputFeaturesD.size(), inputShapesML[iCharmPart + 1][0]));
+          } else {
+            LOG(error) << "Error running model inference: Unexpected input data type.";
+          }
 
           // double-check the dimensions of the input tensor
           if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown

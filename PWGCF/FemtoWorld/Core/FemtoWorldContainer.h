@@ -23,6 +23,7 @@
 #include "Math/Vector4D.h"
 #include "TMath.h"
 #include "TDatabasePDG.h"
+#include "TLorentzVector.h"
 
 #include "CommonConstants/MathConstants.h"
 using namespace o2::constants::math;
@@ -66,8 +67,10 @@ class FemtoWorldContainer
   /// \param mTBins mT binning for the histograms
   /// \param etaBins mT binning for the histograms
   /// \param phiBins mT binning for the histograms
+  /// \param mInvBins mT binning for the histograms
+
   template <typename T1, typename T2>
-  void init(HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins)
+  void init(HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins, T2& mInvBins)
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -85,6 +88,7 @@ class FemtoWorldContainer
 
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
+    framework::AxisSpec mInvAxis = {mInvBins, 0.0, 10.0};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]);
     mHistogramRegistry->add((folderName + "relPairDist").c_str(), ("Name; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
@@ -98,6 +102,7 @@ class FemtoWorldContainer
     mHistogramRegistry->add((folderName + "MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
     mHistogramRegistry->add((folderName + "PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
     mHistogramRegistry->add((folderName + "relPairDetaDphi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2D, {phiAxis, etaAxis});
+    mHistogramRegistry->add((folderName + "relPairInvariantMass").c_str(), ";M_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
   }
 
   /// Set the PDG codes of the two particles involved
@@ -125,13 +130,23 @@ class FemtoWorldContainer
     const float mT = FemtoWorldMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     double delta_eta = part1.eta() - part2.eta();
-
     double delta_phi = part1.phi() - part2.phi();
+
     while (delta_phi < mPhiLow) {
       delta_phi += TwoPI;
     }
     while (delta_phi > mPhiHigh) {
       delta_phi -= TwoPI;
+    }
+    TLorentzVector part1Vec;
+    part1Vec.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), mMassOne);
+    TLorentzVector part2Vec;
+    part2Vec.SetPtEtaPhiM(part2.pt(), part2.eta(), part2.phi(), mMassTwo);
+
+    TLorentzVector sumVec(part1Vec);
+    sumVec += part2Vec;
+    if (mHistogramRegistry) {
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairInvariantMass"), sumVec.M());
     }
 
     if (mHistogramRegistry) {

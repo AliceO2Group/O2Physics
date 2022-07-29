@@ -49,6 +49,7 @@ class FemtoWorldParticleHisto
       mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
       mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
       mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
+      mHistogramRegistry->add((folderName + "/dEdxTPCVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); dE/dx (keV/cm)", kTH2F, {{100, 0., 5.}, {250, 0., 500.}});
 
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
@@ -76,6 +77,7 @@ class FemtoWorldParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPt"), part.pt());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hEta"), part.eta());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/hPhi"), part.phi());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("/dEdxTPCVsMomentum"), part.p(), part.tpcSignal());
 
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
