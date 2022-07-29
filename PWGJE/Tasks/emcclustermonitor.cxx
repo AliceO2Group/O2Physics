@@ -59,6 +59,9 @@ struct ClusterMonitor {
   HistogramRegistry mHistManager{"ClusterMonitorHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
 
+  Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
@@ -100,6 +103,7 @@ struct ClusterMonitor {
 
     // cluster properties (matched clusters)
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{2000, 0, 200}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
     mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
@@ -108,6 +112,9 @@ struct ClusterMonitor {
     mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50}});
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
+    mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
+    mHistManager.add("clusterTM_dEtadPhi", "cluster trackmatching dEta/dPhi", o2HistType::kTH2F, {{100, -0.4, 0.4}, {100, -0.4, 0.4}});
+    mHistManager.add("clusterTM_EoverP_E", "cluster E/p (dEtadPhi<0.05)", o2HistType::kTH2F, {{500, 0, 10}, {200, 0, 100}});
 
     if (mVetoBCID->length()) {
       std::stringstream parser(mVetoBCID.value);
@@ -137,7 +144,7 @@ struct ClusterMonitor {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::BCs const& bcs)
+  void processCollisions(collisionEvSelIt const& theCollision, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& emccluscells, o2::aod::Calos const& allcalos, o2::aod::EMCALMatchedTracks const& matchedtracks, o2::aod::Tracks const& alltrack)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 
@@ -156,6 +163,7 @@ struct ClusterMonitor {
     mHistManager.fill(HIST("eventsSelected"), 1);
     mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
 
+    LOG(debug) << "bunch crossing ID" << theCollision.bcId();
     // loop over all clusters from accepted collision
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
     for (const auto& cluster : clusters) {
@@ -176,6 +184,52 @@ struct ClusterMonitor {
       mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
       mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
       mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
+      // loop over cells in cluster
+      LOG(debug) << "Cluster energy: " << cluster.energy();
+      LOG(debug) << "Cluster index: " << cluster.index();
+      LOG(debug) << "ncells in cluster: " << cluster.nCells();
+      LOG(debug) << "real cluster id" << cluster.id();
+
+      // example of loop over all cells of current cluster
+      // cell.calo() allows to access the cell properties as defined in AnalysisDataModel
+      // In this exammple, we loop over all cells and find the cell of maximum energy and plot the fraction
+      // it carries of the whole cluster
+      auto cellsofcluster = emccluscells.sliceBy(perCluster, cluster.globalIndex());
+      double maxamp = 0;
+      double ampfraction = 0;
+      for (const auto& cell : cellsofcluster) {
+        // example how to get any information of the cell associated with cluster
+        LOG(debug) << "Cell ID:" << cell.calo().amplitude() << " Time " << cell.calo().time();
+        if (cell.calo().amplitude() > maxamp) {
+          maxamp = cell.calo().amplitude();
+        }
+      }
+      ampfraction = maxamp / cluster.energy();
+      mHistManager.fill(HIST("clusterAmpFractionLeadingCell"), ampfraction);
+
+      // Example of loop over tracks matched to cluster within dR=0.4, where only the
+      // 5 most closest tracks are stored. If needed the number of tracks can be later
+      // increased in the correction framework. Access to all track properties via match.track()
+      // In this example the counter t is just used to only look at the closest match
+      double dEta, dPhi, dR;
+      auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
+      int t = 0;
+      for (const auto& match : tracksofcluster) {
+        // exmple of how to access any property of the matched tracks (tracks are sorted by how close they are to cluster)
+        LOG(debug) << "Pt of match" << match.track().pt();
+        // only consider closest match
+        if (t == 0) {
+          dEta = match.track().eta() - cluster.eta();
+          dPhi = match.track().phi() - cluster.phi();
+          dR = TMath::Sqrt(dEta * dEta + dPhi * dPhi);
+          if (dEta < 0.05 && dPhi < 0.05) {
+            mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track().p(), cluster.energy());
+          }
+          mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi);
+        }
+
+        t++;
+      }
     }
   }
   PROCESS_SWITCH(ClusterMonitor, processCollisions, "Process clusters from collision", false);

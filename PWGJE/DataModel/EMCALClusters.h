@@ -89,6 +89,27 @@ DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
 using EMCALCluster = EMCALClusters::iterator;
 using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
 
-} // namespace o2::aod
+namespace emcalclustercell
+{
+// declare index column pointing to cluster table
+DECLARE_SOA_INDEX_COLUMN(EMCALCluster, emcalcluster); //! linked to EMCalClusters table
+DECLARE_SOA_INDEX_COLUMN(Calo, calo);                 //! linked to calo cells
 
+// declare index column pointing to ambiguous cluster table
+DECLARE_SOA_INDEX_COLUMN(EMCALAmbiguousCluster, emcalambiguouscluster); //! linked to EMCalAmbiguousClusters table
+} // namespace emcalclustercell
+DECLARE_SOA_TABLE(EMCALClusterCells, "AOD", "EMCCLUSCELLS",                                               //!
+                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalclustercell::CaloId);          //!
+DECLARE_SOA_TABLE(EMCALAmbiguousClusterCells, "AOD", "EMCAMBBCLUSCLS",                                    //!
+                  o2::soa::Index<>, emcalclustercell::EMCALAmbiguousClusterId, emcalclustercell::CaloId); //!
+using EMCALClusterCell = EMCALClusterCells::iterator;
+using EMCALAmbiguousClusterCell = EMCALAmbiguousClusterCells::iterator;
+namespace emcalmatchedtrack
+{
+DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
+} // namespace emcalmatchedtrack
+DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS",                                     //!
+                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId); //!
+using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
+} // namespace o2::aod
 #endif
