@@ -37,6 +37,6 @@
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
-/PWGMM/UE @alibuild @aalkin
+/PWGMM/UE @alibuild @aalkin @aortizve
 /PWGUD @alibuild @pbuehler
 /Tools/PIDML @alibuild @saganatt
