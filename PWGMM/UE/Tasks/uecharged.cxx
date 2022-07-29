@@ -20,8 +20,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
+#include "TDatabasePDG.h"
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TF1.h>
@@ -37,13 +39,16 @@ using namespace o2::framework::expressions;
 
 struct ueCharged {
 
-  float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
+  TrackSelection myTrackSelection();
 
+  Service<TDatabasePDG> pdg;
+  float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
+  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   // acceptance cuts
-  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 1.5f, "Eta range for tracks"};
+  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
 
-  HistogramRegistry ue; //{"ue", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry ue;
   static constexpr std::string_view pNumDenMeasuredPS[3] = {"pNumDenMeasuredPS_NS", "pNumDenMeasuredPS_AS", "pNumDenMeasuredPS_TS"};
   static constexpr std::string_view pSumPtMeasuredPS[3] = {"pSumPtMeasuredPS_NS", "pSumPtMeasuredPS_AS", "pSumPtMeasuredPS_TS"};
   static constexpr std::string_view hPhi[3] = {"hPhi_NS", "hPhi_AS", "hPhi_TS"};
@@ -62,6 +67,9 @@ struct ueCharged {
   template <bool IS_MC, typename C, typename T>
   void processMeas(const C& collision, const T& tracks);
 
+  template <typename C, typename P>
+  void processTrue(const C& collision, const P& particles);
+
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
@@ -70,11 +78,11 @@ struct ueCharged {
   PROCESS_SWITCH(ueCharged, processData, "process data", false);
 
   using CollisionTableMCTrue = aod::McCollisions;
-  using CollisionTableMC = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>>;
   using ParticleTableMC = aod::McParticles;
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
-  void processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks);
+  void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
   PROCESS_SWITCH(ueCharged, processMC, "process mc", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -120,6 +128,17 @@ void ueCharged::init(InitContext const&)
 
   f_Eff.setObject(new TF1("fpara", "(x<0.22)*((-0.770334)+(6.32178)*x)+(x>=0.22&&x<0.4)*((0.310721)+(2.02610)*x+(-2.25005)*x*x)+(x>=0.4&&x<1.0)*((1.21232)+(-1.27511)*x+(0.588435)*x*x)+(x>=1.0&&x<5.5)*((0.502911)+(0.0416893)*x)+(x>=5.5)*(0.709143)", 0.15, 50.0));
 
+  if (doprocessMC) {
+    ue.add("hPtOut", "pT all rec; pT; Nch", HistType::kTH1D, {ptAxis});
+    ue.add("hPtInPrim", "pT mc prim; pT; Nch", HistType::kTH1D, {ptAxis});
+    ue.add("hPtOutPrim", "pT rec prim; pT; Nch", HistType::kTH1D, {ptAxis});
+    ue.add("hPtOutSec", "pT rec sec; pT; Nch", HistType::kTH1D, {ptAxis});
+    ue.add("hPtDCAall", "all MC; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
+    ue.add("hPtDCAPrimary", "primary; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
+    ue.add("hPtDCAWeak", "Weak decays; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
+    ue.add("hPtDCAMat", "Material; DCA_xy; Nch", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
+  }
+
   ue.add("hStat", "TotalEvents", HistType::kTH1F, {{1, 0.5, 1.5, " "}});
   ue.add("hdNdeta", "dNdeta", HistType::kTH1F, {{50, -2.5, 2.5, " "}});
   ue.add("vtxZEta", ";#eta;vtxZ", HistType::kTH2F, {{50, -2.5, 2.5, " "}, {60, -30, 30, " "}});
@@ -151,27 +170,81 @@ void ueCharged::init(InitContext const&)
   ue.add("hPTVsDCAData", " ", HistType::kTH2D, {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
 }
 
-void ueCharged::processMC(CollisionTableMC::iterator const& collision, TrackTableMC const& tracks)
+void ueCharged::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
 {
-  processMeas<true>(collision, tracks);
+  if (collisions.size() != 0) {
+    for (auto& collision : collisions) {
+      auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+      processMeas<true>(collision, curTracks);
+      break; // for now look only at first collision...
+    }
+  }
+  processTrue(mcCollision, particles);
 }
 
 void ueCharged::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
 {
   processMeas<false>(collision, tracks);
 }
+template <typename C, typename P>
+void ueCharged::processTrue(const C& collision, const P& particles)
+{
+
+  int multTrue = 0;
+  for (auto& particle : particles) {
+    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+    if (!pdgParticle || pdgParticle->Charge() == 0.) {
+      continue;
+    }
+    if (!particle.isPhysicalPrimary()) {
+      continue;
+    }
+    if (std::abs(particle.eta()) >= cfgTrkEtaCut) {
+      continue;
+    }
+
+    multTrue++;
+  }
+  if (!((std::abs(collision.posZ()) < 10.f) && (multTrue > 0))) {
+    return;
+  }
+
+  for (auto& particle : particles) {
+    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+    if (!pdgParticle || pdgParticle->Charge() == 0.) {
+      continue;
+    }
+    if (!particle.isPhysicalPrimary()) {
+      continue;
+    }
+    if (std::abs(particle.eta()) >= cfgTrkEtaCut) {
+      continue;
+    }
+    ue.fill(HIST("hPtInPrim"), particle.pt());
+  }
+}
+
 template <bool IS_MC, typename C, typename T>
 void ueCharged::processMeas(const C& collision, const T& tracks)
 {
 
   ue.fill(HIST("hCounter"), 0);
 
-  ue.fill(HIST("hCounter"), 1);
+  bool isAcceptedEvent = false;
+  if (std::abs(collision.posZ()) < 10.f) {
+    ue.fill(HIST("hCounter"), 1);
+    if (isRun3 ? collision.sel8() : collision.sel7()) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
+        isAcceptedEvent = true;
+      }
+    }
+  }
 
-  ue.fill(HIST("hStat"), collision.size());
-  if (TMath::Abs(collision.posZ()) > 10.0) {
+  if (!isAcceptedEvent) {
     return;
   }
+
+  ue.fill(HIST("hStat"), collision.size());
   auto vtxZ = collision.posZ();
 
   ue.fill(HIST("hCounter"), 2);
@@ -211,13 +284,41 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   for (auto& track : tracks) {
 
-    if (track.isGlobalTrack()) { // TODO: set cuts w/o DCA cut
+    if (myTrackSelection().IsSelected(track)) { // TODO: set cuts w/o DCA cut
       ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
     }
-    if (!track.isGlobalTrack()) {
-      continue;
-    }
+    if constexpr (IS_MC) {
+      if (track.has_mcParticle()) {
+        if (track.isGlobalTrack()) {
+          ue.fill(HIST("hPtOut"), track.pt());
+        }
+        if (myTrackSelection().IsSelected(track)) {
+          ue.fill(HIST("hPtDCAall"), track.pt(), track.dcaXY());
+        }
+        const auto& particle = track.template mcParticle_as<aod::McParticles>();
+        if (particle.isPhysicalPrimary()) {
 
+          if (track.isGlobalTrack()) {
+            ue.fill(HIST("hPtOutPrim"), track.pt());
+          }
+          if (myTrackSelection().IsSelected(track)) {
+            ue.fill(HIST("hPtDCAPrimary"), track.pt(), track.dcaXY());
+          }
+          // LOGP(info, "this track has MC particle {}", 1);
+        } else {
+          if (track.isGlobalTrack()) {
+            ue.fill(HIST("hPtOutSec"), track.pt());
+          }
+          if (myTrackSelection().IsSelected(track)) {
+            if (particle.getGenStatusCode() >= 0) { // i guess these are decays
+              ue.fill(HIST("hPtDCAWeak"), track.pt(), track.dcaXY());
+            } else { // i guess these are from material
+              ue.fill(HIST("hPtDCAMat"), track.pt(), track.dcaXY());
+            }
+          }
+        }
+      }
+    }
     // applying the efficiency twice for the misrec of leading particle
     if (f_Eff->Eval(track.pt()) > gRandom->Uniform(0, 1)) {
       ptArray.push_back(track.pt());
@@ -335,4 +436,21 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
   ptArray.clear();
   phiArray.clear();
   indexArray.clear();
+}
+TrackSelection ueCharged::myTrackSelection()
+{
+  TrackSelection selectedTracks;
+  selectedTracks.SetPtRange(0.1f, 1e10f);
+  selectedTracks.SetEtaRange(-0.8f, 0.8f);
+  selectedTracks.SetRequireITSRefit(true);
+  selectedTracks.SetRequireTPCRefit(true);
+  selectedTracks.SetRequireGoldenChi2(false);
+  selectedTracks.SetMinNCrossedRowsTPC(70);
+  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+  selectedTracks.SetMaxChi2PerClusterITS(36.f);
+  selectedTracks.SetMaxDcaXY(10.f);
+  selectedTracks.SetMaxDcaZ(10.f);
+  return selectedTracks;
 }
