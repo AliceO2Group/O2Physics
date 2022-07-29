@@ -281,7 +281,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometrically(
 /**
  * Match clusters and tracks.
  *
- * Match cluster with tracks, where maxNumberMatches are considered in dR=maxMatchingDistance. 
+ * Match cluster with tracks, where maxNumberMatches are considered in dR=maxMatchingDistance.
  * If no unique match was found for a jet, an index of -1 is stored.
  * The same map is created for clusters matched to tracks e.g. for electron analyses.
  *
