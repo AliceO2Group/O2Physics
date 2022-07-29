@@ -211,7 +211,7 @@ struct ClusterMonitor {
       // 5 most closest tracks are stored. If needed the number of tracks can be later
       // increased in the correction framework. Access to all track properties via match.track()
       // In this example the counter t is just used to only look at the closest match
-      double dEta, dPhi, dR;
+      double dEta, dPhi;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
       int t = 0;
       for (const auto& match : tracksofcluster) {
@@ -221,7 +221,6 @@ struct ClusterMonitor {
         if (t == 0) {
           dEta = match.track().eta() - cluster.eta();
           dPhi = match.track().phi() - cluster.phi();
-          dR = TMath::Sqrt(dEta * dEta + dPhi * dPhi);
           if (dEta < 0.05 && dPhi < 0.05) {
             mHistManager.fill(HIST("clusterTM_EoverP_E"), cluster.energy() / match.track().p(), cluster.energy());
           }

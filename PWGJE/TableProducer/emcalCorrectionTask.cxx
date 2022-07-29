@@ -261,7 +261,6 @@ struct EmcalCorrectionTask {
           // we found a collision, put the clusters into the none ambiguous table
           clusters.reserve(mAnalysisClusters.size());
           int cellindex = -1;
-          float cellampfraction = -1;
 
           unsigned int k = 0;
           for (const auto& cluster : mAnalysisClusters) {
@@ -288,7 +287,7 @@ struct EmcalCorrectionTask {
             // fill histograms
             hClusterE->Fill(cluster.E());
             hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
-            for (int iTrack = 0; iTrack < clusterToTrackIndexMap[k].size(); iTrack++) {
+            for (unsigned int iTrack = 0; iTrack < clusterToTrackIndexMap[k].size(); iTrack++) {
               if (clusterToTrackIndexMap[k][iTrack] >= 0) {
                 LOG(debug) << "Found track " << trackGlobalIndex[clusterToTrackIndexMap[k][iTrack]] << " in cluster " << cluster.getID();
                 matchedTracks(clusters.lastIndex(), trackGlobalIndex[clusterToTrackIndexMap[k][iTrack]]);
@@ -306,7 +305,6 @@ struct EmcalCorrectionTask {
       // be identified.
       if (!hasCollision) { // ambiguous
         int cellindex = -1;
-        float cellampfraction = -1;
         clustersAmbiguous.reserve(mAnalysisClusters.size());
         for (const auto& cluster : mAnalysisClusters) {
           auto pos = cluster.getGlobalPosition();
@@ -323,7 +321,6 @@ struct EmcalCorrectionTask {
           clustercellsambiguous.reserve(cluster.getNCells());
           for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
             cellindex = cluster.getCellIndex(ncell);
-            cellampfraction = cluster.getCellAmplitudeFraction(ncell);
             clustercellsambiguous(clustersAmbiguous.lastIndex(), mCellIdToCellGlobalIndex.at(cellindex));
           }
         }
