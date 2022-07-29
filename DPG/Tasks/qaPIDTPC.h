@@ -42,14 +42,6 @@ struct tpcPidQa {
   static constexpr std::string_view hexpected_diffptneg[Np] = {"expected_diffptneg/El", "expected_diffptneg/Mu", "expected_diffptneg/Pi",
                                                                "expected_diffptneg/Ka", "expected_diffptneg/Pr", "expected_diffptneg/De",
                                                                "expected_diffptneg/Tr", "expected_diffptneg/He", "expected_diffptneg/Al"};
-  // With TOF
-  static constexpr std::string_view hexpectedwtof[Np] = {"expectedwtof/El", "expectedwtof/Mu", "expectedwtof/Pi",
-                                                         "expectedwtof/Ka", "expectedwtof/Pr", "expectedwtof/De",
-                                                         "expectedwtof/Tr", "expectedwtof/He", "expectedwtof/Al"};
-  static constexpr std::string_view hexpected_diffwtof[Np] = {"expected_diffwtof/El", "expected_diffwtof/Mu", "expected_diffwtof/Pi",
-                                                              "expected_diffwtof/Ka", "expected_diffwtof/Pr", "expected_diffwtof/De",
-                                                              "expected_diffwtof/Tr", "expected_diffwtof/He", "expected_diffwtof/Al"};
-
   static constexpr std::string_view hexpsigma[Np] = {"expsigma/El", "expsigma/Mu", "expsigma/Pi",
                                                      "expsigma/Ka", "expsigma/Pr", "expsigma/De",
                                                      "expsigma/Tr", "expsigma/He", "expsigma/Al"};
@@ -65,24 +57,38 @@ struct tpcPidQa {
   static constexpr std::string_view hnsigmanegpt[Np] = {"nsigmanegpt/El", "nsigmanegpt/Mu", "nsigmanegpt/Pi",
                                                         "nsigmanegpt/Ka", "nsigmanegpt/Pr", "nsigmanegpt/De",
                                                         "nsigmanegpt/Tr", "nsigmanegpt/He", "nsigmanegpt/Al"};
-  // With TOF
-  static constexpr std::string_view hexpsigmawtof[Np] = {"expsigmawtof/El", "expsigmawtof/Mu", "expsigmawtof/Pi",
-                                                         "expsigmawtof/Ka", "expsigmawtof/Pr", "expsigmawtof/De",
-                                                         "expsigmawtof/Tr", "expsigmawtof/He", "expsigmawtof/Al"};
-  static constexpr std::string_view hnsigmawtof[Np] = {"nsigmawtof/El", "nsigmawtof/Mu", "nsigmawtof/Pi",
-                                                       "nsigmawtof/Ka", "nsigmawtof/Pr", "nsigmawtof/De",
-                                                       "nsigmawtof/Tr", "nsigmawtof/He", "nsigmawtof/Al"};
-  static constexpr std::string_view hnsigmaptwtof[Np] = {"nsigmaptwtof/El", "nsigmaptwtof/Mu", "nsigmaptwtof/Pi",
-                                                         "nsigmaptwtof/Ka", "nsigmaptwtof/Pr", "nsigmaptwtof/De",
-                                                         "nsigmaptwtof/Tr", "nsigmaptwtof/He", "nsigmaptwtof/Al"};
 
-  static constexpr std::string_view hsignal[Np] = {"signal/El", "signal/Mu", "signal/Pi",
-                                                   "signal/Ka", "signal/Pr", "signal/De",
-                                                   "signal/Tr", "signal/He", "signal/Al"};
   // With TOF
-  static constexpr std::string_view hsignalwtof[Np] = {"signalwtof/El", "signalwtof/Mu", "signalwtof/Pi",
-                                                       "signalwtof/Ka", "signalwtof/Pr", "signalwtof/De",
-                                                       "signalwtof/Tr", "signalwtof/He", "signalwtof/Al"};
+  static constexpr std::string_view hexpectedWithTOF[Np] = {"wTOF/expected/El", "wTOF/expected/Mu", "wTOF/expected/Pi",
+                                                            "wTOF/expected/Ka", "wTOF/expected/Pr", "wTOF/expected/De",
+                                                            "wTOF/expected/Tr", "wTOF/expected/He", "wTOF/expected/Al"};
+  static constexpr std::string_view hexpected_diffWithTOF[Np] = {"wTOF/expected_diff/El", "wTOF/expected_diff/Mu", "wTOF/expected_diff/Pi",
+                                                                 "wTOF/expected_diff/Ka", "wTOF/expected_diff/Pr", "wTOF/expected_diff/De",
+                                                                 "wTOF/expected_diff/Tr", "wTOF/expected_diff/He", "wTOF/expected_diff/Al"};
+  static constexpr std::string_view hexpected_diffptposWithTOF[Np] = {"wTOF/expected_diffptpos/El", "wTOF/expected_diffptpos/Mu", "wTOF/expected_diffptpos/Pi",
+                                                                      "wTOF/expected_diffptpos/Ka", "wTOF/expected_diffptpos/Pr", "wTOF/expected_diffptpos/De",
+                                                                      "wTOF/expected_diffptpos/Tr", "wTOF/expected_diffptpos/He", "wTOF/expected_diffptpos/Al"};
+  static constexpr std::string_view hexpected_diffptnegWithTOF[Np] = {"wTOF/expected_diffptneg/El", "wTOF/expected_diffptneg/Mu", "wTOF/expected_diffptneg/Pi",
+                                                                      "wTOF/expected_diffptneg/Ka", "wTOF/expected_diffptneg/Pr", "wTOF/expected_diffptneg/De",
+                                                                      "wTOF/expected_diffptneg/Tr", "wTOF/expected_diffptneg/He", "wTOF/expected_diffptneg/Al"};
+  static constexpr std::string_view hexpsigmaWithTOF[Np] = {"wTOF/expsigma/El", "wTOF/expsigma/Mu", "wTOF/expsigma/Pi",
+                                                            "wTOF/expsigma/Ka", "wTOF/expsigma/Pr", "wTOF/expsigma/De",
+                                                            "wTOF/expsigma/Tr", "wTOF/expsigma/He", "wTOF/expsigma/Al"};
+  static constexpr std::string_view hnsigmaWithTOF[Np] = {"wTOF/nsigma/El", "wTOF/nsigma/Mu", "wTOF/nsigma/Pi",
+                                                          "wTOF/nsigma/Ka", "wTOF/nsigma/Pr", "wTOF/nsigma/De",
+                                                          "wTOF/nsigma/Tr", "wTOF/nsigma/He", "wTOF/nsigma/Al"};
+  static constexpr std::string_view hnsigmaptWithTOF[Np] = {"wTOF/nsigmapt/El", "wTOF/nsigmapt/Mu", "wTOF/nsigmapt/Pi",
+                                                            "wTOF/nsigmapt/Ka", "wTOF/nsigmapt/Pr", "wTOF/nsigmapt/De",
+                                                            "wTOF/nsigmapt/Tr", "wTOF/nsigmapt/He", "wTOF/nsigmapt/Al"};
+  static constexpr std::string_view hnsigmaposptWithTOF[Np] = {"wTOF/nsigmapospt/El", "wTOF/nsigmapospt/Mu", "wTOF/nsigmapospt/Pi",
+                                                               "wTOF/nsigmapospt/Ka", "wTOF/nsigmapospt/Pr", "wTOF/nsigmapospt/De",
+                                                               "wTOF/nsigmapospt/Tr", "wTOF/nsigmapospt/He", "wTOF/nsigmapospt/Al"};
+  static constexpr std::string_view hnsigmanegptWithTOF[Np] = {"wTOF/nsigmanegpt/El", "wTOF/nsigmanegpt/Mu", "wTOF/nsigmanegpt/Pi",
+                                                               "wTOF/nsigmanegpt/Ka", "wTOF/nsigmanegpt/Pr", "wTOF/nsigmanegpt/De",
+                                                               "wTOF/nsigmanegpt/Tr", "wTOF/nsigmanegpt/He", "wTOF/nsigmanegpt/Al"};
+  static constexpr std::string_view hsignalWithTOF[Np] = {"wTOF/signal/El", "wTOF/signal/Mu", "wTOF/signal/Pi",
+                                                          "wTOF/signal/Ka", "wTOF/signal/Pr", "wTOF/signal/De",
+                                                          "wTOF/signal/Tr", "wTOF/signal/He", "wTOF/signal/Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -107,11 +113,23 @@ struct tpcPidQa {
   void addParticleHistos(const AxisSpec& pAxis, const AxisSpec& ptAxis)
   {
     static_assert(id >= 0 && id <= PID::Alpha && "Particle index outside limits");
+    bool enableTOFHistos = false;
+    int enabledProcesses = 0;
     switch (id) { // Skipping disabled particles
 #define particleCase(particleId)                                                                     \
   case PID::particleId:                                                                              \
     if (!doprocess##particleId && !doprocessFull##particleId && !doprocessFullWithTOF##particleId) { \
       return;                                                                                        \
+    }                                                                                                \
+    if (!doprocess##particleId) {                                                                    \
+      enabledProcesses++;                                                                            \
+    }                                                                                                \
+    if (!doprocessFull##particleId) {                                                                \
+      enabledProcesses++;                                                                            \
+    }                                                                                                \
+    if (!doprocessFullWithTOF##particleId) {                                                         \
+      enableTOFHistos = true;                                                                        \
+      enabledProcesses++;                                                                            \
     }                                                                                                \
     LOGF(info, "Enabled TPC QA for %s %s", #particleId, pT[id]);                                     \
     break;
@@ -126,6 +144,9 @@ struct tpcPidQa {
       particleCase(Helium3);
       particleCase(Alpha);
 #undef particleCase
+    }
+    if (enabledProcesses != 1) {
+      LOG(fatal) << "Cannot enable more than one process function per particle, check and retry!";
     }
     // Exp signal
     const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[id])};
@@ -149,9 +170,22 @@ struct tpcPidQa {
     histos.add(hnsigmapospt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmanegpt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
 
-    // Signal with TOF preselection
+    if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
+      return;
+    }
+
+    histos.add(hexpectedWithTOF[id].data(), "With TOF", kTH2F, {pAxis, expAxis});
+    histos.add(hexpected_diffWithTOF[id].data(), "With TOF", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptposWithTOF[id].data(), "With TOF Positive", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptnegWithTOF[id].data(), "With TOF Negative", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpsigmaWithTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
+    histos.add(hnsigmaWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmaptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmaposptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
+
     const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} A.U."};
-    histos.add(hsignal[id].data(), "", kTH2F, {pAxis, dedxAxis});
+    histos.add(hsignalWithTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
   }
 
   void init(o2::framework::InitContext&)
@@ -335,18 +369,17 @@ struct tpcPidQa {
         histos.fill(HIST(hexpsigma[id]), t.tpcInnerParam(), o2::aod::pidutils::tpcExpSigma<id>(t));
         if constexpr (fillWithTOFHistograms) {
           if (std::abs(o2::aod::pidutils::tofNSigma<id>(t)) < 3.f) {
-            histos.fill(HIST(hexpectedwtof[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
-            histos.fill(HIST(hexpected_diffwtof[id]), t.tpcInnerParam(), diff);
-            histos.fill(HIST(hexpsigmawtof[id]), t.p(), o2::aod::pidutils::tpcExpSigma<id>(t));
+            histos.fill(HIST(hexpectedWithTOF[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
+            histos.fill(HIST(hexpected_diffWithTOF[id]), t.tpcInnerParam(), diff);
+            histos.fill(HIST(hexpsigmaWithTOF[id]), t.p(), o2::aod::pidutils::tpcExpSigma<id>(t));
           }
         }
-      }
-      if constexpr (fillWithTOFHistograms) {
+      } else if constexpr (fillWithTOFHistograms) {
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
-          histos.fill(HIST(hnsigmawtof[id]), t.p(), nsigma);
-          histos.fill(HIST(hnsigmaptwtof[id]), t.pt(), nsigma);
-          histos.fill(HIST(hsignalwtof[id]), t.tpcInnerParam(), t.tpcSignal());
+          histos.fill(HIST(hnsigmaWithTOF[id]), t.p(), nsigma);
+          histos.fill(HIST(hnsigmaptWithTOF[id]), t.pt(), nsigma);
+          histos.fill(HIST(hsignalWithTOF[id]), t.tpcInnerParam(), t.tpcSignal());
           // histos.fill(HIST("event/signedtpcsignal"), t.tpcInnerParam() * t.sign(), t.tpcSignal());
         }
       }
