@@ -43,7 +43,7 @@ using namespace o2::aod::hf_cand;
 using namespace o2::aod::hf_cand_prong2;
 using namespace o2::analysis::hf_cuts_d0_topik;
 
-struct HfTaskCorrelationD0 {
+struct HfTaskFlow {
   HistogramRegistry registry{"registry"};
 
   OutputObj<CorrelationContainer> sameTPCTPCCh{"sameEventTPCTPCChHadrons"};
@@ -405,7 +405,7 @@ struct HfTaskCorrelationD0 {
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
-  PROCESS_SWITCH(HfTaskCorrelationD0, processSameRun3, "Process same event for Run 3", true);
+  PROCESS_SWITCH(HfTaskFlow, processSameRun3, "Process same event for Run 3", true);
 
   // =====================================
   //    process same event correlations
@@ -439,7 +439,7 @@ struct HfTaskCorrelationD0 {
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
   }
-  PROCESS_SWITCH(HfTaskCorrelationD0, processSameRun2, "Process same event for Run 2", false);
+  PROCESS_SWITCH(HfTaskFlow, processSameRun2, "Process same event for Run 2", false);
 
   // =====================================
   //    process mixed event correlations
@@ -484,11 +484,11 @@ struct HfTaskCorrelationD0 {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskCorrelationD0, processMixed, "Process mixed event", true);
+  PROCESS_SWITCH(HfTaskFlow, processMixed, "Process mixed event", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskCorrelationD0>(cfgc)};
+    adaptAnalysisTask<HfTaskFlow>(cfgc)};
 }
