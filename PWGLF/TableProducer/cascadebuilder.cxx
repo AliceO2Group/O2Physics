@@ -131,9 +131,9 @@ struct cascadeBuilder {
           LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
         }
       }
-      if(grpo){
+      if (grpo) {
         o2::base::Propagator::initFieldFromGRP(grpo);
-      }else{
+      } else {
         o2::base::Propagator::initFieldFromGRP(grpmag);
       }
       o2::base::Propagator::Instance()->setMatLUT(lut);
