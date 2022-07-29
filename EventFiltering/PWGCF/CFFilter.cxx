@@ -34,12 +34,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include "DataFormatsParameters/GRPObject.h"
-
 #include <cmath>
 #include <string>
-
 #include <bitset>
 
 namespace
@@ -102,8 +98,6 @@ struct CFFilter {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   // FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTV;
@@ -171,31 +165,6 @@ struct CFFilter {
       registry.add("fMinvLambda", "Invariant mass of lambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
       registry.add("fMinvAntiLambda", "Invariant mass of antilambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
     }
-
-    /// Initializing CCDB
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
-  }
-
-  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
-  float getMagneticFieldTesla(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
-    }
-    float output = 0.1 * (grpo->getNominalL3Field());
-    return output;
   }
 
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
@@ -208,8 +177,7 @@ struct CFFilter {
     auto partsProton1 = partsProton1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsLambda1 = partsLambda1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
-    auto tmstamp = col.timestamp();
-    auto mafneticField = getMagneticFieldTesla(tmstamp);
+    auto magneticField = col.magField();
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
     registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
@@ -255,13 +223,13 @@ struct CFFilter {
             }
             // Think if pair cleaning is needed in current framework
             // Run close pair rejection
-            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
+            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
               continue;
             }
-            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
+            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, magneticField)) {
               continue;
             }
-            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
+            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, magneticField)) {
               continue;
             }
             auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
@@ -281,13 +249,13 @@ struct CFFilter {
             }
             // Think if pair cleaning is needed in current framework
             // Run close pair rejection
-            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
+            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
               continue;
             }
-            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
+            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, magneticField)) {
               continue;
             }
-            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
+            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, magneticField)) {
               continue;
             }
             auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
@@ -313,13 +281,13 @@ struct CFFilter {
               if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
                 continue;
               }
-              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
+              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
                 continue;
               }
-              if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
+              if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, magneticField)) {
                 continue;
               }
-              if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
+              if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, magneticField)) {
                 continue;
               }
               auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
@@ -343,13 +311,13 @@ struct CFFilter {
                 if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
                   continue;
                 }
-                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
+                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
                   continue;
                 }
-                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
+                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, magneticField)) {
                   continue;
                 }
-                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
+                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, magneticField)) {
                   continue;
                 }
                 auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);

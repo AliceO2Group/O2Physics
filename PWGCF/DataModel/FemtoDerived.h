@@ -29,6 +29,7 @@ namespace femtodreamcollision
 {
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
+DECLARE_SOA_COLUMN(MagField, magField, float);     //! Sphericity of the event
 
 } // namespace femtodreamcollision
 
@@ -37,7 +38,7 @@ DECLARE_SOA_TABLE(FemtoDreamCollisions, "AOD", "FEMTODREAMCOLS",
                   o2::aod::collision::PosZ,
                   femtodreamcollision::MultV0M,
                   femtodreamcollision::Sphericity,
-                  timestamp::Timestamp);
+                  femtodreamcollision::MagField);
 using FemtoDreamCollision = FemtoDreamCollisions::iterator;
 
 /// FemtoDreamTrack

@@ -19,8 +19,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
-#include <CCDB/BasicCCDBManager.h>
-#include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
@@ -118,8 +116,6 @@ struct femtoWorldPairTaskTrackTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
@@ -139,14 +135,6 @@ struct femtoWorldPairTaskTrackTrack {
 
     vPIDPartOne = ConfPIDPartOne;
     vPIDPartTwo = ConfPIDPartTwo;
-
-    /// Initializing CCDB
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -154,8 +142,7 @@ struct femtoWorldPairTaskTrackTrack {
   void processSameEvent(o2::aod::FemtoDreamCollision& col,
                         o2::aod::FemtoWorldParticles& parts)
   {
-    const auto& tmstamp = col.timestamp();
-    const auto& magFieldTesla = getMagneticFieldTesla(tmstamp, ccdb);
+    const auto& magFieldTesla = col.magField();
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
@@ -223,11 +210,9 @@ struct femtoWorldPairTaskTrackTrack {
 
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
 
-      const auto& tmstamp1 = collision1.timestamp();
-      const auto& magFieldTesla1 = getMagneticFieldTesla(tmstamp1, ccdb);
+      const auto& magFieldTesla1 = collision1.magField();
 
-      const auto& tmstamp2 = collision2.timestamp();
-      const auto& magFieldTesla2 = getMagneticFieldTesla(tmstamp2, ccdb);
+      const auto& magFieldTesla2 = collision2.magField();
 
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
