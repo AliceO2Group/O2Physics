@@ -22,7 +22,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include <TVector3.h>
-#include <TMath.h>                     // for ATan2, Cos, Sin, Sqrt
+#include <TMath.h> // for ATan2, Cos, Sin, Sqrt
 
 using namespace o2;
 using namespace o2::framework;
@@ -62,7 +62,7 @@ struct GammaConversions {
 
   // line cut for Z vs R plot
   Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
-  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float) TMath::Tan(2*TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
+  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
     {ePhotonCuts::kV0In, "kV0In"},
@@ -107,7 +107,7 @@ struct GammaConversions {
     //R vs Z
     std::vector<MyHistogramSpec> fV0RVsZ{
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}}};
-    
+
     //Fractional momentum distribution
     std::vector<MyHistogramSpec> fpepGammaFraction{
       {"hpeDivpGamma", "hpeDivpGamma;\frac{p_{e}}{p_{#gamma}};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}};
@@ -147,7 +147,7 @@ struct GammaConversions {
       {"hPtRes", "hPtRes_Rec-MC;#Delta p_T (GeV/c);counts", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
       {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {gAxis_radRes}}},
       {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {gAxis_radRes}}},
-      {"hConvPointXYResVsXY", "hConvPointXYResVsXY_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}},    //maybe change axis later on
+      {"hConvPointXYResVsXY", "hConvPointXYResVsXY_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}}, //maybe change axis later on
       {"hConvPointXYResVsXY_recalc", "hConvPointXYResVsXY_recalc_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}},
       {"hConvPointZResVsZ", "hConvPointZResVsZ_Rec-MC;Z (cm);#Delta Z (cm)", {HistType::kTH2F, {gAxis_xyz, gAxis_dr}}},
       {"hConvPointZResVsZ_recalc", "hConvPointZResVsZ_recalc_Rec-MC;Z (cm);#Delta Z (cm)", {HistType::kTH2F, {gAxis_xyz, gAxis_dr}}},
@@ -157,7 +157,7 @@ struct GammaConversions {
     std::vector<MyHistogramSpec> fSpecialHistoDefinitions{
       {"hV0Selection", "hV0Selection;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}},
       {"hV0McValidation", "hV0McValidation;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}, false /*callSumw2*/, true /*dataOnly_*/}};
-    
+
     auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
       auto lHisto = theContainer.find(theHistoName);
       if (lHisto != theContainer.end()) {
@@ -209,28 +209,25 @@ struct GammaConversions {
                                                                                                          lMcSuffix);
         }
 
-        
-        if(iMcKind != kRes)
-        {
-        //R vs Z plot
-        fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                    fV0RVsZ,
-                                                                                                    lMcSuffix);
-  	    //Fractional momentum distribution
-        fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                    fpepGammaFraction,
-                                                                                                    lMcSuffix);
+        if (iMcKind != kRes) {
+          //R vs Z plot
+          fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                      fV0RVsZ,
+                                                                                                      lMcSuffix);
+          //Fractional momentum distribution
+          fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                      fpepGammaFraction,
+                                                                                                      lMcSuffix);
         }
         // v0 histograms
         fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
                                                                                                     (iMcKind < 3) ? fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
                                                                                                     lMcSuffix);
         // v0 recalculated conversion point histos
-        if((iMcKind == kRec) || (iMcKind == kMCVal))
-        {
+        if ((iMcKind == kRec) || (iMcKind == kMCVal)) {
           fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                    fV0HistoDefinitions_recalculated,
-                                                                                                    lMcSuffix);
+                                                                                                      fV0HistoDefinitions_recalculated,
+                                                                                                      lMcSuffix);
         }
 
         if (doprocessMc) {
@@ -239,20 +236,18 @@ struct GammaConversions {
             fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
                                                                                                                                   (iMcKind < 3) ? fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
                                                                                                                                   lMcSuffix);
-            if(iMcKind != kRes)
-            {
+            if (iMcKind != kRes) {
               fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
                                                                                                                                     fV0RVsZ,
                                                                                                                                     lMcSuffix);
               fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
                                                                                                                                     fpepGammaFraction,
-                                                                                                                                    lMcSuffix);  
+                                                                                                                                    lMcSuffix);
             }
-            if((iMcKind == kRec) || (iMcKind == kMCVal))
-            {
+            if ((iMcKind == kRec) || (iMcKind == kMCVal)) {
               fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                        fV0HistoDefinitions_recalculated,
-                                                                                                        lMcSuffix);
+                                                                                                                                    fV0HistoDefinitions_recalculated,
+                                                                                                                                    lMcSuffix);
             }
           }
         }
@@ -602,14 +597,13 @@ struct GammaConversions {
     }
   }
 
-bool RVsZPassLineCut(float v0radius, float z)
-{
-  if(TMath::Abs(z) < LineCutZ0 + v0radius * LineCutZRSlope)
+  bool RVsZPassLineCut(float v0radius, float z)
   {
-    return true;
+    if (TMath::Abs(z) < LineCutZ0 + v0radius * LineCutZRSlope) {
+      return true;
+    }
+    return false;
   }
-  return false;
-}
 
   //this is really ugly but it works. Would be easier if .end() worked..
   template <typename TTRACKS>
@@ -618,21 +612,19 @@ bool RVsZPassLineCut(float v0radius, float z)
     float p_electron[2];
     Int_t counter = 0;
 
-    for (auto& lTrack : theTwoV0Daughters)
-    {
+    for (auto& lTrack : theTwoV0Daughters) {
       p_electron[counter] = lTrack.p();
       counter++;
     }
 
-    fillTH1(theContainer, "hpeDivpGamma", p_electron[0]/(p_electron[0]+p_electron[1]));
-    fillTH1(theContainer, "hpeDivpGamma", p_electron[1]/(p_electron[0]+p_electron[1]));
+    fillTH1(theContainer, "hpeDivpGamma", p_electron[0] / (p_electron[0] + p_electron[1]));
+    fillTH1(theContainer, "hpeDivpGamma", p_electron[1] / (p_electron[0] + p_electron[1]));
   }
 
   template <typename TV0>
   void fillRVsZHistograms(mapStringHistPtr& theContainer, TV0 const& theV0)
   {
-    if(RVsZPassLineCut(theV0.v0radius(), theV0.z()) == true)
-    { 
+    if (RVsZPassLineCut(theV0.v0radius(), theV0.z()) == true) {
       fillTH2(theContainer, "hRVsZ", theV0.v0radius(), theV0.z());
     }
   }
@@ -644,7 +636,7 @@ bool RVsZPassLineCut(float v0radius, float z)
     fillTH1(theContainer, "hPhi", theV0.phi());
     fillTH1(theContainer, "hPt", theV0.pt());
     fillTH1(theContainer, "hConvPointR", theV0.v0radius());
-    fillTH1(theContainer, "hConvPointZ",  theV0.z());
+    fillTH1(theContainer, "hConvPointZ", theV0.z());
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
@@ -663,8 +655,7 @@ bool RVsZPassLineCut(float v0radius, float z)
   template <typename TMCGAMMA>
   void fillRVsZHistogramsMcGamma(mapStringHistPtr& theContainer, TMCGAMMA const& theMcGamma)
   {
-    if(RVsZPassLineCut(theMcGamma.v0Radius(), theMcGamma.conversionZ()) == true)
-    { 
+    if (RVsZPassLineCut(theMcGamma.v0Radius(), theMcGamma.conversionZ()) == true) {
       fillTH2(theContainer, "hRVsZ", theMcGamma.v0Radius(), theMcGamma.conversionZ());
     }
   }
