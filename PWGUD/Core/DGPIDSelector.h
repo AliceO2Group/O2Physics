@@ -21,7 +21,7 @@
 using namespace o2;
 
 using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>;
-using UDTrackFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>::iterator;
+using UDTrackFull = UDTracksFull::iterator;
 
 float particleMass(TDatabasePDG* pdg, int pid);
 

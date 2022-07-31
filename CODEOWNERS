@@ -33,10 +33,10 @@
 /PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
 /PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh @rvertesi
 /PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo @NicoleBastid @mvolkl
-/PWGLF @alibuild @njacazio
+/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
-/PWGMM/UE @alibuild @aalkin
+/PWGMM/UE @alibuild @aalkin @aortizve
 /PWGUD @alibuild @pbuehler
 /Tools/PIDML @alibuild @saganatt
