@@ -40,7 +40,7 @@
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/Core/trackUtilities.h"
 
-#include <TMath.h>                     // for ATan2, Cos, Sin, Sqrt
+#include <TMath.h> // for ATan2, Cos, Sin, Sqrt
 #include "TVector2.h"
 
 using namespace o2;
@@ -48,7 +48,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,  aod::pidTPCEl, aod::pidTPCPi>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi>;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 // additional table for testing, later on try to put everything in tracksAndTPCInfo
@@ -185,8 +185,7 @@ struct skimmerGammaConversions {
                   FullTracksExt const& Track_additional)
   {
     // skip if bc has no Collisions
-    if(theCollision.size() == 0)
-    {
+    if (theCollision.size() == 0) {
       return;
     }
 
@@ -333,24 +332,24 @@ struct skimmerGammaConversions {
     return kGoodMcMother;
   }
 
-  template<typename TrackPrecision = float, typename T>
+  template <typename TrackPrecision = float, typename T>
   void Vtx_recalculation(T lTrackPos, T lTrackNeg, float* conversionPosition)
   {
-    o2::base::Propagator* prop = o2::base::Propagator::Instance();                  //This singleton propagator requires some initialisation of the CCDB object.
+    o2::base::Propagator* prop = o2::base::Propagator::Instance(); //This singleton propagator requires some initialisation of the CCDB object.
 
     float bz = prop->getNominalBz();
 
     //*******************************************************
 
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos);                 //first get an object that stores Track information (positive)
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg);                 //first get an object that stores Track information (negative)
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); //first get an object that stores Track information (positive)
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); //first get an object that stores Track information (negative)
 
-    o2::track::TrackAuxPar helixPos(trackPosInformation, bz);                   //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
-    o2::track::TrackAuxPar helixNeg(trackNegInformation, bz);                   //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
+    o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
+    o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
 
-    conversionPosition[0] = (helixPos.xC*helixNeg.rC + helixNeg.xC*helixPos.rC)/(helixPos.rC+helixNeg.rC);                  //This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
-    conversionPosition[1] = (helixPos.yC*helixNeg.rC + helixNeg.yC*helixPos.rC)/(helixPos.rC+helixNeg.rC);                  //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't. 
-    
+    conversionPosition[0] = (helixPos.xC * helixNeg.rC + helixNeg.xC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
+    conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
+
     //I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
     o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParCov(trackPosInformation);
     o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParCov(trackNegInformation);
@@ -360,36 +359,35 @@ struct skimmerGammaConversions {
     Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
     Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
 
-    Double_t vertexXPos = helixPos.xC + helixPos.rC*TMath::Cos(alphaPos);
-    Double_t vertexYPos = helixPos.yC + helixPos.rC*TMath::Sin(alphaPos);
-    Double_t vertexXNeg = helixNeg.xC + helixNeg.rC*TMath::Cos(alphaNeg);
-    Double_t vertexYNeg = helixNeg.yC + helixNeg.rC*TMath::Sin(alphaNeg);
+    Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
+    Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
+    Double_t vertexXNeg = helixNeg.xC + helixNeg.rC * TMath::Cos(alphaNeg);
+    Double_t vertexYNeg = helixNeg.yC + helixNeg.rC * TMath::Sin(alphaNeg);
 
-    TVector2 vertexPos(vertexXPos,vertexYPos);
-    TVector2 vertexNeg(vertexXNeg,vertexYNeg);
+    TVector2 vertexPos(vertexXPos, vertexYPos);
+    TVector2 vertexNeg(vertexXNeg, vertexYNeg);
 
     // Convert to local coordinate system
-    TVector2 vertexPosRot=vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
-    TVector2 vertexNegRot=vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
+    TVector2 vertexPosRot = vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
+    TVector2 vertexNegRot = vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
 
     prop->propagateToX(trackPosInformationCopy,
-                       vertexXPos, 
-                       bz, 
-                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI, 
+                       vertexXPos,
+                       bz,
+                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                        o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
 
     prop->propagateToX(trackNegInformationCopy,
-                       vertexXNeg, 
-                       bz, 
-                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI, 
+                       vertexXNeg,
+                       bz,
+                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                        o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
-    
-    // TODO: This is still off and needs to be checked...
-    conversionPosition[2] = (trackPosInformationCopy.getZ()*helixNeg.rC + trackNegInformationCopy.getZ()*helixPos.rC)/(helixPos.rC+helixNeg.rC);
-  }
 
+    // TODO: This is still off and needs to be checked...
+    conversionPosition[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
