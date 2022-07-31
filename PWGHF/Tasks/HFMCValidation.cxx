@@ -44,9 +44,11 @@ namespace o2::aod
 {
 // Columns to store the information about ambiguous tracks joinable with the track table
 DECLARE_SOA_COLUMN(IsAmbiguousTrack, isAmbiguousTrack, bool);                              //!
+DECLARE_SOA_COLUMN(NumBC, numBC, int);                                                     //!
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousCollisionIndices, ambiguousCollisionIndices); //!
 DECLARE_SOA_TABLE(TracksWithAmbiguousCollisionInfo, "AOD", "TRACKSWAMBINFO",               //!
                   IsAmbiguousTrack,
+                  NumBC,
                   AmbiguousCollisionIndicesIds);
 } // namespace o2::aod
 
@@ -74,6 +76,7 @@ struct AddAmbiguousTrackInfo {
     for (auto& track : tracks) {
       std::vector<int> collIndices{};
       bool isAmbiguous = false;
+      int nBC = 0;
       if (track.isGlobalTrackWoDCA()) { // add info only for global tracks
         auto trackIdx = track.globalIndex();
         auto iter = std::find(trackIndices.begin(), trackIndices.end(), trackIdx);
@@ -83,6 +86,7 @@ struct AddAmbiguousTrackInfo {
           for (auto& collision : collisions) {
             uint64_t mostProbableBC = collision.bc().globalBC();
             for (auto& bc : ambitrack.bc()) {
+              nBC++;
               if (bc.globalBC() == mostProbableBC) {
                 collIndices.push_back(collision.globalIndex());
                 break;
@@ -91,7 +95,7 @@ struct AddAmbiguousTrackInfo {
           }
         }
       }
-      trackWithAmbiguousInfo(isAmbiguous, collIndices);
+      trackWithAmbiguousInfo(isAmbiguous, nBC, collIndices);
     }
   }
 };
@@ -333,13 +337,38 @@ struct ValidationRecLevel {
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
 
-  HistogramRegistry registry{"registry", {}};
+  HistogramRegistry registry{
+    "registry",
+    {{"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {{200, -1, 1.}}}},
+     {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {{200, -1, 1.}}}},
+     {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
+     {"histDeltaZvtx", "Residual distribution of PV in #it{Z};#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH1F, {{1000, -0.5, 0.5}}}},
+     {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100000.}}}},
+     {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
+     {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}}}};
+
+  /// RMS calculation
+  /// \param vec  vector of values to compute RMS
+  template <typename T>
+  T computeRMS(std::vector<T> vec)
+  {
+    T sum = std::accumulate(vec.begin(), vec.end(), 0.0);
+    T mean = sum / vec.size();
+
+    std::vector<T> diff(vec.size());
+    std::transform(vec.begin(), vec.end(), diff.begin(), [mean](T x) { return x - mean; });
+    T sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    T stdev = std::sqrt(sq_sum / vec.size());
+
+    return stdev;
+  }
+
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}});           // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}});              // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
+    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}});           // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}});              // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
+    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(2, "no quark");
@@ -383,6 +412,16 @@ struct ValidationRecLevel {
 
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, CollisionsWithMCLabels const& collisions)
   {
+    // loop over collisions
+    for (auto& collision : collisions) {
+      registry.fill(HIST("histXvtxReco"), collision.posX());
+      registry.fill(HIST("histYvtxReco"), collision.posY());
+      registry.fill(HIST("histZvtxReco"), collision.posZ());
+      auto mcCollision = collision.mcCollision();
+      auto deltaZ = collision.posZ() - mcCollision.posZ();
+      registry.fill(HIST("histDeltaZvtx"), deltaZ);
+    }
+
     // loop over tracks
     for (auto& track : tracks) {
       if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
@@ -394,7 +433,15 @@ struct ValidationRecLevel {
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histTracks->Fill(origin, track.pt());
         if (track.isAmbiguousTrack()) {
+          registry.fill(HIST("histAmbiguousTrackNumBC"), track.numBC());
+          registry.fill(HIST("histAmbiguousTrackNumCollisions"), track.ambiguousCollisionIndicesIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
+          std::vector<double> ambCollPosZ{};
+          for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
+            auto ambCollision = collisions.rawIteratorAt(collIdx);
+            ambCollPosZ.push_back(ambCollision.posZ());
+          }
+          registry.fill(HIST("histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
         }
         float deltaZ = -999.f;
         if (index) {
@@ -402,22 +449,23 @@ struct ValidationRecLevel {
           auto mcCollision = particle.mcCollision();
           deltaZ = collision.posZ() - mcCollision.posZ();
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
-            histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor());
+            histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF());
           } else { // if the most probable collision is not the good one, check if the tracks is ambiguous
             if (track.isAmbiguousTrack()) {
               for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
+
                 if (ambCollision.mcCollisionId() == particle.mcCollisionId()) {
-                  histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor());
+                  histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF());
                   break;
                 }
               }
             }
           }
         }
-        histOriginTracks[index]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor());
+        histOriginTracks[index]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF());
       } else {
-        histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor());
+        histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor(), track.hasTOF());
       }
     }
 
