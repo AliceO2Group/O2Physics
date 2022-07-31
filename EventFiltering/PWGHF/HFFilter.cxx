@@ -126,6 +126,7 @@ DECLARE_SOA_TABLE(Colls3Prong, "AOD", "COLLSID3P", o2::aod::extra3Prong::Collisi
 
 namespace hftraining2p
 {
+DECLARE_SOA_COLUMN(PT2Prong, pT2Prong, float);         //!
 DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
@@ -143,6 +144,7 @@ DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float); //!
 DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);    //!
 } // namespace hftraining2p
 DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
+                  hftraining2p::PT2Prong,
                   hftraining2p::PT1,
                   hftraining2p::DCAPrimXY1,
                   hftraining2p::DCAPrimZ1,
@@ -161,6 +163,7 @@ DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
 
 namespace hftraining3p
 {
+DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);         //!
 DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
 DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
 DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
@@ -193,6 +196,7 @@ DECLARE_SOA_COLUMN(Channel, channel, int8_t);          //!
 DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);        //!
 } // namespace hftraining3p
 DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
+                  hftraining3p::PT3Prong,
                   hftraining3p::PT1,
                   hftraining3p::DCAPrimXY1,
                   hftraining3p::DCAPrimZ1,
@@ -327,6 +331,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> outputShapesML{};
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
   std::array<Ort::SessionOptions, kNCharmParticles> sessionOptions{};
+  std::array<int, kNCharmParticles> dataTypeML{};
   std::array<Ort::Env, kNCharmParticles> env = {
     Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-d0-triggers"},
     Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-dplus-triggers"},
@@ -392,6 +397,10 @@ struct HfFilter { // Main struct for HF triggers
           }
           outputNamesML[iCharmPart] = sessionML[iCharmPart]->GetOutputNames();
           outputShapesML[iCharmPart] = sessionML[iCharmPart]->GetOutputShapes();
+
+          Ort::TypeInfo typeInfo = sessionML[iCharmPart]->GetInputTypeInfo(0);
+          auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
+          dataTypeML[iCharmPart] = tensorInfo.GetElementType();
         }
       }
     }
@@ -561,11 +570,6 @@ struct HfFilter { // Main struct for HF triggers
     auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
     auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
 
-    if (activateQA) {
-      hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
-      hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
-    }
-
     int retValue = 0;
     if (std::abs(invMassDsToKKPi - massDs) < 0.04) {
       retValue |= BIT(0);
@@ -575,9 +579,15 @@ struct HfFilter { // Main struct for HF triggers
     }
     if (std::abs(invMassKKFirst - massPhi) < 0.02) {
       retValue |= BIT(2);
+      if (activateQA) {
+        hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
+      }
     }
     if (std::abs(invMassKKSecond - massPhi) < 0.02) {
       retValue |= BIT(3);
+      if (activateQA) {
+        hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
+      }
     }
 
     return retValue;
@@ -697,9 +707,16 @@ struct HfFilter { // Main struct for HF triggers
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
         // TODO: add more feature configurations
-        std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
         std::vector<Ort::Value> inputTensorD0;
-        inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeaturesD0.data(), inputFeaturesD0.size(), inputShapesML[kD0][0]));
+        std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        std::vector<double> inputFeaturesDoD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
+        if (dataTypeML[kD0] == 1) {
+          inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeaturesD0.data(), inputFeaturesD0.size(), inputShapesML[kD0][0]));
+        } else if (dataTypeML[kD0] == 11) {
+          inputTensorD0.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesDoD0.data(), inputFeaturesDoD0.size(), inputShapesML[kD0][0]));
+        } else {
+          LOG(fatal) << "Error running model inference: Unexpected input data type.";
+        }
 
         // double-check the dimensions of the input tensor
         if (inputTensorD0[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
@@ -825,9 +842,16 @@ struct HfFilter { // Main struct for HF triggers
       if (applyML) {
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
+        std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         for (auto iCharmPart{0}; (iCharmPart < kNCharmParticles - 1) && is3Prong[iCharmPart] && onnxFiles[iCharmPart + 1] != ""; ++iCharmPart) {
           std::vector<Ort::Value> inputTensor;
-          inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
+          if (dataTypeML[iCharmPart + 1] == 1) {
+            inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
+          } else if (dataTypeML[iCharmPart + 1] == 11) {
+            inputTensor.push_back(Ort::Experimental::Value::CreateTensor<double>(inputFeaturesD.data(), inputFeaturesD.size(), inputShapesML[iCharmPart + 1][0]));
+          } else {
+            LOG(error) << "Error running model inference: Unexpected input data type.";
+          }
 
           // double-check the dimensions of the input tensor
           if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
@@ -841,9 +865,9 @@ struct HfFilter { // Main struct for HF triggers
             auto scores = outputTensor[1].GetTensorMutableData<float>();
 
             if (applyML && activateQA) {
-              hBDTScoreBkg[iCharmPart]->Fill(scores[0]);
-              hBDTScorePrompt[iCharmPart]->Fill(scores[1]);
-              hBDTScoreNonPrompt[iCharmPart]->Fill(scores[2]);
+              hBDTScoreBkg[iCharmPart + 1]->Fill(scores[0]);
+              hBDTScorePrompt[iCharmPart + 1]->Fill(scores[1]);
+              hBDTScoreNonPrompt[iCharmPart + 1]->Fill(scores[2]);
             }
 
             int tagBDT = isBDTSelected(scores, iCharmPart + 1);
@@ -872,17 +896,17 @@ struct HfFilter { // Main struct for HF triggers
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
-      std::array<int, kNCharmParticles - 1> is3ProngInMass{};
-      if (is3Prong[0]) {
+      std::array<int, kNCharmParticles - 1> is3ProngInMass{0};
+      if (is3Prong[0] && (isCharmTagged[0] || isBeautyTagged[0])) {
         is3ProngInMass[0] = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[1]) {
+      if (is3Prong[1] && (isCharmTagged[1] || isBeautyTagged[1])) {
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[2]) {
+      if (is3Prong[2] && (isCharmTagged[2] || isBeautyTagged[2])) {
         is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[3]) {
+      if (is3Prong[3] && (isCharmTagged[3] || isBeautyTagged[3])) {
         is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
 
@@ -890,7 +914,7 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kHighPt] = true;
         if (activateQA) {
           for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-            if (is3Prong[iCharmPart - 1]) {
+            if (is3Prong[iCharmPart - 1] && (isCharmTagged[iCharmPart - 1] || isBeautyTagged[iCharmPart - 1])) {
               hCharmHighPt[iCharmPart]->Fill(pt3Prong);
             }
           }
@@ -975,6 +999,11 @@ struct HfFilter { // Main struct for HF triggers
       auto trackPos = cand2Prong.index0_as<BigTracksMCPID>(); // positive daughter
       auto trackNeg = cand2Prong.index1_as<BigTracksMCPID>(); // negative daughter
 
+      std::array<float, 3> pVecPos = {trackPos.px(), trackPos.py(), trackPos.pz()};
+      std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+      auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
+      auto pt2Prong = RecoDecay::pt(pVec2Prong);
+
       int8_t sign = 0;
       int8_t flag = 0;
       int8_t origin = 0;
@@ -995,7 +1024,7 @@ struct HfFilter { // Main struct for HF triggers
 
       double pseudoRndm = trackPos.pt() * 1000. - (long)(trackPos.pt() * 1000);
       if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train2P(trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
+        train2P(pt2Prong, trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), trackPos.tofNSigmaPi(), trackPos.tofNSigmaKa(),
                 trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaPi(), trackNeg.tofNSigmaKa(),
                 flag);
       }
@@ -1007,6 +1036,13 @@ struct HfFilter { // Main struct for HF triggers
       auto trackSecond = cand3Prong.index1_as<BigTracksMCPID>(); // second daughter
       auto trackThird = cand3Prong.index2_as<BigTracksMCPID>();  // third daughter
       auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
+
+      std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
+      std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
+      std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
+
+      auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
+      auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
       int8_t sign = 0;
       int8_t flag = 0;
@@ -1054,7 +1090,7 @@ struct HfFilter { // Main struct for HF triggers
 
       double pseudoRndm = trackFirst.pt() * 1000. - (long)(trackFirst.pt() * 1000);
       if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train3P(trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
+        train3P(pt3Prong, trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
                 trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
                 trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
                 flag, channel, cand3Prong.hfflag());

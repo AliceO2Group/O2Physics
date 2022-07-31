@@ -99,6 +99,13 @@ struct qaEventTrack {
                                              ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                              ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                                              ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
+  Partition<TrackTableData> tracksFilteredCorrIU = (trackSelection.node() == 0) ||
+                                                   ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                                                   ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                                                   ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                                                   ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                                                   ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
   HistogramRegistry histos;
 
@@ -170,7 +177,7 @@ struct qaEventTrack {
 
   // Process function for data
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
+  // using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
   void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
   {
     /// work with all tracks
@@ -195,6 +202,7 @@ struct qaEventTrack {
     int trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
       if (!isSelectedTrack<false>(trk)) {
+        trackIndex++;
         continue;
       }
 
@@ -223,21 +231,24 @@ struct qaEventTrack {
   PROCESS_SWITCH(qaEventTrack, processDataIU, "process IU vs DCA comparison", true);
 
   // Process function for filtered IU
-  void processDataIUFiltered(CollisionTableData::iterator const& collision, TrackIUTable const&)
+  void processDataIUFiltered(CollisionTableData::iterator const& collision, TrackTableData const&, TrackIUTable const&)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
     }
 
     auto tracksIU = tracksIUFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
+    // LOG(info) << "===> tracksIU.size()=" << tracksIU.size() << "===> tracksDCA.size()" << tracksDCA.size();
 
-    // int trackIndex = 0;
+    int trackIndex = 0;
     for (const auto& trkIU : tracksIU) {
       if (!isSelectedTrack<false>(trkIU)) {
+        trackIndex++;
         continue;
       }
 
-      // const auto& trkIU = tracksIU.iteratorAt(trackIndex++);
+      const auto& trkDCA = tracksDCA.iteratorAt(trackIndex++);
       histos.fill(HIST("Tracks/IUFiltered/Pt"), trkIU.pt());
       histos.fill(HIST("Tracks/IUFiltered/Eta"), trkIU.eta());
       histos.fill(HIST("Tracks/IUFiltered/Phi"), trkIU.phi());
@@ -249,6 +260,14 @@ struct qaEventTrack {
       histos.fill(HIST("Tracks/IUFiltered/signed1Pt"), trkIU.signed1Pt());
       histos.fill(HIST("Tracks/IUFiltered/snp"), trkIU.snp());
       histos.fill(HIST("Tracks/IUFiltered/tgl"), trkIU.tgl());
+
+      histos.fill(HIST("Tracks/IUFiltered/deltaDCA/Pt"), trkDCA.pt(), trkIU.pt() - trkDCA.pt());
+      histos.fill(HIST("Tracks/IUFiltered/deltaDCA/Eta"), trkDCA.eta(), trkIU.eta() - trkDCA.eta());
+      histos.fill(HIST("Tracks/IUFiltered/deltaDCA/Phi"), trkDCA.phi(), trkIU.phi() - trkDCA.phi());
+
+      histos.fill(HIST("Tracks/IUFiltered/vsDCA/Pt"), trkDCA.pt(), trkIU.pt());
+      histos.fill(HIST("Tracks/IUFiltered/vsDCA/Eta"), trkDCA.eta(), trkIU.eta());
+      histos.fill(HIST("Tracks/IUFiltered/vsDCA/Phi"), trkDCA.phi(), trkIU.phi());
     }
   }
   PROCESS_SWITCH(qaEventTrack, processDataIUFiltered, "process IU filtered", true);
@@ -734,6 +753,21 @@ void qaEventTrack::init(InitContext const&)
     h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
     h1 = histos.add<TH1>("Tracks/IUFiltered/tgl", "tangent of the track momentum dip angle", kTH1F, {axisParTgl});
     h1->GetXaxis()->SetTitle(Form("%s IU filtered", h1->GetXaxis()->GetTitle()));
+
+    // Deltas
+    histos.add("Tracks/IUFiltered/deltaDCA/Pt", "IU - DCA both filtered: Pt", kTH2F, {axisPt, {30, -0.15, 0.15, "#it{p}_{T}^{IU} - #it{p}_{T}^{DCA} [GeV/#it{c}]"}});
+    histos.add("Tracks/IUFiltered/deltaDCA/Eta", "IU - DCA both filtered: Eta", kTH2F, {axisEta, {30, -0.15, 0.15, "#it{#eta}^{IU} - #it{#eta}^{DCA}"}});
+    histos.add("Tracks/IUFiltered/deltaDCA/Phi", "IU - DCA both filtered: Phi", kTH2F, {axisPhi, {30, -0.15, 0.15, "#varphi^{IU} - #varphi^{DCA} [rad]"}});
+    // Correlations
+    auto h2 = histos.add<TH2>("Tracks/IUFiltered/vsDCA/Pt", "IU vs DC both filteredA: Pt", kTH2F, {axisPt, axisPt});
+    h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
+    h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
+    h2 = histos.add<TH2>("Tracks/IUFiltered/vsDCA/Eta", "IU vs DC both filteredA: Eta", kTH2F, {axisEta, axisEta});
+    h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
+    h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
+    h2 = histos.add<TH2>("Tracks/IUFiltered/vsDCA/Phi", "IU vs DC both filteredA: Phi", kTH2F, {axisPhi, axisPhi});
+    h2->GetXaxis()->SetTitle(Form("%s DCA", h2->GetXaxis()->GetTitle()));
+    h2->GetYaxis()->SetTitle(Form("%s IU", h2->GetYaxis()->GetTitle()));
   }
 
   // tracks IU filtered
