@@ -46,7 +46,7 @@ jobs:
           # DISABLE: COPYPASTE,SPELL
           # The bandit check is overly broad and complains about subprocess
           # usage in Scripts/update_ccdb.py.
-          DISABLE: bandit
+          DISABLE_ERRORS_LINTERS: bandit
 
       # Create or delete the cleanup branch
       - name: Update cleanup branch
