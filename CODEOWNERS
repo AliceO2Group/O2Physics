@@ -24,7 +24,7 @@
 /EventFiltering/PWGMM @alibuild @aortizve
 /EventFiltering/PWGJE @alibuild @fkrizek
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
-/PWGDQ @alibuild @iarsene
+/PWGDQ @alibuild @iarsene @dsekihat
 /PWGEM @alibuild @mikesas @rbailhac
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
