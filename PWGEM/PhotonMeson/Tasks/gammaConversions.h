@@ -41,6 +41,7 @@ enum class ePhotonCuts {
   kArmenteros,
   kPsiPair,
   kCosinePA,
+  kRZLine,
   kV0Out
 };
 
