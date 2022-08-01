@@ -477,14 +477,14 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 // iterators
 using V0Bit = V0Bits::iterator;
 
-namespace DalitzBits
+namespace DalBits
 {
-DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint64_t); //!
+DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint32_t); //!
 } // namespace DalitzBits
 
 // bit information for particle species.
 DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", //!
-                  DalitzBits::DALITZBits);
+                  DalBits::DALITZBits);
 
 // iterators
 using DalitzBit = DalitzBits::iterator;

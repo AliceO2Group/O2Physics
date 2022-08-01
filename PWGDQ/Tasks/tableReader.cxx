@@ -76,11 +76,15 @@ using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, a
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
+using MyBarrelTracksSelectedDalitzBits = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::DalitzBits>;
+using MyBarrelTracksSelectedWithCovDalitzBits = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::DalitzBits>;
 
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
 using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
 using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
+using MyMuonTracksSelectedDalitzBits = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts, aod::DalitzBits>;
+using MyMuonTracksSelectedWithCovDalitzBits = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts, aod::DalitzBits>;
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -190,6 +194,8 @@ struct AnalysisTrackSelection {
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
   Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fRejectConv{"fRejectConv", false, "If true, reject tracks from gamma conversions in material"};
+  Configurable<bool> fRejectDalitz{"fRejectDalitz", false, "If true, reject tracks from Dalitz decays"};
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
@@ -217,6 +223,12 @@ struct AnalysisTrackSelection {
         histDirNames += Form("TrackBarrel_%s;", cut.GetName());
       }
 
+      if(fRejectConv) {
+        for (auto& cut : fTrackCuts) {
+          histDirNames += Form("TrackBarrel_%s_rejectConv;", cut.GetName());
+        }
+      }
+
       DefineHistograms(fHistMan, histDirNames.Data()); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -242,13 +254,21 @@ struct AnalysisTrackSelection {
       }
 
       iCut = 0;
+      // filter map stays to 0 if it is rejected as conversion or by all dalitz cuts
+            
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (uint32_t(1) << iCut);
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            if (fRejectConv && !(track.filteringFlags() & BIT(2))) {
+              fHistMan->FillHistClass(Form("TrackBarrel_%s_rejectConv", (*cut).GetName()), VarManager::fgValues);
+            }
           }
         }
+      }
+      if (fRejectConv && (track.filteringFlags() & BIT(2))) {
+        filterMap = uint32_t(0);
       }
       trackSel(static_cast<int>(filterMap));
     } // end loop over tracks
@@ -606,6 +626,12 @@ struct AnalysisSameEventPairing {
   Configurable<string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<bool> fRejectConv{"fRejectConv", false, "If true, reject tracks from gamma conversions in material"};
+  Configurable<bool> fRejectDalitz{"fRejectDalitz", false, "If true, reject tracks from Dalitz decays"};
+  Configurable<std::string> fConfigTrackCutsDalitz{"cfgTrackCutsDalitz", "", "Dalitz track selection cuts, separated by a comma"}; // For now must be exactly the same as in the dalitz selection
+  Configurable<std::string> fConfigPairCutsDalitz{"cfgPairCutsDalitz", "", "Dalitz pair selection cuts"};
+
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
@@ -622,6 +648,10 @@ struct AnalysisSameEventPairing {
   std::vector<std::vector<TString>> fTrackHistNames;
   std::vector<std::vector<TString>> fMuonHistNames;
   std::vector<std::vector<TString>> fTrackMuonHistNames;
+  
+  int nTrackCuts = 0;
+  int nDalitzCuts = 0;
+  int nMuonCuts = 0;
 
   void init(o2::framework::InitContext& context)
   {
@@ -632,11 +662,13 @@ struct AnalysisSameEventPairing {
 
     // Keep track of all the histogram class names to avoid composing strings in the event mixing pairing
     TString histNames = "";
-    if (context.mOptions.get<bool>("processJpsiToEESkimmed") || context.mOptions.get<bool>("processVnJpsiToEESkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+
+    if (context.mOptions.get<bool>("processJpsiToEESkimmed") || context.mOptions.get<bool>("processVnJpsiToEESkimmed") || context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processJpsiToEESkimmedPrefilter")) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
-        for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        nTrackCuts = objArray->GetEntries();
+        for (int icut = 0; icut < nTrackCuts; ++icut) {
           std::vector<TString> names = {
             Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
@@ -646,12 +678,47 @@ struct AnalysisSameEventPairing {
           fTwoTrackFilterMask |= (uint32_t(1) << icut);
         }
       }
+      if(context.mOptions.get<bool>("processJpsiToEESkimmedPrefilter") && fRejectConv){
+        int hNSize = (int) fTrackHistNames.size();
+        for (int icut = 0; icut < hNSize; ++icut) {
+          std::vector<TString> names = {
+            Form("%s_rejectConv", fTrackHistNames[icut][0].Data()),
+            Form("%s_rejectConv", fTrackHistNames[icut][1].Data()),
+            Form("%s_rejectConv", fTrackHistNames[icut][2].Data())}; 
+          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          fTrackHistNames.push_back(names);           
+        }
+      }
+      if(context.mOptions.get<bool>("processJpsiToEESkimmedPrefilter") && fRejectDalitz){
+        TString dalitzTrackCutNames = fConfigTrackCutsDalitz.value;
+        TString dalitzPairCutNames = fConfigPairCutsDalitz.value;
+        std::unique_ptr<TObjArray> dalitzTrackCuts(dalitzTrackCutNames.Tokenize(","));
+        std::unique_ptr<TObjArray> dalitzPairCuts(dalitzPairCutNames.Tokenize(","));
+        int hNSize = (int) fTrackHistNames.size();
+        if (!dalitzTrackCutNames.IsNull()  &&  !dalitzPairCutNames.IsNull()) {
+          nDalitzCuts = dalitzTrackCuts->GetEntries()*dalitzPairCuts->GetEntries();            
+          for (int dalitzPCut = 0; dalitzPCut < dalitzPairCuts->GetEntries(); dalitzPCut++) {
+            for (int dalitzTCut = 0; dalitzTCut < dalitzTrackCuts->GetEntries(); dalitzTCut++) {
+              for (int icut = 0; icut < hNSize; ++icut) {
+                std::vector<TString> names = {
+                  Form("%s_%s_%s", fTrackHistNames[icut][0].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName()),
+                  Form("%s_%s_%s", fTrackHistNames[icut][1].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName()),
+                  Form("%s_%s_%s", fTrackHistNames[icut][2].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName())}; 
+                histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+                fTrackHistNames.push_back(names);
+                // Histograms order is: TrackCuts, TrackCuts+rejectConv, TrackCuts+dalitzcut1, TrackCuts+rejectConv+dalitzcut1,  TrackCuts+dalitzcut2 ...         
+              }
+            } // end loop dalitz track cuts
+          }// end loop dalitz pair cuts
+        }// end if (non null)    
+      }// end if reject dalitz
     }
     if (context.mOptions.get<bool>("processJpsiToMuMuSkimmed") || context.mOptions.get<bool>("processJpsiToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processVnJpsiToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigMuonCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
-        for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        nMuonCuts = objArray->GetEntries();
+        for (int icut = 0; icut < nMuonCuts; ++icut) {
           std::vector<TString> names = {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
@@ -698,11 +765,11 @@ struct AnalysisSameEventPairing {
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
-  template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2>
+  template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, bool prefilter, typename TEvent, typename TTracks1, typename TTracks2> //bool prefilter is temporary
   void runSameEventPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
 
-    unsigned int ncuts = fTrackHistNames.size();
+    unsigned int ncuts = nTrackCuts; //fTrackHistNames.size(); // number of cuts = NtrackCuts*(1+fRejectConv)*(1+NDalitzTrackCuts*NDalitzPairCuts)
     std::vector<std::vector<TString>> histNames = fTrackHistNames;
     if constexpr (TPairType == pairTypeMuMu) {
       ncuts = fMuonHistNames.size();
@@ -733,6 +800,8 @@ struct AnalysisSameEventPairing {
       }
       constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
 
+
+
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
@@ -743,7 +812,7 @@ struct AnalysisSameEventPairing {
       }
 
       // TODO: provide the type of pair to the dilepton table (e.g. ee, mumu, emu...)
-      dileptonFilterMap = twoTrackFilter;
+      dileptonFilterMap = twoTrackFilter; //TODO: add prefilter to the filter map
       dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
 
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
@@ -766,31 +835,85 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
             }
           }
+          // additional histograms with prefiltering
+          if constexpr (TPairType == pairTypeEE && prefilter) {
+            //TrackCut_rejectConv histograms
+            if(fRejectConv && !(t1.filteringFlags() & BIT(2)) && !(t2.filteringFlags() & BIT(2))){
+              if (t1.sign() * t2.sign() < 0) {
+                fHistMan->FillHistClass(histNames[icut+nTrackCuts][0].Data(), VarManager::fgValues);
+              } else {
+                if (t1.sign() > 0) {
+                  fHistMan->FillHistClass(histNames[icut+nTrackCuts][1].Data(), VarManager::fgValues);
+                } else {
+                  fHistMan->FillHistClass(histNames[icut+nTrackCuts][2].Data(), VarManager::fgValues);
+                }
+              }
+            } //end if reject conv
+            // Dalitz cuts
+            if(fRejectDalitz) {
+              uint64_t twoTracksDalitzFilter = t1.dalitzBits() | t2.dalitzBits();
+              for (int dalitzCut = 0; dalitzCut < nDalitzCuts; dalitzCut++) {
+                if ((uint64_t(1) << dalitzCut) & !twoTracksDalitzFilter) {
+                  //TrackCut_DalitzCuts histograms
+                  if (t1.sign() * t2.sign() < 0) {
+                    fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+icut][0].Data(), VarManager::fgValues);
+                  } else {
+                    if (t1.sign() > 0) {
+                      fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+icut][1].Data(), VarManager::fgValues);
+                    } else {
+                      fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+icut][2].Data(), VarManager::fgValues);
+                    }
+                  }
+                  //TrackCuts_rejectConv_DalitzCuts histograms
+                  if(fRejectConv && !(t1.filteringFlags() & BIT(2)) && !(t2.filteringFlags() & BIT(2))){
+                    if (t1.sign() * t2.sign() < 0) {
+                      fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+nTrackCuts+icut][0].Data(), VarManager::fgValues);
+                    } else {
+                      if (t1.sign() > 0) {
+                        fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+nTrackCuts+icut][1].Data(), VarManager::fgValues);
+                      } else {
+                        fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+nTrackCuts+icut][2].Data(), VarManager::fgValues);
+                      }
+                    }
+                  } //end if reject conv
+                } // end if not dalitz-rejected
+              } // end loop dalitz cuts
+            } // end if reject Dalitz
+            
+          } //end if Jpsi2ee
+          
         } // end if (filter bits)
       }   // end for (cuts)
     }     // end loop over pairs
   }
 
+  void processJpsiToEESkimmedPrefilter(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelectedDalitzBits> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap, true>(event, tracks, tracks);
+  }
   void processJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap, false>(event, tracks, tracks);
   }
   void processJpsiToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, muons);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap, false>(event, muons, muons);
   }
   void processJpsiToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithCov> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(event, muons, muons);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov, false>(event, muons, muons);
   }
   void processVnJpsiToEESkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
@@ -811,16 +934,16 @@ struct AnalysisSameEventPairing {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons);
+    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap, false>(event, tracks, muons);
   }
   void processAllSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
-    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, muons);
-    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons);
+    runSameEventPairing<VarManager::kJpsiToEE, gkEventFillMap, gkTrackFillMap, false>(event, tracks, tracks);
+    runSameEventPairing<VarManager::kJpsiToMuMu, gkEventFillMap, gkMuonFillMap, false>(event, muons, muons);
+    runSameEventPairing<VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap, false>(event, tracks, muons);
   }
   // TODO: dummy function for the case when no process function is enabled
   void processDummy(MyEvents&)
@@ -828,6 +951,7 @@ struct AnalysisSameEventPairing {
     // do nothing
   }
 
+  PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToEESkimmedPrefilter, "Run electron-electron pairing, with skimmed tracks, with dalitz bits for prefilter", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuSkimmed, "Run muon-muon pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processJpsiToMuMuVertexingSkimmed, "Run muon-muon pairing and vertexing, with skimmed muons", false);

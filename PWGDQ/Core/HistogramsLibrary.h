@@ -179,8 +179,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "TOFnSigEle_pIN", "TOF n-#sigma(e) vs pIN", false, 200, 0.0, 10.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTOFnSigmaEl);
     }
     if (subGroupStr.Contains("dca")) {
-      hm->AddHistogram(histClass, "DCAxy", "DCA_{xy}", false, 200, -1.0, 1.0, VarManager::kTrackDCAxy);
-      hm->AddHistogram(histClass, "DCAz", "DCA_{z}", false, 200, -1.0, 1.0, VarManager::kTrackDCAz);
+      hm->AddHistogram(histClass, "DCAxy", "DCA_{xy}", false, 1000, -2.0, 2.0, VarManager::kTrackDCAxy);
+      hm->AddHistogram(histClass, "DCAz", "DCA_{z}", false, 1000, -2.0, 2.0, VarManager::kTrackDCAz);
       hm->AddHistogram(histClass, "DCAsigXY", "DCA_{XY} [#sigma]", false, 100, -10.0, 10.0, VarManager::kTrackDCAsigXY);
       hm->AddHistogram(histClass, "DCAsigZ", "DCA_{Z} [#sigma]", false, 100, -10.0, 10.0, VarManager::kTrackDCAsigZ);
       hm->AddHistogram(histClass, "Pt_DCAsigXY", "p_{T} vs DCA_{XY} [#sigma]", false, 200, 0.0, 20.0, VarManager::kPt, 100, -10.0, 10.0, VarManager::kTrackDCAsigXY); // JJ:edit
@@ -235,8 +235,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 100, 0.0, 20.0, VarManager::kMass);
     hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
     if (subGroupStr.Contains("vertexing-barrel")) {
-      hm->AddHistogram(histClass, "Lxy", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxy);
-      hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);
+      hm->AddHistogram(histClass, "Lxy", "", false, 200, 0.0, 20.0, VarManager::kVertexingLxy);
+      hm->AddHistogram(histClass, "Lxyz", "", false, 200, 0.0, 20.0, VarManager::kVertexingLxyz);
       hm->AddHistogram(histClass, "Tauxy", "", false, 100, 0, 0.01, VarManager::kVertexingTauxy);
       hm->AddHistogram(histClass, "LxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyErr);
       hm->AddHistogram(histClass, "LxyzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyzErr);
