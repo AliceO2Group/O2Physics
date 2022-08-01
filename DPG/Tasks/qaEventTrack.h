@@ -79,16 +79,32 @@ DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! Pt MC
 DECLARE_SOA_COLUMN(EtaMC, etaMC, float);                 //! Eta MC
 DECLARE_SOA_COLUMN(PhiMC, phiMC, float);                 //! Phi MC
 DECLARE_SOA_COLUMN(ProductionMode, productionMode, int); //! ProductionMode i.e. non matched (-1), physical primary (0), weak decay product (1) or material (2)
+DECLARE_SOA_DYNAMIC_COLUMN(IsNonMatched, isNonMatched,   //! True if particle is considered a non matched particle
+                           [](int mode) -> bool { return mode == -1; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, //! True if particle is considered a physical primary according to the ALICE definition
+                           [](int mode) -> bool { return mode == 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsFromWeakDecay, isFromWeakDecay, //! True if particle is considered from a weak decay
+                           [](int mode) -> bool { return mode == 1; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsFromMaterial, isFromMaterial, //! True if particle is considered from a weak decay
+                           [](int mode) -> bool { return mode == 2; });
 
 } // namespace dpgparticles
 
 DECLARE_SOA_TABLE(DPGRecoParticles, "AOD", "DPGRecoPart", //! Table of the DPG reconstructed particles
                   dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
-                  mcparticle::PdgCode, dpgparticles::ProductionMode);
+                  mcparticle::PdgCode, dpgparticles::ProductionMode,
+                  dpgparticles::IsNonMatched<dpgparticles::ProductionMode>,
+                  dpgparticles::IsPhysicalPrimary<dpgparticles::ProductionMode>,
+                  dpgparticles::IsFromWeakDecay<dpgparticles::ProductionMode>,
+                  dpgparticles::IsFromMaterial<dpgparticles::ProductionMode>);
 
-DECLARE_SOA_TABLE(DPGNonRecoParticles, "AOD", "DPGNonRecoPart", //! Table of the DPG particles
+DECLARE_SOA_TABLE(DPGNonRecoParticles, "AOD", "DPGNonRecoPart", //! Table of the DPG non reconstructed particles
                   dpgtrack::DPGCollisionId,
                   dpgparticles::PtMC, dpgparticles::EtaMC, dpgparticles::PhiMC,
                   mcparticle::PdgCode, dpgparticles::ProductionMode,
+                  dpgparticles::IsNonMatched<dpgparticles::ProductionMode>,
+                  dpgparticles::IsPhysicalPrimary<dpgparticles::ProductionMode>,
+                  dpgparticles::IsFromWeakDecay<dpgparticles::ProductionMode>,
+                  dpgparticles::IsFromMaterial<dpgparticles::ProductionMode>,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz);
 } // namespace o2::aod

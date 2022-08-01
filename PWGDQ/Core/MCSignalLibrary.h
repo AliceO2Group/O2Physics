@@ -45,6 +45,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Primary electrons", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("pionPrimary")) {
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false});     // define 1-generation prong using the full constructor
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);                // set source to be ALICE primary particles
+    signal = new MCSignal(name, "Primary electrons", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
   if (!nameStr.compare("photon")) {
     MCProng prong(1, {22}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
     signal = new MCSignal(name, "Photon", {prong}, {-1});       // define the signal using the full constructor
@@ -357,6 +363,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from open charmed hadron decays from b hadron decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("HFdecayToE")) {
+    MCProng prong(2, {902, 11}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    // prong.SetSourceBit(0, MCProng::kPhysicalPrimary, false);  // set source to be ALICE primary particles
+    prong.SetSignalInTime(true); // set direction to check for daughters (true, in time) or for mothers (false, back in time)
+    signal = new MCSignal(name, "Open charm and beauty to electrons", {prong}, {-1});
+    return signal;
+  }
   //   if (!nameStr.compare("LFQtoPC")) {
   //   MCProng prong(3, {900, 22, 11}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
   //   prong.SetSignalInTime(true);  // set direction to check for daughters (true, in time) or for mothers (false, back in time)
@@ -428,6 +441,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // LMEE pair signals for HF
+  // c->e and c->e (no check)
+  if (!nameStr.compare("eeFromCCNoCheck")) {
+    MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "ee pairs from c->e and c->e without check", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
   // c->e and c->e (prompt)
   if (!nameStr.compare("eeFromCC")) {
     MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, true}, {0, 0, 0}, {0, 0, 0}, {false, false, false});

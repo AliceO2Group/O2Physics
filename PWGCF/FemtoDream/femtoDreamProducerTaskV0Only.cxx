@@ -29,8 +29,10 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/StrangenessTables.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -93,6 +95,7 @@ struct femtoDreamProducerTaskV0Only {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
+  // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   FemtoDreamV0Selection v0Cuts;
   /// \todo Labeled array (see Track-Track task)
@@ -117,6 +120,10 @@ struct femtoDreamProducerTaskV0Only {
   Configurable<float> ConfInvMassLowLimit{"ConfInvMassLowLimit", 1.05, "Lower limit of the V0 invariant mass"};
   Configurable<float> ConfInvMassUpLimit{"ConfInvMassUpLimit", 1.30, "Upper limit of the V0 invariant mass"};
 
+  Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
+  Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
+  Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
+
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
                     (nabs(aod::v0data::y) < V0DecVtxMax.value) &&
@@ -124,6 +131,10 @@ struct femtoDreamProducerTaskV0Only {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working for now do not know why
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+
+  int mRunNumber;
+  float mMagField;
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
   {
@@ -154,20 +165,55 @@ struct femtoDreamProducerTaskV0Only {
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kPosTrack, ConfRejectNotPropagatedTracks);
       v0Cuts.setChildRejectNotPropagatedTracks(femtoDreamV0Selection::kNegTrack, ConfRejectNotPropagatedTracks);
+      if (ConfRejectKaons) {
+        v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit, ConfInvKaonMassUpLimit);
+      }
     }
+    mRunNumber = 0;
+    mMagField = 0.0;
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = 0.1 * (grpo->getNominalL3Field());
+    return output;
   }
 
   void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
-    auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    if (mRunNumber != bc.runNumber()) {
+      mMagField = getMagneticFieldTesla(bc.timestamp());
+      mRunNumber = bc.runNumber();
+    }
+
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField);
       }
       return;
     }
@@ -179,9 +225,9 @@ struct femtoDreamProducerTaskV0Only {
 
     // now the table is filled
     if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multFT0M(), spher, bc.timestamp());
+      outputCollision(vtxZ, col.multFT0M(), spher, mMagField);
     } else {
-      outputCollision(vtxZ, mult, spher, bc.timestamp());
+      outputCollision(vtxZ, mult, spher, mMagField);
     }
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
@@ -245,6 +291,7 @@ struct femtoDreamProducerTaskV0Only {
                              -999.,
                              -999.,
                              -999.,
+                             -999.,
                              -999.); // QA for positive daughter
             outputDebugParts(negtrack.sign(),
                              (uint8_t)negtrack.tpcNClsFound(),
@@ -267,6 +314,7 @@ struct femtoDreamProducerTaskV0Only {
                              negtrack.tofNSigmaStoreKa(),
                              negtrack.tofNSigmaStorePr(),
                              negtrack.tofNSigmaStoreDe(),
+                             -999.,
                              -999.,
                              -999.,
                              -999.,
@@ -297,7 +345,8 @@ struct femtoDreamProducerTaskV0Only {
                              v0.v0radius(),
                              v0.x(),
                              v0.y(),
-                             v0.z()); // QA for V0
+                             v0.z(),
+                             v0.mK0Short()); // QA for V0
           }
         }
       }
