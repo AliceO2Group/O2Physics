@@ -5,9 +5,9 @@ name: MegaLinter
 
 'on': [pull_request_target]
 
-env: # Comment env block if you do not want to apply fixes
+env:
   # Apply linter fixes configuration
-  APPLY_FIXES: all # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
+  APPLY_FIXES: all
   PR_NUMBER: ${{ github.event.pull_request.number }}
 
 concurrency:
@@ -35,12 +35,18 @@ jobs:
         # More info at https://megalinter.github.io/flavors/
         uses: oxsecurity/megalinter@v5
         env:
-          # All available variables are described in documentation
+          # All available variables are described in documentation:
           # https://megalinter.github.io/configuration/
-          VALIDATE_ALL_CODEBASE: false # ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }} # Validates all source when push on master, else just the git diff with master. Override with true if you always want to lint all sources
+          # Validates all source when push on master, else just the diff with
+          # master. Override with true if you always want to lint all sources.
+          # VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
-          # DISABLE: COPYPASTE,SPELL # Uncomment to disable copy-paste and spell checks
+          # Uncomment to disable copy-paste and spell checks
+          # DISABLE: COPYPASTE,SPELL
+          # The bandit check is overly broad and complains about subprocess
+          # usage in Scripts/update_ccdb.py.
+          DISABLE: bandit
 
       # Create or delete the cleanup branch
       - name: Update cleanup branch
@@ -70,8 +76,7 @@ jobs:
           destination_branch: '${{ github.event.pull_request.head.label }}'
           github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
           pr_title: >-
-            [MegaLinter] Apply linters automatic fixes to
-            #${{ env.PR_NUMBER }}
+            [MegaLinter] Apply linters automatic fixes to #${{ env.PR_NUMBER }}
           pr_body: >-
             Your PR ${{ github.event.repository.full_name }}#${{ env.PR_NUMBER }}
             cannot be merged as is. You should either run MegaLinter
@@ -79,11 +84,17 @@ jobs:
 
             You can find how to run MegaLinter locally at
             <https://megalinter.github.io/latest/mega-linter-runner/>.
-        continue-on-error: true  # We do not create PRs if the branch is not there.
+        # We do not create PRs if the branch is not there.
+        continue-on-error: true
 
       - name: Exit with error if the PR is not clean
         run: |
           case "${{ steps.ml.outputs.has_updated_sources }}" in
-            0) echo 'PR clean' ; exit 0 ;;
-            1) echo 'PR not clean' ; exit 1 ;;
+            0) echo '::notice::PR is clean' ; exit 0 ;;
+            1) echo '::error::MegaLinter found errors'
+               echo "::notice::Check $pr_url$q for a pull request with fixes."
+               exit 1 ;;
           esac
+        env:
+          pr_url: https://github.com/${{ github.event.pull_request.head.repo.full_name }}/pulls
+          q: ?q=is%3Apr+is%3Aopen+MegaLinter+%23${{ github.event.pull_request.number }}
