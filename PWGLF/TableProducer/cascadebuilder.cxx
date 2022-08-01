@@ -45,6 +45,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include <CCDB/BasicCCDBManager.h>
 
 #include <TFile.h>
@@ -93,6 +94,8 @@ struct cascadeBuilder {
   Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
   Configurable<bool> tpcrefit{"tpcrefit", false, "demand TPC refit"};
   Configurable<double> v0radius{"v0radius", 0.9, "v0radius"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   int mRunNumber;
   float d_bz;
@@ -110,6 +113,7 @@ struct cascadeBuilder {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
@@ -119,8 +123,19 @@ struct cascadeBuilder {
       /* but what happens if the run changes while doing the processing?             */
       constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
 
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+      o2::parameters::GRPMagField* grpmag = 0x0;
+      if (!grpo) {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+        if (!grpmag) {
+          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        }
+      }
+      if (grpo) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+      } else {
+        o2::base::Propagator::initFieldFromGRP(grpmag);
+      }
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
