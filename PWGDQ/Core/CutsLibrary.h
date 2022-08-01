@@ -50,6 +50,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("DalitzO2MCdebugCuts")) {
+    cut->AddCut(GetAnalysisCut("electronDalitzKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts2")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -409,12 +416,19 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("pairMassLow1"));
     return cut;
   }
+
   if (!nameStr.compare("pairMassLow2")) {
     cut->AddCut(GetAnalysisCut("pairMassLow2"));
     return cut;
   }
+
   if (!nameStr.compare("pairMassLow3")) {
-    cut->AddCut(GetAnalysisCut("pairMassLow3"));
+    cut->AddCut(GetAnalysisCut("pairMassLow3"));    
+    return cut;
+  }
+
+  if (!nameStr.compare("pairDalitz")) {
+    cut->AddCut(GetAnalysisCut("pairDalitz"));
     return cut;
   }
 
@@ -494,6 +508,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     return cut;
   }
+
+  if (!nameStr.compare("electronDalitzKine")) {
+    cut->AddCut(VarManager::kPt, 0.5, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    return cut;
+  }
+
 
   if (!nameStr.compare("highPtHadron")) {
     cut->AddCut(VarManager::kPt, 4.0, 1000.0);
@@ -831,6 +852,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("matchedGlobal")) {
     cut->AddCut(VarManager::kMuonTrackType, -0.5, 0.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairDalitz")) {
+    cut->AddCut(VarManager::kMass, 0.0, 0.15);
     return cut;
   }
 
