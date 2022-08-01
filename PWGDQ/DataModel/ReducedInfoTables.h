@@ -472,6 +472,18 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 // iterators
 using V0Bit = V0Bits::iterator;
 
+namespace DalitzBits
+{
+DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint64_t); //!
+} // namespace DalitzBits
+
+// bit information for particle species.
+DECLARE_SOA_TABLE(DalitzBits, "AOD", "DALITZBITS", //!
+                  DalitzBits::DALITZBits);
+
+// iterators
+using DalitzBit = DalitzBits::iterator;
+
 } // namespace o2::aod
 
 #endif // O2_Analysis_ReducedInfoTables_H_
