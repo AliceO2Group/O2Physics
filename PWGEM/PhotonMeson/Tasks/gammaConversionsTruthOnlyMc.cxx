@@ -33,6 +33,8 @@ struct gammaConversionsTruthOnlyMc {
   Configurable<float> fEtaMax{"fEtaMax", 0.8, "aMaximum photon eta"};
   Configurable<float> fV0RMin{"fV0RMin", 0., "minimum conversion radius of the V0s"};
   Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
+  Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
+  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fEtaMax))), "The slope for the line cut"};
 
   HistogramRegistry registry{
     "registry",
@@ -94,6 +96,10 @@ struct gammaConversionsTruthOnlyMc {
 
     if (std::abs(theMcGamma.eta()) > fEtaMax) {
       // fill histo
+      return false;
+    }
+
+    if (TMath::Abs(theMcGamma.conversionZ()) < LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
       return false;
     }
     return true;
