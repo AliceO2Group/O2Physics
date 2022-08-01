@@ -51,10 +51,6 @@ using namespace o2::framework::expressions;
 using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi>;
 using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
-// additional table for testing, later on try to put everything in tracksAndTPCInfo
-
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
-
 struct skimmerGammaConversions {
 
   HistogramRegistry fRegistry{
@@ -93,6 +89,7 @@ struct skimmerGammaConversions {
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
+  Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
@@ -153,7 +150,7 @@ struct skimmerGammaConversions {
   }
 
   template <typename TV0, typename TTRACK>
-  void fillTrackTable(TV0 const& theV0, TTRACK const& theTrack, bool theIsPositive, float* recalculatedVtx)
+  void fillTrackTable(TV0 const& theV0, TTRACK const& theTrack, bool theIsPositive)
   {
     fFuncTableV0DaughterTracks(
       theV0.v0Id(),
@@ -166,23 +163,27 @@ struct skimmerGammaConversions {
       theTrack.tpcCrossedRowsOverFindableCls(),
       theTrack.tpcFoundOverFindableCls(),
       theTrack.tpcNClsCrossedRows(),
-      recalculatedVtx[0],
-      recalculatedVtx[1],
-      recalculatedVtx[2],
       theTrack.tpcNSigmaEl(),
       theTrack.tpcNSigmaPi(),
       theTrack.tpcSignal());
   }
 
-  // ============================ FUNCTION DEFINITIONS ====================================================
+  template <typename TV0>
+  void fillV0RecalculatedTable(TV0 const& theV0, float* recalculatedVtx)
+  {
+      fFuncTableV0Recalculated(
+        theV0.v0Id(),
+        recalculatedVtx[0],
+        recalculatedVtx[1],
+        recalculatedVtx[2]);
+  }
 
-  //WIESO KOMM BUNCH CROSSING NACH COLLISION UND NICHT DAVOR DAS MACHT 0 SINN
+  // ============================ FUNCTION DEFINITIONS ====================================================
 
   void processRec(aod::Collisions::iterator const& theCollision,
                   aod::BCsWithTimestamps const& bcs,
                   aod::V0Datas const& theV0s,
-                  tracksAndTPCInfo const& theTracks,
-                  FullTracksExt const& Track_additional)
+                  tracksAndTPCInfo const& theTracks)
   {
     // skip if bc has no Collisions
     if (theCollision.size() == 0) {
@@ -201,8 +202,9 @@ struct skimmerGammaConversions {
       float recalculatedVtx[3];
       Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
 
-      fillTrackTable(lV0, lTrackPos, true, recalculatedVtx);
-      fillTrackTable(lV0, lTrackNeg, false, recalculatedVtx);
+      fillTrackTable(lV0, lTrackPos, true);
+      fillTrackTable(lV0, lTrackNeg, false);
+      fillV0RecalculatedTable(lV0, recalculatedVtx);
     }
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
@@ -247,8 +249,9 @@ struct skimmerGammaConversions {
         float recalculatedVtx[3];
         Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
 
-        fillTrackTable(lV0, lTrackPos, true, recalculatedVtx);
-        fillTrackTable(lV0, lTrackNeg, false, recalculatedVtx);
+        fillTrackTable(lV0, lTrackPos, true);
+        fillTrackTable(lV0, lTrackNeg, false);
+        fillV0RecalculatedTable(lV0, recalculatedVtx);
       }
     }
   }
@@ -372,14 +375,14 @@ struct skimmerGammaConversions {
     TVector2 vertexNegRot = vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
 
     prop->propagateToX(trackPosInformationCopy,
-                       vertexXPos,
+                       vertexPosRot.X(),
                        bz,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                        o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
 
     prop->propagateToX(trackNegInformationCopy,
-                       vertexXNeg,
+                       vertexNegRot.X(),
                        bz,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                        o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
