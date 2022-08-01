@@ -49,10 +49,10 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
 
 namespace gammarecalculated
 {
-DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float);                           //! Recalculated conversion point
-DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float);                           //! Recalculated conversion point
-DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float);                           //! Recalculated conversion point
-DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return TMath::Sqrt(x*x + y*y);});
+DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
+DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float); //! Recalculated conversion point
+DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated conversion point
+DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return TMath::Sqrt(x * x + y * y); });
 } // namespace gammarecalculated
 
 DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
@@ -61,7 +61,7 @@ DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
                   gammarecalculated::RecalculatedVtxX,
                   gammarecalculated::RecalculatedVtxY,
                   gammarecalculated::RecalculatedVtxZ,
-                  gammarecalculated::RecalculatedVtxR<o2::aod::gammarecalculated::RecalculatedVtxX,o2::aod::gammarecalculated::RecalculatedVtxY>);
+                  gammarecalculated::RecalculatedVtxR<o2::aod::gammarecalculated::RecalculatedVtxX, o2::aod::gammarecalculated::RecalculatedVtxY>);
 
 namespace gammamctrue
 {

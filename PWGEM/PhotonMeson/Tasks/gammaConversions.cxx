@@ -127,8 +127,7 @@ struct GammaConversions {
       {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
       {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
-      {"hpeDivpGamma", "hpeDivpGamma;p_{e}p_{#gamma};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}
-    };
+      {"hpeDivpGamma", "hpeDivpGamma;p_{e}p_{#gamma};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}};
 
     // recalculated conversion Point for V0, only Rec and MCVal need this
     std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
@@ -142,7 +141,7 @@ struct GammaConversions {
       {"hPtRes", "hPtRes_Rec-MC;#Delta p_T (GeV/c);counts", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
       {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {gAxis_radRes}}},
       {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {gAxis_radRes}}},
-      {"hConvPointXYResVsXY", "hConvPointXYResVsXY_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}}, //maybe change axis later on
+      {"hConvPointXYResVsXY", "hConvPointXYResVsXY_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}}, // maybe change axis later on
       {"hConvPointXYResVsXY_recalc", "hConvPointXYResVsXY_recalc_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}},
       {"hConvPointZResVsZ", "hConvPointZResVsZ_Rec-MC;Z (cm);#Delta Z (cm)", {HistType::kTH2F, {gAxis_xyz, gAxis_dr}}},
       {"hConvPointZResVsZ_recalc", "hConvPointZResVsZ_recalc_Rec-MC;Z (cm);#Delta Z (cm)", {HistType::kTH2F, {gAxis_xyz, gAxis_dr}}},
@@ -573,7 +572,7 @@ struct GammaConversions {
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
-    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); //as long as z recalculation is not fixed use this
+    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
 
     float p_electron[2];
     Int_t counter = 0;
@@ -674,7 +673,7 @@ struct GammaConversions {
       return kFALSE;
     }
 
-    if (TMath::Abs(theV0.z()) > LineCutZ0 + theV0.recalculatedVtxR() * LineCutZRSlope) { //as long as z recalculation is not fixed use this
+    if (TMath::Abs(theV0.z()) > LineCutZ0 + theV0.recalculatedVtxR() * LineCutZRSlope) { // as long as z recalculation is not fixed use this
       fillV0SelectionHisto(ePhotonCuts::kRZLine);
       return kFALSE;
     }

@@ -171,11 +171,11 @@ struct skimmerGammaConversions {
   template <typename TV0>
   void fillV0RecalculatedTable(TV0 const& theV0, float* recalculatedVtx)
   {
-      fFuncTableV0Recalculated(
-        theV0.v0Id(),
-        recalculatedVtx[0],
-        recalculatedVtx[1],
-        recalculatedVtx[2]);
+    fFuncTableV0Recalculated(
+      theV0.v0Id(),
+      recalculatedVtx[0],
+      recalculatedVtx[1],
+      recalculatedVtx[2]);
   }
 
   // ============================ FUNCTION DEFINITIONS ====================================================
