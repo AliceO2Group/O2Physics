@@ -59,7 +59,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
-                                        aod::McTrackLabels, aod::DalitzBits>;
+                                        aod::McTrackLabels, aod::V0Bits, aod::DalitzBits>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -69,7 +69,7 @@ constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
-constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
@@ -404,7 +404,9 @@ struct TableMakerMC {
                 ((TH1I*)fStatsList->At(1))->Fill(fTrackCuts.size() + float(iv0));
               }
             }
+            trackFilteringTag |= (uint64_t(track.dalitzBits()) << 15); //BIT15-...: Dalitz
           }
+
           trackFilteringTag |= (uint64_t(trackTempFilterMap) << 7); // BIT7-14:  user track filters
 
           mcflags = 0;
@@ -622,6 +624,8 @@ struct TableMakerMC {
       if (mctrack.has_mothers()) {
         for (auto& m : mctrack.mothersIds()) {
           if (m < mcTracks.size()) { // protect against bad mother indices
+          
+               // if(abs(mctrack.pdgCode())==11) std::cout<<" mc pdg code: "<<mctrack.pdgCode()<<" mother pdg code: "<<mcTracks.iteratorAt(m).pdgCode()<<std::endl;
             if (fNewLabels.find(m) != fNewLabels.end()) {
               mothers.push_back(fNewLabels.find(m)->second);
             }

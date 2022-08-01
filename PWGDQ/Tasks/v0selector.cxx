@@ -64,6 +64,7 @@ struct v0selector {
     kOmega = 4
   };
 
+  int globalCounter;
   Produces<o2::aod::V0Bits> v0bits;
 
   float alphav0(const array<float, 3>& ppos, const array<float, 3>& pneg)
@@ -681,6 +682,7 @@ struct v0selector {
       // printf("setting pidmap[%lld] = %d\n",track.globalIndex(),pidmap[track.globalIndex()]);
       v0bits(pidmap[track.globalIndex()]);
     } // end of track loop
+
 
   } // end of process
 };
