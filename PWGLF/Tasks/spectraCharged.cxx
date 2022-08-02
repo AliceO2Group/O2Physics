@@ -42,12 +42,15 @@ struct chargedSpectra {
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
 
+  Configurable<bool> normINELGT0{"normINELGT0", false, "normalize INEL>0 according to MC"};
+
   // helper struct to store transient properties
   struct varContainer {
     uint32_t multMeas{0u};
     uint32_t multTrue{0u};
     bool isAcceptedEvent{false};
     bool isAcceptedEventMC{false};
+    bool isINELGT0EventMC{false};
     bool isChargedPrimary{false};
   };
   varContainer vars;
@@ -218,6 +221,10 @@ bool chargedSpectra::initParticle(const P& particle)
     return false;
   }
   vars.isChargedPrimary = particle.isPhysicalPrimary();
+
+  // event class is INEL>0 in case it has a charged particle in abs(eta) < 1
+  vars.isINELGT0EventMC = vars.isINELGT0EventMC || (vars.isChargedPrimary && (std::abs(particle.eta()) < 1.));
+
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
@@ -280,6 +287,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
 template <typename C, typename P>
 void chargedSpectra::initEventMC(const C& collision, const P& particles)
 {
+  vars.isINELGT0EventMC = false; // will be set to true in case a charged particle within eta +-1 is found
   vars.multTrue = 0;
   for (auto& particle : particles) {
     if (!initParticle(particle) || !vars.isChargedPrimary) {
@@ -287,7 +295,8 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
     }
     ++vars.multTrue;
   }
-  vars.isAcceptedEventMC = ((std::abs(collision.posZ()) < 10.f) && (vars.multTrue > 0));
+  bool isGoodEventClass = (normINELGT0) ? vars.isINELGT0EventMC : (vars.multTrue > 0);
+  vars.isAcceptedEventMC = isGoodEventClass && (std::abs(collision.posZ()) < 10.f);
 }
 
 //**************************************************************************************************

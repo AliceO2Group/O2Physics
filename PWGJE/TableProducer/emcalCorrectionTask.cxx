@@ -32,6 +32,7 @@
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/ClusterFactory.h"
 #include "EMCALReconstruction/Clusterizer.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "TVector2.h"
 
 using namespace o2;
@@ -41,11 +42,17 @@ using namespace o2::framework::expressions;
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
   Produces<o2::aod::EMCALAmbiguousClusters> clustersAmbiguous;
+  Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
+  Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
+  Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
 
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   // Options for the clusterization
   // 1 corresponds to EMCAL cells based on the Run2 definition.
   Configurable<int> selectedCellType{"selectedCellType", 1, "EMCAL Cell type"};
   Configurable<std::string> clusterDefinitions{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default. Multiple definitions can be specified separated by comma"};
+  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
+
   // CDB service (for geometry)
   Service<o2::ccdb::BasicCCDBManager> mCcdbManager;
 
@@ -56,6 +63,8 @@ struct EmcalCorrectionTask {
   std::vector<std::unique_ptr<o2::emcal::ClusterFactory<o2::emcal::Cell>>> mClusterFactories;
   // Cells and clusters
   std::vector<o2::emcal::Cell> mEmcalCells;
+  // map of cellId (local in BC) to global cell index in cell table in AO2D
+  std::map<int, int64_t> mCellIdToCellGlobalIndex;
   std::vector<o2::emcal::AnalysisCluster> mAnalysisClusters;
 
   std::vector<o2::aod::EMCALClusterDefinition> mClusterDefinitions;
@@ -100,7 +109,7 @@ struct EmcalCorrectionTask {
       }
     }
     for (auto& clusterDefinition : mClusterDefinitions) {
-      mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, true, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
+      mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1E9, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, clusterDefinition.doGradientCut, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
       mClusterFactories.emplace_back(std::make_unique<o2::emcal::ClusterFactory<o2::emcal::Cell>>());
       LOG(info) << "Cluster definition initialized: " << clusterDefinition.toString();
       LOG(info) << "timeMin: " << clusterDefinition.timeMin;
@@ -108,6 +117,7 @@ struct EmcalCorrectionTask {
       LOG(info) << "gradientCut: " << clusterDefinition.gradientCut;
       LOG(info) << "seedEnergy: " << clusterDefinition.seedEnergy;
       LOG(info) << "minCellEnergy: " << clusterDefinition.minCellEnergy;
+      LOG(info) << "storageID" << clusterDefinition.storageID;
     }
     for (auto& clusterizer : mClusterizers) {
       clusterizer->setGeometry(geometry);
@@ -134,15 +144,17 @@ struct EmcalCorrectionTask {
   // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
 
   //  Appears to need the BC to be accessed to be available in the collision table...
-  void process(aod::BC const& bc, aod::Collisions const& collisions, aod::Calos const& cells)
+  void process(aod::BC const& bc, aod::Collisions const& collisions, aod::Tracks const& tracks, aod::Calos const& cells)
   {
     LOG(debug) << "Starting process.";
     // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
     // In particular, we need to filter only EMCAL cells.
     mEmcalCells.clear();
+    mCellIdToCellGlobalIndex.clear();
+    int c = 0;
     for (auto& cell : cells) {
       if (cell.caloType() != selectedCellType) {
-        // LOG(debug) << "Rejected";
+        LOG(debug) << "Rejected";
         continue;
       }
       // LOG(debug) << "Cell E: " << cell.getEnergy();
@@ -152,7 +164,11 @@ struct EmcalCorrectionTask {
         cell.amplitude(),
         cell.time(),
         o2::emcal::intToChannelType(cell.cellType())));
+      mCellIdToCellGlobalIndex.insert(std::make_pair(c, cell.globalIndex()));
+      LOG(debug) << "Creating map " << c << " -> " << cell.globalIndex();
+      c++;
     }
+    LOG(debug) << "Number of cells (CF): " << mEmcalCells.size();
 
     // Cell QA
     // For convenience, use the clusterizer stored geometry to get the eta-phi
@@ -197,6 +213,7 @@ struct EmcalCorrectionTask {
       for (int icl = 0; icl < mClusterFactories.at(i)->getNumberOfClusters(); icl++) {
         auto analysisCluster = mClusterFactories.at(i)->buildCluster(icl);
         mAnalysisClusters.emplace_back(analysisCluster);
+        LOG(debug) << "Cluster " << icl << ": E: " << analysisCluster.E() << ", NCells " << analysisCluster.getNCells();
       }
       LOG(debug) << "Converted to analysis clusters.";
 
@@ -212,8 +229,40 @@ struct EmcalCorrectionTask {
           vz = col.posZ();
           hasCollision = true;
 
+          // store positions of all tracks of collision
+          auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
+
+          std::vector<double> trackPhi;
+          std::vector<double> trackEta;
+          std::vector<int64_t> trackGlobalIndex;
+          for (auto& track : groupedTracks) {
+            // TODO this actually needs to use the eta phi
+            // of track propagated to EMC surface! Will be provided centrally according to Ruben
+            // TODO only consider tracks in current emcal/dcal acceptanc
+            trackPhi.emplace_back(TVector2::Phi_0_2pi(track.phi()));
+            trackEta.emplace_back(track.eta());
+            trackGlobalIndex.emplace_back(track.globalIndex());
+          }
+
+          std::vector<double> clusterPhi;
+          std::vector<double> clusterEta;
+
+          // TODO one loop that could in principle be combined with the other loop to improve performance
+          for (const auto& cluster : mAnalysisClusters) {
+            // Determine the cluster eta, phi, correcting for the vertex position.
+            auto pos = cluster.getGlobalPosition();
+            pos = pos - math_utils::Point3D<float>{vx, vy, vz};
+            // Normalize the vector and rescale by energy.
+            pos *= (cluster.E() / std::sqrt(pos.Mag2()));
+            clusterPhi.emplace_back(TVector2::Phi_0_2pi(pos.Phi()));
+            clusterEta.emplace_back(pos.Eta());
+          }
+          auto&& [clusterToTrackIndexMap, trackToClusterIndexMap] = JetUtilities::MatchClustersAndTracks(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 5);
           // we found a collision, put the clusters into the none ambiguous table
           clusters.reserve(mAnalysisClusters.size());
+          int cellindex = -1;
+
+          unsigned int k = 0;
           for (const auto& cluster : mAnalysisClusters) {
 
             // Determine the cluster eta, phi, correcting for the vertex position.
@@ -228,9 +277,23 @@ struct EmcalCorrectionTask {
                      cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
                      cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(i)));
 
+            clustercells.reserve(cluster.getNCells());
+            // loop over cells in cluster and save to table
+            for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
+              cellindex = cluster.getCellIndex(ncell);
+              LOG(debug) << "trying to find cell index " << cellindex << " in map";
+              clustercells(clusters.lastIndex(), mCellIdToCellGlobalIndex.at(cellindex));
+            }
             // fill histograms
             hClusterE->Fill(cluster.E());
             hClusterEtaPhi->Fill(pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
+            for (unsigned int iTrack = 0; iTrack < clusterToTrackIndexMap[k].size(); iTrack++) {
+              if (clusterToTrackIndexMap[k][iTrack] >= 0) {
+                LOG(debug) << "Found track " << trackGlobalIndex[clusterToTrackIndexMap[k][iTrack]] << " in cluster " << cluster.getID();
+                matchedTracks(clusters.lastIndex(), trackGlobalIndex[clusterToTrackIndexMap[k][iTrack]]);
+              }
+            }
+            k++;
           } // end of cluster loop
         }   // end of collision loop
       }
@@ -241,6 +304,7 @@ struct EmcalCorrectionTask {
       // Store the clusters in the table where a mathcing collision could
       // be identified.
       if (!hasCollision) { // ambiguous
+        int cellindex = -1;
         clustersAmbiguous.reserve(mAnalysisClusters.size());
         for (const auto& cluster : mAnalysisClusters) {
           auto pos = cluster.getGlobalPosition();
@@ -254,6 +318,11 @@ struct EmcalCorrectionTask {
           clustersAmbiguous(bc, cluster.getID(), cluster.E(), cluster.getCoreEnergy(), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()),
                             cluster.getM02(), cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
                             cluster.getIsExotic(), cluster.getDistanceToBadChannel(), cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(i)));
+          clustercellsambiguous.reserve(cluster.getNCells());
+          for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
+            cellindex = cluster.getCellIndex(ncell);
+            clustercellsambiguous(clustersAmbiguous.lastIndex(), mCellIdToCellGlobalIndex.at(cellindex));
+          }
         }
       }
       LOG(debug) << "Cluster loop done for clusterizer " << i;

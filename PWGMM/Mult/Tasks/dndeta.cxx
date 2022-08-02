@@ -42,11 +42,11 @@ AxisSpec PtAxis = {2401, -0.005, 24.005};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionPattern = TrackSelectionFlags::kTrackType |
                                                                        TrackSelectionFlags::kTPCNCls |
+                                                                       TrackSelectionFlags::kITSNCls |
                                                                        TrackSelectionFlags::kTPCCrossedRowsOverNCls |
                                                                        TrackSelectionFlags::kTPCChi2NDF |
                                                                        TrackSelectionFlags::kITSChi2NDF |
                                                                        TrackSelectionFlags::kITSHits |
-                                                                       TrackSelectionFlags::kGoldenChi2 |
                                                                        TrackSelectionFlags::kDCAz |
                                                                        TrackSelectionFlags::kDCAxy;
 
@@ -57,8 +57,6 @@ struct MultiplicityCounter {
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  Configurable<float> maxDCAZ{"maxDCAZ", 0.3f, "max track DCAZ"};
-  Configurable<bool> useDCAZcut{"useDCAZcut", true, "apply track DCAZ cut"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
 
   HistogramRegistry registry{
@@ -244,7 +242,7 @@ struct MultiplicityCounter {
           auto counter = 0;
           auto relatedTracks = particle.tracks_as<soa::Filtered<LabeledTracksEx>>();
           for (auto& track : relatedTracks) {
-            if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
+            if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
               continue;
             }
             ++counter;
@@ -264,7 +262,7 @@ struct MultiplicityCounter {
           }
           if (counter > 1) {
             for (auto& track : relatedTracks) {
-              if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
+              if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
                 continue;
               }
               for (auto layer = 0; layer < 7; ++layer) {
@@ -287,7 +285,7 @@ struct MultiplicityCounter {
           if (relatedTracks.size() > 1) {
             registry.fill(HIST("Tracks/Control/PhiEtaGenDuplicates"), particle.phi(), particle.eta());
             for (auto& track : relatedTracks) {
-              if (useDCAZcut && std::abs(track.dcaZ()) > maxDCAZ) {
+              if ((track.trackCutFlag() & TrackSelectionFlags::kDCAz) != TrackSelectionFlags::kDCAz) {
                 continue;
               }
               registry.fill(HIST("Tracks/Control/PhiEtaDuplicates"), track.phi(), track.eta());
@@ -381,14 +379,11 @@ struct MultiplicityCounter {
         if (perCollisionSample.size() > 0) {
           registry.fill(HIST("Events/Efficiency"), 5.);
         }
-
-        registry.fill(HIST("Events/Efficiency"), 6.);
         ++moreThanOne;
         atLeastOne = true;
         Nrec += perCollisionSample.size();
         if (perCollisionSample.size() > 0) {
           atLeastOne_gt0 = true;
-          registry.fill(HIST("Events/Efficiency"), 7.);
         }
         registry.fill(HIST("Events/NtrkZvtxGen"), perCollisionSample.size(), collision.posZ());
       }
