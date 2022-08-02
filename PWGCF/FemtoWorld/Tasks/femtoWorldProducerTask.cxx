@@ -78,7 +78,7 @@ struct femtoWorldProducerTask {
 
   Produces<aod::FemtoWorldCollisions> outputCollision;
   Produces<aod::FemtoWorldParticles> outputParts;
-  //Produces<aod::FemtoWorldDebugParticles> outputDebugParts;
+  // Produces<aod::FemtoWorldDebugParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -293,217 +293,217 @@ struct femtoWorldProducerTask {
                   cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoWorldTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(),
-                  childIDs, 0, 0, //początek nowej części
-                        track.sign(), 
-                         (uint8_t)track.tpcNClsFound(),
-                         track.tpcNClsFindable(),
-                         (uint8_t)track.tpcNClsCrossedRows(),
-                         track.tpcNClsShared(),
-                         track.tpcInnerParam(),
-                         track.itsNCls(),
-                         track.itsNClsInnerBarrel(),
-                         track.dcaXY(),
-                         track.dcaZ(),
-                         track.tpcSignal(),
-                         track.tpcNSigmaStoreEl(),
-                         track.tpcNSigmaStorePi(),
-                         track.tpcNSigmaStoreKa(),
-                         track.tpcNSigmaStorePr(),
-                         track.tpcNSigmaStoreDe(),
-                         track.tofNSigmaStoreEl(),
-                         track.tofNSigmaStorePi(),
-                         track.tofNSigmaStoreKa(),
-                         track.tofNSigmaStorePr(),
-                         track.tofNSigmaStoreDe(),
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.);         
+                  childIDs, 0, 0, // początek nowej części
+                  track.sign(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.tpcNClsFindable(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  track.tpcNClsShared(),
+                  track.tpcInnerParam(),
+                  track.itsNCls(),
+                  track.itsNClsInnerBarrel(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.tpcSignal(),
+                  track.tpcNSigmaStoreEl(),
+                  track.tpcNSigmaStorePi(),
+                  track.tpcNSigmaStoreKa(),
+                  track.tpcNSigmaStorePr(),
+                  track.tpcNSigmaStoreDe(),
+                  track.tofNSigmaStoreEl(),
+                  track.tofNSigmaStorePi(),
+                  track.tofNSigmaStoreKa(),
+                  track.tofNSigmaStorePr(),
+                  track.tofNSigmaStoreDe(),
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.,
+                  -999.);
       tmpIDtrack.push_back(track.globalIndex());
-    /*if (ConfDebugOutput) {
-        outputDebugParts(track.sign(),
-                         (uint8_t)track.tpcNClsFound(),
-                         track.tpcNClsFindable(),
-                         (uint8_t)track.tpcNClsCrossedRows(),
-                         track.tpcNClsShared(),
-                         track.tpcInnerParam(),
-                         track.itsNCls(),
-                         track.itsNClsInnerBarrel(),
-                         track.dcaXY(),
-                         track.dcaZ(),
-                         track.tpcSignal(),
-                         track.tpcNSigmaStoreEl(),
-                         track.tpcNSigmaStorePi(),
-                         track.tpcNSigmaStoreKa(),
-                         track.tpcNSigmaStorePr(),
-                         track.tpcNSigmaStoreDe(),
-                         track.tofNSigmaStoreEl(),
-                         track.tofNSigmaStorePi(),
-                         track.tofNSigmaStoreKa(),
-                         track.tofNSigmaStorePr(),
-                         track.tofNSigmaStoreDe(),
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.);
-      }*/
+      /*if (ConfDebugOutput) {
+          outputDebugParts(track.sign(),
+                           (uint8_t)track.tpcNClsFound(),
+                           track.tpcNClsFindable(),
+                           (uint8_t)track.tpcNClsCrossedRows(),
+                           track.tpcNClsShared(),
+                           track.tpcInnerParam(),
+                           track.itsNCls(),
+                           track.itsNClsInnerBarrel(),
+                           track.dcaXY(),
+                           track.dcaZ(),
+                           track.tpcSignal(),
+                           track.tpcNSigmaStoreEl(),
+                           track.tpcNSigmaStorePi(),
+                           track.tpcNSigmaStoreKa(),
+                           track.tpcNSigmaStorePr(),
+                           track.tpcNSigmaStoreDe(),
+                           track.tofNSigmaStoreEl(),
+                           track.tofNSigmaStorePi(),
+                           track.tofNSigmaStoreKa(),
+                           track.tofNSigmaStorePr(),
+                           track.tofNSigmaStoreDe(),
+                           -999.,
+                           -999.,
+                           -999.,
+                           -999.,
+                           -999.,
+                           -999.);
+        }*/
     }
-/*
-    if (ConfStoreV0) {
-      for (auto& v0 : fullV0s) {
-        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
-        auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
-        // const auto dcaXYpos = postrack.dcaXY();
-        // const auto dcaZpos = postrack.dcaZ();
-        // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
-        v0Cuts.fillLambdaQA(col, v0, postrack, negtrack);
+    /*
+        if (ConfStoreV0) {
+          for (auto& v0 : fullV0s) {
+            auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
+            auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
+            // const auto dcaXYpos = postrack.dcaXY();
+            // const auto dcaZpos = postrack.dcaZ();
+            // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
+            v0Cuts.fillLambdaQA(col, v0, postrack, negtrack);
 
-        if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
-          continue;
-        }
+            if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
+              continue;
+            }
 
-        if (ConfRejectITSHitandTOFMissing) {
-          // Uncomment only when TOF timing is solved
-          // bool itsHit = o2PhysicsTrackSelection->IsSelected(postrack, TrackSelection::TrackCuts::kITSHits);
-          // bool itsHit = o2PhysicsTrackSelection->IsSelected(negtrack, TrackSelection::TrackCuts::kITSHits);
-        }
+            if (ConfRejectITSHitandTOFMissing) {
+              // Uncomment only when TOF timing is solved
+              // bool itsHit = o2PhysicsTrackSelection->IsSelected(postrack, TrackSelection::TrackCuts::kITSHits);
+              // bool itsHit = o2PhysicsTrackSelection->IsSelected(negtrack, TrackSelection::TrackCuts::kITSHits);
+            }
 
-        v0Cuts.fillQA<aod::femtoworldparticle::ParticleType::kV0, aod::femtoworldparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
-        auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, v0, postrack, negtrack);
+            v0Cuts.fillQA<aod::femtoworldparticle::ParticleType::kV0, aod::femtoworldparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
+            auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, v0, postrack, negtrack);
 
-        if ((cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
-          int postrackID = v0.posTrackId();
-          int rowInPrimaryTrackTablePos = -1;
-          rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
-          childIDs[0] = rowInPrimaryTrackTablePos;
-          childIDs[1] = 0;
-          outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID), 0., childIDs, 0, 0);
-          const int rowOfPosTrack = outputParts.lastIndex();
-          int negtrackID = v0.negTrackId();
-          int rowInPrimaryTrackTableNeg = -1;
-          rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
-          childIDs[0] = 0;
-          childIDs[1] = rowInPrimaryTrackTableNeg;
-          outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
-          const int rowOfNegTrack = outputParts.lastIndex();
-          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
-          outputParts(outputCollision.lastIndex(),v0.pt(), v0.eta(), v0.phi(), aod::femtoworldparticle::ParticleType::kV0, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda(),postrack.sign(),
-                             (uint8_t)postrack.tpcNClsFound(),
-                             postrack.tpcNClsFindable(),
-                             (uint8_t)postrack.tpcNClsCrossedRows(),
-                             postrack.tpcNClsShared(),
-                             postrack.tpcInnerParam(),
-                             postrack.itsNCls(),
-                             postrack.itsNClsInnerBarrel(),
-                             postrack.dcaXY(),
-                             postrack.dcaZ(),
-                             postrack.tpcSignal(),
-                             postrack.tpcNSigmaStoreEl(),
-                             postrack.tpcNSigmaStorePi(),
-                             postrack.tpcNSigmaStoreKa(),
-                             postrack.tpcNSigmaStorePr(),
-                             postrack.tpcNSigmaStoreDe(),
-                             postrack.tofNSigmaStoreEl(),
-                             postrack.tofNSigmaStorePi(),
-                             postrack.tofNSigmaStoreKa(),
-                             postrack.tofNSigmaStorePr(),
-                             postrack.tofNSigmaStoreDe(),
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.);
-          if (ConfDebugOutput) {
-            outputDebugParts(postrack.sign(),
-                             (uint8_t)postrack.tpcNClsFound(),
-                             postrack.tpcNClsFindable(),
-                             (uint8_t)postrack.tpcNClsCrossedRows(),
-                             postrack.tpcNClsShared(),
-                             postrack.tpcInnerParam(),
-                             postrack.itsNCls(),
-                             postrack.itsNClsInnerBarrel(),
-                             postrack.dcaXY(),
-                             postrack.dcaZ(),
-                             postrack.tpcSignal(),
-                             postrack.tpcNSigmaStoreEl(),
-                             postrack.tpcNSigmaStorePi(),
-                             postrack.tpcNSigmaStoreKa(),
-                             postrack.tpcNSigmaStorePr(),
-                             postrack.tpcNSigmaStoreDe(),
-                             postrack.tofNSigmaStoreEl(),
-                             postrack.tofNSigmaStorePi(),
-                             postrack.tofNSigmaStoreKa(),
-                             postrack.tofNSigmaStorePr(),
-                             postrack.tofNSigmaStoreDe(),
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.); // QA for positive daughter
-            outputDebugParts(negtrack.sign(),
-                             (uint8_t)negtrack.tpcNClsFound(),
-                             negtrack.tpcNClsFindable(),
-                             (uint8_t)negtrack.tpcNClsCrossedRows(),
-                             negtrack.tpcNClsShared(),
-                             negtrack.tpcInnerParam(),
-                             negtrack.itsNCls(),
-                             negtrack.itsNClsInnerBarrel(),
-                             negtrack.dcaXY(),
-                             negtrack.dcaZ(),
-                             negtrack.tpcSignal(),
-                             negtrack.tpcNSigmaStoreEl(),
-                             negtrack.tpcNSigmaStorePi(),
-                             negtrack.tpcNSigmaStoreKa(),
-                             negtrack.tpcNSigmaStorePr(),
-                             negtrack.tpcNSigmaStoreDe(),
-                             negtrack.tofNSigmaStoreEl(),
-                             negtrack.tofNSigmaStorePi(),
-                             negtrack.tofNSigmaStoreKa(),
-                             negtrack.tofNSigmaStorePr(),
-                             negtrack.tofNSigmaStoreDe(),
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.); // QA for negative daughter
-            outputDebugParts(-999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             v0.dcaV0daughters(),
-                             v0.v0radius(),
-                             v0.x(),
-                             v0.y(),
-                             v0.z(),
-                             v0.mK0Short()); // QA for V0
+            if ((cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
+              int postrackID = v0.posTrackId();
+              int rowInPrimaryTrackTablePos = -1;
+              rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
+              childIDs[0] = rowInPrimaryTrackTablePos;
+              childIDs[1] = 0;
+              outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID), 0., childIDs, 0, 0);
+              const int rowOfPosTrack = outputParts.lastIndex();
+              int negtrackID = v0.negTrackId();
+              int rowInPrimaryTrackTableNeg = -1;
+              rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+              childIDs[0] = 0;
+              childIDs[1] = rowInPrimaryTrackTableNeg;
+              outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
+              const int rowOfNegTrack = outputParts.lastIndex();
+              int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+              outputParts(outputCollision.lastIndex(),v0.pt(), v0.eta(), v0.phi(), aod::femtoworldparticle::ParticleType::kV0, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda(),postrack.sign(),
+                                 (uint8_t)postrack.tpcNClsFound(),
+                                 postrack.tpcNClsFindable(),
+                                 (uint8_t)postrack.tpcNClsCrossedRows(),
+                                 postrack.tpcNClsShared(),
+                                 postrack.tpcInnerParam(),
+                                 postrack.itsNCls(),
+                                 postrack.itsNClsInnerBarrel(),
+                                 postrack.dcaXY(),
+                                 postrack.dcaZ(),
+                                 postrack.tpcSignal(),
+                                 postrack.tpcNSigmaStoreEl(),
+                                 postrack.tpcNSigmaStorePi(),
+                                 postrack.tpcNSigmaStoreKa(),
+                                 postrack.tpcNSigmaStorePr(),
+                                 postrack.tpcNSigmaStoreDe(),
+                                 postrack.tofNSigmaStoreEl(),
+                                 postrack.tofNSigmaStorePi(),
+                                 postrack.tofNSigmaStoreKa(),
+                                 postrack.tofNSigmaStorePr(),
+                                 postrack.tofNSigmaStoreDe(),
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.);
+              if (ConfDebugOutput) {
+                outputDebugParts(postrack.sign(),
+                                 (uint8_t)postrack.tpcNClsFound(),
+                                 postrack.tpcNClsFindable(),
+                                 (uint8_t)postrack.tpcNClsCrossedRows(),
+                                 postrack.tpcNClsShared(),
+                                 postrack.tpcInnerParam(),
+                                 postrack.itsNCls(),
+                                 postrack.itsNClsInnerBarrel(),
+                                 postrack.dcaXY(),
+                                 postrack.dcaZ(),
+                                 postrack.tpcSignal(),
+                                 postrack.tpcNSigmaStoreEl(),
+                                 postrack.tpcNSigmaStorePi(),
+                                 postrack.tpcNSigmaStoreKa(),
+                                 postrack.tpcNSigmaStorePr(),
+                                 postrack.tpcNSigmaStoreDe(),
+                                 postrack.tofNSigmaStoreEl(),
+                                 postrack.tofNSigmaStorePi(),
+                                 postrack.tofNSigmaStoreKa(),
+                                 postrack.tofNSigmaStorePr(),
+                                 postrack.tofNSigmaStoreDe(),
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.); // QA for positive daughter
+                outputDebugParts(negtrack.sign(),
+                                 (uint8_t)negtrack.tpcNClsFound(),
+                                 negtrack.tpcNClsFindable(),
+                                 (uint8_t)negtrack.tpcNClsCrossedRows(),
+                                 negtrack.tpcNClsShared(),
+                                 negtrack.tpcInnerParam(),
+                                 negtrack.itsNCls(),
+                                 negtrack.itsNClsInnerBarrel(),
+                                 negtrack.dcaXY(),
+                                 negtrack.dcaZ(),
+                                 negtrack.tpcSignal(),
+                                 negtrack.tpcNSigmaStoreEl(),
+                                 negtrack.tpcNSigmaStorePi(),
+                                 negtrack.tpcNSigmaStoreKa(),
+                                 negtrack.tpcNSigmaStorePr(),
+                                 negtrack.tpcNSigmaStoreDe(),
+                                 negtrack.tofNSigmaStoreEl(),
+                                 negtrack.tofNSigmaStorePi(),
+                                 negtrack.tofNSigmaStoreKa(),
+                                 negtrack.tofNSigmaStorePr(),
+                                 negtrack.tofNSigmaStoreDe(),
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.); // QA for negative daughter
+                outputDebugParts(-999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 -999.,
+                                 v0.dcaV0daughters(),
+                                 v0.v0radius(),
+                                 v0.x(),
+                                 v0.y(),
+                                 v0.z(),
+                                 v0.mK0Short()); // QA for V0
+              }
+            }
           }
-        }
-      }
-    }*/
+        }*/
   }
 };
 

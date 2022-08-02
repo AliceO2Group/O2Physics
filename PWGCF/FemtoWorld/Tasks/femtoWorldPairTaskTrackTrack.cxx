@@ -51,11 +51,10 @@ static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
 namespace o2::aod
 {
-//using FemtoWorldParticlesMerged = soa::Join<aod::FemtoWorldParticles,aod::FemtoWorldDebugParticles>;
+// using FemtoWorldParticlesMerged = soa::Join<aod::FemtoWorldParticles,aod::FemtoWorldDebugParticles>;
 using FemtoWorldParticlesMerged = aod::FemtoWorldParticles;
 using FemtoWorldParticleMerged = FemtoWorldParticlesMerged::iterator;
 } // namespace o2::aod
-
 
 struct femtoWorldPairTaskTrackTrack {
 
@@ -84,8 +83,8 @@ struct femtoWorldPairTaskTrackTrack {
 
   /// Partition for particle 2
   Partition<aod::FemtoWorldParticlesMerged> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack)) &&
-                                                 //  (aod::femtoworldparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
-                                                 ((aod::femtoworldparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
+                                                       //  (aod::femtoworldparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
+                                                       ((aod::femtoworldparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
   /// Histogramming for particle 2
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 2> trackHistoPartTwo;

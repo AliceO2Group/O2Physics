@@ -134,7 +134,7 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::Px<femtoworldparticle::Pt, femtoworldparticle::Phi>,
                   femtoworldparticle::Py<femtoworldparticle::Pt, femtoworldparticle::Phi>,
                   femtoworldparticle::Pz<femtoworldparticle::Pt, femtoworldparticle::Eta>,
-                  femtoworldparticle::P<femtoworldparticle::Pt, femtoworldparticle::Eta>,//tu koniec poprzedniej wersji
+                  femtoworldparticle::P<femtoworldparticle::Pt, femtoworldparticle::Eta>, // tu koniec poprzedniej wersji
                   femtoworldparticle::Sign,
                   femtoworldparticle::TPCNClsFound,
                   track::TPCNClsFindable,
@@ -230,7 +230,7 @@ using Hash = Hashes::iterator;
 namespace femtohash
 {
 DECLARE_SOA_COLUMN(FemtoBin, bin, int); //! Hash for the event mixing
-} // namespace hash
+} // namespace femtohash
 DECLARE_SOA_TABLE(FemtoHashes, "AOD", "HASH", femtohash::FemtoBin);
 using FemtoHash = FemtoHashes::iterator;
 
