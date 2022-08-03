@@ -9,4 +9,4 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-const Int_t gWeights = 3; // phi, pt, eta
+//const Int_t gEventHistograms = 7; // not needed any longer, since I switched to eEventHistograms_N trick, which is also const int;
