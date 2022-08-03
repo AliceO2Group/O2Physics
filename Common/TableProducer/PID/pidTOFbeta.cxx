@@ -21,7 +21,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "pidTOFBase.h"
 #include "TableHelper.h"
-#include "DPG/Tasks/qaPIDTOF.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::pid;
@@ -61,6 +61,9 @@ struct tofPidBeta {
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
   void process(Trks const& tracks)
   {
+    if (!enableTableBeta && !enableTableMass) {
+      return;
+    }
     float beta = 0.f;
     tablePIDBeta.reserve(tracks.size());
     for (auto const& trk : tracks) {
