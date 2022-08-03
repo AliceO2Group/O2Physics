@@ -310,6 +310,26 @@ DECLARE_SOA_EXTENDED_TABLE_USER(CascDataExt, CascDataOrigin, "CascDATAEXT", //!
 
 using CascDataFull = CascDataExt;
 
+//Definition of labels for V0s
+namespace mcv0label
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+} // namespace mcv0label
+
+DECLARE_SOA_TABLE(McV0Labels, "AOD", "MCV0LABEL", //! Table joinable to V0data containing the MC labels
+                  mcv0label::McParticleId);
+using McV0Label = McV0Labels::iterator;
+
+//Definition of labels for cascades
+namespace mccasclabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+} // namespace mccasclabel
+
+DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable to V0data containing the MC labels
+                  mccasclabel::McParticleId);
+using McCascLabel = McCascLabels::iterator;
+
 } // namespace o2::aod
 
 #endif // O2_ANALYSIS_STRANGENESSTABLES_H_
