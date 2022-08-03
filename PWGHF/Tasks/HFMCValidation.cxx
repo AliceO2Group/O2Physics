@@ -446,6 +446,7 @@ struct ValidationRecLevel {
         continue;
       }
       // check number of ITS hits
+      LOG(info) << " HERE? ";
       int nITSlayers = 0;
       uint8_t ITSHitMap = track.itsClusterMap();
       for (int iLayer = 0; iLayer < 7; ++iLayer) {
@@ -478,7 +479,7 @@ struct ValidationRecLevel {
         float deltaZ = -999.f;
         if (index) {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
-          auto mcCollision = particle.mcCollision();
+          auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
           deltaZ = collision.posZ() - mcCollision.posZ();
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
