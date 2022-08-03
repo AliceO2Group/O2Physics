@@ -297,7 +297,6 @@ struct tpcPidFull {
         }
       };
 
-      // const o2::pid::tpc::Response& response;
       makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
       makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
       makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
