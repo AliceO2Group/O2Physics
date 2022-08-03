@@ -711,6 +711,8 @@ struct HfFilter { // Main struct for HF triggers
 
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
+        isCharmTagged = false;
+        isBeautyTagged = false;
         // TODO: add more feature configurations
         std::vector<Ort::Value> inputTensorD0;
         std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
@@ -845,6 +847,10 @@ struct HfFilter { // Main struct for HF triggers
 
       // apply ML models
       if (applyML) {
+        for (auto iCharmPart{0}; iCharmPart < kNCharmParticles - 1; ++iCharmPart) {
+          isCharmTagged[iCharmPart] = false;
+          isBeautyTagged[iCharmPart] = false;
+        }
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
