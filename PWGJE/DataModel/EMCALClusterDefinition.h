@@ -39,12 +39,13 @@ struct EMCALClusterDefinition {
   double minCellEnergy = 0.05;     // minimum cell energy (GeV)
   double timeMin = -10000;         // minimum time (ns)
   double timeMax = 10000;          // maximum time (ns)
-  double gradientCut = 0.03;       // gradient cut
+  bool doGradientCut = true;       // apply gradient cut if true
+  double gradientCut = -1;         // gradient cut
 
   // default constructor
   EMCALClusterDefinition() = default;
   // constructor
-  EMCALClusterDefinition(ClusterAlgorithm_t pAlgorithm, int pStorageID, int pSelectedCellType, std::string pName, double pSeedEnergy, double pMinCellEnergy, double pTimeMin, double pTimeMax, double pGradientCut)
+  EMCALClusterDefinition(ClusterAlgorithm_t pAlgorithm, int pStorageID, int pSelectedCellType, std::string pName, double pSeedEnergy, double pMinCellEnergy, double pTimeMin, double pTimeMax, bool pDoGradientCut, double pGradientCut)
   {
     algorithm = pAlgorithm;
     storageID = pStorageID;
@@ -54,13 +55,14 @@ struct EMCALClusterDefinition {
     minCellEnergy = pMinCellEnergy;
     timeMin = pTimeMin;
     timeMax = pTimeMax;
+    doGradientCut = pDoGradientCut;
     gradientCut = pGradientCut;
   }
 
   // implement comparison operators for int std::string and ClusterAlgorithm_t
   bool operator==(const EMCALClusterDefinition& rhs) const
   {
-    return (algorithm == rhs.algorithm && storageID == rhs.storageID && name == rhs.name && seedEnergy == rhs.seedEnergy && minCellEnergy == rhs.minCellEnergy && timeMin == rhs.timeMin && timeMax == rhs.timeMax && gradientCut == rhs.gradientCut);
+    return (algorithm == rhs.algorithm && storageID == rhs.storageID && name == rhs.name && seedEnergy == rhs.seedEnergy && minCellEnergy == rhs.minCellEnergy && timeMin == rhs.timeMin && timeMax == rhs.timeMax && gradientCut == rhs.gradientCut && doGradientCut == rhs.doGradientCut);
   }
   bool operator!=(const EMCALClusterDefinition& rhs) const
   {

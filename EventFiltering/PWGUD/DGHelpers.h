@@ -71,7 +71,7 @@ struct DGSelector {
   template <typename CC, typename BC, typename BCs, typename TCs, typename FWs>
   int IsSelected(DGCutparHolder diffCuts, CC const& collision, BC& bc, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
-    LOGF(debug, "Collision %f BC %i", collision.collisionTime(), bc.globalBC());
+    LOGF(debug, "Collision %f BC %u", collision.collisionTime(), bc.globalBC());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
 
     // check that there are no FIT signals in any of the compatible BCs

@@ -72,8 +72,6 @@ struct DGCandAnalyzer {
     pidsel.init(anaPars);
   }
 
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>;
-
   void process(aod::UDCollision const& dgcand, UDTracksFull const& dgtracks)
   {
 

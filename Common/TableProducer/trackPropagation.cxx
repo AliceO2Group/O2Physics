@@ -24,7 +24,6 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "CommonUtils/NameConf.h"
 #include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
@@ -61,17 +60,14 @@ struct TrackPropagation {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   const o2::dataformats::MeanVertexObject* mVtx = nullptr;
-  o2::parameters::GRPObject* grpo = nullptr;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<bool> isRun2{"isRun2", false, "Flag to check the CCDB for GRPObject before asking for the GRPMagField"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -104,15 +100,9 @@ struct TrackPropagation {
     if (runNumber == bc.runNumber()) {
       return;
     }
-    if (isRun2) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, bc.timestamp());
-      LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
-      o2::base::Propagator::initFieldFromGRP(grpo);
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-      LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-    }
+    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
+    o2::base::Propagator::initFieldFromGRP(grpmag);
     o2::base::Propagator::Instance()->setMatLUT(lut);
     mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
     runNumber = bc.runNumber();
