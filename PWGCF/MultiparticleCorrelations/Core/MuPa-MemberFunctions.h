@@ -91,11 +91,11 @@ void DefaultBooking()
 
   // b) Particle histograms:
   // ...
- 
+
 
   // c) QA:
   // ...
- 
+
 
 } // void DefaultBooking()
 
@@ -115,34 +115,34 @@ void DefaultBinning()
   ceh_a.fEventHistogramsBins[eNumberOfEvents][0] = 1;
   ceh_a.fEventHistogramsBins[eNumberOfEvents][1] = 0.;
   ceh_a.fEventHistogramsBins[eNumberOfEvents][2] = 1.;
-  // task->SetEventHistogramsBins("TotalMultiplicity",1000,0.,1000.); 
+  // task->SetEventHistogramsBins("TotalMultiplicity",1000,0.,1000.);
   ceh_a.fEventHistogramsBins[eTotalMultiplicity][0] = 1000;
   ceh_a.fEventHistogramsBins[eTotalMultiplicity][1] = 0.;
   ceh_a.fEventHistogramsBins[eTotalMultiplicity][2] = 10000.;
-  // task->SetEventHistogramsBins("SelectedParticles",1000,0.,1000.); 
+  // task->SetEventHistogramsBins("SelectedParticles",1000,0.,1000.);
   ceh_a.fEventHistogramsBins[eSelectedParticles][0] = 1000;
   ceh_a.fEventHistogramsBins[eSelectedParticles][1] = 0.;
   ceh_a.fEventHistogramsBins[eSelectedParticles][2] = 10000.;
-  // task->SetEventHistogramsBins("Centrality",100,0.,100.); 
+  // task->SetEventHistogramsBins("Centrality",100,0.,100.);
   ceh_a.fEventHistogramsBins[eCentrality][0] = 100;
   ceh_a.fEventHistogramsBins[eCentrality][1] = 0.;
   ceh_a.fEventHistogramsBins[eCentrality][2] = 100.;
-  // task->SetEventHistogramsBins("Vertex_x",1000,-20.,20.); 
+  // task->SetEventHistogramsBins("Vertex_x",1000,-20.,20.);
   ceh_a.fEventHistogramsBins[eVertex_x][0] = 1000;
   ceh_a.fEventHistogramsBins[eVertex_x][1] = -20.;
   ceh_a.fEventHistogramsBins[eVertex_x][2] = 20.;
-  // task->SetEventHistogramsBins("Vertex_y",1000,-20.,20.); 
+  // task->SetEventHistogramsBins("Vertex_y",1000,-20.,20.);
   ceh_a.fEventHistogramsBins[eVertex_y][0] = 1000;
   ceh_a.fEventHistogramsBins[eVertex_y][1] = -20.;
   ceh_a.fEventHistogramsBins[eVertex_y][2] = 20.;
-  // task->SetEventHistogramsBins("Vertex_z",1000,-20.,20.); 
+  // task->SetEventHistogramsBins("Vertex_z",1000,-20.,20.);
   ceh_a.fEventHistogramsBins[eVertex_z][0] = 1000;
   ceh_a.fEventHistogramsBins[eVertex_z][1] = -20.;
   ceh_a.fEventHistogramsBins[eVertex_z][2] = 20.;
 
   // b) Default binning for particle histograms:
   // ...
-  
+
 } // void DefaultBinning()
 
 //============================================================
@@ -231,7 +231,7 @@ void BookControlEventHistograms()
      if(eSelectedParticles == t && eBefore == ba){continue;} // Number of selected particles makes sense only after cuts
      // ...
      // Book the rest:
-     ceh_a.fEventHistograms[t][rs][ba] = new TH1D(Form("fEventHistograms[%s][%s][%s]",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),Form("%s, %s, %s",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),(Int_t)ceh_a.fEventHistogramsBins[t][0],ceh_a.fEventHistogramsBins[t][1],ceh_a.fEventHistogramsBins[t][2]); 
+     ceh_a.fEventHistograms[t][rs][ba] = new TH1D(Form("fEventHistograms[%s][%s][%s]",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),Form("%s, %s, %s",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),(Int_t)ceh_a.fEventHistogramsBins[t][0],ceh_a.fEventHistogramsBins[t][1],ceh_a.fEventHistogramsBins[t][2]);
      ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);  
      ceh_a.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba]-10);
      fControlEventHistogramsList->Add(ceh_a.fEventHistograms[t][rs][ba]);
