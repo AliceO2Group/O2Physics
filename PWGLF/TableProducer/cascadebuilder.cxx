@@ -171,7 +171,7 @@ struct cascadeBuilder {
   }
 
   template <class TCascTracksTo>
-  void buildCascadeTable(aod::Collision const& collision, aod::V0Datas const& v0data, aod::Cascades const& cascades)
+  void buildCascadeTable(aod::Collision const& collision, aod::V0Datas const& v0data, aod::Cascades const& cascades, Bool_t lRun3 = kTRUE)
   {
 
     // Define o2 fitter, 2-prong
@@ -211,15 +211,15 @@ struct cascadeBuilder {
 
       hCascCandidate->Fill(1.5); //has matched V0
       if (tpcrefit) {
-        if (!(posTrackCast.trackType() & o2::aod::track::TPCrefit)) {
+        if (!(posTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           continue; // TPC refit
         }
         hCascCandidate->Fill(2.5);
-        if (!(negTrackCast.trackType() & o2::aod::track::TPCrefit)) {
+        if (!(negTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           continue; // TPC refit
         }
         hCascCandidate->Fill(3.5);
-        if (!(bachTrackCast.trackType() & o2::aod::track::TPCrefit)) {
+        if (!(bachTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           //cascdataLink(-1);
           continue; // TPC refit
         }
@@ -379,7 +379,7 @@ struct cascadeBuilder {
     CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
     // do cascades, typecase correctly into tracks
-    buildCascadeTable<FullTracksExt>(collision, v0data, cascades);
+    buildCascadeTable<FullTracksExt>(collision, v0data, cascades, kFALSE);
   }
   PROCESS_SWITCH(cascadeBuilder, processRun2, "Produce Run 2 cascade tables", true);
 
@@ -392,7 +392,7 @@ struct cascadeBuilder {
     CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
     // do cascades, typecase correctly into tracksIU (Run 3 use case)
-    buildCascadeTable<FullTracksExtIU>(collision, v0data, cascades);
+    buildCascadeTable<FullTracksExtIU>(collision, v0data, cascades, kTRUE);
   }
   PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", false);
 };

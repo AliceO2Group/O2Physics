@@ -217,7 +217,7 @@ struct lambdakzeroBuilder {
   }
 
   template <class TCascTracksTo>
-  void buildLambdaKZeroTable(aod::Collision const& collision, aod::V0s const& V0s)
+  void buildLambdaKZeroTable(aod::Collision const& collision, aod::V0s const& V0s, Bool_t lRun3 = kTRUE)
   {
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
@@ -248,12 +248,12 @@ struct lambdakzeroBuilder {
       // value 0.5: any considered V0
       registry.fill(HIST("hV0Criteria"), 0.5);
       if (isRun2) {
-        if (!(posTrackCast.trackType() & o2::aod::track::TPCrefit)) {
+        if (!(posTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
           v0dataLink(-1);
           continue; // TPC refit
         }
-        if (!(negTrackCast.trackType() & o2::aod::track::TPCrefit)) {
+        if (!(negTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
           v0dataLink(-1);
           continue; // TPC refit
@@ -422,8 +422,8 @@ struct lambdakzeroBuilder {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
-    // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildLambdaKZeroTable<MyTracks>(collision, V0s);
+    // do v0s, typecase correctly into tracks (Run 2 use case)
+    buildLambdaKZeroTable<MyTracks>(collision, V0s, kFALSE);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", true);
 
@@ -439,7 +439,7 @@ struct lambdakzeroBuilder {
     CheckAndUpdate(bc.runNumber(), bc.timestamp());
 
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
-    buildLambdaKZeroTable<MyTracksIU>(collision, V0s);
+    buildLambdaKZeroTable<MyTracksIU>(collision, V0s, kTRUE);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", false);
 };
