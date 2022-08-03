@@ -11,6 +11,7 @@
 
 enum eRecoSim { eRec = 0,
                 eSim = 1 };
+
 enum eBeforeAfter { eBefore = 0,
                     eAfter = 1 };
 
@@ -22,11 +23,11 @@ enum eWeights { wPHI = 0,
                 wETA = 2,
                 eWeights_N };
 
-enum eEventHistograms { eNumberOfEvents, 
-                        eTotalMultiplicity, 
-                        eSelectedParticles, 
-                        eCentrality, 
-                        eVertex_x, 
-                        eVertex_y, 
+enum eEventHistograms { eNumberOfEvents,
+                        eTotalMultiplicity,
+                        eSelectedParticles,
+                        eCentrality,
+                        eVertex_x,
+                        eVertex_y,
                         eVertex_z,
-			 eEventHistograms_N }; 
+                        eEventHistograms_N };
