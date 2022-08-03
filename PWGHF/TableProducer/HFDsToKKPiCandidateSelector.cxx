@@ -32,7 +32,6 @@ struct HfDsToKKPiCandidateSelector {
   Configurable<double> pTCandMin{"pTCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> pTCandMax{"pTCandMax", 36., "Upper bound of candidate pT"};
   // TPC
-  Configurable<bool> requireTPC{"requireTPC", true, "Flag to require a positive Number of found clusters in TPC"};
   Configurable<double> pidTPCMinpT{"pidTPCMinpT", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> pidTPCMaxpT{"pidTPCMaxpT", 20., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTPC{"nSigmaTPC", 3., "Nsigma cut on TPC"};
@@ -127,8 +126,12 @@ struct HfDsToKKPiCandidateSelector {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         continue;
       }
-      SETBIT(statusDsToKKPi, aod::SelectionStep::RecoTopol);
-      SETBIT(statusDsToPiKK, aod::SelectionStep::RecoTopol);
+      if (topoDsToKKPi) {
+        SETBIT(statusDsToKKPi, aod::SelectionStep::RecoTopol);
+      }
+      if (topoDsToPiKK) {
+        SETBIT(statusDsToPiKK, aod::SelectionStep::RecoTopol);
+      }
 
       // track-level PID selection
       int pidTrackPos1Pion = selectorPion.getStatusTrackPIDAll(trackPos1);
@@ -136,6 +139,8 @@ struct HfDsToKKPiCandidateSelector {
       int pidTrackPos1Kaon = selectorKaon.getStatusTrackPIDAll(trackPos1);
       int pidTrackPos2Kaon = selectorKaon.getStatusTrackPIDAll(trackPos2);
       int pidTrackNegKaon = selectorKaon.getStatusTrackPIDAll(trackNeg);
+      bool pidDsToKKPi = false;
+      bool pidDsToPiKK = false;
 
       // excluding candidates with negative track rejected as K
       if (pidTrackNegKaon == TrackSelectorPID::Status::PIDRejected) {
@@ -147,13 +152,17 @@ struct HfDsToKKPiCandidateSelector {
           pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
           pidTrackPos2Pion == TrackSelectorPID::Status::PIDAccepted) {
         SETBIT(statusDsToKKPi, aod::SelectionStep::RecoPID); // accept DsKKPi
+        pidDsToKKPi = true;
       }
       // checking PID for Ds to PiKK hypothesis
-      else if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted &&
-               pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
-               pidTrackPos2Kaon == TrackSelectorPID::Status::PIDAccepted) {
+      if (pidTrackPos1Pion == TrackSelectorPID::Status::PIDAccepted &&
+          pidTrackNegKaon == TrackSelectorPID::Status::PIDAccepted &&
+          pidTrackPos2Kaon == TrackSelectorPID::Status::PIDAccepted) {
         SETBIT(statusDsToPiKK, aod::SelectionStep::RecoPID); // accept DsPiKK
-      } else {
+        pidDsToPiKK = true;
+      }
+      // both PID hypotheses rejected
+      if (!pidDsToKKPi && !pidDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         continue;
       }
@@ -165,5 +174,5 @@ struct HfDsToKKPiCandidateSelector {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDsTokkpiCandidateSelector>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfDsToKKPiCandidateSelector>(cfgc)};
 }
