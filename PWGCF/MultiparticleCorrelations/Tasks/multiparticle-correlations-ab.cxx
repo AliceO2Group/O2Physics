@@ -25,11 +25,11 @@ using namespace o2::framework;
 #include "TRandom3.h"
 using namespace std;
 
-// *) Global constants:
-#include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
-
 // *) Enums:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-Enums.h"
+
+// *) Global constants:
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) Main task:
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
@@ -51,8 +51,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   {
     // *) Trick to avoid name clashes, part 1;
     // *) Book base list;
+    // *) Default configuration, booking, binning and cuts;
     // *) Configure the task with setters and getters;
-    // *) Book random generator;
     // *) Book all remaining objects;
     // ...
     // *) Trick to avoid name clashes, part 2;
@@ -63,6 +63,12 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book base list:
     BookBaseList();
+
+    // *) Default configuration, booking, binning and cuts:
+    DefaultConfiguration();
+    DefaultBooking();
+    DefaultBinning();
+    DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
     // *) Configure the task with setters and getters:
     //TH1D *phiWeights = task->GetHistogramWithWeights(Form("%s/%s/weights.root",directoryWeights.Data(),runNumber.Data()),"phi"); // original line
@@ -90,11 +96,22 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
   {
     // *) Event cuts:
-    ceh_a.fMultiplicityHist[BEFORE]->Fill(tracks.size()); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eNumberOfEvents][eRec][eBefore]->Fill(0.5);              // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eTotalMultiplicity][eRec][eBefore]->Fill(tracks.size()); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_x][eRec][eBefore]->Fill(collision.posX());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_y][eRec][eBefore]->Fill(collision.posY());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_z][eRec][eBefore]->Fill(collision.posZ());       // TBI 20220713 -> member function
+    // centrality, selected tracks
+
     if (!EventCuts(collision)) {
       return;
     }
-    ceh_a.fMultiplicityHist[AFTER]->Fill(tracks.size()); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->Fill(0.5);              // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eTotalMultiplicity][eRec][eAfter]->Fill(tracks.size()); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_x][eRec][eAfter]->Fill(collision.posX());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_y][eRec][eAfter]->Fill(collision.posY());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_z][eRec][eAfter]->Fill(collision.posZ());       // TBI 20220713 -> member function
+    // centrality, selected tracks
 
     // *) Main loop over particles:
     for (auto& track : tracks) {
