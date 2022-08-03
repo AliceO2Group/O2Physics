@@ -12,7 +12,7 @@
 // void BookBaseList()
 // void DefaultConfiguration();
 // void DefaultBooking();
-// void DefaultBinning(); 
+// void DefaultBinning();
 // void DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 // void BookAndNestAllLists()
 // void BookControlEventHistograms()
@@ -77,7 +77,7 @@ void DefaultBooking()
   // c) QA;
 
   if(fVerbose){Green(__PRETTY_FUNCTION__);}
- 
+
   // a) Event histograms:
   // Each default setting can be overuled e.g. with: task->SetBookEventHistograms("NumberOfEvents",kFALSE);
   ceh_a.fBookEventHistograms[eNumberOfEvents] = kTRUE;
