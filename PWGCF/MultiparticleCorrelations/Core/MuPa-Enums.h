@@ -9,12 +9,25 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-enum eRecoSim { REC = 0,
-                SIM = 1 };
-enum eBeforeAfter { BEFORE = 0,
-                    AFTER = 1 };
+enum eRecoSim { eRec = 0,
+                eSim = 1 };
+
+enum eBeforeAfter { eBefore = 0,
+                    eAfter = 1 };
+
+enum eDefaultColors { eColor = kBlack,
+                      eFillColor = kGray };
+
 enum eWeights { wPHI = 0,
                 wPT = 1,
-                wETA = 2 };
-enum eDefaultColors { COLOR = kBlack,
-                      FILLCOLOR = kGray };
+                wETA = 2,
+                eWeights_N };
+
+enum eEventHistograms { eNumberOfEvents,
+                        eTotalMultiplicity,
+                        eSelectedParticles,
+                        eCentrality,
+                        eVertex_x,
+                        eVertex_y,
+                        eVertex_z,
+                        eEventHistograms_N };
