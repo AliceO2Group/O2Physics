@@ -97,7 +97,6 @@ struct cascadeBuilder {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
-
   int mRunNumber;
   float d_bz;
   float maxSnp;  //max sine phi for propagation
