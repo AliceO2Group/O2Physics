@@ -69,7 +69,7 @@ class FemtoWorldContainer
   /// \param etaBins eta binning for the histograms
   /// \param phiBins phi binning for the histograms
   /// \param mInvBins invariant mass binning for the histograms
-  
+
   template <typename T1, typename T2>
   void init(HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins, T2& mInvBins)
   {
