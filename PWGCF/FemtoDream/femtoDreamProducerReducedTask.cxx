@@ -28,8 +28,10 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/StrangenessTables.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -89,6 +91,10 @@ struct femtoDreamProducerReducedTask {
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
+  int mRunNumber;
+  float mMagField;
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+
   void init(InitContext&)
   {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
@@ -112,11 +118,42 @@ struct femtoDreamProducerReducedTask {
     trackCuts.setSelection(ConfTrkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(ConfTrkTPIDspecies);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry);
+    mRunNumber = 0;
+    mMagField = 0.0;
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    static o2::parameters::GRPObject* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    float output = 0.1 * (grpo->getNominalL3Field());
+    return output;
   }
 
   void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
   {
-    auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    if (mRunNumber != bc.runNumber()) {
+      mMagField = getMagneticFieldTesla(bc.timestamp());
+      mRunNumber = bc.runNumber();
+    }
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
     /// For benchmarking on Run 2, V0M in FemtoDreamRun2 is defined V0M/2
@@ -132,14 +169,14 @@ struct femtoDreamProducerReducedTask {
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), mult, colCuts.computeSphericity(col, tracks), bc.timestamp());
+        outputCollision(col.posZ(), mult, colCuts.computeSphericity(col, tracks), mMagField);
       }
       return;
     }
 
     colCuts.fillQA(col);
     // now the table is filled
-    outputCollision(vtxZ, mult, spher, bc.timestamp());
+    outputCollision(vtxZ, mult, spher, mMagField);
 
     int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
     for (auto& track : tracks) {
