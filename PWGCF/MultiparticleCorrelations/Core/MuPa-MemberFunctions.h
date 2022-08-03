@@ -76,7 +76,9 @@ void DefaultBooking()
   // b) Particle histograms;
   // c) QA;
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // a) Event histograms:
   // Each default setting can be overuled e.g. with: task->SetBookEventHistograms("NumberOfEvents",kFALSE);
@@ -88,14 +90,11 @@ void DefaultBooking()
   ceh_a.fBookEventHistograms[eVertex_y] = kTRUE;
   ceh_a.fBookEventHistograms[eVertex_z] = kTRUE;
 
-
   // b) Particle histograms:
   // ...
 
-
   // c) QA:
   // ...
-
 
 } // void DefaultBooking()
 
@@ -108,7 +107,9 @@ void DefaultBinning()
   // a) Default binning for event histograms;
   // b) Default binning for particle histograms;
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // a) Default binning for event histograms:
   // task->SetEventHistogramsBins("NumberOfEvents",1,0.,1.);
@@ -151,7 +152,9 @@ void DefaultCuts()
 {
   // ...
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
 } // void DefaultCuts()
 
@@ -164,7 +167,9 @@ void BookAndNestAllLists()
   // *) Particle weights;
   // *) Results.
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // *) QA:
   fQAList = new TList();
@@ -201,7 +206,9 @@ void BookControlEventHistograms()
   // a) Book the profile holding flags;
   // b) Book specific control event histograms.
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // a) Book the profile holding flags:
   fControlEventHistogramsPro = new TProfile("fControlEventHistogramsPro", "flags for control event histograms", 25, 0., 25.);
@@ -211,38 +218,35 @@ void BookControlEventHistograms()
   // ...
   fControlEventHistogramsList->Add(fControlEventHistogramsPro);
 
-
   Int_t fBeforeAfterColor[2] = {kRed, kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
 
-
   // b) Book specific control event histograms:
-  TString stype[eEventHistograms_N] = {"NumberOfEvents","TotalMultiplicity","SelectedParticles","Centrality","Vertex_x","Vertex_y","Vertex_z"}; // keep in sync. with enum eEventHistograms
-  TString srs[2] = {"rec","sim"};
-  TString sba[2] = {"before","after"};
+  TString stype[eEventHistograms_N] = {"NumberOfEvents", "TotalMultiplicity", "SelectedParticles", "Centrality", "Vertex_x", "Vertex_y", "Vertex_z"}; // keep in sync. with enum eEventHistograms
+  TString srs[2] = {"rec", "sim"};
+  TString sba[2] = {"before", "after"};
 
-  for(Int_t t=0;t<eEventHistograms_N;t++) // type, see enum eEventHistograms
+  for (Int_t t = 0; t < eEventHistograms_N; t++) // type, see enum eEventHistograms
   {
-   if(!ceh_a.fBookEventHistograms[t]){continue;}
-   for(Int_t rs=0;rs<2;rs++) // reco/sim
-   {
-    for(Int_t ba=0;ba<2;ba++) // before/after cuts
+    if (!ceh_a.fBookEventHistograms[t]) {
+      continue;
+    }
+    for (Int_t rs = 0; rs < 2; rs++) // reco/sim
     {
-     // Skip exceptional cases:
-     if(eSelectedParticles == t && eBefore == ba){continue;} // Number of selected particles makes sense only after cuts
-     // ...
-     // Book the rest:
-     ceh_a.fEventHistograms[t][rs][ba] = new TH1D(Form("fEventHistograms[%s][%s][%s]",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),Form("%s, %s, %s",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),(Int_t)ceh_a.fEventHistogramsBins[t][0],ceh_a.fEventHistogramsBins[t][1],ceh_a.fEventHistogramsBins[t][2]);
-     ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
-     ceh_a.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba]-10);
-     fControlEventHistogramsList->Add(ceh_a.fEventHistograms[t][rs][ba]);
-    } // for(Int_t ba=0;ba<2;ba++)
-   } // for(Int_t rs=0;rs<2;rs++) // reco/sim
-  } // for(Int_t t=0;t<eEventHistograms_N;t++) // type, see enum eEventHistograms
-
-
-
-
-
+      for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
+      {
+        // Skip exceptional cases:
+        if (eSelectedParticles == t && eBefore == ba) {
+          continue;
+        } // Number of selected particles makes sense only after cuts
+        // ...
+        // Book the rest:
+        ceh_a.fEventHistograms[t][rs][ba] = new TH1D(Form("fEventHistograms[%s][%s][%s]", stype[t].Data(), srs[rs].Data(), sba[ba].Data()), Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()), (Int_t)ceh_a.fEventHistogramsBins[t][0], ceh_a.fEventHistogramsBins[t][1], ceh_a.fEventHistogramsBins[t][2]);
+        ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
+        ceh_a.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] - 10);
+        fControlEventHistogramsList->Add(ceh_a.fEventHistograms[t][rs][ba]);
+      } // for(Int_t ba=0;ba<2;ba++)
+    }   // for(Int_t rs=0;rs<2;rs++) // reco/sim
+  }     // for(Int_t t=0;t<eEventHistograms_N;t++) // type, see enum eEventHistograms
 
   // *)
   /*
@@ -270,7 +274,9 @@ void BookWeightsHistograms()
   // b) Common local labels;
   // c) Histograms.
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // a) Book the profile holding flags:
   fWeightsFlagsPro = new TProfile("fWeightsFlagsPro", "flags for particle weights", 3, 0., 3.);
@@ -321,7 +327,9 @@ void BookResultsHistograms()
   // a) Book the profile holding flags;
   // *) ...
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // a) Book the profile holding flags:
   fResultsFlagsPro = new TProfile("fResultsFlagsPro", "flags for results histograms", 1, 0., 1.);
@@ -343,7 +351,9 @@ Bool_t EventCuts(aod::Collision const& collision)
 {
   // ...
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   if ((collision.posZ() < Vz_min) || (collision.posZ() > Vz_max)) {
     return kFALSE;
@@ -360,7 +370,9 @@ Bool_t ParticleCuts(aod::Track const& track)
 {
   // ...
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
     return kFALSE;
@@ -377,7 +389,9 @@ void SetWeightsHist(TH1D* const hist, const char* variable)
 
   // Copy histogram holding weights from an external file to the corresponding data member.
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // Basic protection:
   if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") || TString(variable).EqualTo("eta"))) {
@@ -416,7 +430,9 @@ TH1D* GetWeightsHist(const char* variable)
 {
   // The standard getter.
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // Basic protection:
   if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") || TString(variable).EqualTo("eta"))) {
@@ -453,7 +469,9 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
   // d) Access the external ROOT file and fetch the desired histogram with weights;
   // e) Close the external ROOT file.
 
-  if(fVerbose){Green(__PRETTY_FUNCTION__);}
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
 
   // a) Return value:
   TH1D* hist = NULL;
@@ -512,29 +530,30 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
 
 void Red(const char* text)
 {
- cout<<"\n\033[1;31m"<<text<<"\033[0m\n"<<endl;
+  cout << "\n\033[1;31m" << text << "\033[0m\n"
+       << endl;
 }
 
 //============================================================
 
 void Green(const char* text)
 {
- cout<<"\n\033[1;32m"<<text<<"\033[0m\n"<<endl;
+  cout << "\n\033[1;32m" << text << "\033[0m\n"
+       << endl;
 }
 
 //============================================================
 
 void Yellow(const char* text)
 {
- cout<<"\n\033[1;33m"<<text<<"\033[0m\n"<<endl;
+  cout << "\n\033[1;33m" << text << "\033[0m\n"
+       << endl;
 }
 
 //============================================================
 
 void Blue(const char* text)
 {
- cout<<"\n\033[1;34m"<<text<<"\033[0m\n"<<endl;
+  cout << "\n\033[1;34m" << text << "\033[0m\n"
+       << endl;
 }
-
-
-

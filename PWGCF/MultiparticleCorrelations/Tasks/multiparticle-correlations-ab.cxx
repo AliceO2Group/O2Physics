@@ -96,21 +96,21 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
   {
     // *) Event cuts:
-    ceh_a.fEventHistograms[eNumberOfEvents][eRec][eBefore]->Fill(0.5); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eNumberOfEvents][eRec][eBefore]->Fill(0.5);              // TBI 20220713 -> member function
     ceh_a.fEventHistograms[eTotalMultiplicity][eRec][eBefore]->Fill(tracks.size()); // TBI 20220713 -> member function
-    ceh_a.fEventHistograms[eVertex_x][eRec][eBefore]->Fill(collision.posX()); // TBI 20220713 -> member function
-    ceh_a.fEventHistograms[eVertex_y][eRec][eBefore]->Fill(collision.posY()); // TBI 20220713 -> member function
-    ceh_a.fEventHistograms[eVertex_z][eRec][eBefore]->Fill(collision.posZ()); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_x][eRec][eBefore]->Fill(collision.posX());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_y][eRec][eBefore]->Fill(collision.posY());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_z][eRec][eBefore]->Fill(collision.posZ());       // TBI 20220713 -> member function
     // centrality, selected tracks
 
     if (!EventCuts(collision)) {
       return;
     }
-    ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->Fill(0.5); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->Fill(0.5);              // TBI 20220713 -> member function
     ceh_a.fEventHistograms[eTotalMultiplicity][eRec][eAfter]->Fill(tracks.size()); // TBI 20220713 -> member function
-    ceh_a.fEventHistograms[eVertex_x][eRec][eAfter]->Fill(collision.posX()); // TBI 20220713 -> member function
-    ceh_a.fEventHistograms[eVertex_y][eRec][eAfter]->Fill(collision.posY()); // TBI 20220713 -> member function
-    ceh_a.fEventHistograms[eVertex_z][eRec][eAfter]->Fill(collision.posZ()); // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_x][eRec][eAfter]->Fill(collision.posX());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_y][eRec][eAfter]->Fill(collision.posY());       // TBI 20220713 -> member function
+    ceh_a.fEventHistograms[eVertex_z][eRec][eAfter]->Fill(collision.posZ());       // TBI 20220713 -> member function
     // centrality, selected tracks
 
     // *) Main loop over particles:
