@@ -232,7 +232,7 @@ void BookControlEventHistograms()
      // ...
      // Book the rest:
      ceh_a.fEventHistograms[t][rs][ba] = new TH1D(Form("fEventHistograms[%s][%s][%s]",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),Form("%s, %s, %s",stype[t].Data(),srs[rs].Data(),sba[ba].Data()),(Int_t)ceh_a.fEventHistogramsBins[t][0],ceh_a.fEventHistogramsBins[t][1],ceh_a.fEventHistogramsBins[t][2]);
-     ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);  
+     ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
      ceh_a.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba]-10);
      fControlEventHistogramsList->Add(ceh_a.fEventHistograms[t][rs][ba]);
     } // for(Int_t ba=0;ba<2;ba++)
@@ -511,30 +511,30 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* variable)
 //============================================================
 
 void Red(const char* text)
-{ 
+{
  cout<<"\n\033[1;31m"<<text<<"\033[0m\n"<<endl;
-} 
+}
 
 //============================================================
 
 void Green(const char* text)
-{ 
+{
  cout<<"\n\033[1;32m"<<text<<"\033[0m\n"<<endl;
 }
 
 //============================================================
 
 void Yellow(const char* text)
-{ 
+{
  cout<<"\n\033[1;33m"<<text<<"\033[0m\n"<<endl;
-} 
+}
 
 //============================================================
 
 void Blue(const char* text)
-{ 
+{
  cout<<"\n\033[1;34m"<<text<<"\033[0m\n"<<endl;
-} 
+}
 
 
 

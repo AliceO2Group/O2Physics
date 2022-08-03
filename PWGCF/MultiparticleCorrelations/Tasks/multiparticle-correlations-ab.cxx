@@ -67,7 +67,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     // *) Default configuration, booking, binning and cuts:
     DefaultConfiguration();
     DefaultBooking();
-    DefaultBinning(); 
+    DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
     // *) Configure the task with setters and getters:
