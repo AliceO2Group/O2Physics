@@ -48,7 +48,14 @@ struct UpcCandAnalyzer {
      {"PairSelection/MassNoFT0", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/MassNoFT0Contam", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/MassNoFT0MC", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
-     {"PairSelection/PtNoFT0", ";#it{p}_{T}^{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}}}};
+     {"PairSelection/MassNoFT0ContamMC", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+     {"PairSelection/PtNoFT0", ";#it{p}_{T}^{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+     {"PairSelection/chi2zSig", ";chi2 z;", {HistType::kTH1D, {{200, 0., 20.}}}},
+     {"PairSelection/chi2zFake", ";chi2 z;", {HistType::kTH1D, {{200, 0., 20.}}}}}};
+
+  using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksCov, o2::aod::UDTrackCollisionIDs, o2::aod::UDTracksExtra, o2::aod::UDMcTrackLabels>;
+  using BarrelTrack = BarrelTracks::iterator;
+  using FwdTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra, o2::aod::UDMcFwdTrackLabels>;
 
   void collectMC(o2::aod::UDMcCollisions const& mcCollisions, o2::aod::UDMcParticles const& mcParticles)
   {
@@ -80,7 +87,7 @@ struct UpcCandAnalyzer {
     }
   }
 
-  template <typename TTrack1, typename TTrack2>
+  template <bool isCentral, typename TTrack1, typename TTrack2>
   void processCandidate(o2::aod::UDCollision const& cand, o2::aod::UDMcParticles const& mcParticles, TTrack1& tr1, TTrack2& tr2)
   {
     TLorentzVector p1, p2, pPair;
@@ -125,14 +132,28 @@ struct UpcCandAnalyzer {
     registry.fill(HIST("PairSelection/MassNoFT0"), pPair.M());
     registry.fill(HIST("PairSelection/MassNoFT0MC"), pPairMC.M());
     registry.fill(HIST("PairSelection/PtNoFT0"), pPair.Pt());
-    if (mcPartId1 == -1 || mcPartId2 == -1) {
+    bool isFake = mcPartId1 == -1 || mcPartId2 == -1;
+    if (isFake) {
       registry.fill(HIST("PairSelection/MassNoFT0Contam"), pPair.M());
+      registry.fill(HIST("PairSelection/MassNoFT0ContamMC"), pPairMC.M());
+    }
+    if constexpr (isCentral) {
+      float z1 = tr1.z();
+      float z2 = tr2.z();
+      float sz1 = tr1.sigmaZ();
+      float sz2 = tr2.sigmaZ();
+      float chi2z = (z1 * z1 - z2 * z2) * (z1 * z1 - z2 * z2) / (sz1 * sz1 + sz2 * sz2);
+      if (!isFake) {
+        registry.fill(HIST("PairSelection/chi2zSig"), chi2z);
+      } else {
+        registry.fill(HIST("PairSelection/chi2zFake"), chi2z);
+      }
     }
   }
 
   // process candidates with 2 muon tracks
   void processFwdMC(o2::aod::UDCollisions const& eventCandidates,
-                    soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
+                    FwdTracks const& fwdTracks,
                     o2::aod::UDMcCollisions const& mcCollisions,
                     o2::aod::UDMcParticles const& mcParticles)
   {
@@ -141,17 +162,17 @@ struct UpcCandAnalyzer {
     // assuming that candidates have exatly 2 muon tracks and 0 barrel tracks
     for (const auto& cand : eventCandidates) {
       auto candID = cand.globalIndex();
-      auto muonTracksPerCand = muonTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
-      const auto& tr1 = muonTracksPerCand.iteratorAt(0);
-      const auto& tr2 = muonTracksPerCand.iteratorAt(1);
-      processCandidate(cand, mcParticles, tr1, tr2);
+      auto fwdTracksPerCand = fwdTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
+      const auto& tr1 = fwdTracksPerCand.iteratorAt(0);
+      const auto& tr2 = fwdTracksPerCand.iteratorAt(1);
+      processCandidate<false>(cand, mcParticles, tr1, tr2);
     }
   }
 
   // process candidates with 1 muon and 1 barrel tracks
   void processSemiFwdMC(o2::aod::UDCollisions const& eventCandidates,
-                        soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTrackCollisionIDs, o2::aod::UDFwdTracksExtra, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
-                        soa::Join<o2::aod::UDTracks, o2::aod::UDTrackCollisionIDs, o2::aod::UDTracksExtra, o2::aod::UDMcTrackLabels> const& barTracks,
+                        FwdTracks const& fwdTracks,
+                        BarrelTracks const& barTracks,
                         o2::aod::UDMcCollisions const& mcCollisions,
                         o2::aod::UDMcParticles const& mcParticles)
   {
@@ -160,17 +181,36 @@ struct UpcCandAnalyzer {
     // assuming that candidates have exatly 1 muon track and 1 barrel track
     for (const auto& cand : eventCandidates) {
       auto candID = cand.globalIndex();
-      auto muonTracksPerCand = muonTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
+      auto fwdTracksPerCand = fwdTracks.select(o2::aod::udfwdtrack::udCollisionId == candID);
       auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
-      const auto& tr1 = muonTracksPerCand.iteratorAt(0);
+      const auto& tr1 = fwdTracksPerCand.iteratorAt(0);
       const auto& tr2 = barTracksPerCand.iteratorAt(0);
-      processCandidate(cand, mcParticles, tr1, tr2);
+      processCandidate<false>(cand, mcParticles, tr1, tr2);
+    }
+  }
+
+  // process candidates with 2 central barrel tracks
+  void processCentralMC(o2::aod::UDCollisions const& eventCandidates,
+                        BarrelTracks const& barTracks,
+                        o2::aod::UDMcCollisions const& mcCollisions,
+                        o2::aod::UDMcParticles const& mcParticles)
+  {
+    collectMC(mcCollisions, mcParticles);
+
+    // assuming that candidates have exatly 2 central barrel tracks
+    for (const auto& cand : eventCandidates) {
+      auto candID = cand.globalIndex();
+      auto barTracksPerCand = barTracks.select(o2::aod::udtrack::udCollisionId == candID);
+      const auto& tr1 = barTracksPerCand.iteratorAt(0);
+      const auto& tr2 = barTracksPerCand.iteratorAt(1);
+      processCandidate<true>(cand, mcParticles, tr1, tr2);
     }
   }
 
   // todo: add processes without MC information
   PROCESS_SWITCH(UpcCandAnalyzer, processFwdMC, "Analyse forward candidates", false);
   PROCESS_SWITCH(UpcCandAnalyzer, processSemiFwdMC, "Analyse semiforward candidates", false);
+  PROCESS_SWITCH(UpcCandAnalyzer, processCentralMC, "Analyse central candidates", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

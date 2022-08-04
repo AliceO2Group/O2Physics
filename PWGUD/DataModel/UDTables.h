@@ -136,6 +136,10 @@ DECLARE_SOA_TABLE(UDTracks, "AOD", "UDTRACK",
                   udtrack::TrackTimeRes,
                   udtrack::Pt<udtrack::Px, udtrack::Py>);
 
+DECLARE_SOA_TABLE(UDTracksCov, "AOD", "UDTRACKCOV",
+                  track::X, track::Y, track::Z,
+                  track::SigmaY, track::SigmaZ);
+
 DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
                   pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr);
@@ -167,6 +171,7 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
 using UDTrack = UDTracks::iterator;
+using UDTrackCov = UDTracksCov::iterator;
 using UDTrackExtra = UDTracksExtra::iterator;
 using UDTrackCollisionID = UDTrackCollisionIDs::iterator;
 

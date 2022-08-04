@@ -109,9 +109,19 @@ struct UpcCandProducer {
       if (!(nFwdTracks == fNFwdProngs && nBarTracks == fNBarProngs)) {
         continue;
       }
+      float RgtrwTOF = 0.;
+      for (auto id : barTrackIDs) {
+        const auto& tr = barTracks->iteratorAt(id);
+        if (tr.hasTOF()) {
+          RgtrwTOF++;
+        }
+      }
+      RgtrwTOF = nBarTracks != 0 ? RgtrwTOF / (float) nBarTracks : 0.;
+      if (RgtrwTOF == 0 && fNFwdProngs == 0) { // require at least 1 TOF track in central and semiforward cases
+        continue;
+      }
       int8_t netCharge = 0;
       uint16_t numContrib = nFwdTracks + nBarTracks;
-      float RgtrwTOF = 0.;
       for (auto id : fwdTrackIDs) {
         fwdTrackCandIds[id] = candID;
         const auto& tr = fwdTracks->iteratorAt(id);
@@ -121,11 +131,7 @@ struct UpcCandProducer {
         barTrackCandIds[id] = candID;
         const auto& tr = barTracks->iteratorAt(id);
         netCharge += tr.sign();
-        if (tr.hasTOF()) {
-          RgtrwTOF++;
-        }
       }
-      RgtrwTOF /= nBarTracks;
       // fetching FT0 information
       // if there is no FT0 signal, dummy info will be used
       FT0Info ft0Info;
@@ -176,6 +182,7 @@ struct UpcCandProducer {
                   o2::aod::BCs const& bcs,
                   o2::aod::FT0s const& ft0s)
   {
+    fDoSemiFwd = false;
     createCandidates(&muonTracks, (o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra>*)nullptr, bcs, ft0s);
   }
 
@@ -189,8 +196,19 @@ struct UpcCandProducer {
     createCandidates(&muonTracks, &barTracks, bcs, ft0s);
   }
 
+  // create candidates for central region
+  void processCentral(o2::aod::UDFwdTracks const& muonTracks,
+                      o2::soa::Join<o2::aod::UDTracks, o2::aod::UDTracksExtra> const& barTracks,
+                      o2::aod::BCs const& bcs,
+                      o2::aod::FT0s const& ft0s)
+  {
+    fDoSemiFwd = false;
+    createCandidates((o2::aod::UDFwdTracks*)nullptr, &barTracks, bcs, ft0s);
+  }
+
   PROCESS_SWITCH(UpcCandProducer, processFwd, "Produce candidates for forward rapidities", false);
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward region", false);
+  PROCESS_SWITCH(UpcCandProducer, processCentral, "Produce candidates in central region", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
