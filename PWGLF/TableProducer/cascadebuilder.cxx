@@ -414,6 +414,12 @@ struct cascadeLabelBuilder {
 
   void init(InitContext const&) {}
 
+  void processDoNotBuildLabels(aod::Collision const& collision)
+  {
+    //dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(cascadeLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
+
   void processBuildLabels(aod::Collision const& collision, aod::CascDataExt const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
@@ -487,7 +493,7 @@ struct cascadeLabelBuilder {
         lLabel);
     } //end casctable loop
   }
-  PROCESS_SWITCH(cascadeLabelBuilder, processBuildLabels, "Produce MC label tables", true);
+  PROCESS_SWITCH(cascadeLabelBuilder, processBuildLabels, "Produce MC label tables", false);
 };
 
 /// Extends the cascdata table with expression columns
