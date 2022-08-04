@@ -101,6 +101,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
                            });
 // debug variables
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                                       //! Chi2 / cluster for the ITS track segment
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);                                       //! Chi2 / cluster for the TPC track segment
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
@@ -136,6 +138,8 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::Pz<femtoworldparticle::Pt, femtoworldparticle::Eta>,
                   femtoworldparticle::P<femtoworldparticle::Pt, femtoworldparticle::Eta>, // tu koniec poprzedniej wersji
                   femtoworldparticle::Sign,
+                  femtoworldparticle::ITSChi2NCl,
+                  femtoworldparticle::TPCChi2NCl,
                   femtoworldparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtoworldparticle::TPCNClsCrossedRows,

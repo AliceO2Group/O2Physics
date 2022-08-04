@@ -295,6 +295,8 @@ struct femtoWorldProducerTask {
                   track.dcaXY(),
                   childIDs, 0, 0, // początek nowej części
                   track.sign(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl(),
                   (uint8_t)track.tpcNClsFound(),
                   track.tpcNClsFindable(),
                   (uint8_t)track.tpcNClsCrossedRows(),
