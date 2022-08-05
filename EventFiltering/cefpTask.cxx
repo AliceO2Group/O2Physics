@@ -63,39 +63,23 @@ bool readJsonFile(std::string& config, Document& d)
 
 std::unordered_map<std::string, std::unordered_map<std::string, float>> mDownscaling;
 static const std::vector<std::string> downscalingName{"Downscaling"};
-static const float defaultDownscaling[32][1]{
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f},
-  {1.f}}; /// Max number of columns for triggers is 32 (extendible)
+static const float defaultDownscaling[128][1]{
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},
+  {1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f},{1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
 #define FILTER_CONFIGURABLE(_TYPE_) \
   Configurable<LabeledArray<float>> cfg##_TYPE_ { #_TYPE_, {defaultDownscaling[0], NumberOfColumns < _TYPE_>(), 1, ColumnsNames(typename _TYPE_::iterator::persistent_columns_t{}), downscalingName }, #_TYPE_ " downscalings" }
