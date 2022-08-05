@@ -193,20 +193,25 @@ struct qaEventTrack {
 
   // Process function for IU vs DCA track comparison
   void processDataIU(CollisionTableData::iterator const& collision,
-                     aod::FullTracks const& tracksUnfiltered, aod::TracksIU const& tracksIU)
+                     aod::FullTracks const& tracksUnfiltered,
+                     aod::TracksIU const& tracksIU)
   {
     if (!isSelectedCollision<false>(collision)) {
       return;
     }
 
-    int trackIndex = 0;
+    if (tracksUnfiltered.size() != tracksIU.size()) {
+      LOG(fatal) << "Tables are of different size!!!!!!!!! " << tracksUnfiltered.size() << " vs " << tracksIU.size();
+    }
+
+    uint64_t trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
+      trackIndex++;
       if (!isSelectedTrack<false>(trk)) {
-        trackIndex++;
         continue;
       }
 
-      const auto& trkIU = tracksIU.iteratorAt(trackIndex++);
+      const auto& trkIU = tracksIU.iteratorAt(trackIndex);
       histos.fill(HIST("Tracks/IU/Pt"), trkIU.pt());
       histos.fill(HIST("Tracks/IU/Eta"), trkIU.eta());
       histos.fill(HIST("Tracks/IU/Phi"), trkIU.phi());
@@ -241,14 +246,14 @@ struct qaEventTrack {
     auto tracksDCA = tracksFilteredCorrIU->sliceByCached(aod::track::collisionId, collision.globalIndex());
     // LOG(info) << "===> tracksIU.size()=" << tracksIU.size() << "===> tracksDCA.size()" << tracksDCA.size();
 
-    int trackIndex = 0;
+    uint64_t trackIndex = 0;
     for (const auto& trkIU : tracksIU) {
+      trackIndex++;
       if (!isSelectedTrack<false>(trkIU)) {
-        trackIndex++;
         continue;
       }
 
-      const auto& trkDCA = tracksDCA.iteratorAt(trackIndex++);
+      const auto& trkDCA = tracksDCA.iteratorAt(trackIndex);
       histos.fill(HIST("Tracks/IUFiltered/Pt"), trkIU.pt());
       histos.fill(HIST("Tracks/IUFiltered/Eta"), trkIU.eta());
       histos.fill(HIST("Tracks/IUFiltered/Phi"), trkIU.phi());
