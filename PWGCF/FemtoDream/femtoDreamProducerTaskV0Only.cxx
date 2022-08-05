@@ -30,6 +30,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/StrangenessTables.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -84,8 +85,9 @@ struct femtoDreamProducerTaskV0Only {
 
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
 
-  // Choose if running on converted data or pilot beam
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"};
+  // Choose if running on converted data or Run3  / Pilot
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
+  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
@@ -184,16 +186,35 @@ struct femtoDreamProducerTaskV0Only {
   float getMagneticFieldTesla(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+    float output = -999;
+
+    if (ConfIsRun3 && !ConfIsMC) {
+      static o2::parameters::GRPMagField* grpo = nullptr;
       if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
+        grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+        if (grpo == nullptr) {
+          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+          return 0;
+        }
+        LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
       }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+      // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
+      auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
+      output = 0.1 * (NominalL3Field);
     }
-    float output = 0.1 * (grpo->getNominalL3Field());
+
+    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+      static o2::parameters::GRPObject* grpo = nullptr;
+      if (grpo == nullptr) {
+        grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+        if (grpo == nullptr) {
+          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+          return 0;
+        }
+        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+      }
+      output = 0.1 * (grpo->getNominalL3Field());
+    }
     return output;
   }
 

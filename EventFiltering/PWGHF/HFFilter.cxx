@@ -287,6 +287,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<double> donwSampleBkgFactor{"donwSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
 
   // parameters for ML application with ONNX
+  Configurable<bool> singleThreadInference{"singleThreadInference", true, "Run ML inference single thread"};
   Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
   Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::pTBinsVec}, "track pT bin limits for BDT cut"};
 
@@ -330,14 +331,14 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::vector<std::string>, kNCharmParticles> outputNamesML{};
   std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> outputShapesML{};
   std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
-  std::array<Ort::SessionOptions, kNCharmParticles> sessionOptions{};
+  std::array<Ort::SessionOptions, kNCharmParticles> sessionOptions{Ort::SessionOptions(), Ort::SessionOptions(), Ort::SessionOptions(), Ort::SessionOptions(), Ort::SessionOptions()};
   std::array<int, kNCharmParticles> dataTypeML{};
   std::array<Ort::Env, kNCharmParticles> env = {
-    Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-d0-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-dplus-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-ds-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-lc-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_WARNING, "ml-model-xic-triggers"}};
+    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-d0-triggers"},
+    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-dplus-triggers"},
+    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-ds-triggers"},
+    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-lc-triggers"},
+    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-xic-triggers"}};
 
   void init(o2::framework::InitContext&)
   {
@@ -388,6 +389,10 @@ struct HfFilter { // Main struct for HF triggers
 
       for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         if (onnxFiles[iCharmPart] != "") {
+          if (singleThreadInference) {
+            sessionOptions[iCharmPart].SetIntraOpNumThreads(1);
+            sessionOptions[iCharmPart].SetInterOpNumThreads(1);
+          }
           sessionML[iCharmPart].reset(new Ort::Experimental::Session{env[iCharmPart], onnxFiles[iCharmPart], sessionOptions[iCharmPart]});
           inputNamesML[iCharmPart] = sessionML[iCharmPart]->GetInputNames();
           inputShapesML[iCharmPart] = sessionML[iCharmPart]->GetInputShapes();
@@ -706,6 +711,8 @@ struct HfFilter { // Main struct for HF triggers
 
       // apply ML models
       if (applyML && onnxFiles[kD0] != "") {
+        isCharmTagged = false;
+        isBeautyTagged = false;
         // TODO: add more feature configurations
         std::vector<Ort::Value> inputTensorD0;
         std::vector<float> inputFeaturesD0{trackPos.pt(), trackPos.dcaXY(), trackPos.dcaZ(), trackNeg.pt(), trackNeg.dcaXY(), trackNeg.dcaZ()};
@@ -739,7 +746,7 @@ struct HfFilter { // Main struct for HF triggers
           isCharmTagged = TESTBIT(tagBDT, kPrompt);
           isBeautyTagged = TESTBIT(tagBDT, kNonPrompt);
         } catch (const Ort::Exception& exception) {
-          LOG(error) << "Error running model inference: " << exception.what();
+          //LOG(error) << "Error running model inference: " << exception.what();
         }
       }
 
@@ -840,6 +847,10 @@ struct HfFilter { // Main struct for HF triggers
 
       // apply ML models
       if (applyML) {
+        for (auto iCharmPart{0}; iCharmPart < kNCharmParticles - 1; ++iCharmPart) {
+          isCharmTagged[iCharmPart] = false;
+          isBeautyTagged[iCharmPart] = false;
+        }
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
@@ -874,7 +885,7 @@ struct HfFilter { // Main struct for HF triggers
             isCharmTagged[iCharmPart] = TESTBIT(tagBDT, kPrompt);
             isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, kNonPrompt);
           } catch (const Ort::Exception& exception) {
-            LOG(error) << "Error running model inference: " << exception.what();
+            // LOG(error) << "Error running model inference: " << exception.what();
           }
         }
       }

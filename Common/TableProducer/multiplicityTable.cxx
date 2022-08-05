@@ -74,6 +74,7 @@ struct MultiplicityTableTaskIndexed {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false); //don't fatal, please - exception is caught explicitly (as it should)
   }
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra> const& tracksExtra, aod::BCs const&, aod::Zdcs const&, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::FT0s const& ft0s)

@@ -178,6 +178,36 @@ DECLARE_SOA_TABLE(FemtoDreamDebugParticles, "AOD", "FEMTODEBUGPARTS",
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
 using FemtoDreamDebugParticle = FemtoDreamDebugParticles::iterator;
 
+/// FemtoDreamTrackMC
+namespace femtodreamparticleMC
+{
+/// Distinuishes the different particle origins
+enum ParticleOriginMCTruth {
+  kPrimary,   //! Primary track or V0
+  kDaughter,  //! Particle from a decay
+  kMaterial,  //! Particle from a material
+  kNotPrimary //! Particle from a material
+};
+
+DECLARE_SOA_INDEX_COLUMN(FemtoDreamParticle, femtoDreamParticle);
+DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtodreamparticle::ParticleOriginMCTruth
+DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
+
+// debug variables
+DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
+} // namespace femtodreamparticleMC
+
+DECLARE_SOA_TABLE(FemtoDreamParticlesMC, "AOD", "FEMTODREAMPSMC",
+                  o2::soa::Index<>,
+                  femtodreamparticleMC::FemtoDreamParticleId,
+                  femtodreamparticleMC::PartOriginMCTruth,
+                  femtodreamparticleMC::PDGMCTruth);
+using FemtoDreamParticleMC = FemtoDreamParticlesMC::iterator;
+
+DECLARE_SOA_TABLE(FemtoDreamDebugParticlesMC, "AOD", "FEMTODEBUGPMC",
+                  femtodreamparticleMC::MotherPDG);
+using FemtoDreamDebugParticleMC = FemtoDreamParticlesMC::iterator;
+
 /// Hash
 namespace hash
 {
