@@ -297,6 +297,8 @@ struct femtoWorldProducerTask {
                   track.sign(),
                   track.itsChi2NCl(),
                   track.tpcChi2NCl(),
+                  track.tpcNSigmaKa(),
+                  track.tofNSigmaKa(),
                   (uint8_t)track.tpcNClsFound(),
                   track.tpcNClsFindable(),
                   (uint8_t)track.tpcNClsCrossedRows(),

@@ -105,12 +105,15 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                              
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, float);                                       //! Chi2 / cluster for the TPC track segment
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCNSigmaKaon, tpcNSigmaKaon, float);                                 //! TPCNSigmaKaon
+DECLARE_SOA_COLUMN(TOFNSigmaKaon, tofNSigmaKaon, float);                                 //! TOFNSigmaKaon
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
+// DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binning::binned_t);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
@@ -140,6 +143,8 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::Sign,
                   femtoworldparticle::ITSChi2NCl,
                   femtoworldparticle::TPCChi2NCl,
+                  femtoworldparticle::TPCNSigmaKaon,
+                  femtoworldparticle::TOFNSigmaKaon,
                   femtoworldparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtoworldparticle::TPCNClsCrossedRows,

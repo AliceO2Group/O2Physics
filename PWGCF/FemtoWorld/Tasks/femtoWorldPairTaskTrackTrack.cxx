@@ -20,6 +20,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+//#include "Common/DataModel/PIDResponse.h"
 
 #include "PWGCF/DataModel/FemtoWorldDerived.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
@@ -72,8 +73,8 @@ struct femtoWorldPairTaskTrackTrack {
   Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
   Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
   Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
-  Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"}; // Number of found TPC clusters
-  Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"};
+  Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
+  Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
   Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
   Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
   // Second particle
@@ -83,45 +84,74 @@ struct femtoWorldPairTaskTrackTrack {
   Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
   Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
   Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
-  Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"}; // Number of found TPC clusters
-  Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"};
+  Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
+  Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
   Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
   Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
 
-  /// Particle 1
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 211, "Particle 1 - PDG code"};
+  /// Particle 1 K+
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
   Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from json file"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
 
   /// Partition for particle 1
-  Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack)) &&                   // particle type cut
-                                                       (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1) &&                 // pT cuts
-                                                       (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1) &&             // Eta cuts
-                                                       (o2::aod::track::dcaXY < cfgDcaXYPart1) && (o2::aod::track::dcaZ < cfgDcaZPart1) &&                                // DCA cuts for XY and Z
-                                                       (aod::femtoworldparticle::tpcNClsFound < (uint8_t)cfgTpcClPart1) &&                                                // Number of found TPC clusters
-                                                       (aod::femtoworldparticle::tpcNClsCrossedRows < (uint8_t)cfgTpcCrosRoPart1) &&                                      // Crossed rows TPC
-                                                       (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart1) // chi2 cuts
+  Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                         // particle type cut
+                                                                                                                                                                             // pT cuts (and PID)
+                                                       && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1)                    // simple pT cuts
+                                                                                                                                                                             // &&((aod::femtoworldparticle::pt >= cfgPtLowPart1) &&(aod::pidtpc::tpcNSigmaKa < (float)2.0) &&(aod::femtoworldparticle::pt < (float)0.25))
+                                                                                                                                                                             //       &&((aod::femtoworldparticle::pt >= (float)0.25) &&(aod::pidtpc::tpcNSigmaKa < (float)2.0)  &&(aod::femtoworldparticle::pt < (float)0.4))
+                                                                                                                                                                             //       &&((aod::femtoworldparticle::pt >= (float)0.4) /*&&(aod::pidtpc_tiny::tpcNSigmaStoreKa < (float)1.0) */&&(aod::femtoworldparticle::pt < (float)0.45))
+                                                                                                                                                                             //     &&((aod::femtoworldparticle::pt >= (float)0.45) /*&&(aod::pidtpc_tiny::tpcNSigmaStoreKa < (float)3.0) &&(aod::pidtof_tiny::tofNSigmaStoreKa < (float)2.0)*/ &&(aod::femtoworldparticle::pt < (float)0.5))
+                                                                                                                                                                             //       &&((aod::femtoworldparticle::pt >= (float)0.5) /*&&(aod::pidtpc_tiny::tpcNSigmaStoreKa < (float)3.0) &&(aod::pidtof_tiny::tofNSigmaStoreKa < (float)2.0)*/ &&(aod::femtoworldparticle::pt < (float)0.8))
+                                                                                                                                                                             //      &&((aod::femtoworldparticle::pt >= (float)0.8) /*&&(aod::pidtpc_tiny::tpcNSigmaStoreKa < (float)3.0) && (aod::pidtof_tiny::tofNSigmaStoreKa < (float)1.5) */&&(aod::femtoworldparticle::pt < (float)1.0))
+                                                                                                                                                                             //      &&((aod::femtoworldparticle::pt >= (float)1.0) /*&&(aod::pidtpc_tiny::tpcNSigmaStoreKa < (float)3.0) &&(aod::pidtof_tiny::tofNSigmaStoreKa < (float)1.0) */&&(aod::femtoworldparticle::pt < cfgPtHighPart1))
+                                                       && (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1)                // Eta cuts
+                                                       && (o2::aod::track::dcaXY < cfgDcaXYPart1) && (o2::aod::track::dcaZ < cfgDcaZPart1)                                   // DCA cuts for XY and Z
+                                                       && (aod::femtoworldparticle::tpcNClsFound > (uint8_t)cfgTpcClPart1)                                                   // Number of found TPC clusters
+                                                       && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart1)                                         // Crossed rows TPC
+                                                       && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart1) //&& // chi2 cuts
+                                                       && (aod::femtoworldparticle::sign > int8_t(0))                                                                        // Sign (K+)
     // todo: globaltrack cut
     ;
 
+  Partition<aod::FemtoWorldParticlesMerged> partsOneFailed = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack)) &&                   // particle type cut
+                                                             ((aod::femtoworldparticle::pt > cfgPtHighPart1) || (aod::femtoworldparticle::pt < cfgPtLowPart1)) &&               // pT cuts
+                                                             ((aod::femtoworldparticle::eta > cfgEtaHighPart1) || (aod::femtoworldparticle::eta < cfgEtaLowPart1)) &&           // Eta cuts
+                                                             (o2::aod::track::dcaXY > cfgDcaXYPart1) && (o2::aod::track::dcaZ > cfgDcaZPart1) &&                                // DCA cuts for XY and Z
+                                                             (aod::femtoworldparticle::tpcNClsFound < (uint8_t)cfgTpcClPart1) &&                                                // Number of found TPC clusters
+                                                             (aod::femtoworldparticle::tpcNClsCrossedRows < (uint8_t)cfgTpcCrosRoPart1) &&                                      // Crossed rows TPC
+                                                             (aod::femtoworldparticle::itsChi2NCl > cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl > cfgChi2TpcPart1) //&& // chi2 cuts
+                                                                                                                                                                                // (aod::femtoworldparticle::sign <= int8_t(0))                                                                         //Sign (<=0)
+                                                                                                                                                                                // todo: globaltrack cut
+    ;
   /// Histogramming for particle 1
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
-  /// Particle 2
+  /// Particle 2 K-
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
-  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
   Configurable<std::vector<int>> ConfPIDPartTwo{"ConfPIDPartTwo", std::vector<int>{2}, "Particle 2 - Read from json file"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
   /// Partition for particle 2
-  Partition<aod::FemtoWorldParticlesMerged> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack)) &&                   // particle type cut
-                                                       (aod::femtoworldparticle::pt < cfgPtHighPart2) && (aod::femtoworldparticle::pt > cfgPtLowPart2) &&                 // pT cuts
-                                                       (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2) &&             // Eta cuts
-                                                       (o2::aod::track::dcaXY < cfgDcaXYPart2) && (o2::aod::track::dcaZ < cfgDcaZPart2) &&                                // DCA cuts for XY and Z
-                                                       (aod::femtoworldparticle::tpcNClsFound < (uint8_t)88) &&                                                           // Number of found TPC clusters
-                                                       (aod::femtoworldparticle::tpcNClsCrossedRows < (uint8_t)70) &&                                                     // Crossed rows TPC
-                                                       (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart2) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart2) // chi2 cuts
+  Partition<aod::FemtoWorldParticlesMerged> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                         // particle type cut
+                                                       && (aod::femtoworldparticle::pt < cfgPtHighPart2) && (aod::femtoworldparticle::pt > cfgPtLowPart2)                    // pT cuts
+                                                       && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2)                // Eta cuts
+                                                       && (o2::aod::track::dcaXY < cfgDcaXYPart2) && (o2::aod::track::dcaZ < cfgDcaZPart2)                                   // DCA cuts for XY and Z
+                                                       && (aod::femtoworldparticle::tpcNClsFound > (uint8_t)cfgTpcClPart2)                                                   // Number of found TPC clusters
+                                                       && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart2)                                         // Crossed rows TPC
+                                                       && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart2) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart2) //  // chi2 cuts
+                                                       && (aod::femtoworldparticle::sign < int8_t(0))                                                                        // Sign (K-)
+                                                                                                      //  todo: globaltrack cut
+    ;
+  Partition<aod::FemtoWorldParticlesMerged> partsTwoFailed = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                         // particle type cut
+                                                             && ((aod::femtoworldparticle::pt > cfgPtHighPart2) || (aod::femtoworldparticle::pt < cfgPtLowPart2))                  // pT cuts
+                                                             && ((aod::femtoworldparticle::eta > cfgEtaHighPart2) || (aod::femtoworldparticle::eta < cfgEtaLowPart2))              // Eta cuts
+                                                             && (o2::aod::track::dcaXY > cfgDcaXYPart2) && (o2::aod::track::dcaZ > cfgDcaZPart2)                                   // DCA cuts for XY and Z
+                                                             && (aod::femtoworldparticle::tpcNClsFound < (uint8_t)cfgTpcClPart2)                                                   // Number of found TPC clusters
+                                                             && (aod::femtoworldparticle::tpcNClsCrossedRows < (uint8_t)cfgTpcCrosRoPart2)                                         // Crossed rows TPC
+                                                             && (aod::femtoworldparticle::itsChi2NCl > cfgChi2ItsPart2) && (aod::femtoworldparticle::tpcChi2NCl > cfgChi2TpcPart2) //  // chi2 cuts
+                                                             && (aod::femtoworldparticle::sign >= int8_t(0))                                                                       // Sign (>=0)
     // todo: globaltrack cut
     ;
-
   /// Histogramming for particle 2
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
 
@@ -181,11 +211,38 @@ struct femtoWorldPairTaskTrackTrack {
     vPIDPartTwo = ConfPIDPartTwo;
   }
 
+  // PID
+  bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK)
+  {
+    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
+    if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
+      return true;
+    if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaK) < 1.0)
+      return true;
+    if (mom > 0.5 && TMath::Abs(nsigmaK) < 3.0)
+      return true;
+
+    return false;
+  }
+
+  bool IsKaonTOFNSigma(float mom, float nsigmaK)
+  {
+    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
+    if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
+      return true;
+    if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaK) < 1.5)
+      return true;
+    if (mom > 1.0 && TMath::Abs(nsigmaK) < 1.0)
+      return true;
+    return false;
+  }
+
   /// This function processes the same event and takes care of all the histogramming
   /// \todo the trivial loops over the tracks should be factored out since they will be common to all combinations of T-T, T-V0, V0-V0, ...
   void processSameEvent(o2::aod::FemtoWorldCollision& col,
                         o2::aod::FemtoWorldParticlesMerged& parts)
   {
+
     MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
 
     const auto& magFieldTesla = col.magField();
@@ -197,20 +254,18 @@ struct femtoWorldPairTaskTrackTrack {
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
+      if (!((part.p() < 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())))) {
         continue;
-      }
-      if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
+      } else if (!((part.p() >= 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
         continue;
       }
       trackHistoPartOne.fillQA(part);
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if (part.p() > cfgCutTable->get("PartTwo", "MaxP") || part.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+        if (!((part.p() < 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())))) {
           continue;
-        }
-        if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgNspecies, kNsigma, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        } else if (!((part.p() >= 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
           continue;
         }
         trackHistoPartTwo.fillQA(part);
@@ -218,19 +273,21 @@ struct femtoWorldPairTaskTrackTrack {
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+      if (!((p1.p() < 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())))) {
+        continue;
+      } else if (!((p1.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
         continue;
       }
-      if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgNspecies, kNsigma, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+      if (!((p2.p() < 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())))) {
+        continue;
+      } else if (!((p2.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
         continue;
       }
-
       if (ConfIsCPR) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
           continue;
         }
       }
-
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
@@ -265,10 +322,14 @@ struct femtoWorldPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt") || p2.p() > cfgCutTable->get("PartTwo", "MaxP") || p2.pt() > cfgCutTable->get("PartTwo", "MaxPt")) {
+        if (!((p1.p() < 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())))) {
+          continue;
+        } else if (!((p1.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
           continue;
         }
-        if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF")) || !isFullPIDSelected(p2.pidcut(), p2.p(), cfgCutTable->get("PartTwo", "PIDthr"), vPIDPartTwo, cfgNspecies, kNsigma, cfgCutTable->get("PartTwo", "nSigmaTPC"), cfgCutTable->get("PartTwo", "nSigmaTPCTOF"))) {
+        if (!((p2.p() < 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())))) {
+          continue;
+        } else if (!((p2.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
           continue;
         }
 
