@@ -53,6 +53,11 @@ using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksD
 
 struct skimmerGammaConversions {
 
+  //configurables for CCDB access
+  Configurable<std::string> path{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+
   HistogramRegistry fRegistry{
     "fRegistry",
     {
@@ -108,42 +113,26 @@ struct skimmerGammaConversions {
       lXaxis->SetBinLabel(lPairIt.first + 1, lPairIt.second.data());
     }
 
-    //This is added in order to access the ccdb
+    // This is added in order to access the ccdb
 
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(url.value);
     ccdb->setCaching(true);
-
-    //apperantly works without all of this :)
-
-    //ccdb->setLocalObjectValidityChecking();                               //no idea wether this is usefull or not
-    //ccdb->setCreatedNotAfter(nolaterthan.value);                          //maybe I decide that this is usefull afterall
-
-    //probably don't need that right here
-    /*
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT")); //this somehow sets the geometry/calibration file that is read in???
-
-    if (!o2::base::GeometryManager::isGeometryLoaded())
-    {
-      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", run3grp_timestamp);
-      o2::base::Propagator::initFieldFromGRP(grpo);
-    }
-    else
-    {
-      LOGF(warning, "Geometry not loaded");
-    }
-    */
+    ccdb->setLocalObjectValidityChecking();                               // no idea wether this is usefull or not, there is no documentation
+    // Not later than now, will be replaced by the value of the train creation
+    // This avoids that users can replace objects **while** a train is running
+    ccdb->setCreatedNotAfter(nolaterthan.value);                          // was like that in the tutorial efficiencyPerRun
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    //if run number matches then magnetic field should also match I hope
+    // if run number matches then magnetic field should also match. Avoids unessecary acceses.
     if (runNumber == bc.runNumber()) {
       return;
     }
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", bc.timestamp());
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(path.value, bc.timestamp());
+    if(!grpo) {
+      LOGF(fatal, "Efficiency object not found!");
+    }
     o2::base::Propagator::initFieldFromGRP(grpo);
     //o2::base::Propagator::Instance()->setMatLUT(lut);
     runNumber = bc.runNumber();
