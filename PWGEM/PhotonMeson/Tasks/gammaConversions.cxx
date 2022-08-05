@@ -264,13 +264,12 @@ struct GammaConversions {
     return kTRUE;
   }
 
-  template <typename TV0, typename TMCGAMMA, typename TTRACKS>
+  template <typename TV0, typename TMCGAMMA>
   void fillAllV0HistogramsForRejectedByMc(int theRejReason,
                                           int theBefAftRec,
                                           TMCGAMMA const& theMcPhoton,
                                           TV0 const& theV0,
-                                          float const& theV0CosinePA,
-                                          TTRACKS const& theTwoV0Daughters)
+                                          float const& theV0CosinePA)
   {
     fillV0Histograms(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
@@ -281,27 +280,24 @@ struct GammaConversions {
                                             theBefAftRec,
                                             theMcPhoton,
                                             theV0,
-                                            theV0CosinePA,
-                                            theTwoV0Daughters);
+                                            theV0CosinePA);
   }
 
-  template <typename TV0, typename TMCGAMMA, typename TTRACKS>
-  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts, TTRACKS const& theTwoV0Daughters)
+  template <typename TV0, typename TMCGAMMA>
+  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts)
   {
     auto fillRejectedV0HistosI = [&](eMcRejectedSaved theRejReason) {
       fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
                                          kBeforeRecCuts,
                                          theMcPhoton,
                                          theV0,
-                                         theV0CosinePA,
-                                         theTwoV0Daughters);
+                                         theV0CosinePA);
       if (theV0PassesRecCuts) {
         fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
                                            kAfterRecCuts,
                                            theMcPhoton,
                                            theV0,
-                                           theV0CosinePA,
-                                           theTwoV0Daughters);
+                                           theV0CosinePA);
       }
     };
 
@@ -329,12 +325,11 @@ struct GammaConversions {
     return true;
   }
 
-  template <typename TV0, typename TMCGAMMATABLE, typename TTRACKS>
+  template <typename TV0, typename TMCGAMMATABLE>
   void processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable,
                        TV0 const& theV0,
                        float const& theV0CosinePA,
-                       bool theV0PassesRecCuts,
-                       TTRACKS const& theTwoV0Daughters)
+                       bool theV0PassesRecCuts)
   {
     fillV0McValidationHisto(eV0McValidation::kV0in);
 
@@ -348,24 +343,21 @@ struct GammaConversions {
     if (!v0IsGoodValidatedMcPhoton(lMcPhoton,
                                    theV0,
                                    theV0CosinePA,
-                                   theV0PassesRecCuts,
-                                   theTwoV0Daughters)) {
+                                   theV0PassesRecCuts)) {
       return;
     }
 
     fillTruePhotonHistograms(kBeforeRecCuts,
                              lMcPhoton,
                              theV0,
-                             theV0CosinePA,
-                             theTwoV0Daughters);
+                             theV0CosinePA);
 
     if (theV0PassesRecCuts) {
       fillV0McValidationHisto(eV0McValidation::kMcValAfterRecCuts);
       fillTruePhotonHistograms(kAfterRecCuts,
                                lMcPhoton,
                                theV0,
-                               theV0CosinePA,
-                               theTwoV0Daughters);
+                               theV0CosinePA);
     }
   }
 
@@ -386,8 +378,8 @@ struct GammaConversions {
     fillTH2(theContainer, "hConvPointZResVsZ_recalc", theMcPhoton.conversionZ(), theV0.recalculatedVtxZ() - theMcPhoton.conversionZ());
   }
 
-  template <typename TV0, typename TMCGAMMA, typename TTRACKS>
-  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, TTRACKS const& theTwoV0Daughters)
+  template <typename TV0, typename TMCGAMMA>
+  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
   {
     fillV0HistogramsMcGamma(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
@@ -408,13 +400,12 @@ struct GammaConversions {
       theV0);
   }
 
-  template <typename TV0, typename TMCGAMMA, typename TTRACKS>
+  template <typename TV0, typename TMCGAMMA>
   void fillTruePhotonHistogramsForRejectedByMc(int theRejReason,
                                                int theBefAftRec,
                                                TMCGAMMA const& theMcPhoton,
                                                TV0 const& theV0,
-                                               float const& theV0CosinePA,
-                                               TTRACKS const& theTwoV0Daughters)
+                                               float const& theV0CosinePA)
   {
     fillV0HistogramsMcGamma(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
@@ -481,8 +472,7 @@ struct GammaConversions {
       processMcPhoton(lMcPhotonForThisV0AsTable,
                       lV0,
                       lV0CosinePA,
-                      lV0PassesRecCuts,
-                      lTwoV0Daughters);
+                      lV0PassesRecCuts);
     }
   }
   PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
