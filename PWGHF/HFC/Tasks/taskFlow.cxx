@@ -78,13 +78,16 @@ struct HfTaskFlow {
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
-  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"}; // TODO: check if we really need that many bins
+  //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
+  //        either 1) add invariant mass axis or 2) define several containers for different inv. mass regions
+  //        Note: don't forget to check inv. mass separately for D0 and D0bar candidate
+  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
 
   //  Collision filters
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -97,6 +100,7 @@ struct HfTaskFlow {
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>>;
 
   //  HF candidate filter
+  //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_selcandidate_d0::isSelD0 >= d_selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= d_selectionFlagD0bar;
   using hfCandidates = soa::Filtered<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate>>;
 
@@ -321,14 +325,8 @@ struct HfTaskFlow {
 
       //  TODO: add getter for NUE trigger efficiency here
 
-      //  calculating inv. mass to be filled into the container below
-      //  Note: this is needed only in case of HF-hadron correlations
-      bool fillingHFcontainer = false;
-      float invmass = 0;
+      //  TODO: Check how to put this into a Filter
       if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
-        fillingHFcontainer = true;
-        invmass = InvMassD0(track1);
-        //  TODO: Check how to put this into a Filter
         if (!isAcceptedCandidate(track1)) {
           continue;
         }
@@ -345,6 +343,9 @@ struct HfTaskFlow {
           }
         }
 
+        //  TODO: in case of HF-h correlations, remove candidate daughters from the pool of associated hadrons
+        //        with which the candidate is being correlated
+
         float eta2 = track2.eta();
         float pt2 = track2.pt();
         float phi2 = track2.phi();
@@ -358,7 +359,7 @@ struct HfTaskFlow {
         //  set range of delta phi in (-pi/2 , 3/2*pi)
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * PI);
 
-        //  fill pair correlations (HF case needs additional axis for invariant mass)
+        //  fill pair correlations (TODO: HF case needs additional axis for invariant mass)
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                     eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                     triggerWeight * associatedWeight);
@@ -386,21 +387,20 @@ struct HfTaskFlow {
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("hEventCountSame"), bin);
 
-    sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    sameTPCMFTCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-
     if (processTPCTPChh) {
+      sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillQA(multiplicity, tracks);
       fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
     }
 
     if (processTPCMFThh) {
+      sameTPCMFTCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillMFTQA(multiplicity, mfttracks);
       fillCorrelations(sameTPCMFTCh, tracks, mfttracks, multiplicity, collision.posZ());
     }
 
     if (processHFHadrons) {
+      sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCandidateQA(candidates);
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
@@ -426,15 +426,14 @@ struct HfTaskFlow {
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("hEventCountSame"), bin);
 
-    sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-
     if (processTPCTPChh) {
+      sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillQA(multiplicity, tracks);
       fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
     }
 
     if (processHFHadrons) {
+      sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCandidateQA(candidates);
       fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
     }
@@ -444,7 +443,6 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations
   // =====================================
-  //  TODO: these collisions do not contain trigger selection, because SameKindPair needs table, not iterator -> check if it can be solved
   //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3 because there is no MFT in Run2
   void processMixed(aodCollisions& collisions,
                     aodTracks& tracks)
@@ -479,6 +477,7 @@ struct HfTaskFlow {
       registry.fill(HIST("hEventCount"), bin);
 
       if (processTPCTPChh) {
+        mixedTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
         fillMixingQA(multiplicity, tracks1);
         fillCorrelations(mixedTPCTPCCh, tracks1, tracks2, multiplicity, collision1.posZ());
       }
