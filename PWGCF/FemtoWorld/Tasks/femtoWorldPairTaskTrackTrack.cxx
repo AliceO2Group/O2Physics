@@ -140,7 +140,7 @@ struct femtoWorldPairTaskTrackTrack {
                                                        && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart2)                                         // Crossed rows TPC
                                                        && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart2) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart2) //  // chi2 cuts
                                                        && (aod::femtoworldparticle::sign < int8_t(0))                                                                        // Sign (K-)
-                                                                                                      //  todo: globaltrack cut
+                                                                                                                                                                             //  todo: globaltrack cut
     ;
   Partition<aod::FemtoWorldParticlesMerged> partsTwoFailed = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                         // particle type cut
                                                              && ((aod::femtoworldparticle::pt > cfgPtHighPart2) || (aod::femtoworldparticle::pt < cfgPtLowPart2))                  // pT cuts
