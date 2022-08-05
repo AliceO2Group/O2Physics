@@ -11,7 +11,7 @@
 
 # @alibuild has to be in each line to allow self approval of PRs
 
-* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
