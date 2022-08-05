@@ -93,6 +93,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(PsiPair, psipair, //! psi pair angle
                              return std::asin(clipToPM1(argsin));
                            });
 
+//calculate the fraction of the pos/neg momentum of the V0 momentum
+DECLARE_SOA_DYNAMIC_COLUMN(PFracPos, pfracpos,
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
+                             float ppos = RecoDecay::sqrtSumOfSquares(pxpos, pypos, pzpos);
+                             float PV0 = RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+                             return (ppos / PV0);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(PFracNeg, pfracneg,
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
+                             float pneg = RecoDecay::sqrtSumOfSquares(pxneg, pyneg, pzneg);
+                             float PV0 = RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+                             return (pneg / PV0);
+                           });
+
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //! mass under lambda hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(array{array{pxpos, pypos, pzpos}, array{pxneg, pyneg, pzneg}}, array{RecoDecay::getMassPDG(kProton), RecoDecay::getMassPDG(kPiPlus)}); });
@@ -150,6 +165,8 @@ DECLARE_SOA_TABLE_FULL(StoredV0Datas, "V0Datas", "AOD", "V0DATA", //!
                        v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
                        // Invariant masses
                        v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,

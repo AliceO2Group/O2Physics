@@ -127,7 +127,7 @@ struct GammaConversions {
       {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
       {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
-      {"hpeDivpGamma", "hpeDivpGamma;p_{e}p_{#gamma};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}};
+      {"hpeDivpGamma", "hpeDivpGamma;p_{e}/p_{#gamma};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}};
 
     // recalculated conversion Point for V0, only Rec and MCVal need this
     std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
@@ -275,7 +275,6 @@ struct GammaConversions {
     fillV0Histograms(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
-      theTwoV0Daughters,
       theV0CosinePA);
 
     fillTruePhotonHistogramsForRejectedByMc(theRejReason,
@@ -397,7 +396,6 @@ struct GammaConversions {
     fillV0Histograms(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
-      theTwoV0Daughters,
       theV0CosinePA);
 
     fillV0Histograms_recalculated(
@@ -425,7 +423,6 @@ struct GammaConversions {
     fillV0Histograms(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
-      theTwoV0Daughters,
       theV0CosinePA);
 
     fillV0Histograms_recalculated(
@@ -545,24 +542,8 @@ struct GammaConversions {
     }
   }
 
-  //this is really ugly but it works. Would be easier if .end() worked..
-  template <typename TTRACKS>
-  void fillhpeDivpGammaHistograms(mapStringHistPtr& theContainer, TTRACKS const& theTwoV0Daughters)
-  {
-    float p_electron[2];
-    Int_t counter = 0;
-
-    for (auto& lTrack : theTwoV0Daughters) {
-      p_electron[counter] = lTrack.p();
-      counter++;
-    }
-
-    fillTH1(theContainer, "hpeDivpGamma", p_electron[0] / (p_electron[0] + p_electron[1]));
-    fillTH1(theContainer, "hpeDivpGamma", p_electron[1] / (p_electron[0] + p_electron[1]));
-  }
-
-  template <typename TV0, typename TTRACKS>
-  void fillV0Histograms(mapStringHistPtr& theContainer, TV0 const& theV0, TTRACKS const& theTwoV0Daughters, float const& theV0CosinePA)
+  template <typename TV0>
+  void fillV0Histograms(mapStringHistPtr& theContainer, TV0 const& theV0, float const& theV0CosinePA)
   {
     fillTH1(theContainer, "hEta", theV0.eta());
     fillTH1(theContainer, "hPhi", theV0.phi());
@@ -573,19 +554,11 @@ struct GammaConversions {
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
-
-    float p_electron[2];
-    Int_t counter = 0;
-
-    // Fill momentum distribution histogram
-    for (auto& lTrack : theTwoV0Daughters) {
-      p_electron[counter] = lTrack.p();
-      counter++;
-    }
-    fillTH1(theContainer, "hpeDivpGamma", p_electron[0] / theV0.pt());
-    fillTH1(theContainer, "hpeDivpGamma", p_electron[1] / theV0.pt());
+    fillTH1(theContainer, "hpeDivpGamma", theV0.pfracpos());
+    fillTH1(theContainer, "hpeDivpGamma", theV0.pfracneg());
   }
 
+  // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a seperate fill function is needed
   template <typename TV0>
   void fillV0Histograms_recalculated(mapStringHistPtr& theContainer, TV0 const& theV0)
   {
@@ -665,9 +638,6 @@ struct GammaConversions {
       return kFALSE;
     }
 
-    Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
-    Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
-
     if (fV0CosPAngleMin > 0. && theV0CosinePA < fV0CosPAngleMin) {
       fillV0SelectionHisto(ePhotonCuts::kCosinePA);
       return kFALSE;
@@ -692,7 +662,6 @@ struct GammaConversions {
     fillV0Histograms(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
-      theTwoV0Daughters,
       theV0CosinePA);
 
     fillV0Histograms_recalculated(
