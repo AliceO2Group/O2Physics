@@ -117,10 +117,10 @@ struct skimmerGammaConversions {
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();                               // no idea wether this is usefull or not, there is no documentation
+    ccdb->setLocalObjectValidityChecking(); // no idea wether this is usefull or not, there is no documentation
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(nolaterthan.value);                          // was like that in the tutorial efficiencyPerRun
+    ccdb->setCreatedNotAfter(nolaterthan.value); // was like that in the tutorial efficiencyPerRun
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -130,7 +130,7 @@ struct skimmerGammaConversions {
       return;
     }
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(path.value, bc.timestamp());
-    if(!grpo) {
+    if (!grpo) {
       LOGF(fatal, "Efficiency object not found!");
     }
     o2::base::Propagator::initFieldFromGRP(grpo);
