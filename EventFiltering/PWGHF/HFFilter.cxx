@@ -628,7 +628,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param TrackSameChargeSecond is the second same-charge track
   /// \param ptLc is the pt of the D0 meson candidate
   /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
-  ///		BIT(2) for pKpi with proton PID, BIT(3) for piKp with proton PID
+  ///         BIT(2) for pKpi with proton PID, BIT(3) for piKp with proton PID
   template <typename T, typename P>
   int isSelectedLcInMassRange(const P& pTrackSameChargeFirst, const P& pTrackSameChargeSecond, const P& pTrackOppositeCharge, const T& TrackSameChargeFirst, const T& TrackSameChargeSecond, const float& ptLc)
   {
