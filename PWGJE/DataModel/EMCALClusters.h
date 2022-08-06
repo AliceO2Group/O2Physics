@@ -27,12 +27,12 @@ namespace emcalcluster
 // define global cluster definitions
 // the V1 algorithm is not yet implemented, but the V3 algorithm is
 // New definitions should be added here!
-const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.3, 0.1, -10000, 10000, 0.03);
-const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.2, 0.1, -10000, 10000, 0.03);
+const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, true, 0.03);       //dummy
+const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, true, 0.03); //dummy
+const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, true, 0.03); //dummy
+const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, true, 0.03);
+const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
+const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
@@ -89,6 +89,27 @@ DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
 using EMCALCluster = EMCALClusters::iterator;
 using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
 
-} // namespace o2::aod
+namespace emcalclustercell
+{
+// declare index column pointing to cluster table
+DECLARE_SOA_INDEX_COLUMN(EMCALCluster, emcalcluster); //! linked to EMCalClusters table
+DECLARE_SOA_INDEX_COLUMN(Calo, calo);                 //! linked to calo cells
 
+// declare index column pointing to ambiguous cluster table
+DECLARE_SOA_INDEX_COLUMN(EMCALAmbiguousCluster, emcalambiguouscluster); //! linked to EMCalAmbiguousClusters table
+} // namespace emcalclustercell
+DECLARE_SOA_TABLE(EMCALClusterCells, "AOD", "EMCCLUSCELLS",                                               //!
+                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalclustercell::CaloId);          //!
+DECLARE_SOA_TABLE(EMCALAmbiguousClusterCells, "AOD", "EMCAMBBCLUSCLS",                                    //!
+                  o2::soa::Index<>, emcalclustercell::EMCALAmbiguousClusterId, emcalclustercell::CaloId); //!
+using EMCALClusterCell = EMCALClusterCells::iterator;
+using EMCALAmbiguousClusterCell = EMCALAmbiguousClusterCells::iterator;
+namespace emcalmatchedtrack
+{
+DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
+} // namespace emcalmatchedtrack
+DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS",                                     //!
+                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId); //!
+using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
+} // namespace o2::aod
 #endif

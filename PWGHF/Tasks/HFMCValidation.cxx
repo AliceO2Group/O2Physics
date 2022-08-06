@@ -44,10 +44,17 @@ namespace o2::aod
 {
 // Columns to store the information about ambiguous tracks joinable with the track table
 DECLARE_SOA_COLUMN(IsAmbiguousTrack, isAmbiguousTrack, bool);                              //!
+DECLARE_SOA_COLUMN(NumBC, numBC, int);                                                     //!
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousCollisionIndices, ambiguousCollisionIndices); //!
 DECLARE_SOA_TABLE(TracksWithAmbiguousCollisionInfo, "AOD", "TRACKSWAMBINFO",               //!
                   IsAmbiguousTrack,
+                  NumBC,
                   AmbiguousCollisionIndicesIds);
+
+// Columns to store the information about the presence of HF signals in a MC collision
+DECLARE_SOA_COLUMN(HasHFsignal, hasHFsignal, bool);         //!
+DECLARE_SOA_TABLE(CollWithHFSignal, "AOD", "COLLWHFSIGNAL", //!
+                  HasHFsignal);
 } // namespace o2::aod
 
 struct AddAmbiguousTrackInfo {
@@ -74,6 +81,7 @@ struct AddAmbiguousTrackInfo {
     for (auto& track : tracks) {
       std::vector<int> collIndices{};
       bool isAmbiguous = false;
+      int nBC = 0;
       if (track.isGlobalTrackWoDCA()) { // add info only for global tracks
         auto trackIdx = track.globalIndex();
         auto iter = std::find(trackIndices.begin(), trackIndices.end(), trackIdx);
@@ -84,6 +92,7 @@ struct AddAmbiguousTrackInfo {
             uint64_t mostProbableBC = collision.bc().globalBC();
             for (auto& bc : ambitrack.bc()) {
               if (bc.globalBC() == mostProbableBC) {
+                nBC++;
                 collIndices.push_back(collision.globalIndex());
                 break;
               }
@@ -91,7 +100,7 @@ struct AddAmbiguousTrackInfo {
           }
         }
       }
-      trackWithAmbiguousInfo(isAmbiguous, collIndices);
+      trackWithAmbiguousInfo(isAmbiguous, nBC, collIndices);
     }
   }
 };
@@ -109,6 +118,8 @@ struct AddAmbiguousTrackInfo {
 /// - Momentum Conservation for these particles
 
 struct ValidationGenLevel {
+
+  Produces<o2::aod::CollWithHFSignal> collWithHFSignal;
 
   Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
   Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of generated primary vertex [cm]"};
@@ -199,6 +210,8 @@ struct ValidationGenLevel {
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
     std::vector<int> listDaughters{};
 
+    bool hasSignal = false;
+
     for (auto& particle : particlesMC) {
       if (!selectVertex(mccollision))
         continue;
@@ -244,6 +257,7 @@ struct ValidationGenLevel {
           std::size_t arrayPDGsize = arrPDGFinal[iD].size() - std::count(arrPDGFinal[iD].begin(), arrPDGFinal[iD].end(), 0);
           int origin = -1;
           if (listDaughters.size() == arrayPDGsize) {
+            hasSignal = true;
             origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
             if (origin == RecoDecay::OriginType::Prompt) {
               counterPrompt[iD]++;
@@ -311,6 +325,8 @@ struct ValidationGenLevel {
     registry.fill(HIST("hCounterPerCollisionNonPromptLambdaC"), counterNonPrompt[4]);
     registry.fill(HIST("hCounterPerCollisionNonPromptXiC"), counterNonPrompt[5]);
     registry.fill(HIST("hCounterPerCollisionNonPromptJPsi"), counterNonPrompt[6]);
+
+    collWithHFSignal(hasSignal);
   }
 };
 
@@ -326,6 +342,8 @@ struct ValidationGenLevel {
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
 struct ValidationRecLevel {
 
+  Configurable<bool> checkAmbiguousTracksWithHFEventsOnly{"checkAmbiguousTracksWithHFEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
+
   static const int nCharmHadrons = 7;
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
@@ -333,13 +351,38 @@ struct ValidationRecLevel {
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
 
-  HistogramRegistry registry{"registry", {}};
+  HistogramRegistry registry{
+    "registry",
+    {{"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {{200, -1, 1.}}}},
+     {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {{200, -1, 1.}}}},
+     {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
+     {"histDeltaZvtx", "Residual distribution of PV in #it{Z};#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH1F, {{1000, -0.5, 0.5}}}},
+     {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100000.}}}},
+     {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
+     {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}}}};
+
+  /// RMS calculation
+  /// \param vec  vector of values to compute RMS
+  template <typename T>
+  T computeRMS(std::vector<T>& vec)
+  {
+    T sum = std::accumulate(vec.begin(), vec.end(), 0.0);
+    T mean = sum / vec.size();
+
+    std::vector<T> diff(vec.size());
+    std::transform(vec.begin(), vec.end(), diff.begin(), [mean](T x) { return x - mean; });
+    T sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    T stdev = std::sqrt(sq_sum / vec.size());
+
+    return stdev;
+  }
+
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}});           // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}});              // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); isContributor", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
+    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}});           // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}});              // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
+    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(2, "no quark");
@@ -380,44 +423,82 @@ struct ValidationRecLevel {
   using HfCandProng3WithMCRec = soa::Join<aod::HfCandProng3, aod::HfCandProng3MCRec>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using TracksWithSel = soa::Join<aod::BigTracksMC, aod::TrackSelection, aod::TracksWithAmbiguousCollisionInfo>;
+  using mcCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
-  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, CollisionsWithMCLabels const& collisions)
+  void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions)
   {
+    // loop over collisions
+    for (auto& collision : collisions) {
+      auto mcCollision = collision.mcCollision_as<mcCollisionWithHFSignalInfo>();
+      if (checkAmbiguousTracksWithHFEventsOnly && !mcCollision.hasHFsignal()) {
+        continue;
+      }
+      registry.fill(HIST("histXvtxReco"), collision.posX());
+      registry.fill(HIST("histYvtxReco"), collision.posY());
+      registry.fill(HIST("histZvtxReco"), collision.posZ());
+      auto deltaZ = collision.posZ() - mcCollision.posZ();
+      registry.fill(HIST("histDeltaZvtx"), deltaZ);
+    }
+
     // loop over tracks
     for (auto& track : tracks) {
       if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
         continue;
       }
+      // check number of ITS hits
+      LOG(info) << " HERE? ";
+      int nITSlayers = 0;
+      uint8_t ITSHitMap = track.itsClusterMap();
+      for (int iLayer = 0; iLayer < 7; ++iLayer) {
+        if (TESTBIT(ITSHitMap, iLayer)) {
+          nITSlayers++;
+        }
+      }
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
+        if (checkAmbiguousTracksWithHFEventsOnly) {
+          auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
+          if (!mcCollision.hasHFsignal()) {
+            continue;
+          }
+        }
         auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle, true);
         histTracks->Fill(origin, track.pt());
         if (track.isAmbiguousTrack()) {
+          registry.fill(HIST("histAmbiguousTrackNumBC"), track.numBC());
+          registry.fill(HIST("histAmbiguousTrackNumCollisions"), track.ambiguousCollisionIndicesIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
+          std::vector<double> ambCollPosZ{};
+          for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
+            auto ambCollision = collisions.rawIteratorAt(collIdx);
+            ambCollPosZ.push_back(ambCollision.posZ());
+          }
+          registry.fill(HIST("histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
         }
         float deltaZ = -999.f;
         if (index) {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
-          auto mcCollision = particle.mcCollision();
+          auto mcCollision = particle.mcCollision_as<mcCollisionWithHFSignalInfo>();
           deltaZ = collision.posZ() - mcCollision.posZ();
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
-            histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor());
+            histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
           } else { // if the most probable collision is not the good one, check if the tracks is ambiguous
             if (track.isAmbiguousTrack()) {
               for (auto& collIdx : track.ambiguousCollisionIndicesIds()) {
                 auto ambCollision = collisions.rawIteratorAt(collIdx);
+
                 if (ambCollision.mcCollisionId() == particle.mcCollisionId()) {
-                  histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor());
+                  histOriginTracks[index + 2]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
                   break;
                 }
               }
             }
           }
         }
-        histOriginTracks[index]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor());
+        histOriginTracks[index]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
       } else {
-        histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor());
+        histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor(), track.hasTOF(), nITSlayers);
       }
     }
 

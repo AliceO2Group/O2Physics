@@ -603,6 +603,8 @@ struct qaEventTrackLite {
 
     if (pdgcode == pdgCodeSel) { // Check that the pdg code is exactly what was asked
       return true;
+    } else if (pdgCodeSel != 0) {
+      return false;
     }
     const int abspdgcode = abs(pdgcode);
     if (pdgCodeSelMode == 1 || pdgCodeSelMode == 2) {
