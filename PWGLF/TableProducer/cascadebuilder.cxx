@@ -195,19 +195,19 @@ struct cascadeBuilder {
     fitterCasc.setUseAbsDCA(d_UseAbsDCA);
 
     for (auto& casc : cascades) {
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
       hCascCandidate->Fill(0.5); //considered
-      if (!(v0index.has_v0Data())) {
+      if (!(v0.has_v0Data())) {
         //cascdataLink(-1);
         continue; //skip those cascades for which V0 doesn't exist
       }
-      auto v0 = v0index.v0Data(); //de-reference index to correct v0data in case it exists
+      auto v0data = v0.v0Data(); //de-reference index to correct v0data in case it exists
 
-      std::array<float, 3> pVtx = {v0.collision().posX(), v0.collision().posY(), v0.collision().posZ()};
+      std::array<float, 3> pVtx = {v0data.collision().posX(), v0data.collision().posY(), v0data.collision().posZ()};
 
       auto bachTrackCast = casc.bachelor_as<TCascTracksTo>();
-      auto posTrackCast = v0.posTrack_as<TCascTracksTo>();
-      auto negTrackCast = v0.negTrack_as<TCascTracksTo>();
+      auto posTrackCast = v0data.posTrack_as<TCascTracksTo>();
+      auto negTrackCast = v0data.negTrack_as<TCascTracksTo>();
 
       hCascCandidate->Fill(1.5); //has matched V0
       if (tpcrefit) {
@@ -257,27 +257,27 @@ struct cascadeBuilder {
       hCascCandidate->Fill(10.5);
 
       // V0 selections
-      if (fabs(v0.mLambda() - 1.116) > lambdamasswindow && fabs(v0.mAntiLambda() - 1.116) > lambdamasswindow) {
+      if (fabs(v0data.mLambda() - 1.116) > lambdamasswindow && fabs(v0data.mAntiLambda() - 1.116) > lambdamasswindow) {
         //cascdataLink(-1);
         continue;
       }
       hCascCandidate->Fill(11.5);
-      if (v0.dcaV0daughters() > dcav0dau) {
+      if (v0data.dcaV0daughters() > dcav0dau) {
         //cascdataLink(-1);
         continue;
       }
       hCascCandidate->Fill(12.5);
-      if (v0.v0radius() < v0radius) {
+      if (v0data.v0radius() < v0radius) {
         //cascdataLink(-1);
         continue;
       }
       hCascCandidate->Fill(13.5);
-      if (v0.v0cosPA(pVtx[0], pVtx[1], pVtx[2]) < cospaV0) {
+      if (v0data.v0cosPA(pVtx[0], pVtx[1], pVtx[2]) < cospaV0) {
         //cascdataLink(-1);
         continue;
       }
       hCascCandidate->Fill(14.5);
-      if (v0.dcav0topv(pVtx[0], pVtx[1], pVtx[2]) < dcav0topv) {
+      if (v0data.dcav0topv(pVtx[0], pVtx[1], pVtx[2]) < dcav0topv) {
         //cascdataLink(-1);
         continue;
       }
@@ -356,7 +356,7 @@ struct cascadeBuilder {
         hCascCandidate->Fill(18.5);
 
       cascdata(
-        v0index.globalIndex(),
+        v0.globalIndex(),
         bachTrackCast.globalIndex(),
         casc.collisionId(),
         charge, posXi[0], posXi[1], posXi[2], pos[0], pos[1], pos[2],
@@ -425,12 +425,12 @@ struct cascadeLabelBuilder {
     for (auto& casc : casctable) {
       float lFillVal = 0.5f; //all considered V0s
       //Loop over those that actually have the corresponding V0 associated to them
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
+      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
+      if (!(v0.has_v0Data())) {
         registry.fill(HIST("hLabelCounter"), lFillVal);
         continue; // skip those cascades for which V0 doesn't exist
       }
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
+      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
 
       int lLabel = -1;
       int lPDG = -1;
@@ -439,8 +439,8 @@ struct cascadeLabelBuilder {
 
       //Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<LabeledTracks>();
-      auto lNegTrack = v0.negTrack_as<LabeledTracks>();
-      auto lPosTrack = v0.posTrack_as<LabeledTracks>();
+      auto lNegTrack = v0data.negTrack_as<LabeledTracks>();
+      auto lPosTrack = v0data.posTrack_as<LabeledTracks>();
 
       //Association check
       //There might be smarter ways of doing this in the future
