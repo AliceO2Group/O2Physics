@@ -263,6 +263,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> deltaMassBPlus{"deltaMassBPlus", 0.3, "invariant-mass delta with respect to the B+ mass"};
   Configurable<float> deltaMassB0{"deltaMassB0", 0.3, "invariant-mass delta with respect to the B0 mass"};
   Configurable<float> deltaMassBs{"deltaMassBs", 0.3, "invariant-mass delta with respect to the Bs mass"};
+  Configurable<float> deltaMassCharmHadronForBeauty{"deltaMassCharmHadronForBeauty", 0.04, "invariant-mass delta for charm"};
   Configurable<float> deltaMassLb{"deltaMassLb", 0.3, "invariant-mass delta with respect to the Lb mass"};
   Configurable<float> deltaMassXib{"deltaMassXib", 0.3, "invariant-mass delta with respect to the Lb mass"};
   Configurable<float> deltaMassDStar{"deltaMassDStar", 0.1, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
@@ -271,6 +272,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::npTBinsTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::pTBinLabelsTrack, hf_cuts_single_track::cutVarLabelsTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
   Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::npTBinsTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::pTBinLabelsTrack, hf_cuts_single_track::cutVarLabelsTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
+  Configurable<float> nsigmaTPCProtonLc{"nsigmaTPCProtonLc", 3., "Maximum value for TPC PID proton Nsigma for Lc"};
+  Configurable<float> nsigmaTOFProtonLc{"nsigmaTOFProtonLc", 3., "Maximum value for TOF PID proton Nsigma for Lc"};
 
   // parameters for femto triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
@@ -512,6 +515,25 @@ struct HfFilter { // Main struct for HF triggers
     return true;
   }
 
+  /// Basic selection of proton candidates for Lc
+  /// \param track is a track
+  /// \return true if track passes all cuts
+  template <typename T>
+  bool isSelectedProton4Lc(const T& track)
+  {
+    float NSigmaTPC = track.tpcNSigmaPr();
+    float NSigmaTOF = track.tofNSigmaPr();
+
+    if (std::abs(NSigmaTPC) > nsigmaTPCProtonLc) {
+      return false;
+    }
+    if (track.hasTOF() && std::abs(NSigmaTOF) > nsigmaTOFProtonLc) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Basic additional selection of D0 candidates
   /// \param pTrackPos is the positive track momentum
   /// \param pTrackNeg is the negative track momentum
@@ -600,27 +622,37 @@ struct HfFilter { // Main struct for HF triggers
 
   /// Basic additional selection of Lc candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
-  /// \param pTrackSameChargeFirst is the second same-charge track momentum
-  /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param pTrackSameChargeSecond is the second same-charge track momentum
+  /// \param pTrackOppositeCharge is the opposite charge track momentum
+  /// \param TrackSameChargeFirst is the first same-charge track
+  /// \param TrackSameChargeSecond is the second same-charge track
   /// \param ptLc is the pt of the D0 meson candidate
-  /// \return 1 for pKpi, 2 for piKp, 3 for both
-  template <typename T>
-  int isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc)
+  /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
+  ///         BIT(2) for pKpi with proton PID, BIT(3) for piKp with proton PID
+  template <typename T, typename P>
+  int isSelectedLcInMassRange(const P& pTrackSameChargeFirst, const P& pTrackSameChargeSecond, const P& pTrackOppositeCharge, const T& TrackSameChargeFirst, const T& TrackSameChargeSecond, const float& ptLc)
   {
     auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
     auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
 
-    if (activateQA) {
-      hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPKPi);
-      hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPiKP);
-    }
-
     int retValue = 0;
-    if (std::abs(invMassLcToPKPi - massLc) < 0.04) {
-      retValue += 1;
+    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(0);
     }
-    if (std::abs(invMassLcToPiKP - massLc) < 0.04) {
-      retValue += 2;
+    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty) {
+      retValue |= BIT(1);
+    }
+    if (isSelectedProton4Lc(TrackSameChargeFirst)) {
+      retValue |= BIT(2);
+      if (activateQA) {
+        hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPKPi);
+      }
+    }
+    if (isSelectedProton4Lc(TrackSameChargeSecond)) {
+      retValue |= BIT(3);
+      if (activateQA) {
+        hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPiKP);
+      }
     }
 
     return retValue;
@@ -915,7 +947,7 @@ struct HfFilter { // Main struct for HF triggers
         is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
       if (is3Prong[2] && (isCharmTagged[2] || isBeautyTagged[2])) {
-        is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+        is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, trackFirst, trackThird, pt3Prong);
       }
       if (is3Prong[3] && (isCharmTagged[3] || isBeautyTagged[3])) {
         is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
@@ -945,7 +977,7 @@ struct HfFilter { // Main struct for HF triggers
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty]; ++iHypo) {
-            if (isBeautyTagged[iHypo] && ((iHypo != 1 && is3ProngInMass[iHypo] > 0) || (iHypo == 1 && ((TESTBIT(is3ProngInMass[iHypo], 0) && TESTBIT(is3ProngInMass[iHypo], 2)) || (TESTBIT(is3ProngInMass[iHypo], 1) && TESTBIT(is3ProngInMass[iHypo], 3)))))) {
+            if (isBeautyTagged[iHypo] && ((iHypo != 1 && iHypo != 2 && is3ProngInMass[iHypo] > 0) || ((iHypo == 1 || iHypo == 2) && ((TESTBIT(is3ProngInMass[iHypo], 0) && TESTBIT(is3ProngInMass[iHypo], 2)) || (TESTBIT(is3ProngInMass[iHypo], 1) && TESTBIT(is3ProngInMass[iHypo], 3)))))) {
               auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
@@ -962,7 +994,7 @@ struct HfFilter { // Main struct for HF triggers
         // 3-prong femto
         if (isSelectedProton4Femto(track)) {
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
-            if (isCharmTagged[iHypo] && ((iHypo != 1 && is3Prong[iHypo]) || (iHypo == 1 && is3Prong[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 2) || TESTBIT(is3ProngInMass[iHypo], 3))))) {
+            if (isCharmTagged[iHypo] && ((iHypo != 1 && iHypo != 2 && is3Prong[iHypo]) || ((iHypo == 1 || iHypo == 2) && is3Prong[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 2) || TESTBIT(is3ProngInMass[iHypo], 3))))) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
