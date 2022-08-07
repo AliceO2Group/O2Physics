@@ -933,7 +933,11 @@ struct HfFilter { // Main struct for HF triggers
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
-        for (auto iCharmPart{0}; (iCharmPart < kNCharmParticles - 1) && is3Prong[iCharmPart] && onnxFiles[iCharmPart + 1] != ""; ++iCharmPart) {
+        for (auto iCharmPart{0}; iCharmPart < kNCharmParticles - 1; ++iCharmPart) {
+          if (!is3Prong[iCharmPart] || onnxFiles[iCharmPart + 1] == "") {
+            continue;
+          }
+
           std::vector<Ort::Value> inputTensor;
           if (dataTypeML[iCharmPart + 1] == 1) {
             inputTensor.push_back(Ort::Experimental::Value::CreateTensor<float>(inputFeatures.data(), inputFeatures.size(), inputShapesML[iCharmPart + 1][0]));
