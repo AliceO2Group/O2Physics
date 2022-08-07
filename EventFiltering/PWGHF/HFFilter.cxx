@@ -15,6 +15,8 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Marcel Lesch <marcel.lesch@tum.de>, TUM
+/// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
+/// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -56,12 +58,6 @@ enum HfTriggers {
 enum BeautyCandType {
   kBeauty3Prong = 0, // combination of charm 2-prong and pion
   kBeauty4Prong      // combination of charm 3-prong and pion
-};
-
-enum candOrig {
-  kPrompt = 0,
-  kNonPrompt,
-  kBkg
 };
 
 enum charmParticles {
@@ -163,40 +159,44 @@ DECLARE_SOA_TABLE(HFTrigTrain2P, "AOD", "HFTRIGTRAIN2P", //!
 
 namespace hftraining3p
 {
-DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);         //!
-DECLARE_SOA_COLUMN(PT1, pT1, float);                   //!
-DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);     //!
-DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);       //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float); //!
-DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float); //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float); //!
-DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float); //!
-DECLARE_SOA_COLUMN(PT2, pT2, float);                   //!
-DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);     //!
-DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);       //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float); //!
-DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float); //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float); //!
-DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float); //!
-DECLARE_SOA_COLUMN(PT3, pT3, float);                   //!
-DECLARE_SOA_COLUMN(DCAPrimXY3, dcaPrimXY3, float);     //!
-DECLARE_SOA_COLUMN(DCAPrimZ3, dcaPrimZ3, float);       //!
-DECLARE_SOA_COLUMN(NsigmaPiTPC3, nsigmaPiTPC3, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTPC3, nsigmaKaTPC3, float); //!
-DECLARE_SOA_COLUMN(NsigmaPrTPC3, nsigmaPrTPC3, float); //!
-DECLARE_SOA_COLUMN(NsigmaPiTOF3, nsigmaPiTOF3, float); //!
-DECLARE_SOA_COLUMN(NsigmaKaTOF3, nsigmaKaTOF3, float); //!
-DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float); //!
-DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);    //!
-DECLARE_SOA_COLUMN(Channel, channel, int8_t);          //!
-DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);        //!
+DECLARE_SOA_COLUMN(PT3Prong, pT3Prong, float);                   //!
+DECLARE_SOA_COLUMN(PT1, pT1, float);                             //!
+DECLARE_SOA_COLUMN(DeltaMassKKFirst, deltaMassKKFirst, float);   //!
+DECLARE_SOA_COLUMN(DeltaMassKKSecond, deltaMassKKSecond, float); //!
+DECLARE_SOA_COLUMN(DCAPrimXY1, dcaPrimXY1, float);               //!
+DECLARE_SOA_COLUMN(DCAPrimZ1, dcaPrimZ1, float);                 //!
+DECLARE_SOA_COLUMN(NsigmaPiTPC1, nsigmaPiTPC1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTPC1, nsigmaKaTPC1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTPC1, nsigmaPrTPC1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPiTOF1, nsigmaPiTOF1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTOF1, nsigmaKaTOF1, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTOF1, nsigmaPrTOF1, float);           //!
+DECLARE_SOA_COLUMN(PT2, pT2, float);                             //!
+DECLARE_SOA_COLUMN(DCAPrimXY2, dcaPrimXY2, float);               //!
+DECLARE_SOA_COLUMN(DCAPrimZ2, dcaPrimZ2, float);                 //!
+DECLARE_SOA_COLUMN(NsigmaPiTPC2, nsigmaPiTPC2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTPC2, nsigmaKaTPC2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTPC2, nsigmaPrTPC2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPiTOF2, nsigmaPiTOF2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTOF2, nsigmaKaTOF2, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTOF2, nsigmaPrTOF2, float);           //!
+DECLARE_SOA_COLUMN(PT3, pT3, float);                             //!
+DECLARE_SOA_COLUMN(DCAPrimXY3, dcaPrimXY3, float);               //!
+DECLARE_SOA_COLUMN(DCAPrimZ3, dcaPrimZ3, float);                 //!
+DECLARE_SOA_COLUMN(NsigmaPiTPC3, nsigmaPiTPC3, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTPC3, nsigmaKaTPC3, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTPC3, nsigmaPrTPC3, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPiTOF3, nsigmaPiTOF3, float);           //!
+DECLARE_SOA_COLUMN(NsigmaKaTOF3, nsigmaKaTOF3, float);           //!
+DECLARE_SOA_COLUMN(NsigmaPrTOF3, nsigmaPrTOF3, float);           //!
+DECLARE_SOA_COLUMN(FlagOrigin, flagOrigin, int8_t);              //!
+DECLARE_SOA_COLUMN(Channel, channel, int8_t);                    //!
+DECLARE_SOA_COLUMN(HFSelBit, hfselbit, int8_t);                  //!
 } // namespace hftraining3p
 DECLARE_SOA_TABLE(HFTrigTrain3P, "AOD", "HFTRIGTRAIN3P", //!
                   hftraining3p::PT3Prong,
+                  hftraining3p::DeltaMassKKFirst,
+                  hftraining3p::DeltaMassKKSecond,
                   hftraining3p::PT1,
                   hftraining3p::DCAPrimXY1,
                   hftraining3p::DCAPrimZ1,
@@ -256,8 +256,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
   // parameters for high-pT triggers
-  Configurable<float> pTThreshold2Prong{"pTThreshold2Prong", 5., "pT treshold for high pT 2-prong candidates for kHighPt triggers in GeV/c"};
-  Configurable<float> pTThreshold3Prong{"pTThreshold3Prong", 5., "pT treshold for high pT 3-prong candidates for kHighPt triggers in GeV/c"};
+  Configurable<float> pTThreshold2Prong{"pTThreshold2Prong", 8., "pT treshold for high pT 2-prong candidates for kHighPt triggers in GeV/c"};
+  Configurable<float> pTThreshold3Prong{"pTThreshold3Prong", 8., "pT treshold for high pT 3-prong candidates for kHighPt triggers in GeV/c"};
 
   // parameters for beauty triggers
   Configurable<float> deltaMassBPlus{"deltaMassBPlus", 0.3, "invariant-mass delta with respect to the B+ mass"};
@@ -266,7 +266,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> deltaMassCharmHadronForBeauty{"deltaMassCharmHadronForBeauty", 0.04, "invariant-mass delta for charm"};
   Configurable<float> deltaMassLb{"deltaMassLb", 0.3, "invariant-mass delta with respect to the Lb mass"};
   Configurable<float> deltaMassXib{"deltaMassXib", 0.3, "invariant-mass delta with respect to the Lb mass"};
-  Configurable<float> deltaMassDStar{"deltaMassDStar", 0.1, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
+  Configurable<float> deltaMassDStar{"deltaMassDStar", 0.04, "invariant-mass delta with respect to the D* mass for B0 -> D*pi"};
   Configurable<float> pTMinBeautyBachelor{"pTMinBeautyBachelor", 0.5, "minumum pT for bachelor pion track used to build b-hadron candidates"};
   Configurable<float> pTMinSoftPion{"pTMinSoftPion", 0.1, "minumum pT for soft pion track used to build D* mesons in the b-hadron decay chain"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::pTBinsTrack_v}, "track pT bin limits for DCAXY pT-depentend cut"};
@@ -453,28 +453,6 @@ struct HfFilter { // Main struct for HF triggers
     return kRegular;
   }
 
-  /// Single-track cuts for bachelor track of beauty candidates
-  /// \param scores is a 3-element array with BDT out scores
-  /// \return 0 if rejected, otherwise bitmap with BIT(kPrompt) and/or BIT(kNonPrompt) on
-  template <typename T>
-  int isBDTSelected(const T& scores, const int candType)
-  {
-    int retValue = 0;
-    // uint32_t ptBin = 0;
-
-    if (scores[0] > thresholdBDTScores[candType].get(0u, "BDTbkg")) {
-      return retValue;
-    }
-    if (scores[1] < thresholdBDTScores[candType].get(0u, "BDTprompt")) {
-      retValue |= BIT(kPrompt);
-    }
-    if (scores[2] < thresholdBDTScores[candType].get(0u, "BDTnonprompt")) {
-      retValue |= BIT(kNonPrompt);
-    }
-
-    return retValue;
-  }
-
   /// Basic selection of proton candidates
   /// \param track is a track
   /// \return true if track passes all cuts
@@ -519,7 +497,7 @@ struct HfFilter { // Main struct for HF triggers
   /// \param track is a track
   /// \return true if track passes all cuts
   template <typename T>
-  bool isSelectedProton4Lc(const T& track)
+  bool isSelectedProton4CharmBaryons(const T& track)
   {
     float NSigmaTPC = track.tpcNSigmaPr();
     float NSigmaTOF = track.tofNSigmaPr();
@@ -534,13 +512,53 @@ struct HfFilter { // Main struct for HF triggers
     return true;
   }
 
-  /// Basic additional selection of D0 candidates
+  /// Basic additional selection of Ds candidates
+  /// \param pTrackSameChargeFirst is the first same-charge track momentum
+  /// \param pTrackSameChargeFirst is the second same-charge track momentum
+  /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \return BIT(0) for KKpi, BIT(1) for piKK
+  template <typename T>
+  int8_t isDsPreselected(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge)
+  {
+    auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
+    auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
+
+    int8_t retValue = 0;
+    if (std::abs(invMassKKFirst - massPhi) < 0.02) {
+      retValue |= BIT(0);
+    }
+    if (std::abs(invMassKKSecond - massPhi) < 0.02) {
+      retValue |= BIT(1);
+    }
+
+    return retValue;
+  }
+
+  /// Basic additional selection of Lc->pKpi and Xic->pKpi candidates
+  /// \param TrackSameChargeFirst is the first same-charge track
+  /// \param TrackSameChargeSecond is the second same-charge track
+  /// \return BIT(0) for pKpi, BIT(1) for piKp
+  template <typename T>
+  int8_t isCharmBaryonPreselected(const T& TrackSameChargeFirst, const T& TrackSameChargeSecond)
+  {
+    int8_t retValue = 0;
+    if (isSelectedProton4CharmBaryons(TrackSameChargeFirst)) {
+      retValue |= BIT(0);
+    }
+    if (isSelectedProton4CharmBaryons(TrackSameChargeSecond)) {
+      retValue |= BIT(1);
+    }
+
+    return retValue;
+  }
+
+  /// Mass selection of D0 candidates to build Bplus candidates
   /// \param pTrackPos is the positive track momentum
   /// \param pTrackNeg is the negative track momentum
   /// \param ptD is the pt of the D0 meson candidate
   /// \return 1 for D0, 2 for D0bar, 3 for both
   template <typename T>
-  int isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD)
+  int8_t isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD)
   {
     auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massK});
     auto invMassD0bar = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massK, massPi});
@@ -550,137 +568,150 @@ struct HfFilter { // Main struct for HF triggers
       hMassVsPtC[kD0]->Fill(ptD, invMassD0bar);
     }
 
-    int retValue = 0;
-    if (std::abs(invMassD0 - massD0) < 0.04) {
+    int8_t retValue = 0;
+    if (std::abs(invMassD0 - massD0) < deltaMassCharmHadronForBeauty) {
       retValue += 1;
     }
-    if (std::abs(invMassD0bar - massD0) < 0.04) {
+    if (std::abs(invMassD0bar - massD0) < deltaMassCharmHadronForBeauty) {
       retValue += 2;
     }
 
     return retValue;
   }
 
-  /// Basic additional selection of D+ candidates
+  /// Mass selection of D+ candidates to build B0 candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeFirst is the second same-charge track momentum
   /// \param pTrackSameChargeFirst is the opposite charge track momentum
   /// \param ptD is the pt of the D+ meson candidate
-  /// \return true for D+
+  /// \return BIT(0) (==1) for D+, 0 otherwise
   template <typename T>
-  bool isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
+  int8_t isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
   {
     auto invMassDplus = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massK});
     if (activateQA) {
       hMassVsPtC[kDplus]->Fill(ptD, invMassDplus);
     }
 
-    if (std::abs(invMassDplus - massDPlus) > 0.04) {
-      return false;
+    if (std::abs(invMassDplus - massDPlus) > deltaMassCharmHadronForBeauty) {
+      return 0;
     }
 
-    return true;
+    return BIT(0);
   }
 
-  /// Basic additional selection of Ds candidates
+  /// Mass selection of of Ds candidates to build Bs candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeFirst is the second same-charge track momentum
   /// \param pTrackSameChargeFirst is the opposite charge track momentum
   /// \param ptD is the pt of the Ds meson candidate
   /// \return BIT(0) for KKpi, BIT(1) for piKK, BIT(2) for phipi, BIT(3) for piphi
   template <typename T>
-  int isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD)
+  int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, int8_t isSelected)
   {
-    auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massK, massK});
-    auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massK, massK});
-
-    auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
-    auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
-
-    int retValue = 0;
-    if (std::abs(invMassDsToKKPi - massDs) < 0.04) {
-      retValue |= BIT(0);
-    }
-    if (std::abs(invMassDsToPiKK - massDs) < 0.04) {
-      retValue |= BIT(1);
-    }
-    if (std::abs(invMassKKFirst - massPhi) < 0.02) {
-      retValue |= BIT(2);
+    int8_t retValue = 0;
+    if (TESTBIT(isSelected, 0)) {
+      auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massK, massK, massPi});
       if (activateQA) {
         hMassVsPtC[kDs]->Fill(ptD, invMassDsToKKPi);
       }
+      if (std::abs(invMassDsToKKPi - massDs) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(0);
+      }
     }
-    if (std::abs(invMassKKSecond - massPhi) < 0.02) {
-      retValue |= BIT(3);
+    if (TESTBIT(isSelected, 0)) {
+      auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
       if (activateQA) {
         hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
       }
+      if (std::abs(invMassDsToPiKK - massDs) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(1);
+      }
     }
 
     return retValue;
   }
 
-  /// Basic additional selection of Lc candidates
+  /// Mass selection of Lc candidates to build Lb candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
   /// \param pTrackSameChargeSecond is the second same-charge track momentum
   /// \param pTrackOppositeCharge is the opposite charge track momentum
-  /// \param TrackSameChargeFirst is the first same-charge track
-  /// \param TrackSameChargeSecond is the second same-charge track
   /// \param ptLc is the pt of the D0 meson candidate
   /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
-  ///         BIT(2) for pKpi with proton PID, BIT(3) for piKp with proton PID
-  template <typename T, typename P>
-  int isSelectedLcInMassRange(const P& pTrackSameChargeFirst, const P& pTrackSameChargeSecond, const P& pTrackOppositeCharge, const T& TrackSameChargeFirst, const T& TrackSameChargeSecond, const float& ptLc)
+  template <typename T>
+  int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const int8_t isSelected)
   {
-    auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
-    auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
-
-    int retValue = 0;
-    if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty) {
-      retValue |= BIT(0);
-    }
-    if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty) {
-      retValue |= BIT(1);
-    }
-    if (isSelectedProton4Lc(TrackSameChargeFirst)) {
-      retValue |= BIT(2);
+    int8_t retValue = 0;
+    if (TESTBIT(isSelected, 0)) {
+      auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
       if (activateQA) {
         hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPKPi);
       }
+      if (std::abs(invMassLcToPKPi - massLc) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(0);
+      }
     }
-    if (isSelectedProton4Lc(TrackSameChargeSecond)) {
-      retValue |= BIT(3);
+    if (TESTBIT(isSelected, 1)) {
+      auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
       if (activateQA) {
         hMassVsPtC[kLc]->Fill(ptLc, invMassLcToPiKP);
+      }
+      if (std::abs(invMassLcToPiKP - massLc) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(1);
       }
     }
 
     return retValue;
   }
 
-  /// Basic additional selection of Xic candidates
+  /// Mass selection of Xic candidates to build Lb candidates
   /// \param pTrackSameChargeFirst is the first same-charge track momentum
-  /// \param pTrackSameChargeFirst is the second same-charge track momentum
-  /// \param pTrackSameChargeFirst is the opposite charge track momentum
+  /// \param pTrackSameChargeSecond is the second same-charge track momentum
+  /// \param pTrackOppositeCharge is the opposite charge track momentum
   /// \param ptXic is the pt of the D0 meson candidate
-  /// \return 1 for pKpi, 2 for piKp, 3 for both
+  /// \return BIT(0) for pKpi with mass cut, BIT(1) for piKp with mass cut
   template <typename T>
-  int isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic)
+  int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected)
   {
-    auto invMassXicToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
-    auto invMassXicToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
-
-    if (activateQA) {
-      hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPKPi);
-      hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPiKP);
+    int8_t retValue = 0;
+    if (TESTBIT(isSelected, 0)) {
+      auto invMassXicToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massK, massPi});
+      if (activateQA) {
+        hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPKPi);
+      }
+      if (std::abs(invMassXicToPKPi - massXic) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(0);
+      }
+    }
+    if (TESTBIT(isSelected, 1)) {
+      auto invMassXicToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massProton});
+      if (activateQA) {
+        hMassVsPtC[kXic]->Fill(ptXic, invMassXicToPiKP);
+      }
+      if (std::abs(invMassXicToPiKP - massXic) < deltaMassCharmHadronForBeauty) {
+        retValue |= BIT(1);
+      }
     }
 
-    int retValue = 0;
-    if (std::abs(invMassXicToPKPi - massXic) < 0.04) {
-      retValue += 1;
+    return retValue;
+  }
+
+  /// Single-track cuts for bachelor track of beauty candidates
+  /// \param scores is a 3-element array with BDT out scores
+  /// \return 0 if rejected, otherwise bitmap with BIT(RecoDecay::OriginType::Prompt) and/or BIT(RecoDecay::OriginType::NonPrompt) on
+  template <typename T>
+  int8_t isBDTSelected(const T& scores, const int candType)
+  {
+    int8_t retValue = 0;
+
+    if (scores[0] > thresholdBDTScores[candType].get(0u, "BDTbkg")) {
+      return retValue;
     }
-    if (std::abs(invMassXicToPiKP - massXic) < 0.04) {
-      retValue += 2;
+    if (scores[1] < thresholdBDTScores[candType].get(0u, "BDTprompt")) {
+      retValue |= BIT(RecoDecay::OriginType::Prompt);
+    }
+    if (scores[2] < thresholdBDTScores[candType].get(0u, "BDTnonprompt")) {
+      retValue |= BIT(RecoDecay::OriginType::NonPrompt);
     }
 
     return retValue;
@@ -775,8 +806,8 @@ struct HfFilter { // Main struct for HF triggers
           }
 
           int tagBDT = isBDTSelected(scores, kD0);
-          isCharmTagged = TESTBIT(tagBDT, kPrompt);
-          isBeautyTagged = TESTBIT(tagBDT, kNonPrompt);
+          isCharmTagged = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
+          isBeautyTagged = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
         } catch (const Ort::Exception& exception) {
           //LOG(error) << "Error running model inference: " << exception.what();
         }
@@ -861,7 +892,7 @@ struct HfFilter { // Main struct for HF triggers
 
     for (const auto& cand3Prong : cand3Prongs) { // start loop over 3 prongs
 
-      std::array<bool, kNCharmParticles - 1> is3Prong = {
+      std::array<int8_t, kNCharmParticles - 1> is3Prong = {
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DPlusToPiKPi),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToPiKK),
         TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::LcToPKPi),
@@ -870,19 +901,35 @@ struct HfFilter { // Main struct for HF triggers
         continue;
       }
 
-      std::array<bool, kNCharmParticles - 1> isCharmTagged = is3Prong;
-      std::array<bool, kNCharmParticles - 1> isBeautyTagged = is3Prong;
-
       auto trackFirst = cand3Prong.index0_as<BigTracksWithProtonPID>();
       auto trackSecond = cand3Prong.index1_as<BigTracksWithProtonPID>();
       auto trackThird = cand3Prong.index2_as<BigTracksWithProtonPID>();
 
+      std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
+      std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
+      std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
+
+      if (is3Prong[1]) { // Ds preselections
+        is3Prong[1] = isDsPreselected(pVecFirst, pVecThird, pVecSecond);
+      }
+      if (is3Prong[2] || is3Prong[3]) { // charm baryon preselections
+        auto presel = isCharmBaryonPreselected(trackFirst, trackThird);
+        if (is3Prong[2]) {
+          is3Prong[2] = presel;
+        }
+        if (is3Prong[3]) {
+          is3Prong[3] = presel;
+        }
+      }
+
+      std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
+      std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
+
       // apply ML models
       if (applyML) {
-        for (auto iCharmPart{0}; iCharmPart < kNCharmParticles - 1; ++iCharmPart) {
-          isCharmTagged[iCharmPart] = false;
-          isBeautyTagged[iCharmPart] = false;
-        }
+        isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
+        isBeautyTagged = std::array<int8_t, kNCharmParticles - 1>{0};
+
         // TODO: add more feature configurations
         std::vector<float> inputFeatures{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
         std::vector<double> inputFeaturesD{trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ()};
@@ -914,8 +961,8 @@ struct HfFilter { // Main struct for HF triggers
             }
 
             int tagBDT = isBDTSelected(scores, iCharmPart + 1);
-            isCharmTagged[iCharmPart] = TESTBIT(tagBDT, kPrompt);
-            isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, kNonPrompt);
+            isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
+            isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
           } catch (const Ort::Exception& exception) {
             // LOG(error) << "Error running model inference: " << exception.what();
           }
@@ -930,27 +977,22 @@ struct HfFilter { // Main struct for HF triggers
         n3Prongs++;
       } // end multiple 3-prong selection
 
-      std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-      std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-      std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
-
-      float sign3Prong = trackFirst.signed1Pt() * trackSecond.signed1Pt() * trackThird.signed1Pt();
-
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
+      float sign3Prong = trackFirst.signed1Pt() * trackSecond.signed1Pt() * trackThird.signed1Pt();
 
-      std::array<int, kNCharmParticles - 1> is3ProngInMass{0};
-      if (is3Prong[0] && (isCharmTagged[0] || isBeautyTagged[0])) {
+      std::array<int8_t, kNCharmParticles - 1> is3ProngInMass{0};
+      if (is3Prong[0]) {
         is3ProngInMass[0] = isSelectedDplusInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
       }
-      if (is3Prong[1] && (isCharmTagged[1] || isBeautyTagged[1])) {
-        is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+      if (is3Prong[1]) {
+        is3ProngInMass[1] = isSelectedDsInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[1]);
       }
-      if (is3Prong[2] && (isCharmTagged[2] || isBeautyTagged[2])) {
-        is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, trackFirst, trackThird, pt3Prong);
+      if (is3Prong[2]) {
+        is3ProngInMass[2] = isSelectedLcInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[2]);
       }
-      if (is3Prong[3] && (isCharmTagged[3] || isBeautyTagged[3])) {
-        is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong);
+      if (is3Prong[3]) {
+        is3ProngInMass[3] = isSelectedXicInMassRange(pVecFirst, pVecThird, pVecSecond, pt3Prong, is3Prong[3]);
       }
 
       if (pt3Prong >= pTThreshold3Prong) {
@@ -977,7 +1019,7 @@ struct HfFilter { // Main struct for HF triggers
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty]; ++iHypo) {
-            if (isBeautyTagged[iHypo] && ((iHypo != 1 && iHypo != 2 && is3ProngInMass[iHypo] > 0) || ((iHypo == 1 || iHypo == 2) && ((TESTBIT(is3ProngInMass[iHypo], 0) && TESTBIT(is3ProngInMass[iHypo], 2)) || (TESTBIT(is3ProngInMass[iHypo], 1) && TESTBIT(is3ProngInMass[iHypo], 3)))))) {
+            if (isBeautyTagged[iHypo] && (iHypo > 0 && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1)))) {
               auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
@@ -994,7 +1036,7 @@ struct HfFilter { // Main struct for HF triggers
         // 3-prong femto
         if (isSelectedProton4Femto(track)) {
           for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto]; ++iHypo) {
-            if (isCharmTagged[iHypo] && ((iHypo != 1 && iHypo != 2 && is3Prong[iHypo]) || ((iHypo == 1 || iHypo == 2) && is3Prong[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 2) || TESTBIT(is3ProngInMass[iHypo], 3))))) {
+            if (isCharmTagged[iHypo]) {
               float relativeMomentum = computeRelativeMomentum(track, pVec3Prong, massCharmHypos[iHypo]);
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto] = true;
@@ -1049,20 +1091,15 @@ struct HfFilter { // Main struct for HF triggers
 
       int8_t sign = 0;
       int8_t flag = 0;
-      int8_t origin = 0;
 
       // D0(bar) → π± K∓
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          flag = kNonPrompt;
-        } else if (origin == RecoDecay::OriginType::Prompt) {
-          flag = kPrompt;
+        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (flag < RecoDecay::OriginType::Prompt) {
+          continue;
         }
-      } else {
-        flag = kBkg;
       }
 
       double pseudoRndm = trackPos.pt() * 1000. - (long)(trackPos.pt() * 1000);
@@ -1087,10 +1124,15 @@ struct HfFilter { // Main struct for HF triggers
       auto pVec3Prong = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird);
       auto pt3Prong = RecoDecay::pt(pVec3Prong);
 
+      float deltaMassKKFirst = -1.f;
+      float deltaMassKKSecond = -1.f;
+      if (TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_prong3::DecayType::DsToPiKK)) {
+        deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massK, massK}) - massPhi);
+        deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massK, massK}) - massPhi);
+      }
       int8_t sign = 0;
       int8_t flag = 0;
       int8_t channel = -1;
-      int8_t origin = 0;
 
       // D± → π± K∓ π±
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, arrayDaughters, pdg::Code::kDPlus, array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
@@ -1121,19 +1163,15 @@ struct HfFilter { // Main struct for HF triggers
 
       if (indexRec > -1) {
         auto particle = particlesMC.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          flag = kNonPrompt;
-        } else {
-          flag = kPrompt;
+        flag = RecoDecay::getCharmHadronOrigin(particlesMC, particle);
+        if (flag < RecoDecay::OriginType::Prompt) {
+          continue;
         }
-      } else {
-        flag = kBkg;
       }
 
       double pseudoRndm = trackFirst.pt() * 1000. - (long)(trackFirst.pt() * 1000);
       if ((fillSignal && indexRec > -1) || (fillBackground && indexRec < 0 && pseudoRndm < donwSampleBkgFactor)) {
-        train3P(pt3Prong, trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
+        train3P(pt3Prong, deltaMassKKFirst, deltaMassKKSecond, trackFirst.pt(), trackFirst.dcaXY(), trackFirst.dcaZ(), trackFirst.tpcNSigmaPi(), trackFirst.tpcNSigmaKa(), trackFirst.tpcNSigmaPr(), trackFirst.tofNSigmaPi(), trackFirst.tofNSigmaKa(), trackFirst.tofNSigmaPr(),
                 trackSecond.pt(), trackSecond.dcaXY(), trackSecond.dcaZ(), trackSecond.tpcNSigmaPi(), trackSecond.tpcNSigmaKa(), trackSecond.tpcNSigmaPr(), trackSecond.tofNSigmaPi(), trackSecond.tofNSigmaKa(), trackSecond.tofNSigmaPr(),
                 trackThird.pt(), trackThird.dcaXY(), trackThird.dcaZ(), trackThird.tpcNSigmaPi(), trackThird.tpcNSigmaKa(), trackThird.tpcNSigmaPr(), trackThird.tofNSigmaPi(), trackThird.tofNSigmaKa(), trackThird.tofNSigmaPr(),
                 flag, channel, cand3Prong.hfflag());
