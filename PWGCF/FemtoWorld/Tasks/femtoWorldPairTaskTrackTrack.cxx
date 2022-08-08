@@ -212,7 +212,7 @@ struct femtoWorldPairTaskTrackTrack {
   }
 
   // PID
-  bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK)
+  bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
   {
     //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
     if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
@@ -225,7 +225,7 @@ struct femtoWorldPairTaskTrackTrack {
     return false;
   }
 
-  bool IsKaonTOFNSigma(float mom, float nsigmaK)
+  bool IsKaonTOFNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
   {
     //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
     if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
@@ -254,34 +254,54 @@ struct femtoWorldPairTaskTrackTrack {
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (!((part.p() < 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())))) {
-        continue;
-      } else if (!((part.p() >= 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-        continue;
+      if ((part.p() > (float)0.45)) {
+        if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
+          continue;
+        }
+
+      } else if ((part.p() <= (float)0.45)) {
+        if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
+          continue;
+        }
       }
       trackHistoPartOne.fillQA(part);
     }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if (!((part.p() < 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())))) {
-          continue;
-        } else if (!((part.p() >= 0.45) && (IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-          continue;
+        if ((part.p() > (float)0.45)) {
+          if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
+            continue;
+          }
+
+        } else if ((part.p() <= (float)0.45)) {
+          if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
+            continue;
+          }
         }
         trackHistoPartTwo.fillQA(part);
       }
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
-      if (!((p1.p() < 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())))) {
-        continue;
-      } else if (!((p1.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-        continue;
+      if ((p1.p() > (float)0.45)) {
+        if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
+          continue;
+        }
+
+      } else if ((p1.p() <= (float)0.45)) {
+        if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
+          continue;
+        }
       }
-      if (!((p2.p() < 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())))) {
-        continue;
-      } else if (!((p2.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-        continue;
+      if ((p2.p() > (float)0.45)) {
+        if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
+          continue;
+        }
+
+      } else if ((p2.p() <= (float)0.45)) {
+        if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
+          continue;
+        }
       }
       if (ConfIsCPR) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
@@ -322,15 +342,23 @@ struct femtoWorldPairTaskTrackTrack {
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (!((p1.p() < 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())))) {
-          continue;
-        } else if (!((p1.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
-          continue;
+        if ((p1.p() > (float)0.45)) {
+          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKaon())))) {
+            continue;
+          }
+        } else if ((p1.p() <= (float)0.45)) {
+          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKaon()))) {
+            continue;
+          }
         }
-        if (!((p2.p() < 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())))) {
-          continue;
-        } else if (!((p2.p() >= 0.45) && (IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
-          continue;
+        if ((p2.p() > (float)0.45)) {
+          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKaon())))) {
+            continue;
+          }
+        } else if ((p2.p() <= (float)0.45)) {
+          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKaon()))) {
+            continue;
+          }
         }
 
         if (ConfIsCPR) {

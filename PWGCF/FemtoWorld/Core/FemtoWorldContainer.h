@@ -103,7 +103,7 @@ class FemtoWorldContainer
     mHistogramRegistry->add((folderName + "MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
     mHistogramRegistry->add((folderName + "PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
     mHistogramRegistry->add((folderName + "relPairDetaDphi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2D, {phiAxis, etaAxis});
-    mHistogramRegistry->add((folderName + "relPairInvariantMass").c_str(), ";M_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
+    mHistogramRegistry->add((folderName + "relPairInvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
   }
 
   /// Set the PDG codes of the two particles involved
