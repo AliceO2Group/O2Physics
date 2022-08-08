@@ -33,7 +33,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "DPG/Tasks/qaPIDTPC.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -54,6 +54,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 struct tpcPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
   using Coll = soa::Join<aod::Collisions, aod::Mults>;
+
   // Tables to produce
   Produces<o2::aod::pidTPCEl> tablePIDEl;
   Produces<o2::aod::pidTPCMu> tablePIDMu;
@@ -129,6 +130,7 @@ struct tpcPid {
       const std::string path = ccdbPath.value;
       const auto time = ccdbTimestamp.value;
       ccdb->setURL(url.value);
+
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -165,6 +167,7 @@ struct tpcPid {
   {
 
     const unsigned long tracks_size = tracks.size();
+
     auto reserveTable = [&tracks_size](const Configurable<int>& flag, auto& table) {
       if (flag.value != 1) {
         return;
@@ -254,7 +257,8 @@ struct tpcPid {
     int lastCollisionId = -1; // Last collision ID analysed
     unsigned long count_tracks = 0;
 
-    for (auto const& trk : tracks) {                                                                                 // Loop on Tracks
+    for (auto const& trk : tracks) {
+      // Loop on Tracks
       if (useCCDBParam && ccdbTimestamp.value == 0 && trk.has_collision() && trk.collisionId() != lastCollisionId) { // Updating parametrization only if the initial timestamp is 0
         lastCollisionId = trk.collisionId();
         const auto& bc = collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>();
@@ -266,9 +270,10 @@ struct tpcPid {
           return;
         }
 
-        // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
-        // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
         if (useNetworkCorrection) {
+
+          // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+          // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
           if (network.getOutputDimensions() == 1) {
             aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - network_prediction[count_tracks + tracks_size * pid] * response.GetExpectedSignal(trk, pid)) / response.GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
           } else if (network.getOutputDimensions() == 2) {
