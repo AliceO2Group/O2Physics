@@ -124,7 +124,7 @@ struct femtoWorldPairTaskTrackTrack {
     ;
   /// Histogramming for particle 2
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 3> trackHistoPartTwo;
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 3> trackHistoPartTwoFailed;
+  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 4> trackHistoPartTwoFailed;
 
   /// Histogramming for Event
   FemtoWorldEventHisto eventHisto;
@@ -163,10 +163,10 @@ struct femtoWorldPairTaskTrackTrack {
   {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
-    // trackHistoPartOneFailed.init(&qaRegistryFail);
+    trackHistoPartOneFailed.init(&qaRegistry);
     if (!ConfIsSame) {
       trackHistoPartTwo.init(&qaRegistry);
-      // trackHistoPartTwoFailed.init(&qaRegistryFail);
+      trackHistoPartTwoFailed.init(&qaRegistry);
     }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -223,8 +223,8 @@ struct femtoWorldPairTaskTrackTrack {
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    // auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
-    // auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsOneFailed = partsOneFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
+    auto groupPartsTwoFailed = partsTwoFailed->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
 
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
@@ -242,19 +242,10 @@ struct femtoWorldPairTaskTrackTrack {
       }
       trackHistoPartOne.fillQA(part);
     }
-    /*for (auto& part : groupPartsOneFailed) {
-      if ((part.p() > (float)0.45)) {
-        if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-          continue;
-        }
+    for (auto& part : groupPartsOneFailed) {
 
-      } else if ((part.p() <= (float)0.45)) {
-        if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
-          continue;
-        }
-      }
       trackHistoPartOneFailed.fillQA(part);
-    }*/
+    }
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
         if ((part.p() > (float)0.45)) {
@@ -268,20 +259,11 @@ struct femtoWorldPairTaskTrackTrack {
           }
         }
         trackHistoPartTwo.fillQA(part);
-      } /*
-       for (auto& part : groupPartsTwoFailed) {
-         if ((part.p() > (float)0.45)) {
-           if (!((IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon())) && (IsKaonTOFNSigma(part.p(), part.tofNSigmaKaon())))) {
-             continue;
-           }
+      }
+      for (auto& part : groupPartsTwoFailed) {
 
-         } else if ((part.p() <= (float)0.45)) {
-           if (!(IsKaonTPCdEdxNSigma(part.p(), part.tpcNSigmaKaon()))) {
-             continue;
-           }
-         }
-         trackHistoPartTwoFailed.fillQA(part);
-       }*/
+        trackHistoPartTwoFailed.fillQA(part);
+      }
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
