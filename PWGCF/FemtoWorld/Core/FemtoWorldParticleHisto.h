@@ -17,7 +17,7 @@
 #ifndef FEMTOWORLDPARTICLEHISTO_H_
 #define FEMTOWORLDPARTICLEHISTO_H_
 
-#include "PWGCF/DataModel/FemtoWorldDerived.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;

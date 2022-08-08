@@ -34,17 +34,3 @@ o2physics_add_dpl_workflow(femto-world-pair-track-track
 #          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
 #          COMPONENT_NAME Analysis)
 
-#o2physics_add_dpl_workflow(femto-world-producer-reduced
-#          SOURCES femtoWorldProducerReducedTask.cxx
-#          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-#          COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(femto-world-producer
-          SOURCES femtoWorldProducerTask.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-          COMPONENT_NAME Analysis)
-
-#o2physics_add_dpl_workflow(femto-world-producer-v0
-#          SOURCES femtoWorldProducerTaskV0Only.cxx
-#          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-#          COMPONENT_NAME Analysis)

@@ -18,7 +18,7 @@
 #ifndef FEMTOWORLDTRACKSELECTION_H_
 #define FEMTOWORLDTRACKSELECTION_H_
 
-#include "PWGCF/DataModel/FemtoWorldDerived.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"

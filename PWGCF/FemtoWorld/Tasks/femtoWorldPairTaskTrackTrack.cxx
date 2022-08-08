@@ -20,9 +20,8 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
-//#include "Common/DataModel/PIDResponse.h"
 
-#include "PWGCF/DataModel/FemtoWorldDerived.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldParticleHisto.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldEventHisto.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"

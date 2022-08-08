@@ -17,7 +17,7 @@
 #ifndef FEMTOWORLDDETADPHISTAR_H_
 #define FEMTOWORLDDETADPHISTAR_H_
 
-#include "PWGCF/DataModel/FemtoWorldDerived.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 
 #include "Framework/HistogramRegistry.h"
 #include <string>

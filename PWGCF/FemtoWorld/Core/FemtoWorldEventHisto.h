@@ -17,7 +17,7 @@
 #ifndef FEMTOWORLDEVENTHISTO_H_
 #define FEMTOWORLDEVENTHISTO_H_
 
-#include "PWGCF/DataModel/FemtoWorldDerived.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
