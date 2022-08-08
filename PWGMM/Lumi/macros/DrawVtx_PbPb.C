@@ -1,9 +1,27 @@
-{
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+/// \author Junlee Kim (jikim1290@gmail.com)
+/// \since November 2021
+// usage: o2-analysis-timestamp -b --aod-file AO2D.root --configuration
+// json://./config.json | o2-analysis-trackextension -b |
+// o2-analysis-trackselection -b --isRun3 <0, 1> | o2-analysis-mm-lumi -b
+// --configuration json://./config.json
+
+
+void DrawVtx_PbPb(){
   const char fname[1000] = {"upd_full_trk"};
   // org, upd
 
   TFile *ftot = new TFile(
-      Form("../data/PbPb_Run2conv/AnalysisResults_%s.root", fname), "read");
+      Form("../data/PbPb_Run2conv/AnalysisResults_%s.root", fname), "read"); //change me
   TH2F *hTime_VtxX = (TH2F *)ftot->Get("lumi/vertexx_Refitted_timestamp");
   TH2F *hTime_VtxY = (TH2F *)ftot->Get("lumi/vertexy_Refitted_timestamp");
 
