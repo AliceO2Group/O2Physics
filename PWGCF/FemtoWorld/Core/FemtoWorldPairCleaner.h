@@ -12,12 +12,12 @@
 /// \file FemtoWorldPairCleaner.h
 /// \brief FemtoWorldPairCleaner - Makes sure only proper candidates are paired
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
 #ifndef FEMTOWORLDPAIRCLEANER_H_
 #define FEMTOWORLDPAIRCLEANER_H_
 
-#include "PWGCF/DataModel/FemtoDerived.h"
-
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
@@ -29,7 +29,7 @@ namespace o2::analysis::femtoWorld
 /// \brief Class taking care that no autocorrelations enter the same event distribution
 /// \tparam partOne Type of particle 1 (Track/V0/Cascade/...)
 /// \tparam partTwo Type of particle 2 (Track/V0/Cascade/...)
-template <o2::aod::femtodreamparticle::ParticleType partOne, o2::aod::femtodreamparticle::ParticleType partTwo>
+template <o2::aod::femtoworldparticle::ParticleType partOne, o2::aod::femtoworldparticle::ParticleType partTwo>
 class FemtoWorldPairCleaner
 {
  public:
@@ -56,16 +56,16 @@ class FemtoWorldPairCleaner
   template <typename Part, typename Parts>
   bool isCleanPair(Part const& part1, Part const& part2, Parts const& particles)
   {
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
       /// Track-Track combination
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack) {
+      if (part1.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack) {
         LOG(fatal) << "FemtoWorldPairCleaner: passed arguments don't agree with FemtoWorldPairCleaner instantiation! Please provide kTrack,kTrack candidates.";
         return false;
       }
       return part1.globalIndex() != part2.globalIndex();
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kV0) {
       /// Track-V0 combination
-      if (part2.partType() != o2::aod::femtodreamparticle::ParticleType::kV0) {
+      if (part2.partType() != o2::aod::femtoworldparticle::ParticleType::kV0) {
         LOG(fatal) << "FemtoWorldPairCleaner: passed arguments don't agree with FemtoWorldPairCleaner instantiation! Please provide second argument kV0 candidate.";
         return false;
       }
@@ -85,8 +85,8 @@ class FemtoWorldPairCleaner
 
  private:
   HistogramRegistry* mHistogramRegistry;                                             ///< For QA output
-  static constexpr o2::aod::femtodreamparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
-  static constexpr o2::aod::femtodreamparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
+  static constexpr o2::aod::femtoworldparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
+  static constexpr o2::aod::femtoworldparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
 };
 } // namespace o2::analysis::femtoWorld
 
