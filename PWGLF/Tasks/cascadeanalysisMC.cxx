@@ -23,6 +23,9 @@
 // during reconstruction and collision association is better
 // done at that stage.
 //
+// this task makes use of labels provided by the cascade
+// builder to process cascades quickly.
+//
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
 //    david.dobrigkeit.chinellato@cern.ch
@@ -63,7 +66,7 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, a
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
-struct cascadeQa {
+struct cascadeQaMC {
   // Basic checks
   HistogramRegistry registry{
     "registry",
@@ -87,15 +90,30 @@ struct cascadeQa {
     },
   };
 
-  void process(aod::Collision const& collision, aod::CascDataExt const& Cascades)
+  Configurable<bool> assocMC{"assocMC", true, "fill histograms only for MC associated candidates"};
+
+  void process(aod::Collision const& collision, LabeledCascades const& Cascades, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
+      Int_t lPDG = 0;
+      if (assocMC) {
+        if (!casc.has_mcParticle())
+          continue;
+        auto cascmc = casc.mcParticle();
+        if (TMath::Abs(cascmc.pdgCode()) == 3312 || TMath::Abs(cascmc.pdgCode()) == 3334)
+          lPDG = cascmc.pdgCode();
+      }
+
       if (casc.sign() < 0) { // FIXME: could be done better...
-        registry.fill(HIST("hMassXiMinus"), casc.mXi());
-        registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
+        if (!assocMC || lPDG == 3312)
+          registry.fill(HIST("hMassXiMinus"), casc.mXi());
+        if (!assocMC || lPDG == 3334)
+          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega());
       } else {
-        registry.fill(HIST("hMassXiPlus"), casc.mXi());
-        registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
+        if (!assocMC || lPDG == -3312)
+          registry.fill(HIST("hMassXiPlus"), casc.mXi());
+        if (!assocMC || lPDG == -3334)
+          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega());
       }
       // The basic eleven!
       registry.fill(HIST("hV0Radius"), casc.v0radius());
@@ -113,7 +131,7 @@ struct cascadeQa {
   }
 };
 
-struct cascadeAnalysis {
+struct cascadeAnalysisMC {
   HistogramRegistry registry{
     "registry",
     {},
@@ -151,6 +169,7 @@ struct cascadeAnalysis {
   Configurable<bool> allowITSSAbachelor{"allowITSSAbachelor", true, "allow for bachelor <- cascade track to be via ITS tracking only"};
   Configurable<bool> allowITSSAproton{"allowITSSAproton", true, "allow for proton <- lambda track to be via ITS tracking only"};
   Configurable<bool> allowITSSApion{"allowITSSApion", false, "allow for pion <- lambda track to be via ITS tracking only "};
+  Configurable<bool> assocMC{"assocMC", true, "fill histograms only for MC associated candidates"};
 
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
@@ -158,11 +177,21 @@ struct cascadeAnalysis {
   Partition<LabeledCascades> associatedCascades = (aod::mccasclabel::mcParticleId > -1);
 
   template <class TCascTracksTo>
-  void fillCascadeOutput(soa::Filtered<aod::CascDataExt> const& cascades, float const& pvx, float const& pvy, float const& pvz)
+  void fillCascadeOutput(soa::Filtered<LabeledCascades> const& cascades, float const& pvx, float const& pvy, float const& pvz)
   //function to process cascades and generate corresponding invariant mass distributions
   {
     for (auto& casc : cascades) {
       registry.fill(HIST("hCandidateCounter"), 0.5); //all candidates
+      //check mc association if requested
+      Int_t lPDG = 0;
+      if (assocMC) {
+        if (!casc.has_mcParticle())
+          continue;
+        auto cascmc = casc.mcParticle();
+        if (TMath::Abs(cascmc.pdgCode()) == 3312 || TMath::Abs(cascmc.pdgCode()) == 3334)
+          lPDG = cascmc.pdgCode();
+      }
+
       auto v0 = casc.v0_as<o2::aod::V0sLinked>();
       if (!(v0.has_v0Data())) {
         continue; //skip those cascades for which V0 doesn't exist
@@ -227,18 +256,18 @@ struct cascadeAnalysis {
           casc.dcav0topv(pvx, pvy, pvz) > dcav0topv &&
           TMath::Abs(casc.mLambda() - 1.115683) < v0masswindow) {
         registry.fill(HIST("hCandidateCounter"), 3.5); //pass cascade selections
-        if (casc.sign() < 0) {                         // FIXME: could be done better...
-          if (TMath::Abs(casc.yXi()) < 0.5) {
+        if (casc.sign() < 0) {
+          if (TMath::Abs(casc.yXi()) < 0.5 && ((!assocMC) || (lPDG == 3312))) {
             registry.fill(HIST("h2dMassXiMinus"), casc.template pt(), casc.template mXi());
           }
-          if (TMath::Abs(casc.yOmega()) < 0.5) {
+          if (TMath::Abs(casc.yOmega()) < 0.5 && ((!assocMC) || (lPDG == 3334))) {
             registry.fill(HIST("h2dMassOmegaMinus"), casc.template pt(), casc.template mOmega());
           }
         } else {
-          if (TMath::Abs(casc.yXi()) < 0.5) {
+          if (TMath::Abs(casc.yXi()) < 0.5 && ((!assocMC) || (lPDG == -3312))) {
             registry.fill(HIST("h2dMassXiPlus"), casc.template pt(), casc.template mXi());
           }
-          if (TMath::Abs(casc.yOmega()) < 0.5) {
+          if (TMath::Abs(casc.yOmega()) < 0.5 && ((!assocMC) || (lPDG == -3334))) {
             registry.fill(HIST("h2dMassOmegaPlus"), casc.template pt(), casc.template mOmega());
           }
         }
@@ -246,7 +275,7 @@ struct cascadeAnalysis {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::McParticles const&)
   //process function subscribing to Run 3-like analysis objects
   {
     //Run 3 event selection criteria
@@ -256,9 +285,9 @@ struct cascadeAnalysis {
     //fill cascade information with tracksIU typecast (Run 3)
     fillCascadeOutput<FullTracksExtIU>(Cascades, collision.posX(), collision.posY(), collision.posZ());
   }
-  PROCESS_SWITCH(cascadeAnalysis, processRun3, "Process Run 3 data", true);
+  PROCESS_SWITCH(cascadeAnalysisMC, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&, aod::McParticles const&)
   //process function subscribing to Run 3-like analysis objects
   {
     //Run 2 event selection criteria
@@ -271,12 +300,12 @@ struct cascadeAnalysis {
     //fill cascade information with tracks typecast (Run 2)
     fillCascadeOutput<FullTracksExt>(Cascades, collision.posX(), collision.posY(), collision.posZ());
   }
-  PROCESS_SWITCH(cascadeAnalysis, processRun2, "Process Run 2 data", false);
+  PROCESS_SWITCH(cascadeAnalysisMC, processRun2, "Process Run 2 data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadeAnalysis>(cfgc),
-    adaptAnalysisTask<cascadeQa>(cfgc)};
+    adaptAnalysisTask<cascadeAnalysisMC>(cfgc),
+    adaptAnalysisTask<cascadeQaMC>(cfgc)};
 }

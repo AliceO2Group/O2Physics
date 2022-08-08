@@ -461,6 +461,12 @@ struct lambdakzeroLabelBuilder {
 
   void init(InitContext const&) {}
 
+  void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
+  {
+    //dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(lambdakzeroLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
+
   void processBuildLabels(aod::Collisions::iterator const& collision, aod::V0Datas const& v0table, aod::Tracks const& tracks, aod::McParticles const& particlesMC)
   {
     for (auto& v0 : v0table) {

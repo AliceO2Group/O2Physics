@@ -11,7 +11,7 @@
 
 /// \file femtoDreamProducerTask.cxx
 /// \brief Tasks that produces the track tables used for the pairing
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
 #include "FemtoDreamCollisionSelection.h"
 #include "FemtoDreamTrackSelection.h"
@@ -46,12 +46,18 @@ namespace o2::aod
 using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
                                      aod::Mults>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions,
+                                       aod::EvSels,
+                                       aod::Mults,
+                                       aod::McCollisionLabels>::iterator;
+
 using FemtoFullTracks = soa::Join<aod::FullTracks,
                                   aod::TracksDCA, aod::TOFSignal,
                                   aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                   aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                   aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                   aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
 } // namespace o2::aod
 
@@ -77,7 +83,9 @@ struct femtoDreamProducerTask {
 
   Produces<aod::FemtoDreamCollisions> outputCollision;
   Produces<aod::FemtoDreamParticles> outputParts;
+  Produces<aod::FemtoDreamParticlesMC> outputPartsMC;
   Produces<aod::FemtoDreamDebugParticles> outputDebugParts;
+  Produces<aod::FemtoDreamDebugParticlesMC> outputDebugPartsMC;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -159,6 +167,13 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
+    if (doprocessData == false && doprocessMC == false) {
+      LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
+    }
+    if (doprocessData == true && doprocessMC == true) {
+      LOGF(fatal, "Cannot enable processData and processMC at the same time. Please choose one.");
+    }
+
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
     colCuts.init(&qaRegistry);
 
@@ -223,9 +238,13 @@ struct femtoDreamProducerTask {
   }
 
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
-  float getMagneticFieldTesla(uint64_t timestamp)
+  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    // get magnetic field for run
+    if (mRunNumber == bc.runNumber())
+      return;
+    auto timestamp = bc.timestamp();
     float output = -999;
 
     if (ConfIsRun3 && !ConfIsMC) {
@@ -234,7 +253,7 @@ struct femtoDreamProducerTask {
         grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
         if (grpo == nullptr) {
           LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return 0;
+          return;
         }
         LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
       }
@@ -249,24 +268,78 @@ struct femtoDreamProducerTask {
         grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
         if (grpo == nullptr) {
           LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-          return 0;
+          return;
         }
         LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
       }
       output = 0.1 * (grpo->getNominalL3Field());
     }
-    return output;
+    mMagField = output;
+    mRunNumber = bc.runNumber();
   }
 
-  void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
-               o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
+  template <bool isTrackOrV0, typename ParticleType>
+  void fillDebugParticle(ParticleType const& particle)
   {
-    // get magnetic field for run
-    auto bc = col.bc_as<aod::BCsWithTimestamps>();
-    if (mRunNumber != bc.runNumber()) {
-      mMagField = getMagneticFieldTesla(bc.timestamp());
-      mRunNumber = bc.runNumber();
+    if constexpr (isTrackOrV0) {
+      outputDebugParts(particle.sign(),
+                       (uint8_t)particle.tpcNClsFound(),
+                       particle.tpcNClsFindable(),
+                       (uint8_t)particle.tpcNClsCrossedRows(),
+                       particle.tpcNClsShared(),
+                       particle.tpcInnerParam(),
+                       particle.itsNCls(),
+                       particle.itsNClsInnerBarrel(),
+                       particle.dcaXY(),
+                       particle.dcaZ(),
+                       particle.tpcSignal(),
+                       particle.tpcNSigmaStoreEl(),
+                       particle.tpcNSigmaStorePi(),
+                       particle.tpcNSigmaStoreKa(),
+                       particle.tpcNSigmaStorePr(),
+                       particle.tpcNSigmaStoreDe(),
+                       particle.tofNSigmaStoreEl(),
+                       particle.tofNSigmaStorePi(),
+                       particle.tofNSigmaStoreKa(),
+                       particle.tofNSigmaStorePr(),
+                       particle.tofNSigmaStoreDe(),
+                       -999., -999., -999., -999., -999., -999.);
+    } else {
+      outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       particle.dcaV0daughters(),
+                       particle.v0radius(),
+                       particle.x(),
+                       particle.y(),
+                       particle.z(),
+                       particle.mK0Short()); // QA for v0
     }
+  }
+  template <typename ParticleType>
+  void fillMCParticle(ParticleType const& particle)
+  {
+    if (particle.has_mcParticle()) {
+      // get corresponding MC particle and its info
+      auto particleMC = particle.mcParticle();
+      auto pdgCode = particleMC.pdgCode();
+      bool isPrimary = particleMC.isPhysicalPrimary();
+      if (isPrimary) {
+        outputPartsMC(outputParts.lastIndex(), aod::femtodreamparticleMC::ParticleOriginMCTruth::kPrimary, pdgCode);
+      } else {
+        outputPartsMC(outputParts.lastIndex(), aod::femtodreamparticleMC::ParticleOriginMCTruth::kNotPrimary, pdgCode);
+      }
+      // fill with correct values, this is currently placeholder
+      outputDebugPartsMC(-999);
+    } else {
+      outputPartsMC(outputParts.lastIndex(), -999, -999);
+      outputDebugPartsMC(-999);
+    }
+  }
+
+  template <bool isMC, typename V0Type, typename TrackType, typename CollisionType>
+  void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
+  {
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:
@@ -315,40 +388,18 @@ struct femtoDreamProducerTask {
                   childIDs, 0, 0);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfDebugOutput) {
-        outputDebugParts(track.sign(),
-                         (uint8_t)track.tpcNClsFound(),
-                         track.tpcNClsFindable(),
-                         (uint8_t)track.tpcNClsCrossedRows(),
-                         track.tpcNClsShared(),
-                         track.tpcInnerParam(),
-                         track.itsNCls(),
-                         track.itsNClsInnerBarrel(),
-                         track.dcaXY(),
-                         track.dcaZ(),
-                         track.tpcSignal(),
-                         track.tpcNSigmaStoreEl(),
-                         track.tpcNSigmaStorePi(),
-                         track.tpcNSigmaStoreKa(),
-                         track.tpcNSigmaStorePr(),
-                         track.tpcNSigmaStoreDe(),
-                         track.tofNSigmaStoreEl(),
-                         track.tofNSigmaStorePi(),
-                         track.tofNSigmaStoreKa(),
-                         track.tofNSigmaStorePr(),
-                         track.tofNSigmaStoreDe(),
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.,
-                         -999.);
+        fillDebugParticle<true>(track);
+      }
+
+      if constexpr (isMC) {
+        fillMCParticle(track);
       }
     }
 
     if (ConfStoreV0) {
       for (auto& v0 : fullV0s) {
-        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
-        auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
+        auto postrack = v0.template posTrack_as<TrackType>();
+        auto negtrack = v0.template negTrack_as<TrackType>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
@@ -375,6 +426,9 @@ struct femtoDreamProducerTask {
           childIDs[1] = 0;
           outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kPosPID), 0., childIDs, 0, 0);
           const int rowOfPosTrack = outputParts.lastIndex();
+          if constexpr (isMC) {
+            fillMCParticle(postrack);
+          }
           int negtrackID = v0.negTrackId();
           int rowInPrimaryTrackTableNeg = -1;
           rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
@@ -382,95 +436,49 @@ struct femtoDreamProducerTask {
           childIDs[1] = rowInPrimaryTrackTableNeg;
           outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtodreamparticle::ParticleType::kV0Child, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
           const int rowOfNegTrack = outputParts.lastIndex();
+          if constexpr (isMC) {
+            fillMCParticle(negtrack);
+          }
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
           outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
-            outputDebugParts(postrack.sign(),
-                             (uint8_t)postrack.tpcNClsFound(),
-                             postrack.tpcNClsFindable(),
-                             (uint8_t)postrack.tpcNClsCrossedRows(),
-                             postrack.tpcNClsShared(),
-                             postrack.tpcInnerParam(),
-                             postrack.itsNCls(),
-                             postrack.itsNClsInnerBarrel(),
-                             postrack.dcaXY(),
-                             postrack.dcaZ(),
-                             postrack.tpcSignal(),
-                             postrack.tpcNSigmaStoreEl(),
-                             postrack.tpcNSigmaStorePi(),
-                             postrack.tpcNSigmaStoreKa(),
-                             postrack.tpcNSigmaStorePr(),
-                             postrack.tpcNSigmaStoreDe(),
-                             postrack.tofNSigmaStoreEl(),
-                             postrack.tofNSigmaStorePi(),
-                             postrack.tofNSigmaStoreKa(),
-                             postrack.tofNSigmaStorePr(),
-                             postrack.tofNSigmaStoreDe(),
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.); // QA for positive daughter
-            outputDebugParts(negtrack.sign(),
-                             (uint8_t)negtrack.tpcNClsFound(),
-                             negtrack.tpcNClsFindable(),
-                             (uint8_t)negtrack.tpcNClsCrossedRows(),
-                             negtrack.tpcNClsShared(),
-                             negtrack.tpcInnerParam(),
-                             negtrack.itsNCls(),
-                             negtrack.itsNClsInnerBarrel(),
-                             negtrack.dcaXY(),
-                             negtrack.dcaZ(),
-                             negtrack.tpcSignal(),
-                             negtrack.tpcNSigmaStoreEl(),
-                             negtrack.tpcNSigmaStorePi(),
-                             negtrack.tpcNSigmaStoreKa(),
-                             negtrack.tpcNSigmaStorePr(),
-                             negtrack.tpcNSigmaStoreDe(),
-                             negtrack.tofNSigmaStoreEl(),
-                             negtrack.tofNSigmaStorePi(),
-                             negtrack.tofNSigmaStoreKa(),
-                             negtrack.tofNSigmaStorePr(),
-                             negtrack.tofNSigmaStoreDe(),
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.); // QA for negative daughter
-            outputDebugParts(-999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             -999.,
-                             v0.dcaV0daughters(),
-                             v0.v0radius(),
-                             v0.x(),
-                             v0.y(),
-                             v0.z(),
-                             v0.mK0Short()); // QA for V0
+            fillDebugParticle<true>(postrack); // QA for positive daughter
+            fillDebugParticle<true>(postrack); // QA for negative daughter
+            fillDebugParticle<false>(v0);      // QA for v0
+          }
+          if constexpr (isMC) {
+            // write code to fill lambdas!
+            // fill for lambda
+            outputPartsMC(outputParts.lastIndex(), -999, -999);
+            outputDebugPartsMC(-999);
           }
         }
       }
     }
   }
+
+  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
+                   o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<false>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processData, "Provide experimental data", true);
+
+  void processMC(aod::FemtoFullCollisionMC const& col,
+                 aod::BCsWithTimestamps const&,
+                 soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles,
+                 o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<true>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

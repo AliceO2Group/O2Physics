@@ -33,7 +33,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "DPG/Tasks/qaPIDTPC.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -297,7 +297,6 @@ struct tpcPidFull {
         }
       };
 
-      // const o2::pid::tpc::Response& response;
       makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
       makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
       makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
