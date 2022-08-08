@@ -18,6 +18,9 @@
 #include <string_view>
 #include <string>
 #include <vector>
+#include <array>
+#include <numeric>
+#include "TComplex.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Expressions.h"
@@ -108,6 +111,9 @@ static constexpr std::string_view TrackVariableNames[kLAST_TrackVariable] = {"Pt
 
 // common info string for all configurables
 std::string info = std::string(": Hist bins, Hist lower edge, Hist upper edge, lower cut, upper cut, cut ON(1)/OFF(-1)");
+
+const int MaxHarmonic = 10;
+const int MaxPower = 10;
 
 // function for computing the absolute distance of the primary vertex form the origin
 inline float abs(float vx, float vy, float vz)
@@ -225,6 +231,13 @@ struct MultiParticleCorrelationsARTask {
                              false,
                              false};
 
+  // declare 2d array for qvectors
+  std::array<std::array<TComplex, AR::MaxHarmonic>, AR::MaxPower> QVectors;
+
+  // declare objects for computing qvectors
+  std::vector<double> Angles;
+  std::vector<double> Weights;
+
   void init(InitContext&)
   {
 
@@ -325,7 +338,7 @@ struct MultiParticleCorrelationsARTask {
 
   // function for checking if collision survives event cuts
   template <typename CollisionObject, typename TrackObject>
-  bool SurviveEventCuts(CollisionObject collision, TrackObject tracks, float* reducedMultiplicityQ, float* reducedMultiplicityW)
+  bool SurviveEventCuts(CollisionObject collision, TrackObject tracks)
   {
     bool flag = true;
 
@@ -352,10 +365,6 @@ struct MultiParticleCorrelationsARTask {
         }
       }
     }
-
-    // update the values for Multiplicity{Q,W}, whose references are passed to this function
-    *reducedMultiplicityQ = MultiplicityQ;
-    *reducedMultiplicityW = MultiplicityW;
 
     // at last, check if event also passes this cut
     if (!AR::SurviveCut(cfgMULQ.value, MultiplicityQ) ||
@@ -388,6 +397,33 @@ struct MultiParticleCorrelationsARTask {
     return flag;
   }
 
+  // Calculate all Q-vectors
+  void CalculateQvectors()
+  {
+    // Make sure all Q-vectors are initially zero
+    for (int h = 0; h < AR::MaxHarmonic; h++) {
+      for (int p = 0; p < AR::MaxPower; p++) {
+        QVectors[h][p] = TComplex(0., 0.);
+      }
+    }
+
+    // Calculate Q-vectors for available angles and weights
+    double dPhi = 0.;
+    double wPhi = 1.;         // particle weight
+    double wPhiToPowerP = 1.; // particle weight raised to power p
+    for (std::size_t i = 0; i < Angles.size(); i++) {
+      dPhi = Angles.at(i);
+      wPhi = Weights.at(i);
+      for (int h = 0; h < AR::MaxHarmonic; h++) {
+        for (int p = 0; p < AR::MaxPower; p++) {
+          wPhiToPowerP = TMath::Power(wPhi, p);
+          QVectors[h][p] += TComplex(wPhiToPowerP * TMath::Cos(h * dPhi),
+                                     wPhiToPowerP * TMath::Sin(h * dPhi));
+        }
+      }
+    }
+  }
+
   using CollisionsInstance = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>;
   using TracksInstance = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
 
@@ -396,21 +432,22 @@ struct MultiParticleCorrelationsARTask {
 
   void process(CollisionsInstanceIterator const& collision, TracksInstance const& tracks)
   {
+
+    // clear angles and weights
+    Angles.clear();
+    Weights.clear();
+
     LOGF(info, "Process reconstructed event: %d", collision.index());
 
     FillEventControlHist<AR::kRECO, AR::kBEFORE, CollisionsInstanceIterator>(collision, registry);
     FillEventControlHistMul<AR::kRECO, AR::kBEFORE>(registry, collision.size(), collision.size());
 
-    float reducedMultiplicityQ = 0;
-    float reducedMultiplicityW = 0;
-
-    if (!SurviveEventCuts(collision, tracks, &reducedMultiplicityQ, &reducedMultiplicityW)) {
+    if (!SurviveEventCuts(collision, tracks)) {
       LOGF(info, "Event was CUT");
       return;
     }
 
     FillEventControlHist<AR::kRECO, AR::kAFTER, CollisionsInstanceIterator>(collision, registry);
-    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(registry, reducedMultiplicityQ, reducedMultiplicityW);
 
     // loop over all tracks in the event
     for (auto const& track : tracks) {
@@ -421,7 +458,16 @@ struct MultiParticleCorrelationsARTask {
       }
       // fill track control histograms after cut
       FillTrackControlHist<AR::kRECO, AR::kAFTER, TracksInstance::iterator>(track, registry);
+
+      // fill angles into vector for processing
+      Angles.push_back(track.phi());
+      Weights.push_back(1.);
     }
+
+    FillEventControlHistMul<AR::kRECO, AR::kAFTER>(registry, Angles.size(), std::accumulate(Weights.begin(), Weights.end(), 0.));
+
+    // calculate qvectors from filled angles and weights
+    CalculateQvectors();
   }
 };
 
