@@ -15,13 +15,13 @@
 // o2-analysis-trackselection -b --isRun3 <0, 1> | o2-analysis-mm-lumi -b
 // --configuration json://./config.json
 
-
-void DrawVtx_PbPb(){
+void DrawVtx_PbPb() {
   const char fname[1000] = {"upd_full_trk"};
   // org, upd
 
-  TFile *ftot = new TFile(
-      Form("../data/PbPb_Run2conv/AnalysisResults_%s.root", fname), "read"); //change me
+  TFile *ftot =
+      new TFile(Form("../data/PbPb_Run2conv/AnalysisResults_%s.root", fname),
+                "read"); // change me
   TH2F *hTime_VtxX = (TH2F *)ftot->Get("lumi/vertexx_Refitted_timestamp");
   TH2F *hTime_VtxY = (TH2F *)ftot->Get("lumi/vertexy_Refitted_timestamp");
 
