@@ -52,7 +52,7 @@ using FemtoFullTracks = soa::Join<aod::FullTracks,
                                   aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
                                   aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                   aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-                                  aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+                                  aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFbeta>;
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
 } // namespace o2::aod
 
@@ -295,6 +295,7 @@ struct femtoWorldProducerTask {
                   track.dcaXY(),
                   childIDs, 0, 0, // początek nowej części
                   track.sign(),
+                  track.beta(),
                   track.itsChi2NCl(),
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
