@@ -9,16 +9,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// a) Called directly in init(...);
+// b) Called directly in process(...);
+// *) Particle weights;
+// *) Utility;
+
+// a) Called directly in init(...):
 // void BookBaseList()
 // void DefaultConfiguration();
 // void DefaultBooking();
 // void DefaultBinning();
 // void DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 // void BookAndNestAllLists()
-// void BookControlEventHistograms()
+// void BookEventHistograms()
+// void BookParticleHistograms()
 // void BookWeightsHistograms()
 // void BookResultsHistograms()
+
+// b) Called directly in process(...):
+// void FillEventHistograms(aod::Collision const& collision, aod::Tracks const& tracks, const Int_t rs, const Int_t ba); // reco or sim, before or after event cuts
 // Bool_t EventCuts(aod::Collision const& collision)
+// void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t ba); // reco or sim, before or after particle cuts
 // Bool_t ParticleCuts(aod::Track const& track)
 
 // *) Particle weights:
@@ -91,7 +102,10 @@ void DefaultBooking()
   ceh_a.fBookEventHistograms[eVertex_z] = kTRUE;
 
   // b) Particle histograms:
-  // ...
+  // Each default setting can be overuled e.g. with: task->SetBookParticleHistograms("Phi",kFALSE);
+  cph_a.fBookParticleHistograms[ePhi] = kTRUE;
+  cph_a.fBookParticleHistograms[ePt] = kTRUE;
+  cph_a.fBookParticleHistograms[eEta] = kTRUE;
 
   // c) QA:
   // ...
@@ -142,7 +156,18 @@ void DefaultBinning()
   ceh_a.fEventHistogramsBins[eVertex_z][2] = 20.;
 
   // b) Default binning for particle histograms:
-  // ...
+  // task->SetParticleHistogramsBins("Phi",360,0.,TMath::TwoPi());
+  cph_a.fParticleHistogramsBins[ePhi][0] = 360;
+  cph_a.fParticleHistogramsBins[ePhi][1] = 0.;
+  cph_a.fParticleHistogramsBins[ePhi][2] = TMath::TwoPi();
+  // task->SetParticleHistogramsBins("Pt",1000,0.,20.);
+  cph_a.fParticleHistogramsBins[ePt][0] = 1000;
+  cph_a.fParticleHistogramsBins[ePt][1] = 0.;
+  cph_a.fParticleHistogramsBins[ePt][2] = 20.;
+  // task->SetParticleHistogramsBins("Eta",200,-1.,1.);
+  cph_a.fParticleHistogramsBins[eEta][0] = 200;
+  cph_a.fParticleHistogramsBins[eEta][1] = -1.;
+  cph_a.fParticleHistogramsBins[eEta][2] = 1.;
 
 } // void DefaultBinning()
 
@@ -164,6 +189,7 @@ void BookAndNestAllLists()
 {
   // *) QA;
   // *) Control event histograms;
+  // *) Control particle histograms;
   // *) Particle weights;
   // *) Results.
 
@@ -178,10 +204,16 @@ void BookAndNestAllLists()
   fBaseList->Add(fQAList);
 
   // *) Control event histograms:
-  fControlEventHistogramsList = new TList();
-  fControlEventHistogramsList->SetName("ControlEventHistograms");
-  fControlEventHistogramsList->SetOwner(kTRUE);
-  fBaseList->Add(fControlEventHistogramsList);
+  fEventHistogramsList = new TList();
+  fEventHistogramsList->SetName("EventHistograms");
+  fEventHistogramsList->SetOwner(kTRUE);
+  fBaseList->Add(fEventHistogramsList);
+
+  // *) Control particle histograms:
+  fParticleHistogramsList = new TList();
+  fParticleHistogramsList->SetName("ParticleHistograms");
+  fParticleHistogramsList->SetOwner(kTRUE);
+  fBaseList->Add(fParticleHistogramsList);
 
   // *) Particle weights:
   fWeightsList = new TList();
@@ -199,24 +231,24 @@ void BookAndNestAllLists()
 
 //============================================================
 
-void BookControlEventHistograms()
+void BookEventHistograms()
 {
-  // Book all control event histograms.
+  // Book all event histograms.
 
   // a) Book the profile holding flags;
-  // b) Book specific control event histograms.
+  // b) Book specific event histograms.
 
   if (fVerbose) {
     Green(__PRETTY_FUNCTION__);
   }
 
   // a) Book the profile holding flags:
-  fControlEventHistogramsPro = new TProfile("fControlEventHistogramsPro", "flags for control event histograms", 25, 0., 25.);
-  fControlEventHistogramsPro->SetStats(kFALSE);
-  fControlEventHistogramsPro->SetLineColor(eColor);
-  fControlEventHistogramsPro->SetFillColor(eFillColor);
+  fEventHistogramsPro = new TProfile("fEventHistogramsPro", "flags for event histograms", 25, 0., 25.);
+  fEventHistogramsPro->SetStats(kFALSE);
+  fEventHistogramsPro->SetLineColor(eColor);
+  fEventHistogramsPro->SetFillColor(eFillColor);
   // ...
-  fControlEventHistogramsList->Add(fControlEventHistogramsPro);
+  fEventHistogramsList->Add(fEventHistogramsPro);
 
   Int_t fBeforeAfterColor[2] = {kRed, kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
 
@@ -234,35 +266,62 @@ void BookControlEventHistograms()
     {
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
-        // Skip exceptional cases:
-        if (eSelectedParticles == t && eBefore == ba) {
-          continue;
-        } // Number of selected particles makes sense only after cuts
-        // ...
-        // Book the rest:
         ceh_a.fEventHistograms[t][rs][ba] = new TH1D(Form("fEventHistograms[%s][%s][%s]", stype[t].Data(), srs[rs].Data(), sba[ba].Data()), Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()), (Int_t)ceh_a.fEventHistogramsBins[t][0], ceh_a.fEventHistogramsBins[t][1], ceh_a.fEventHistogramsBins[t][2]);
         ceh_a.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
         ceh_a.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] - 10);
-        fControlEventHistogramsList->Add(ceh_a.fEventHistograms[t][rs][ba]);
+        fEventHistogramsList->Add(ceh_a.fEventHistograms[t][rs][ba]);
       } // for(Int_t ba=0;ba<2;ba++)
     }   // for(Int_t rs=0;rs<2;rs++) // reco/sim
   }     // for(Int_t t=0;t<eEventHistograms_N;t++) // type, see enum eEventHistograms
 
-  // *)
-  /*
-  for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
-  {
-    //ceh_a.fMultiplicityHist[ba] = new TH1D(Form("fMultiplicityHist[%d]",ba),Form("%s, %s",fRunNumber.Data(),sba[ba].Data()),(Int_t)fMultiplicityBins[0],fMultiplicityBins[1],fMultiplicityBins[2]);
-    ceh_a.fMultiplicityHist[ba] = new TH1D(Form("fMultiplicityHist[%d]", ba), "...", 5000, 0., 5000.);
-    ceh_a.fMultiplicityHist[ba]->SetStats(kFALSE);
-    ceh_a.fMultiplicityHist[ba]->SetLineColor(fBeforeAfterColor[ba]);
-    ceh_a.fMultiplicityHist[ba]->SetFillColor(fBeforeAfterColor[ba] - 10);
-    ceh_a.fMultiplicityHist[ba]->GetXaxis()->SetTitle("...");
-    fControlEventHistogramsList->Add(ceh_a.fMultiplicityHist[ba]);
-  }
-  */
+} // void BookEventHistograms()
 
-} // void BookControlEventHistograms()
+//============================================================
+
+void BookParticleHistograms()
+{
+  // Book all particle histograms.
+
+  // a) Book the profile holding flags;
+  // b) Book specific particle histograms.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  fParticleHistogramsPro = new TProfile("fParticleHistogramsPro", "flags for particle histograms", 25, 0., 25.);
+  fParticleHistogramsPro->SetStats(kFALSE);
+  fParticleHistogramsPro->SetLineColor(eColor);
+  fParticleHistogramsPro->SetFillColor(eFillColor);
+  // ...
+  fParticleHistogramsList->Add(fParticleHistogramsPro);
+
+  Int_t fBeforeAfterColor[2] = {kRed, kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
+
+  // b) Book specific control particle histograms:
+  TString stype[eParticleHistograms_N] = {"Phi", "Pt", "Eta"}; // keep in sync. with enum eParticleHistograms
+  TString srs[2] = {"rec", "sim"};
+  TString sba[2] = {"before", "after"};
+
+  for (Int_t t = 0; t < eParticleHistograms_N; t++) // type, see enum eParticleHistograms
+  {
+    if (!cph_a.fBookParticleHistograms[t]) {
+      continue;
+    }
+    for (Int_t rs = 0; rs < 2; rs++) // reco/sim
+    {
+      for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
+      {
+        cph_a.fParticleHistograms[t][rs][ba] = new TH1D(Form("fParticleHistograms[%s][%s][%s]", stype[t].Data(), srs[rs].Data(), sba[ba].Data()), Form("%s, %s, %s", stype[t].Data(), srs[rs].Data(), sba[ba].Data()), (Int_t)cph_a.fParticleHistogramsBins[t][0], cph_a.fParticleHistogramsBins[t][1], cph_a.fParticleHistogramsBins[t][2]);
+        cph_a.fParticleHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
+        cph_a.fParticleHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] - 10);
+        fParticleHistogramsList->Add(cph_a.fParticleHistograms[t][rs][ba]);
+      } // for(Int_t ba=0;ba<2;ba++)
+    }   // for(Int_t rs=0;rs<2;rs++) // reco/sim
+  }     // for(Int_t t=0;t<eParticleHistograms_N;t++) // type, see enum eParticleHistograms
+
+} // void BookParticleHistograms()
 
 //============================================================
 
@@ -366,6 +425,26 @@ Bool_t EventCuts(aod::Collision const& collision)
 
 //============================================================
 
+void FillEventHistograms(aod::Collision const& collision, aod::Tracks const& tracks, const Int_t rs, const Int_t ba) // reco or sim, before or after event cuts
+{
+  // Fill all event histograms.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  ceh_a.fEventHistograms[eNumberOfEvents][rs][ba]->Fill(0.5);
+  ceh_a.fEventHistograms[eTotalMultiplicity][rs][ba]->Fill(tracks.size());
+  ceh_a.fEventHistograms[eVertex_x][rs][ba]->Fill(collision.posX());
+  ceh_a.fEventHistograms[eVertex_y][rs][ba]->Fill(collision.posY());
+  ceh_a.fEventHistograms[eVertex_z][rs][ba]->Fill(collision.posZ());
+
+  // TBI 20220808 ctd. with centrality, selected tracks
+
+} // void FillEventHistograms(aod::Collision const& collision, aod::Tracks const& tracks, const Int_t rs, const Int_t ba); // reco or sim, before or after event cuts
+
+//============================================================
+
 Bool_t ParticleCuts(aod::Track const& track)
 {
   // ...
@@ -381,6 +460,24 @@ Bool_t ParticleCuts(aod::Track const& track)
   return kTRUE;
 
 } // void ParticleCuts(aod::Track const& tracks)
+
+//============================================================
+
+void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t ba) // reco or sim, before or after particle cuts
+{
+  // Fill all particle histograms.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  cph_a.fParticleHistograms[ePhi][rs][ba]->Fill(track.phi());
+  cph_a.fParticleHistograms[ePt][rs][ba]->Fill(track.pt());
+  cph_a.fParticleHistograms[eEta][rs][ba]->Fill(track.eta());
+
+  // TBI 20220808 ctd. with other particle histograms, DCA, etc.
+
+} // void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t ba); // reco or sim, before or after particle cuts
 
 //============================================================
 
