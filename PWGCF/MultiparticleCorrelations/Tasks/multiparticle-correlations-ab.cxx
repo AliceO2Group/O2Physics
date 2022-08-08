@@ -112,7 +112,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
       // *) Fill particle histograms for reconstructed data before particle cuts:
       FillParticleHistograms(track, eRec, eBefore);
-      
+
       // *) Particle cuts:
       if (!ParticleCuts(track)) {
         continue;
