@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -75,7 +75,6 @@ void DrawVtx_PbPb() {
     }
     for (int i = 0; i < nsteps[s]; i++) {
       trange_lower_x[s][i] += 20;
-      //		trange_upper_x[s][i] -= 5;
       line_xl_1st[s][i] = new TLine(1e3 * trange_lower_x[s][i], 0.08,
                                     1e3 * trange_lower_x[s][i], 0.11);
       line_xu_1st[s][i] = new TLine(1e3 * trange_upper_x[s][i], 0.08,
