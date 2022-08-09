@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 namespace MultiParticleCorrelationsARTaskGlobalVariables
 {
 // for before and after applying cuts
-enum BA {
+enum BeforeAfterEnum {
   kBEFORE,
   kAFTER,
   kLAST_BA
@@ -44,7 +44,7 @@ enum BA {
 static constexpr std::string_view BeforeAfter[kLAST_BA] = {"before/", "after/"};
 
 // for reconstructed and simulated data
-enum RS {
+enum RecoSimEnum {
   kRECO,
   kSIM,
   kLAST_RS
@@ -278,7 +278,7 @@ struct MultiParticleCorrelationsARTask {
   // function for filling event control histograms
   // exclude MultiplicityQ, i.e. number of tracks in the QVector, and
   // MultiplicityW, i.e. the weighted number of tracks in the QVector, and fill them separably
-  template <AR::RS rs, AR::BA ba, typename CollisionObject>
+  template <AR::RecoSimEnum rs, AR::BeforeAfterEnum ba, typename CollisionObject>
   void FillEventControlHist(CollisionObject const& collision, HistogramRegistry& registry)
   {
     registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kVX]),
@@ -301,7 +301,7 @@ struct MultiParticleCorrelationsARTask {
 
   // function for filling event control histograms for Multiplicity{Q,W},
   // since they have to be computed separately
-  template <AR::RS rs, AR::BA ba>
+  template <AR::RecoSimEnum rs, AR::BeforeAfterEnum ba>
   void FillEventControlHistMul(HistogramRegistry& registry, double mulQvector, double mulWeights)
   {
     registry.fill(HIST(AR::RecoSim[rs]) + HIST("EventControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::EventVariableNames[AR::kMULQ]),
@@ -311,7 +311,7 @@ struct MultiParticleCorrelationsARTask {
   }
 
   // function for filling track control histograms
-  template <AR::RS rs, AR::BA ba, typename TrackObject>
+  template <AR::RecoSimEnum rs, AR::BeforeAfterEnum ba, typename TrackObject>
   void FillTrackControlHist(TrackObject const& track, HistogramRegistry& registry)
   {
     registry.fill(HIST(AR::RecoSim[rs]) + HIST("TrackControl/") + HIST(AR::BeforeAfter[ba]) + HIST(AR::TrackVariableNames[AR::kPT]),
@@ -340,61 +340,49 @@ struct MultiParticleCorrelationsARTask {
   template <typename CollisionObject, typename TrackObject>
   bool SurviveEventCuts(CollisionObject collision, TrackObject tracks)
   {
-    bool flag = true;
 
     // Check if event survives event cuts, where we can get the values for the variables immediately
-    if (!AR::SurviveCut(cfgVX.value, collision.posX()) ||
-        !AR::SurviveCut(cfgVY.value, collision.posY()) ||
-        !AR::SurviveCut(cfgVZ.value, collision.posZ()) ||
-        !AR::SurviveCut(cfgVABS.value, AR::abs(collision.posX(), collision.posY(), collision.posZ())) ||
-        !AR::SurviveCut(cfgCEN.value, collision.centRun2V0M()) ||
-        !AR::SurviveCut(cfgMULNC.value, collision.numContrib()) ||
-        !AR::SurviveCut(cfgMULTPC.value, collision.multTPC())) {
-      flag = false;
+    if (!(AR::SurviveCut(cfgVX.value, collision.posX()) &&
+          AR::SurviveCut(cfgVY.value, collision.posY()) &&
+          AR::SurviveCut(cfgVZ.value, collision.posZ()) &&
+          AR::SurviveCut(cfgVABS.value, AR::abs(collision.posX(), collision.posY(), collision.posZ())) &&
+          AR::SurviveCut(cfgCEN.value, collision.centRun2V0M()) &&
+          AR::SurviveCut(cfgMULNC.value, collision.numContrib()) &&
+          AR::SurviveCut(cfgMULTPC.value, collision.multTPC()))) {
+      return false;
     }
 
     int MultiplicityQ = 0.;
     float MultiplicityW = 0.;
 
     // only compute Multiplicity{Q,W} if the other checks pass, i.e. our flag is still set to true
-    if (flag) {
-      for (auto& track : tracks) {
-        if (SurviveTrackCuts(track) == true) {
-          MultiplicityQ += 1.;
-          MultiplicityW += 1.;
-        }
+    for (auto& track : tracks) {
+      if (SurviveTrackCuts(track) == true) {
+        MultiplicityQ += 1.;
+        MultiplicityW += 1.;
       }
     }
 
-    // at last, check if event also passes this cut
-    if (!AR::SurviveCut(cfgMULQ.value, MultiplicityQ) ||
-        !AR::SurviveCut(cfgMULW.value, MultiplicityW)) {
-      flag = false;
-    }
-
-    return flag;
+    // at last, check if event also passes multiplicity cuts
+    return AR::SurviveCut(cfgMULQ.value, MultiplicityQ) && AR::SurviveCut(cfgMULW.value, MultiplicityW);
   }
 
   // function for checking if track survices trach cuts
   template <typename TrackObject>
   bool SurviveTrackCuts(TrackObject track)
   {
-    bool flag = true;
-
-    if (!AR::SurviveCut(cfgPT.value, track.pt()) ||
-        !AR::SurviveCut(cfgPHI.value, track.phi()) ||
-        !AR::SurviveCut(cfgETA.value, track.eta()) ||
-        !AR::SurviveCut(cfgCHARGE.value, track.sign()) ||
-        !AR::SurviveCut(cfgDCAZ.value, track.dcaZ()) ||
-        !AR::SurviveCut(cfgDCAXY.value, track.dcaXY()) ||
-        !AR::SurviveCut(cfgTPCCLUSTERS.value, track.tpcNClsFound()) ||
-        !AR::SurviveCut(cfgTPCCROSSEDROWS.value, track.tpcNClsCrossedRows()) ||
-        !AR::SurviveCut(cfgTPCCHI2.value, track.tpcChi2NCl()) ||
-        !AR::SurviveCut(cfgITSCLUSTERS.value, track.itsNCls())) {
-      flag = false;
-    }
-
-    return flag;
+    // if all SurviveCut return true, the function will return true
+    // if at least one fails, it will return false
+    return AR::SurviveCut(cfgPT.value, track.pt()) &&
+           AR::SurviveCut(cfgPHI.value, track.phi()) &&
+           AR::SurviveCut(cfgETA.value, track.eta()) &&
+           AR::SurviveCut(cfgCHARGE.value, track.sign()) &&
+           AR::SurviveCut(cfgDCAZ.value, track.dcaZ()) &&
+           AR::SurviveCut(cfgDCAXY.value, track.dcaXY()) &&
+           AR::SurviveCut(cfgTPCCLUSTERS.value, track.tpcNClsFound()) &&
+           AR::SurviveCut(cfgTPCCROSSEDROWS.value, track.tpcNClsCrossedRows()) &&
+           AR::SurviveCut(cfgTPCCHI2.value, track.tpcChi2NCl()) &&
+           AR::SurviveCut(cfgITSCLUSTERS.value, track.itsNCls());
   }
 
   // Calculate all Q-vectors
