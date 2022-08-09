@@ -16,7 +16,8 @@
 // a) Base list to hold all output objects ("grandmother" of all lists);
 // *) Task identity;
 // *) QA;
-// *) Control event histograms;
+// *) Event histograms;
+// *) Particle histograms;
 // *) Particle weights;
 
 // a) Base list to hold all output objects ("grandmother" of all lists):
@@ -37,16 +38,25 @@ Bool_t fVerbose = kFALSE; // print additional info like Green(__PRETTY_FUNCTION_
 // *) QA:
 TList* fQAList = NULL; //!<! base list to hold all QA output object
 
-// *) Control event histograms:
-TList* fControlEventHistogramsList = NULL;   //!<! list to hold all control event histograms
-TProfile* fControlEventHistogramsPro = NULL; //!<! keeps flags relevant for the control event histograms
-struct ControlEventHistograms_Arrays {
+// *) Event histograms:
+TList* fEventHistogramsList = NULL;   //!<! list to hold all control event histograms
+TProfile* fEventHistogramsPro = NULL; //!<! keeps flags relevant for the control event histograms
+struct EventHistograms_Arrays {
   TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before,after event cuts]
   Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
   Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}}; // [nBins,min,max]
   Double_t fEventCuts[eEventHistograms_N][2] = {{0.}};           // [min,max]
-  //TH1D* fMultiplicityHist[2] = {NULL}; //!<! distribution of multiplicity [before,after event cuts]
-} ceh_a; // "ceh_a" labels an instance of this group of histograms, e.g. ceha_a.fMultiplicityHist[0]
+} ceh_a;                                                         // "ceh_a" labels an instance of this group of histograms
+
+// *) Particle histograms:
+TList* fParticleHistogramsList = NULL;   //!<! list to hold all control particle histograms
+TProfile* fParticleHistogramsPro = NULL; //!<! keeps flags relevant for the control particle histograms
+struct ParticleHistograms_Arrays {
+  TH1D* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eParticleHistograms ][reco,sim][before,after particle cuts]
+  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookParticleHistograms
+  Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}}; // [nBins,min,max]
+  Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};           // [min,max]
+} cph_a;                                                               // "cph_a" labels an instance of this group of histograms
 
 // *) Particle weights:
 TList* fWeightsList = NULL;        //!<! list to hold all particle weights
