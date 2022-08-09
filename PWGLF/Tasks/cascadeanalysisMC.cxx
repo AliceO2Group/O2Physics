@@ -287,7 +287,7 @@ struct cascadeAnalysisMC {
   }
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&, aod::McParticles const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&, aod::McParticles const&)
   //process function subscribing to Run 3-like analysis objects
   {
     //Run 2 event selection criteria
