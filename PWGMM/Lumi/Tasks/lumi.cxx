@@ -49,7 +49,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lumiTask {
-  Configurable<Long64_t> ftts{"ftts", 1530319778000,
+  Configurable<uint64_t> ftts{"ftts", 1530319778000,
                               "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500,
                                 "Maximum number of contributors"};

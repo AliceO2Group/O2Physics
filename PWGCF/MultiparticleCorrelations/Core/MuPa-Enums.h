@@ -31,3 +31,8 @@ enum eEventHistograms { eNumberOfEvents,
                         eVertex_y,
                         eVertex_z,
                         eEventHistograms_N };
+
+enum eParticleHistograms { ePhi,
+                           ePt,
+                           eEta,
+                           eParticleHistograms_N };

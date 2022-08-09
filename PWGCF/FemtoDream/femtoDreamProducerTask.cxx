@@ -443,7 +443,7 @@ struct femtoDreamProducerTask {
           outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtodreamparticle::ParticleType::kV0, cutContainerV0.at(femtoDreamV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
             fillDebugParticle<true>(postrack); // QA for positive daughter
-            fillDebugParticle<true>(postrack); // QA for negative daughter
+            fillDebugParticle<true>(negtrack); // QA for negative daughter
             fillDebugParticle<false>(v0);      // QA for v0
           }
           if constexpr (isMC) {
