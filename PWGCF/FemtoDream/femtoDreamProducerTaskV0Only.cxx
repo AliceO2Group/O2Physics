@@ -29,8 +29,11 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/StrangenessTables.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -82,8 +85,9 @@ struct femtoDreamProducerTaskV0Only {
 
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"};
 
-  // Choose if running on converted data or pilot beam
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Pilot beam"};
+  // Choose if running on converted data or Run3  / Pilot
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
+  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
@@ -130,6 +134,10 @@ struct femtoDreamProducerTaskV0Only {
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
+  int mRunNumber;
+  float mMagField;
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+
   void init(InitContext&)
   {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
@@ -163,19 +171,70 @@ struct femtoDreamProducerTaskV0Only {
         v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit, ConfInvKaonMassUpLimit);
       }
     }
+    mRunNumber = 0;
+    mMagField = 0.0;
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+  }
+
+  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
+  float getMagneticFieldTesla(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    float output = -999;
+
+    if (ConfIsRun3 && !ConfIsMC) {
+      static o2::parameters::GRPMagField* grpo = nullptr;
+      if (grpo == nullptr) {
+        grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+        if (grpo == nullptr) {
+          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+          return 0;
+        }
+        LOGF(info, "Retrieved GRP for timestamp %llu with L3 ", timestamp, grpo->getL3Current());
+      }
+      // taken from GRP onject definition of getNominalL3Field; update later to something smarter (mNominalL3Field = std::lround(5.f * mL3Current / 30000.f);)
+      auto NominalL3Field = std::lround(5.f * grpo->getL3Current() / 30000.f);
+      output = 0.1 * (NominalL3Field);
+    }
+
+    if (!ConfIsRun3 || (ConfIsRun3 && ConfIsMC)) {
+      static o2::parameters::GRPObject* grpo = nullptr;
+      if (grpo == nullptr) {
+        grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
+        if (grpo == nullptr) {
+          LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+          return 0;
+        }
+        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+      }
+      output = 0.1 * (grpo->getNominalL3Field());
+    }
+    return output;
   }
 
   void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
                o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
-    auto bc = col.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    if (mRunNumber != bc.runNumber()) {
+      mMagField = getMagneticFieldTesla(bc.timestamp());
+      mRunNumber = bc.runNumber();
+    }
+
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     // If the basic selection is NOT fullfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), bc.timestamp());
+        outputCollision(col.posZ(), col.multFV0M(), colCuts.computeSphericity(col, tracks), mMagField);
       }
       return;
     }
@@ -187,9 +246,9 @@ struct femtoDreamProducerTaskV0Only {
 
     // now the table is filled
     if (ConfIsRun3) {
-      outputCollision(vtxZ, col.multFT0M(), spher, bc.timestamp());
+      outputCollision(vtxZ, col.multFT0M(), spher, mMagField);
     } else {
-      outputCollision(vtxZ, mult, spher, bc.timestamp());
+      outputCollision(vtxZ, mult, spher, mMagField);
     }
 
     int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children

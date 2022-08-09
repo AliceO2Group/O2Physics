@@ -11,11 +11,13 @@
 
 # @alibuild has to be in each line to allow self approval of PRs
 
-* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @ginnocen @vkucera
-/DPG @alibuild @mario-krueger @njacazio @mfaggin
+/DPG @alibuild @chiarazampolli @noferini
+/DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @njacazio
 /EventFiltering @alibuild @mpuccio
 /EventFiltering/PWGHF @alibuild @fgrosa @vkucera
 /EventFiltering/PWGUD @alibuild @pbuehler
@@ -24,7 +26,7 @@
 /EventFiltering/PWGMM @alibuild @aortizve
 /EventFiltering/PWGJE @alibuild @fkrizek
 /PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez
-/PWGDQ @alibuild @iarsene
+/PWGDQ @alibuild @iarsene @dsekihat
 /PWGEM @alibuild @mikesas @rbailhac
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky
@@ -33,10 +35,10 @@
 /PWGHF/HFC @alibuild @ginnocen @vkucera @fcolamar @cterrevo @mmazzilli
 /PWGHF/HFJ @alibuild @ginnocen @vkucera @fcolamar @cterrevo @nzardosh @rvertesi
 /PWGHF/HFL @alibuild @ginnocen @vkucera @fcolamar @cterrevo @NicoleBastid @mvolkl
-/PWGLF @alibuild @njacazio
+/PWGLF @alibuild @lramona @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
-/PWGMM/UE @alibuild @aalkin
+/PWGMM/UE @alibuild @aalkin @aortizve
 /PWGUD @alibuild @pbuehler
 /Tools/PIDML @alibuild @saganatt

@@ -12,6 +12,7 @@
 /// \file FemtoWorldMath.h
 /// \brief Definition of the FemtoWorldMath Container for math calculations of quantities related to pairs
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
 #ifndef FEMTOWORLDMATH_H_
 #define FEMTOWORLDMATH_H_

@@ -12,11 +12,12 @@
 /// \file FemtoWorldDetaDphiStar.h
 /// \brief FemtoWorldDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
 #ifndef FEMTOWORLDDETADPHISTAR_H_
 #define FEMTOWORLDDETADPHISTAR_H_
 
-#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 
 #include "Framework/HistogramRegistry.h"
 #include <string>
@@ -30,7 +31,7 @@ namespace femtoWorld
 /// \brief Class to check particles for the close pair rejection.
 /// \tparam partOne Type of particle 1 (Track/V0/Cascade/...)
 /// \tparam partTwo Type of particle 2 (Track/V0/Cascade/...)
-template <o2::aod::femtodreamparticle::ParticleType partOne, o2::aod::femtodreamparticle::ParticleType partTwo>
+template <o2::aod::femtoworldparticle::ParticleType partOne, o2::aod::femtoworldparticle::ParticleType partTwo>
 class FemtoWorldDetaDphiStar
 {
  public:
@@ -45,7 +46,7 @@ class FemtoWorldDetaDphiStar
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
 
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
       std::string dirName = static_cast<std::string>(dirNames[0]);
       histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -55,7 +56,7 @@ class FemtoWorldDetaDphiStar
         }
       }
     }
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kV0) {
       for (int i = 0; i < 2; i++) {
         std::string dirName = static_cast<std::string>(dirNames[1]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -74,10 +75,10 @@ class FemtoWorldDetaDphiStar
   {
     magfield = lmagfield;
 
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+    if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack) {
+      if (part1.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack) {
         LOG(fatal) << "FemtoWorldDetaDphiStar: passed arguments don't agree with FemtoWorldDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
         return false;
       }
@@ -91,10 +92,10 @@ class FemtoWorldDetaDphiStar
         return false;
       }
 
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kV0) {
       /// Track-V0 combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kV0) {
+      if (part1.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtoworldparticle::ParticleType::kV0) {
         LOG(fatal) << "FemtoWorldDetaDphiStar: passed arguments don't agree with FemtoWorldDetaDphiStar instantiation! Please provide kTrack,kV0 candidates.";
         return false;
       }
@@ -133,8 +134,8 @@ class FemtoWorldDetaDphiStar
                                                              "detadphidetadphi0Before_1_3", "detadphidetadphi0Before_1_4", "detadphidetadphi0Before_1_5",
                                                              "detadphidetadphi0Before_1_6", "detadphidetadphi0Before_1_7", "detadphidetadphi0Before_1_8"}};
 
-  static constexpr o2::aod::femtodreamparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
-  static constexpr o2::aod::femtodreamparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
+  static constexpr o2::aod::femtoworldparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
+  static constexpr o2::aod::femtoworldparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
 
   static constexpr float tmpRadiiTPC[9] = {85., 105., 125., 145., 165., 185., 205., 225., 245.};
 

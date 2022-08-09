@@ -25,11 +25,11 @@ using namespace o2::framework;
 #include "TRandom3.h"
 using namespace std;
 
-// *) Global constants:
-#include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
-
 // *) Enums:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-Enums.h"
+
+// *) Global constants:
+#include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) Main task:
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
@@ -51,8 +51,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   {
     // *) Trick to avoid name clashes, part 1;
     // *) Book base list;
+    // *) Default configuration, booking, binning and cuts;
     // *) Configure the task with setters and getters;
-    // *) Book random generator;
     // *) Book all remaining objects;
     // ...
     // *) Trick to avoid name clashes, part 2;
@@ -63,6 +63,12 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book base list:
     BookBaseList();
+
+    // *) Default configuration, booking, binning and cuts:
+    DefaultConfiguration();
+    DefaultBooking();
+    DefaultBinning();
+    DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
     // *) Configure the task with setters and getters:
     //TH1D *phiWeights = task->GetHistogramWithWeights(Form("%s/%s/weights.root",directoryWeights.Data(),runNumber.Data()),"phi"); // original line
@@ -75,7 +81,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
-    BookControlEventHistograms();
+    BookEventHistograms();
+    BookParticleHistograms();
     BookWeightsHistograms();
     BookResultsHistograms();
 
@@ -89,19 +96,31 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // *) Process the data:
   void process(aod::Collision const& collision, aod::Tracks const& tracks) // called once per collision found in the time frame
   {
+    // *) Fill event histograms for reconstructed data before event cuts:
+    FillEventHistograms(collision, tracks, eRec, eBefore);
+
     // *) Event cuts:
-    ceh_a.fMultiplicityHist[BEFORE]->Fill(tracks.size()); // TBI 20220713 -> member function
     if (!EventCuts(collision)) {
       return;
     }
-    ceh_a.fMultiplicityHist[AFTER]->Fill(tracks.size()); // TBI 20220713 -> member function
+
+    // *) Fill event histograms for reconstructed data after event cuts:
+    FillEventHistograms(collision, tracks, eRec, eAfter);
 
     // *) Main loop over particles:
     for (auto& track : tracks) {
 
+      // *) Fill particle histograms for reconstructed data before particle cuts:
+      FillParticleHistograms(track, eRec, eBefore);
+
+      // *) Particle cuts:
       if (!ParticleCuts(track)) {
         continue;
       }
+
+      // *) Fill particle histograms for reconstructed data after particle cuts:
+      FillParticleHistograms(track, eRec, eAfter);
+
       fResultsHist->Fill(pw_a.fWeightsHist[wPHI]->GetBinContent(pw_a.fWeightsHist[wPHI]->FindBin(track.phi()))); // TBI 20220713 meaningless, only temporarily here to check if this is feasible
 
     } // for (auto& track : tracks)

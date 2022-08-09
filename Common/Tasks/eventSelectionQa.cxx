@@ -118,12 +118,12 @@ struct EventSelectionQaTask {
     histos.add("hTimeFDAacc", "Accepted events;FDA time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeFDCacc", "Accepted events;FDC time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZACacc", "Accepted events; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
-    histos.add("hSPDClsVsTklCol", "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
+    histos.add("hSPDClsVsTklCol", "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {200, 0., isLowFlux ? 1000. : 20000.}});
     histos.add("hV0C012vsTklCol", "All events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
     histos.add("hV0MOnVsOfCol", "All events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
     histos.add("hSPDOnVsOfCol", "All events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
     histos.add("hV0C3vs012Col", "All events;V0C012 multiplicity;V0C3 multiplicity", kTH2F, {{200, 0., 800.}, {300, 0., 300.}});
-    histos.add("hSPDClsVsTklAcc", "Accepted events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
+    histos.add("hSPDClsVsTklAcc", "Accepted events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {200, 0., isLowFlux ? 1000. : 20000.}});
     histos.add("hV0C012vsTklAcc", "Accepted events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
     histos.add("hV0MOnVsOfAcc", "Accepted events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
     histos.add("hSPDOnVsOfAcc", "Accepted events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
@@ -317,23 +317,27 @@ struct EventSelectionQaTask {
       int spdClusters = col.spdClusters();
 
       float multT0A = 0;
-      for (auto amplitude : bc.ft0().amplitudeA()) {
-        multT0A += amplitude;
-      }
       float multT0C = 0;
-      for (auto amplitude : bc.ft0().amplitudeC()) {
-        multT0C += amplitude;
-      }
       float multFDA = 0;
-      for (auto amplitude : bc.fdd().chargeA()) {
-        multFDA += amplitude;
-      }
       float multFDC = 0;
-      for (auto amplitude : bc.fdd().chargeC()) {
-        multFDC += amplitude;
+      if (bc.has_ft0()) {
+        for (auto amplitude : bc.ft0().amplitudeA()) {
+          multT0A += amplitude;
+        }
+        for (auto amplitude : bc.ft0().amplitudeC()) {
+          multT0C += amplitude;
+        }
       }
-      float multZNA = bc.zdc().energyCommonZNA();
-      float multZNC = bc.zdc().energyCommonZNC();
+      if (bc.has_fdd()) {
+        for (auto amplitude : bc.fdd().chargeA()) {
+          multFDA += amplitude;
+        }
+        for (auto amplitude : bc.fdd().chargeC()) {
+          multFDC += amplitude;
+        }
+      }
+      float multZNA = bc.has_zdc() ? bc.zdc().energyCommonZNA() : 0;
+      float multZNC = bc.has_zdc() ? bc.zdc().energyCommonZNC() : 0;
 
       histos.fill(HIST("hMultV0Mcol"), multV0M);
       histos.fill(HIST("hMultV0Acol"), multV0A);

@@ -75,7 +75,7 @@ using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::ReducedEventQvector;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -93,7 +93,6 @@ struct AnalysisQvector {
   Configurable<float> fConfigCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
   Configurable<float> fConfigCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<float> fConfigEtaLimit{"cfgEtaLimit", 0.4f, "Eta gap separation, only if using subEvents"};
-  Configurable<int> fConfigNHarm{"cfgNHarm", 2, "Harmonic number of Q vector"};
   Configurable<int> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
 
   // Access to the efficiencies and acceptances from CCDB
@@ -301,9 +300,12 @@ struct AnalysisQvector {
     int nentries = gfwCum.GetN();
 
     // Get the Q vector for selected harmonic, power (for minPt=0)
-    TComplex QvecN = gfwCumN.Vec(fConfigNHarm, fConfigNPow);
-    TComplex QvecP = gfwCumP.Vec(fConfigNHarm, fConfigNPow);
-    TComplex Qvec = gfwCum.Vec(fConfigNHarm, fConfigNPow);
+    TComplex Q2vecN = gfwCumN.Vec(2, fConfigNPow);
+    TComplex Q2vecP = gfwCumP.Vec(2, fConfigNPow);
+    TComplex Q2vec = gfwCum.Vec(2, fConfigNPow);
+    TComplex Q3vecN = gfwCumN.Vec(3, fConfigNPow);
+    TComplex Q3vecP = gfwCumP.Vec(3, fConfigNPow);
+    TComplex Q3vec = gfwCum.Vec(3, fConfigNPow);
 
     // TODO: move this part to later analysis development
     // compute the resolution from Q vectors estimated with different eta gaps
@@ -313,7 +315,8 @@ struct AnalysisQvector {
     //    }
 
     // Fill the VarManager::fgValues with the Q vector quantities
-    VarManager::FillQVectorFromGFW(collision, Qvec, QvecN, QvecP, nentries, nentriesN, nentriesP);
+    VarManager::FillQVectorFromGFW(collision, Q2vec, Q2vecN, Q2vecP, Q3vec, Q3vecN, Q3vecP, nentries, nentriesN, nentriesP);
+
     if (fConfigQA) {
       if (nentriesN * nentriesP * nentries != 0) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -325,15 +328,24 @@ struct AnalysisQvector {
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC]);
+      eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C]);
     }
   }
 
   // Process to fill Q vector in a reduced event table for barrel/muon tracks flow related analyses
-  void process(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processQvector(MyEventsWithCent::iterator const& collisions, aod::BCs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
   }
+
+  // TODO: dummy function for the case when no process function is enabled
+  void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisQvector, processQvector, "Run q-vector task", false);
+  PROCESS_SWITCH(AnalysisQvector, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -353,7 +365,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     histMan->AddHistClass(classStr.Data());
 
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent,res");
     }
   }
 }

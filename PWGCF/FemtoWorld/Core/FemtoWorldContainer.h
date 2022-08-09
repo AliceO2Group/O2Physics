@@ -13,18 +13,23 @@
 /// \brief Definition of the FemtoWorldContainer
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch NOWE
 
-#ifndef FEMTOWORDLCONTAINER_H_
-#define FEMTOWORDLCONTAINER_H_
+#ifndef FEMTOWORLDCONTAINER_H_
+#define FEMTOWORLDCONTAINER_H_
 
 #include "Framework/HistogramRegistry.h"
-#include "FemtoWorldMath.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
 #include "TDatabasePDG.h"
 
+#include "TLorentzVector.h"
+#include "CommonConstants/MathConstants.h"
+
 using namespace o2::framework;
+using namespace o2::constants::math;
 
 namespace o2::analysis::femtoWorld
 {
@@ -61,10 +66,12 @@ class FemtoWorldContainer
   /// \param multBins multiplicity binning for the histograms
   /// \param kTBins kT binning for the histograms
   /// \param mTBins mT binning for the histograms
-  /// \param etaBins mT binning for the histograms
-  /// \param phiBins mT binning for the histograms
+  /// \param etaBins eta binning for the histograms
+  /// \param phiBins phi binning for the histograms
+  /// \param mInvBins invariant mass binning for the histograms
+
   template <typename T1, typename T2>
-  void init(HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins)
+  void init(HistogramRegistry* registry, T1& kstarBins, T1& multBins, T1& kTBins, T1& mTBins, T2& phiBins, T2& etaBins, T2& mInvBins)
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -77,14 +84,15 @@ class FemtoWorldContainer
     framework::AxisSpec kTAxis = {kTBins, "#it{k}_{T} (GeV/#it{c})"};
     framework::AxisSpec mTAxis = {mTBins, "#it{m}_{T} (GeV/#it{c}^{2})"};
 
-    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
-    mPhiHigh = 2 * TMath::Pi() + (-(int)(phiBins / 4) + 0.5) * 2. * TMath::Pi() / phiBins;
+    mPhiLow = (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
+    mPhiHigh = 2 * PI + (-(int)(phiBins / 4) + 0.5) * 2. * PI / phiBins;
 
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
+    framework::AxisSpec mInvAxis = {mInvBins, 0.0, 10.0};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]);
-    mHistogramRegistry->add((folderName + "relPairDist").c_str(), ("Name; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
     mHistogramRegistry->add((folderName + "relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
     mHistogramRegistry->add((folderName + "relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
@@ -95,6 +103,7 @@ class FemtoWorldContainer
     mHistogramRegistry->add((folderName + "MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
     mHistogramRegistry->add((folderName + "PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
     mHistogramRegistry->add((folderName + "relPairDetaDphi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2D, {phiAxis, etaAxis});
+    mHistogramRegistry->add((folderName + "relPairInvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
   }
 
   /// Set the PDG codes of the two particles involved
@@ -122,13 +131,23 @@ class FemtoWorldContainer
     const float mT = FemtoWorldMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     double delta_eta = part1.eta() - part2.eta();
-
     double delta_phi = part1.phi() - part2.phi();
+
     while (delta_phi < mPhiLow) {
-      delta_phi += PIT;
+      delta_phi += TwoPI;
     }
     while (delta_phi > mPhiHigh) {
-      delta_phi -= PIT;
+      delta_phi -= TwoPI;
+    }
+    TLorentzVector part1Vec;
+    part1Vec.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), mMassOne);
+    TLorentzVector part2Vec;
+    part2Vec.SetPtEtaPhiM(part2.pt(), part2.eta(), part2.phi(), mMassTwo);
+
+    TLorentzVector sumVec(part1Vec);
+    sumVec += part2Vec;
+    if (mHistogramRegistry) {
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST("relPairInvariantMass"), sumVec.M());
     }
 
     if (mHistogramRegistry) {
@@ -155,9 +174,8 @@ class FemtoWorldContainer
   float mMassTwo = 0.f;                                                               ///< PDG mass of particle 2
   double mPhiLow;
   double mPhiHigh;
-  static constexpr double PIT = 6.28318530717958623;
 };
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORDLCONTAINER_H_ */
+#endif /* FEMTOWORLDCONTAINER_H_ */
