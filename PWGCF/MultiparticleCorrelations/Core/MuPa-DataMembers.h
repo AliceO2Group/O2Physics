@@ -18,6 +18,8 @@
 // *) QA;
 // *) Event histograms;
 // *) Particle histograms;
+// *) Q-vectors;
+// *) Multiparticle correlations (standard, isotropic, same harmonic);
 // *) Particle weights;
 
 // a) Base list to hold all output objects ("grandmother" of all lists):
@@ -57,6 +59,23 @@ struct ParticleHistograms_Arrays {
   Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}}; // [nBins,min,max]
   Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};           // [min,max]
 } cph_a;                                                               // "cph_a" labels an instance of this group of histograms
+
+// *) Q-vectors:
+TList* fQvectorList = NULL;        // list to hold all Q-vector objects
+TProfile* fQvectorFlagsPro = NULL; // profile to hold all flags for Q-vector
+Bool_t fCalculateQvector = kTRUE;  // to calculate or not to calculate Q-vectors, that's a Boolean...
+struct Qvector_Arrays {
+  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};       //! generic Q-vector
+  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}}; //! "integrated" Q-vector
+} qv_a;
+
+// *) Multiparticle correlations (standard, isotropic, same harmonic):
+TList* fCorrelationsList = NULL;        // list to hold all correlations objects
+TProfile* fCorrelationsFlagsPro = NULL; // profile to hold all flags for correlations
+Bool_t fCalculateCorrelations = kTRUE;  // calculate and store integrated correlations
+struct Correlations_Arrays {
+  TProfile* fCorrelationsPro[4][6][3] = {{{NULL}}}; //! multiparticle correlations [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs. multiplicity,2=vs. centrality]
+} c_a;
 
 // *) Particle weights:
 TList* fWeightsList = NULL;        //!<! list to hold all particle weights
