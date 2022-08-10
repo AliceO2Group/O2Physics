@@ -688,9 +688,9 @@ void CalculateCorrelations()
    harmonics->SetAt(-h,1);
    Double_t nestedLoopValue = this->CalculateCustomNestedLoop(harmonics);
    if(TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue)>1.e-5)
-   {          
+   {
     Exit(__PRETTY_FUNCTION__,__LINE__,Form("nestedLoopValue = %f is not the same as twoC = %f",nestedLoopValue,twoC)); exit(1);
-   } 
+   }
    else
    {
     cout<<Form("=> e-b-e check with CustomNestedLoop is OK for isotropic 2-p, harmonic %d",h)<<endl;
@@ -700,9 +700,9 @@ void CalculateCorrelations()
   } // if(fCalculateCustomNestedLoop)
 
   // for on-the-fly and internal validation, rescale results with theoretical value:
-  if(fCalculateOnTheFly && fOnTheFlyFlowAmplitudes && fRescaleWithTheoreticalInput && 
+  if(fCalculateOnTheFly && fOnTheFlyFlowAmplitudes && fRescaleWithTheoreticalInput &&
      TMath::Abs(fOnTheFlyFlowAmplitudes->GetAt(h-1))>0.){twoC/=pow(fOnTheFlyFlowAmplitudes->GetAt(h-1),2.);}
-  else if(fUseInternalValidation && fInternalValidationAmplitudes && fRescaleWithTheoreticalInput && 
+  else if(fUseInternalValidation && fInternalValidationAmplitudes && fRescaleWithTheoreticalInput &&
           TMath::Abs(fInternalValidationAmplitudes->GetAt(h-1))>0.){twoC/=pow(fInternalValidationAmplitudes->GetAt(h-1),2.);}
 
 */
