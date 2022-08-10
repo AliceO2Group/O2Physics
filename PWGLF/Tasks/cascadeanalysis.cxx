@@ -61,7 +61,6 @@ using std::array;
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
-using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
 struct cascadeQa {
   // Basic checks
@@ -88,6 +87,8 @@ struct cascadeQa {
   };
 
   void process(aod::Collision const& collision, aod::CascDataExt const& Cascades)
+  //This "basic QA" plot a few distributions of topological variables for inspection.
+  //it is not meant to be a complete study (yet) - it could be enhanced significantly.
   {
     for (auto& casc : Cascades) {
       if (casc.sign() < 0) { // FIXME: could be done better...
@@ -121,15 +122,25 @@ struct cascadeAnalysis {
 
   void init(InitContext const&)
   {
+    AxisSpec centAxis = {100, 0.0f, 100.0f, "mult percentile"};
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "it{p}_{T} (GeV/c)"};
     AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
     AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}});
-    registry.add("h2dMassXiMinus", "h2dMassXiMinus", {HistType::kTH2F, {ptAxis, massAxisXi}});
-    registry.add("h2dMassXiPlus", "h2dMassXiPlus", {HistType::kTH2F, {ptAxis, massAxisXi}});
-    registry.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
-    registry.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
+
+    //have registrey with 2d histograms (no centrality selection)
+    if (!doCentralityStudy) {
+      registry.add("h2dMassXiMinus", "h2dMassXiMinus", {HistType::kTH2F, {ptAxis, massAxisXi}});
+      registry.add("h2dMassXiPlus", "h2dMassXiPlus", {HistType::kTH2F, {ptAxis, massAxisXi}});
+      registry.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
+      registry.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
+    } else {
+      registry.add("h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {centAxis, ptAxis, massAxisXi}});
+      registry.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisXi}});
+      registry.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
+      registry.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {centAxis, ptAxis, massAxisOmega}});
+    }
   }
 
   // Selection criteria
@@ -151,14 +162,13 @@ struct cascadeAnalysis {
   Configurable<bool> allowITSSAbachelor{"allowITSSAbachelor", true, "allow for bachelor <- cascade track to be via ITS tracking only"};
   Configurable<bool> allowITSSAproton{"allowITSSAproton", true, "allow for proton <- lambda track to be via ITS tracking only"};
   Configurable<bool> allowITSSApion{"allowITSSApion", false, "allow for pion <- lambda track to be via ITS tracking only "};
+  Configurable<bool> doCentralityStudy{"doCentralityStudy", true, "do centrality percentile selection (yes/no)"};
 
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  Partition<LabeledCascades> associatedCascades = (aod::mccasclabel::mcParticleId > -1);
-
   template <class TCascTracksTo>
-  void fillCascadeOutput(soa::Filtered<aod::CascDataExt> const& cascades, float const& pvx, float const& pvy, float const& pvz)
+  void fillCascadeOutput(soa::Filtered<aod::CascDataExt> const& cascades, float const& pvx, float const& pvy, float const& pvz, float lPercentile = 999.0f)
   //function to process cascades and generate corresponding invariant mass distributions
   {
     for (auto& casc : cascades) {
@@ -229,17 +239,33 @@ struct cascadeAnalysis {
         registry.fill(HIST("hCandidateCounter"), 3.5); //pass cascade selections
         if (casc.sign() < 0) {                         // FIXME: could be done better...
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            registry.fill(HIST("h2dMassXiMinus"), casc.template pt(), casc.template mXi());
+            if (!doCentralityStudy) {
+              registry.fill(HIST("h2dMassXiMinus"), casc.template pt(), casc.template mXi());
+            } else {
+              registry.fill(HIST("h3dMassXiMinus"), lPercentile, casc.template pt(), casc.template mXi());
+            }
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            registry.fill(HIST("h2dMassOmegaMinus"), casc.template pt(), casc.template mOmega());
+            if (!doCentralityStudy) {
+              registry.fill(HIST("h2dMassOmegaMinus"), casc.template pt(), casc.template mOmega());
+            } else {
+              registry.fill(HIST("h3dMassOmegaMinus"), lPercentile, casc.template pt(), casc.template mOmega());
+            }
           }
         } else {
           if (TMath::Abs(casc.yXi()) < 0.5) {
-            registry.fill(HIST("h2dMassXiPlus"), casc.template pt(), casc.template mXi());
+            if (!doCentralityStudy) {
+              registry.fill(HIST("h2dMassXiPlus"), casc.template pt(), casc.template mXi());
+            } else {
+              registry.fill(HIST("h3dMassXiPlus"), lPercentile, casc.template pt(), casc.template mXi());
+            }
           }
           if (TMath::Abs(casc.yOmega()) < 0.5) {
-            registry.fill(HIST("h2dMassOmegaPlus"), casc.template pt(), casc.template mOmega());
+            if (!doCentralityStudy) {
+              registry.fill(HIST("h2dMassOmegaPlus"), casc.template pt(), casc.template mOmega());
+            } else {
+              registry.fill(HIST("h3dMassOmegaPlus"), lPercentile, casc.template pt(), casc.template mOmega());
+            }
           }
         }
       }
@@ -272,6 +298,33 @@ struct cascadeAnalysis {
     fillCascadeOutput<FullTracksExt>(Cascades, collision.posX(), collision.posY(), collision.posZ());
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2, "Process Run 2 data", false);
+
+  void processRun3VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  //process function subscribing to Run 3-like analysis objects
+  {
+    //Run 3 event selection criteria
+    if (eventSelection && !collision.sel8()) {
+      return;
+    }
+    //fill cascade information with tracksIU typecast (Run 3)
+    fillCascadeOutput<FullTracksExtIU>(Cascades, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+  }
+  PROCESS_SWITCH(cascadeAnalysis, processRun3VsMultiplicity, "Process Run 3 data vs multiplicity", false);
+
+  void processRun2VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&)
+  //process function subscribing to Run 3-like analysis objects
+  {
+    //Run 2 event selection criteria
+    if (eventSelection && !collision.alias()[kINT7]) {
+      return;
+    }
+    if (eventSelection && !collision.sel7()) {
+      return;
+    }
+    //fill cascade information with tracks typecast (Run 2)
+    fillCascadeOutput<FullTracksExt>(Cascades, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+  }
+  PROCESS_SWITCH(cascadeAnalysis, processRun2VsMultiplicity, "Process Run 2 data vs multiplicity", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
