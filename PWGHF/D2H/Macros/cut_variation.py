@@ -85,14 +85,18 @@ class CutVarMinimiser:
             sys.exit()
 
         if len(self.unc_raw_yields) != self.n_sets:
-            print("ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit")
+            print(
+                "ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit"
+            )
             sys.exit()
 
         if (
             len(self.unc_eff_prompt) != self.n_sets
             or len(self.unc_eff_nonprompt) != self.n_sets
         ):
-            print("ERROR: number of raw yields and efficiency uncertainties not consistent! Exit")
+            print(
+                "ERROR: number of raw yields and efficiency uncertainties not consistent! Exit"
+            )
             sys.exit()
 
     def __initialise_objects(self):

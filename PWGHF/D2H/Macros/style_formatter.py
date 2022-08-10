@@ -75,17 +75,17 @@ def set_global_style(**kwargs):
     """
 
     # pad margins
-    padrightmargin = kwargs.get('padrightmargin', 0.035)
-    padleftmargin = kwargs.get('padleftmargin', 0.12)
-    padtopmargin = kwargs.get('padtopmargin', 0.035)
-    padbottommargin = kwargs.get('padbottommargin', 0.1)
+    padrightmargin = kwargs.get("padrightmargin", 0.035)
+    padleftmargin = kwargs.get("padleftmargin", 0.12)
+    padtopmargin = kwargs.get("padtopmargin", 0.035)
+    padbottommargin = kwargs.get("padbottommargin", 0.1)
     ROOT.gStyle.SetPadRightMargin(padrightmargin)
     ROOT.gStyle.SetPadLeftMargin(padleftmargin)
     ROOT.gStyle.SetPadTopMargin(padtopmargin)
     ROOT.gStyle.SetPadBottomMargin(padbottommargin)
 
     # title sizes
-    titlesize = kwargs.get('titlesize', 0.050)
+    titlesize = kwargs.get("titlesize", 0.050)
     ROOT.gStyle.SetTitleSize(titlesize, "xyz")
     if "titlesizex" in kwargs:
         ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "x")
@@ -95,7 +95,7 @@ def set_global_style(**kwargs):
         ROOT.gStyle.SetTitleSize(kwargs["titlesizez"], "z")
 
     # label sizes
-    labelsize = kwargs.get('labelsize', 0.045)
+    labelsize = kwargs.get("labelsize", 0.045)
     ROOT.gStyle.SetLabelSize(labelsize, "xyz")
     if "labelsizex" in kwargs:
         ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "x")
@@ -105,7 +105,7 @@ def set_global_style(**kwargs):
         ROOT.gStyle.SetLabelSize(kwargs["labelsizez"], "z")
 
     # title offsets
-    titleoffset = kwargs.get('titleoffset', 1.2)
+    titleoffset = kwargs.get("titleoffset", 1.2)
     ROOT.gStyle.SetTitleOffset(titleoffset, "xyz")
     if "titleoffsetx" in kwargs:
         ROOT.gStyle.SetTitleOffset(kwargs["titleoffsetx"], "x")
@@ -115,21 +115,21 @@ def set_global_style(**kwargs):
         ROOT.gStyle.SetTitleOffset(kwargs["titleoffsetz"], "z")
 
     # other options
-    opttitle = kwargs.get('opttitle', 0)
+    opttitle = kwargs.get("opttitle", 0)
     ROOT.gStyle.SetOptTitle(opttitle)
 
-    optstat = kwargs.get('optstat', 0)
+    optstat = kwargs.get("optstat", 0)
     ROOT.gStyle.SetOptStat(optstat)
 
-    padtickx = kwargs.get('padtickx', 1)
-    padticky = kwargs.get('padticky', 1)
+    padtickx = kwargs.get("padtickx", 1)
+    padticky = kwargs.get("padticky", 1)
     ROOT.gStyle.SetPadTickX(padtickx)
     ROOT.gStyle.SetPadTickY(padticky)
 
     if "maxdigits" in kwargs:
         ROOT.TGaxis.SetMaxDigits(kwargs["maxdigits"])
 
-    palette = kwargs.get('palette', 112) # viridis palette by default
+    palette = kwargs.get("palette", 112)  # viridis palette by default
     ROOT.gStyle.SetPalette(palette)
 
     ROOT.gStyle.SetLegendBorderSize(0)
