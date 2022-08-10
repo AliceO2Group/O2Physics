@@ -714,9 +714,9 @@ struct hypertriton3bodyMcParticleCount {
             dauPdgCode[i] = mcparticleDaughter.pdgCode();
             i++;
           }
-          if( (std::abs(dauPdgCode[0]) == 2212 && std::abs(dauPdgCode[1]) == 221 && std::abs(dauPdgCode[2]) == 1000010020)   ||   (std::abs(dauPdgCode[0]) == 2212 && std::abs(dauPdgCode[1]) == 1000010020 && std::abs(dauPdgCode[2]) == 221)   ||   
-              (std::abs(dauPdgCode[0]) == 221 && std::abs(dauPdgCode[1]) == 2212 && std::abs(dauPdgCode[2]) == 1000010020)  ||   (std::abs(dauPdgCode[0]) == 221 && std::abs(dauPdgCode[1]) == 1000010020 && std::abs(dauPdgCode[2]) == 2212)   ||   
-              (std::abs(dauPdgCode[0]) == 1000010020 && std::abs(dauPdgCode[1]) == 2212 && std::abs(dauPdgCode[2]) == 221)   ||   (std::abs(dauPdgCode[0]) == 1000010020 && std::abs(dauPdgCode[1]) == 221 && std::abs(dauPdgCode[2]) == 2212)    ){
+          if( (std::abs(dauPdgCode[0]) == 2212 && std::abs(dauPdgCode[1]) == 211 && std::abs(dauPdgCode[2]) == 1000010020)   ||   (std::abs(dauPdgCode[0]) == 2212 && std::abs(dauPdgCode[1]) == 1000010020 && std::abs(dauPdgCode[2]) == 211)   ||   
+              (std::abs(dauPdgCode[0]) == 211 && std::abs(dauPdgCode[1]) == 2212 && std::abs(dauPdgCode[2]) == 1000010020)  ||   (std::abs(dauPdgCode[0]) == 211 && std::abs(dauPdgCode[1]) == 1000010020 && std::abs(dauPdgCode[2]) == 2212)   ||   
+              (std::abs(dauPdgCode[0]) == 1000010020 && std::abs(dauPdgCode[1]) == 2212 && std::abs(dauPdgCode[2]) == 211)   ||   (std::abs(dauPdgCode[0]) == 1000010020 && std::abs(dauPdgCode[1]) == 211 && std::abs(dauPdgCode[2]) == 2212)    ){
         registry.fill(HIST("hMcHypertritonDecayCount"), 1.5);
           }
         }
