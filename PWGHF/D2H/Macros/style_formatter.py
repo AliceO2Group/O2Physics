@@ -104,9 +104,9 @@ def set_global_style(**kwargs):
     if "titlesizex" in kwargs:
         ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "x")
     if "titlesizey" in kwargs:
-        ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "y")
+        ROOT.gStyle.SetTitleSize(kwargs["titlesizey"], "y")
     if "titlesizez" in kwargs:
-        ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "z")
+        ROOT.gStyle.SetTitleSize(kwargs["titlesizez"], "z")
 
     # label sizes
     if "labelsize" in kwargs:
@@ -117,9 +117,9 @@ def set_global_style(**kwargs):
     if "labelsizex" in kwargs:
         ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "x")
     if "labelsizey" in kwargs:
-        ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "y")
+        ROOT.gStyle.SetLabelSize(kwargs["labelsizey"], "y")
     if "labelsizez" in kwargs:
-        ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "z")
+        ROOT.gStyle.SetLabelSize(kwargs["labelsizez"], "z")
 
     # title offsets
     if "titleoffset" in kwargs:
@@ -175,7 +175,7 @@ def set_object_style(obj, **kwargs):
     Parameters
     -------------------------------------------------
 
-    - obj: ROOT.TOBject
+    - obj: ROOT.TObject
         object to set style
 
     - linecolor: int
