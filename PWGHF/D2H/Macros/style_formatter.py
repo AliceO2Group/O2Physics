@@ -9,7 +9,7 @@ Script with helper methods for style settings
 
 import ROOT
 
-# pylint: disable=too-many-branches,too-many-statements, no-member
+# pylint: disable=too-many-branches, no-member
 
 
 def set_global_style(**kwargs):
@@ -75,58 +75,38 @@ def set_global_style(**kwargs):
     """
 
     # pad margins
-    if "padrightmargin" in kwargs:
-        ROOT.gStyle.SetPadRightMargin(kwargs["padrightmargin"])
-    else:
-        ROOT.gStyle.SetPadRightMargin(0.035)
-
-    if "padleftmargin" in kwargs:
-        ROOT.gStyle.SetPadLeftMargin(kwargs["padleftmargin"])
-    else:
-        ROOT.gStyle.SetPadLeftMargin(0.12)
-
-    if "padtopmargin" in kwargs:
-        ROOT.gStyle.SetPadTopMargin(kwargs["padtopmargin"])
-    else:
-        ROOT.gStyle.SetPadTopMargin(0.035)
-
-    if "padbottommargin" in kwargs:
-        ROOT.gStyle.SetPadBottomMargin(kwargs["padbottommargin"])
-    else:
-        ROOT.gStyle.SetPadBottomMargin(0.1)
+    padrightmargin = kwargs.get("padrightmargin", 0.035)
+    padleftmargin = kwargs.get("padleftmargin", 0.12)
+    padtopmargin = kwargs.get("padtopmargin", 0.035)
+    padbottommargin = kwargs.get("padbottommargin", 0.1)
+    ROOT.gStyle.SetPadRightMargin(padrightmargin)
+    ROOT.gStyle.SetPadLeftMargin(padleftmargin)
+    ROOT.gStyle.SetPadTopMargin(padtopmargin)
+    ROOT.gStyle.SetPadBottomMargin(padbottommargin)
 
     # title sizes
-    if "titlesize" in kwargs:
-        ROOT.gStyle.SetTitleSize(kwargs["titlesize"], "xyz")
-    else:
-        ROOT.gStyle.SetTitleSize(0.050, "xyz")
-
+    titlesize = kwargs.get("titlesize", 0.050)
+    ROOT.gStyle.SetTitleSize(titlesize, "xyz")
     if "titlesizex" in kwargs:
         ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "x")
     if "titlesizey" in kwargs:
-        ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "y")
+        ROOT.gStyle.SetTitleSize(kwargs["titlesizey"], "y")
     if "titlesizez" in kwargs:
-        ROOT.gStyle.SetTitleSize(kwargs["titlesizex"], "z")
+        ROOT.gStyle.SetTitleSize(kwargs["titlesizez"], "z")
 
     # label sizes
-    if "labelsize" in kwargs:
-        ROOT.gStyle.SetLabelSize(kwargs["labelsize"], "xyz")
-    else:
-        ROOT.gStyle.SetLabelSize(0.045, "xyz")
-
+    labelsize = kwargs.get("labelsize", 0.045)
+    ROOT.gStyle.SetLabelSize(labelsize, "xyz")
     if "labelsizex" in kwargs:
         ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "x")
     if "labelsizey" in kwargs:
-        ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "y")
+        ROOT.gStyle.SetLabelSize(kwargs["labelsizey"], "y")
     if "labelsizez" in kwargs:
-        ROOT.gStyle.SetLabelSize(kwargs["labelsizex"], "z")
+        ROOT.gStyle.SetLabelSize(kwargs["labelsizez"], "z")
 
     # title offsets
-    if "titleoffset" in kwargs:
-        ROOT.gStyle.SetTitleOffset(kwargs["titleoffset"], "xyz")
-    else:
-        ROOT.gStyle.SetTitleOffset(1.2, "xyz")
-
+    titleoffset = kwargs.get("titleoffset", 1.2)
+    ROOT.gStyle.SetTitleOffset(titleoffset, "xyz")
     if "titleoffsetx" in kwargs:
         ROOT.gStyle.SetTitleOffset(kwargs["titleoffsetx"], "x")
     if "titleoffsety" in kwargs:
@@ -135,34 +115,24 @@ def set_global_style(**kwargs):
         ROOT.gStyle.SetTitleOffset(kwargs["titleoffsetz"], "z")
 
     # other options
-    if "opttitle" in kwargs:
-        ROOT.gStyle.SetOptTitle(kwargs["opttitle"])
-    else:
-        ROOT.gStyle.SetOptTitle(0)
+    opttitle = kwargs.get("opttitle", 0)
+    ROOT.gStyle.SetOptTitle(opttitle)
 
-    if "optstat" in kwargs:
-        ROOT.gStyle.SetOptStat(kwargs["optstat"])
-    else:
-        ROOT.gStyle.SetOptStat(0)
+    optstat = kwargs.get("optstat", 0)
+    ROOT.gStyle.SetOptStat(optstat)
 
-    if "padtickx" in kwargs:
-        ROOT.gStyle.SetPadTickX(kwargs["padtickx"])
-    else:
-        ROOT.gStyle.SetPadTickX(1)
-
-    if "padticky" in kwargs:
-        ROOT.gStyle.SetPadTickY(kwargs["padticky"])
-    else:
-        ROOT.gStyle.SetPadTickY(1)
-
-    ROOT.gStyle.SetLegendBorderSize(0)
+    padtickx = kwargs.get("padtickx", 1)
+    padticky = kwargs.get("padticky", 1)
+    ROOT.gStyle.SetPadTickX(padtickx)
+    ROOT.gStyle.SetPadTickY(padticky)
 
     if "maxdigits" in kwargs:
         ROOT.TGaxis.SetMaxDigits(kwargs["maxdigits"])
 
-    if "palette" in kwargs:
-        ROOT.gStyle.SetPalette(kwargs["palette"])
+    palette = kwargs.get("palette", 112)  # viridis palette by default
+    ROOT.gStyle.SetPalette(palette)
 
+    ROOT.gStyle.SetLegendBorderSize(0)
     ROOT.gROOT.ForceStyle()
 
 
@@ -175,7 +145,7 @@ def set_object_style(obj, **kwargs):
     Parameters
     -------------------------------------------------
 
-    - obj: ROOT.TOBject
+    - obj: ROOT.TObject
         object to set style
 
     - linecolor: int
@@ -210,13 +180,9 @@ def set_object_style(obj, **kwargs):
     """
 
     # alpha parameters
-    lalpha = kwargs.get("linealpha", 1)
-    malpha = kwargs.get("markeralpha", 1)
-    falpha = kwargs.get("fillalpha", 1)
-    if "alpha" in kwargs:
-        lalpha = kwargs["alpha"]
-        malpha = kwargs["alpha"]
-        falpha = kwargs["alpha"]
+    lalpha = kwargs.get("alpha", 1)
+    malpha = kwargs.get("alpha", 1)
+    falpha = kwargs.get("alpha", 1)
     if "linealpha" in kwargs:
         lalpha = kwargs["linealpha"]
     if "markeralpha" in kwargs:
@@ -225,48 +191,26 @@ def set_object_style(obj, **kwargs):
         falpha = kwargs["fillalpha"]
 
     # line styles
-    if "linecolor" in kwargs:
-        if lalpha < 1:
-            obj.SetLineColorAlpha(kwargs["linecolor"], lalpha)
-        else:
-            obj.SetLineColor(kwargs["linecolor"])
+    linecolor = kwargs.get("linecolor", ROOT.kBlack)
+    linewidth = kwargs.get("linewidth", 2)
+    linestyle = kwargs.get("linestyle", 1)
+    if lalpha < 1:
+        obj.SetLineColorAlpha(linecolor, lalpha)
     else:
-        if lalpha < 1:
-            obj.SetLineColorAlpha(ROOT.kBlack, lalpha)
-        else:
-            obj.SetLineColor(ROOT.kBlack)
-
-    if "linewidth" in kwargs:
-        obj.SetLineWidth(kwargs["linewidth"])
-    else:
-        obj.SetLineWidth(2)
-
-    if "linestyle" in kwargs:
-        obj.SetLineStyle(kwargs["linestyle"])
-    else:
-        obj.SetLineStyle(1)
+        obj.SetLineColor(linecolor)
+    obj.SetLineWidth(linewidth)
+    obj.SetLineStyle(linestyle)
 
     # marker styles
-    if "markercolor" in kwargs:
-        if malpha < 1:
-            obj.SetMarkerColorAlpha(kwargs["markercolor"], malpha)
-        else:
-            obj.SetMarkerColor(kwargs["markercolor"])
+    markercolor = kwargs.get("markercolor", ROOT.kBlack)
+    markersize = kwargs.get("markersize", 1.0)
+    markerstyle = kwargs.get("markerstyle", ROOT.kFullCircle)
+    if malpha < 1:
+        obj.SetMarkerColorAlpha(markercolor, malpha)
     else:
-        if malpha < 1:
-            obj.SetMarkerColorAlpha(ROOT.kBlack, malpha)
-        else:
-            obj.SetMarkerColor(ROOT.kBlack)
-
-    if "markersize" in kwargs:
-        obj.SetMarkerSize(kwargs["markersize"])
-    else:
-        obj.SetMarkerSize(1.0)
-
-    if "markerstyle" in kwargs:
-        obj.SetMarkerStyle(kwargs["markerstyle"])
-    else:
-        obj.SetMarkerStyle(ROOT.kFullCircle)
+        obj.SetMarkerColor(markercolor)
+    obj.SetMarkerSize(markersize)
+    obj.SetMarkerStyle(markerstyle)
 
     # fill styles
     if "fillcolor" in kwargs:
