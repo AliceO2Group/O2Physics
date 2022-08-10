@@ -51,7 +51,9 @@ struct UpcCandAnalyzer {
      {"PairSelection/MassNoFT0ContamMC", ";#it{m}_{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/PtNoFT0", ";#it{p}_{T}^{#mu#mu}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
      {"PairSelection/chi2zSig", ";chi2 z;", {HistType::kTH1D, {{200, 0., 20.}}}},
-     {"PairSelection/chi2zFake", ";chi2 z;", {HistType::kTH1D, {{200, 0., 20.}}}}}};
+     {"PairSelection/chi2zFake", ";chi2 z;", {HistType::kTH1D, {{200, 0., 20.}}}},
+     {"PairSelection/chi2zSigVsM", ";chi2 z;", {HistType::kTH2D, {{200, 0., 20.}, {100, 0., 10.}}}},
+     {"PairSelection/chi2zFakeVsM", ";chi2 z;", {HistType::kTH2D, {{200, 0., 20.}, {100, 0., 10.}}}}}};
 
   using BarrelTracks = soa::Join<o2::aod::UDTracks, o2::aod::UDTracksCov, o2::aod::UDTrackCollisionIDs, o2::aod::UDTracksExtra, o2::aod::UDMcTrackLabels>;
   using BarrelTrack = BarrelTracks::iterator;
@@ -145,8 +147,10 @@ struct UpcCandAnalyzer {
       float chi2z = (z1 * z1 - z2 * z2) * (z1 * z1 - z2 * z2) / (sz1 * sz1 + sz2 * sz2);
       if (!isFake) {
         registry.fill(HIST("PairSelection/chi2zSig"), chi2z);
+        registry.fill(HIST("PairSelection/chi2zSigVsM"), chi2z, pPairMC.M());
       } else {
         registry.fill(HIST("PairSelection/chi2zFake"), chi2z);
+        registry.fill(HIST("PairSelection/chi2zFakeVsM"), chi2z, pPairMC.M());
       }
     }
   }

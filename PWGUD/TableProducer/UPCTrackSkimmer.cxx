@@ -302,7 +302,7 @@ struct UpcTrackSkimmer {
                      TMcBarTrackLabels* mcTrackLabels,
                      std::map<int32_t, int32_t> const& newPartIDs)
   {
-    std::map<int32_t, int32_t> ambTrIds;
+    std::unordered_map<int32_t, int32_t> ambTrIds;
     for (const auto& ambTr : ambTracks) {
       auto trId = ambTr.trackId();
       ambTrIds[trId] = ambTr.globalIndex();
@@ -328,9 +328,10 @@ struct UpcTrackSkimmer {
       double trTime = bc * o2::constants::lhc::LHCBunchSpacingNS - realTime;
       udTracks(tr.px(), tr.py(), tr.pz(), tr.sign(), bc, trTime, tr.trackTimeRes());
       udTracksCov(tr.x(), tr.y(), tr.z(), tr.sigmaY(), tr.sigmaZ());
-      udTracksExtra(tr.itsClusterMap(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(),
-                    tr.tpcNClsShared(), tr.trdPattern(), tr.itsChi2NCl(), tr.tpcChi2NCl(), tr.trdChi2(), tr.tofChi2(),
-                    tr.tpcSignal(), tr.trdSignal(), tr.length(), tr.tofExpMom(), tr.detectorMap());
+      udTracksExtra(tr.itsChi2NCl(), tr.itsClusterMap(),
+                    tr.tpcChi2NCl(), tr.tpcNClsFindable(), tr.tpcNClsFindableMinusFound(), tr.tpcNClsFindableMinusCrossedRows(), tr.tpcNClsShared(), tr.tpcSignal(),
+                    tr.tofChi2(), tr.tofExpMom(), tr.tofSignal(), tr.length(),
+                    tr.detectorMap());
       udTracksPID(tr.tpcNSigmaEl(), tr.tpcNSigmaMu(), tr.tpcNSigmaPi(), tr.tpcNSigmaKa(), tr.tpcNSigmaPr(),
                   tr.tofNSigmaEl(), tr.tofNSigmaMu(), tr.tofNSigmaPi(), tr.tofNSigmaKa(), tr.tofNSigmaPr());
       // fill MC labels and masks if needed

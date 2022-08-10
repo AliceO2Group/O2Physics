@@ -34,16 +34,21 @@ struct UpcTrackSkimmerQa {
       {"Muons/Kine/Pt", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
       {"Muons/Kine/Eta", ";#eta;", {HistType::kTH1D, {{100, -4., 4.}}}},
       //
-      {"Barrels/Timings/TrackTimeRes", ";Track time resolution, ns;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Barrels/Timings/TrackTimeRes", ";Track time resolution, ns;", {HistType::kTH1D, {{1000, 0., 1000.}}}},
+      //
       {"Barrels/Kine/Pt", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Barrels/Kine/PtWTOF", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
       {"Barrels/Kine/PtMC", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
+      {"Barrels/Kine/PtWTOFMC", ";#it{p}_{T}, GeV;", {HistType::kTH1D, {{100, 0., 10.}}}},
       {"Barrels/Kine/Eta", ";#eta;", {HistType::kTH1D, {{100, -4., 4.}}}},
       {"Barrels/ITS/chi2", ";chi2;", {HistType::kTH1D, {{1100, -100., 1000.}}}},
       {"Barrels/ITS/nClusters", ";n clusters;", {HistType::kTH1I, {{10, 0, 10}}}},
       {"Barrels/TPC/chi2", ";chi2;", {HistType::kTH1D, {{110, -10., 100.}}}},
       {"Barrels/TPC/nClusters", ";n clusters;", {HistType::kTH1I, {{200, 0, 200}}}},
-      {"Barrels/TOF/chi2", ";chi2;", {HistType::kTH1D, {{110, -10., 100.}}}},
-      {"Barrels/TOF/ExpMom", ";TOF exp. mom., GeV;", {HistType::kTH1D, {{1000, 0., 100.}}}}
+      {"Barrels/TPC/nClustersWTOF", ";n clusters;", {HistType::kTH1I, {{200, 0, 200}}}},
+      {"Barrels/TOF/chi2", ";chi2;", {HistType::kTH1D, {{1050, -1000., 50.}}}},
+      {"Barrels/TOF/ExpMom", ";TOF exp. mom., GeV;", {HistType::kTH1D, {{1000, 0., 100.}}}},
+      {"Barrels/MC/Labels", ";MC labels;", {HistType::kTH1I, {{1001, -1, 1000}}}}
     }};
 
   void process(soa::Join<o2::aod::UDFwdTracks, o2::aod::UDMcFwdTrackLabels> const& muonTracks,
@@ -85,12 +90,15 @@ struct UpcTrackSkimmerQa {
       if (!(mcPart.isPhysicalPrimary() && std::abs(mcPart.pdgCode()) == 13)) {
         continue;
       }
+      registry.fill(HIST("Barrels/MC/Labels"), mcPartId);
       TLorentzVector p;
       p.SetXYZM(track.px(), track.py(), track.pz(), mmuon);
       TLorentzVector pMC;
       pMC.SetXYZM(mcPart.px(), mcPart.py(), mcPart.pz(), mmuon);
-      if (std::abs(pMC.Eta()) > 0.8 || std::abs(pMC.Pt()) < 0.3) {
-        continue;
+      if (std::abs(pMC.Eta()) < 0.8 && std::abs(pMC.Pt()) > 0.3 && track.hasTOF()) {
+        registry.fill(HIST("Barrels/Kine/PtWTOF"), p.Pt());
+        registry.fill(HIST("Barrels/Kine/PtWTOFMC"), pMC.Pt());
+        registry.fill(HIST("Barrels/TPC/nClustersWTOF"), track.tpcNClsCrossedRows());
       }
       registry.fill(HIST("Barrels/Timings/TrackTimeRes"), track.trackTimeRes());
       registry.fill(HIST("Barrels/Kine/Pt"), p.Pt());
@@ -99,7 +107,7 @@ struct UpcTrackSkimmerQa {
       registry.fill(HIST("Barrels/ITS/chi2"), track.itsChi2NCl());
       registry.fill(HIST("Barrels/ITS/nClusters"), track.itsNCls());
       registry.fill(HIST("Barrels/TPC/chi2"), track.tpcChi2NCl());
-      registry.fill(HIST("Barrels/TPC/nClusters"), track.tpcNClsFindable());
+      registry.fill(HIST("Barrels/TPC/nClusters"), track.tpcNClsCrossedRows());
       registry.fill(HIST("Barrels/TOF/chi2"), track.tofChi2());
       registry.fill(HIST("Barrels/TOF/ExpMom"), track.tofExpMom());
     }
