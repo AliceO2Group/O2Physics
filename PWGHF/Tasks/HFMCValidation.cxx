@@ -81,18 +81,18 @@ struct AddAmbiguousTrackInfo {
     for (auto& track : tracks) {
       std::vector<int> collIndices{};
       bool isAmbiguous = false;
-      int nBC = 0;
+      std::size_t nBC = 0;
       if (track.isGlobalTrackWoDCA()) { // add info only for global tracks
         auto trackIdx = track.globalIndex();
         auto iter = std::find(trackIndices.begin(), trackIndices.end(), trackIdx);
         if (iter != trackIndices.end()) {
           isAmbiguous = true;
           auto ambitrack = ambitracks.rawIteratorAt(ambTrackIndices[std::distance(trackIndices.begin(), iter)]);
+          nBC = ambitrack.bc().size();
           for (auto& collision : collisions) {
             uint64_t mostProbableBC = collision.bc().globalBC();
             for (auto& bc : ambitrack.bc()) {
               if (bc.globalBC() == mostProbableBC) {
-                nBC++;
                 collIndices.push_back(collision.globalIndex());
                 break;
               }
@@ -350,14 +350,23 @@ struct ValidationRecLevel {
   std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
+  std::shared_ptr<TH1> histContributors;
+
+  const AxisSpec axisDeltaMom{2000, -1., 1.};
+  const AxisSpec axisOrigin{4, -1.5, 2.5};
+  const AxisSpec axisEta{40, -1., 1.};
+  const AxisSpec axisPt{50, 0., 10.};
+  const AxisSpec axisDeltaVtx{200, -1, 1.};
+  const AxisSpec axisDecision{2, -0.5, 1.5};
 
   HistogramRegistry registry{
     "registry",
-    {{"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {{200, -1, 1.}}}},
-     {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {{200, -1, 1.}}}},
+    {{"histNtracks", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+     {"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
+     {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
-     {"histDeltaZvtx", "Residual distribution of PV in #it{Z};#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH1F, {{1000, -0.5, 0.5}}}},
-     {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100000.}}}},
+     {"histDeltaZvtx", "Residual distribution of PV in #it{Z} as a function of number of contributors;number of contributors;#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH2F, {{100, -0.5, 99.5}, {1000, -0.5, 0.5}}}},
+     {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100.}}}},
      {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
      {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}}}};
 
@@ -379,18 +388,18 @@ struct ValidationRecLevel {
 
   void init(o2::framework::InitContext&)
   {
-    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}});           // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}});              // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {{4, -1.5, 2.5}, {50, 0., 10.}, {40, -1., 1.}, {200, -1., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}, {8, -0.5, 7.5}}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
+    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, {8, -0.5, 7.5}});           // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, {8, -0.5, 7.5}});              // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, {8, -0.5, 7.5}});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
+    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, {8, -0.5, 7.5}}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(2, "no quark");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(3, "charm");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(4, "beauty");
     }
-    histAmbiguousTracks = registry.add<TH2>("histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
-    histTracks = registry.add<TH2>("histTracks", "Tracks vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {{4, -1.5, 2.5}, {50, 0., 10.}});
+    histAmbiguousTracks = registry.add<TH2>("histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
+    histTracks = registry.add<TH2>("histTracks", "Tracks vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
     histTracks->GetXaxis()->SetBinLabel(1, "no MC particle");
     histTracks->GetXaxis()->SetBinLabel(2, "no quark");
     histTracks->GetXaxis()->SetBinLabel(3, "charm");
@@ -400,23 +409,26 @@ struct ValidationRecLevel {
     histAmbiguousTracks->GetXaxis()->SetBinLabel(3, "charm");
     histAmbiguousTracks->GetXaxis()->SetBinLabel(4, "beauty");
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
-      histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histDeltaPx[iHad] = registry.add<TH1>(Form("histDeltaPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histDeltaPy[iHad] = registry.add<TH1>(Form("histDeltaPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histDeltaPz[iHad] = registry.add<TH1>(Form("histDeltaPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {{2000, -1., 1.}});
-      histDeltaSecondaryVertexX[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexX%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
-      histDeltaSecondaryVertexY[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexY%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
-      histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
-      histDeltaDecayLength[iHad] = registry.add<TH1>(Form("histDeltaDecayLength%s", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
+      histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaPx[iHad] = registry.add<TH1>(Form("histDeltaPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaPy[iHad] = registry.add<TH1>(Form("histDeltaPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaPz[iHad] = registry.add<TH1>(Form("histDeltaPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaSecondaryVertexX[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexX%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaSecondaryVertexY[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexY%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaDecayLength[iHad] = registry.add<TH1>(Form("histDeltaDecayLength%s", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
       for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
         histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("histPtReco%s%s", originNames[iOrigin].data(), particleNames[iHad].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, 0., 50.}});
         for (auto iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
-          histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histPtDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{50, 0., 25.}});
+          histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histPtDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
           histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histEtaDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
-          histImpactParameterDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histImpactParameterDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{200, -1., 1.}});
+          histImpactParameterDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histImpactParameterDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         }
       }
     }
+    histContributors = registry.add<TH1>("histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
+    histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
+    histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
   }
 
   using HfCandProng2WithMCRec = soa::Join<aod::HfCandProng2, aod::HfCandProng2MCRec>;
@@ -437,16 +449,17 @@ struct ValidationRecLevel {
       registry.fill(HIST("histYvtxReco"), collision.posY());
       registry.fill(HIST("histZvtxReco"), collision.posZ());
       auto deltaZ = collision.posZ() - mcCollision.posZ();
-      registry.fill(HIST("histDeltaZvtx"), deltaZ);
+      registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), deltaZ);
     }
 
     // loop over tracks
+    int nTracks = 0;
     for (auto& track : tracks) {
       if (track.isGlobalTrackWoDCA() != (uint8_t) true) {
         continue;
       }
+      nTracks++;
       // check number of ITS hits
-      LOG(info) << " HERE? ";
       int nITSlayers = 0;
       uint8_t ITSHitMap = track.itsClusterMap();
       for (int iLayer = 0; iLayer < 7; ++iLayer) {
@@ -493,6 +506,12 @@ struct ValidationRecLevel {
                   break;
                 }
               }
+            } else if (track.isPVContributor()) {
+              if (collision.mcCollisionId() == particle.mcCollisionId()) {
+                histContributors->Fill(0);
+              } else {
+                histContributors->Fill(1);
+              }
             }
           }
         }
@@ -501,6 +520,7 @@ struct ValidationRecLevel {
         histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor(), track.hasTOF(), nITSlayers);
       }
     }
+    registry.fill(HIST("histNtracks"), nTracks);
 
     // loop over 2-prong candidates
     for (auto& cand2Prong : cand2Prongs) {
