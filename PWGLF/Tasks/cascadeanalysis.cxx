@@ -40,6 +40,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -61,6 +62,8 @@ using std::array;
 //use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
+using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
+using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
 struct cascadeQa {
   // Basic checks
@@ -157,115 +160,163 @@ struct cascadeAnalysis {
   Configurable<float> v0masswindow{"v0masswindow", 0.008, "v0masswindow"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
+  //Track quality and type selections
   Configurable<int> tpcClusters{"tpcClusters", 70, "minimum number of TPC clusters requirement"};
   Configurable<int> itsClusters{"itsClusters", 4, "minimum number of ITS clusters requirement for ITSSA tracks"};
   Configurable<bool> allowITSSAbachelor{"allowITSSAbachelor", true, "allow for bachelor <- cascade track to be via ITS tracking only"};
   Configurable<bool> allowITSSAproton{"allowITSSAproton", true, "allow for proton <- lambda track to be via ITS tracking only"};
   Configurable<bool> allowITSSApion{"allowITSSApion", false, "allow for pion <- lambda track to be via ITS tracking only "};
+
+  //Track identification configurables
+  Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 4, "TPC NSigma bachelor (>10 is no cut)"};
+  Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 4, "TPC NSigma proton <- lambda (>10 is no cut)"};
+  Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 4, "TPC NSigma pion <- lambda (>10 is no cut)"};
+
+  //Switch for centrality
   Configurable<bool> doCentralityStudy{"doCentralityStudy", true, "do centrality percentile selection (yes/no)"};
 
   Filter preFilter =
     nabs(aod::cascdata::dcapostopv) > dcapostopv&& nabs(aod::cascdata::dcanegtopv) > dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > dcabachtopv&& aod::cascdata::dcaV0daughters < dcav0dau&& aod::cascdata::dcacascdaughters < dcacascdau;
 
-  template <class TCascTracksTo>
-  void fillCascadeOutput(soa::Filtered<aod::CascDataExt> const& cascades, float const& pvx, float const& pvy, float const& pvz, float lPercentile = 999.0f)
+  template <class TCascTracksTo, typename TCascade>
+  int checkCascadeTPCPID(TCascade& lCascade)
+  //function to check PID of a certain cascade candidate for a hypothesis
+  {
+    bool lConsistentWithLambda = true;
+    bool lConsistentWithXi = true;
+    bool lConsistentWithOm = true;
+    auto v0 = lCascade.template v0_as<o2::aod::V0sLinked>();
+    if (!(v0.has_v0Data())) {
+      return 0; //reject
+    }
+    auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
+    auto bachTrack = lCascade.template bachelor_as<TCascTracksTo>();
+    auto posTrack = v0data.template posTrack_as<TCascTracksTo>();
+    auto negTrack = v0data.template negTrack_as<TCascTracksTo>();
+
+    //Bachelor: depends on type
+    if (TMath::Abs(bachTrack.tpcNSigmaPi()) > tpcNsigmaBachelor && tpcNsigmaBachelor < 9.99)
+      lConsistentWithXi = false;
+    if (TMath::Abs(bachTrack.tpcNSigmaKa()) > tpcNsigmaBachelor && tpcNsigmaBachelor < 9.99)
+      lConsistentWithOm = false;
+
+    //Proton check: depends on cascade sign
+    if (lCascade.sign() < 0 && TMath::Abs(posTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99)
+      lConsistentWithLambda = false;
+    if (lCascade.sign() > 0 && TMath::Abs(negTrack.tpcNSigmaPr()) > tpcNsigmaProton && tpcNsigmaProton < 9.99)
+      lConsistentWithLambda = false;
+
+    //Pion check: depends on cascade sign
+    if (lCascade.sign() < 0 && TMath::Abs(negTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99)
+      lConsistentWithLambda = false;
+    if (lCascade.sign() > 0 && TMath::Abs(posTrack.tpcNSigmaPi()) > tpcNsigmaPion && tpcNsigmaPion < 9.99)
+      lConsistentWithLambda = false;
+
+    //bit-packing (first bit -> consistent with Xi, second bit -> consistent with Omega)
+    return lConsistentWithLambda * lConsistentWithXi + 2 * lConsistentWithLambda * lConsistentWithOm;
+  }
+
+  template <class TCascTracksTo, typename TCascade>
+  void processCascadeCandidate(TCascade const& casc, float const& pvx, float const& pvy, float const& pvz, float lPercentile = 999.0f, int lPIDvalue = 3)
   //function to process cascades and generate corresponding invariant mass distributions
   {
-    for (auto& casc : cascades) {
-      registry.fill(HIST("hCandidateCounter"), 0.5); //all candidates
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        continue; //skip those cascades for which V0 doesn't exist
+    registry.fill(HIST("hCandidateCounter"), 0.5); //all candidates
+    auto v0 = casc.template v0_as<o2::aod::V0sLinked>();
+    if (!(v0.has_v0Data())) {
+      return; //skip those cascades for which V0 doesn't exist
+    }
+    registry.fill(HIST("hCandidateCounter"), 1.5); //v0data exists
+    auto v0data = v0.v0Data();                     // de-reference index to correct v0data in case it exists
+    auto bachTrackCast = casc.template bachelor_as<TCascTracksTo>();
+    auto posTrackCast = v0data.template posTrack_as<TCascTracksTo>();
+    auto negTrackCast = v0data.template negTrack_as<TCascTracksTo>();
+
+    //track-level selections
+    Bool_t lEnoughTPCNClsBac = kTRUE;
+    Bool_t lEnoughTPCNClsPos = kTRUE;
+    Bool_t lEnoughTPCNClsNeg = kTRUE;
+    Bool_t lEnoughITSNClsBac = kTRUE;
+    Bool_t lEnoughITSNClsPos = kTRUE;
+    Bool_t lEnoughITSNClsNeg = kTRUE;
+
+    if (bachTrackCast.tpcNClsFound() < tpcClusters)
+      lEnoughTPCNClsBac = kFALSE;
+    if (posTrackCast.tpcNClsFound() < tpcClusters)
+      lEnoughTPCNClsPos = kFALSE;
+    if (negTrackCast.tpcNClsFound() < tpcClusters)
+      lEnoughTPCNClsNeg = kFALSE;
+    if (bachTrackCast.itsNCls() < itsClusters)
+      lEnoughITSNClsBac = kFALSE;
+    if (posTrackCast.itsNCls() < itsClusters)
+      lEnoughITSNClsPos = kFALSE;
+    if (negTrackCast.itsNCls() < itsClusters)
+      lEnoughITSNClsNeg = kFALSE;
+
+    //Logic: either you have enough TPC clusters, OR you enabled ITSSA and have enough ITS clusters as requested
+    //N.B.: This will require dedicated studies!
+
+    Bool_t lGoodCandidate = kFALSE;
+    if (casc.sign() < 0) {
+      if (
+        (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && //bachelor conditional
+        (lEnoughTPCNClsPos || (allowITSSAproton && lEnoughITSNClsPos)) &&   //bachelor conditional
+        (lEnoughTPCNClsNeg || (allowITSSApion && lEnoughITSNClsNeg))        //bachelor conditional
+      ) {
+        lGoodCandidate = kTRUE;
       }
-      registry.fill(HIST("hCandidateCounter"), 1.5); //v0data exists
-      auto v0data = v0.v0Data();                     // de-reference index to correct v0data in case it exists
-      auto bachTrackCast = casc.bachelor_as<TCascTracksTo>();
-      auto posTrackCast = v0data.posTrack_as<TCascTracksTo>();
-      auto negTrackCast = v0data.negTrack_as<TCascTracksTo>();
+    }
+    if (casc.sign() > 0) {
+      if (
+        (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && //bachelor conditional
+        (lEnoughTPCNClsPos || (allowITSSApion && lEnoughITSNClsPos)) &&     //bachelor conditional
+        (lEnoughTPCNClsNeg || (allowITSSAproton && lEnoughITSNClsNeg))      //bachelor conditional
+      ) {
+        lGoodCandidate = kTRUE;
+      }
+    }
+    if (!lGoodCandidate)
+      return;
+    registry.fill(HIST("hCandidateCounter"), 2.5); //okay track quality
 
-      //track-level selections
-      Bool_t lEnoughTPCNClsBac = kTRUE;
-      Bool_t lEnoughTPCNClsPos = kTRUE;
-      Bool_t lEnoughTPCNClsNeg = kTRUE;
-      Bool_t lEnoughITSNClsBac = kTRUE;
-      Bool_t lEnoughITSNClsPos = kTRUE;
-      Bool_t lEnoughITSNClsNeg = kTRUE;
+    //assign TPC PID compatibility booleans
+    bool lCompatiblePID_Xi = (lPIDvalue >> 0 & 1);
+    bool lCompatiblePID_Om = (lPIDvalue >> 1 & 1);
 
-      if (bachTrackCast.tpcNClsFound() < tpcClusters)
-        lEnoughTPCNClsBac = kFALSE;
-      if (posTrackCast.tpcNClsFound() < tpcClusters)
-        lEnoughTPCNClsPos = kFALSE;
-      if (negTrackCast.tpcNClsFound() < tpcClusters)
-        lEnoughTPCNClsNeg = kFALSE;
-      if (bachTrackCast.itsNCls() < itsClusters)
-        lEnoughITSNClsBac = kFALSE;
-      if (posTrackCast.itsNCls() < itsClusters)
-        lEnoughITSNClsPos = kFALSE;
-      if (negTrackCast.itsNCls() < itsClusters)
-        lEnoughITSNClsNeg = kFALSE;
-
-      //Logic: either you have enough TPC clusters, OR you enabled ITSSA and have enough ITS clusters as requested
-      //N.B.: This will require dedicated studies!
-
-      Bool_t lGoodCandidate = kFALSE;
-      if (casc.sign() < 0) {
-        if (
-          (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && //bachelor conditional
-          (lEnoughTPCNClsPos || (allowITSSAproton && lEnoughITSNClsPos)) &&   //bachelor conditional
-          (lEnoughTPCNClsNeg || (allowITSSApion && lEnoughITSNClsNeg))        //bachelor conditional
-        ) {
-          lGoodCandidate = kTRUE;
+    if (casc.v0radius() > v0radius &&
+        casc.cascradius() > cascradius &&
+        casc.v0cosPA(pvx, pvy, pvz) > v0cospa &&
+        casc.casccosPA(pvx, pvy, pvz) > casccospa &&
+        casc.dcav0topv(pvx, pvy, pvz) > dcav0topv &&
+        TMath::Abs(casc.mLambda() - 1.115683) < v0masswindow) {
+      registry.fill(HIST("hCandidateCounter"), 3.5); //pass cascade selections
+      if (casc.sign() < 0) {                         // FIXME: could be done better...
+        if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi) {
+          if (!doCentralityStudy) {
+            registry.fill(HIST("h2dMassXiMinus"), casc.template pt(), casc.template mXi());
+          } else {
+            registry.fill(HIST("h3dMassXiMinus"), lPercentile, casc.template pt(), casc.template mXi());
+          }
         }
-      }
-      if (casc.sign() > 0) {
-        if (
-          (lEnoughTPCNClsBac || (allowITSSAbachelor && lEnoughITSNClsBac)) && //bachelor conditional
-          (lEnoughTPCNClsPos || (allowITSSApion && lEnoughITSNClsPos)) &&     //bachelor conditional
-          (lEnoughTPCNClsNeg || (allowITSSAproton && lEnoughITSNClsNeg))      //bachelor conditional
-        ) {
-          lGoodCandidate = kTRUE;
+        if (TMath::Abs(casc.yOmega()) < 0.5 && lCompatiblePID_Om) {
+          if (!doCentralityStudy) {
+            registry.fill(HIST("h2dMassOmegaMinus"), casc.template pt(), casc.template mOmega());
+          } else {
+            registry.fill(HIST("h3dMassOmegaMinus"), lPercentile, casc.template pt(), casc.template mOmega());
+          }
         }
-      }
-      if (!lGoodCandidate)
-        continue;
-      registry.fill(HIST("hCandidateCounter"), 2.5); //okay track quality
-
-      if (casc.v0radius() > v0radius &&
-          casc.cascradius() > cascradius &&
-          casc.v0cosPA(pvx, pvy, pvz) > v0cospa &&
-          casc.casccosPA(pvx, pvy, pvz) > casccospa &&
-          casc.dcav0topv(pvx, pvy, pvz) > dcav0topv &&
-          TMath::Abs(casc.mLambda() - 1.115683) < v0masswindow) {
-        registry.fill(HIST("hCandidateCounter"), 3.5); //pass cascade selections
-        if (casc.sign() < 0) {                         // FIXME: could be done better...
-          if (TMath::Abs(casc.yXi()) < 0.5) {
-            if (!doCentralityStudy) {
-              registry.fill(HIST("h2dMassXiMinus"), casc.template pt(), casc.template mXi());
-            } else {
-              registry.fill(HIST("h3dMassXiMinus"), lPercentile, casc.template pt(), casc.template mXi());
-            }
+      } else {
+        if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi) {
+          if (!doCentralityStudy) {
+            registry.fill(HIST("h2dMassXiPlus"), casc.template pt(), casc.template mXi());
+          } else {
+            registry.fill(HIST("h3dMassXiPlus"), lPercentile, casc.template pt(), casc.template mXi());
           }
-          if (TMath::Abs(casc.yOmega()) < 0.5) {
-            if (!doCentralityStudy) {
-              registry.fill(HIST("h2dMassOmegaMinus"), casc.template pt(), casc.template mOmega());
-            } else {
-              registry.fill(HIST("h3dMassOmegaMinus"), lPercentile, casc.template pt(), casc.template mOmega());
-            }
-          }
-        } else {
-          if (TMath::Abs(casc.yXi()) < 0.5) {
-            if (!doCentralityStudy) {
-              registry.fill(HIST("h2dMassXiPlus"), casc.template pt(), casc.template mXi());
-            } else {
-              registry.fill(HIST("h3dMassXiPlus"), lPercentile, casc.template pt(), casc.template mXi());
-            }
-          }
-          if (TMath::Abs(casc.yOmega()) < 0.5) {
-            if (!doCentralityStudy) {
-              registry.fill(HIST("h2dMassOmegaPlus"), casc.template pt(), casc.template mOmega());
-            } else {
-              registry.fill(HIST("h3dMassOmegaPlus"), lPercentile, casc.template pt(), casc.template mOmega());
-            }
+        }
+        if (TMath::Abs(casc.yOmega()) < 0.5 && lCompatiblePID_Om) {
+          if (!doCentralityStudy) {
+            registry.fill(HIST("h2dMassOmegaPlus"), casc.template pt(), casc.template mOmega());
+          } else {
+            registry.fill(HIST("h3dMassOmegaPlus"), lPercentile, casc.template pt(), casc.template mOmega());
           }
         }
       }
@@ -280,7 +331,9 @@ struct cascadeAnalysis {
       return;
     }
     //fill cascade information with tracksIU typecast (Run 3)
-    fillCascadeOutput<FullTracksExtIU>(Cascades, collision.posX(), collision.posY(), collision.posZ());
+    for (auto& casc : Cascades) {
+      processCascadeCandidate<FullTracksExtIU>(casc, collision.posX(), collision.posY(), collision.posZ());
+    }
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3, "Process Run 3 data", true);
 
@@ -295,7 +348,9 @@ struct cascadeAnalysis {
       return;
     }
     //fill cascade information with tracks typecast (Run 2)
-    fillCascadeOutput<FullTracksExt>(Cascades, collision.posX(), collision.posY(), collision.posZ());
+    for (auto& casc : Cascades) {
+      processCascadeCandidate<FullTracksExt>(casc, collision.posX(), collision.posY(), collision.posZ());
+    }
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2, "Process Run 2 data", false);
 
@@ -307,7 +362,9 @@ struct cascadeAnalysis {
       return;
     }
     //fill cascade information with tracksIU typecast (Run 3)
-    fillCascadeOutput<FullTracksExtIU>(Cascades, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+    for (auto& casc : Cascades) {
+      processCascadeCandidate<FullTracksExtIU>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+    }
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3VsMultiplicity, "Process Run 3 data vs multiplicity", false);
 
@@ -322,9 +379,77 @@ struct cascadeAnalysis {
       return;
     }
     //fill cascade information with tracks typecast (Run 2)
-    fillCascadeOutput<FullTracksExt>(Cascades, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+    for (auto& casc : Cascades) {
+      processCascadeCandidate<FullTracksExt>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M());
+    }
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2VsMultiplicity, "Process Run 2 data vs multiplicity", false);
+
+  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
+  //process function subscribing to Run 3-like analysis objects
+  {
+    //Run 3 event selection criteria
+    if (eventSelection && !collision.sel8()) {
+      return;
+    }
+    //fill cascade information with tracksIU typecast (Run 3)
+    for (auto& casc : Cascades) {
+      int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
+      processCascadeCandidate<FullTracksExtIUWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), -999, lPIDvalue);
+    }
+  }
+  PROCESS_SWITCH(cascadeAnalysis, processRun3WithPID, "Process Run 3 data  with PID", false);
+
+  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtWithPID const&)
+  //process function subscribing to Run 3-like analysis objects
+  {
+    //Run 2 event selection criteria
+    if (eventSelection && !collision.alias()[kINT7]) {
+      return;
+    }
+    if (eventSelection && !collision.sel7()) {
+      return;
+    }
+    //fill cascade information with tracks typecast (Run 2)
+    for (auto& casc : Cascades) {
+      int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
+      processCascadeCandidate<FullTracksExtWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), -999, lPIDvalue);
+    }
+  }
+  PROCESS_SWITCH(cascadeAnalysis, processRun2WithPID, "Process Run 2 data  with PID", false);
+
+  void processRun3VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
+  //process function subscribing to Run 3-like analysis objects
+  {
+    //Run 3 event selection criteria
+    if (eventSelection && !collision.sel8()) {
+      return;
+    }
+    //fill cascade information with tracksIU typecast (Run 3)
+    for (auto& casc : Cascades) {
+      int lPIDvalue = checkCascadeTPCPID<FullTracksExtIUWithPID>(casc);
+      processCascadeCandidate<FullTracksExtIUWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), lPIDvalue);
+    }
+  }
+  PROCESS_SWITCH(cascadeAnalysis, processRun3VsMultiplicityWithPID, "Process Run 3 data vs multiplicity with PID", false);
+
+  void processRun2VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtWithPID const&)
+  //process function subscribing to Run 3-like analysis objects
+  {
+    //Run 2 event selection criteria
+    if (eventSelection && !collision.alias()[kINT7]) {
+      return;
+    }
+    if (eventSelection && !collision.sel7()) {
+      return;
+    }
+    //fill cascade information with tracks typecast (Run 2)
+    for (auto& casc : Cascades) {
+      int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
+      processCascadeCandidate<FullTracksExtWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), lPIDvalue);
+    }
+  }
+  PROCESS_SWITCH(cascadeAnalysis, processRun2VsMultiplicityWithPID, "Process Run 2 data vs multiplicity with PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
