@@ -129,8 +129,8 @@ def set_global_style(**kwargs):
     if "maxdigits" in kwargs:
         ROOT.TGaxis.SetMaxDigits(kwargs["maxdigits"])
 
-    if "palette" in kwargs:
-        ROOT.gStyle.SetPalette(kwargs["palette"])
+    palette = kwargs.get('palette', 112) # viridis palette by default
+    ROOT.gStyle.SetPalette(palette)
 
     ROOT.gStyle.SetLegendBorderSize(0)
     ROOT.gROOT.ForceStyle()
