@@ -9,7 +9,7 @@ Script with helper methods for style settings
 
 import ROOT
 
-# pylint: disable=too-many-branches,too-many-statements, no-member
+# pylint: disable=too-many-branches, no-member
 
 
 def set_global_style(**kwargs):
