@@ -370,7 +370,7 @@ struct ValidationRecLevel {
 
   HistogramRegistry registry{
     "registry",
-    {{"histNtracks", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+    {{"histNtracks", "Number of global tracks w/o DCA requirement;#it{N}_{tracks};entries", {HistType::kTH1F, {{200, 0., 200.}}}},
      {"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
