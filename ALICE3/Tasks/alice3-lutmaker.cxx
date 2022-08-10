@@ -68,11 +68,11 @@ struct Alice3LutMaker {
     const TString commonTitle = Form(" PDG %i", pdg);
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} GeV/#it{c}"};
     if (ptLog) {
-      axisPt.makeLogaritmic();
+      axisPt.makeLogarithmic();
     }
     AxisSpec axisNch{nchBins, nchMin, nchMax, "N_{Ch}"};
     if (nchLog) {
-      axisNch.makeLogaritmic();
+      axisNch.makeLogarithmic();
     }
     const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
 
