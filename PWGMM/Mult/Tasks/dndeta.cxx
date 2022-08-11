@@ -40,15 +40,16 @@ AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 
-static constexpr TrackSelectionFlags::flagtype trackSelectionPattern = TrackSelectionFlags::kTrackType |
-                                                                       TrackSelectionFlags::kTPCNCls |
-                                                                       TrackSelectionFlags::kITSNCls |
-                                                                       TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-                                                                       TrackSelectionFlags::kTPCChi2NDF |
-                                                                       TrackSelectionFlags::kITSChi2NDF |
-                                                                       TrackSelectionFlags::kITSHits |
-                                                                       TrackSelectionFlags::kDCAz |
-                                                                       TrackSelectionFlags::kDCAxy;
+static constexpr TrackSelectionFlags::flagtype trackSelectionITS = TrackSelectionFlags::kITSNCls |
+                                                                   TrackSelectionFlags::kITSChi2NDF |
+                                                                   TrackSelectionFlags::kITSHits;
+
+static constexpr TrackSelectionFlags::flagtype trackSelectionTPC = TrackSelectionFlags::kTPCNCls |
+                                                                   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+                                                                   TrackSelectionFlags::kTPCChi2NDF;
+
+static constexpr TrackSelectionFlags::flagtype trackSelectionDCA = TrackSelectionFlags::kDCAz |
+                                                                   TrackSelectionFlags::kDCAxy;
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
@@ -166,11 +167,14 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
-  expressions::Filter trackSelectionFilter = (aod::track::trackCutFlag & trackSelectionPattern) == trackSelectionPattern;
+  expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
+                                             ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC,
+                                                    (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC,
+                                                    true);
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
-  Partition<FiTracks> sample = nabs(aod::track::eta) < estimatorEta;
+  Partition<FiTracks> sample = (nabs(aod::track::eta) < estimatorEta) && ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
 
   void processCounting(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, FiTracks const& tracks)
   {
