@@ -14,6 +14,12 @@
 /// dependencies: o2-analysis-lf-lambdakzerobuilder
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
+// *****revision history*****:
+//
+// added recalculation of the conversion point on 08.07.22 by Nikita Philip Tatsch (tatsch@physi.uni-heidelberg.de)
+//
+// **************************
+
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
@@ -24,15 +30,33 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 
+//includes for the R recalculation
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "DetectorsVertexing/HelixHelper.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <TMath.h> // for ATan2, Cos, Sin, Sqrt
+#include "TVector2.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi>;
+using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 struct skimmerGammaConversions {
+
+  //configurables for CCDB access
+  Configurable<std::string> path{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -70,6 +94,10 @@ struct skimmerGammaConversions {
 
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
+  Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  int runNumber = -1;
 
   void init(InitContext const&)
   {
@@ -84,6 +112,30 @@ struct skimmerGammaConversions {
     for (auto& lPairIt : fV0ConfirmationLabel) {
       lXaxis->SetBinLabel(lPairIt.first + 1, lPairIt.second.data());
     }
+
+    // This is added in order to access the ccdb
+
+    ccdb->setURL(url.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking(); // no idea wether this is usefull or not, there is no documentation
+    // Not later than now, will be replaced by the value of the train creation
+    // This avoids that users can replace objects **while** a train is running
+    ccdb->setCreatedNotAfter(nolaterthan.value); // was like that in the tutorial efficiencyPerRun
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    // if run number matches then magnetic field should also match. Avoids unessecary acceses.
+    if (runNumber == bc.runNumber()) {
+      return;
+    }
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(path.value, bc.timestamp());
+    if (!grpo) {
+      LOGF(fatal, "Efficiency object not found!");
+    }
+    o2::base::Propagator::initFieldFromGRP(grpo);
+    //o2::base::Propagator::Instance()->setMatLUT(lut);
+    runNumber = bc.runNumber();
   }
 
   template <typename TV0, typename TTRACK>
@@ -105,11 +157,30 @@ struct skimmerGammaConversions {
       theTrack.tpcSignal());
   }
 
+  template <typename TV0>
+  void fillV0RecalculatedTable(TV0 const& theV0, float* recalculatedVtx)
+  {
+    fFuncTableV0Recalculated(
+      theV0.v0Id(),
+      recalculatedVtx[0],
+      recalculatedVtx[1],
+      recalculatedVtx[2]);
+  }
+
   // ============================ FUNCTION DEFINITIONS ====================================================
+
   void processRec(aod::Collisions::iterator const& theCollision,
+                  aod::BCsWithTimestamps const& bcs,
                   aod::V0Datas const& theV0s,
                   tracksAndTPCInfo const& theTracks)
   {
+    // skip if bc has no Collisions
+    if (theCollision.size() == 0) {
+      return;
+    }
+
+    initCCDB(bcs.begin());
+
     fRegistry.fill(HIST("hCollisionZ_Rec"), theCollision.posZ());
 
     for (auto& lV0 : theV0s) {
@@ -117,8 +188,12 @@ struct skimmerGammaConversions {
       auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfo>(); // positive daughter
       auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfo>(); // negative daughter
 
+      float recalculatedVtx[3];
+      Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
+
       fillTrackTable(lV0, lTrackPos, true);
       fillTrackTable(lV0, lTrackNeg, false);
+      fillV0RecalculatedTable(lV0, recalculatedVtx);
     }
   }
   PROCESS_SWITCH(skimmerGammaConversions, processRec, "process reconstructed info only", true);
@@ -128,10 +203,14 @@ struct skimmerGammaConversions {
   void processMc(aod::McCollision const& theMcCollision,
                  soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                             aod::Collisions>> const& theCollisions,
+                 aod::BCsWithTimestamps const& bcs,
                  aod::V0Datas const& theV0s,
                  tracksAndTPCInfoMC const& theTracks,
                  aod::McParticles const& theMcParticles)
   {
+
+    initCCDB(bcs.begin());
+
     fRegistry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
 
     if (theCollisions.size() == 0) {
@@ -156,8 +235,12 @@ struct skimmerGammaConversions {
 
         fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(lV0Status);
 
+        float recalculatedVtx[3];
+        Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
+
         fillTrackTable(lV0, lTrackPos, true);
         fillTrackTable(lV0, lTrackNeg, false);
+        fillV0RecalculatedTable(lV0, recalculatedVtx);
       }
     }
   }
@@ -239,6 +322,63 @@ struct skimmerGammaConversions {
       break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
     }
     return kGoodMcMother;
+  }
+
+  template <typename TrackPrecision = float, typename T>
+  void Vtx_recalculation(T lTrackPos, T lTrackNeg, float* conversionPosition)
+  {
+    o2::base::Propagator* prop = o2::base::Propagator::Instance(); //This singleton propagator requires some initialisation of the CCDB object.
+
+    float bz = prop->getNominalBz();
+
+    //*******************************************************
+
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); //first get an object that stores Track information (positive)
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); //first get an object that stores Track information (negative)
+
+    o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
+    o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
+
+    conversionPosition[0] = (helixPos.xC * helixNeg.rC + helixNeg.xC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //This calculates the coordinates of the conversion point as an weighted average of the two helix centers. xC and yC should be the global coordinates for the helix center as far as I understand. But you can double check the code of trackPosInformation.getCircleParamsLoc
+    conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
+
+    //I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParCov(trackPosInformation);
+    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParCov(trackNegInformation);
+
+    //I think this calculation gets the closest point on the track to the conversion point
+    //This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
+    Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
+    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
+
+    Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
+    Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
+    Double_t vertexXNeg = helixNeg.xC + helixNeg.rC * TMath::Cos(alphaNeg);
+    Double_t vertexYNeg = helixNeg.yC + helixNeg.rC * TMath::Sin(alphaNeg);
+
+    TVector2 vertexPos(vertexXPos, vertexYPos);
+    TVector2 vertexNeg(vertexXNeg, vertexYNeg);
+
+    // Convert to local coordinate system
+    TVector2 vertexPosRot = vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
+    TVector2 vertexNegRot = vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
+
+    prop->propagateToX(trackPosInformationCopy,
+                       vertexPosRot.X(),
+                       bz,
+                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
+                       o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
+                       o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
+
+    prop->propagateToX(trackNegInformationCopy,
+                       vertexNegRot.X(),
+                       bz,
+                       o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
+                       o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
+                       o2::base::PropagatorImpl<TrackPrecision>::MatCorrType::USEMatCorrNONE);
+
+    // TODO: This is still off and needs to be checked...
+    conversionPosition[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
   }
 };
 
