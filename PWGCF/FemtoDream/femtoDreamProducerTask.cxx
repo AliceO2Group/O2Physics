@@ -447,10 +447,7 @@ struct femtoDreamProducerTask {
             fillDebugParticle<false>(v0);      // QA for v0
           }
           if constexpr (isMC) {
-            // write code to fill lambdas!
-            // fill for lambda
-            outputPartsMC(outputParts.lastIndex(), -999, -999);
-            outputDebugPartsMC(-999);
+            fillMCParticle(v0);
           }
         }
       }
@@ -471,7 +468,7 @@ struct femtoDreamProducerTask {
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                  aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles,
-                 o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
+                 soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
