@@ -367,14 +367,14 @@ struct HfTaskFlow {
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -0.5 * PI);
 
         if (!fillingHFcontainer) {
-        //  fill pair correlations
-        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                    triggerWeight * associatedWeight);
+          //  fill pair correlations
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+                                      triggerWeight * associatedWeight);
         } else {
-        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                    triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
         }
       }
     }
