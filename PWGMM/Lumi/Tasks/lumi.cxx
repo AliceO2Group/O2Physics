@@ -27,8 +27,6 @@
 
 #include "CommonUtils/NameConf.h"
 
-#include "DetectorsBase/Propagator.h"
-
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -40,10 +38,6 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
