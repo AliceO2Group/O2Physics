@@ -179,6 +179,7 @@ struct tpcPidFull {
                            enableNetworkOptimizations.value);
           network = temp_net;
           network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+          network.SetNClNormalization(response.GetNClNormalization());
         }
       } else {
         return;
@@ -237,6 +238,7 @@ struct tpcPidFull {
                              enableNetworkOptimizations.value);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+            network.SetNClNormalization(response.GetNClNormalization());
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }
@@ -250,7 +252,7 @@ struct tpcPidFull {
       const unsigned long prediction_size = output_dimensions * tracks_size;
 
       network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
-
+      const float nNclNormalization = response.GetNClNormalization();
       float duration_network = 0;
 
       std::vector<float> track_properties(track_prop_size);
@@ -266,7 +268,7 @@ struct tpcPidFull {
           track_properties[counter_track_props + 2] = trk.signed1Pt();
           track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
           track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
-          track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
+          track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
           counter_track_props += input_dimensions;
         }
 

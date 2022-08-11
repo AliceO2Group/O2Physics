@@ -1094,7 +1094,7 @@ struct HfFilter { // Main struct for HF triggers
       auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
       int8_t sign = 0;
-      int8_t flag = 0;
+      int8_t flag = RecoDecay::OriginType::None;
 
       // D0(bar) → π± K∓
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMC, std::array{trackPos, trackNeg}, pdg::Code::kD0, array{+kPiPlus, -kKPlus}, true, &sign);
@@ -1135,7 +1135,7 @@ struct HfFilter { // Main struct for HF triggers
         deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massK, massK}) - massPhi);
       }
       int8_t sign = 0;
-      int8_t flag = 0;
+      int8_t flag = RecoDecay::OriginType::None;
       int8_t channel = -1;
 
       // D± → π± K∓ π±

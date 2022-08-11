@@ -13,6 +13,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/StrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include <TMath.h>
 
 // todo: declare more columns in this file dynamic or expression, atm I save a lot of redundant information
 namespace o2::aod
@@ -27,6 +28,7 @@ DECLARE_SOA_COLUMN(PositivelyCharged, positivelyCharged, bool);                 
 DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float); //! Ratio  crossed rows over findable clusters
 DECLARE_SOA_COLUMN(TpcFoundOverFindableCls, tpcFoundOverFindableCls, float);             //! Ratio of found over findable clusters
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, float);                       //! Number of crossed TPC Rows
+
 } // namespace gammatrackreco
 
 DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
@@ -44,6 +46,22 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCNSigmaPi,
                   track::TPCSignal);
+
+namespace gammarecalculated
+{
+DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
+DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float); //! Recalculated conversion point
+DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated conversion point
+DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return TMath::Sqrt(x * x + y * y); });
+} // namespace gammarecalculated
+
+DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
+                  o2::soa::Index<>,
+                  v0data::V0Id,
+                  gammarecalculated::RecalculatedVtxX,
+                  gammarecalculated::RecalculatedVtxY,
+                  gammarecalculated::RecalculatedVtxZ,
+                  gammarecalculated::RecalculatedVtxR<o2::aod::gammarecalculated::RecalculatedVtxX, o2::aod::gammarecalculated::RecalculatedVtxY>);
 
 namespace gammamctrue
 {

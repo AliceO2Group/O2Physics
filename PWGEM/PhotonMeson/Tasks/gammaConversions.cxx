@@ -22,10 +22,13 @@
 #include "Framework/runDataProcessing.h"
 
 #include <TVector3.h>
+#include <TMath.h> // for ATan2, Cos, Sin, Sqrt
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 struct GammaConversions {
@@ -45,60 +48,21 @@ struct GammaConversions {
   Configurable<float> fPIDnSigmaElectronMax{"fPIDnSigmaElectronMax", 3., "maximum sigma electron PID for V0 daughter tracks"};
   Configurable<float> fPIDPionRejectionPMin{"fPIDPionRejectionPMin", 0.4, "minimum track momentum to apply any pion rejection"};                              // case 7:  // 0.4 GeV
   Configurable<float> fPIDPionRejectionPBoarder{"fPIDPionRejectionPBoarder", 8., "border between low and high momentum pion rejection"};                      // case 7:  // 8. GeV
-  Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", 3., "minimum sigma to be over the pion line for low momentum tracks"}; // case 4: 3.0sigma, 1.0 sigma at high momentum
-  Configurable<float> fPIDnSigmaAbovePionLineHighPMin{"fPIDnSigmaAbovePionLineHighPMin", 1., "minimum sigma to be over the pion line for high momentum tracks"};
-  Configurable<float> fMinTPCFoundOverFindableCls{"fMinTPCNClsFoundOverFindable", 0.6, "minimum ratio found tpc clusters over findable"}; // case 9:  // 0.6
+  Configurable<float> fPIDnSigmaAbovePionLineLowPMin{"fPIDnSigmaAbovePionLineLowPMin", -10., "minimum sigma to be over the pion line for low momentum tracks"}; // case 4: 3.0sigma, 1.0 sigma at high momentum
+  Configurable<float> fPIDnSigmaAbovePionLineHighPMin{"fPIDnSigmaAbovePionLineHighPMin", -10., "minimum sigma to be over the pion line for high momentum tracks"};
+  Configurable<float> fMinTPCFoundOverFindableCls{"fMinTPCNClsFoundOverFindable", 0.3, "minimum ratio found tpc clusters over findable"}; // case 9:  // 0.6
   Configurable<float> fMinTPCCrossedRowsOverFindableCls{"fMinTPCCrossedRowsOverFindableCls", 0.0, "minimum ratio TPC crossed rows over findable clusters"};
 
   // V0 cuts
   Configurable<float> fV0CosPAngleMin{"fV0CosPAngleMin", 0.85, "Set negative to disable. Minimum cosinus of the pointing angle"}; // case 4
-  Configurable<float> fV0RMin{"fV0RMin", 5., "minimum conversion radius of the V0s"};
+  Configurable<float> fV0RMin{"fV0RMin", 0., "minimum conversion radius of the V0s"};
   Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
-  Configurable<float> fV0PhotonAsymmetryMax{"fV0PhotonAsymmetryMax", 0.95, "maximum photon asymetry. Set negative do disable cut."};
-  Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", 0.1, "maximum psi angle of the track pair. Set negative do disable cut. "};
-  Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.11, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
-  Configurable<float> fV0QtMax{"fV0QtMax", 0.040, "the maximum value of the product, that is the maximum qt"};
-
-  // collision histograms
-  std::vector<MyHistogramSpec> fCollisionHistoDefinitions{
-    {"hCollisionZ", "hCollisionZ;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}}};
-
-  // track histograms
-  std::vector<MyHistogramSpec> fTrackHistoDefinitions{
-    {"hTrackPt", "hTrackPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
-    {"hTrackEta", "hTrackEta;#eta;counts", {HistType::kTH1F, {gAxis_eta}}},
-    {"hTrackPhi", "hTrackPhi;#phi (rad);counts", {HistType::kTH1F, {gAxis_phi}}},
-    {"hTPCFoundOverFindableCls", "hTPCFoundOverFindableCls;TPCFoundOverFindableCls;counts", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
-    {"hTPCCrossedRowsOverFindableCls", "hTPCCrossedRowsOverFindableCls;TPCCrossedRowsOverFindableCls;counts", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
-    {"hTPCdEdx", "hTPCdEdx;p (GeV/c);TPCdEdx", {HistType::kTH2F, {gAxis_pT, {800, 0.f, 200.f}}}},
-    {"hTPCdEdxSigEl", "hTPCdEdxSigEl;p (GeV/c);TPCdEdxSigEl", {HistType::kTH2F, {gAxis_pT, gAxis_TPCdEdxSig}}},
-    {"hTPCdEdxSigPi", "hTPCdEdxSigPi;p (GeV/c);TPCdEdxSigPi", {HistType::kTH2F, {gAxis_pT, gAxis_TPCdEdxSig}}}};
-
-  // v0 histograms
-  std::vector<MyHistogramSpec> fV0HistoDefinitions{
-    {"hPt", "hPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
-    {"hEta", "hEta;#eta;counts", {HistType::kTH1F, {gAxis_eta}}},
-    {"hPhi", "hPhi;#phi (rad);counts", {HistType::kTH1F, {gAxis_phi}}},
-    {"hConvPointR", "hConvPointR;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
-    {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, gAxis_pT}}},
-    {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
-    {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
-  };
-
-  // only in mc
-  // resolution histos
-  std::vector<MyHistogramSpec> fV0ResolutionHistoDefinitions{
-    {"hPtRes", "hPtRes_Rec-MC;#Delta p_T (GeV/c);counts", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
-    {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {gAxis_radRes}}},
-    {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {gAxis_radRes}}},
-    {"hConvPointRRes", "hConvPointRRes_Rec-MC;#Delta R (cm);counts", {HistType::kTH1F, {{800, -200.f, 200.f}}}},
-    {"hConvPointAbsoluteDistanceRes", "hConvPointAbsoluteDistanceRes;euclidean distance (cm);counts", {HistType::kTH1F, {{800, 0.0f, 200.f}}}},
-  };
-
-  // think of better name
-  std::vector<MyHistogramSpec> fSpecialHistoDefinitions{
-    {"hV0Selection", "hV0Selection;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}},
-    {"hV0McValidation", "hV0McValidation;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}, false /*callSumw2*/, true /*dataOnly_*/}};
+  Configurable<float> fV0PhotonAsymmetryMax{"fV0PhotonAsymmetryMax", 1.0, "maximum photon asymetry. Set negative do disable cut."};
+  Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", -0.1, "maximum psi angle of the track pair. Set negative do disable cut. "};
+  Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.125, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
+  Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
+  Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
+  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
     {ePhotonCuts::kV0In, "kV0In"},
@@ -113,6 +77,7 @@ struct GammaConversions {
     {ePhotonCuts::kArmenteros, "kArmenteros"},
     {ePhotonCuts::kPsiPair, "kPsiPair"},
     {ePhotonCuts::kCosinePA, "kCosinePA"},
+    {ePhotonCuts::kRZLine, "kRZLine"},
     {ePhotonCuts::kV0Out, "kV0Out"}};
 
   std::map<eV0McValidation, std::string> fV0McValidationLabels{
@@ -132,6 +97,61 @@ struct GammaConversions {
 
   void init(InitContext const&)
   {
+    // make axis logarithmic
+    gAxis_pT_log.makeLogaritmic();
+
+    // Declarations for histogram
+    // collision histograms
+    std::vector<MyHistogramSpec> lCollisionHistoDefinitions{
+      {"hCollisionZ", "hCollisionZ;z (cm);counts", {HistType::kTH1F, {gAxis_zColl}}}};
+
+    // track histograms
+    std::vector<MyHistogramSpec> lTrackHistoDefinitions{
+      {"hTrackPt", "hTrackPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
+      {"hTrackEta", "hTrackEta;#eta;counts", {HistType::kTH1F, {gAxis_eta}}},
+      {"hTrackPhi", "hTrackPhi;#phi (rad);counts", {HistType::kTH1F, {gAxis_phi}}},
+      {"hTPCFoundOverFindableCls", "hTPCFoundOverFindableCls;TPCFoundOverFindableCls;counts", {HistType::kTH1F, {{800, 0.9f, 1.01f}}}},
+      {"hTPCCrossedRowsOverFindableCls", "hTPCCrossedRowsOverFindableCls;TPCCrossedRowsOverFindableCls;counts", {HistType::kTH1F, {{800, 0.8f, 1.5f}}}},
+      {"hTPCdEdx", "hTPCdEdx;p (GeV/c);TPCdEdx", {HistType::kTH2F, {gAxis_pT_log, {800, 0.f, 200.f}}}},
+      {"hTPCdEdxSigEl", "hTPCdEdxSigEl;p (GeV/c);TPCdEdxSigEl", {HistType::kTH2F, {gAxis_pT_log, gAxis_TPCdEdxSig}}},
+      {"hTPCdEdxSigPi", "hTPCdEdxSigPi;p (GeV/c);TPCdEdxSigPi", {HistType::kTH2F, {gAxis_pT_log, gAxis_TPCdEdxSig}}}};
+
+    // v0 histograms
+    std::vector<MyHistogramSpec> lV0HistoDefinitions{
+      {"hPt", "hPt;p_{T} (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
+      {"hEta", "hEta;#eta;counts", {HistType::kTH1F, {gAxis_eta}}},
+      {"hPhi", "hPhi;#phi (rad);counts", {HistType::kTH1F, {gAxis_phi}}},
+      {"hConvPointR", "hConvPointR;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
+      {"hConvPointZ", "hConvPointZ;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
+      {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, gAxis_pT_armenteros}}},
+      {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
+      {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
+      {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
+      {"hpeDivpGamma", "hpeDivpGamma;p_{e}/p_{#gamma};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}};
+
+    // recalculated conversion Point for V0, only Rec and MCVal need this
+    std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
+      {"hConvPointR_recalc", "hConvPointR_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
+      {"hConvPointZ_recalc", "hConvPointZ_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
+    };
+
+    // only in mc
+    // resolution histos
+    std::vector<MyHistogramSpec> lV0ResolutionHistoDefinitions{
+      {"hPtRes", "hPtRes_Rec-MC;#Delta p_T (GeV/c);counts", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
+      {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {gAxis_radRes}}},
+      {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {gAxis_radRes}}},
+      {"hConvPointXYResVsXY", "hConvPointXYResVsXY_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}}, // maybe change axis later on
+      {"hConvPointXYResVsXY_recalc", "hConvPointXYResVsXY_recalc_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}},
+      {"hConvPointZResVsZ", "hConvPointZResVsZ_Rec-MC;Z (cm);#Delta Z (cm)", {HistType::kTH2F, {gAxis_xyz, gAxis_dr}}},
+      {"hConvPointZResVsZ_recalc", "hConvPointZResVsZ_recalc_Rec-MC;Z (cm);#Delta Z (cm)", {HistType::kTH2F, {gAxis_xyz, gAxis_dr}}},
+    };
+
+    // think of better name
+    std::vector<MyHistogramSpec> lSpecialHistoDefinitions{
+      {"hV0Selection", "hV0Selection;V0 categories;counts", {HistType::kTH1I, {{14, -0.0f, 13.5f}}}},
+      {"hV0McValidation", "hV0McValidation;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}, false /*callSumw2*/, true /*dataOnly_*/}};
+
     auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
       auto lHisto = theContainer.find(theHistoName);
       if (lHisto != theContainer.end()) {
@@ -152,7 +172,7 @@ struct GammaConversions {
 
     fMyRegistry.mV0.mSpecialHistos.addHistosToOfficalRegistry(
       fHistogramRegistry,
-      fSpecialHistoDefinitions,
+      lSpecialHistoDefinitions,
       nullptr /*theSuffix*/,
       doprocessRec /*theCheckDataOnly*/);
 
@@ -173,27 +193,37 @@ struct GammaConversions {
           if (iBARecCuts == kBeforeRecCuts) {
             // collision histograms
             fMyRegistry.mCollision.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                               fCollisionHistoDefinitions,
+                                                                                                               lCollisionHistoDefinitions,
                                                                                                                lMcSuffix);
           }
 
           // track histograms
           fMyRegistry.mTrack.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                         fTrackHistoDefinitions,
+                                                                                                         lTrackHistoDefinitions,
                                                                                                          lMcSuffix);
         }
-
         // v0 histograms
         fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                    (iMcKind < 3) ? fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
+                                                                                                    (iMcKind < 3) ? lV0HistoDefinitions : lV0ResolutionHistoDefinitions,
                                                                                                     lMcSuffix);
+        // v0 recalculated conversion point histos
+        if ((iMcKind == kRec) || (iMcKind == kMCVal)) {
+          fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                      lV0HistoDefinitions_recalculated,
+                                                                                                      lMcSuffix);
+        }
 
         if (doprocessMc) {
           // v0 mc rejection histos
           for (size_t iRejReason = 0; iRejReason < 2; ++iRejReason) {
             fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                                                  (iMcKind < 3) ? fV0HistoDefinitions : fV0ResolutionHistoDefinitions,
+                                                                                                                                  (iMcKind < 3) ? lV0HistoDefinitions : lV0ResolutionHistoDefinitions,
                                                                                                                                   lMcSuffix);
+            if ((iMcKind == kRec) || (iMcKind == kMCVal)) {
+              fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                                                    lV0HistoDefinitions_recalculated,
+                                                                                                                                    lMcSuffix);
+            }
           }
         }
       }
@@ -295,12 +325,11 @@ struct GammaConversions {
     return true;
   }
 
-  template <typename TV0, typename TMCGAMMATABLE, typename TTRACKS>
+  template <typename TV0, typename TMCGAMMATABLE>
   void processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable,
                        TV0 const& theV0,
                        float const& theV0CosinePA,
-                       bool theV0PassesRecCuts,
-                       TTRACKS const& theTwoV0Daughters)
+                       bool theV0PassesRecCuts)
   {
     fillV0McValidationHisto(eV0McValidation::kV0in);
 
@@ -337,14 +366,16 @@ struct GammaConversions {
                                   TMCGAMMA const& theMcPhoton,
                                   TV0 const& theV0)
   {
-    TVector3 lConvPointRec(theV0.x(), theV0.y(), theV0.z());
     TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
+    TVector3 lConvPointRecalc(theV0.recalculatedVtxX(), theV0.recalculatedVtxY(), theV0.recalculatedVtxZ());
 
     fillTH1(theContainer, "hPtRes", theV0.pt() - theMcPhoton.pt());
     fillTH1(theContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
     fillTH1(theContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
-    fillTH1(theContainer, "hConvPointRRes", theV0.v0radius() - lConvPointTrue.Perp());
-    fillTH1(theContainer, "hConvPointAbsoluteDistanceRes", TVector3(lConvPointRec - lConvPointTrue).Mag());
+    fillTH2(theContainer, "hConvPointXYResVsXY", lConvPointTrue.Perp(), theV0.v0radius() - lConvPointTrue.Perp());
+    fillTH2(theContainer, "hConvPointXYResVsXY_recalc", lConvPointTrue.Perp(), lConvPointRecalc.Perp() - lConvPointTrue.Perp());
+    fillTH2(theContainer, "hConvPointZResVsZ", theMcPhoton.conversionZ(), theV0.z() - theMcPhoton.conversionZ());
+    fillTH2(theContainer, "hConvPointZResVsZ_recalc", theMcPhoton.conversionZ(), theV0.recalculatedVtxZ() - theMcPhoton.conversionZ());
   }
 
   template <typename TV0, typename TMCGAMMA>
@@ -358,6 +389,10 @@ struct GammaConversions {
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
       theV0,
       theV0CosinePA);
+
+    fillV0Histograms_recalculated(
+      fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      theV0);
 
     fillV0ResolutionHistograms(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRes].mContainer,
@@ -381,6 +416,10 @@ struct GammaConversions {
       theV0,
       theV0CosinePA);
 
+    fillV0Histograms_recalculated(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
+      theV0);
+
     fillV0ResolutionHistograms(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRes].mContainer,
       theMcPhoton,
@@ -390,7 +429,7 @@ struct GammaConversions {
   Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
 
   void processRec(aod::Collisions::iterator const& theCollision,
-                  aod::V0Datas const& theV0s,
+                  V0DatasAdditional const& theV0s,
                   aod::V0DaughterTracks const& theAllTracks)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
@@ -412,7 +451,7 @@ struct GammaConversions {
   Preslice<aod::McGammasTrue> gperV0 = aod::v0data::v0Id;
 
   void processMc(aod::Collisions::iterator const& theCollision,
-                 aod::V0Datas const& theV0s,
+                 V0DatasAdditional const& theV0s,
                  aod::V0DaughterTracks const& theAllTracks,
                  aod::McGammasTrue const& theV0sTrue)
   {
@@ -433,8 +472,7 @@ struct GammaConversions {
       processMcPhoton(lMcPhotonForThisV0AsTable,
                       lV0,
                       lV0CosinePA,
-                      lV0PassesRecCuts,
-                      lTwoV0Daughters);
+                      lV0PassesRecCuts);
     }
   }
   PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
@@ -501,9 +539,21 @@ struct GammaConversions {
     fillTH1(theContainer, "hPhi", theV0.phi());
     fillTH1(theContainer, "hPt", theV0.pt());
     fillTH1(theContainer, "hConvPointR", theV0.v0radius());
+    fillTH1(theContainer, "hConvPointZ", theV0.z());
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
+    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
+    fillTH1(theContainer, "hpeDivpGamma", theV0.pfracpos());
+    fillTH1(theContainer, "hpeDivpGamma", theV0.pfracneg());
+  }
+
+  // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a seperate fill function is needed
+  template <typename TV0>
+  void fillV0Histograms_recalculated(mapStringHistPtr& theContainer, TV0 const& theV0)
+  {
+    fillTH1(theContainer, "hConvPointR_recalc", theV0.recalculatedVtxR());
+    fillTH1(theContainer, "hConvPointZ_recalc", theV0.recalculatedVtxZ());
   }
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
@@ -514,6 +564,8 @@ struct GammaConversions {
     fillTH1(theContainer, "hPhi", theMcGamma.phi());
     fillTH1(theContainer, "hPt", theMcGamma.pt());
     fillTH1(theContainer, "hConvPointR", theMcGamma.v0Radius());
+    fillTH1(theContainer, "hConvPointZ", theMcGamma.conversionZ());
+    fillTH2(theContainer, "hRVsZ", theMcGamma.v0Radius(), theMcGamma.conversionZ());
   }
 
   template <typename T>
@@ -580,6 +632,11 @@ struct GammaConversions {
       fillV0SelectionHisto(ePhotonCuts::kCosinePA);
       return kFALSE;
     }
+
+    if (TMath::Abs(theV0.z()) > LineCutZ0 + theV0.recalculatedVtxR() * LineCutZRSlope) { // as long as z recalculation is not fixed use this
+      fillV0SelectionHisto(ePhotonCuts::kRZLine);
+      return kFALSE;
+    }
     return kTRUE;
   }
 
@@ -596,6 +653,10 @@ struct GammaConversions {
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
       theV0,
       theV0CosinePA);
+
+    fillV0Histograms_recalculated(
+      fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
+      theV0);
   }
 
   Bool_t ArmenterosQtCut(Double_t theAlpha, Double_t theQt, Double_t thePt)

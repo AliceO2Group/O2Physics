@@ -57,6 +57,8 @@ class Network
   unsigned long getValidityUntil() const { return valid_until; };
   void setValidityFrom(unsigned long t) { valid_from = t; };
   void setValidityUntil(unsigned long t) { valid_until = t; };
+  void SetNClNormalization(const float nclnorm) { nClNorm = nclnorm; }
+  const float GetNClNormalization() const { return nClNorm; }
 
  private:
   // Range of validity in timestamps
@@ -73,6 +75,8 @@ class Network
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;
   std::vector<std::vector<int64_t>> mOutputShapes;
+
+  float nClNorm = 152.f;
 
   // Internal function for printing the shape of tensors: See https://github.com/saganatt/PID_ML_in_O2 or O2Physics/Tools/PIDML/simpleApplyPidOnnxModel.cxx
   std::string printShape(const std::vector<int64_t>& v);

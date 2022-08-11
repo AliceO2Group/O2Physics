@@ -112,8 +112,8 @@ struct richPidQaMc {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
-      pAxis.makeLogaritmic();
-      ptAxis.makeLogaritmic();
+      pAxis.makeLogarithmic();
+      ptAxis.makeLogarithmic();
     }
     const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{RICH}(%s)", pT[pid_type])};
 
@@ -140,8 +140,8 @@ struct richPidQaMc {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
-      pAxis.makeLogaritmic();
-      ptAxis.makeLogaritmic();
+      pAxis.makeLogarithmic();
+      ptAxis.makeLogarithmic();
     }
 
     const AxisSpec sigAxis{1000, 0, 0.3, "Cherenkov angle (rad)"};
