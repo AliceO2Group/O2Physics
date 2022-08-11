@@ -98,7 +98,7 @@ struct GammaConversions {
   void init(InitContext const&)
   {
     // make axis logarithmic
-    gAxis_pT_log.makeLogaritmic();
+    gAxis_pT_log.makeLogarithmic();
 
     // Declarations for histogram
     // collision histograms
