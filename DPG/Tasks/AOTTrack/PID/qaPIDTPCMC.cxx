@@ -84,7 +84,7 @@ struct pidTPCTaskQA {
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[pid_type])};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
     }
 
     // NSigma
@@ -101,8 +101,8 @@ struct pidTPCTaskQA {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
-      pAxis.makeLogaritmic();
-      ptAxis.makeLogaritmic();
+      pAxis.makeLogarithmic();
+      ptAxis.makeLogarithmic();
     }
     const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[pid_type])};
     const AxisSpec signalAxis{6000, 0, 2000, "TPC d#it{E}/d#it{x} A.U."};
