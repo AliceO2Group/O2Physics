@@ -232,15 +232,15 @@ struct GammaConversions {
                                                                                                                                     lMcSuffix);
             }
             if (iMcKind == kRec) {
-            fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                                                  lMcPDGCode,
-                                                                                                                                  lMcSuffix);
+              fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                                                    lMcPDGCode,
+                                                                                                                                    lMcSuffix);
             }
           }
           if (iMcKind == kRec) {
             fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
-                                                                                                    lMcPDGCode,
-                                                                                                    lMcSuffix);
+                                                                                                        lMcPDGCode,
+                                                                                                        lMcSuffix);
           }
         }
       }
@@ -384,19 +384,19 @@ struct GammaConversions {
 
   template <typename TV0>
   void processPDGHist(TV0 const& theV0,
-                 int const& theV0PassesRecCuts)
+                      int const& theV0PassesRecCuts)
   {
     lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
                  theV0);
     if (theV0PassesRecCuts) {
       lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
-                 theV0);
+                   theV0);
     }
   }
 
   template <typename TV0>
   void lfillPDGHist(mapStringHistPtr& theContainer,
-               TV0 const& theV0)
+                    TV0 const& theV0)
   {
     fillTH1(theContainer, "hPDGCode", theV0.pdgCodeV0());
     fillTH1(theContainer, "hPDGCode", theV0.pdgCodeD1());
