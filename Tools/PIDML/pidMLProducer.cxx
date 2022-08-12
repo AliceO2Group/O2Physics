@@ -31,41 +31,56 @@ struct CreateTableMc {
   Produces<aod::PidTracksMc> pidTracksTable;
 
   Filter trackFilter = requireGlobalTrackInFilter();
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
-  using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
+  //using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtended, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  //using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
+  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using MyCollision = aod::Collisions::iterator;
+
+  HistogramRegistry registry{
+    "registry",
+    {{"hPtvsTPCSig", "TPC signal;TPC signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 10.}}}},
+     {"hPtvsTOFBeta", "TOF beta;TOF beta; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 2.}}}},
+     {"hPtvsTRDSig", "TRD signal;TRD signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 22.}}}},
+     {"hPtvsTPCSigMC", "TPC signal MC;TPC signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 10.}}}},
+     {"hPtvsTOFBetaMC", "TOF beta MC;TOF beta; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 2.}}}},
+     {"hPtvsTRDSigMC", "TRD signal MC;TRD signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 22.}}}}}};
 
   void process(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles_000 const& mctracks)
   {
     for (const auto& track : tracks) {
       const auto mcParticle = track.mcParticle_as<aod::McParticles_000>();
       uint8_t isPrimary = (uint8_t)mcParticle.isPhysicalPrimary();
-      pidTracksTable(collision.centRun2V0M(),
-                     collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
-                     collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
-                     collision.multZNA(), collision.multZNC(),
-                     collision.multTracklets(), collision.multTPC(),
-                     track.tpcSignal(), track.trdSignal(), track.trdPattern(),
-                     track.trackEtaEmcal(), track.trackPhiEmcal(),
-                     track.tofSignal(), track.beta(),
-                     track.p(), track.pt(), track.px(), track.py(), track.pz(),
-                     track.sign(),
-                     track.x(), track.y(), track.z(),
-                     track.alpha(),
-                     track.trackType(),
-                     track.tpcNClsShared(),
-                     track.dcaXY(), track.dcaZ(),
-                     track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
-                     track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
-                     track.tpcNSigmaMu(), track.tpcExpSigmaMu(), track.tpcExpSignalDiffMu(),
-                     track.tofNSigmaMu(), track.tofExpSigmaMu(), track.tofExpSignalDiffMu(),
-                     track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
-                     track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
-                     track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
-                     track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
-                     track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
-                     track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
-                     mcParticle.pdgCode(),
-                     isPrimary);
+      pidTracksTable( //collision.centRun2V0M(),
+        //collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+        //collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
+        //collision.multZNA(), collision.multZNC(),
+        //collision.multTracklets(), collision.multTPC(),
+        track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+        //track.trackEtaEmcal(), track.trackPhiEmcal(),
+        track.tofSignal(), track.beta(),
+        track.p(), track.pt(), track.px(), track.py(), track.pz(),
+        track.sign(),
+        track.x(), track.y(), track.z(),
+        track.alpha(),
+        track.trackType(),
+        track.tpcNClsShared(),
+        track.dcaXY(), track.dcaZ(),
+        //track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
+        //track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
+        //track.tpcNSigmaMu(), track.tpcExpSigmaMu(), track.tpcExpSignalDiffMu(),
+        //track.tofNSigmaMu(), track.tofExpSigmaMu(), track.tofExpSignalDiffMu(),
+        //track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
+        //track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
+        //track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
+        //track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
+        //track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
+        //track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
+        mcParticle.pdgCode(),
+        isPrimary);
+
+      registry.fill(HIST("hPtvsTPCSigMC"), track.tpcSignal(), track.pt());
+      registry.fill(HIST("hPtvsTOFBetaMC"), track.beta(), track.pt());
+      registry.fill(HIST("hPtvsTRDSigMC"), track.trdSignal(), track.pt());
     }
   }
 };
@@ -80,31 +95,35 @@ struct CreateTableReal {
   void process(MyCollision const& collision, BigTracks const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTable(collision.centRun2V0M(),
-                     collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
-                     collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
-                     collision.multZNA(), collision.multZNC(),
-                     collision.multTracklets(), collision.multTPC(),
-                     track.tpcSignal(), track.trdSignal(), track.trdPattern(),
-                     track.trackEtaEmcal(), track.trackPhiEmcal(),
-                     track.tofSignal(), track.beta(),
-                     track.p(), track.pt(), track.px(), track.py(), track.pz(),
-                     track.sign(),
-                     track.x(), track.y(), track.z(),
-                     track.alpha(),
-                     track.trackType(),
-                     track.tpcNClsShared(),
-                     track.dcaXY(), track.dcaZ(),
-                     track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
-                     track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
-                     track.tpcNSigmaMu(), track.tpcExpSigmaMu(), track.tpcExpSignalDiffMu(),
-                     track.tofNSigmaMu(), track.tofExpSigmaMu(), track.tofExpSignalDiffMu(),
-                     track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
-                     track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
-                     track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
-                     track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
-                     track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
-                     track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
+      pidTracksTable( // collision.centRun2V0M(),
+        // collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+        // collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
+        // collision.multZNA(), collision.multZNC(),
+        // collision.multTracklets(), collision.multTPC(),
+        track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+        //track.trackEtaEmcal(), track.trackPhiEmcal(),
+        track.tofSignal(), track.beta(),
+        track.p(), track.pt(), track.px(), track.py(), track.pz(),
+        track.sign(),
+        track.x(), track.y(), track.z(),
+        track.alpha(),
+        track.trackType(),
+        track.tpcNClsShared(),
+        track.dcaXY(), track.dcaZ());
+      // track.tpcNSigmaEl(), track.tpcExpSigmaEl(), track.tpcExpSignalDiffEl(),
+      // track.tofNSigmaEl(), track.tofExpSigmaEl(), track.tofExpSignalDiffEl(),
+      // track.tpcNSigmaMu(), track.tpcExpSigmaMu(), track.tpcExpSignalDiffMu(),
+      // track.tofNSigmaMu(), track.tofExpSigmaMu(), track.tofExpSignalDiffMu(),
+      // track.tpcNSigmaPi(), track.tpcExpSigmaPi(), track.tpcExpSignalDiffPi(),
+      // track.tofNSigmaPi(), track.tofExpSigmaPi(), track.tofExpSignalDiffPi(),
+      // track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
+      // track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
+      // track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
+      // track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
+
+      registry.fill(HIST("hPtvsTPCSig"), track.tpcSignal(), track.pt());
+      registry.fill(HIST("hPtvsTOFBeta"), track.beta(), track.pt());
+      registry.fill(HIST("hPtvsTRDSig"), track.trdSignal(), track.pt());
     }
   }
 };
