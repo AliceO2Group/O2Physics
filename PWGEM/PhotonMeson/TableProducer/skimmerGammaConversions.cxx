@@ -48,8 +48,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi>;
+using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 struct skimmerGammaConversions {
 
@@ -95,6 +95,7 @@ struct skimmerGammaConversions {
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
+  Produces<aod::McPdgCode> fFuncTableMcPdgCode;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
@@ -161,7 +162,7 @@ struct skimmerGammaConversions {
   void fillV0RecalculatedTable(TV0 const& theV0, float* recalculatedVtx)
   {
     fFuncTableV0Recalculated(
-      theV0.v0Id(),
+      //theV0.v0Id(),
       recalculatedVtx[0],
       recalculatedVtx[1],
       recalculatedVtx[2]);
@@ -241,6 +242,17 @@ struct skimmerGammaConversions {
         fillTrackTable(lV0, lTrackPos, true);
         fillTrackTable(lV0, lTrackNeg, false);
         fillV0RecalculatedTable(lV0, recalculatedVtx);
+
+        if ((lTrackPos.has_mcParticle() && lTrackNeg.has_mcParticle())) {
+          for (auto& lMcMother : lTrackPos.mcParticle().template mothers_as<aod::McParticles>()) {
+            fFuncTableMcPdgCode(
+            //theV0.v0Id(),
+            lMcMother.pdgCode(),
+            lTrackPos.mcParticle().pdgCode(),
+            lTrackNeg.mcParticle().pdgCode());
+            break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
+          }
+        }
       }
     }
   }
@@ -319,6 +331,7 @@ struct skimmerGammaConversions {
         lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
         lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
         lV0Radius);
+
       break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
     }
     return kGoodMcMother;
@@ -333,8 +346,9 @@ struct skimmerGammaConversions {
 
     //*******************************************************
 
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); //first get an object that stores Track information (positive)
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); //first get an object that stores Track information (negative)
+    // o2::track::TrackParametrization<TrackPrecision> = TrackPar, I use the full version to have control over the data type
+    o2::track::TrackParametrization<TrackPrecision> trackPosInformation = getTrackPar(lTrackPos); //first get an object that stores Track information (positive)
+    o2::track::TrackParametrization<TrackPrecision> trackNegInformation = getTrackPar(lTrackNeg); //first get an object that stores Track information (negative)
 
     o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
     o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -343,8 +357,8 @@ struct skimmerGammaConversions {
     conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
 
     //I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParCov(trackPosInformation);
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParCov(trackNegInformation);
+    o2::track::TrackParametrization<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrization<TrackPrecision>(trackPosInformation);
+    o2::track::TrackParametrization<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrization<TrackPrecision>(trackNegInformation);
 
     //I think this calculation gets the closest point on the track to the conversion point
     //This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point

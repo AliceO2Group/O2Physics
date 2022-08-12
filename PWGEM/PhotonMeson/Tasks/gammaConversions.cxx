@@ -20,6 +20,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
+#include "Common/Core/RecoDecay.h"
 
 #include <TVector3.h>
 #include <TMath.h> // for ATan2, Cos, Sin, Sqrt
@@ -28,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
+using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated, aod::McPdgCode>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 struct GammaConversions {
@@ -61,8 +62,9 @@ struct GammaConversions {
   Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", -0.1, "maximum psi angle of the track pair. Set negative do disable cut. "};
   Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.125, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
-  Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
-  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
+  Configurable<float> fLineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
+  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
+  Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
     {ePhotonCuts::kV0In, "kV0In"},
@@ -124,15 +126,20 @@ struct GammaConversions {
       {"hConvPointR", "hConvPointR;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
       {"hConvPointZ", "hConvPointZ;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
       {"hArmenteros", "hArmenteros;#alpha;q_{T} (GeV/c)", {HistType::kTH2F, {{800, -1.f, 1.f}, gAxis_pT_armenteros}}},
+      {"hinvestigationOfQtCut", "hinvestigationOfQtCut;q_{T} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{200, -0.0f, 0.1f}, gAxis_pT_log}}},
       {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
       {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
-      {"hpeDivpGamma", "hpeDivpGamma;p_{e}/p_{#gamma};counts", {HistType::kTH1F, {{200, 0.f, 1.f}}}}};
+      {"hpeDivpGamma", "hpeDivpGamma;p (GeV/c);p_{e}/p_{#gamma};counts", {HistType::kTH2F, {gAxis_pT, {200, 0.f, 1.1f}}}}};
 
     // recalculated conversion Point for V0, only Rec and MCVal need this
     std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
       {"hConvPointR_recalc", "hConvPointR_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_r}}},
       {"hConvPointZ_recalc", "hConvPointZ_recalc;conversion radius (cm);counts", {HistType::kTH1F, {gAxis_xyz}}},
+    };
+    // PDG code of all particles to analyize the purity. Only for MC and only for Rec
+    std::vector<MyHistogramSpec> lMcPDGCode{
+      {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{10000, -5000.0f, 5000.0f}}}}, // first only cover usefull range. Otherwise histogram will get rediculously large
     };
 
     // only in mc
@@ -224,6 +231,16 @@ struct GammaConversions {
                                                                                                                                     lV0HistoDefinitions_recalculated,
                                                                                                                                     lMcSuffix);
             }
+            if (iMcKind == kRec) {
+            fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                                                  lMcPDGCode,
+                                                                                                                                  lMcSuffix);
+            }
+          }
+          if (iMcKind == kRec) {
+            fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
+                                                                                                    lMcPDGCode,
+                                                                                                    lMcSuffix);
           }
         }
       }
@@ -276,6 +293,10 @@ struct GammaConversions {
       theV0,
       theV0CosinePA);
 
+    lfillPDGHist(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
+      theV0);
+
     fillTruePhotonHistogramsForRejectedByMc(theRejReason,
                                             theBefAftRec,
                                             theMcPhoton,
@@ -303,7 +324,7 @@ struct GammaConversions {
 
     fillV0McValidationHisto(eV0McValidation::kMcMotherIn);
 
-    if (!theMcPhoton.isPhysicalPrimary()) {
+    if (fPhysicalPrimaryOnly && !theMcPhoton.isPhysicalPrimary()) {
       fillV0McValidationHisto(eV0McValidation::kNoPhysicalPrimary);
       fillRejectedV0HistosI(eMcRejectedSaved::kNoPhysicalPrimary);
       return false;
@@ -359,6 +380,27 @@ struct GammaConversions {
                                theV0,
                                theV0CosinePA);
     }
+  }
+
+  template <typename TV0>
+  void processPDGHist(TV0 const& theV0,
+                 int const& theV0PassesRecCuts)
+  {
+    lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
+                 theV0);
+    if (theV0PassesRecCuts) {
+      lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
+                 theV0);
+    }
+  }
+
+  template <typename TV0>
+  void lfillPDGHist(mapStringHistPtr& theContainer,
+               TV0 const& theV0)
+  {
+    fillTH1(theContainer, "hPDGCode", theV0.pdgCodeV0());
+    fillTH1(theContainer, "hPDGCode", theV0.pdgCodeD1());
+    fillTH1(theContainer, "hPDGCode", theV0.pdgCodeD2());
   }
 
   template <typename TV0, typename TMCGAMMA>
@@ -467,6 +509,10 @@ struct GammaConversions {
       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
       bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
 
+      // this process function has to exist seperatly because it is only for MC Rec
+      processPDGHist(lV0,
+                     lV0PassesRecCuts);
+
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
       processMcPhoton(lMcPhotonForThisV0AsTable,
@@ -542,10 +588,11 @@ struct GammaConversions {
     fillTH1(theContainer, "hConvPointZ", theV0.z());
     fillTH1(theContainer, "hCosPAngle", theV0CosinePA);
     fillTH2(theContainer, "hArmenteros", theV0.alpha(), theV0.qtarm());
+    fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
-    fillTH1(theContainer, "hpeDivpGamma", theV0.pfracpos());
-    fillTH1(theContainer, "hpeDivpGamma", theV0.pfracneg());
+    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.pxpos() + theV0.pxneg(), theV0.pypos() + theV0.pyneg(), theV0.pzpos() + theV0.pzneg()), theV0.pfracpos());
+    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.pxpos() + theV0.pxneg(), theV0.pypos() + theV0.pyneg(), theV0.pzpos() + theV0.pzneg()), theV0.pfracneg());
   }
 
   // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a seperate fill function is needed
@@ -633,7 +680,7 @@ struct GammaConversions {
       return kFALSE;
     }
 
-    if (TMath::Abs(theV0.z()) > LineCutZ0 + theV0.recalculatedVtxR() * LineCutZRSlope) { // as long as z recalculation is not fixed use this
+    if (TMath::Abs(theV0.z()) > fLineCutZ0 + theV0.recalculatedVtxR() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
       fillV0SelectionHisto(ePhotonCuts::kRZLine);
       return kFALSE;
     }
