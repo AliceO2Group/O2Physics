@@ -49,6 +49,11 @@ o2physics_add_dpl_workflow(cf-threebodyfemto-filter
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cf-twobodyfemto-filter
+                            SOURCES PWGCF/CFFilterTwoBody.cxx
+                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                            COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(je-filter
                            SOURCES PWGJE/jetFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib

@@ -208,6 +208,7 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(DqFilters);
   FILTER_CONFIGURABLE(HfFilters);
   FILTER_CONFIGURABLE(CFFilters);
+  FILTER_CONFIGURABLE(CFTwoBodys);
   FILTER_CONFIGURABLE(JetFilters);
   FILTER_CONFIGURABLE(StrangenessFilters);
   FILTER_CONFIGURABLE(MultFilters);
@@ -309,7 +310,7 @@ struct centralEventFilterTask {
     mScalers->SetBinContent(1, mScalers->GetBinContent(1) + nEvents);
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents);
 
-    //Filling output table
+    // Filling output table
     auto collTabConsumer = pc.inputs().get<TableConsumer>("Collisions");
     auto collTabPtr{collTabConsumer->asArrowTable()};
     if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
