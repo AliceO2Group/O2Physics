@@ -65,7 +65,7 @@ struct ftofPidQaMC {
   {
     AxisSpec momAxis{nBinsP, minP, maxP};
     if (logAxis) {
-      momAxis.makeLogaritmic();
+      momAxis.makeLogarithmic();
     }
     const AxisSpec nsigmaAxis{nBinsNsigma, minNsigma, maxNsigma};
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta};

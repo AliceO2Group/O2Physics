@@ -26,7 +26,7 @@
 // O2Physics includes
 #include "TableHelper.h"
 #include "pidTOFBase.h"
-#include "DPG/Tasks/qaPIDTOF.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTOF.h"
 
 using namespace o2;
 using namespace o2::framework;

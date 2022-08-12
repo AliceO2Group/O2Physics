@@ -20,6 +20,12 @@
 //
 // **************************
 
+// *****revision history*****:
+//
+// added recalculation of the conversion point on 08.07.22 by Nikita Philip Tatsch (tatsch@physi.uni-heidelberg.de)
+//
+// **************************
+
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
@@ -331,7 +337,6 @@ struct skimmerGammaConversions {
         lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
         lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
         lV0Radius);
-
       break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
     }
     return kGoodMcMother;

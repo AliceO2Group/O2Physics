@@ -208,8 +208,8 @@ struct tpcPidQa {
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
-      pAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
+      pAxis.makeLogarithmic();
     }
     const AxisSpec dedxAxis{5000, 0, 5000, "d#it{E}/d#it{x} A.U."};
 

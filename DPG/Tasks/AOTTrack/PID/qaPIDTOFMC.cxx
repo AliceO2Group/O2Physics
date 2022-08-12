@@ -84,7 +84,7 @@ struct pidTOFTaskQA {
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[pid_type])};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
     }
 
     // NSigma
@@ -101,8 +101,8 @@ struct pidTOFTaskQA {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
-      pAxis.makeLogaritmic();
-      ptAxis.makeLogaritmic();
+      pAxis.makeLogarithmic();
+      ptAxis.makeLogarithmic();
     }
     const AxisSpec nSigmaAxis{nBinsNsigma, minNsigma, maxNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[pid_type])};
     const AxisSpec betaAxis{1000, 0, 1.2, "TOF #beta"};

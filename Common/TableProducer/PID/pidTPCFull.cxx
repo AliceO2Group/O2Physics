@@ -33,7 +33,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "Common/TableProducer/PID/pidTPCML.h"
-#include "DPG/Tasks/qaPIDTPC.h"
+#include "DPG/Tasks/AOTTrack/PID/qaPIDTPC.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -158,6 +158,7 @@ struct tpcPidFull {
                          enableNetworkOptimizations.value);
         network = temp_net;
         network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
+        network.SetNClNormalization(response.GetNClNormalization());
       }
     }
   }
@@ -214,7 +215,7 @@ struct tpcPidFull {
       const unsigned long prediction_size = output_dimensions * tracks_size;
 
       network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
-
+      const float nNclNormalization = response.GetNClNormalization();
       float duration_network = 0;
 
       std::vector<float> track_properties(track_prop_size);
@@ -230,7 +231,7 @@ struct tpcPidFull {
           track_properties[counter_track_props + 2] = trk.signed1Pt();
           track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
           track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
-          track_properties[counter_track_props + 5] = std::sqrt(159. / trk.tpcNClsFound());
+          track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
           counter_track_props += input_dimensions;
         }
 
@@ -297,7 +298,6 @@ struct tpcPidFull {
         }
       };
 
-      // const o2::pid::tpc::Response& response;
       makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
       makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
       makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);

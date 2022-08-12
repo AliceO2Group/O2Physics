@@ -228,9 +228,9 @@ struct tpcPidQaSignalwTof {
     h->GetXaxis()->SetBinLabel(4, "TOF passed");
 
     AxisSpec pAxis{1000, 0.001, 20, "#it{p} (GeV/#it{c})"};
-    pAxis.makeLogaritmic();
+    pAxis.makeLogarithmic();
     AxisSpec ptAxis{1000, 0.001, 20, "#it{p}_{T} (GeV/#it{c})"};
-    ptAxis.makeLogaritmic();
+    ptAxis.makeLogarithmic();
     const AxisSpec axisSignal{1000, 0, 1000, "TPC Signal"};
     const AxisSpec dcaXyAxis{600, -3.005, 2.995, "DCA_{xy} (cm)"};
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};

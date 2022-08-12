@@ -554,7 +554,7 @@ struct bayesPidQa {
     // Probability
     AxisSpec axisP{nBinsP, MinP, MaxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
-      axisP.makeLogaritmic();
+      axisP.makeLogarithmic();
     }
     const AxisSpec axisProb{nBinsProb, MinProb, MaxProb, "Probability"};
     histos.add(hprob[i].data(), Form(";;N_{#sigma}^{TOF}(%s)", pT[i]), HistType::kTH2F, {axisP, axisProb});
@@ -565,8 +565,8 @@ struct bayesPidQa {
     AxisSpec axisP{nBinsP, MinP, MaxP, "#it{p} (GeV/#it{c})"};
     AxisSpec axisPt{nBinsP, MinP, MaxP, "#it{p}_{T} (GeV/#it{c})"};
     if (logAxis) {
-      axisP.makeLogaritmic();
-      axisPt.makeLogaritmic();
+      axisP.makeLogarithmic();
+      axisPt.makeLogarithmic();
     }
     const AxisSpec axisTOFSignal{10000, 0, 2e6, "TOF Signal"};
 
