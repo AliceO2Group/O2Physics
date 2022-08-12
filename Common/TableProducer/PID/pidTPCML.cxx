@@ -156,7 +156,7 @@ Network& Network::operator=(Network& inst)
 } // Network& Network::operator=(const Network &)
 
 template <typename C, typename T>
-std::array<float, 6> Network::createInputFromTrack(const C& collision_it, const T& track, const uint8_t id) const
+std::array<float, 6> Network::createInputFromTrack(const C& collision_it, const T& track, const uint8_t id, const float nClNorm = 152.) const
 {
 
   /*

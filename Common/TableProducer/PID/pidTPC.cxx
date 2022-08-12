@@ -179,7 +179,6 @@ struct tpcPid {
                            enableNetworkOptimizations.value);
           network = temp_net;
           network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
-          network.SetNClNormalization(response.GetNClNormalization());
         }
       } else {
         return;
@@ -239,7 +238,6 @@ struct tpcPid {
                              enableNetworkOptimizations.value);
             network = temp_net;
             network.evalNetwork(std::vector<float>(network.getInputDimensions(), 1.)); // This is an initialisation and might reduce the overhead of the model
-            network.SetNClNormalization(response.GetNClNormalization());
           } else {
             LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
           }
