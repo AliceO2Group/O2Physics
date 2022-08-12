@@ -56,12 +56,26 @@ DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float
 } // namespace gammarecalculated
 
 DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
-                  o2::soa::Index<>,
-                  v0data::V0Id,
+                  //o2::soa::Index<>,
+                  //v0data::V0Id,
                   gammarecalculated::RecalculatedVtxX,
                   gammarecalculated::RecalculatedVtxY,
                   gammarecalculated::RecalculatedVtxZ,
                   gammarecalculated::RecalculatedVtxR<o2::aod::gammarecalculated::RecalculatedVtxX, o2::aod::gammarecalculated::RecalculatedVtxY>);
+
+namespace pdgcodetable
+{
+DECLARE_SOA_COLUMN(PdgCodeV0, pdgCodeV0, int); // PDG code of V0
+DECLARE_SOA_COLUMN(PdgCodeD1, pdgCodeD1, int); // PDG code of first daughter
+DECLARE_SOA_COLUMN(PdgCodeD2, pdgCodeD2, int); // PDG code of second daughter
+} // namespace pdgcodetable
+
+DECLARE_SOA_TABLE(McPdgCode, "AOD", "MCPDGCODE",
+                  //o2::soa::Index<>,
+                  //v0data::V0Id,
+                  pdgcodetable::PdgCodeV0,
+                  pdgcodetable::PdgCodeD1,
+                  pdgcodetable::PdgCodeD2);
 
 namespace gammamctrue
 {
