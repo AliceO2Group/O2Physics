@@ -1234,22 +1234,20 @@ struct hypertritonMcParticleCount {
         registry.fill(HIST("hMcHypertritonCheck"), 0.5);
         registry.fill(HIST("hMcHypertritonPt"), mcparticle.pt());
 
-        double dauHe3Vx = -999; 
-        double dauHe3Vy = -999;
-        double dauHe3Vz = -999;
+        double dauHe3Pos[3] = {-999, -999, -999}; 
         for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
           hypertrtitonCheckTable(mcparticleDaughter.pdgCode());
           if (mcparticleDaughter.pdgCode() == 1000020030 || mcparticleDaughter.pdgCode() == -1000020030){
-            dauHe3Vx = mcparticleDaughter.vx();
-            dauHe3Vy = mcparticleDaughter.vy();
-            dauHe3Vz = mcparticleDaughter.vz();
+            dauHe3Pos[0] = mcparticleDaughter.vx();
+            dauHe3Pos[1] = mcparticleDaughter.vy();
+            dauHe3Pos[2] = mcparticleDaughter.vz();
           }
         }
-        registry.fill(HIST("hMcDauHelium3Vx"), dauHe3Vx);
-        registry.fill(HIST("hMcDauHelium3Vy"), dauHe3Vy);
-        registry.fill(HIST("hMcDauHelium3Vz"), dauHe3Vz);
+        registry.fill(HIST("hMcDauHelium3Vx"), dauHe3Pos[0]);
+        registry.fill(HIST("hMcDauHelium3Vy"), dauHe3Pos[1]);
+        registry.fill(HIST("hMcDauHelium3Vz"), dauHe3Pos[2]);
 
-        double MClifetime = RecoDecay::sqrtSumOfSquares(dauHe3Vx - mcparticle.vx(), dauHe3Vy - mcparticle.vy(), dauHe3Vz - mcparticle.vz())*2.991/mcparticle.p();  
+        double MClifetime = RecoDecay::sqrtSumOfSquares(dauHe3Pos[0] - mcparticle.vx(), dauHe3Pos[1] - mcparticle.vy(), dauHe3Pos[2] - mcparticle.vz())*2.991/mcparticle.p();  
         registry.fill(HIST("hMcHypertritonLifeTime"), MClifetime);
         registry.fill(HIST("h3dMCHypertriton"), mcparticle.y(), mcparticle.pt(), MClifetime);
 
