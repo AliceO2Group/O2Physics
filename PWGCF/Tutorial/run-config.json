@@ -7,7 +7,7 @@
     "start-value-enumeration": "0",
     "end-value-enumeration": "-1",
     "step-value-enumeration": "1",
-    "aod-file": "pippo6.root"
+    "aod-file": "AO2D.root"
   },
   "internal-dpl-aod-index-builder": "",
   "internal-dpl-aod-spawner": "",
@@ -127,7 +127,8 @@
       ]
     },
     "processSame": "true",
-    "processMixed": "true"
+    "processMixed": "true",
+    "processMixedEventInterface": "true"
   },
   "internal-dpl-aod-global-analysis-file-sink": "",
   "internal-dpl-aod-writer": ""

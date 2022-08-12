@@ -95,16 +95,20 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   //   The third axis of correlationAxis (multiplicity/centrality) is used also for the efficiency
   //
   // (optional) userAxis can contain optional user axes which are added to pair and trigger histogram and are
-  // integrated out in the helper functions (e.g. getSumOfRatios). Ranges can be set on them before calling helper functions.
+  //   integrated out in the helper functions (e.g. getSumOfRatios). Ranges can be set on them before calling helper functions.
 
   if (strlen(name) == 0) {
     return;
   }
 
-  LOGF(info, "Creating CorrelationContainer");
-
   std::vector<o2::framework::AxisSpec> pairAxis(correlationAxis);
   pairAxis.insert(pairAxis.end(), userAxis.begin(), userAxis.end());
+  long bins = 1;
+  for (const auto& axis : pairAxis) {
+    bins *= axis.getNbins();
+  }
+  LOGF(info, "Creating CorrelationContainer with %ld bins in the pair histogram (approx. %ld-%ld MB of memory)", bins, bins * 4 / 1024 / 1024, bins * 8 / 1024 / 1024);
+
   mPairHist = HistFactory::createHist<StepTHnF>({"mPairHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, pairAxis, fgkCFSteps}}).release();
 
   std::vector<o2::framework::AxisSpec> triggerAxis({correlationAxis[2], correlationAxis[3], correlationAxis[5]});
@@ -407,7 +411,7 @@ void CorrelationContainer::getHistsZVtxMult(CorrelationContainer::CFStep step, F
 
   Int_t dimensions[] = {4, 0, 5, 3};
   THnBase* tmpTrackHist = sparse->ProjectionND(4, dimensions, "E");
-  *eventHist = (TH2*)mTriggerHist->getTHn(step)->Projection(2, 1);
+  *eventHist = (TH2*)mTriggerHist->getTHn(step)->Projection(1, 2); // NOTE the syntax is Projection(Y, X) --> produces a histogram where x = axis 2 (vertex) and y = axis 1 (multiplicity)
   // convert to THn
   *trackHist = changeToThn(tmpTrackHist);
   delete tmpTrackHist;
@@ -456,7 +460,7 @@ TH2* CorrelationContainer::getPerTriggerYield(CorrelationContainer::CFStep step,
   }
 
   TH2* yield = trackSameAll->Projection(1, 0, "E");
-  Float_t triggers = eventSameAll->Integral(multBinBegin, multBinEnd, vertexBinBegin, vertexBinEnd);
+  Float_t triggers = eventSameAll->Integral(vertexBinBegin, vertexBinEnd, multBinBegin, multBinEnd);
 
   if (normalizePerTrigger) {
     LOGF(info, "Dividing %f tracks by %f triggers", yield->Integral(), triggers);
@@ -889,8 +893,8 @@ TH1* CorrelationContainer::getTrackEfficiency(CFStep step1, CFStep step2, Int_t 
     generated = sourceContainer->getTHn(step1)->Projection(axis1, axis2, axis3);
     measured = sourceContainer->getTHn(step2)->Projection(axis1, axis2, axis3);
   } else if (axis2 >= 0) {
-    generated = sourceContainer->getTHn(step1)->Projection(axis1, axis2);
-    measured = sourceContainer->getTHn(step2)->Projection(axis1, axis2);
+    generated = sourceContainer->getTHn(step1)->Projection(axis2, axis1); // NOTE the syntax is Projection(Y, X)
+    measured = sourceContainer->getTHn(step2)->Projection(axis2, axis1);  // NOTE the syntax is Projection(Y, X)
   } else {
     generated = sourceContainer->getTHn(step1)->Projection(axis1);
     measured = sourceContainer->getTHn(step2)->Projection(axis1);
@@ -1093,8 +1097,8 @@ TH1* CorrelationContainer::getEventEfficiency(CFStep step1, CFStep step2, Int_t 
   TH1* generated = nullptr;
 
   if (axis2 >= 0) {
-    generated = mTriggerHist->getTHn(step1)->Projection(axis1, axis2);
-    measured = mTriggerHist->getTHn(step2)->Projection(axis1, axis2);
+    generated = mTriggerHist->getTHn(step1)->Projection(axis2, axis1); // NOTE the syntax is Projection(Y, X)
+    measured = mTriggerHist->getTHn(step2)->Projection(axis2, axis1);  // NOTE the syntax is Projection(Y, X)
   } else {
     generated = mTriggerHist->getTHn(step1)->Projection(axis1);
     measured = mTriggerHist->getTHn(step2)->Projection(axis1);

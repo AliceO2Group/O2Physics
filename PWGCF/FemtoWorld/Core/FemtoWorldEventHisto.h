@@ -12,12 +12,12 @@
 /// \file FemtoWorldEventHisto.h
 /// \brief FemtoWorldEventHisto - Histogram class for tracks, V0s and cascades
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
 #ifndef FEMTOWORLDEVENTHISTO_H_
 #define FEMTOWORLDEVENTHISTO_H_
 
-#include "PWGCF/DataModel/FemtoDerived.h"
-
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;

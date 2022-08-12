@@ -104,7 +104,7 @@ struct CFFilter {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
-  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
+  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, kDetector iDet = kDetector::kTPC)
   {
     bool pidSelection = true;
     for (auto iSpecies : vSpecies) {
@@ -123,10 +123,10 @@ struct CFFilter {
     auto vSpecies = std::vector<int>{0};
     if (momentum < pidThresh) {
       /// TPC PID only
-      pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPC);
+      pidSelection = isPIDSelected(pidCut, vSpecies, kDetector::kTPC);
     } else {
       /// TPC + TOF PID
-      pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPCTOF);
+      pidSelection = isPIDSelected(pidCut, vSpecies, kDetector::kTPCTOF);
     }
     return pidSelection;
   };

@@ -77,25 +77,26 @@ class CutVarMinimiser:
         Helper method to check self consistency of inputs
         """
 
-        self.n_sets = len(self.raw_yields)
-        self.ndf = self.n_sets - 2
-
         if (
             len(self.eff_prompt) != self.n_sets
             or len(self.eff_nonprompt) != self.n_sets
         ):
-            print("ERROR: number of raw yields and eff not consistent! Exit")
+            print("ERROR: number of raw yields and efficiencies not consistent! Exit")
             sys.exit()
 
         if len(self.unc_raw_yields) != self.n_sets:
-            print("ERROR: number of raw yield uncertainties not consistent! Exit")
+            print(
+                "ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit"
+            )
             sys.exit()
 
         if (
             len(self.unc_eff_prompt) != self.n_sets
             or len(self.unc_eff_nonprompt) != self.n_sets
         ):
-            print("ERROR: number of raw yield uncertainties not consistent! Exit")
+            print(
+                "ERROR: number of raw yields and efficiency uncertainties not consistent! Exit"
+            )
             sys.exit()
 
     def __initialise_objects(self):
@@ -192,7 +193,6 @@ class CutVarMinimiser:
                 self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
             )
             self.m_res = self.m_eff * self.m_corr_yields - self.m_rawy
-            m_res_tr = np.transpose(self.m_res)
 
             rel_delta = [
                 (self.m_corr_yields.item(0) - m_corr_yields_old.item(0))
@@ -207,7 +207,7 @@ class CutVarMinimiser:
             m_corr_yields_old = np.copy(self.m_corr_yields)
 
         # chi2
-        self.chi_2 = np.float(m_res_tr * self.m_weights * self.m_res)
+        self.chi_2 = np.float(np.transpose(self.m_res) * self.m_weights * self.m_res)
 
         # fraction
         for i_set, (effp, effnp) in enumerate(zip(self.eff_prompt, self.eff_nonprompt)):
@@ -501,7 +501,6 @@ class CutVarMinimiser:
             color=ROOT.kRed + 1,
             fillstyle=0,
             markerstyle=ROOT.kFullCircle,
-            linewidth=2,
         )
         set_object_style(
             hist_eff_nonprompt,
@@ -588,7 +587,6 @@ class CutVarMinimiser:
             color=ROOT.kRed + 1,
             fillstyle=0,
             markerstyle=ROOT.kFullCircle,
-            linewidth=2,
         )
         set_object_style(
             hist_f_nonprompt,

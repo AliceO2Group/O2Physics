@@ -523,8 +523,8 @@ struct QaEfficiency {
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, ptMin, ptMax, "#it{p} (GeV/#it{c})"};
     if (logPt) {
-      axisPt.makeLogaritmic();
-      axisP.makeLogaritmic();
+      axisPt.makeLogarithmic();
+      axisP.makeLogarithmic();
     }
     const AxisSpec axisEta{etaBins, etaMin, etaMax, "#it{#eta}"};
     const AxisSpec axisY{yBins, yMin, yMax, "#it{y}"};
@@ -737,7 +737,7 @@ struct QaEfficiency {
                                phiMin.value, phiMax.value);
     AxisSpec axisPt{ptBins, ptMin, ptMax, "#it{p}_{T} (GeV/#it{c})"};
     if (logPt) {
-      axisPt.makeLogaritmic();
+      axisPt.makeLogarithmic();
     }
 
     const TString tagEta = Form("#it{p}_{T} [%.2f,%.2f] #it{#varphi} [%.2f,%.2f]",

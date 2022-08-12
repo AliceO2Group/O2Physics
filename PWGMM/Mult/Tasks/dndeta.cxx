@@ -10,22 +10,43 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
-#include "Framework/Configurable.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RuntimeError.h"
-#include "Framework/runDataProcessing.h"
 
-#include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/MathConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/RuntimeError.h"
+#include "Framework/runDataProcessing.h"
 #include "Index.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TDatabasePDG.h"
+
+namespace o2::aod
+{
+namespace track
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(BestCollision, bestCollision, int32_t, Collisions,
+                              "");
+DECLARE_SOA_COLUMN(BestDCAXY, bestDCAXY, float);
+DECLARE_SOA_COLUMN(BestDCAZ, bestDCAZ, float);
+DECLARE_SOA_COLUMN(PtStatic, pts, float);
+DECLARE_SOA_COLUMN(PStatic, ps, float);
+DECLARE_SOA_COLUMN(EtaStatic, etas, float);
+DECLARE_SOA_COLUMN(PhiStatic, phis, float);
+} // namespace track
+DECLARE_SOA_TABLE(BestCollisions, "AOD", "BESTCOLL",
+                  aod::track::BestCollisionId, aod::track::BestDCAXY,
+                  aod::track::BestDCAZ, track::X, track::Alpha, track::Y,
+                  track::Z, track::Snp, track::Tgl, track::Signed1Pt,
+                  track::PtStatic, track::PStatic, track::EtaStatic,
+                  track::PhiStatic);
+} // namespace o2::aod
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,15 +61,17 @@ AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 
-static constexpr TrackSelectionFlags::flagtype trackSelectionPattern = TrackSelectionFlags::kTrackType |
-                                                                       TrackSelectionFlags::kTPCNCls |
-                                                                       TrackSelectionFlags::kITSNCls |
-                                                                       TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-                                                                       TrackSelectionFlags::kTPCChi2NDF |
-                                                                       TrackSelectionFlags::kITSChi2NDF |
-                                                                       TrackSelectionFlags::kITSHits |
-                                                                       TrackSelectionFlags::kDCAz |
-                                                                       TrackSelectionFlags::kDCAxy;
+static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
+  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+  TrackSelectionFlags::kITSHits;
+
+static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
+  TrackSelectionFlags::kTPCNCls |
+  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+  TrackSelectionFlags::kTPCChi2NDF;
+
+static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
+  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
@@ -62,17 +85,19 @@ struct MultiplicityCounter {
   HistogramRegistry registry{
     "registry",
     {
-      {"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}},         //
-      {"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},              //
-      {"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},          //
-      {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                  //
-      {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},             //
-      {"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}}, //
-      {"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},   //
-      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                           //
-      {"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}},                         //
-      {"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}}              //
-    }                                                                                                       //
+      {"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}},               //
+      {"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                    //
+      {"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                //
+      {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                        //
+      {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                   //
+      {"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},       //
+      {"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},         //
+      {"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
+      {"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},     //
+      {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                 //
+      {"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}},                               //
+      {"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}}                    //
+    }                                                                                                             //
   };
 
   void init(InitContext&)
@@ -133,11 +158,14 @@ struct MultiplicityCounter {
   }
 
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-  void processEventStat(FullBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  void processEventStat(
+    FullBCs const& bcs,
+    soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection()[evsel::kIsBBT0A] & bc.selection()[evsel::kIsBBT0C]) != 0) {
+      if (!useEvSel || (bc.selection()[evsel::kIsBBT0A] &
+                        bc.selection()[evsel::kIsBBT0C]) != 0) {
         registry.fill(HIST("Events/Selection"), 5.);
         cols.clear();
         for (auto& collision : collisions) {
@@ -166,13 +194,24 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processEventStat, "Collect event sample stats", false);
 
-  expressions::Filter trackSelectionFilter = (aod::track::trackCutFlag & trackSelectionPattern) == trackSelectionPattern;
+  expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
+                                             ifnode((aod::track::detectorMap & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC,
+                                                    (aod::track::trackCutFlag & trackSelectionTPC) == trackSelectionTPC,
+                                                    true);
 
   using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiTracks = soa::Filtered<ExTracks>;
-  Partition<FiTracks> sample = nabs(aod::track::eta) < estimatorEta;
+  Partition<FiTracks> sample = (nabs(aod::track::eta) < estimatorEta) &&
+                               ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
 
-  void processCounting(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, FiTracks const& tracks)
+  expressions::Filter atrackFilter = (nabs(aod::track::etas) < estimatorEta) &&
+                                     (nabs(aod::track::bestDCAZ) <= 2.f) &&
+                                     (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
+
+  void processCounting(
+    soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+    FiTracks const& tracks,
+    soa::SmallGroups<soa::Join<aod::AmbiguousTracks, aod::BestCollisions>> const& atracks)
   {
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
@@ -194,6 +233,12 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
         }
       }
+
+      for (auto& track : atracks) {
+        registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), track.etas(), z);
+        registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), track.phis(), track.etas());
+      }
+
     } else {
       registry.fill(HIST("Events/Selection"), 4.);
     }
@@ -210,10 +255,10 @@ struct MultiplicityCounter {
   Partition<ParticlesI> primariesI = ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) &&
                                      (nabs(aod::mcparticle::eta) < estimatorEta);
 
-  void processTrackEfficiencyIndexed(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                                     aod::McCollisions const&,
-                                     ParticlesI const&,
-                                     soa::Filtered<LabeledTracksEx> const& tracks)
+  void processTrackEfficiencyIndexed(
+    soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+    aod::McCollisions const&, ParticlesI const&,
+    soa::Filtered<LabeledTracksEx> const& tracks)
   {
     for (auto& collision : collisions) {
       if (useEvSel && !collision.sel8()) {
@@ -299,10 +344,10 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
 
   Partition<soa::Filtered<LabeledTracksEx>> lsample = nabs(aod::track::eta) < estimatorEta;
-  void processTrackEfficiency(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                              aod::McCollisions const&,
-                              Particles const& mcParticles,
-                              soa::Filtered<LabeledTracksEx> const&)
+  void processTrackEfficiency(
+    soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+    aod::McCollisions const&, Particles const& mcParticles,
+    soa::Filtered<LabeledTracksEx> const&)
   {
     for (auto& collision : collisions) {
       if (useEvSel && !collision.sel8()) {
@@ -343,7 +388,10 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processTrackEfficiency, "Calculate tracking efficiency vs pt", false);
 
-  void processGen(aod::McCollisions::iterator const& mcCollision, o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions, Particles const& particles, FiTracks const& /*tracks*/)
+  void processGen(
+    aod::McCollisions::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& /*tracks*/)
   {
     auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex());
     auto nCharged = 0;
@@ -427,8 +475,7 @@ struct MultiplicityCounter {
   PROCESS_SWITCH(MultiplicityCounter, processGen, "Process generator-level info", false);
 };
 
-WorkflowSpec
-  defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<MultiplicityCounter>(cfgc)};
 }

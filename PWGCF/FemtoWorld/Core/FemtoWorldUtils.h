@@ -13,13 +13,13 @@
 /// \brief Utilities for the FemtoWorld framework
 ///
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDUTILS_H_
-#define FEMTOWORLDUTILS_H_
+#ifndef FEMTOWORLD_UTILS_H_
+#define FEMTOWORLD_UTILS_H_
 
 #include "Framework/ASoAHelpers.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
-
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include <CCDB/BasicCCDBManager.h>
 
 #include <vector>
@@ -62,7 +62,7 @@ kPIDselection getPIDselection(const float nSigma, const std::vector<float>& vNsi
 /// \param vNsigma vector with available n-sigma selections for PID
 /// \param kDetector enum corresponding to the PID technique
 /// \return Whether the PID selection specified in the vectors is fulfilled
-bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, int nSpecies, float nSigma, const std::vector<float>& vNsigma, const kDetector iDet = kDetector::kTPC)
+bool isPIDSelected(aod::femtoworldparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, int nSpecies, float nSigma, const std::vector<float>& vNsigma, const kDetector iDet = kDetector::kTPC)
 {
   bool pidSelection = true;
   kPIDselection iNsigma = getPIDselection(nSigma, vNsigma);
@@ -86,7 +86,7 @@ bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std:
 /// \param nSigmaTPC Number of TPC sigmas for selection
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled
-bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, float const momentum, float const pidThresh, std::vector<int> const& vSpecies, int nSpecies, const std::vector<float>& vNsigma = {3.5, 3., 2.5}, const float nSigmaTPC = 3.5, const float nSigmaTPCTOF = 3.5)
+bool isFullPIDSelected(aod::femtoworldparticle::cutContainerType const& pidCut, float const momentum, float const pidThresh, std::vector<int> const& vSpecies, int nSpecies, const std::vector<float>& vNsigma = {3.5, 3., 2.5}, const float nSigmaTPC = 3.5, const float nSigmaTPCTOF = 3.5)
 {
   bool pidSelection = true;
   if (momentum < pidThresh) {
@@ -100,5 +100,4 @@ bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut, 
 };
 
 } // namespace o2::analysis::femtoWorld
-
 #endif
