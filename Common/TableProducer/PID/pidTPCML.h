@@ -45,10 +45,10 @@ class Network
 
   // Functions
   template <typename C, typename T>
-  std::array<float, 6> createInputFromTrack(const C&, const T&, const uint8_t, const float) const;  // create a std::vector<float> with all the inputs for the network
-  std::vector<Ort::Value> createTensor(std::array<float, 6>) const;                                 // create a std::vector<Ort::Value> (= ONNX tensor) for model input
-  float* evalNetwork(std::vector<Ort::Value>);                                                      // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
-  float* evalNetwork(std::vector<float>);                                                           // evaluate the network on a std::vector<float>
+  std::array<float, 6> createInputFromTrack(const C&, const T&, const uint8_t, const float) const; // create a std::vector<float> with all the inputs for the network
+  std::vector<Ort::Value> createTensor(std::array<float, 6>) const;                                // create a std::vector<Ort::Value> (= ONNX tensor) for model input
+  float* evalNetwork(std::vector<Ort::Value>);                                                     // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
+  float* evalNetwork(std::vector<float>);                                                          // evaluate the network on a std::vector<float>
 
   // Getters & Setters
   int getInputDimensions() const { return mInputShapes[0][1]; }
