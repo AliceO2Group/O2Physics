@@ -99,7 +99,7 @@ struct gammaConversionsTruthOnlyMc {
       return false;
     }
 
-    if (TMath::Abs(theMcGamma.conversionZ()) < LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
+    if (TMath::Abs(theMcGamma.conversionZ()) > LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
       return false;
     }
     return true;
