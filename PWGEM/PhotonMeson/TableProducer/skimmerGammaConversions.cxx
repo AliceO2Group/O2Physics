@@ -252,10 +252,10 @@ struct skimmerGammaConversions {
         if ((lTrackPos.has_mcParticle() && lTrackNeg.has_mcParticle())) {
           for (auto& lMcMother : lTrackPos.mcParticle().template mothers_as<aod::McParticles>()) {
             fFuncTableMcPdgCode(
-            //theV0.v0Id(),
-            lMcMother.pdgCode(),
-            lTrackPos.mcParticle().pdgCode(),
-            lTrackNeg.mcParticle().pdgCode());
+              //theV0.v0Id(),
+              lMcMother.pdgCode(),
+              lTrackPos.mcParticle().pdgCode(),
+              lTrackNeg.mcParticle().pdgCode());
             break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
           }
         }
