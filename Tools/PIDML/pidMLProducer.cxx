@@ -41,9 +41,9 @@ struct CreateTableMc {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtvsTPCSig", "TPC signal;#it{p}_{T};TPC signal", {HistType::kTH2D, {{100, 0., 10.}, {100, 0., 600.}}}},
-     {"hPtvsTOFBeta", "TOF beta;#it{p}_{T};TOF beta", {HistType::kTH2D, {{100, 0., 2.}, {100, 0., 600.}}}},
-     {"hPtvsTRDSig", "TRD signal;#it{p}_{T};TRD signal", {HistType::kTH2D, {{100, 0., 22.}, {100, 0., 600.}}}}}};
+    {{"hPtvsTPCSig", "TPC signal;#it{p}_{T};TPC signal", {HistType::kTH2D, {{1000, 0., 10.}, {1000, 0., 600.}}}},
+     {"hPtvsTOFBeta", "TOF beta;#it{p}_{T};TOF beta", {HistType::kTH2D, {{1000, 0., 2.}, {1000, 0., 600.}}}},
+     {"hPtvsTRDSig", "TRD signal;#it{p}_{T};TRD signal", {HistType::kTH2D, {{1000, 0., 22.}, {1000, 0., 600.}}}}}};
 
   void processML(MyCollisionML const& collision, BigTracksML const& tracks, aod::McParticles_000 const& mctracks)
   {
@@ -122,9 +122,9 @@ struct CreateTableReal {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtvsTPCSig", "TPC signal;#it{p}_{T};TPC signal", {HistType::kTH2D, {{100, 0., 10.}, {100, 0., 600.}}}},
-     {"hPtvsTOFBeta", "TOF beta;#it{p}_{T};TOF beta", {HistType::kTH2D, {{100, 0., 2.}, {100, 0., 600.}}}},
-     {"hPtvsTRDSig", "TRD signal;#it{p}_{T};TRD signal", {HistType::kTH2D, {{100, 0., 22.}, {100, 0., 600.}}}}}};
+    {{"hPtvsTPCSig", "TPC signal;#it{p}_{T};TPC signal", {HistType::kTH2D, {{1000, 0., 10.}, {1000, 0., 600.}}}},
+     {"hPtvsTOFBeta", "TOF beta;#it{p}_{T};TOF beta", {HistType::kTH2D, {{1000, 0., 2.}, {1000, 0., 600.}}}},
+     {"hPtvsTRDSig", "TRD signal;#it{p}_{T};TRD signal", {HistType::kTH2D, {{1000, 0., 22.}, {1000, 0., 600.}}}}}};
 
   void processML(MyCollisionML const& collision, BigTracksML const& tracks)
   {
