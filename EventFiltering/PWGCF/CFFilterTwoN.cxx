@@ -82,11 +82,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 
-struct CFTwoBody {
+struct CFFilterTwoN {
 
-  Produces<aod::CFTwoBodys> tags;
+  Produces<aod::CFFiltersTwoN> tags;
 
-  Configurable<std::vector<float>> confKstarTriggerLimit{"KstarTriggerLimitUpper", std::vector<float>{4.0f}, "Kstar limit for selection"};
+  Configurable<std::vector<float>> confKstarTriggerLimit{"KstarTriggerLimitUpper", std::vector<float>{2.0f}, "Kstar limit for selection"};
   Configurable<int> KstarTrigger{"KstarTrigger", 0, "Choice which trigger to run"};
 
   Configurable<float> confNSigma{"nSigma", 3.5f, "nSigma for TPC/TPC&TOF selection"};
@@ -228,17 +228,13 @@ struct CFTwoBody {
     int antideut = 0;
 
     for (auto p1pt : partsProtonDeuteron0) {
-      LOGF(info, "Test for Proton");
       // select protons
       if (isFullPIDSelected(p1pt.pidcut(), std::vector<int>{o2::track::PID::Proton}, confNSigma, p1pt.p(), confPIDThreshold)) {
-        LOGF(info, "gotit!");
         registry.get<TH1>(HIST("fProtonPtAfterPD"))->Fill(p1pt.pt());
         prot++;
       }
-      LOGF(info, "Test for Deuteron");
       // select deutrons
       if (isFullPIDSelected(p1pt.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, confNSigma, p1pt.p(), confPIDThreshold)) {
-        LOGF(info, "gotit!");
         registry.get<TH1>(HIST("fDeuteronPtAfterPD"))->Fill(p1pt.pt());
         deut++;
       }
@@ -247,7 +243,7 @@ struct CFTwoBody {
     for (auto p1pt : partsProtonDeuteron1) {
       // select antiprotons
       if (isFullPIDSelected(p1pt.pidcut(), std::vector<int>{o2::track::PID::Proton}, confNSigma, p1pt.p(), confPIDThreshold)) {
-        registry.get<TH1>(HIST("fPtAfterPD"))->Fill(p1pt.pt());
+        registry.get<TH1>(HIST("fAntiProtonPtAfterPD"))->Fill(p1pt.pt());
         antiprot++;
       }
       // select antideutrons
@@ -287,7 +283,7 @@ struct CFTwoBody {
             }
 
             auto kstar = FemtoDreamMath::getkstar(p1, mMassProton, p2, mMassDeuteron);
-            registry.get<TH1>(HIST("fSameEventPartPd"))->Fill(kstar);
+            registry.get<TH1>(HIST("fSameEventPartPD"))->Fill(kstar);
             if (kstar < confKstarTriggerLimit.value.at(0)) {
               lowKstarPairs[0]++;
             }
@@ -338,9 +334,9 @@ struct CFTwoBody {
               }
 
               auto kstar = FemtoDreamMath::getkstar(p1, mMassProton, p2, mMassDeuteron);
-              registry.get<TH1>(HIST("fSameEventAntiPartPd"))->Fill(kstar);
+              registry.get<TH1>(HIST("fSameEventAntiPartPD"))->Fill(kstar);
               if (kstar < confKstarTriggerLimit.value.at(0)) {
-                lowKstarPairs[0]++;
+                lowKstarPairs[1]++;
               }
             }
           }
@@ -358,19 +354,15 @@ struct CFTwoBody {
 
     tags(keepEvent[kPD], keepEvent[kLD]);
 
-    if (!keepEvent[kPD] && !keepEvent[kLD]) {
-      registry.get<TH1>(HIST("fProcessedEvents"))->Fill(1);
+    if (keepEvent[kPD] || keepEvent[kLD]) {
+      registry.get<TH1>(HIST("fProcessedEvents"))->Fill(2);
     } else {
-      for (int iTrigger{0}; iTrigger < nPairs; iTrigger++) {
-        if (keepEvent[iTrigger]) {
-          registry.get<TH1>(HIST("fProcessedEvents"))->Fill(iTrigger + 2);
-        }
-      }
+      registry.get<TH1>(HIST("fProcessedEvents"))->Fill(1);
     }
-  };
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-  return WorkflowSpec{adaptAnalysisTask<CFTwoBody>(cfg)};
+  return WorkflowSpec{adaptAnalysisTask<CFFilterTwoN>(cfg)};
 }

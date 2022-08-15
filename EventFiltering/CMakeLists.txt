@@ -50,7 +50,7 @@ o2physics_add_dpl_workflow(cf-threebodyfemto-filter
                             COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-twobodyfemto-filter
-                            SOURCES PWGCF/CFFilterTwoBody.cxx
+                            SOURCES PWGCF/CFFilterTwoN.cxx
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                             COMPONENT_NAME Analysis)
 
