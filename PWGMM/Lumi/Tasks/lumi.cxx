@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -12,7 +12,7 @@
 /// \since November 2021
 // usage: o2-analysis-timestamp -b --aod-file AO2D.root --configuration
 // json://./config.json | o2-analysis-trackextension -b |
-// o2-analysis-trackselection -b --isRun3 <0, 1> | o2-analysis-mm-lumi -b
+// o2-analysis-trackselection -b --isRun3 0 | o2-analysis-mm-lumi -b
 // --configuration json://./config.json
 
 #include <array>
