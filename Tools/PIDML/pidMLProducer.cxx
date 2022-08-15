@@ -41,9 +41,9 @@ struct CreateTableMc {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtvsTPCSig", "TPC signal;TPC signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 10.}}}},
-     {"hPtvsTOFBeta", "TOF beta;TOF beta; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 2.}}}},
-     {"hPtvsTRDSig", "TRD signal;TRD signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 22.}}}}}};
+    {{"hPtvsTPCSig", "TPC signal;#it{p}_{T};TPC signal", {HistType::kTH2D, {{100, 0., 10.}, {100, 0., 600.}}}},
+     {"hPtvsTOFBeta", "TOF beta;#it{p}_{T};TOF beta", {HistType::kTH2D, {{100, 0., 2.}, {100, 0., 600.}}}},
+     {"hPtvsTRDSig", "TRD signal;#it{p}_{T};TRD signal", {HistType::kTH2D, {{100, 0., 22.}, {100, 0., 600.}}}}}};
 
   void processML(MyCollisionML const& collision, BigTracksML const& tracks, aod::McParticles_000 const& mctracks)
   {
@@ -62,9 +62,9 @@ struct CreateTableMc {
                        mcParticle.pdgCode(),
                        isPrimary);
 
-      registry.fill(HIST("hPtvsTPCSig"), track.tpcSignal(), track.pt());
-      registry.fill(HIST("hPtvsTOFBeta"), track.beta(), track.pt());
-      registry.fill(HIST("hPtvsTRDSig"), track.trdSignal(), track.pt());
+      registry.fill(HIST("hPtvsTPCSig"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hPtvsTOFBeta"), track.pt(), track.beta());
+      registry.fill(HIST("hPtvsTRDSig"), track.pt(), track.trdSignal());
     }
   }
   PROCESS_SWITCH(CreateTableMc, processML, "Produce only ML MC essential data", true);
@@ -102,9 +102,9 @@ struct CreateTableMc {
                      mcParticle.pdgCode(),
                      isPrimary);
 
-      registry.fill(HIST("hPtvsTPCSig"), track.tpcSignal(), track.pt());
-      registry.fill(HIST("hPtvsTOFBeta"), track.beta(), track.pt());
-      registry.fill(HIST("hPtvsTRDSig"), track.trdSignal(), track.pt());
+      registry.fill(HIST("hPtvsTPCSig"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hPtvsTOFBeta"), track.pt(), track.beta());
+      registry.fill(HIST("hPtvsTRDSig"), track.pt(), track.trdSignal());
     }
   }
   PROCESS_SWITCH(CreateTableMc, processAll, "Produce all MC data", false);
@@ -122,9 +122,9 @@ struct CreateTableReal {
 
   HistogramRegistry registry{
     "registry",
-    {{"hPtvsTPCSig", "TPC signal;TPC signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 10.}}}},
-     {"hPtvsTOFBeta", "TOF beta;TOF beta; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 2.}}}},
-     {"hPtvsTRDSig", "TRD signal;TRD signal; #it{p}_{T}", {HistType::kTH2D, {{100, 0., 600.}, {100, 0., 22.}}}}}};
+    {{"hPtvsTPCSig", "TPC signal;#it{p}_{T};TPC signal", {HistType::kTH2D, {{100, 0., 10.}, {100, 0., 600.}}}},
+     {"hPtvsTOFBeta", "TOF beta;#it{p}_{T};TOF beta", {HistType::kTH2D, {{100, 0., 2.}, {100, 0., 600.}}}},
+     {"hPtvsTRDSig", "TRD signal;#it{p}_{T};TRD signal", {HistType::kTH2D, {{100, 0., 22.}, {100, 0., 600.}}}}}};
 
   void processML(MyCollisionML const& collision, BigTracksML const& tracks)
   {
@@ -139,9 +139,9 @@ struct CreateTableReal {
                        track.tpcNClsShared(),
                        track.dcaXY(), track.dcaZ());
 
-      registry.fill(HIST("hPtvsTPCSig"), track.tpcSignal(), track.pt());
-      registry.fill(HIST("hPtvsTOFBeta"), track.beta(), track.pt());
-      registry.fill(HIST("hPtvsTRDSig"), track.trdSignal(), track.pt());
+      registry.fill(HIST("hPtvsTPCSig"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hPtvsTOFBeta"), track.pt(), track.beta());
+      registry.fill(HIST("hPtvsTRDSig"), track.pt(), track.trdSignal());
     }
   }
   PROCESS_SWITCH(CreateTableReal, processML, "Produce only ML real data", true);
@@ -175,9 +175,9 @@ struct CreateTableReal {
                      track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
                      track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
 
-      registry.fill(HIST("hPtvsTPCSig"), track.tpcSignal(), track.pt());
-      registry.fill(HIST("hPtvsTOFBeta"), track.beta(), track.pt());
-      registry.fill(HIST("hPtvsTRDSig"), track.trdSignal(), track.pt());
+      registry.fill(HIST("hPtvsTPCSig"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("hPtvsTOFBeta"), track.pt(), track.beta());
+      registry.fill(HIST("hPtvsTRDSig"), track.pt(), track.trdSignal());
     }
   }
   PROCESS_SWITCH(CreateTableReal, processAll, "Produce all real data", false);
