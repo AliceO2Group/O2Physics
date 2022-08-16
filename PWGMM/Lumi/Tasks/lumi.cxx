@@ -12,7 +12,7 @@
 /// \since November 2021
 // usage: o2-analysis-timestamp -b --aod-file AO2D.root --configuration
 // json://./config.json | o2-analysis-trackextension -b |
-// o2-analysis-trackselection -b --isRun3 <0, 1> | o2-analysis-mm-lumi -b
+// o2-analysis-trackselection -b --isRun3 0 | o2-analysis-mm-lumi -b
 // --configuration json://./config.json
 
 #include <array>
@@ -39,10 +39,25 @@
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+
+#include "DetectorsBase/Propagator.h"
+
+#include "CommonUtils/NameConf.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lumiTask {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  const char* ccdbpath_grp = "GLO/GRP/GRP";
+  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  int mRunNumber;
+
   Configurable<uint64_t> ftts{"ftts", 1530319778000,
                               "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500,
@@ -85,6 +100,14 @@ struct lumiTask {
     }};
   bool doPVrefit = true;
 
+  void init(InitContext&)
+  {
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    mRunNumber = 0;
+  }
+
   void process(aod::Collision const& collision, aod::BCsWithTimestamps const&,
                o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection,
                              o2::aod::TracksCov, o2::aod::TracksExtra,
@@ -115,6 +138,19 @@ struct lumiTask {
     }
 
     std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
+
+    if (mRunNumber != bc.runNumber()) {
+      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(
+        ccdbpath_grp, bc.timestamp());
+      if (grpo != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+      } else {
+        LOGF(fatal,
+             "GRP object is not available in CCDB for run=%d at timestamp=%llu",
+             bc.runNumber(), bc.timestamp());
+      }
+      mRunNumber = bc.runNumber();
+    }
 
     o2::dataformats::VertexBase Pvtx;
     Pvtx.setX(collision.posX());
