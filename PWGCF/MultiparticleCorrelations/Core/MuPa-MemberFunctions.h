@@ -23,14 +23,25 @@
 // void BookAndNestAllLists()
 // void BookEventHistograms()
 // void BookParticleHistograms()
+// void BookQvectorHistograms()
+// void BookCorrelationsHistograms()
 // void BookWeightsHistograms()
 // void BookResultsHistograms()
 
 // b) Called directly in process(...):
+// void ResetEventByEventQuantities();
 // void FillEventHistograms(aod::Collision const& collision, aod::Tracks const& tracks, const Int_t rs, const Int_t ba); // reco or sim, before or after event cuts
 // Bool_t EventCuts(aod::Collision const& collision)
 // void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t ba); // reco or sim, before or after particle cuts
 // Bool_t ParticleCuts(aod::Track const& track)
+// void CalculateCorrelations();
+
+// *) Q-vectors:
+// TComplex Q(Int_t n, Int_t p);
+// TComplex One(Int_t n1);
+// TComplex Two(Int_t n1, Int_t n2);
+// ... TBI 20220809 port the rest ...
+// void ResetQ(); // reset the components of generic Q-vectors
 
 // *) Particle weights:
 // void SetWeightsHist(TH1D* const hist, const char *variable)
@@ -74,6 +85,12 @@ void DefaultConfiguration()
 
   // task->SetVerbose(kFALSE);
   fVerbose = kFALSE;
+
+  // task->SetCalculateQvector(kTRUE);
+  fCalculateQvector = kTRUE;
+
+  // task->SetCalculateCorrelations(kTRUE);
+  fCalculateCorrelations = kTRUE;
 
 } // void DefaultConfiguration()
 
@@ -190,6 +207,8 @@ void BookAndNestAllLists()
   // *) QA;
   // *) Control event histograms;
   // *) Control particle histograms;
+  // *) Correlations;
+  // *) Q-vectors;
   // *) Particle weights;
   // *) Results.
 
@@ -214,6 +233,18 @@ void BookAndNestAllLists()
   fParticleHistogramsList->SetName("ParticleHistograms");
   fParticleHistogramsList->SetOwner(kTRUE);
   fBaseList->Add(fParticleHistogramsList);
+
+  // *) Q-vectors:
+  fQvectorList = new TList();
+  fQvectorList->SetName("Q-vectors");
+  fQvectorList->SetOwner(kTRUE);
+  fBaseList->Add(fQvectorList);
+
+  // *) Correlations:
+  fCorrelationsList = new TList();
+  fCorrelationsList->SetName("Correlations");
+  fCorrelationsList->SetOwner(kTRUE);
+  fBaseList->Add(fCorrelationsList);
 
   // *) Particle weights:
   fWeightsList = new TList();
@@ -325,6 +356,95 @@ void BookParticleHistograms()
 
 //============================================================
 
+void BookQvectorHistograms()
+{
+  // Book all Q-vector histograms.
+
+  // a) Book the profile holding flags;
+  // b) ...
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  fQvectorFlagsPro = new TProfile("fQvectorFlagsPro", "flags for Q-vector objects", 3, 0., 3.);
+  fQvectorFlagsPro->SetStats(kFALSE);
+  fQvectorFlagsPro->SetLineColor(eColor);
+  fQvectorFlagsPro->SetFillColor(eFillColor);
+  fQvectorFlagsPro->GetXaxis()->SetLabelSize(0.05);
+  fQvectorFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateQvector");
+  fQvectorFlagsPro->Fill(0.5, fCalculateQvector);
+  fQvectorFlagsPro->GetXaxis()->SetBinLabel(2, "gMaxHarmonic");
+  fQvectorFlagsPro->Fill(1.5, gMaxHarmonic);
+  fQvectorFlagsPro->GetXaxis()->SetBinLabel(3, "gMaxCorrelator");
+  fQvectorFlagsPro->Fill(2.5, gMaxCorrelator);
+  fQvectorList->Add(fQvectorFlagsPro);
+
+  // b) ...
+
+} // void BookQvectorHistograms()
+
+//============================================================
+
+void BookCorrelationsHistograms()
+{
+  // Book all correlations histograms.
+
+  // a) Book the profile holding flags;
+  // b) Common local labels;
+  // c) Histograms.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  fCorrelationsFlagsPro = new TProfile("fCorrelationsFlagsPro", "flags for correlations", 3, 0., 3.);
+  fCorrelationsFlagsPro->SetStats(kFALSE);
+  fCorrelationsFlagsPro->SetLineColor(eColor);
+  fCorrelationsFlagsPro->SetFillColor(eFillColor);
+  fCorrelationsFlagsPro->GetXaxis()->SetLabelSize(0.05);
+  fCorrelationsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateCorrelations");
+  fCorrelationsFlagsPro->Fill(0.5, fCalculateCorrelations);
+  // ...
+  fCorrelationsList->Add(fCorrelationsFlagsPro);
+
+  if (!fCalculateCorrelations) {
+    return;
+  }
+
+  // b) Common local labels:
+  TString oVariable[4] = {"#varphi_{1}-#varphi_{2}", "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
+                          "#varphi_{1}+#varphi_{2}+#varphi_{3}-#varphi_{4}-#varphi_{5}-#varphi_{6}",
+                          "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-#varphi_{7}-#varphi_{8}"};
+
+  TString vvVariable[3] = {"int", "mult", "cent"};
+
+  // c) Histograms:
+  for (Int_t k = 0; k < 4; k++) // order [2p=0,4p=1,6p=2,8p=3]
+  {
+    for (Int_t n = 0; n < 6; n++) // harmonic [n=1,n=2,...,n=6]
+    {
+      for (Int_t v = 0; v < 3; v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality]
+      {
+        // ... TBI 20220809 ... port the rest
+
+        // c_a.fCorrelationsPro[k][n][v] = new TProfile(Form("c_a.fCorrelationsPro[%d][%d][%s]",k,n,vvVariable[v].Data()),harmonicArray.Data(),vvvariableNBins[v],vvvariableMinMax[v][0],vvvariableMinMax[v][1]);
+        c_a.fCorrelationsPro[k][n][v] = new TProfile(Form("fCorrelationsPro[%d][%d][%s]", k, n, vvVariable[v].Data()), "some title", 2000, 0., 2000.);
+        c_a.fCorrelationsPro[k][n][v]->SetStats(kFALSE);
+        c_a.fCorrelationsPro[k][n][v]->Sumw2();
+        c_a.fCorrelationsPro[k][n][v]->GetXaxis()->SetTitle(vvVariable[v].Data());
+        c_a.fCorrelationsPro[k][n][v]->GetYaxis()->SetTitle(Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1), oVariable[k].Data()));
+        fCorrelationsList->Add(c_a.fCorrelationsPro[k][n][v]);
+      }
+    }
+  }
+
+} // BookCorrelationsHistograms()
+
+//============================================================
+
 void BookWeightsHistograms()
 {
   // Book all objects for particle weights.
@@ -406,6 +526,44 @@ void BookResultsHistograms()
 
 //============================================================
 
+void ResetEventByEventQuantities()
+{
+  // Reset all global event-by-event quantities here:
+
+  // a) Multiplicities;
+  // b) Centrality;
+  // c) Q-vectors;
+  // d) Reset ebe containers for nested loops;
+  // e) Fisher-Yates algorithm.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  // a) Multiplicities:
+  //fMultiplicity = 0.;
+  //fSelectedParticles = 0;
+
+  // b) Centrality:
+  //fCentrality = 0.;
+
+  // c) Q-vectors:
+  if (fCalculateQvector) {
+    ResetQ(); // generic Q-vector
+    for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+      for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) // weight power
+      {
+        qv_a.fQvector[h][wp] = TComplex(0., 0.);
+      }
+    }
+  } // if(fCalculateQvector)
+
+  // ... TBI 20220809 port the rest ...
+
+} // void ResetEventByEventQuantities()
+
+//============================================================
+
 Bool_t EventCuts(aod::Collision const& collision)
 {
   // ...
@@ -478,6 +636,154 @@ void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t
   // TBI 20220808 ctd. with other particle histograms, DCA, etc.
 
 } // void FillParticleHistograms(aod::Track const& track, const Int_t rs, const Int_t ba); // reco or sim, before or after particle cuts
+
+//============================================================
+
+void CalculateCorrelations()
+{
+  // Calculate analytically multiparticle correlations from Q-vectors
+  // In this method, only isotropic correlations for which all harmonics are the same are evaluated.
+  // For the calculus of generic multiparticle correlations, see method CalculateGenericCorrelations()
+
+  // a) Flush 'n' fill the generic Q-vectors;
+  // b) Calculate correlations;
+  // c) Flush the generic Q-vectors.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  // a) Flush 'n' fill the generic Q-vectors:
+  ResetQ();
+  for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+    for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) // weight power
+    {
+      qv_a.fQ[h][wp] = qv_a.fQvector[h][wp];
+    }
+  }
+
+  // b) Calculate correlations:
+  for (Int_t h = 1; h <= gMaxHarmonic; h++) // harmonic
+  {
+    // 2p:
+    //if(fSelectedParticles<2){return;}
+    //if(fVerbose){cout<<Form("   => CalculateCorrelations(void), 2p, h = %d .... ",h)<<endl;}
+    TComplex two = Two(h, -h);
+    Double_t twoC = two.Re(); // cos
+    //Double_t twoS = two.Im(); // sin
+    Double_t wTwo = Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI 20220809 add support for other weights
+    if (wTwo > 0.0) {
+      twoC /= wTwo;
+    } else {
+      return;
+    } // ... TBI 20220809 ... use the line below eventually
+    // else { Exit(__PRETTY_FUNCTION__,__LINE__,Form("wTwo = %f is not positive. fSelectedParticles = %d",wTwo,fSelectedParticles)); return; }
+
+    /* ... TBI 20220809 ... enable eventually
+  if(fCalculateCustomNestedLoop)
+  {
+   // e-b-e sanity check:
+   TArrayI *harmonics = new TArrayI(2);
+   harmonics->SetAt(h,0);
+   harmonics->SetAt(-h,1);
+   Double_t nestedLoopValue = this->CalculateCustomNestedLoop(harmonics);
+   if(TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue)>1.e-5)
+   {
+    Exit(__PRETTY_FUNCTION__,__LINE__,Form("nestedLoopValue = %f is not the same as twoC = %f",nestedLoopValue,twoC)); exit(1);
+   }
+   else
+   {
+    cout<<Form("=> e-b-e check with CustomNestedLoop is OK for isotropic 2-p, harmonic %d",h)<<endl;
+    //cout<<Form("   value = %f",twoC)<<endl;
+   }
+   delete harmonics; harmonics = NULL;
+  } // if(fCalculateCustomNestedLoop)
+
+  // for on-the-fly and internal validation, rescale results with theoretical value:
+  if(fCalculateOnTheFly && fOnTheFlyFlowAmplitudes && fRescaleWithTheoreticalInput &&
+     TMath::Abs(fOnTheFlyFlowAmplitudes->GetAt(h-1))>0.){twoC/=pow(fOnTheFlyFlowAmplitudes->GetAt(h-1),2.);}
+  else if(fUseInternalValidation && fInternalValidationAmplitudes && fRescaleWithTheoreticalInput &&
+          TMath::Abs(fInternalValidationAmplitudes->GetAt(h-1))>0.){twoC/=pow(fInternalValidationAmplitudes->GetAt(h-1),2.);}
+
+*/
+
+    // integrated:
+    if (c_a.fCorrelationsPro[0][h - 1][0]) {
+      c_a.fCorrelationsPro[0][h - 1][0]->Fill(0.5, twoC, wTwo);
+    }
+    // vs. multiplicity:
+    //if(c_a.fCorrelationsPro[0][h-1][1]){c_a.fCorrelationsPro[0][h-1][1]->Fill(fSelectedParticles+0.5,twoC,wTwo);}
+    // vs. centrality:
+    //if(c_a.fCorrelationsPro[0][h-1][2]){c_a.fCorrelationsPro[0][h-1][2]->Fill(fCentrality,twoC,wTwo);}
+
+    // ... TBI 20220809 port the rest ...
+
+  } // for(Int_t h=1;h<=gMaxHarmonic;h++) // harmonic
+
+  // c) Flush the generic Q-vectors:
+  ResetQ();
+
+} // void CalculateCorrelations()
+
+//============================================================
+
+TComplex Q(Int_t n, Int_t wp)
+{
+  // Using the fact that Q{-n,p} = Q{n,p}^*.
+
+  if (n >= 0) {
+    return qv_a.fQ[n][wp];
+  }
+  return TComplex::Conjugate(qv_a.fQ[-n][wp]);
+
+} // TComplex FlowWithMultiparticleCorrelationsTask::Q(Int_t n, Int_t wp)
+
+//============================================================
+
+TComplex One(Int_t n1)
+{
+  // Generic expression <exp[i(n1*phi1)]>.
+
+  TComplex one = Q(n1, 1);
+
+  return one;
+
+} // TComplex FlowWithMultiparticleCorrelationsTask::One(Int_t n1)
+
+//============================================================
+
+TComplex Two(Int_t n1, Int_t n2)
+{
+  // Generic two-particle correlation <exp[i(n1*phi1+n2*phi2)]>.
+
+  TComplex two = Q(n1, 1) * Q(n2, 1) - Q(n1 + n2, 2);
+
+  return two;
+
+} // TComplex FlowWithMultiparticleCorrelationsTask::Two(Int_t n1, Int_t n2)
+
+//============================================================
+
+// ... TBI 20220809 ... port the rest
+
+//============================================================
+
+void ResetQ()
+{
+  // Reset the components of generic Q-vectors. Use it whenever you call the standard functions for correlations, for some custom Q-vectors.
+
+  if (fVerbose) {
+    Green(__PRETTY_FUNCTION__);
+  }
+
+  for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+    for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) // weight power
+    {
+      qv_a.fQ[h][wp] = TComplex(0., 0.);
+    }
+  }
+
+} // void ResetQ()
 
 //============================================================
 
