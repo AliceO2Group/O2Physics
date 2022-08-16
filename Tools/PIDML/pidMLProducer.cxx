@@ -41,9 +41,9 @@ struct CreateTableMc {
 
   HistogramRegistry registry{
     "registry",
-    {{"hTPCSigvsPt", "TPC signal vs #it{p}_{T};#it{p}_{T};TPC signal", {HistType::kTH2D, {{1000, 0., 10.}, {1000, 0., 600.}}}},
-     {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T};TOF beta", {HistType::kTH2D, {{1000, 0., 2.}, {1000, 0., 600.}}}},
-     {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T};TRD signal", {HistType::kTH2D, {{1000, 0., 22.}, {1000, 0., 600.}}}}}};
+    {{"hTPCSigvsPt", "TPC signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC signal", {HistType::kTH2F, {{500, 0., 10.}, {1000, 0., 600.}}}},
+     {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF beta", {HistType::kTH2F, {{500, 0., 10.}, {500, 0., 2.}}}},
+     {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TRD signal", {HistType::kTH2F, {{500, 0., 10.}, {2500, 0., 100.}}}}}};
 
   void processML(MyCollisionML const& collision, BigTracksML const& tracks, aod::McParticles_000 const& mctracks)
   {
@@ -122,9 +122,9 @@ struct CreateTableReal {
 
   HistogramRegistry registry{
     "registry",
-    {{"hTPCSigvsPt", "TPC signal vs #it{p}_{T};#it{p}_{T};TPC signal", {HistType::kTH2D, {{1000, 0., 10.}, {1000, 0., 600.}}}},
-     {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T};TOF beta", {HistType::kTH2D, {{1000, 0., 2.}, {1000, 0., 600.}}}},
-     {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T};TRD signal", {HistType::kTH2D, {{1000, 0., 22.}, {1000, 0., 600.}}}}}};
+    {{"hTPCSigvsPt", "TPC signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC signal", {HistType::kTH2F, {{500, 0., 10.}, {1000, 0., 600.}}}},
+     {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF beta", {HistType::kTH2F, {{500, 0., 10.}, {500, 0., 2.}}}},
+     {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TRD signal", {HistType::kTH2F, {{500, 0., 10.}, {2500, 0., 100.}}}}}};
 
   void processML(MyCollisionML const& collision, BigTracksML const& tracks)
   {
