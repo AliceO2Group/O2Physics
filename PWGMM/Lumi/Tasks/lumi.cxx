@@ -12,7 +12,7 @@
 /// \since November 2021
 // usage: o2-analysis-timestamp -b --aod-file AO2D.root --configuration
 // json://./config.json | o2-analysis-trackextension -b |
-// o2-analysis-trackselection -b --isRun3 <0, 1> | o2-analysis-mm-lumi -b
+// o2-analysis-trackselection -b --isRun3 0 | o2-analysis-mm-lumi -b
 // --configuration json://./config.json
 
 #include <array>
@@ -39,10 +39,28 @@
 #include "ReconstructionDataFormats/PrimaryVertex.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+
+#include "CommonUtils/NameConf.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct lumiTask {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet *lut;
+  const char *ccdbpath_grp = "GLO/GRP/GRP";
+  const char *ccdburl = "http://alice-ccdb.cern.ch";
+  int mRunNumber;
+
   Configurable<uint64_t> ftts{"ftts", 1530319778000,
                               "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500,
@@ -51,47 +69,53 @@ struct lumiTask {
                                 "Minimum number of contributors"};
 
   HistogramRegistry histos{
-    "histos",
-    {
-      {"vertexx", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}},     //
-      {"vertexy", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}},     //
-      {"timestamp", "", {HistType::kTH1F, {{20000, 0, 2e7, "t"}}}}, //
-      {"vertexx_timestamp",
-       "",
-       {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "x"}}}}, //
-      {"vertexy_timestamp",
-       "",
-       {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "y"}}}},     //
-      {"chisquare", "", {HistType::kTH1F, {{1000, 0, 100, "#chi^{2}"}}}}, //
+      "histos",
+      {
+          {"vertexx", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}},     //
+          {"vertexy", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}},     //
+          {"timestamp", "", {HistType::kTH1F, {{20000, 0, 2e7, "t"}}}}, //
+          {"vertexx_timestamp",
+           "",
+           {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "x"}}}}, //
+          {"vertexy_timestamp",
+           "",
+           {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "y"}}}},     //
+          {"chisquare", "", {HistType::kTH1F, {{1000, 0, 100, "#chi^{2}"}}}}, //
 
-      {"vertexx_Refitted", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}}, //
-      {"vertexy_Refitted", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}}, //
-      {"vertexx_Refitted_timestamp",
-       "",
-       {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "x"}}}}, //
-      {"vertexy_Refitted_timestamp",
-       "",
-       {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "y"}}}}, //
-      {"chisquare_Refitted",
-       "",
-       {HistType::kTH1F, {{1000, 0, 100, "#chi^{2}"}}}}, //
+          {"vertexx_Refitted", "", {HistType::kTH1F, {{1000, -1, 1, "x"}}}}, //
+          {"vertexy_Refitted", "", {HistType::kTH1F, {{1000, -1, 1, "y"}}}}, //
+          {"vertexx_Refitted_timestamp",
+           "",
+           {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "x"}}}}, //
+          {"vertexy_Refitted_timestamp",
+           "",
+           {HistType::kTH2F, {{1000, 0, 4e6, "t"}, {2000, -1, 1, "y"}}}}, //
+          {"chisquare_Refitted",
+           "",
+           {HistType::kTH1F, {{1000, 0, 100, "#chi^{2}"}}}}, //
 
-      {"vertexx_Refitted_vertexx",
-       "",
-       {HistType::kTH2F, {{1000, -1, 1, "x"}, {1000, -1, 1, "rx"}}}}, //
-      {"vertexy_Refitted_vertexy",
-       "",
-       {HistType::kTH2F, {{1000, -1, 1, "y"}, {1000, -1, 1, "ry"}}}} //
-    }};
+          {"vertexx_Refitted_vertexx",
+           "",
+           {HistType::kTH2F, {{1000, -1, 1, "x"}, {1000, -1, 1, "rx"}}}}, //
+          {"vertexy_Refitted_vertexy",
+           "",
+           {HistType::kTH2F, {{1000, -1, 1, "y"}, {1000, -1, 1, "ry"}}}} //
+      }};
   bool doPVrefit = true;
 
-  void process(aod::Collision const& collision, aod::BCsWithTimestamps const&,
+  void init(InitContext &) {
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    mRunNumber = 0;
+  }
+
+  void process(aod::Collision const &collision, aod::BCsWithTimestamps const &,
                o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection,
                              o2::aod::TracksCov, o2::aod::TracksExtra,
-                             o2::aod::TracksDCA> const& tracks,
+                             o2::aod::TracksDCA> const &tracks,
                o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
-                             o2::aod::TracksExtra> const& unfiltered_tracks)
-  {
+                             o2::aod::TracksExtra> const &unfiltered_tracks) {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
@@ -100,7 +124,7 @@ struct lumiTask {
 
     int nContrib = 0;
     int nNonContrib = 0;
-    for (const auto& unfiltered_track : unfiltered_tracks) {
+    for (const auto &unfiltered_track : unfiltered_tracks) {
       if (!unfiltered_track.hasITS()) {
         nNonContrib++;
         continue;
@@ -116,6 +140,19 @@ struct lumiTask {
 
     std::vector<bool> vec_useTrk_PVrefit(vec_globID_contr.size(), true);
 
+    if (mRunNumber != bc.runNumber()) {
+      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(
+          ccdbpath_grp, bc.timestamp());
+      if (grpo != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpo);
+      } else {
+        LOGF(fatal,
+             "GRP object is not available in CCDB for run=%d at timestamp=%llu",
+             bc.runNumber(), bc.timestamp());
+      }
+      mRunNumber = bc.runNumber();
+    }
+
     o2::dataformats::VertexBase Pvtx;
     Pvtx.setX(collision.posX());
     Pvtx.setY(collision.posY());
@@ -128,8 +165,8 @@ struct lumiTask {
 
     o2::vertexing::PVertexer vertexer;
     o2::conf::ConfigurableParam::updateFromString(
-      "pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o
-                                                  // MeanVertex constraint
+        "pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o
+                                                    // MeanVertex constraint
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
     double chi2;
@@ -182,8 +219,7 @@ struct lumiTask {
   } // need selections
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
   WorkflowSpec w{adaptAnalysisTask<lumiTask>(cfgc, TaskName{"lumi"})};
   return w;
 }
