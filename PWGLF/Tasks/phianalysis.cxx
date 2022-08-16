@@ -106,7 +106,7 @@ struct phianalysis {
   void processME(o2::aod::ResoCollisions& collision,
                  o2::aod::BCsWithTimestamps const&, aod::ResoDaughters const&, aod::Reso2TracksPIDExt const&)
   {
-    BinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, collision, collision)) {
 
