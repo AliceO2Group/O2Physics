@@ -215,11 +215,7 @@ struct CFFilterTwoN {
     registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
 
-    for (auto p1pt : partsProtonDeuteron0) {
-      registry.get<TH1>(HIST("fPtBeforePD"))->Fill(p1pt.pt());
-    }
-
-    LOGF(info, "Collision: %d", col.size());
+    LOGF(info, "Collision: %d/%d", col.index(), col.size());
 
     int prot = 0;
     int antiprot = 0;
@@ -228,6 +224,7 @@ struct CFFilterTwoN {
     int antideut = 0;
 
     for (auto p1pt : partsProtonDeuteron0) {
+      registry.get<TH1>(HIST("fPtBeforePD"))->Fill(p1pt.pt());
       // select protons
       if (isFullPIDSelected(p1pt.pidcut(), std::vector<int>{o2::track::PID::Proton}, confNSigma, p1pt.p(), confPIDThreshold)) {
         registry.get<TH1>(HIST("fProtonPtAfterPD"))->Fill(p1pt.pt());
@@ -241,6 +238,7 @@ struct CFFilterTwoN {
     }
 
     for (auto p1pt : partsProtonDeuteron1) {
+      registry.get<TH1>(HIST("fPtBeforeAntiPD"))->Fill(p1pt.pt());
       // select antiprotons
       if (isFullPIDSelected(p1pt.pidcut(), std::vector<int>{o2::track::PID::Proton}, confNSigma, p1pt.p(), confPIDThreshold)) {
         registry.get<TH1>(HIST("fAntiProtonPtAfterPD"))->Fill(p1pt.pt());
@@ -253,10 +251,10 @@ struct CFFilterTwoN {
       }
     }
 
-    LOGF(info, "Protons: %d", prot);
-    LOGF(info, "AntiProtons: %d", antideut);
-    LOGF(info, "Deuterons: %d", deut);
-    LOGF(info, "AntiDeuterons: %d", antideut);
+    // LOGF(info, "Protons: %d", prot);
+    // LOGF(info, "AntiProtons: %d", antideut);
+    // LOGF(info, "Deuterons: %d", deut);
+    // LOGF(info, "AntiDeuterons: %d", antideut);
 
     bool keepEvent[nPairs]{false};
     int lowKstarPairs[2] = {0, 0};
