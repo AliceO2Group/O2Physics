@@ -41,9 +41,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
 
-#include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 
 #include "CommonUtils/NameConf.h"
@@ -56,7 +54,6 @@ using namespace o2::framework::expressions;
 
 struct lumiTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet *lut;
   const char *ccdbpath_grp = "GLO/GRP/GRP";
   const char *ccdburl = "http://alice-ccdb.cern.ch";
   int mRunNumber;
