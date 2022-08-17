@@ -101,7 +101,7 @@ struct skimmerGammaConversions {
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
-  Produces<aod::McPdgCode> fFuncTableMcPdgCode;
+  Produces<aod::MCTrackTrue> fFuncTableMCTrackInformation;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
@@ -172,6 +172,17 @@ struct skimmerGammaConversions {
       recalculatedVtx[0],
       recalculatedVtx[1],
       recalculatedVtx[2]);
+  }
+
+  template <typename TTRACK>
+  void fillfFuncTableMCTrackInformation(TTRACK theTrack, bool sameMother)
+  {
+    fFuncTableMCTrackInformation(
+      theTrack.mcParticle().pdgCode(),
+      theTrack.mcParticle().px(),
+      theTrack.mcParticle().py(),
+      theTrack.mcParticle().pz(),
+      sameMother);
   }
 
   // ============================ FUNCTION DEFINITIONS ====================================================
@@ -248,17 +259,6 @@ struct skimmerGammaConversions {
         fillTrackTable(lV0, lTrackPos, true);
         fillTrackTable(lV0, lTrackNeg, false);
         fillV0RecalculatedTable(lV0, recalculatedVtx);
-
-        if ((lTrackPos.has_mcParticle() && lTrackNeg.has_mcParticle())) {
-          for (auto& lMcMother : lTrackPos.mcParticle().template mothers_as<aod::McParticles>()) {
-            fFuncTableMcPdgCode(
-              //theV0.v0Id(),
-              lMcMother.pdgCode(),
-              lTrackPos.mcParticle().pdgCode(),
-              lTrackNeg.mcParticle().pdgCode());
-            break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
-          }
-        }
       }
     }
   }
@@ -292,6 +292,16 @@ struct skimmerGammaConversions {
     // get indeces of mcMother of tracks
     std::vector<int> lMothersIndecesPos = getMothersIndeces(lMcPos);
     std::vector<int> lMothersIndecesNeg = getMothersIndeces(lMcNeg);
+
+    // fill Track Mc true table
+    if(lMothersIndecesPos[0] == lMothersIndecesNeg[0]) {
+      fillfFuncTableMCTrackInformation(theTrackPos, true);
+      fillfFuncTableMCTrackInformation(theTrackNeg, true);
+    }
+    else {
+      fillfFuncTableMCTrackInformation(theTrackPos, false);
+      fillfFuncTableMCTrackInformation(theTrackNeg, false);
+    }
 
     // none of tracks has a mother, has been accounted for in fMotherSizesHisto
     if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 0) {
@@ -368,7 +378,7 @@ struct skimmerGammaConversions {
     //I think this calculation gets the closest point on the track to the conversion point
     //This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
     Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
-    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
+    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixNeg.yC), (conversionPosition[0] - helixNeg.xC));
 
     Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
     Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);

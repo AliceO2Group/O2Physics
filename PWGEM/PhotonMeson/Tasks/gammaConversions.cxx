@@ -29,7 +29,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated, aod::McPdgCode>;
+using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
+using V0DaughterTracksAdditional = soa::Join<aod::V0DaughterTracks, aod::MCTrackTrue>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 struct GammaConversions {
@@ -62,7 +63,7 @@ struct GammaConversions {
   Configurable<float> fV0PsiPairMax{"fV0PsiPairMax", -0.1, "maximum psi angle of the track pair. Set negative do disable cut. "};
   Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.125, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
-  Configurable<float> fLineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
+  Configurable<float> fLineCutZ0{"fLineCutZ0", 12.0, "The offset for the linecute used in the Z vs R plot"};
   Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax))), "The slope for the line cut"};
   Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
 
@@ -91,6 +92,20 @@ struct GammaConversions {
     {eV0McValidation::kOutsideMCEtaAcc, "kOutsideMCEtaAcc"},
     {eV0McValidation::kMcValidatedPhotonOut, "kMcValidatedPhotonOut"},
     {eV0McValidation::kMcValAfterRecCuts, "kMcValAfterRecCuts"}};
+
+    std::map<eV0Decays, std::string> fV0McV0DecaysLabels{
+    {eV0Decays::ee1, "e+-/e-+, true"},
+    {eV0Decays::ee2, "e+-/e-+, diffMother"},
+    {eV0Decays::epi, "e+-/pi-+"},
+    {eV0Decays::ek, "e+-/K-+"},
+    {eV0Decays::ep, "e+-/p-+"},
+    {eV0Decays::emu, "e+-/mu-+"},
+    {eV0Decays::pipi, "pi+-/pi-+"},
+    {eV0Decays::pik, "pi+-/K-+"},
+    {eV0Decays::pip, "pi+-/p-+"},
+    {eV0Decays::pimu, "pi+-/mu-+"},
+    {eV0Decays::pKmu, "p+-/K-+mu-+"},
+    {eV0Decays::other, "other"}};
 
   std::vector<std::string> fHistoSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
 
@@ -139,7 +154,8 @@ struct GammaConversions {
     };
     // PDG code of all particles to analyize the purity. Only for MC and only for Rec
     std::vector<MyHistogramSpec> lMcPDGCode{
-      {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{10000, -5000.0f, 5000.0f}}}}, // first only cover usefull range. Otherwise histogram will get rediculously large
+      {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{6000, -3000.0f, 3000.0f}}}}, // first only cover usefull range. Otherwise histogram will get rediculously large
+      {"hDecays", "hDecays;;P [GeV/c]", {HistType::kTH2I, {{12, -0.0f, 11.5f}, gAxis_pT}}},
     };
 
     // only in mc
@@ -159,10 +175,20 @@ struct GammaConversions {
       {"hV0Selection", "hV0Selection;V0 categories;counts", {HistType::kTH1I, {{14, -0.0f, 13.5f}}}},
       {"hV0McValidation", "hV0McValidation;V0 categories;counts", {HistType::kTH1I, {{13, -0.0f, 12.5f}}}, false /*callSumw2*/, true /*dataOnly_*/}};
 
-    auto addLablesToHisto = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
+    auto addLablesToHisto1D = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
       auto lHisto = theContainer.find(theHistoName);
       if (lHisto != theContainer.end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lHisto->second)->GetXaxis();
+        for (auto& lPairIt : theLables) {
+          lXaxis->SetBinLabel(static_cast<int>(lPairIt.first) + 1, lPairIt.second.data());
+        }
+      }
+    };
+
+    auto addLablesToHisto2D = [](auto const& theContainer, std::string const& theHistoName, auto const& theLables) {
+      auto lHisto = theContainer.find(theHistoName);
+      if (lHisto != theContainer.end()) {
+        TAxis* lXaxis = std::get<std::shared_ptr<TH2>>(lHisto->second)->GetXaxis();
         for (auto& lPairIt : theLables) {
           lXaxis->SetBinLabel(static_cast<int>(lPairIt.first) + 1, lPairIt.second.data());
         }
@@ -184,11 +210,11 @@ struct GammaConversions {
       doprocessRec /*theCheckDataOnly*/);
 
     // do some labeling
-    addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0Selection", fPhotonCutLabels);
+    addLablesToHisto1D(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0Selection", fPhotonCutLabels);
     if (doprocessMc) {
-      addLablesToHisto(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0McValidation", fV0McValidationLabels);
+      addLablesToHisto1D(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0McValidation", fV0McValidationLabels);
     }
-
+    
     for (size_t iBARecCuts = 0; iBARecCuts < 2; ++iBARecCuts) {
       for (size_t iMcKind = 0; iMcKind < (doprocessMc ? 4 : 1); ++iMcKind) {
         std::string const* lMcSuffix = &fHistoSuffixes[iMcKind];
@@ -235,12 +261,14 @@ struct GammaConversions {
               fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
                                                                                                                                     lMcPDGCode,
                                                                                                                                     lMcSuffix);
+              addLablesToHisto2D(fMyRegistry.mV0.mRejectedByMc[iRejReason].mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].mContainer, "hDecays", fV0McV0DecaysLabels);
             }
           }
           if (iMcKind == kRec) {
             fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].addHistosToOfficalRegistry(fHistogramRegistry,
                                                                                                         lMcPDGCode,
                                                                                                         lMcSuffix);
+            addLablesToHisto2D(fMyRegistry.mV0.mBeforeAfterRecCuts[iBARecCuts].mV0Kind[iMcKind].mContainer, "hDecays", fV0McV0DecaysLabels);
           }
         }
       }
@@ -286,7 +314,10 @@ struct GammaConversions {
                                           int theBefAftRec,
                                           TMCGAMMA const& theMcPhoton,
                                           TV0 const& theV0,
-                                          float const& theV0CosinePA)
+                                          float const& theV0CosinePA,
+                                          int PDGCode[],
+                                          bool const& sameMother,
+                                          float McTrackmomentum[])
   {
     fillV0Histograms(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
@@ -295,30 +326,43 @@ struct GammaConversions {
 
     lfillPDGHist(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
-      theV0);
+      PDGCode);
+
+    lfillDecaysHist(
+      fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
+      PDGCode,
+      sameMother,
+      McTrackmomentum);
 
     fillTruePhotonHistogramsForRejectedByMc(theRejReason,
                                             theBefAftRec,
                                             theMcPhoton,
                                             theV0,
-                                            theV0CosinePA);
+                                            theV0CosinePA,
+                                            McTrackmomentum);
   }
 
   template <typename TV0, typename TMCGAMMA>
-  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts)
+  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts, int PDGCode[], bool const& sameMother, float McTrackmomentum[])
   {
     auto fillRejectedV0HistosI = [&](eMcRejectedSaved theRejReason) {
       fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
                                          kBeforeRecCuts,
                                          theMcPhoton,
                                          theV0,
-                                         theV0CosinePA);
+                                         theV0CosinePA,
+                                         PDGCode,
+                                         sameMother,
+                                         McTrackmomentum);
       if (theV0PassesRecCuts) {
         fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
                                            kAfterRecCuts,
                                            theMcPhoton,
                                            theV0,
-                                           theV0CosinePA);
+                                           theV0CosinePA,
+                                           PDGCode,
+                                           sameMother,
+                                           McTrackmomentum);
       }
     };
 
@@ -350,7 +394,10 @@ struct GammaConversions {
   void processMcPhoton(TMCGAMMATABLE const& theMcPhotonForThisV0AsTable,
                        TV0 const& theV0,
                        float const& theV0CosinePA,
-                       bool theV0PassesRecCuts)
+                       bool theV0PassesRecCuts,
+                       int PDGCode[],
+                       bool const& sameMother,
+                       float McTrackmomentum[])
   {
     fillV0McValidationHisto(eV0McValidation::kV0in);
 
@@ -364,43 +411,102 @@ struct GammaConversions {
     if (!v0IsGoodValidatedMcPhoton(lMcPhoton,
                                    theV0,
                                    theV0CosinePA,
-                                   theV0PassesRecCuts)) {
+                                   theV0PassesRecCuts,
+                                   PDGCode,
+                                   sameMother,
+                                   McTrackmomentum)) {
       return;
     }
 
     fillTruePhotonHistograms(kBeforeRecCuts,
                              lMcPhoton,
                              theV0,
-                             theV0CosinePA);
+                             theV0CosinePA,
+                             McTrackmomentum);
 
     if (theV0PassesRecCuts) {
       fillV0McValidationHisto(eV0McValidation::kMcValAfterRecCuts);
       fillTruePhotonHistograms(kAfterRecCuts,
                                lMcPhoton,
                                theV0,
-                               theV0CosinePA);
+                               theV0CosinePA,
+                               McTrackmomentum);
     }
   }
 
-  template <typename TV0>
-  void processPDGHist(TV0 const& theV0,
-                      int const& theV0PassesRecCuts)
+  void processPDGHistos(int const PDGCode[],
+                        bool const& sameMother,
+                        float const McTrackmomentum[],
+                        int const& theV0PassesRecCuts)
   {
     lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
-                 theV0);
+                 PDGCode);
+    lfillDecaysHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
+                 PDGCode,
+                 sameMother,
+                 McTrackmomentum);
+    
     if (theV0PassesRecCuts) {
       lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
-                   theV0);
+                   PDGCode);
+      lfillDecaysHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
+                 PDGCode,
+                 sameMother,
+                 McTrackmomentum);
     }
   }
 
-  template <typename TV0>
   void lfillPDGHist(mapStringHistPtr& theContainer,
-                    TV0 const& theV0)
+                    int const PDGCode[])
   {
-    fillTH1(theContainer, "hPDGCode", theV0.pdgCodeV0());
-    fillTH1(theContainer, "hPDGCode", theV0.pdgCodeD1());
-    fillTH1(theContainer, "hPDGCode", theV0.pdgCodeD2());
+    fillTH1(theContainer, "hPDGCode", PDGCode[0]);
+    fillTH1(theContainer, "hPDGCode", PDGCode[1]);
+  }
+
+  void lfillDecaysHist(mapStringHistPtr& theContainer,
+                       int const PDGCode[],
+                       int const& sameMother,
+                       float const McTrackmomentum[])
+  {
+    
+    float MCV0p = RecoDecay::sqrtSumOfSquares(McTrackmomentum[0] + McTrackmomentum[3], McTrackmomentum[1] + McTrackmomentum[4], McTrackmomentum[2] + McTrackmomentum[5]);
+
+    if(sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee1), MCV0p);
+    }
+    else if(!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee2), MCV0p);
+    }
+    else if((PDGCode[0] == 11 && PDGCode[1] == 211) || (PDGCode[0] == -11 && PDGCode[1] == -211)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::epi), MCV0p);
+    }
+    else if((PDGCode[0] == 11 && PDGCode[1] == 321) || (PDGCode[0] == -11 && PDGCode[1] == -321)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ek), MCV0p);
+    }
+    else if((PDGCode[0] == 11 && PDGCode[1] == 2212) || (PDGCode[0] == -11 && PDGCode[1] == -2212)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ep), MCV0p);
+    }
+    else if((PDGCode[0] == 11 && PDGCode[1] == -13) || (PDGCode[0] == -11 && PDGCode[1] == 13)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::emu), MCV0p);
+    }
+    else if((PDGCode[0] == 211 && PDGCode[1] == -211) || (PDGCode[0] == -211 && PDGCode[1] == 211)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pipi), MCV0p);
+    }
+    else if((PDGCode[0] == 211 && PDGCode[1] == -321) || (PDGCode[0] == -211 && PDGCode[1] == 321)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pik), MCV0p);
+    }
+    else if((PDGCode[0] == 211 && PDGCode[1] == -2212) || (PDGCode[0] == -211 && PDGCode[1] == 2212)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pip), MCV0p);
+    }
+    else if((PDGCode[0] == 211 && PDGCode[1] == 13) || (PDGCode[0] == -211 && PDGCode[1] == -13)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pimu), MCV0p);
+    }
+    else if((PDGCode[0] == 2212 && PDGCode[1] == -321) || (PDGCode[0] == -2212 && PDGCode[1] == 321) || (PDGCode[0] == 2212 && PDGCode[1] == 13) || (PDGCode[0] == -2212 && PDGCode[1] == -13)) {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pKmu), MCV0p);
+    }
+    else {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::other), MCV0p);
+    }
   }
 
   template <typename TV0, typename TMCGAMMA>
@@ -421,11 +527,12 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMA>
-  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA)
+  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, float McTrackmomentum[])
   {
     fillV0HistogramsMcGamma(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
-      theMcPhoton);
+      theMcPhoton,
+      McTrackmomentum);
 
     fillV0Histograms(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
@@ -447,11 +554,13 @@ struct GammaConversions {
                                                int theBefAftRec,
                                                TMCGAMMA const& theMcPhoton,
                                                TV0 const& theV0,
-                                               float const& theV0CosinePA)
+                                               float const& theV0CosinePA,
+                                               float McTrackmomentum[])
   {
     fillV0HistogramsMcGamma(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
-      theMcPhoton);
+      theMcPhoton,
+      McTrackmomentum);
 
     fillV0Histograms(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCVal].mContainer,
@@ -494,7 +603,7 @@ struct GammaConversions {
 
   void processMc(aod::Collisions::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
-                 aod::V0DaughterTracks const& theAllTracks,
+                 V0DaughterTracksAdditional const& theAllTracks,
                  aod::McGammasTrue const& theV0sTrue)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
@@ -510,15 +619,40 @@ struct GammaConversions {
       bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
 
       // this process function has to exist seperatly because it is only for MC Rec
-      processPDGHist(lV0,
-                     lV0PassesRecCuts);
+      // first fill array with relevant information, then pass it to function. Avoids passing of unnecessary information
+      int PDGCode[2]; // Pos, then Neg
+      float McTrackmomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = pos 3-5 = neg
+      bool sameMother;
+    
+      auto lMcPhotonForThisV0AsTable_tmp = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
+
+      int i = 0;
+      int j = 0;
+      for(auto& theTrack : lTwoV0Daughters)
+      {
+        PDGCode[i] = theTrack.pdgCodeTrack();
+        McTrackmomentum[j+0] = theTrack.mcpx();
+        McTrackmomentum[j+1] = theTrack.mcpy();
+        McTrackmomentum[j+2] = theTrack.mcpz();
+        sameMother = theTrack.sameMother();
+        i+=1;
+        j+=3;
+      }
+
+      processPDGHistos(PDGCode,
+                      sameMother,
+                      McTrackmomentum,
+                      lV0PassesRecCuts);
 
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
       processMcPhoton(lMcPhotonForThisV0AsTable,
                       lV0,
                       lV0CosinePA,
-                      lV0PassesRecCuts);
+                      lV0PassesRecCuts,
+                      PDGCode,
+                      sameMother,
+                      McTrackmomentum);
     }
   }
   PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
@@ -591,8 +725,8 @@ struct GammaConversions {
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
-    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.pxpos() + theV0.pxneg(), theV0.pypos() + theV0.pyneg(), theV0.pzpos() + theV0.pzneg()), theV0.pfracpos());
-    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.pxpos() + theV0.pxneg(), theV0.pypos() + theV0.pyneg(), theV0.pzpos() + theV0.pzneg()), theV0.pfracneg());
+    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py(), theV0.pz()), theV0.pfracpos());
+    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py(), theV0.pz()), theV0.pfracneg());
   }
 
   // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a seperate fill function is needed
@@ -605,14 +739,15 @@ struct GammaConversions {
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
   template <typename TMCGAMMA>
-  void fillV0HistogramsMcGamma(mapStringHistPtr& theContainer, TMCGAMMA const& theMcGamma)
+  void fillV0HistogramsMcGamma(mapStringHistPtr& theContainer, TMCGAMMA const& theMcGamma, float McTrackmomentum[])
   {
     fillTH1(theContainer, "hEta", theMcGamma.eta());
     fillTH1(theContainer, "hPhi", theMcGamma.phi());
     fillTH1(theContainer, "hPt", theMcGamma.pt());
     fillTH1(theContainer, "hConvPointR", theMcGamma.v0Radius());
     fillTH1(theContainer, "hConvPointZ", theMcGamma.conversionZ());
-    fillTH2(theContainer, "hRVsZ", theMcGamma.v0Radius(), theMcGamma.conversionZ());
+    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[0], McTrackmomentum[1], McTrackmomentum[2])/theMcGamma.p());
+    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[3], McTrackmomentum[4], McTrackmomentum[5])/theMcGamma.p());
   }
 
   template <typename T>

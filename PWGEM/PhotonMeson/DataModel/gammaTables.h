@@ -47,6 +47,22 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
                   pidtpc::TPCNSigmaPi,
                   track::TPCSignal);
 
+namespace MCTracksTrue
+{
+DECLARE_SOA_COLUMN(PDGCodeTrack, pdgCodeTrack, int); // PDG code of second daughter
+DECLARE_SOA_COLUMN(MCPx, mcpx, float);               // Absolute momentum in GeV/c from MCTrue
+DECLARE_SOA_COLUMN(MCPy, mcpy, float);               // Absolute momentum in GeV/c from MCTrue
+DECLARE_SOA_COLUMN(MCPz, mcpz, float);               // Absolute momentum in GeV/c from MCTrue
+DECLARE_SOA_COLUMN(SameMother, sameMother, bool);    // Do the tracks have the same mother particle?
+} // namespace MCTracksTrue
+
+DECLARE_SOA_TABLE(MCTrackTrue, "AOD", "MCTRACKTRUE",
+                  MCTracksTrue::PDGCodeTrack,
+                  MCTracksTrue::MCPx,
+                  MCTracksTrue::MCPy,
+                  MCTracksTrue::MCPz,
+                  MCTracksTrue::SameMother);
+
 namespace gammarecalculated
 {
 DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
@@ -62,20 +78,6 @@ DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
                   gammarecalculated::RecalculatedVtxY,
                   gammarecalculated::RecalculatedVtxZ,
                   gammarecalculated::RecalculatedVtxR<o2::aod::gammarecalculated::RecalculatedVtxX, o2::aod::gammarecalculated::RecalculatedVtxY>);
-
-namespace pdgcodetable
-{
-DECLARE_SOA_COLUMN(PdgCodeV0, pdgCodeV0, int); // PDG code of V0
-DECLARE_SOA_COLUMN(PdgCodeD1, pdgCodeD1, int); // PDG code of first daughter
-DECLARE_SOA_COLUMN(PdgCodeD2, pdgCodeD2, int); // PDG code of second daughter
-} // namespace pdgcodetable
-
-DECLARE_SOA_TABLE(McPdgCode, "AOD", "MCPDGCODE",
-                  //o2::soa::Index<>,
-                  //v0data::V0Id,
-                  pdgcodetable::PdgCodeV0,
-                  pdgcodetable::PdgCodeD1,
-                  pdgcodetable::PdgCodeD2);
 
 namespace gammamctrue
 {
