@@ -119,13 +119,26 @@ struct MixedEventsJoinedTracks {
 //};
 
 struct MixedEventsCounters {
-  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
-  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true};                                    // true is for 'ignore overflows' (true by default)
-  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+  // This task shows how to extract variables needed for weighted correlations.
+  // NOTE: The same number of currentWindowNeighbours is returned for all kinds of block combinations.
+  // Strictly upper: the first collision will is paired with exactly currentWindowNeighbours other collisions.
+  // Upper: the first collision is paired with (currentWindowNeighbours + 1) collisions, including itself.
+  // Full: (currentWindowNeighbours + 1) pairs with the first collision in the first position (c1)
+  //       + there are other combinations with the first collision at other positions.
 
-  void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070,
+                            0.072};
+  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301,
+                            -0.300, 0.330, 0.340, 0.350, 0.360};
+  using BinningType =
+    ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
+  BinningType binningOnPositions{{xBins, yBins}, true};
+  // true is for 'ignore overflows' (true by default)
+  SameKindPair<aod::Collisions, aod::Tracks, BinningType>
+    pair{binningOnPositions, 5, -1}; // indicates that 5 events should be
+  mixed and under / overflow(-1) to be ignored
+
+    void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
 
