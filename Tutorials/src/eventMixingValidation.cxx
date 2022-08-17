@@ -131,7 +131,7 @@ struct MixedEventsCounters {
 
     for (auto it = pair.begin(); it != pair.end(); it++) {
       auto& [c1, tracks1, c2, tracks2] = *it;
-      LOGF(info, "Mixed event collisions: (%d, %d), is first: %d, remaining number of collisions to mix the first with: %d", c1.globalIndex(), c2.globalIndex(), it.isFirstEvent(), it.numberOfEventsToMixWith());
+      LOGF(info, "Mixed event collisions: (%d, %d), is it first pair with %d: %d, number of collisions mixed with the first: %d", c1.globalIndex(), c2.globalIndex(), c1.globalIndex(), it.isNewWindow(), it.combinationsWithFirst());
     }
   }
 };
