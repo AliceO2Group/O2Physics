@@ -118,11 +118,13 @@ struct HistogramsWithTrd {
   // aod::Tracks instead of aod::Track
 
   Filter trackFilter = requireGlobalTrackInFilter();
-  using FilteredTrack = soa::Filtered<soa::Join<aod::FullTracks, aod::TrackSelection>>::iterator;
+  using FilteredTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TrackSelection>>;
 
-  void process(FilteredTrack const& track)
+  void process(aod::Collision const& col, FilteredTracks const& tracks)
   {
-    registry.fill(HIST("TRDSignal"), track.pt(), track.trdSignal());
+    for (const auto& track : tracks) {
+      registry.fill(HIST("TRDSignal"), track.pt(), track.trdSignal());
+    }
   }
 };
 //end TOFvsPT ZCH
