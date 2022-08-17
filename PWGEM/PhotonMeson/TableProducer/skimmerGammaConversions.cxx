@@ -294,11 +294,10 @@ struct skimmerGammaConversions {
     std::vector<int> lMothersIndecesNeg = getMothersIndeces(lMcNeg);
 
     // fill Track Mc true table
-    if(lMothersIndecesPos[0] == lMothersIndecesNeg[0]) {
+    if (lMothersIndecesPos[0] == lMothersIndecesNeg[0]) {
       fillfFuncTableMCTrackInformation(theTrackPos, true);
       fillfFuncTableMCTrackInformation(theTrackNeg, true);
-    }
-    else {
+    } else {
       fillfFuncTableMCTrackInformation(theTrackPos, false);
       fillfFuncTableMCTrackInformation(theTrackNeg, false);
     }
