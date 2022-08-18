@@ -155,30 +155,6 @@ Network& Network::operator=(Network& inst)
 
 } // Network& Network::operator=(const Network &)
 
-template <typename C, typename T>
-std::array<float, 6> Network::createInputFromTrack(const C& collision_it, const T& track, const uint8_t id, const float nClNorm = 152.) const
-{
-
-  /*
-  Function: Creating a std::vector<float> from a track with the variables that the network has been trained on
-  - Input:
-    -- collisions_it    const C&            ;   An iterator of a collisions table of the form: soa::Join<aod::Collisions, aod::Mults>::iterator const& collision
-    -- track:           const T&            ;   A track, typically from soa::Join<...> tables or of their iterators;
-    -- id:              uint8_t             ;   The id of a particle used for the mass assignment with o2::track::pid_constants::sMasses[id];
-  - Output:
-    -- inputValues:     std::vector<float>  ;   A std::vector<float> with the input variables for the network;
-  */
-
-  const float p = track.tpcInnerParam();
-  const float tgl = track.tgl();
-  const float signed1Pt = track.signed1Pt();
-  const float mass = o2::track::pid_constants::sMasses[id];
-  const float multTPC = collision_it.multTPC() / 11000.;
-  const float ncl = std::sqrt(nClNorm / track.tpcNClsFound());
-
-  return {p, tgl, signed1Pt, mass, multTPC, ncl};
-}
-
 std::vector<Ort::Value> Network::createTensor(std::array<float, 6> input) const
 {
 

@@ -45,7 +45,6 @@ class Network
 
   // Functions
   template <typename C, typename T>
-  std::array<float, 6> createInputFromTrack(const C&, const T&, const uint8_t, const float) const; // create a std::vector<float> with all the inputs for the network
   std::vector<Ort::Value> createTensor(std::array<float, 6>) const;                                // create a std::vector<Ort::Value> (= ONNX tensor) for model input
   float* evalNetwork(std::vector<Ort::Value>);                                                     // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
   float* evalNetwork(std::vector<float>);                                                          // evaluate the network on a std::vector<float>
@@ -73,8 +72,6 @@ class Network
   std::vector<std::vector<int64_t>> mInputShapes;
   std::vector<std::string> mOutputNames;
   std::vector<std::vector<int64_t>> mOutputShapes;
-
-  float nClNorm = 152.f;
 
   // Internal function for printing the shape of tensors: See https://github.com/saganatt/PID_ML_in_O2 or O2Physics/Tools/PIDML/simpleApplyPidOnnxModel.cxx
   std::string printShape(const std::vector<int64_t>& v);
