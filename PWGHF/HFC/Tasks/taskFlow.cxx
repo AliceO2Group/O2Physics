@@ -344,8 +344,10 @@ struct HfTaskFlow {
 
       for (auto& track2 : tracks2) {
 
-        if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) { // case of h-h correlations where the two types of tracks are the same
-          if (track1 == track2) {
+        //  case of h-h correlations where the two types of tracks are the same
+        //  this avoids autocorrelations and double counting of particle pairs
+        if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) {
+          if (track1.index() <= track2.index()) {
             continue;
           }
         }
