@@ -50,6 +50,7 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> sameTPCMFTCh{"sameEventTPCMFTChHadrons"};
   OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
   OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
+  OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
 
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
@@ -187,6 +188,7 @@ struct HfTaskFlow {
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
+    mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, {}));
   }
 
   //  ---------------
@@ -387,6 +389,38 @@ struct HfTaskFlow {
     }
   }
 
+  template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
+  void mixCollisions(aodCollisions& collisions, TTracksTrig tracks1, TTracksAssoc tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  {
+    using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
+    BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
+
+    auto tracksTuple = std::make_tuple(tracks1, tracks2);
+    Pair<aodCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, cfgNoMixedEvents, -1, collisions, tracksTuple};
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+
+      if (!(isCollisionSelected(collision1, false))) {
+        continue;
+      }
+      if (!(isCollisionSelected(collision2, false))) {
+        continue;
+      }
+
+      const auto multiplicity = tracks1.size();
+      registry.fill(HIST("hMultiplicityMixing"), multiplicity);
+      registry.fill(HIST("hVtxZMixing"), collision1.posZ());
+
+      auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
+      int bin = binningWithTracksSize.getBin(binningValues);
+      registry.fill(HIST("hEventCount"), bin);
+
+      corrContainer->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+      fillMixingQA(multiplicity, tracks1);
+      fillCorrelations(corrContainer, tracks1, tracks2, multiplicity, collision1.posZ());
+    }
+  }
+
   // =====================================
   //    process same event correlations
   // =====================================
@@ -464,43 +498,27 @@ struct HfTaskFlow {
   //    process mixed event correlations
   // =====================================
   //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3 because there is no MFT in Run2
+
   void processMixed(aodCollisions& collisions,
-                    aodTracks& tracks)
+                    aodTracks const& tracks,
+                    hfCandidates const& candidates)
   {
     auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
       return size;
     };
+    auto getCandsSize = [&candidates](aodCollisions::iterator const& col) {
+      auto associatedCands = candidates.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
+      auto size = associatedCands.size();
+      return size;
+    };
 
-    using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    BinningType binningWithTracksSize{{getTracksSize}, {axisVertex, axisMultiplicity}, true};
-
-    auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aodCollisions, aodTracks, BinningType> pair{binningWithTracksSize, cfgNoMixedEvents, -1, collisions, tracksTuple};
-
-    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
-
-      if (!(isCollisionSelected(collision1, false))) {
-        continue;
-      }
-      if (!(isCollisionSelected(collision2, false))) {
-        continue;
-      }
-
-      const auto multiplicity = tracks1.size();
-      registry.fill(HIST("hMultiplicityMixing"), multiplicity);
-      registry.fill(HIST("hVtxZMixing"), collision1.posZ());
-
-      auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
-      int bin = binningWithTracksSize.getBin(binningValues);
-      registry.fill(HIST("hEventCount"), bin);
-
-      if (processTPCTPChh) {
-        mixedTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillMixingQA(multiplicity, tracks1);
-        fillCorrelations(mixedTPCTPCCh, tracks1, tracks2, multiplicity, collision1.posZ());
-      }
+    if (processTPCTPChh) {
+      mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCCh);
+    }
+    if (processHFHadrons) {
+      mixCollisions(collisions, tracks, candidates, getCandsSize, mixedHF);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processMixed, "Process mixed event", true);
