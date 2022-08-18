@@ -90,6 +90,7 @@ struct HfTaskFlow {
   ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
 
   //  Collision filters
+  //  FIXME: The filter is applied also on the candidates! Beware!
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
 
@@ -190,6 +191,7 @@ struct HfTaskFlow {
 
   //  ---------------
   //    templates
+  //  FIXME: Some collisions are rejected here, what causes (part of) differences with the D0 task
   //  ---------------
   template <typename TCollision>
   bool isCollisionSelected(TCollision collision, bool fillHistograms = false)
