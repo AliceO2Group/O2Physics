@@ -44,7 +44,6 @@ class Network
   Network& operator=(Network&); // copy a network into an existing class instance
 
   // Functions
-  template <typename C, typename T>
   std::vector<Ort::Value> createTensor(std::array<float, 6>) const; // create a std::vector<Ort::Value> (= ONNX tensor) for model input
   float* evalNetwork(std::vector<Ort::Value>);                      // evaluate the network on a std::vector<Ort::Value> (= ONNX tensor)
   float* evalNetwork(std::vector<float>);                           // evaluate the network on a std::vector<float>
