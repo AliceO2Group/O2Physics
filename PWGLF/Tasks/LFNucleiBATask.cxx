@@ -426,107 +426,125 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/proton/h1ProtonSpectraTrue"), track.pt());
           histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTrue"), track.pt(), track.dcaxy());
           histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTrue"), track.pt(), track.dcaz());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             histos.fill(HIST("tracks/proton/h1ProtonSpectraTruePrim"), track.pt());
-          histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTruePrim"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTruePrim"), track.pt(), track.dcaz());
-          if (!isPhysPrim && isProdByGen)
+            histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTruePrim"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTruePrim"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && isProdByGen) {
             histos.fill(HIST("tracks/proton/h1ProtonSpectraTrueSec"), track.pt());
-          histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTrueSec"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTrueSec"), track.pt(), track.dcaz());
-          if (!isPhysPrim && !isProdByGen)
+            histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTrueSec"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTrueSec"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && !isProdByGen) {
             histos.fill(HIST("tracks/proton/h1ProtonSpectraTrueTransport"), track.pt());
-          histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTrueTransport"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTrueTransport"), track.pt(), track.dcaz());
+            histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtProtonTrueTransport"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/proton/dca/hDCAzVsPtProtonTrueTransport"), track.pt(), track.dcaz());
+          }
         }
 
         if (track.pdgCode() == -PDGProton) {
           histos.fill(HIST("tracks/proton/h1antiProtonSpectraTrue"), track.pt());
           histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTrue"), track.pt(), track.dcaxy());
           histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTrue"), track.pt(), track.dcaz());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             histos.fill(HIST("tracks/proton/h1antiProtonSpectraTruePrim"), track.pt());
-          histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTruePrim"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTruePrim"), track.pt(), track.dcaz());
-          if (!isPhysPrim && isProdByGen)
+            histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTruePrim"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTruePrim"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && isProdByGen) {
             histos.fill(HIST("tracks/proton/h1antiProtonSpectraTrueSec"), track.pt());
-          histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTrueSec"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTrueSec"), track.pt(), track.dcaz());
-          if (!isPhysPrim && !isProdByGen)
+            histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTrueSec"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTrueSec"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && !isProdByGen) {
             histos.fill(HIST("tracks/proton/h1antiProtonSpectraTrueTransport"), track.pt());
-          histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTrueTransport"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTrueTransport"), track.pt(), track.dcaz());
+            histos.fill(HIST("tracks/proton/dca/hDCAxyVsPtantiProtonTrueTransport"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/proton/dca/hDCAzVsPtantiProtonTrueTransport"), track.pt(), track.dcaz());
+          }
         }
         if (track.pdgCode() == PDGDeuteron) {
           histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrue"), track.pt());
           histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrue"), track.pt(), track.dcaxy());
           histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrue"), track.pt(), track.dcaz());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTruePrim"), track.pt());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTruePrim"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTruePrim"), track.pt(), track.dcaz());
-          if (!isPhysPrim && isProdByGen)
+            histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTruePrim"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTruePrim"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && isProdByGen) {
             histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrueSec"), track.pt());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrueSec"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrueSec"), track.pt(), track.dcaz());
-          if (!isPhysPrim && !isProdByGen)
+            histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrueSec"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrueSec"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && !isProdByGen) {
             histos.fill(HIST("tracks/deuteron/h1DeuteronSpectraTrueTransport"), track.pt());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrueTransport"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrueTransport"), track.pt(), track.dcaz());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtDeuteronTrueTransport"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtDeuteronTrueTransport"), track.pt(), track.dcaz());
+          }
         }
 
         if (track.pdgCode() == -PDGDeuteron) {
           histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrue"), track.pt());
           histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrue"), track.pt(), track.dcaxy());
           histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTrue"), track.pt(), track.dcaz());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTruePrim"), track.pt());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTruePrim"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTruePrim"), track.pt(), track.dcaz());
-          if (!isPhysPrim && isProdByGen)
+            histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTruePrim"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTruePrim"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && isProdByGen) {
             histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrueSec"), track.pt());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrueSec"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTrueSec"), track.pt(), track.dcaz());
-          if (!isPhysPrim && !isProdByGen)
+            histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrueSec"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTrueSec"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && !isProdByGen) {
             histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectraTrueTransport"), track.pt());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrueTransport"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTrueTransport"), track.pt(), track.dcaz());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAxyVsPtantiDeuteronTrueTransport"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/deuteron/dca/hDCAzVsPtantiDeuteronTrueTransport"), track.pt(), track.dcaz());
+          }
         }
 
         if (track.pdgCode() == PDGHelium) {
           histos.fill(HIST("tracks/helium/h1HeliumSpectraTrue"), track.pt());
           histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTrue"), track.pt(), track.dcaxy());
           histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTrue"), track.pt(), track.dcaz());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             histos.fill(HIST("tracks/helium/h1HeliumSpectraTruePrim"), track.pt());
-          histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTruePrim"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTruePrim"), track.pt(), track.dcaz());
-          if (!isPhysPrim && isProdByGen)
+            histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTruePrim"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTruePrim"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && isProdByGen) {
             histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueSec"), track.pt());
-          histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTrueSec"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTrueSec"), track.pt(), track.dcaz());
-          if (!isPhysPrim && !isProdByGen)
+            histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTrueSec"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTrueSec"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && !isProdByGen) {
             histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueTransport"), track.pt());
-          histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTrueTransport"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTrueTransport"), track.pt(), track.dcaz());
+            histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtHeliumTrueTransport"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/helium/dca/hDCAzVsPtHeliumTrueTransport"), track.pt(), track.dcaz());
+          }
         }
 
         if (track.pdgCode() == -PDGHelium) {
           histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrue"), track.pt());
           histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTrue"), track.pt(), track.dcaxy());
           histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTrue"), track.pt(), track.dcaz());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTruePrim"), track.pt());
-          histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTruePrim"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTruePrim"), track.pt(), track.dcaz());
-          if (!isPhysPrim && isProdByGen)
+            histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTruePrim"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTruePrim"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && isProdByGen) {
             histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueSec"), track.pt());
-          histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTrueSec"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTrueSec"), track.pt(), track.dcaz());
-          if (!isPhysPrim && !isProdByGen)
+            histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTrueSec"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTrueSec"), track.pt(), track.dcaz());
+          }
+          if (!isPhysPrim && !isProdByGen) {
             histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueTransport"), track.pt());
-          histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTrueTransport"), track.pt(), track.dcaxy());
-          histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTrueTransport"), track.pt(), track.dcaz());
+            histos.fill(HIST("tracks/helium/dca/hDCAxyVsPtantiHeliumTrueTransport"), track.pt(), track.dcaxy());
+            histos.fill(HIST("tracks/helium/dca/hDCAzVsPtantiHeliumTrueTransport"), track.pt(), track.dcaz());
+          }
         }
       }
     }
