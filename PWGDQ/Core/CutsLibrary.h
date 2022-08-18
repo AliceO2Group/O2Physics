@@ -818,7 +818,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairRapidityForward")) {
-    cut->AddCut(VarManager::Rap, 2.5, 4.0);
+    cut->AddCut(VarManager::kRap, 2.5, 4.0);
     return cut;
   }
 
