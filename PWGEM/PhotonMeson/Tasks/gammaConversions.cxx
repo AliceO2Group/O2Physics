@@ -93,7 +93,7 @@ struct GammaConversions {
     {eV0McValidation::kMcValidatedPhotonOut, "kMcValidatedPhotonOut"},
     {eV0McValidation::kMcValAfterRecCuts, "kMcValAfterRecCuts"}};
 
-    std::map<eV0Decays, std::string> fV0McV0DecaysLabels{
+  std::map<eV0Decays, std::string> fV0McV0DecaysLabels{
     {eV0Decays::ee1, "e+-/e-+, true"},
     {eV0Decays::ee2, "e+-/e-+, diffMother"},
     {eV0Decays::epi, "e+-/pi-+"},
@@ -214,7 +214,7 @@ struct GammaConversions {
     if (doprocessMc) {
       addLablesToHisto1D(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0McValidation", fV0McValidationLabels);
     }
-    
+
     for (size_t iBARecCuts = 0; iBARecCuts < 2; ++iBARecCuts) {
       for (size_t iMcKind = 0; iMcKind < (doprocessMc ? 4 : 1); ++iMcKind) {
         std::string const* lMcSuffix = &fHistoSuffixes[iMcKind];
@@ -442,17 +442,17 @@ struct GammaConversions {
     lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
                  PDGCode);
     lfillDecaysHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
-                 PDGCode,
-                 sameMother,
-                 McTrackmomentum);
-    
+                    PDGCode,
+                    sameMother,
+                    McTrackmomentum);
+
     if (theV0PassesRecCuts) {
       lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
                    PDGCode);
       lfillDecaysHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
-                 PDGCode,
-                 sameMother,
-                 McTrackmomentum);
+                      PDGCode,
+                      sameMother,
+                      McTrackmomentum);
     }
   }
 
@@ -468,43 +468,32 @@ struct GammaConversions {
                        int const& sameMother,
                        float const McTrackmomentum[])
   {
-    
+
     float MCV0p = RecoDecay::sqrtSumOfSquares(McTrackmomentum[0] + McTrackmomentum[3], McTrackmomentum[1] + McTrackmomentum[4], McTrackmomentum[2] + McTrackmomentum[5]);
 
-    if(sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    if (sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee1), MCV0p);
-    }
-    else if(!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    } else if (!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee2), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == 211) || (PDGCode[0] == -11 && PDGCode[1] == -211)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == 211) || (PDGCode[0] == -11 && PDGCode[1] == -211)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::epi), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == 321) || (PDGCode[0] == -11 && PDGCode[1] == -321)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == 321) || (PDGCode[0] == -11 && PDGCode[1] == -321)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ek), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == 2212) || (PDGCode[0] == -11 && PDGCode[1] == -2212)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == 2212) || (PDGCode[0] == -11 && PDGCode[1] == -2212)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ep), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == -13) || (PDGCode[0] == -11 && PDGCode[1] == 13)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == -13) || (PDGCode[0] == -11 && PDGCode[1] == 13)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::emu), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == -211) || (PDGCode[0] == -211 && PDGCode[1] == 211)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == -211) || (PDGCode[0] == -211 && PDGCode[1] == 211)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pipi), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == -321) || (PDGCode[0] == -211 && PDGCode[1] == 321)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == -321) || (PDGCode[0] == -211 && PDGCode[1] == 321)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pik), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == -2212) || (PDGCode[0] == -211 && PDGCode[1] == 2212)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == -2212) || (PDGCode[0] == -211 && PDGCode[1] == 2212)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pip), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == 13) || (PDGCode[0] == -211 && PDGCode[1] == -13)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == 13) || (PDGCode[0] == -211 && PDGCode[1] == -13)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pimu), MCV0p);
-    }
-    else if((PDGCode[0] == 2212 && PDGCode[1] == -321) || (PDGCode[0] == -2212 && PDGCode[1] == 321) || (PDGCode[0] == 2212 && PDGCode[1] == 13) || (PDGCode[0] == -2212 && PDGCode[1] == -13)) {
+    } else if ((PDGCode[0] == 2212 && PDGCode[1] == -321) || (PDGCode[0] == -2212 && PDGCode[1] == 321) || (PDGCode[0] == 2212 && PDGCode[1] == 13) || (PDGCode[0] == -2212 && PDGCode[1] == -13)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pKmu), MCV0p);
-    }
-    else {
+    } else {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::other), MCV0p);
     }
   }
@@ -620,29 +609,28 @@ struct GammaConversions {
 
       // this process function has to exist seperatly because it is only for MC Rec
       // first fill array with relevant information, then pass it to function. Avoids passing of unnecessary information
-      int PDGCode[2]; // Pos, then Neg
+      int PDGCode[2];           // Pos, then Neg
       float McTrackmomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = pos 3-5 = neg
       bool sameMother;
-    
+
       auto lMcPhotonForThisV0AsTable_tmp = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
 
       int i = 0;
       int j = 0;
-      for(auto& theTrack : lTwoV0Daughters)
-      {
+      for (auto& theTrack : lTwoV0Daughters) {
         PDGCode[i] = theTrack.pdgCodeTrack();
-        McTrackmomentum[j+0] = theTrack.mcpx();
-        McTrackmomentum[j+1] = theTrack.mcpy();
-        McTrackmomentum[j+2] = theTrack.mcpz();
+        McTrackmomentum[j + 0] = theTrack.mcpx();
+        McTrackmomentum[j + 1] = theTrack.mcpy();
+        McTrackmomentum[j + 2] = theTrack.mcpz();
         sameMother = theTrack.sameMother();
-        i+=1;
-        j+=3;
+        i += 1;
+        j += 3;
       }
 
       processPDGHistos(PDGCode,
-                      sameMother,
-                      McTrackmomentum,
-                      lV0PassesRecCuts);
+                       sameMother,
+                       McTrackmomentum,
+                       lV0PassesRecCuts);
 
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
@@ -746,8 +734,8 @@ struct GammaConversions {
     fillTH1(theContainer, "hPt", theMcGamma.pt());
     fillTH1(theContainer, "hConvPointR", theMcGamma.v0Radius());
     fillTH1(theContainer, "hConvPointZ", theMcGamma.conversionZ());
-    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[0], McTrackmomentum[1], McTrackmomentum[2])/theMcGamma.p());
-    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[3], McTrackmomentum[4], McTrackmomentum[5])/theMcGamma.p());
+    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[0], McTrackmomentum[1], McTrackmomentum[2]) / theMcGamma.p());
+    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[3], McTrackmomentum[4], McTrackmomentum[5]) / theMcGamma.p());
   }
 
   template <typename T>
