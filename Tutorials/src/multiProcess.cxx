@@ -40,17 +40,26 @@ inline auto normalize(float a)
 
 // Analysis task with several process functions with different signatures
 struct MultipleProcessExample {
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"etaDiff", ";#eta_{MC} - #eta_{Rec}", {HistType::kTH1F, {{100, -2, 2}}}},
-      {"phiDiff", ";#phi_{MC} - #phi_{Rec}", {HistType::kTH1F, {{100, -M_PI, M_PI}}}},
-      {"etaRec", ";#eta_{Rec}", {HistType::kTH1F, {{100, -2, 2}}}},
-      {"phiRec", ";#phi_{Rec}", {HistType::kTH1F, {{100, 0, 2 * M_PI}}}},
-      {"etaMC", ";#eta_{MC}", {HistType::kTH1F, {{100, -2, 2}}}},
-      {"phiMC", ";#phi_{MC}", {HistType::kTH1F, {{100, 0, 2 * M_PI}}}} ///
-    }                                                                  ///
-  };
+  HistogramRegistry registry;
+
+  void init(InitContext const&)
+  {
+    // do + processRec can be checked as a bool to veryfy if the process function is enabled
+    if (doprocessRec) { // Check if the process function for processRec is enabled
+      histos.add("etaRec", ";#eta_{Rec}", HistType::kTH1F, {{100, -2, 2}});
+      histos.add("phiRec", ";#phi_{Rec}", HistType::kTH1F, {{100, 0, 2 * M_PI}});
+    }
+    // do + processGen can be checked as a bool to veryfy if the process function is enabled
+    if (doprocessGen) { // Check if the process function for processGen is enabled
+      histos.add("etaMC", ";#eta_{MC}", HistType::kTH1F, {{100, -2, 2}});
+      histos.add("phiMC", ";#phi_{MC}", HistType::kTH1F, {{100, 0, 2 * M_PI}});
+    }
+    // do + processResolution can be checked as a bool to veryfy if the process function is enabled
+    if (doprocessResolution) { // Check if the process function for processResolution is enabled
+      histos.add("etaDiff", ";#eta_{MC} - #eta_{Rec}", HistType::kTH1F, {{100, -2, 2}});
+      histos.add("phiDiff", ";#phi_{MC} - #phi_{Rec}", HistType::kTH1F, {{100, -M_PI, M_PI}});
+    }
+  }
 
   Filter RecColVtxZ = nabs(aod::collision::posZ) < 10.f;
   Filter GenColVtxZ = nabs(aod::mccollision::posZ) < 10.f;
