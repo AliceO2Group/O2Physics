@@ -287,7 +287,7 @@ struct CFFilterTwoN {
     // trigger for ld pairs
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nlambda > 0) {
-        for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsPD, partsL))) {
+        for (auto& [p1, p2] : combinations(soa::CombinationsUpperIndexPolicy(partsPD, partsL))) {
           if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
             continue;
           }
