@@ -342,7 +342,10 @@ struct HfTaskFlow {
       }
 
       //  fill single-track distributions
-      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
+      if (!fillingHFcontainer)
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
+      else
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
 
       for (auto& track2 : tracks2) {
 
