@@ -347,7 +347,6 @@ struct HfTaskFlow {
       else
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
 
-
       for (auto& track2 : tracks2) {
 
         //  case of h-h correlations where the two types of tracks are the same
