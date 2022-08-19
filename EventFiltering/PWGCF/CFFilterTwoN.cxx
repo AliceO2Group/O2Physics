@@ -33,6 +33,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 #include <vector>
 
@@ -103,19 +104,17 @@ struct CFFilterTwoN {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
-  bool PIDHelper(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, kDetector iDet = kDetector::kTPC)
+  bool PIDHelper(aod::femtodreamparticle::cutContainerType const& pidcut, int vSpecies, kDetector iDet = kDetector::kTPC)
   {
     bool pidSelection = true;
-    for (auto iSpecies : vSpecies) {
-      int bit_to_check = iSpecies * kDetector::kNdetectors + iDet;
-      if (!(pidcut & (1UL << bit_to_check))) {
-        pidSelection = false;
-      }
+    int bit_to_check = vSpecies * kDetector::kNdetectors + iDet;
+    if (!(pidcut & (1UL << bit_to_check))) {
+      pidSelection = false;
     }
     return pidSelection;
   };
 
-  bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, std::vector<int> const& vSpecies, float momentum, float const PIDThreshold)
+  bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, int vSpecies, float momentum, float const PIDThreshold)
   {
     bool pidSelection = false;
     if (momentum < PIDThreshold) {
@@ -172,7 +171,8 @@ struct CFFilterTwoN {
   }
 
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
-  float mMassDeuteron = 1.87561f; // get mass from pdg? TDatabasePDG::Instance()->GetParticle(1000010020)->Mass()
+  float mMassDeuteron = o2::constants::physics::MassDeuteron;
+
   float mMassLambda = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
 
   void process(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& partsFemto)
@@ -199,24 +199,21 @@ struct CFFilterTwoN {
       registry.fill(HIST("fPtBeforeSel"), pd.pt());
       // select protons
       if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-        if (SelectParticlePID(pd.pidcut(), std::vector<int>{o2::track::PID::Proton}, pd.p(), confPIDThreshold)) {
+        if (SelectParticlePID(pd.pidcut(), o2::track::PID::Proton, pd.p(), confPIDThreshold)) {
           registry.fill(HIST("fPtProtonAfterSel"), pd.pt());
           Nproton++;
         }
       }
       // select deuterons
-      if (SelectParticlePID(pd.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, pd.p(), confPIDThreshold)) {
+      if (SelectParticlePID(pd.pidcut(), o2::track::PID::Deuteron, pd.p(), confPIDThreshold)) {
         registry.fill(HIST("fPtDeuteronAfterSel"), pd.pt());
         Ndeuteron++;
       }
     }
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       for (auto lambda : partsL) {
-        // select lambdas
-        if (SelectParticlePID(lambda.pidcut(), std::vector<int>{o2::track::PID::Lambda}, lambda.p(), confPIDThreshold)) {
-          registry.fill(HIST("fPtLambdaAfterSel"), lambda.pt());
-          Nlambda++;
-        }
+        registry.fill(HIST("fPtLambdaAfterSel"), lambda.pt());
+        Nlambda++;
       }
     }
 
@@ -224,13 +221,13 @@ struct CFFilterTwoN {
       registry.fill(HIST("fPtAntiBeforeSel"), antipd.pt());
       // select antiprotons
       if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-        if (SelectParticlePID(antipd.pidcut(), std::vector<int>{o2::track::PID::Proton}, antipd.p(), confPIDThreshold)) {
+        if (SelectParticlePID(antipd.pidcut(), o2::track::PID::Proton, antipd.p(), confPIDThreshold)) {
           registry.fill(HIST("fPtAntiProtonAfterSel"), antipd.pt());
           Nantiproton++;
         }
       }
       // select antideuterons
-      if (SelectParticlePID(antipd.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, antipd.p(), confPIDThreshold)) {
+      if (SelectParticlePID(antipd.pidcut(), o2::track::PID::Deuteron, antipd.p(), confPIDThreshold)) {
         registry.fill(HIST("fPtAntiDeuteronAfterSel"), antipd.pt());
         Nantideuteron++;
       }
@@ -238,11 +235,8 @@ struct CFFilterTwoN {
 
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       for (auto antilambda : partsAntiL) {
-        // select antilambdas
-        if (SelectParticlePID(antilambda.pidcut(), std::vector<int>{o2::track::PID::Lambda}, antilambda.p(), confPIDThreshold)) {
-          registry.fill(HIST("fPtAntiLambdaAfterSel"), antilambda.pt());
-          Nlambda++;
-        }
+        registry.fill(HIST("fPtAntiLambdaAfterSel"), antilambda.pt());
+        Nlambda++;
       }
     }
 
@@ -252,8 +246,12 @@ struct CFFilterTwoN {
     // trigger for pd pairs
     if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nproton > 0) {
-        for (auto& [p1, p2] : combinations(partsPD, partsPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Proton, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
+        for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsPD, partsPD))) {
+          if (
+            !(SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value)) &&
+            !(SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value))) {
             continue;
           }
           if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
@@ -267,8 +265,11 @@ struct CFFilterTwoN {
         }
       }
       if (Nantideuteron > 0 && Nantiproton > 0) {
-        for (auto& [p1, p2] : combinations(partsAntiPD, partsAntiPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Proton, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
+        for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsAntiPD, partsAntiPD))) {
+          if (!(SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
+                SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value)) &&
+              !(SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
+                SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value))) {
             continue;
           }
           if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
@@ -286,8 +287,8 @@ struct CFFilterTwoN {
     // trigger for ld pairs
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nlambda > 0) {
-        for (auto& [p1, p2] : combinations(partsL, partsPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Lambda, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
+        for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsPD, partsL))) {
+          if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
             continue;
           }
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
@@ -301,8 +302,8 @@ struct CFFilterTwoN {
         }
       }
       if (Nantideuteron > 0 && Nantilambda > 0) {
-        for (auto& [p1, p2] : combinations(partsAntiL, partsAntiPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Lambda, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
+        for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsAntiPD, partsAntiL))) {
+          if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
             continue;
           }
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
