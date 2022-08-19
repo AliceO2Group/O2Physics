@@ -509,7 +509,7 @@ void qaEventTrack::init(InitContext const&)
   if (doprocessTableData == true && doprocessTableMC == true) {
     LOGF(fatal, "Cannot enable processTableData and processTableMC at the same time. Please choose one.");
   }
-  if (!doprocessData && !doprocessMC) {
+  if (!doprocessData && !doprocessMC && !doprocessDataIU && !doprocessDataIUFiltered) {
     LOGF(info, "No enabled QA, all histograms are disabled");
     return;
   }
