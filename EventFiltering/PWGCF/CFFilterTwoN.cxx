@@ -34,15 +34,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-// #include <CCDB/BasicCCDBManager.h>
 #include <fairlogger/Logger.h>
-#include <math.h>
-#include "DataFormatsParameters/GRPObject.h"
-
-#include <cmath>
-#include <string>
-
-#include <bitset>
 #include <vector>
 
 namespace
