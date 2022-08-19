@@ -34,7 +34,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include <fairlogger/Logger.h>
 #include <vector>
 
 namespace
@@ -84,10 +83,7 @@ struct CFFilterTwoN {
 
   Configurable<float> confKstarTriggerLimit{"KstarTriggerLimitUpper", 1.4f, "Kstar limit for selection"};
   Configurable<int> KstarTrigger{"KstarTrigger", 0, "Choice which trigger to run"};
-
-  Configurable<float> confNSigma{"nSigma", 3.5f, "nSigma for TPC/TPC&TOF selection"};
   Configurable<float> confPIDThreshold{"PThreshold", 0.75f, "P threshold for TPC/TPC&TOF selection"};
-
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
 
@@ -105,9 +101,9 @@ struct CFFilterTwoN {
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
-  // FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
-  bool PIDHelper(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
+  bool PIDHelper(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, kDetector iDet = kDetector::kTPC)
   {
     bool pidSelection = true;
     for (auto iSpecies : vSpecies) {
@@ -119,27 +115,21 @@ struct CFFilterTwoN {
     return pidSelection;
   };
 
-  bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, std::vector<int> const& vSpecies, float nSigma, float momentum, float const PIDThreshold)
+  bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, std::vector<int> const& vSpecies, float momentum, float const PIDThreshold)
   {
     bool pidSelection = false;
     if (momentum < PIDThreshold) {
       /// TPC PID only
-      pidSelection = PIDHelper(pidCut, vSpecies, nSigma, kDetector::kTPC);
+      pidSelection = PIDHelper(pidCut, vSpecies, kDetector::kTPC);
     } else {
       /// TPC + TOF PID
-      pidSelection = PIDHelper(pidCut, vSpecies, nSigma, kDetector::kTPCTOF);
+      pidSelection = PIDHelper(pidCut, vSpecies, kDetector::kTPCTOF);
     }
     return pidSelection;
   };
 
   void init(o2::framework::InitContext&)
   {
-
-    bool plotPerRadii = true;
-
-    closePairRejectionTT.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
-    // closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
-
     registry.add("fProcessedEvents", "CF Two Body - event filtered;;events}", HistType::kTH1F, {{2 + kLAST_CFTwoBodyTriggers, 0, 2 + kLAST_CFTwoBodyTriggers}});
 
     std::array<std::string, 2 + kLAST_CFTwoBodyTriggers> eventTitles = {"all", "rejected", "p-d", "L-d"};
@@ -155,22 +145,26 @@ struct CFFilterTwoN {
     registry.add("fPtBeforeSel", "Transverse momentum of positive tracks", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("fPtAntiBeforeSel", "Transverse momentum of negative tracks", HistType::kTH1F, {{1000, 0, 10}});
 
+    bool plotPerRadii = true;
+
     if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-      LOGF(info, "PD Trigger selected");
       registry.add("fKstarPD", "CF - same event pd distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fKstarAntiPD", "CF - same event pd distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
 
       registry.add("fPtProtonAfterSel", "Transverse momentum of Protons which passed selections", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fPtAntiProtonAfterSel", "Transverse momentum of Protons which passed selections", HistType::kTH1F, {{1000, 0, 10}});
+
+      closePairRejectionTT.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
     }
 
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
-      LOGF(info, "LD Trigger selected");
       registry.add("fKstarLD", "CF - same event ld distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fKstarAntiLD", "CF - same event ld distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
 
       registry.add("fPtLambdaAfterSel", "Transverse momentum of Lambdas which passed selections", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fPtAntiLambdaAfterSel", "Transverse momentum of Antidlambdas which passed selections", HistType::kTH1F, {{1000, 0, 10}});
+
+      closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
     }
 
     registry.add("fPtDeuteronAfterSel", "Transverse momentum of Deuterons which passed selections", HistType::kTH1F, {{1000, 0, 10}});
@@ -194,8 +188,6 @@ struct CFFilterTwoN {
     registry.fill(HIST("fMultiplicityBefore"), col.multV0M());
     registry.fill(HIST("fZvtxBefore"), col.posZ());
 
-    LOGF(info, "Collision: %d/%d", col.index(), col.size());
-
     int Nproton = 0;
     int Nantiproton = 0;
     int Nlambda = 0;
@@ -207,13 +199,13 @@ struct CFFilterTwoN {
       registry.fill(HIST("fPtBeforeSel"), pd.pt());
       // select protons
       if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-        if (SelectParticlePID(pd.pidcut(), std::vector<int>{o2::track::PID::Proton}, confNSigma, pd.p(), confPIDThreshold)) {
+        if (SelectParticlePID(pd.pidcut(), std::vector<int>{o2::track::PID::Proton}, pd.p(), confPIDThreshold)) {
           registry.fill(HIST("fPtProtonAfterSel"), pd.pt());
           Nproton++;
         }
       }
       // select deuterons
-      if (SelectParticlePID(pd.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, confNSigma, pd.p(), confPIDThreshold)) {
+      if (SelectParticlePID(pd.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, pd.p(), confPIDThreshold)) {
         registry.fill(HIST("fPtDeuteronAfterSel"), pd.pt());
         Ndeuteron++;
       }
@@ -221,7 +213,7 @@ struct CFFilterTwoN {
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       for (auto lambda : partsL) {
         // select lambdas
-        if (SelectParticlePID(lambda.pidcut(), std::vector<int>{o2::track::PID::Lambda}, confNSigma, lambda.p(), confPIDThreshold)) {
+        if (SelectParticlePID(lambda.pidcut(), std::vector<int>{o2::track::PID::Lambda}, lambda.p(), confPIDThreshold)) {
           registry.fill(HIST("fPtLambdaAfterSel"), lambda.pt());
           Nlambda++;
         }
@@ -232,13 +224,13 @@ struct CFFilterTwoN {
       registry.fill(HIST("fPtAntiBeforeSel"), antipd.pt());
       // select antiprotons
       if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-        if (SelectParticlePID(antipd.pidcut(), std::vector<int>{o2::track::PID::Proton}, confNSigma, antipd.p(), confPIDThreshold)) {
+        if (SelectParticlePID(antipd.pidcut(), std::vector<int>{o2::track::PID::Proton}, antipd.p(), confPIDThreshold)) {
           registry.fill(HIST("fPtAntiProtonAfterSel"), antipd.pt());
           Nantiproton++;
         }
       }
       // select antideuterons
-      if (SelectParticlePID(antipd.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, confNSigma, antipd.p(), confPIDThreshold)) {
+      if (SelectParticlePID(antipd.pidcut(), std::vector<int>{o2::track::PID::Deuteron}, antipd.p(), confPIDThreshold)) {
         registry.fill(HIST("fPtAntiDeuteronAfterSel"), antipd.pt());
         Nantideuteron++;
       }
@@ -247,7 +239,7 @@ struct CFFilterTwoN {
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       for (auto antilambda : partsAntiL) {
         // select antilambdas
-        if (SelectParticlePID(antilambda.pidcut(), std::vector<int>{o2::track::PID::Lambda}, confNSigma, antilambda.p(), confPIDThreshold)) {
+        if (SelectParticlePID(antilambda.pidcut(), std::vector<int>{o2::track::PID::Lambda}, antilambda.p(), confPIDThreshold)) {
           registry.fill(HIST("fPtAntiLambdaAfterSel"), antilambda.pt());
           Nlambda++;
         }
@@ -261,7 +253,7 @@ struct CFFilterTwoN {
     if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nproton > 0) {
         for (auto& [p1, p2] : combinations(partsPD, partsPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Proton, o2::track::PID::Deuteron}, confNSigma, p1.p(), confPIDThreshold)) {
+          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Proton, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
             continue;
           }
           if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
@@ -276,7 +268,7 @@ struct CFFilterTwoN {
       }
       if (Nantideuteron > 0 && Nantiproton > 0) {
         for (auto& [p1, p2] : combinations(partsAntiPD, partsAntiPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Proton, o2::track::PID::Deuteron}, confNSigma, p1.p(), confPIDThreshold)) {
+          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Proton, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
             continue;
           }
           if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
@@ -295,10 +287,10 @@ struct CFFilterTwoN {
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nlambda > 0) {
         for (auto& [p1, p2] : combinations(partsL, partsPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Lambda, o2::track::PID::Deuteron}, confNSigma, p1.p(), confPIDThreshold)) {
+          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Lambda, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
             continue;
           }
-          if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
+          if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
           auto kstar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
@@ -310,10 +302,10 @@ struct CFFilterTwoN {
       }
       if (Nantideuteron > 0 && Nantilambda > 0) {
         for (auto& [p1, p2] : combinations(partsAntiL, partsAntiPD)) {
-          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Lambda, o2::track::PID::Deuteron}, confNSigma, p1.p(), confPIDThreshold)) {
+          if (!SelectParticlePID(p1.pidcut(), std::vector<int>{o2::track::PID::Lambda, o2::track::PID::Deuteron}, p1.p(), confPIDThreshold)) {
             continue;
           }
-          if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
+          if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
           auto kstar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
