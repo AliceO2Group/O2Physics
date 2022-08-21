@@ -128,11 +128,15 @@ struct HfTaskFlow {
 
     //  histograms for event mixing
     const int maxMixBin = axisMultiplicity->size() * 14; // 14 bins for z-vertex
-    registry.add("hEventCount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("hEventCountMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("hEventCountHFMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("hEventCountSame", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("hMultiplicityMixing", "hMultiplicityMixing", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("hVtxZMixing", "hVtxZMixing", {HistType::kTH1F, {{100, -10, 10}}});
     registry.add("hNtracksMixing", "hNtracksMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("hMultiplicityHFMixing", "hMultiplicityHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("hVtxZHFMixing", "hVtxZHFMixing", {HistType::kTH1F, {{100, -10, 10}}});
+    registry.add("hNtracksHFMixing", "hNtracksHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
 
     //  TRACK HISTOGRAMS
     //  histograms for associated particles
@@ -173,6 +177,11 @@ struct HfTaskFlow {
     registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
+    //  histograms for candidates in event mixing
+    registry.add("hPtHFMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("hEtaHFMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("hPhiHFMixing", "phi", {HistType::kTH1F, {{100, 0, 2 * PI, "#varphi"}}});
+
     //  set axes of the correlation container
     std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
@@ -188,7 +197,7 @@ struct HfTaskFlow {
     sameTPCMFTCh.setObject(new CorrelationContainer("sameEventTPCMFTChHadrons", "sameEventTPCMFTChHadrons", corrAxis, effAxis, {}));
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
-    mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, {}));
+    mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, userAxis));
   }
 
   //  ---------------
@@ -242,8 +251,11 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  void fillMixingQA(float multiplicity, TTracks tracks)
+  void fillMixingQA(float multiplicity, float vz, TTracks tracks)
   {
+    registry.fill(HIST("hMultiplicityMixing"), multiplicity);
+    registry.fill(HIST("hVtxZMixing"), vz);
+
     int Ntracks = 0;
     for (auto& track1 : tracks) {
       Ntracks++;
@@ -252,6 +264,22 @@ struct HfTaskFlow {
       registry.fill(HIST("hPhiMixing"), track1.phi());
     }
     registry.fill(HIST("hNtracksMixing"), Ntracks);
+  }
+
+  template <typename TTracks>
+  void fillHFMixingQA(float multiplicity, float vz, TTracks tracks)
+  {
+    registry.fill(HIST("hMultiplicityHFMixing"), multiplicity);
+    registry.fill(HIST("hVtxZHFMixing"), vz);
+
+    int Ntracks = 0;
+    for (auto& track1 : tracks) {
+      Ntracks++;
+      registry.fill(HIST("hPtHFMixing"), track1.pt());
+      registry.fill(HIST("hEtaHFMixing"), track1.eta());
+      registry.fill(HIST("hPhiHFMixing"), track1.phi());
+    }
+    registry.fill(HIST("hNtracksHFMixing"), Ntracks);
   }
 
   template <typename TTracks>
@@ -344,10 +372,11 @@ struct HfTaskFlow {
       }
 
       //  fill single-track distributions
-      if (!fillingHFcontainer)
+      if (!fillingHFcontainer) {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
-      else
+      } else {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
+      }
 
       for (auto& track2 : tracks2) {
 
@@ -407,16 +436,20 @@ struct HfTaskFlow {
         continue;
       }
 
-      const auto multiplicity = tracks1.size();
-      registry.fill(HIST("hMultiplicityMixing"), multiplicity);
-      registry.fill(HIST("hVtxZMixing"), collision1.posZ());
-
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
-      registry.fill(HIST("hEventCount"), bin);
 
+      const auto multiplicity = tracks1.size();
+      const auto vz = collision1.posZ();
+
+      if (processTPCTPChh) {
+        registry.fill(HIST("hEventCountMixing"), bin);
+        fillMixingQA(multiplicity, vz, tracks1);
+      } else if (processHFHadrons){
+        registry.fill(HIST("hEventCountHFMixing"), bin);
+        fillHFMixingQA(multiplicity, vz, tracks1);
+      }
       corrContainer->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillMixingQA(multiplicity, tracks1);
       fillCorrelations(corrContainer, tracks1, tracks2, multiplicity, collision1.posZ());
     }
   }
@@ -518,7 +551,7 @@ struct HfTaskFlow {
       mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCCh);
     }
     if (processHFHadrons) {
-      mixCollisions(collisions, tracks, candidates, getCandsSize, mixedHF);
+      mixCollisions(collisions, candidates, tracks, getCandsSize, mixedHF);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processMixed, "Process mixed event", true);
