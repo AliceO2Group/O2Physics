@@ -46,18 +46,18 @@ struct MultipleProcessExample {
   {
     // do + processRec can be checked as a bool to veryfy if the process function is enabled
     if (doprocessRec) { // Check if the process function for processRec is enabled
-      histos.add("etaRec", ";#eta_{Rec}", HistType::kTH1F, {{100, -2, 2}});
-      histos.add("phiRec", ";#phi_{Rec}", HistType::kTH1F, {{100, 0, 2 * M_PI}});
+      registry.add("etaRec", ";#eta_{Rec}", HistType::kTH1F, {{100, -2, 2}});
+      registry.add("phiRec", ";#phi_{Rec}", HistType::kTH1F, {{100, 0, 2 * M_PI}});
     }
     // do + processGen can be checked as a bool to veryfy if the process function is enabled
     if (doprocessGen) { // Check if the process function for processGen is enabled
-      histos.add("etaMC", ";#eta_{MC}", HistType::kTH1F, {{100, -2, 2}});
-      histos.add("phiMC", ";#phi_{MC}", HistType::kTH1F, {{100, 0, 2 * M_PI}});
+      registry.add("etaMC", ";#eta_{MC}", HistType::kTH1F, {{100, -2, 2}});
+      registry.add("phiMC", ";#phi_{MC}", HistType::kTH1F, {{100, 0, 2 * M_PI}});
     }
     // do + processResolution can be checked as a bool to veryfy if the process function is enabled
     if (doprocessResolution) { // Check if the process function for processResolution is enabled
-      histos.add("etaDiff", ";#eta_{MC} - #eta_{Rec}", HistType::kTH1F, {{100, -2, 2}});
-      histos.add("phiDiff", ";#phi_{MC} - #phi_{Rec}", HistType::kTH1F, {{100, -M_PI, M_PI}});
+      registry.add("etaDiff", ";#eta_{MC} - #eta_{Rec}", HistType::kTH1F, {{100, -2, 2}});
+      registry.add("phiDiff", ";#phi_{MC} - #phi_{Rec}", HistType::kTH1F, {{100, -M_PI, M_PI}});
     }
   }
 
