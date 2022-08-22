@@ -42,6 +42,10 @@ DECLARE_SOA_COLUMN(HfBeauty, hasHfBeauty, bool);           //! beauty hadron
 DECLARE_SOA_COLUMN(HfFemto, hasHfFemto, bool);             //! charm-hadron - N pair
 DECLARE_SOA_COLUMN(HfDoubleCharm, hasHfDoubleCharm, bool); //! at least two charm-hadron candidates
 
+// CF two body triggers
+DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
+DECLARE_SOA_COLUMN(LD, hasLD, bool); //! has l-d pair
+
 // CF three body triggers
 DECLARE_SOA_COLUMN(PPP, hasPPP, bool); //! has p-p-p triplet
 DECLARE_SOA_COLUMN(PPL, hasPPL, bool); //! has p-p-L triplet
@@ -111,6 +115,10 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
 using HfFilter = HfFilters::iterator;
 
 // correlations
+DECLARE_SOA_TABLE(CFFiltersTwoN, "AOD", "CFFiltersTwoN", //!
+                  filtering::PD, filtering::LD);
+using CFFilterTwoN = CFFiltersTwoN::iterator;
+
 DECLARE_SOA_TABLE(CFFilters, "AOD", "CFFilters", //!
                   filtering::PPP, filtering::PPL, filtering::PLL, filtering::LLL);
 using CfFilter = CFFilters::iterator;
@@ -139,11 +147,11 @@ DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
 using CefpDecision = CefpDecisions::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{8};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-threebodyfemto-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
+constexpr int NumberOfFilters{9};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFiltersTwoN", "CFFilters", "JetFilters", "StrangenessFilters", "MultFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFiltersTwoN", "CFFilters", "JetFilters", "LFStrgFilters", "MultFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp", "o2-analysis-hf-filter", "o2-analysis-cf-twobodyfemto-filter", "o2-analysis-cf-threebodyfemto-filter", "o2-analysis-je-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, CFFiltersTwoN, JetFilters, StrangenessFilters, MultFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>
