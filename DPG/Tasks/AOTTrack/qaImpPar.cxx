@@ -31,7 +31,11 @@
 #include "DetectorsVertexing/PVertexer.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "CCDB/CcdbApi.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "CommonConstants/GeomConstants.h"
 
 #include "iostream"
 #include "vector"
@@ -74,6 +78,11 @@ struct QaImpactPar {
   Configurable<float> nSigmaTOFKaonMax{"nSigmaTOFKaonMax", 99999.f, "Maximum nSigma value in TOF, kaon hypothesis"};
   Configurable<float> nSigmaTOFProtonMin{"nSigmaTOFProtonMin", -99999.f, "Minimum nSigma value in TOF, proton hypothesis"};
   Configurable<float> nSigmaTOFProtonMax{"nSigmaTOFProtonMax", 99999.f, "Maximum nSigma value in TOF, proton hypothesis"};
+  // PV refit
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbpath_lut{"ccdbpath_lut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbpath_geo{"ccdbpath_geo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> ccdbpath_grp{"ccdbpath_grp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> doPVrefit{"doPVrefit", true, "Do PV refit"};
   Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
   Configurable<int> nBins_DeltaY_PVrefit{"nBins_DeltaY_PVrefit", 1000, "Number of bins of DeltaY for PV refit"};
@@ -114,11 +123,7 @@ struct QaImpactPar {
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
-  const char* ccdbpath_lut = "GLO/Param/MatLUT";
-  const char* ccdbpath_geo = "GLO/Config/GeometryAligned";
-  const char* ccdbpath_grp = "GLO/GRP/GRP";
-  const char* ccdburl = "http://alice-ccdb.cern.ch";
+  o2::base::MatLayerCylSet* lut = nullptr;
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int mRunNumber;
 
@@ -211,7 +216,7 @@ struct QaImpactPar {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(ccdbpath_geo);
     }
-    mRunNumber = 0;
+    mRunNumber = -1;
 
     /// Custom cut selection objects
     std::set<uint8_t> set_customITShitmap; // = {};
@@ -370,11 +375,11 @@ struct QaImpactPar {
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     // auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath_grp, bc.timestamp());
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
         o2::base::Propagator::Instance()->setMatLUT(lut);
-        LOGF(info, "Setting magnetic field to %d kG for run %d from its GRP CCDB object", grpo->getNominalL3Field(), bc.runNumber());
+        LOG(info) << "Setting magnetic field to current" << grpo->getL3Current() << " A for run" << bc.runNumber() << " from its GRP CCDB object";
       } else {
         LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
