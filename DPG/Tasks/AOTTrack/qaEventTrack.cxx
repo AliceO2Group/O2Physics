@@ -206,12 +206,12 @@ struct qaEventTrack {
 
     uint64_t trackIndex = 0;
     for (const auto& trk : tracksUnfiltered) {
-      trackIndex++;
       if (!isSelectedTrack<false>(trk)) {
+        trackIndex++;
         continue;
       }
 
-      const auto& trkIU = tracksIU.iteratorAt(trackIndex);
+      const auto& trkIU = tracksIU.iteratorAt(trackIndex++);
       histos.fill(HIST("Tracks/IU/Pt"), trkIU.pt());
       histos.fill(HIST("Tracks/IU/Eta"), trkIU.eta());
       histos.fill(HIST("Tracks/IU/Phi"), trkIU.phi());
@@ -248,12 +248,12 @@ struct qaEventTrack {
 
     uint64_t trackIndex = 0;
     for (const auto& trkIU : tracksIU) {
-      trackIndex++;
       if (!isSelectedTrack<false>(trkIU)) {
+        trackIndex++;
         continue;
       }
 
-      const auto& trkDCA = tracksDCA.iteratorAt(trackIndex);
+      const auto& trkDCA = tracksDCA.iteratorAt(trackIndex++);
       histos.fill(HIST("Tracks/IUFiltered/Pt"), trkIU.pt());
       histos.fill(HIST("Tracks/IUFiltered/Eta"), trkIU.eta());
       histos.fill(HIST("Tracks/IUFiltered/Phi"), trkIU.phi());
