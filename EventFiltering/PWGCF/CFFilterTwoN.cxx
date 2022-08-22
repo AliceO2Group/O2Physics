@@ -88,11 +88,12 @@ struct CFFilterTwoN {
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
 
-  // Obtain particle candidates of protons, deuterons as well as antiprotons and antideuterons
+  // obtain particle candidates of protons, deuterons as well as antiprotons and antideuterons
   Partition<o2::aod::FemtoDreamParticles> partPD = (o2::aod::femtodreamparticle::partType == Track) &&
                                                    ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partAntiPD = (o2::aod::femtodreamparticle::partType == Track) &&
                                                        ((o2::aod::femtodreamparticle::cut & kSignMinusMask) > kValue0);
+  // obtain lambdas and antilambdas
   Partition<o2::aod::FemtoDreamParticles> partL = (o2::aod::femtodreamparticle::partType == V0) &&
                                                   ((o2::aod::femtodreamparticle::cut & kSignPlusMask) > kValue0);
   Partition<o2::aod::FemtoDreamParticles> partAntiL = (o2::aod::femtodreamparticle::partType == V0) &&
@@ -101,9 +102,11 @@ struct CFFilterTwoN {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // containers for close pair rejection
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
+  // helper function for checking paritcle pid
   bool PIDHelper(aod::femtodreamparticle::cutContainerType const& pidcut, int vSpecies, kDetector iDet = kDetector::kTPC)
   {
     bool pidSelection = true;
@@ -114,6 +117,7 @@ struct CFFilterTwoN {
     return pidSelection;
   };
 
+  // function for checking paritcle pid
   bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, int vSpecies, float momentum, float const PIDThreshold)
   {
     bool pidSelection = false;
@@ -131,7 +135,7 @@ struct CFFilterTwoN {
   {
     registry.add("fProcessedEvents", "CF Two Body - event filtered;;events}", HistType::kTH1F, {{2 + kLAST_CFTwoBodyTriggers, 0, 2 + kLAST_CFTwoBodyTriggers}});
 
-    std::array<std::string, 2 + kLAST_CFTwoBodyTriggers> eventTitles = {"all", "rejected", "p-d", "L-d"};
+    std::array<std::string, 2 + kLAST_CFTwoBodyTriggers> eventTitles = {"all", "rejected", "p-d", "l-d"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
@@ -172,22 +176,26 @@ struct CFFilterTwoN {
 
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
   float mMassDeuteron = o2::constants::physics::MassDeuteron;
-
   float mMassLambda = TDatabasePDG::Instance()->GetParticle(3122)->Mass();
 
   void process(o2::aod::FemtoDreamCollision& col, o2::aod::FemtoDreamParticles& partsFemto)
   {
+    // get partitions of all paritcles and antiparticles
     auto partsPD = partPD->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsAntiPD = partAntiPD->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
+    // get partions of V0s
     auto partsL = partL->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsAntiL = partAntiL->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
 
+    // magnetic field is need for close pair rejection
     auto magneticField = col.magField();
+
     registry.fill(HIST("fProcessedEvents"), 0);
     registry.fill(HIST("fMultiplicityBefore"), col.multV0M());
     registry.fill(HIST("fZvtxBefore"), col.posZ());
 
+    // pass through the particles once to check if there are any particles of interest in the first place
     int Nproton = 0;
     int Nantiproton = 0;
     int Nlambda = 0;
@@ -211,6 +219,7 @@ struct CFFilterTwoN {
       }
     }
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
+      // select lambdas
       for (auto lambda : partsL) {
         registry.fill(HIST("fPtLambdaAfterSel"), lambda.pt());
         Nlambda++;
@@ -235,6 +244,7 @@ struct CFFilterTwoN {
 
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       for (auto antilambda : partsAntiL) {
+        // select antilambdas
         registry.fill(HIST("fPtAntiLambdaAfterSel"), antilambda.pt());
         Nlambda++;
       }
@@ -243,42 +253,101 @@ struct CFFilterTwoN {
     bool keepEvent[kLAST_CFTwoBodyTriggers] = {false, false};
     int lowKstarPairs[kLAST_CFTwoBodyTriggers] = {0, 0};
 
+    bool pdPair = false;
+    bool dpPair = false;
+    double kStar = 0.;
+
     // trigger for pd pairs
     if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nproton > 0) {
+        // loop over all unique combinations of particles, excluding the self combinations
         for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsPD, partsPD))) {
-          if (
-            !(SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
-              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value)) &&
-            !(SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
-              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value))) {
+
+          // check if it is a pd pair
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value)) {
+            pdPair = true;
+          } else {
+            pdPair = false;
+          }
+
+          // check if it is dp pair
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value)) {
+            dpPair = true;
+          } else {
+            dpPair = false;
+          }
+
+          // if neither is the case, skip
+          if (!(pdPair || dpPair)) {
             continue;
           }
+
+          // reject close pairs
           if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
-          auto kstar = FemtoDreamMath::getkstar(p1, mMassProton, p2, mMassDeuteron);
-          if (kstar < confKstarTriggerLimit.value) {
+
+          // compute kstar depending on the pairing
+          if (pdPair) {
+            kStar = FemtoDreamMath::getkstar(p1, mMassProton, p2, mMassDeuteron);
+          } else if (dpPair) {
+            kStar = FemtoDreamMath::getkstar(p1, mMassDeuteron, p2, mMassProton);
+          } else {
+            kStar = confKstarTriggerLimit;
+          }
+          // check if the kstar is below threshold
+          if (kStar < confKstarTriggerLimit.value) {
             lowKstarPairs[kPD]++;
-            registry.fill(HIST("fKstarPD"), kstar);
+            registry.fill(HIST("fKstarPD"), kStar);
           }
         }
       }
+
       if (Nantideuteron > 0 && Nantiproton > 0) {
+        // loop over all unique combinations of antiparticles, excluding the self combinations
         for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsAntiPD, partsAntiPD))) {
-          if (!(SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
-                SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value)) &&
-              !(SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
-                SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value))) {
+
+          // check if it is a (anti)pd pair
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value)) {
+            pdPair = true;
+          } else {
+            pdPair = false;
+          }
+
+          // check if it is (anti)dp pair
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value)) {
+            dpPair = true;
+          } else {
+            dpPair = false;
+          }
+
+          // if neither is the case, skip
+          if (!(pdPair || dpPair)) {
             continue;
           }
+
+          // reject close pairs
           if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
-          auto kstar = FemtoDreamMath::getkstar(p1, mMassProton, p2, mMassDeuteron);
-          if (kstar < confKstarTriggerLimit.value) {
+
+          // compute kstar depending on the pairing
+          if (pdPair) {
+            kStar = FemtoDreamMath::getkstar(p1, mMassProton, p2, mMassDeuteron);
+          } else if (dpPair) {
+            kStar = FemtoDreamMath::getkstar(p1, mMassDeuteron, p2, mMassProton);
+          } else {
+            kStar = confKstarTriggerLimit;
+          }
+
+          // check if the kstar is below threshold
+          if (kStar < confKstarTriggerLimit.value) {
             lowKstarPairs[kPD]++;
-            registry.fill(HIST("fKstarAntiPD"), kstar);
+            registry.fill(HIST("fKstarAntiPD"), kStar);
           }
         }
       }
@@ -287,22 +356,27 @@ struct CFFilterTwoN {
     // trigger for ld pairs
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
       if (Ndeuteron > 0 && Nlambda > 0) {
+        // loop over all unique combinations
         for (auto& [p1, p2] : combinations(soa::CombinationsUpperIndexPolicy(partsPD, partsL))) {
+          // check if the particle is a deuteron
+          // we do not need to check the V0s
           if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
             continue;
           }
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
-          auto kstar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
-          if (kstar < confKstarTriggerLimit.value) {
+          kStar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
+          // check if kstar is below threshold
+          if (kStar < confKstarTriggerLimit.value) {
             lowKstarPairs[1]++;
-            registry.fill(HIST("fKstarLD"), kstar);
+            registry.fill(HIST("fKstarLD"), kStar);
           }
         }
       }
       if (Nantideuteron > 0 && Nantilambda > 0) {
         for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsAntiPD, partsAntiL))) {
+          // check if the particle is a antideuteron
           if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
             continue;
           }
@@ -310,7 +384,8 @@ struct CFFilterTwoN {
             continue;
           }
           auto kstar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
-          if (kstar < confKstarTriggerLimit.value) {
+          // check if kstar is below threshold
+          if (kStar < confKstarTriggerLimit.value) {
             lowKstarPairs[1]++;
             registry.fill(HIST("fKstarAntiLD"), kstar);
           }
@@ -318,6 +393,7 @@ struct CFFilterTwoN {
       }
     }
 
+    // if we found any pair below the kstar limit, keep the event
     if (lowKstarPairs[kPD] > 0) {
       keepEvent[kPD] = true;
       registry.fill(HIST("fProcessedEvents"), 2);
