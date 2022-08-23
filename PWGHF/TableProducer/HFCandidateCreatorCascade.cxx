@@ -12,8 +12,9 @@
 /// \file HFCandidateCreatorCascade.cxx
 /// \brief Reconstruction of heavy-flavour cascade decay candidates
 ///
-
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "Common/Core/trackUtilities.h"
@@ -24,14 +25,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 //#define MY_DEBUG
 
@@ -46,6 +39,7 @@ using MyBigTracks = aod::BigTracks;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
+// -----------------------------------------------------------------------------
 /// Reconstruction of heavy-flavour cascade decay candidates
 struct HFCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
@@ -146,7 +140,7 @@ struct HFCandidateCreatorCascade {
         //}
         continue;
       } else {
-        //LOG(info) << "Vertexing succeeded for Lc candidate";
+        // LOG(info) << "Vertexing succeeded for Lc candidate";
       }
 
       const auto& secondaryVertex = df.getPCACandidate();
@@ -192,7 +186,7 @@ struct HFCandidateCreatorCascade {
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.index0Id(), casc.v0Id(),
                        v0.x(), v0.y(), v0.z(),
-                       //v0.posTrack(), v0.negTrack(), // why this was not fine?
+                       // v0.posTrack(), v0.negTrack(), // why this was not fine?
                        trackV0DaughPos.globalIndex(), trackV0DaughNeg.globalIndex(),
                        v0.pxpos(), v0.pypos(), v0.pzpos(),
                        v0.pxneg(), v0.pyneg(), v0.pzneg(),
@@ -210,14 +204,14 @@ struct HFCandidateCreatorCascade {
   }
 };
 
+// -----------------------------------------------------------------------------
 /// Extends the base table with expression columns.
 struct HFCandidateCreatorCascadeExpressions {
   Spawns<aod::HfCandCascExt> rowCandidateCasc;
   void init(InitContext const&) {}
 };
 
-//___________________________________________________________________________________________
-
+// -----------------------------------------------------------------------------
 /// Performs MC matching.
 struct HFCandidateCreatorCascadeMC {
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
@@ -229,9 +223,10 @@ struct HFCandidateCreatorCascadeMC {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  void process(aod::HfCandCascade const& candidates,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+  // -----------------------------------------------------------------------------
+  void processMC(aod::HfCandCascade const& candidates,
+                 aod::BigTracksMC const& tracks,
+                 aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
     std::vector<int> arrDaughLcIndex;
@@ -261,7 +256,7 @@ struct HFCandidateCreatorCascadeMC {
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "correct K0S in the Lc daughters: posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
 
-      //if (isLc) {
+      // if (isLc) {
       RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, kK0Short, array{+kPiPlus, -kPiPlus}, true, &sign, 1); // does it matter the "acceptAntiParticle" in the K0s case? In principle, there is no anti-K0s
 
       if (sign != 0) { // we have already positively checked the K0s
@@ -301,18 +296,26 @@ struct HFCandidateCreatorCascadeMC {
       rowMCMatchGen(sign);
     }
   }
+
+  PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processMC, "Process MC data", false);
+
+  // -----------------------------------------------------------------------------
+  // dummy process function
+  void processDoNotMC(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function - should not be required in the future
+  }
+
+  PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processDoNotMC, "Do not produce MC tables", true);
 };
 
-//____________________________________________________________________
-
+// -----------------------------------------------------------------------------
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
+    adaptAnalysisTask<HFCandidateCreatorCascadeExpressions>(cfgc, TaskName{"hf-cand-creator-cascade-expressions"}),
     adaptAnalysisTask<HFCandidateCreatorCascade>(cfgc, TaskName{"hf-cand-creator-cascade"}),
-    adaptAnalysisTask<HFCandidateCreatorCascadeExpressions>(cfgc, TaskName{"hf-cand-creator-cascade-expressions"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorCascadeMC>(cfgc, TaskName{"hf-cand-creator-cascade-mc"}));
-  }
-  return workflow;
+    adaptAnalysisTask<HFCandidateCreatorCascadeMC>(cfgc, TaskName{"hf-cand-creator-cascade-mc"})};
 }
+
+// -----------------------------------------------------------------------------
