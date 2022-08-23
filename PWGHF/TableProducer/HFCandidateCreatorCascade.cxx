@@ -224,6 +224,13 @@ struct HFCandidateCreatorCascadeMC {
 #endif
 
   // -----------------------------------------------------------------------------
+  // dummy process function
+  void processDoNotMC(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function - should not be required in the future
+  }
+
+  // -----------------------------------------------------------------------------
   void processMC(aod::HfCandCascade const& candidates,
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
@@ -298,15 +305,6 @@ struct HFCandidateCreatorCascadeMC {
   }
 
   PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processMC, "Process MC data", false);
-
-  // -----------------------------------------------------------------------------
-  // dummy process function
-  void processDoNotMC(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function - should not be required in the future
-  }
-
-  PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processDoNotMC, "Do not produce MC tables", true);
 };
 
 // -----------------------------------------------------------------------------

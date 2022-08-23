@@ -41,20 +41,26 @@ struct TaskLcK0sP {
      {"hd0V0neg", "cascade candidates;neg daugh v0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
      {"hV0CPA", "cascade candidates;v0 cosine of pointing angle;entries", {HistType::kTH1F, {{110, -0.98f, 1.1f}}}},
      {"hEta", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -2.0f, 2.0f}}}},
-     {"hSelectionStatus", "cascade candidates;selection status;entries", {HistType::kTH1F, {{5, -0.5f, 4.5f}}}},
-     // MC
-     {"hPtRecSig", "cascade candidates (MC);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtRecBg", "cascade candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtGen", "cascade (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtGenSig", "cascade candidates (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hCPARecSig", "cascade candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hCPARecBg", "cascade candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hEtaRecSig", "cascade candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaRecBg", "cascade candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaGen", "MC particles (MC);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
+     {"hSelectionStatus", "cascade candidates;selection status;entries", {HistType::kTH1F, {{5, -0.5f, 4.5f}}}}}};
 
   Configurable<int> selectionFlagLcK0sp{"selectionFlagLcK0sp", 1, "Selection Flag for LcK0sp"};
   Configurable<double> cutEtaCandMax{"cutEtaCandMax", -1., "max. cand. pseudorapidity"};
+
+  void init(InitContext& context)
+  {
+    // add MC histograms
+    if (context.mOptions.get<bool>("processMC")) {
+      registry.add("hPtRecSig", "cascade candidates (MC);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hPtRecBg", "cascade candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hPtGen", "cascade (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hPtGenSig", "cascade candidates (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hCPARecSig", "cascade candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+      registry.add("hCPARecBg", "cascade candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+      registry.add("hEtaRecSig", "cascade candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
+      registry.add("hEtaRecBg", "cascade candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
+      registry.add("hEtaGen", "MC particles (MC);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
+    }
+  }
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcK0sp);
 
@@ -86,8 +92,6 @@ struct TaskLcK0sP {
       registry.fill(HIST("hSelectionStatus"), candidate.isSelLcK0sP());
     }
   }
-
-  PROCESS_SWITCH(TaskLcK0sP, processData, "Process real data", true);
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<int> selectionFlagLcbar{"selectionFlagLcbar", 1, "Selection Flag for Lcbar"};
