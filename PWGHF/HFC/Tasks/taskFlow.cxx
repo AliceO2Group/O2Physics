@@ -388,8 +388,13 @@ struct HfTaskFlow {
           }
         }
 
-        //  TODO: in case of HF-h correlations, remove candidate daughters from the pool of associated hadrons
-        //        with which the candidate is being correlated
+        //  in case of HF-h correlations, remove candidate daughters from the pool of associated hadrons
+        //  with which the candidate is being correlated
+        if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
+          if ((track1.index0Id() == track2.globalIndex()) || (track1.index1Id() == track2.globalIndex())) {
+            continue;
+          }
+        }
 
         float eta2 = track2.eta();
         float pt2 = track2.pt();
