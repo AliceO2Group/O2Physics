@@ -90,10 +90,10 @@ struct tofPidQa {
     if (!doprocess##particleId && !doprocessFull##particleId) {  \
       return;                                                    \
     }                                                            \
-    if (!doprocess##particleId) {                                \
+    if (doprocess##particleId) {                                 \
       enabledProcesses++;                                        \
     }                                                            \
-    if (!doprocessFull##particleId) {                            \
+    if (doprocessFull##particleId) {                             \
       enableFullHistos = true;                                   \
       enabledProcesses++;                                        \
     }                                                            \
