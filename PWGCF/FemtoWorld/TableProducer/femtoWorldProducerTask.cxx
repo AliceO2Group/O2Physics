@@ -30,7 +30,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"

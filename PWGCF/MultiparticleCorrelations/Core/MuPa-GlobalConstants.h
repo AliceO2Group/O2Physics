@@ -9,4 +9,5 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//const Int_t gEventHistograms = 7; // not needed any longer, since I switched to eEventHistograms_N trick, which is also const int;
+const Int_t gMaxCorrelator = 8;
+const Int_t gMaxHarmonic = 6;

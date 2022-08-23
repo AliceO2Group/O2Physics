@@ -90,10 +90,10 @@ struct tofPidQa {
     if (!doprocess##particleId && !doprocessFull##particleId) {  \
       return;                                                    \
     }                                                            \
-    if (!doprocess##particleId) {                                \
+    if (doprocess##particleId) {                                 \
       enabledProcesses++;                                        \
     }                                                            \
-    if (!doprocessFull##particleId) {                            \
+    if (doprocessFull##particleId) {                             \
       enableFullHistos = true;                                   \
       enabledProcesses++;                                        \
     }                                                            \
@@ -167,9 +167,9 @@ struct tofPidQa {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec pExpAxis{nBinsP, minP, maxP, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
-      pAxis.makeLogaritmic();
-      pExpAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
+      pAxis.makeLogarithmic();
+      pExpAxis.makeLogarithmic();
     }
     const AxisSpec tofAxis{10000, 0, 2e6, "TOF Signal (ps)"};
 
@@ -524,8 +524,8 @@ struct tofPidBetaQa {
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
-      pAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
+      pAxis.makeLogarithmic();
     }
 
     // Event properties

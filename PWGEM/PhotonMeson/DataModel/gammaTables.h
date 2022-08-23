@@ -11,7 +11,7 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include <TMath.h>
 

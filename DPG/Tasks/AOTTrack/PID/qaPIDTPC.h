@@ -122,14 +122,14 @@ struct tpcPidQa {
     if (!doprocess##particleId && !doprocessFull##particleId && !doprocessFullWithTOF##particleId) { \
       return;                                                                                        \
     }                                                                                                \
-    if (!doprocess##particleId) {                                                                    \
+    if (doprocess##particleId) {                                                                     \
       enabledProcesses++;                                                                            \
     }                                                                                                \
-    if (!doprocessFull##particleId) {                                                                \
+    if (doprocessFull##particleId) {                                                                 \
       enableFullHistos = true;                                                                       \
       enabledProcesses++;                                                                            \
     }                                                                                                \
-    if (!doprocessFullWithTOF##particleId) {                                                         \
+    if (doprocessFullWithTOF##particleId) {                                                          \
       enableFullHistos = true;                                                                       \
       enableTOFHistos = true;                                                                        \
       enabledProcesses++;                                                                            \
@@ -208,8 +208,8 @@ struct tpcPidQa {
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
-      pAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
+      pAxis.makeLogarithmic();
     }
     const AxisSpec dedxAxis{5000, 0, 5000, "d#it{E}/d#it{x} A.U."};
 
