@@ -56,10 +56,6 @@ struct HfTaskFlow {
   Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
 
-  Configurable<bool> processTPCTPChh{"processTPCTPChh", "true", "Flag to process TPC-TPC h-h correlations"};
-  Configurable<bool> processTPCMFThh{"processTPCMFThh", "true", "Flag to process TPC-MFT h-h correlations"};
-  Configurable<bool> processHFHadrons{"processHFHadrons", "false", "Flag to process HF-h correlations"};
-
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
   //  configurables for collisions
@@ -447,30 +443,34 @@ struct HfTaskFlow {
       const auto multiplicity = tracks1.size();
       const auto vz = collision1.posZ();
 
-      if (processTPCTPChh) {
-        registry.fill(HIST("hEventCountMixing"), bin);
-        fillMixingQA(multiplicity, vz, tracks1);
-      } else if (processHFHadrons) {
+      if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
         registry.fill(HIST("hEventCountHFMixing"), bin);
         fillHFMixingQA(multiplicity, vz, tracks1);
+      } else {
+        registry.fill(HIST("hEventCountMixing"), bin);
+        fillMixingQA(multiplicity, vz, tracks1);
       }
+
       corrContainer->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelations(corrContainer, tracks1, tracks2, multiplicity, collision1.posZ());
     }
   }
 
   // =====================================
-  //    process same event correlations
+  //    process same event correlations: h-h case
   // =====================================
-  void processSameRun3(aodCollisions::iterator const& collision,
-                       aodTracks const& tracks,
-                       aod::MFTTracks const& mfttracks,
-                       hfCandidates const& candidates)
+  void processSameTPCTPChh(aodCollisions::iterator const& collision,
+                           aodTracks const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
     }
 
+    //  the event histograms below are only filled for h-h case
+    //  because there is a possibility of double-filling if more correlation
+    //  options are ran at the same time
+    //  temporary solution, since other correlation options always have to be ran with h-h, too
+    //  TODO: rewrite it in a more intelligent way
     const auto multiplicity = tracks.size();
     registry.fill(HIST("hMultiplicity"), multiplicity);
     registry.fill(HIST("hVtxZ"), collision.posZ());
@@ -479,87 +479,83 @@ struct HfTaskFlow {
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("hEventCountSame"), bin);
 
-    if (processTPCTPChh) {
-      sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillQA(multiplicity, tracks);
-      fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
-    }
-
-    if (processTPCMFThh) {
-      sameTPCMFTCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillMFTQA(multiplicity, mfttracks);
-      fillCorrelations(sameTPCMFTCh, tracks, mfttracks, multiplicity, collision.posZ());
-    }
-
-    if (processHFHadrons) {
-      sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCandidateQA(candidates);
-      fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
-    }
+    sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    fillQA(multiplicity, tracks);
+    fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
   }
-  PROCESS_SWITCH(HfTaskFlow, processSameRun3, "Process same event for Run 3", true);
+  PROCESS_SWITCH(HfTaskFlow, processSameTPCTPChh, "Process same-event correlations for h-h case", true);
 
   // =====================================
-  //    process same event correlations
+  //    process same event correlations: HF-h case
   // =====================================
-  void processSameRun2(aodCollisions::iterator const& collision,
-                       aodTracks const& tracks,
-                       hfCandidates const& candidates)
+  void processSameHFHadrons(aodCollisions::iterator const& collision,
+                            aodTracks const& tracks,
+                            hfCandidates const& candidates)
   {
-    if (!(isCollisionSelected(collision, true))) {
+    if (!(isCollisionSelected(collision, false))) {
       return;
     }
 
     const auto multiplicity = tracks.size();
-    registry.fill(HIST("hMultiplicity"), multiplicity);
-    registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
-    registry.fill(HIST("hEventCountSame"), bin);
-
-    if (processTPCTPChh) {
-      sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillQA(multiplicity, tracks);
-      fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
-    }
-
-    if (processHFHadrons) {
-      sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCandidateQA(candidates);
-      fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
-    }
+    sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    fillCandidateQA(candidates);
+    fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
   }
-  PROCESS_SWITCH(HfTaskFlow, processSameRun2, "Process same event for Run 2", false);
+  PROCESS_SWITCH(HfTaskFlow, processSameHFHadrons, "Process same-event correlations for HF-h case", true);
 
   // =====================================
-  //    process mixed event correlations
+  //    process same event correlations: h-MFT case
   // =====================================
-  //  TODO: add also MFT and HFcandidate options->then it will have to be split into Run2/3 because there is no MFT in Run2
+  void processSameTPCMFThh(aodCollisions::iterator const& collision,
+                           aodTracks const& tracks,
+                           aod::MFTTracks const& mfttracks)
+  {
+    if (!(isCollisionSelected(collision, false))) {
+      return;
+    }
 
-  void processMixed(aodCollisions& collisions,
-                    aodTracks& tracks,
-                    hfCandidates& candidates)
+    const auto multiplicity = tracks.size();
+
+    sameTPCMFTCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    fillMFTQA(multiplicity, mfttracks);
+    fillCorrelations(sameTPCMFTCh, tracks, mfttracks, multiplicity, collision.posZ());
+  }
+  PROCESS_SWITCH(HfTaskFlow, processSameTPCMFThh, "Process same-event correlations for h-MFT case", true);
+
+  //  TODO: add also MFT option
+  // =====================================
+  //    process mixed event correlations: h-h case
+  // =====================================
+  void processMixedTPCTPChh(aodCollisions& collisions,
+                            aodTracks& tracks)
   {
     auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
       return size;
     };
+
+    mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCCh);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTPCTPChh, "Process mixed-event correlations for h-h case", true);
+
+  // =====================================
+  //    process mixed event correlations: h-h case
+  // =====================================
+  void processMixedHFHadrons(aodCollisions& collisions,
+                             aodTracks& tracks,
+                             hfCandidates& candidates)
+  {
     auto getCandsSize = [&candidates](aodCollisions::iterator const& col) {
       auto associatedCands = candidates.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
       auto size = associatedCands.size();
       return size;
     };
 
-    if (processTPCTPChh) {
-      mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCCh);
-    }
-    if (processHFHadrons) {
-      mixCollisions(collisions, candidates, tracks, getCandsSize, mixedHF);
-    }
+    mixCollisions(collisions, candidates, tracks, getCandsSize, mixedHF);
   }
-  PROCESS_SWITCH(HfTaskFlow, processMixed, "Process mixed event", true);
+  PROCESS_SWITCH(HfTaskFlow, processMixedHFHadrons, "Process mixed-event correlations for HF-h case", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
