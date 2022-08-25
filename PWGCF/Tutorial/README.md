@@ -377,7 +377,7 @@ The process functions can be activated using `PROCESS_SWITCH`, setting the last 
 All the things described in section [General tutorial](#general-tutorial) are a prerequisite for this section.
 
 This section will cover:
-- the [skimmed data](#skimmed-data) format used by *FemtoDream*;
+- the [skimmed data](#skimmed-data) format used by _FemtoDream_;
 - [event and track selections](#event-and-track-selections), in particular focusing on the use of [CutCulator](#cutculator)
 - use of a [task](#correlation-task) that works on skimmed data
 
@@ -387,7 +387,7 @@ This section will cover:
 **IMPORTANT DISCLAIMER**: you will **NEVER** skim data, but it is important to understand how it works.
 <br>
 
-In order to optimise the data volume, only the information relevant for the analysis is stored. This process is called *data skimming*. For *FemtoDream* the data skimming is carried out using the task [femtoDreamProducerTask](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx).
+In order to optimise the data volume, only the information relevant for the analysis is stored. This process is called _data skimming_. For _FemtoDream_ the data skimming is carried out using the task [femtoDreamProducerTask](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx).
 
 `femtoDreamProducerTask` creates tables that are specific for femtoscopy analyses, starting from general O2 tables.
 
@@ -409,7 +409,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                              return 2.f * std::atan(std::exp(-eta));
                            });
 ```
-3. `index` columns contain the index of another table. For example, in the *FemtoDreamParticle* table the index of the corresponding collision is defined as:
+3. `index` columns contain the index of another table. For example, in the _FemtoDreamParticle_ table the index of the corresponding collision is defined as:
 ```c
 DECLARE_SOA_INDEX_COLUMN(FemtoDreamCollision, femtoDreamCollision);
 ```
@@ -451,7 +451,7 @@ The arguments of the filling method are the values to be assigned to each column
 ----------------------------
 ## Event and track selections
 
-Event and track selections in FemtoDream are handled by [FemtoDreamCollisionSelection](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/FemtoDreamCollisionSelection.h) and [FemtoDreamTrackSelection](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/FemtoDreamTrackSelection.h), respectively. They are containers of all the relevant selections and they provide useful histograms concerning selections. *FemtoDreamCollisionSelection* and *FemtoDreamTrackSelection* are used in *femtoDreamProducerTask* and only the candidates that pass all the selections are written in the table.
+Event and track selections in FemtoDream are handled by [FemtoDreamCollisionSelection](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/FemtoDreamCollisionSelection.h) and [FemtoDreamTrackSelection](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/FemtoDreamTrackSelection.h), respectively. They are containers of all the relevant selections and they provide useful histograms concerning selections. _FemtoDreamCollisionSelection_ and _FemtoDreamTrackSelection_ are used in _femtoDreamProducerTask_ and only the candidates that pass all the selections are written in the table.
 
 Once elements are filtered, all the not relevant information is **permanently lost**. For example, information about the number of TPC clusters, $\chi^{2}$, etc. will not be available for skimmed data. However, the information about which selections are passed is encoded in a **bitmap**. Let's clarify with an example.
 
@@ -469,7 +469,7 @@ All the tracks that pass the loosest selection (in this case $|\eta| < 0.9$) are
 | 0.83   | 0                     | 0                     | 1                     |
 | 1.3    | 0                     | 0                     | 0                     |
 
-To see whether a track satisfies the requirement $|\eta| < 0.8$, it is necessary to check the corresponding bit. The same procedure is carried out for each different selection. It is quite complex, but do not worry: *CutCulator* will help.
+To see whether a track satisfies the requirement $|\eta| < 0.8$, it is necessary to check the corresponding bit. The same procedure is carried out for each different selection. It is quite complex, but do not worry: _CutCulator_ will help.
 
 ## CutCulator
 
@@ -563,9 +563,9 @@ This parameters are passed to the task in the following [line](https://github.co
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
 ```
 
-The other important parameters are the number of species for which PID is stored and the ID corresponding to a particular species. These values can be obtained from the cutculator: in our case, we have PID for two species (pions and protons), and we are interested in protons (the output of the *CutCulator* is 1).
+The other important parameters are the number of species for which PID is stored and the ID corresponding to a particular species. These values can be obtained from the cutculator: in our case, we have PID for two species (pions and protons), and we are interested in protons (the output of the _CutCulator_ is 1).
 
-The full configuration for tracks selection and PID, according to the output of *CutCulator*, is:
+The full configuration for tracks selection and PID, according to the output of _CutCulator_, is:
 ```c
 Configurable<int> cfgNspecies{"ccfgNspecies", 2, "Number of particle spieces with PID info"};
 
