@@ -14,6 +14,7 @@
 ///
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
+#include <Framework/Configurable.h>
 #include <TMath.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
@@ -22,6 +23,7 @@
 #include "Framework/HistogramRegistry.h"
 
 #include "../filterTables.h"
+#include "../../PWGCF/FemtoDream/FemtoUtils.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/FemtoDreamParticleHisto.h"
@@ -47,12 +49,12 @@ enum kCFTwoBodyTriggers {
   kLAST_CFTwoBodyTriggers
 };
 
-enum kDetector {
-  kTPC,
-  kTPCTOF,
-  kNdetectors,
-  kLAST_Detector
-};
+// enum kDetector {
+//   kTPC,
+//   kTPCTOF,
+//   kNdetectors,
+//   kLAST_Detector
+// };
 
 static const std::vector<std::string> CfTriggerNames{"kPD", "kLD"};
 static constexpr uint8_t Track = 0;
@@ -83,7 +85,7 @@ struct CFFilterTwoN {
 
   Produces<aod::CFFiltersTwoN> tags;
 
-  Configurable<float> confKstarTriggerLimit{"KstarTriggerLimitUpper", 1.5f, "Kstar limit for selection"};
+  Configurable<float> confKstarTriggerLimit{"KstarTriggerLimitUpper", 1.0f, "Kstar limit for selection"};
   Configurable<int> KstarTrigger{"KstarTrigger", 0, "Choice which trigger to run"};
 
   Configurable<float> confProtonPtMin{"ProtonPtMin", 0.5, "Minimal Pt for Protons"};
@@ -92,6 +94,9 @@ struct CFFilterTwoN {
 
   Configurable<float> confDeuteronPtMin{"DeuteronPtMin", 0.5, "Minimal Pt for Deuterons"};
   Configurable<float> confDeuteronPtMax{"DeuteronPtMax", 1.4, "Maximal Pt for Deuterons"};
+
+  // Configurable<float> confnSigmaAcceptance{"PIDAcceptance",3.5,"nSigma for accepting Protons and Deuterons"};
+  Configurable<float> confPIDRejection{"PIDRejection", 3.5, "nSigma for rejection bogus Deuterons"};
 
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
@@ -114,36 +119,26 @@ struct CFFilterTwoN {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
-  // helper function for checking paritcle pid
-  bool PIDHelper(aod::femtodreamparticle::cutContainerType const& pidcut, int vSpecies, kDetector iDet = kDetector::kTPC)
-  {
-    bool pidSelection = true;
-    int bit_to_check = vSpecies * kDetector::kNdetectors + iDet;
-    if (!(pidcut & (1UL << bit_to_check))) {
-      pidSelection = false;
-    }
-    return pidSelection;
-  };
-
-  // function for checking paritcle pid
-  bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, int vSpecies, float momentum, float const PIDThreshold)
+  bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, int vSpecies, float momentum)
   {
     bool pidSelection = false;
-    // use TOF information for protons
+
     if (vSpecies == o2::track::PID::Proton) {
-      if (momentum < PIDThreshold) {
-        /// TPC PID only below threshold
-        pidSelection = PIDHelper(pidCut, vSpecies, kDetector::kTPC);
-      } else {
-        /// TPC + TOF PID above threshold
-        pidSelection = PIDHelper(pidCut, vSpecies, kDetector::kTPCTOF);
+      // use momentum dependend (TPC or TPC&TOF) pid selection for protons
+      pidSelection = isFullPIDSelected(pidCut, momentum, confPIDThreshold.value, std::vector<int>{vSpecies}, 1, std::vector<float>{3.}, 3., 3.);
+    } else if (vSpecies == o2::track::PID::Deuteron) {
+      // add additional rejections for deuterons if the paritcle could also be a electron, pion or proton
+      if (!isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Electron}, 1, confPIDRejection.value, std::vector<float>{3}, kDetector::kTPC) &&
+          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Pion}, 1, confPIDRejection.value, std::vector<float>{3}, kDetector::kTPC) &&
+          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Proton}, 1, confPIDRejection.value, std::vector<float>{3}, kDetector::kTPC)) {
+        pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3, std::vector<float>{3}, kDetector::kTPC);
       }
-      // everything else uses tpc information only
     } else {
-      pidSelection = PIDHelper(pidCut, vSpecies, kDetector::kTPC);
+      // use tpc information only for anything else
+      pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3, std::vector<float>{3}, kDetector::kTPC);
     }
     return pidSelection;
-  };
+  }
 
   void init(o2::framework::InitContext&)
   {
@@ -239,7 +234,7 @@ struct CFFilterTwoN {
 
       // select protons
       if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-        if (SelectParticlePID(pd.pidcut(), o2::track::PID::Proton, pd.p(), confPIDThreshold) &&
+        if (SelectParticlePID(pd.pidcut(), o2::track::PID::Proton, pd.p()) &&
             pd.pt() < confProtonPtMax.value &&
             pd.pt() > confProtonPtMin.value) {
           registry.fill(HIST("fPtProtonAfterSel"), pd.pt());
@@ -249,7 +244,7 @@ struct CFFilterTwoN {
         }
       }
       // select deuterons
-      if (SelectParticlePID(pd.pidcut(), o2::track::PID::Deuteron, pd.p(), confPIDThreshold) &&
+      if (SelectParticlePID(pd.pidcut(), o2::track::PID::Deuteron, pd.p()) &&
           pd.pt() < confDeuteronPtMax.value &&
           pd.pt() > confDeuteronPtMin.value) {
         registry.fill(HIST("fPtDeuteronAfterSel"), pd.pt());
@@ -272,7 +267,7 @@ struct CFFilterTwoN {
       registry.fill(HIST("fPhiAntiBeforeSel"), antipd.phi());
       // select antiprotons
       if (KstarTrigger.value == 0 || KstarTrigger.value == 11) {
-        if (SelectParticlePID(antipd.pidcut(), o2::track::PID::Proton, antipd.p(), confPIDThreshold) &&
+        if (SelectParticlePID(antipd.pidcut(), o2::track::PID::Proton, antipd.p()) &&
             antipd.pt() < confProtonPtMax.value &&
             antipd.pt() > confProtonPtMin.value) {
 
@@ -283,7 +278,7 @@ struct CFFilterTwoN {
         }
       }
       // select antideuterons
-      if (SelectParticlePID(antipd.pidcut(), o2::track::PID::Deuteron, antipd.p(), confPIDThreshold) &&
+      if (SelectParticlePID(antipd.pidcut(), o2::track::PID::Deuteron, antipd.p()) &&
           antipd.pt() < confDeuteronPtMax.value &&
           antipd.pt() > confDeuteronPtMin.value) {
         registry.fill(HIST("fPtAntiDeuteronAfterSel"), antipd.pt());
@@ -317,8 +312,8 @@ struct CFFilterTwoN {
           // check if it is a pd pair
           // p1 => proton
           // p2 => deuteron
-          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
-              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value) &&
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p()) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p()) &&
               p1.pt() < confProtonPtMax.value &&
               p1.pt() > confProtonPtMin.value &&
               p2.pt() < confDeuteronPtMax.value &&
@@ -331,8 +326,8 @@ struct CFFilterTwoN {
           // check if it is dp pair
           // p1 => deuteron
           // p2 => proton
-          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
-              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value) &&
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p()) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p()) &&
               p1.pt() < confDeuteronPtMax.value &&
               p1.pt() > confDeuteronPtMin.value &&
               p2.pt() < confProtonPtMax.value &&
@@ -375,8 +370,8 @@ struct CFFilterTwoN {
           // check if it is a (anti)pd pair
           // p1 => antiproton
           // p2 => antideuteron
-          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p(), confPIDThreshold.value) &&
-              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p(), confPIDThreshold.value) &&
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Proton, p1.p()) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Deuteron, p2.p()) &&
               p1.pt() < confProtonPtMax.value &&
               p1.pt() > confProtonPtMin.value &&
               p2.pt() < confDeuteronPtMax.value &&
@@ -389,8 +384,8 @@ struct CFFilterTwoN {
           // check if it is (anti)dp pair
           // p1 => antideuteron
           // p2 => antiproton
-          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value) &&
-              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p(), confPIDThreshold.value) &&
+          if (SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p()) &&
+              SelectParticlePID(p2.pidcut(), o2::track::PID::Proton, p2.p()) &&
               p1.pt() < confDeuteronPtMax.value &&
               p1.pt() > confDeuteronPtMin.value &&
               p2.pt() < confProtonPtMax.value &&
@@ -435,7 +430,7 @@ struct CFFilterTwoN {
         for (auto& [p1, p2] : combinations(soa::CombinationsUpperIndexPolicy(partsPD, partsL))) {
           // check if the particle is a deuteron
           // we do not need to check the V0s
-          if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
+          if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p())) {
             continue;
           }
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
@@ -452,7 +447,7 @@ struct CFFilterTwoN {
       if (Nantideuteron > 0 && Nantilambda > 0) {
         for (auto& [p1, p2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(partsAntiPD, partsAntiL))) {
           // check if the particle is a antideuteron
-          if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p(), confPIDThreshold.value)) {
+          if (!SelectParticlePID(p1.pidcut(), o2::track::PID::Deuteron, p1.p())) {
             continue;
           }
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
