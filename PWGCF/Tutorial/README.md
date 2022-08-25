@@ -19,7 +19,7 @@ ______________
 To update the software, you need to do the following: <br>
 1. in `alice/alidist`, type `git pull` <br>
 2. in `alice/O2Physics`, type `git pull --rebase` <br>
-3. in `alice/`, type `aliBuild build O2Physics --defaults o2`. Here you can add `--debug`  (or `-d`) for more information.<br>
+3. in `alice/`, type `aliBuild build O2Physics --defaults o2`. Here you can add `--debug` (or `-d`) for more information. <br>
 
 You need to update it frequently, because O2 is constantly evolving. Keep in mind that it might take quite a long time.
 _________
@@ -384,7 +384,7 @@ This section will cover:
 ----------------------
 ## Skimmed data
 
-**IMPORTANT DISCLAIMER**: you will **NEVER** skim data, but it is important to understand how it works. 
+**IMPORTANT DISCLAIMER**: you will **NEVER** skim data, but it is important to understand how it works.
 <br>
 
 In order to optimise the data volume, only the information relevant for the analysis is stored. This process is called *data skimming*. For *FemtoDream* the data skimming is carried out using the task [femtoDreamProducerTask](https://github.com/AliceO2Group/O2Physics/blob/master/PWGCF/FemtoDream/femtoDreamProducerTask.cxx).
