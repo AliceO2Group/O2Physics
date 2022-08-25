@@ -112,7 +112,6 @@ struct lambdakzeroQa {
       }
       for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
         for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-          // LOGF(info, "MotherNeg = %d, MotherPos = %d", particleMotherOfNeg.pdgCode(), particleMotherOfPos.pdgCode());
           if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310) {
             registry.fill(HIST("hMassK0ShortMCportion"), v0.mK0Short());
             registry.fill(HIST("hPtDiffK0ShortMCportion"), particleMotherOfNeg.pt());
@@ -134,9 +133,6 @@ struct lambdakzeroAnalysisMc {
       {"h3dMassK0Short_MC_truePt", "h3dMassK0Short_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassLambda_MC_truePt", "h3dMassLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassAntiLambda_MC_truePt", "h3dMassAntiLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
-      {"MCmomID_Lambda", "MCmomID_Lambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
-      {"MCmomID_AntiLambda", "MCmomID_AntiLambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
-      {"MCmomID_K0Short", "MCmomID_K0Short", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
       {"V0loopFiltersCounts", "V0loopFiltersCounts", {HistType::kTH1F, {{11, 0.0f, 11.0f}}}},
 
       {"hLambdaFeedDownMatrix", "hLambdaFeedDownMatrix", {HistType::kTH2F, {{200, 0.0f, 10.0f, "#it{p}_{T}^{#Lambda} (GeV/c)"}, {200, 0.0f, 10.0f, "#it{p}_{T}^{#Omega-} (GeV/c)"}}}},
@@ -204,8 +200,6 @@ struct lambdakzeroAnalysisMc {
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
-
-  Configurable<bool> hasItsTest{"hasItsTest", false, "hasItsTest"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
