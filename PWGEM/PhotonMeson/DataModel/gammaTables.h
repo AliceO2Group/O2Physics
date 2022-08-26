@@ -11,7 +11,7 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include <TMath.h>
 
@@ -78,8 +78,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float
 } // namespace gammarecalculated
 
 DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
-                  //o2::soa::Index<>,
-                  //v0data::V0Id,
                   gammarecalculated::RecalculatedVtxX,
                   gammarecalculated::RecalculatedVtxY,
                   gammarecalculated::RecalculatedVtxZ,
