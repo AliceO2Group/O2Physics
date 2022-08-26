@@ -189,6 +189,8 @@ struct v0cascadesQA {
           histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), R_Decay); // Lambda
         if (mcparticle.pdgCode() == -3122)
           histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), R_Decay); // AntiLambda
+      }
+      if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < Casc_rapidity) {
         if (mcparticle.pdgCode() == 3312)
           histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), R_Decay); // Xi-
         if (mcparticle.pdgCode() == -3312)
