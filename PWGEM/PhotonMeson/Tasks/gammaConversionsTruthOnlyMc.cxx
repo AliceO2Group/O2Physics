@@ -58,7 +58,7 @@ struct gammaConversionsTruthOnlyMc {
       {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue;conversion radius (cm);p_T (GeV/c)", {HistType::kTH2F, {gAxis_r2d, gAxis_pT2d}}},
       {"hGammaConvertedXY_MCTrue", "hGammaConvertedXY_MCTrue;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {gAxis_z2d, gAxis_z2d}}},
       {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {gAxis_z2d, gAxis_pT2d}}},
-      {"hGammaConvertedpeDivpGamma", "hpeDivpGamma;p (GeV/c);p_{e}/p_{#gamma};counts", {HistType::kTH2F, {gAxis_pT, {200, 0.f, 1.1f}}}},
+      {"hGammaConvertedpeDivpGamma", "hpeDivpGamma;p (GeV/c);p_{e}/p_{#gamma};counts", {HistType::kTH2F, {gAxis_pT, {220, 0.f, 1.1f}}}},
 
       // debugging histograms
       {"hNDaughters_MCTrue", "hNDaughters_MCTrue;nDaughters;counts", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
