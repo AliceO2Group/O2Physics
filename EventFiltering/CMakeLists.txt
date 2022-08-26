@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(hf-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsVertexing ONNXRuntime::ONNXRuntime
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cf-twobodyfemto-filter
+                            SOURCES PWGCF/CFFilterTwoN.cxx
+                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                            COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cf-threebodyfemto-filter
                             SOURCES PWGCF/CFFilter.cxx
                             PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

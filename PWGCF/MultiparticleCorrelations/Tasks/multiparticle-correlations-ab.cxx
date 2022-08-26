@@ -23,6 +23,7 @@ using namespace o2::framework;
 #include "TGrid.h"
 #include "Riostream.h"
 #include "TRandom3.h"
+#include <TComplex.h>
 using namespace std;
 
 // *) Enums:
@@ -83,6 +84,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookAndNestAllLists();
     BookEventHistograms();
     BookParticleHistograms();
+    BookQvectorHistograms();
+    BookCorrelationsHistograms();
     BookWeightsHistograms();
     BookResultsHistograms();
 
@@ -108,6 +111,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     FillEventHistograms(collision, tracks, eRec, eAfter);
 
     // *) Main loop over particles:
+    Double_t dPhi = 0.; //, dPt = 0., dEta = 0.;
+    // Double_t wPhi = 1., wPt = 1., wEta = 1.;
+    Double_t wToPowerP = 1.; // final particle weight raised to power p
     for (auto& track : tracks) {
 
       // *) Fill particle histograms for reconstructed data before particle cuts:
@@ -121,9 +127,30 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
       // *) Fill particle histograms for reconstructed data after particle cuts:
       FillParticleHistograms(track, eRec, eAfter);
 
+      // *) Fill Q-vectors:
+      dPhi = track.phi();
+      // dPt  = track.pt();
+      // dEta = track.eta();
+      for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+        for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
+          // if (fUseWeights[0]||fUseWeights[1]||fUseWeights[2]) {
+          //   wToPowerP = pow(wPhi*wPt*wEta,wp);
+          // }
+          qv_a.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
+        } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
+      }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
+
       fResultsHist->Fill(pw_a.fWeightsHist[wPHI]->GetBinContent(pw_a.fWeightsHist[wPHI]->FindBin(track.phi()))); // TBI 20220713 meaningless, only temporarily here to check if this is feasible
 
     } // for (auto& track : tracks)
+
+    // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
+    if (fCalculateCorrelations) {
+      CalculateCorrelations();
+    }
+
+    // *) Reset event-by-event objects:
+    ResetEventByEventQuantities();
 
   } // void process(...)
 

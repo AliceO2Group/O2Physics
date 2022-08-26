@@ -39,7 +39,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DetectorsBase/Propagator.h"
@@ -453,7 +453,7 @@ struct lambdakzeroLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-      {"kK0Short", "kK0Short", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hK0Short", "hK0Short", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hLambda", "hLambda", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hAntiLambda", "hAntiLambda", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
     },
@@ -467,7 +467,8 @@ struct lambdakzeroLabelBuilder {
   }
   PROCESS_SWITCH(lambdakzeroLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Collisions::iterator const& collision, aod::V0Datas const& v0table, aod::Tracks const& tracks, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Collisions::iterator const& collision, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
+
   {
     for (auto& v0 : v0table) {
 
