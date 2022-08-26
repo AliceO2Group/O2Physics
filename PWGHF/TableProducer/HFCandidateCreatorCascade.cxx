@@ -209,7 +209,7 @@ struct HFCandidateCreatorCascade {
 struct HFCandidateCreatorCascadeMC {
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
   Produces<aod::HfCandCascadeMCGen> rowMCMatchGen;
-  
+
   Spawns<aod::HfCandCascExt> rowCandidateCasc;
 
 #ifdef MY_DEBUG
