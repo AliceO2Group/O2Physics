@@ -102,7 +102,6 @@ struct skimmerGammaConversions {
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
   Produces<aod::V0DaughterMcParticles> fFuncTableMCTrackInformation;
-  //Builds<aod::MCTrackIndex> fIndexTableMCTrackIndex; // maybe, maybe not
   Produces<aod::MCParticleIndex> fIndexTableMCTrackIndex;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;

@@ -658,19 +658,7 @@ struct GammaConversions {
       int PDGCode[2]; // Pos, then Neg
       float McParticleMomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = one 3-5 = two, no need to check the charges
       bool sameMother;
-      //fillV0MCDaughterParticlesArrays(lTwoV0Daughters, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
-      
-        auto MCDaughterParticleOne = lTwoV0Daughters.iteratorAt(0).v0DaughterMcParticle();
-        auto MCDaughterParticleTwo = lTwoV0Daughters.iteratorAt(1).v0DaughterMcParticle();
-        PDGCode[0] = MCDaughterParticleOne.pdgCode();
-        PDGCode[1] = MCDaughterParticleTwo.pdgCode();
-        McParticleMomentum[0] = MCDaughterParticleOne.px();
-        McParticleMomentum[1] = MCDaughterParticleOne.py();
-        McParticleMomentum[2] = MCDaughterParticleOne.pz();
-        McParticleMomentum[3] = MCDaughterParticleTwo.px();
-        McParticleMomentum[4] = MCDaughterParticleTwo.py();
-        McParticleMomentum[5] = MCDaughterParticleTwo.pz();
-        sameMother = MCDaughterParticleOne.sameMother();
+      fillV0MCDaughterParticlesArrays(lTwoV0Daughters, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
 
       // this process function has to exist seperatly because it is only for MC Rec
       processPDGHistos(PDGCode,
