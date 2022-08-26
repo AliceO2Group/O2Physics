@@ -370,6 +370,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("matchedMchMid")) {
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+
   if (!nameStr.compare("matchedFwd")) {
     cut->AddCut(GetAnalysisCut("matchedFwd"));
     return cut;
@@ -769,6 +774,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("mchTrack")) {
     cut->AddCut(VarManager::kMuonTrackType, 3.5, 4.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("matchedMchMid")) {
+    cut->AddCut(VarManager::kMuonTrackType, 2.5, 3.5);
     return cut;
   }
 
