@@ -205,17 +205,12 @@ struct HFCandidateCreatorCascade {
 };
 
 // -----------------------------------------------------------------------------
-/// Extends the base table with expression columns.
-struct HFCandidateCreatorCascadeExpressions {
-  Spawns<aod::HfCandCascExt> rowCandidateCasc;
-  void init(InitContext const&) {}
-};
-
-// -----------------------------------------------------------------------------
 /// Performs MC matching.
 struct HFCandidateCreatorCascadeMC {
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
   Produces<aod::HfCandCascadeMCGen> rowMCMatchGen;
+  
+  Spawns<aod::HfCandCascExt> rowCandidateCasc;
 
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -224,15 +219,7 @@ struct HFCandidateCreatorCascadeMC {
 #endif
 
   // -----------------------------------------------------------------------------
-  // dummy process function
-  void processDoNotMC(aod::Collisions::iterator const& collision)
-  {
-    // dummy process function - should not be required in the future
-  }
-
-  // -----------------------------------------------------------------------------
-  void processMC(aod::HfCandCascade const& candidates,
-                 aod::BigTracksMC const& tracks,
+  void processMC(aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
@@ -241,7 +228,8 @@ struct HFCandidateCreatorCascadeMC {
     std::array<int, 3> arrDaughLcPDGRef = {2212, 211, -211};
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    rowCandidateCasc->bindExternalIndices(&tracks);
+    for (auto& candidate : *rowCandidateCasc) {
 
       const auto& bach = candidate.index0_as<aod::BigTracksMC>();
       const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
