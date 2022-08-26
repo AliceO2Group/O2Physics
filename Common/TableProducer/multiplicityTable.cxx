@@ -156,6 +156,7 @@ struct MultiplicityTableTaskIndexed {
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
     if (doVertexZeq > 0 && doDummyZeq < 1) {
       if (bc.runNumber() != mRunNumber) {
+        mRunNumber = bc.runNumber(); //mark this run as at least tried
         lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
         if (lCalibObjects) {
           hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
@@ -164,7 +165,6 @@ struct MultiplicityTableTaskIndexed {
           hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
           hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
           hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
-          mRunNumber = bc.runNumber();
           lCalibLoaded = true;
           //Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
