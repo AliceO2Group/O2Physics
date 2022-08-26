@@ -30,7 +30,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using V0DatasAdditional = soa::Join<aod::V0Datas, aod::V0Recalculated>;
-using V0DaughterTracksAdditional = soa::Join<aod::V0DaughterTracks, aod::MCTrackTrue>;
+using V0DaughterTracksWithMC = soa::Join<aod::V0DaughterTracks, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 struct GammaConversions {
@@ -105,7 +105,8 @@ struct GammaConversions {
     {eV0Decays::pip, "pi+-/p-+"},
     {eV0Decays::pimu, "pi+-/mu-+"},
     {eV0Decays::pKmu, "p+-/K-+mu-+"},
-    {eV0Decays::other, "other"}};
+    {eV0Decays::other, "other"},
+    {eV0Decays::nomcparticle, "NoMCParticle"}};
 
   std::vector<std::string> fHistoSuffixes{"_MCRec", "_MCTrue", "_MCVal", "_Res"};
 
@@ -145,7 +146,7 @@ struct GammaConversions {
       {"hPsiPt", "hPsiPt;#Psi;p_{T} (GeV/c)", {HistType::kTH2F, {gAxis_eta, gAxis_pT}}},
       {"hCosPAngle", "hCosPAngle;CosPAngle;counts", {HistType::kTH1F, {{800, 0.99f, 1.005f}}}},
       {"hRVsZ", "hRVsZ;R (cm);z (cm)", {HistType::kTH2F, {gAxis_r, gAxis_xyz}}},
-      {"hpeDivpGamma", "hpeDivpGamma;p (GeV/c);p_{e}/p_{#gamma};counts", {HistType::kTH2F, {gAxis_pT, {200, 0.f, 1.1f}}}}};
+      {"hpeDivpGamma", "hpeDivpGamma;p_{T} (GeV/c);p_{T, e}/p_{T, #gamma};counts", {HistType::kTH2F, {gAxis_pT, {200, 0.f, 1.1f}}}}};
 
     // recalculated conversion Point for V0, only Rec and MCVal need this
     std::vector<MyHistogramSpec> lV0HistoDefinitions_recalculated{
@@ -155,7 +156,7 @@ struct GammaConversions {
     // PDG code of all particles to analyize the purity. Only for MC and only for Rec
     std::vector<MyHistogramSpec> lMcPDGCode{
       {"hPDGCode", "hPDGCode;PDG code;counts", {HistType::kTH1F, {{6000, -3000.0f, 3000.0f}}}}, // first only cover usefull range. Otherwise histogram will get rediculously large
-      {"hDecays", "hDecays;;P [GeV/c]", {HistType::kTH2I, {{12, -0.0f, 11.5f}, gAxis_pT}}},
+      {"hDecays", "hDecays;;p_{T} [GeV/c]", {HistType::kTH2I, {{13, -0.0f, 12.5f}, gAxis_pT}}},
     };
 
     // only in mc
@@ -468,10 +469,13 @@ struct GammaConversions {
                        int const& sameMother,
                        float const McTrackmomentum[])
   {
-    
-    float MCV0p = RecoDecay::sqrtSumOfSquares(McTrackmomentum[0] + McTrackmomentum[3], McTrackmomentum[1] + McTrackmomentum[4], McTrackmomentum[2] + McTrackmomentum[5]);
+    float MCV0p = RecoDecay::sqrtSumOfSquares(McTrackmomentum[0] + McTrackmomentum[3], McTrackmomentum[1] + McTrackmomentum[4]);
 
-    if(sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    if(PDGCode[0] == 0)
+    {
+      fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::nomcparticle), 0);
+    }
+    else if(sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee1), MCV0p);
     }
     else if(!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
@@ -577,6 +581,38 @@ struct GammaConversions {
       theV0);
   }
 
+  template <typename TTRACKS>
+  void fillV0MCDaughterParticlesArrays(TTRACKS lTwoV0Daughters,
+                                      int PDGCode[],
+                                      float McParticleMomentum[],
+                                      bool& sameMother)
+  {
+      if((lTwoV0Daughters.iteratorAt(0).has_v0DaughterMcParticle()) && (lTwoV0Daughters.iteratorAt(1).has_v0DaughterMcParticle())) {
+        auto MCDaughterParticleOne = lTwoV0Daughters.iteratorAt(0).v0DaughterMcParticle();
+        auto MCDaughterParticleTwo = lTwoV0Daughters.iteratorAt(1).v0DaughterMcParticle();
+        PDGCode[0] = MCDaughterParticleOne.pdgCode();
+        PDGCode[1] = MCDaughterParticleTwo.pdgCode();
+        McParticleMomentum[0] = MCDaughterParticleOne.px();
+        McParticleMomentum[1] = MCDaughterParticleOne.py();
+        McParticleMomentum[2] = MCDaughterParticleOne.pz();
+        McParticleMomentum[3] = MCDaughterParticleTwo.px();
+        McParticleMomentum[4] = MCDaughterParticleTwo.py();
+        McParticleMomentum[5] = MCDaughterParticleTwo.pz();
+        sameMother = MCDaughterParticleOne.sameMother();
+      }
+      else {
+        PDGCode[0] = 0;
+        PDGCode[1] = 0;
+        McParticleMomentum[0] = 0;
+        McParticleMomentum[1] = 0;
+        McParticleMomentum[2] = 0;
+        McParticleMomentum[3] = 0;
+        McParticleMomentum[4] = 0;
+        McParticleMomentum[5] = 0;
+        sameMother = false;
+      }
+  }
+
   Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
 
   void processRec(aod::Collisions::iterator const& theCollision,
@@ -603,7 +639,8 @@ struct GammaConversions {
 
   void processMc(aod::Collisions::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
-                 V0DaughterTracksAdditional const& theAllTracks,
+                 V0DaughterTracksWithMC const& theAllTracks,
+                 aod::V0DaughterMcParticles const& TheAllTracksMC,
                  aod::McGammasTrue const& theV0sTrue)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
@@ -618,30 +655,27 @@ struct GammaConversions {
       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
       bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
 
-      // this process function has to exist seperatly because it is only for MC Rec
-      // first fill array with relevant information, then pass it to function. Avoids passing of unnecessary information
       int PDGCode[2]; // Pos, then Neg
-      float McTrackmomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = pos 3-5 = neg
+      float McParticleMomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = one 3-5 = two, no need to check the charges
       bool sameMother;
-    
-      auto lMcPhotonForThisV0AsTable_tmp = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
+      //fillV0MCDaughterParticlesArrays(lTwoV0Daughters, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
+      
+        auto MCDaughterParticleOne = lTwoV0Daughters.iteratorAt(0).v0DaughterMcParticle();
+        auto MCDaughterParticleTwo = lTwoV0Daughters.iteratorAt(1).v0DaughterMcParticle();
+        PDGCode[0] = MCDaughterParticleOne.pdgCode();
+        PDGCode[1] = MCDaughterParticleTwo.pdgCode();
+        McParticleMomentum[0] = MCDaughterParticleOne.px();
+        McParticleMomentum[1] = MCDaughterParticleOne.py();
+        McParticleMomentum[2] = MCDaughterParticleOne.pz();
+        McParticleMomentum[3] = MCDaughterParticleTwo.px();
+        McParticleMomentum[4] = MCDaughterParticleTwo.py();
+        McParticleMomentum[5] = MCDaughterParticleTwo.pz();
+        sameMother = MCDaughterParticleOne.sameMother();
 
-      int i = 0;
-      int j = 0;
-      for(auto& theTrack : lTwoV0Daughters)
-      {
-        PDGCode[i] = theTrack.pdgCodeTrack();
-        McTrackmomentum[j+0] = theTrack.mcpx();
-        McTrackmomentum[j+1] = theTrack.mcpy();
-        McTrackmomentum[j+2] = theTrack.mcpz();
-        sameMother = theTrack.sameMother();
-        i+=1;
-        j+=3;
-      }
-
+      // this process function has to exist seperatly because it is only for MC Rec
       processPDGHistos(PDGCode,
                       sameMother,
-                      McTrackmomentum,
+                      McParticleMomentum,
                       lV0PassesRecCuts);
 
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
@@ -652,7 +686,7 @@ struct GammaConversions {
                       lV0PassesRecCuts,
                       PDGCode,
                       sameMother,
-                      McTrackmomentum);
+                      McParticleMomentum);
     }
   }
   PROCESS_SWITCH(GammaConversions, processMc, "process reconstructed info and mc", false);
@@ -748,6 +782,7 @@ struct GammaConversions {
     fillTH1(theContainer, "hConvPointZ", theMcGamma.conversionZ());
     fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[0], McTrackmomentum[1], McTrackmomentum[2])/theMcGamma.p());
     fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[3], McTrackmomentum[4], McTrackmomentum[5])/theMcGamma.p());
+    fillTH2(theContainer, "hRVsZ", theMcGamma.v0Radius(), theMcGamma.conversionZ());
   }
 
   template <typename T>

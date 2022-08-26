@@ -70,7 +70,8 @@ enum class eV0Decays {
   pip,                   // Pion - Proton/Antiproton
   pimu,                  // Pion - Muon
   pKmu,                  // Proton/Antiproton - Kaon/Muon
-  other                  // other
+  other,                 // other
+  nomcparticle           // no mc particle was found for this track
 };
 
 enum eBeforeAfterRecCuts { kBeforeRecCuts,
