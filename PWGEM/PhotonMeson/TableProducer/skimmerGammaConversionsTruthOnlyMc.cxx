@@ -73,7 +73,6 @@ struct skimmerGammaConversionsTruthOnlyMc {
         int lastIndex0 = -1;
         int lastIndex1 = -1;
 
-
         if (lMcParticle.has_daughters()) {
           auto lDaughters = lMcParticle.daughters_as<aod::McParticles>();
           lNDaughters = lDaughters.size();
@@ -83,8 +82,7 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lDaughter0Vz = lDaughter0.vz();
           lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
 
-          if(lNDaughters == 2)
-          {
+          if (lNDaughters == 2) {
             auto lDaughter1 = lDaughters.iteratorAt(1);
             fFuncTableMcDaughter(lDaughter0.p());
             lastIndex0 = fFuncTableMcDaughter.lastIndex();
