@@ -96,7 +96,7 @@ struct CFFilterTwoN {
   Configurable<float> confDeuteronPtMax{"DeuteronPtMax", 1.4, "Maximal Pt for Deuterons"};
 
   // Configurable<float> confnSigmaAcceptance{"PIDAcceptance",3.5,"nSigma for accepting Protons and Deuterons"};
-  Configurable<float> confPIDRejection{"PIDRejection", 3.5, "nSigma for rejection bogus Deuterons"};
+  Configurable<float> confPIDRejection{"PIDRejection", 3, "nSigma for rejection bogus Deuterons"};
 
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
@@ -125,17 +125,18 @@ struct CFFilterTwoN {
 
     if (vSpecies == o2::track::PID::Proton) {
       // use momentum dependend (TPC or TPC&TOF) pid selection for protons
-      pidSelection = isFullPIDSelected(pidCut, momentum, confPIDThreshold.value, std::vector<int>{vSpecies}, 1, std::vector<float>{3.}, 3., 3.);
-    } else if (vSpecies == o2::track::PID::Deuteron) {
+      pidSelection = isFullPIDSelected(pidCut, momentum, confPIDThreshold.value, std::vector<int>{vSpecies}, 1., std::vector<float>{3.}, 3., 3.);
+
+    } else if (vSpecies == o2::track::PID::Deuteron && confPIDRejection.value > 0.) {
       // add additional rejections for deuterons if the paritcle could also be a electron, pion or proton
-      if (!isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Electron}, 1, confPIDRejection.value, std::vector<float>{3}, kDetector::kTPC) &&
-          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Pion}, 1, confPIDRejection.value, std::vector<float>{3}, kDetector::kTPC) &&
-          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Proton}, 1, confPIDRejection.value, std::vector<float>{3}, kDetector::kTPC)) {
-        pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3, std::vector<float>{3}, kDetector::kTPC);
+      if (!isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Electron}, 1, confPIDRejection.value, std::vector<float>{confPIDRejection.value}, kDetector::kTPC) &&
+          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Pion}, 1, confPIDRejection.value, std::vector<float>{confPIDRejection.value}, kDetector::kTPC) &&
+          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Proton}, 1, confPIDRejection.value, std::vector<float>{confPIDRejection.value}, kDetector::kTPC)) {
+        pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3., std::vector<float>{3.}, kDetector::kTPC);
       }
     } else {
       // use tpc information only for anything else
-      pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3, std::vector<float>{3}, kDetector::kTPC);
+      pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3., std::vector<float>{3.}, kDetector::kTPC);
     }
     return pidSelection;
   }
