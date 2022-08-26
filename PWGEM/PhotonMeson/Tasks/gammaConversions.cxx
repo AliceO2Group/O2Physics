@@ -93,7 +93,7 @@ struct GammaConversions {
     {eV0McValidation::kMcValidatedPhotonOut, "kMcValidatedPhotonOut"},
     {eV0McValidation::kMcValAfterRecCuts, "kMcValAfterRecCuts"}};
 
-    std::map<eV0Decays, std::string> fV0McV0DecaysLabels{
+  std::map<eV0Decays, std::string> fV0McV0DecaysLabels{
     {eV0Decays::ee1, "e+-/e-+, true"},
     {eV0Decays::ee2, "e+-/e-+, diffMother"},
     {eV0Decays::epi, "e+-/pi-+"},
@@ -215,7 +215,7 @@ struct GammaConversions {
     if (doprocessMc) {
       addLablesToHisto1D(fMyRegistry.mV0.mSpecialHistos.mContainer, "hV0McValidation", fV0McValidationLabels);
     }
-    
+
     for (size_t iBARecCuts = 0; iBARecCuts < 2; ++iBARecCuts) {
       for (size_t iMcKind = 0; iMcKind < (doprocessMc ? 4 : 1); ++iMcKind) {
         std::string const* lMcSuffix = &fHistoSuffixes[iMcKind];
@@ -443,17 +443,17 @@ struct GammaConversions {
     lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
                  PDGCode);
     lfillDecaysHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
-                 PDGCode,
-                 sameMother,
-                 McTrackmomentum);
-    
+                    PDGCode,
+                    sameMother,
+                    McTrackmomentum);
+
     if (theV0PassesRecCuts) {
       lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
                    PDGCode);
       lfillDecaysHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kAfterRecCuts].mV0Kind[kRec].mContainer,
-                 PDGCode,
-                 sameMother,
-                 McTrackmomentum);
+                      PDGCode,
+                      sameMother,
+                      McTrackmomentum);
     }
   }
 
