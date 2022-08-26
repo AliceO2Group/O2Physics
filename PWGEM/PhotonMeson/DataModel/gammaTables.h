@@ -85,7 +85,7 @@ DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
 
 namespace gammamctrue
 {
-DECLARE_SOA_COLUMN(P, p, float);                 //! Absolute momentum in GeV/c
+DECLARE_SOA_COLUMN(P, p, float); //! Absolute momentum in GeV/c
 } // namespace gammamctrue
 
 DECLARE_SOA_TABLE(McDaughterTrue, "AOD", "MCDAUTRUE",
@@ -104,7 +104,7 @@ DECLARE_SOA_COLUMN(ConversionX, conversionX, float); //! x of conversion point i
 DECLARE_SOA_COLUMN(ConversionY, conversionY, float); //! y of conversion point in cm
 DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float); //! z of conversion point in cm
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);       //! 2d radius of conversion point
-//DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue); 
+//DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue);
 DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueOne, mcDaughterTrueOne, int, McDaughterTrue, "_One"); // this is a reference that points to the entry in the McDaughterTrues table
 DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueTwo, mcDaughterTrueTwo, int, McDaughterTrue, "_Two"); // this is a reference that points to the entry in the McDaughterTrues table
 } // namespace gammamctrue
@@ -123,7 +123,7 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   gammamctrue::ConversionX, gammamctrue::ConversionY, gammamctrue::ConversionZ,
                   gammamctrue::V0Radius,
 
-                  // Index columns 
+                  // Index columns
                   gammamctrue::McDaughterTrueOneId,
                   gammamctrue::McDaughterTrueTwoId,
 

@@ -59,19 +59,19 @@ enum class eV0McValidation {
 };
 
 enum class eV0Decays {
-  ee1,                   // Electron - Positron with same mother (true V0)
-  ee2,                   // Electron - Positron with different mother
-  epi,                   // Electron/Positron - Pion
-  ek,                    // Electron/Positron - Kaon
-  ep,                    // Electron/Positron - Proton/Antiproton
-  emu,                   // Electron/Positron - Muon
-  pipi,                  // Pion - Pion
-  pik,                   // Pion - Kaon
-  pip,                   // Pion - Proton/Antiproton
-  pimu,                  // Pion - Muon
-  pKmu,                  // Proton/Antiproton - Kaon/Muon
-  other,                 // other
-  nomcparticle           // no mc particle was found for this track
+  ee1,         // Electron - Positron with same mother (true V0)
+  ee2,         // Electron - Positron with different mother
+  epi,         // Electron/Positron - Pion
+  ek,          // Electron/Positron - Kaon
+  ep,          // Electron/Positron - Proton/Antiproton
+  emu,         // Electron/Positron - Muon
+  pipi,        // Pion - Pion
+  pik,         // Pion - Kaon
+  pip,         // Pion - Proton/Antiproton
+  pimu,        // Pion - Muon
+  pKmu,        // Proton/Antiproton - Kaon/Muon
+  other,       // other
+  nomcparticle // no mc particle was found for this track
 };
 
 enum eBeforeAfterRecCuts { kBeforeRecCuts,

@@ -471,44 +471,31 @@ struct GammaConversions {
   {
     float MCV0p = RecoDecay::sqrtSumOfSquares(McTrackmomentum[0] + McTrackmomentum[3], McTrackmomentum[1] + McTrackmomentum[4]);
 
-    if(PDGCode[0] == 0)
-    {
+    if (PDGCode[0] == 0) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::nomcparticle), 0);
-    }
-    else if(sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    } else if (sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee1), MCV0p);
-    }
-    else if(!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    } else if (!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee2), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == 211) || (PDGCode[0] == -11 && PDGCode[1] == -211)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == 211) || (PDGCode[0] == -11 && PDGCode[1] == -211)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::epi), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == 321) || (PDGCode[0] == -11 && PDGCode[1] == -321)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == 321) || (PDGCode[0] == -11 && PDGCode[1] == -321)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ek), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == 2212) || (PDGCode[0] == -11 && PDGCode[1] == -2212)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == 2212) || (PDGCode[0] == -11 && PDGCode[1] == -2212)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ep), MCV0p);
-    }
-    else if((PDGCode[0] == 11 && PDGCode[1] == -13) || (PDGCode[0] == -11 && PDGCode[1] == 13)) {
+    } else if ((PDGCode[0] == 11 && PDGCode[1] == -13) || (PDGCode[0] == -11 && PDGCode[1] == 13)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::emu), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == -211) || (PDGCode[0] == -211 && PDGCode[1] == 211)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == -211) || (PDGCode[0] == -211 && PDGCode[1] == 211)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pipi), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == -321) || (PDGCode[0] == -211 && PDGCode[1] == 321)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == -321) || (PDGCode[0] == -211 && PDGCode[1] == 321)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pik), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == -2212) || (PDGCode[0] == -211 && PDGCode[1] == 2212)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == -2212) || (PDGCode[0] == -211 && PDGCode[1] == 2212)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pip), MCV0p);
-    }
-    else if((PDGCode[0] == 211 && PDGCode[1] == 13) || (PDGCode[0] == -211 && PDGCode[1] == -13)) {
+    } else if ((PDGCode[0] == 211 && PDGCode[1] == 13) || (PDGCode[0] == -211 && PDGCode[1] == -13)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pimu), MCV0p);
-    }
-    else if((PDGCode[0] == 2212 && PDGCode[1] == -321) || (PDGCode[0] == -2212 && PDGCode[1] == 321) || (PDGCode[0] == 2212 && PDGCode[1] == 13) || (PDGCode[0] == -2212 && PDGCode[1] == -13)) {
+    } else if ((PDGCode[0] == 2212 && PDGCode[1] == -321) || (PDGCode[0] == -2212 && PDGCode[1] == 321) || (PDGCode[0] == 2212 && PDGCode[1] == 13) || (PDGCode[0] == -2212 && PDGCode[1] == -13)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pKmu), MCV0p);
-    }
-    else {
+    } else {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::other), MCV0p);
     }
   }
@@ -583,34 +570,33 @@ struct GammaConversions {
 
   template <typename TTRACKS>
   void fillV0MCDaughterParticlesArrays(TTRACKS lTwoV0Daughters,
-                                      int PDGCode[],
-                                      float McParticleMomentum[],
-                                      bool& sameMother)
+                                       int PDGCode[],
+                                       float McParticleMomentum[],
+                                       bool& sameMother)
   {
-      if((lTwoV0Daughters.iteratorAt(0).has_v0DaughterMcParticle()) && (lTwoV0Daughters.iteratorAt(1).has_v0DaughterMcParticle())) {
-        auto MCDaughterParticleOne = lTwoV0Daughters.iteratorAt(0).v0DaughterMcParticle();
-        auto MCDaughterParticleTwo = lTwoV0Daughters.iteratorAt(1).v0DaughterMcParticle();
-        PDGCode[0] = MCDaughterParticleOne.pdgCode();
-        PDGCode[1] = MCDaughterParticleTwo.pdgCode();
-        McParticleMomentum[0] = MCDaughterParticleOne.px();
-        McParticleMomentum[1] = MCDaughterParticleOne.py();
-        McParticleMomentum[2] = MCDaughterParticleOne.pz();
-        McParticleMomentum[3] = MCDaughterParticleTwo.px();
-        McParticleMomentum[4] = MCDaughterParticleTwo.py();
-        McParticleMomentum[5] = MCDaughterParticleTwo.pz();
-        sameMother = MCDaughterParticleOne.sameMother();
-      }
-      else {
-        PDGCode[0] = 0;
-        PDGCode[1] = 0;
-        McParticleMomentum[0] = 0;
-        McParticleMomentum[1] = 0;
-        McParticleMomentum[2] = 0;
-        McParticleMomentum[3] = 0;
-        McParticleMomentum[4] = 0;
-        McParticleMomentum[5] = 0;
-        sameMother = false;
-      }
+    if ((lTwoV0Daughters.iteratorAt(0).has_v0DaughterMcParticle()) && (lTwoV0Daughters.iteratorAt(1).has_v0DaughterMcParticle())) {
+      auto MCDaughterParticleOne = lTwoV0Daughters.iteratorAt(0).v0DaughterMcParticle();
+      auto MCDaughterParticleTwo = lTwoV0Daughters.iteratorAt(1).v0DaughterMcParticle();
+      PDGCode[0] = MCDaughterParticleOne.pdgCode();
+      PDGCode[1] = MCDaughterParticleTwo.pdgCode();
+      McParticleMomentum[0] = MCDaughterParticleOne.px();
+      McParticleMomentum[1] = MCDaughterParticleOne.py();
+      McParticleMomentum[2] = MCDaughterParticleOne.pz();
+      McParticleMomentum[3] = MCDaughterParticleTwo.px();
+      McParticleMomentum[4] = MCDaughterParticleTwo.py();
+      McParticleMomentum[5] = MCDaughterParticleTwo.pz();
+      sameMother = MCDaughterParticleOne.sameMother();
+    } else {
+      PDGCode[0] = 0;
+      PDGCode[1] = 0;
+      McParticleMomentum[0] = 0;
+      McParticleMomentum[1] = 0;
+      McParticleMomentum[2] = 0;
+      McParticleMomentum[3] = 0;
+      McParticleMomentum[4] = 0;
+      McParticleMomentum[5] = 0;
+      sameMother = false;
+    }
   }
 
   Preslice<aod::V0DaughterTracks> perV0 = aod::v0data::v0Id;
@@ -655,16 +641,16 @@ struct GammaConversions {
       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
       bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, lTwoV0Daughters);
 
-      int PDGCode[2]; // Pos, then Neg
+      int PDGCode[2];              // Pos, then Neg
       float McParticleMomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = one 3-5 = two, no need to check the charges
       bool sameMother;
       fillV0MCDaughterParticlesArrays(lTwoV0Daughters, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
 
       // this process function has to exist seperatly because it is only for MC Rec
       processPDGHistos(PDGCode,
-                      sameMother,
-                      McParticleMomentum,
-                      lV0PassesRecCuts);
+                       sameMother,
+                       McParticleMomentum,
+                       lV0PassesRecCuts);
 
       // check if it comes from a true photon (lMcPhotonForThisV0AsTable is a table that might be empty)
       auto lMcPhotonForThisV0AsTable = theV0sTrue.sliceBy(gperV0, lV0.v0Id());
@@ -768,8 +754,8 @@ struct GammaConversions {
     fillTH1(theContainer, "hPt", theMcGamma.pt());
     fillTH1(theContainer, "hConvPointR", theMcGamma.v0Radius());
     fillTH1(theContainer, "hConvPointZ", theMcGamma.conversionZ());
-    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[0], McTrackmomentum[1], McTrackmomentum[2])/theMcGamma.p());
-    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[3], McTrackmomentum[4], McTrackmomentum[5])/theMcGamma.p());
+    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[0], McTrackmomentum[1], McTrackmomentum[2]) / theMcGamma.p());
+    fillTH2(theContainer, "hpeDivpGamma", theMcGamma.p(), RecoDecay::sqrtSumOfSquares(McTrackmomentum[3], McTrackmomentum[4], McTrackmomentum[5]) / theMcGamma.p());
     fillTH2(theContainer, "hRVsZ", theMcGamma.v0Radius(), theMcGamma.conversionZ());
   }
 

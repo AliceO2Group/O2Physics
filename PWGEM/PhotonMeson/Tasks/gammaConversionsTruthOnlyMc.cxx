@@ -86,15 +86,15 @@ struct gammaConversionsTruthOnlyMc {
       registry.fill(HIST("hGammaConvertedPt_Rsel_MCTrue"), theMcConvGamma.pt());
     }
   }
-template <typename MCGAMMA, typename MCDAUONE, typename MCDAUTWO>
+  template <typename MCGAMMA, typename MCDAUONE, typename MCDAUTWO>
   void fillAsymmetryHistograms(MCGAMMA const& theMcConvGamma, MCDAUONE const theFirstDaughter, MCDAUTWO theSecondDaughter)
   {
     float lConversionRadius = theMcConvGamma.v0Radius();
     float lGammaMomentum = theMcConvGamma.p();
 
     if (lConversionRadius > fV0RMin && lConversionRadius < fV0RMax) {
-    registry.fill(HIST("hGammaConvertedpeDivpGamma"), lGammaMomentum, theFirstDaughter.p()/lGammaMomentum);
-    registry.fill(HIST("hGammaConvertedpeDivpGamma"), lGammaMomentum, theSecondDaughter.p()/lGammaMomentum);
+      registry.fill(HIST("hGammaConvertedpeDivpGamma"), lGammaMomentum, theFirstDaughter.p() / lGammaMomentum);
+      registry.fill(HIST("hGammaConvertedpeDivpGamma"), lGammaMomentum, theSecondDaughter.p() / lGammaMomentum);
     }
   }
 
@@ -146,10 +146,10 @@ template <typename MCGAMMA, typename MCDAUONE, typename MCDAUTWO>
       int const lNDaughters = lMcGamma.nDaughters();
       registry.fill(HIST("hNDaughters_MCTrue"), 0.5 + lNDaughters);
       if (lNDaughters == 2) {
-        
+
         fillConversionHistograms(lMcGamma);
 
-        if(lMcGamma.has_mcDaughterTrueOne() && lMcGamma.has_mcDaughterTrueTwo()) {
+        if (lMcGamma.has_mcDaughterTrueOne() && lMcGamma.has_mcDaughterTrueTwo()) {
           auto lMcDaughterOne = lMcGamma.mcDaughterTrueOne();
           auto lMcDaughterTwo = lMcGamma.mcDaughterTrueTwo();
 

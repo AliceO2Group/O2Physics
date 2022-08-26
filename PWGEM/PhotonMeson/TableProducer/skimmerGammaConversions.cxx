@@ -169,10 +169,9 @@ struct skimmerGammaConversions {
 
   void fillMCTrackTable(int const& theTableEntry)
   {
-    if(hasMCParticle) {
+    if (hasMCParticle) {
       fIndexTableMCTrackIndex(theTableEntry);
-    }
-    else {
+    } else {
       fIndexTableMCTrackIndex(-1);
     }
   }
@@ -189,7 +188,7 @@ struct skimmerGammaConversions {
   template <typename TTRACK>
   void fillfFuncTableMCTrackInformation(TTRACK theTrack, bool sameMother)
   {
-      fFuncTableMCTrackInformation(
+    fFuncTableMCTrackInformation(
       theTrack.mcParticle().pdgCode(),
       theTrack.mcParticle().px(),
       theTrack.mcParticle().py(),
@@ -338,8 +337,7 @@ struct skimmerGammaConversions {
       lNegEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
 
       return kNotSameMothers;
-    }
-    else {
+    } else {
       // fill Track Mc true table
       hasMCParticle = true;
       fillfFuncTableMCTrackInformation(theTrackPos, true);
