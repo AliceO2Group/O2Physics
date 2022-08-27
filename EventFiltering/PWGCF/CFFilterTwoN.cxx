@@ -122,21 +122,23 @@ struct CFFilterTwoN {
   bool SelectParticlePID(aod::femtodreamparticle::cutContainerType const& pidCut, int vSpecies, float momentum)
   {
     bool pidSelection = false;
-
     if (vSpecies == o2::track::PID::Proton) {
       // use momentum dependend (TPC or TPC&TOF) pid selection for protons
-      pidSelection = isFullPIDSelected(pidCut, momentum, confPIDThreshold.value, std::vector<int>{vSpecies}, 1., std::vector<float>{3.}, 3., 3.);
-
-    } else if (vSpecies == o2::track::PID::Deuteron && confPIDRejection.value > 0.) {
-      // add additional rejections for deuterons if the paritcle could also be a electron, pion or proton
-      if (!isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Electron}, 1, confPIDRejection.value, std::vector<float>{confPIDRejection.value}, kDetector::kTPC) &&
-          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Pion}, 1, confPIDRejection.value, std::vector<float>{confPIDRejection.value}, kDetector::kTPC) &&
-          !isPIDSelected(pidCut, std::vector<int>{o2::track::PID::Proton}, 1, confPIDRejection.value, std::vector<float>{confPIDRejection.value}, kDetector::kTPC)) {
-        pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3., std::vector<float>{3.}, kDetector::kTPC);
+      pidSelection = isFullPIDSelected(pidCut, momentum, confPIDThreshold.value, std::vector<int>{2}, 4., std::vector<float>{3.5, 3., 2.5}, 3., 3.);
+    } else if (vSpecies == o2::track::PID::Deuteron) {
+      // use additional rejection for deuterons
+      if (confPIDRejection.value > 0.) {
+        // add additional rejections for deuterons if the paritcle could also be a electron, pion or proton
+        if (!isPIDSelected(pidCut, std::vector<int>{0}, 4, confPIDRejection.value, std::vector<float>{3.5, 3., 2.5}, kDetector::kTPC) &&
+            !isPIDSelected(pidCut, std::vector<int>{1}, 4, confPIDRejection.value, std::vector<float>{3.5, 3., 2.5}, kDetector::kTPC) &&
+            !isPIDSelected(pidCut, std::vector<int>{2}, 4, confPIDRejection.value, std::vector<float>{3.5, 3., 2.5}, kDetector::kTPC)) {
+          pidSelection = isPIDSelected(pidCut, std::vector<int>{3}, 4, 3., std::vector<float>{3.5, 3., 2.5}, kDetector::kTPC);
+        }
+      } else {
+        pidSelection = isPIDSelected(pidCut, std::vector<int>{3}, 4, 3., std::vector<float>{3.5, 3., 2.5}, kDetector::kTPC);
       }
     } else {
-      // use tpc information only for anything else
-      pidSelection = isPIDSelected(pidCut, std::vector<int>{vSpecies}, 1, 3., std::vector<float>{3.}, kDetector::kTPC);
+      LOG(fatal) << "Other PID's are not supported by this trigger" << std::endl;
     }
     return pidSelection;
   }
