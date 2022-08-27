@@ -191,22 +191,14 @@ struct lambdakzeroBuilder {
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;
-    static o2::parameters::GRPMagField* grpmag = nullptr;
     if (grpo == nullptr) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
       if (!grpo) {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
-        if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
-        }
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
       }
     }
     float output = 0.0f;
-    if (grpo) {
-      output = grpo->getNominalL3Field();
-    } else {
-      output = grpmag->getNominalL3Field();
-    }
+    output = grpo->getNominalL3Field();
     LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, output);
     return output;
   }
