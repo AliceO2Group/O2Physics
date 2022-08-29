@@ -67,7 +67,29 @@ DECLARE_SOA_TABLE(BestCollisions, "AOD", "BESTCOLL",
                   track::Z, track::Snp, track::Tgl, track::Signed1Pt,
                   track::PtStatic, track::PStatic, track::EtaStatic,
                   track::PhiStatic);
+namespace indices
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
+}
+
+DECLARE_SOA_TABLE(MatchedMulti, "AOD", "MAMU",
+                  indices::BCId, indices::CollisionIds);
 } // namespace o2::aod
+
+struct MultiCollisionAssociation {
+  Produces<aod::MatchedMulti> mm;
+  struct {
+    std::vector<int> colids;
+  } filler;
+  void process(aod::BCs::iterator const& bc, soa::SmallGroups<aod::Collisions> const& collisions)
+  {
+    filler.colids.clear();
+    for (auto const& collision : collisions) {
+      filler.colids.emplace_back(collision.globalIndex());
+    }
+    mm(bc.globalIndex(), filler.colids);
+  }
+};
 
 struct AmbiguousTrackPropagation {
   Produces<aod::BestCollisions> tracksBestCollisions;
@@ -85,7 +107,7 @@ struct AmbiguousTrackPropagation {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
-  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparse>;
+  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedMulti>;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -140,15 +162,17 @@ struct AmbiguousTrackPropagation {
       if (track.x() < o2::constants::geom::XTPCInnerRef + 0.1) {
         auto compatibleBCs = atrack.bc_as<ExtBCs>();
         for (auto& bc : compatibleBCs) {
-          if (!bc.has_collision()) {
+          if (!bc.has_collisions()) {
             continue;
           }
-          auto collision = bc.collision();
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-          if ((dcaInfo[0] < bestDCA[0]) && (dcaInfo[1] < bestDCA[1])) {
-            bestCol = collision.globalIndex();
-            bestDCA[0] = dcaInfo[0];
-            bestDCA[1] = dcaInfo[1];
+          auto collisions = bc.collisions();
+          for (auto const& collision : collisions) {
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+            if ((dcaInfo[0] < bestDCA[0]) && (dcaInfo[1] < bestDCA[1])) {
+              bestCol = collision.globalIndex();
+              bestDCA[0] = dcaInfo[0];
+              bestDCA[1] = dcaInfo[1];
+            }
           }
         }
       }
@@ -168,6 +192,7 @@ struct AmbiguousTrackPropagation {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc),
+                        adaptAnalysisTask<MultiCollisionAssociation>(cfgc)};
   return workflow;
 }
