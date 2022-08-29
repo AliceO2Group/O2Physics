@@ -50,7 +50,7 @@ def GenerateTutorialSample():
 def main():
     parser = argparse.ArgumentParser(description="Arguments to pass")
     parser.add_argument(
-        "cfgFileName", metavar="text", default="config.yml", help="config file name"
+        "cfgFileName", metavar="text", default="configFit.json", help="config file name"
     )
     parser.add_argument(
         "--gen_tutorial", help="generate tutorial sample", action="store_true"
