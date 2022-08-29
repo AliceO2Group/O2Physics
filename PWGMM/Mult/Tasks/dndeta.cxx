@@ -204,7 +204,8 @@ struct MultiplicityCounter {
   Partition<FiTracks> sample = (nabs(aod::track::eta) < estimatorEta) &&
                                ((aod::track::trackCutFlag & trackSelectionDCA) == trackSelectionDCA);
 
-  expressions::Filter atrackFilter = (nabs(aod::track::etas) < estimatorEta) &&
+  expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
+                                     (nabs(aod::track::etas) < estimatorEta) &&
                                      (nabs(aod::track::bestDCAZ) <= 2.f) &&
                                      (nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
 
@@ -218,10 +219,11 @@ struct MultiplicityCounter {
       registry.fill(HIST("Events/Selection"), 2.);
       auto z = collision.posZ();
       auto perCollisionSample = sample->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      if (perCollisionSample.size() > 0) {
+      auto Ntrk = perCollisionSample.size() + atracks.size();
+      if (Ntrk > 0) {
         registry.fill(HIST("Events/Selection"), 3.);
       }
-      registry.fill(HIST("Events/NtrkZvtx"), perCollisionSample.size(), z);
+      registry.fill(HIST("Events/NtrkZvtx"), Ntrk, z);
 
       for (auto& track : tracks) {
         registry.fill(HIST("Tracks/EtaZvtx"), track.eta(), z);
@@ -229,14 +231,22 @@ struct MultiplicityCounter {
         registry.fill(HIST("Tracks/Control/PtEta"), track.pt(), track.eta());
         registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pt(), track.dcaXY());
         registry.fill(HIST("Tracks/Control/DCAZPt"), track.pt(), track.dcaZ());
-        if (perCollisionSample.size() > 0) {
+        if (Ntrk > 0) {
           registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
         }
       }
 
       for (auto& track : atracks) {
+        registry.fill(HIST("Tracks/EtaZvtx"), track.etas(), z);
+        registry.fill(HIST("Tracks/PhiEta"), track.phis(), track.etas());
         registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), track.etas(), z);
         registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), track.phis(), track.etas());
+        registry.fill(HIST("Tracks/Control/PtEta"), track.pts(), track.etas());
+        registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pts(), track.bestDCAXY());
+        registry.fill(HIST("Tracks/Control/DCAZPt"), track.pts(), track.bestDCAZ());
+        if (Ntrk > 0) {
+          registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.etas(), z);
+        }
       }
 
     } else {
@@ -347,7 +357,8 @@ struct MultiplicityCounter {
   void processTrackEfficiency(
     soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
     aod::McCollisions const&, Particles const& mcParticles,
-    soa::Filtered<LabeledTracksEx> const&)
+    soa::Filtered<LabeledTracksEx> const&,
+    soa::SmallGroups<soa::Join<aod::AmbiguousTracks, aod::BestCollisions>> const& atracks)
   {
     for (auto& collision : collisions) {
       if (useEvSel && !collision.sel8()) {
@@ -366,6 +377,14 @@ struct MultiplicityCounter {
           registry.fill(HIST("Tracks/Control/PtEfficiency"), track.mcParticle_as<Particles>().pt());
         } else {
           registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), track.pt());
+        }
+      }
+      for (auto& track : atracks) {
+        auto ttrack = track.track_as<soa::Filtered<LabeledTracksEx>>();
+        if (ttrack.has_mcParticle()) {
+          registry.fill(HIST("Tracks/Control/PtEfficiency"), ttrack.mcParticle_as<Particles>().pt());
+        } else {
+          registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), track.pts());
         }
       }
 

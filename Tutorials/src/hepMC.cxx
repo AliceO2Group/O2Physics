@@ -20,31 +20,38 @@ using namespace o2;
 using namespace o2::framework;
 
 // Simple access to collision
-struct HepMC {
+struct HepMc {
+  OutputObj<TH2F> xsection{TH2F("xsection", "collision id vs. generator ID", 1000, -0.5, 999.5, 20, -0.5, 19.5)};
+  OutputObj<TH2F> pdfinfo{TH2F("pdfinfo", "collision id vs. generator ID", 1000, -0.5, 999.5, 20, -0.5, 19.5)};
+  OutputObj<TH2F> heavyion{TH2F("heavyion", "collision id vs. generator ID", 1000, -0.5, 999.5, 20, -0.5, 19.5)};
+
   void processXSection(aod::HepMCXSection const& hepMC)
   {
-    LOGF(info, "X-section: Coll id: %d, generator: %d, accepted: %lld, attempted: %lld",
+    LOGF(debug, "X-section: Coll id: %d, generator: %d, accepted: %lld, attempted: %lld",
          hepMC.mcCollisionId(), hepMC.generatorsID(), hepMC.accepted(), hepMC.attempted());
+    xsection->Fill(hepMC.mcCollisionId(), hepMC.generatorsID());
   }
-  PROCESS_SWITCH(HepMC, processXSection, "Process x-section", true);
+  PROCESS_SWITCH(HepMc, processXSection, "Process x-section", true);
 
   void processPdfInfo(aod::HepMCPdfInfo const& hepMC)
   {
-    LOGF(info, "PDFInfo: Coll id: %d, generator: %d, id1: %lld, id2: %lld",
+    LOGF(debug, "PDFInfo: Coll id: %d, generator: %d, id1: %lld, id2: %lld",
          hepMC.mcCollisionId(), hepMC.generatorsID(), hepMC.id1(), hepMC.id2());
+    pdfinfo->Fill(hepMC.mcCollisionId(), hepMC.generatorsID());
   }
-  PROCESS_SWITCH(HepMC, processPdfInfo, "Process PDF info", true);
+  PROCESS_SWITCH(HepMc, processPdfInfo, "Process PDF info", true);
 
   void processHeavyIon(aod::HepMCHeavyIon const& hepMC)
   {
-    LOGF(info, "Heavy Ion: Coll id: %d, generator: %d, ncoll_hard: %lld, ncoll: %lld",
+    LOGF(debug, "Heavy Ion: Coll id: %d, generator: %d, ncoll_hard: %lld, ncoll: %lld",
          hepMC.mcCollisionId(), hepMC.generatorsID(), hepMC.ncollHard(), hepMC.ncoll());
+    heavyion->Fill(hepMC.mcCollisionId(), hepMC.generatorsID());
   }
-  PROCESS_SWITCH(HepMC, processHeavyIon, "Process Heavy Ion info", true);
+  PROCESS_SWITCH(HepMc, processHeavyIon, "Process Heavy Ion info", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HepMC>(cfgc)};
+    adaptAnalysisTask<HepMc>(cfgc)};
 }

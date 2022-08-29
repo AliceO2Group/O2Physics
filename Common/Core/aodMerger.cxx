@@ -95,11 +95,11 @@ int main(int argc, char* argv[])
     } else if (c == 3) {
       skipNonExistingFiles = true;
     } else if (c == 4) {
-      printf("AOD merging tool. Options: \n");
+      printf("AO2D merging tool. Options: \n");
       printf("  --input <inputfile.txt>      Contains path to files to be merged. Default: %s\n", inputCollection.c_str());
       printf("  --output <outputfile.root>   Target output ROOT file. Default: %s\n", outputFileName.c_str());
       printf("  --max-size <size in Bytes>   Target directory size. Default: %ld\n", maxDirSize);
-      printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the intput list.\n");
+      printf("  --skip-non-existing-files    Flag to allow skipping of non-existing files in the input list.\n");
       return -1;
     } else {
       return -2;
