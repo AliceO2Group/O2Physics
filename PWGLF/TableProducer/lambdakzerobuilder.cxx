@@ -73,7 +73,7 @@ using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA>;
 using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-//in case requested
+// in case requested
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 //#define MY_DEBUG
@@ -104,6 +104,7 @@ struct lambdakzeroBuilder {
   float d_bz;
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   // for debugging
 #ifdef MY_DEBUG
@@ -133,8 +134,11 @@ struct lambdakzeroBuilder {
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -150,33 +154,14 @@ struct lambdakzeroBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-      o2::parameters::GRPMagField* grpmag = 0x0;
-      if (!grpo) {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-        if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-        }
-      }
-      if (grpo) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-      } else {
-        o2::base::Propagator::initFieldFromGRP(grpmag);
-      }
-      o2::base::Propagator::Instance()->setMatLUT(lut);
+      ccdb->get<TGeoManager>(geoPath);
     }
 
     if (doprocessRun3 && doprocessRun2) {
@@ -186,34 +171,35 @@ struct lambdakzeroBuilder {
       LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
     }
   }
-
-  float getMagneticField(uint64_t timestamp)
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
-      if (!grpo) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    auto run3grp_timestamp = bc.timestamp();
+
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!grpo) {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
     }
-    float output = 0.0f;
-    output = grpo->getNominalL3Field();
-    LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, output);
-    return output;
-  }
-
-  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
-  {
-    if (lRunNumber != mRunNumber) {
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(lTimeStamp);
+        d_bz = grpo->getNominalL3Field();
+        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", run3grp_timestamp, d_bz);
       } else {
         d_bz = d_bz_input;
       }
-      mRunNumber = lRunNumber;
+    } else {
+      o2::base::Propagator::initFieldFromGRP(grpmag);
     }
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+    mRunNumber = bc.runNumber();
   }
 
   template <class TCascTracksTo>
@@ -420,7 +406,7 @@ struct lambdakzeroBuilder {
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
+    initCCDB(bc);
 
     // do v0s, typecase correctly into tracks (Run 2 use case)
     buildLambdaKZeroTable<MyTracks>(collision, V0s, kFALSE);
@@ -436,7 +422,7 @@ struct lambdakzeroBuilder {
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
+    initCCDB(bc);
 
     // do v0s, typecase correctly into tracksIU (Run 3 use case)
     buildLambdaKZeroTable<MyTracksIU>(collision, V0s, kTRUE);
@@ -448,7 +434,7 @@ struct lambdakzeroLabelBuilder {
 
   Produces<aod::McV0Labels> v0labels;
 
-  //for bookkeeping purposes: how many V0s come from same mother etc
+  // for bookkeeping purposes: how many V0s come from same mother etc
   HistogramRegistry registry{
     "registry",
     {
@@ -463,7 +449,7 @@ struct lambdakzeroLabelBuilder {
 
   void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
   {
-    //dummy process function - should not be required in the future
+    // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(lambdakzeroLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
@@ -475,13 +461,13 @@ struct lambdakzeroLabelBuilder {
       int lLabel = -1;
       int lPDG = -1;
       float lPt = -1;
-      float lFillVal = 0.5f; //all considered V0s
+      float lFillVal = 0.5f; // all considered V0s
 
       auto lNegTrack = v0.negTrack_as<LabeledTracks>();
       auto lPosTrack = v0.posTrack_as<LabeledTracks>();
 
-      //Association check
-      //There might be smarter ways of doing this in the future
+      // Association check
+      // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
@@ -493,16 +479,16 @@ struct lambdakzeroLabelBuilder {
                 lLabel = lNegMother.globalIndex();
                 lPt = lNegMother.pt();
                 lPDG = lNegMother.pdgCode();
-                lFillVal = 1.5f; //v0s with the same mother
+                lFillVal = 1.5f; // v0s with the same mother
               }
             }
           }
         }
-      } //end association check
+      } // end association check
       registry.fill(HIST("hLabelCounter"), lFillVal);
 
-      //Intended for cross-checks only
-      //N.B. no rapidity cut!
+      // Intended for cross-checks only
+      // N.B. no rapidity cut!
       if (lPDG == 310)
         registry.fill(HIST("hK0Short"), lPt);
       if (lPDG == 3122)
@@ -510,7 +496,7 @@ struct lambdakzeroLabelBuilder {
       if (lPDG == -3122)
         registry.fill(HIST("hAntiLambda"), lPt);
 
-      //Construct label table (note: this will be joinable with V0Datas)
+      // Construct label table (note: this will be joinable with V0Datas)
       v0labels(
         lLabel);
     }
