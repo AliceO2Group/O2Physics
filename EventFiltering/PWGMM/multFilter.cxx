@@ -49,23 +49,23 @@ struct multFilter {
          kNtriggersMM };
 
   // event selection cuts
-  Configurable<float> selHTrkMult{"selHTrkMult", 24., "global trk multiplicity threshold"};
-  Configurable<float> selHMfddft0cfv0mft{"selHMfddft0cfv0mft", 138.6, "FDD+FV0+FT0C+MFT mult threshold"};
-  Configurable<float> selHMfddfv0mft{"selHMfddfv0mft", 137.9, "FDD+FV0+MFT mult threshold"};
-  Configurable<float> selHMfv0mft{"selHMfv0mft", 65.6, "FV0+MFT mult threshold"};
-  Configurable<float> selHMFv0{"selHMFv0", 9991.85, "FV0-amplitude threshold"};
-  Configurable<float> selHMMFTMult{"selHMMFTMult", 28.14, "MFT multilicity threshold"};
-  Configurable<float> sel1Ffv0{"sel1Ffv0", 0.9, "1-flatenicity FV0  threshold"};
-  Configurable<float> sel1Fmftglob{"sel1Fmftglob", 0.80, "1-flatenicity MFT+Globtracks threshold"};
-  Configurable<float> sel1Fmftfv0glob{"sel1Fmftfv0glob", 0.81, "1-flatenicity FV0+MFT+Globtracks threshold"};
-  Configurable<float> sel1Fmftfv0{"sel1Fmftfv0", 0.86, "1-flatenicity MFT+FV0 threshold"};
-  Configurable<float> sel1Mmftft0a{"sel1Mmftft0a", 41.1, "1-flatenicity MFT+FT0A threshold"};
-  Configurable<float> sel1Mft0{"sel1Mft0", 43.4, "FT0 mult threshold"};
-  Configurable<float> sel1Fft0{"sel1Fft0", 0.78, "1-flatenicity FT0 threshold"};
-  Configurable<float> sel1Fmftft0a{"sel1Fmftft0a", 0.8, "1-flatenicity MFT+FT0A threshold"};
-  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 70.0, "FT0C+FV0 mult threshold"};
-  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.84, "1-flatenicity FT0C+FV0 threshold"};
-  Configurable<float> selPtTrig{"selPtTrig", 5., "track pT leading threshold"};
+  Configurable<float> selHTrkMult{"selHTrkMult", 45., "global trk multiplicity threshold"};
+  Configurable<float> selHMfddft0cfv0mft{"selHMfddft0cfv0mft", 237.0, "FDD+FV0+FT0C+MFT mult threshold"};
+  Configurable<float> selHMfddfv0mft{"selHMfddfv0mft", 226.0, "FDD+FV0+MFT mult threshold"};
+  Configurable<float> selHMfv0mft{"selHMfv0mft", 197.0, "FV0+MFT mult threshold"};
+  Configurable<float> selHMFv0{"selHMFv0", 33559.5, "FV0-amplitude threshold"};
+  Configurable<float> selHMMFTMult{"selHMMFTMult", 73.0, "MFT multilicity threshold"};
+  Configurable<float> sel1Ffv0{"sel1Ffv0", 0.93, "1-flatenicity FV0  threshold"};
+  Configurable<float> sel1Fmftglob{"sel1Fmftglob", 0.865, "1-flatenicity MFT+Globtracks threshold"};
+  Configurable<float> sel1Fmftfv0glob{"sel1Fmftfv0glob", 0.88, "1-flatenicity FV0+MFT+Globtracks threshold"};
+  Configurable<float> sel1Fmftfv0{"sel1Fmftfv0", 0.907, "1-flatenicity MFT+FV0 threshold"};
+  Configurable<float> sel1Mmftft0a{"sel1Mmftft0a", 64.0, "1-flatenicity MFT+FT0A threshold"};
+  Configurable<float> sel1Mft0{"sel1Mft0", 116.0, "FT0 mult threshold"};
+  Configurable<float> sel1Fft0{"sel1Fft0", 0.85, "1-flatenicity FT0 threshold"};
+  Configurable<float> sel1Fmftft0a{"sel1Fmftft0a", 0.865, "1-flatenicity MFT+FT0A threshold"};
+  Configurable<float> sel1Mft0cFv0{"sel1Mft0cfv0", 202.0, "FT0C+FV0 mult threshold"};
+  Configurable<float> sel1Fft0cFv0{"sel1Fft0cfv0", 0.892, "1-flatenicity FT0C+FV0 threshold"};
+  Configurable<float> selPtTrig{"selPtTrig", 11., "track pT leading threshold"};
 
   Produces<aod::MultFilters> tags;
 
@@ -443,7 +443,8 @@ struct multFilter {
     cut[16] = selPtTrig;
     // option 1
     const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
-    float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};
+    // float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};// values for pilot run, 900 GeV
+    float weigthsEta1[nEta1] = {0.000710054, 1.94347, 0.04924, 0.00451969, 0.00215551};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
     ampl1[0] = sumAmpFDDC;
     ampl1[1] = multMFTTrackParc;
@@ -456,7 +457,8 @@ struct multFilter {
     }
     // option 2
     const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
-    float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00548221, 0.0037175};
+    // float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00548221, 0.0037175};// values for pilot run, 900 GeV
+    float weigthsEta2[nEta2] = {0.000710054, 1.27606, 0.00451969, 0.00215551};
     float ampl2[nEta2] = {0, 0, 0, 0};
     ampl2[0] = sumAmpFDDC;
     ampl2[1] = multMFTTrack;
@@ -468,7 +470,8 @@ struct multFilter {
 
     // option 3
     const int nEta3 = 2; // MFT + FV0
-    float weigthsEta3[nEta3] = {1.05258, 0.00535717};
+    // float weigthsEta3[nEta3] = {1.05258, 0.00535717};// values for pilot run, 900 GeV
+    float weigthsEta3[nEta3] = {1.27606, 0.00437892};
     float ampl3[nEta3] = {0, 0};
     ampl3[0] = multMFTTrack;
     ampl3[1] = sumAmpFV0;
@@ -478,7 +481,8 @@ struct multFilter {
 
     // option 4
     const int nEta4 = 2; // MFT + FT0A
-    float weigthsEta4[nEta4] = {1.05258, 0.014552069};
+    // float weigthsEta4[nEta4] = {1.05258, 0.014552069};// values for pilot run, 900 GeV
+    float weigthsEta4[nEta4] = {0.00437892, 0.0097735442};
     float ampl4[nEta4] = {0, 0};
     ampl4[0] = multMFTTrack;
     ampl4[1] = sumAmpFT0A;
@@ -488,7 +492,8 @@ struct multFilter {
 
     // option 5
     const int nEta5 = 2; // FT0C + FT0A
-    float weigthsEta5[nEta5] = {0.0569502, 0.014552069};
+    // float weigthsEta5[nEta5] = {0.0569502, 0.014552069};// values for pilot run, 900 GeV
+    float weigthsEta5[nEta5] = {0.04924, 0.0097735442};
     float ampl5[nEta5] = {0, 0};
     ampl5[0] = sumAmpFT0C;
     ampl5[1] = sumAmpFT0A;
@@ -498,7 +503,8 @@ struct multFilter {
 
     // option 6
     const int nEta6 = 2; //  FT0C + FV0
-    float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
+    // float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
+    float weigthsEta6[nEta6] = {0.04924, 0.00437892};
     float ampl6[nEta6] = {0, 0};
     ampl6[0] = sumAmpFT0C;
     ampl6[1] = sumAmpFV0;
