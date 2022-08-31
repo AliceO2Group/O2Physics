@@ -162,7 +162,7 @@ struct GammaConversions {
     // only in mc
     // resolution histos
     std::vector<MyHistogramSpec> lV0ResolutionHistoDefinitions{
-      {"hPtRes", "hPtRes_Rec-MC;#Delta p_T (GeV/c);counts", {HistType::kTH1F, {{800, -5.f, 5.f}}}},
+      {"hPtRes", "hPtRes_Rec-MC;p_T (GeV/c);#Delta p_T (GeV/c);counts", {HistType::kTH2F, {gAxis_pT, {800, -5.f, 5.f}}}},
       {"hEtaRes", "hEtaRes_Rec-MC;#Delta #eta;counts", {HistType::kTH1F, {gAxis_radRes}}},
       {"hPhiRes", "hPhiRes_Rec-MC;#Delta #phi (rad);counts", {HistType::kTH1F, {gAxis_radRes}}},
       {"hConvPointXYResVsXY", "hConvPointXYResVsXY_Rec-MC;R (cm);#Delta R (cm)", {HistType::kTH2F, {gAxis_r, gAxis_dr}}}, // maybe change axis later on
@@ -508,7 +508,7 @@ struct GammaConversions {
     TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
     TVector3 lConvPointRecalc(theV0.recalculatedVtxX(), theV0.recalculatedVtxY(), theV0.recalculatedVtxZ());
 
-    fillTH1(theContainer, "hPtRes", theV0.pt() - theMcPhoton.pt());
+    fillTH2(theContainer, "hPtRes", theMcPhoton.pt(),theV0.pt() - theMcPhoton.pt());
     fillTH1(theContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
     fillTH1(theContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
     fillTH2(theContainer, "hConvPointXYResVsXY", lConvPointTrue.Perp(), theV0.v0radius() - lConvPointTrue.Perp());
