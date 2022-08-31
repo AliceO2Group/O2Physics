@@ -385,7 +385,6 @@ struct flatenictyFV0 {
       return;
     }
 
-
     flatenicity.fill(HIST("hEv"), 3);
     // these values are from equalized pass 4 signals
     const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
