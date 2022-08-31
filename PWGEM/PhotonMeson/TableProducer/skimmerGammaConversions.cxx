@@ -178,7 +178,7 @@ struct skimmerGammaConversions {
   template <typename TTRACK>
   void fillfFuncTableMCTrackInformation(TTRACK theTrack, bool sameMother)
   {
-      fFuncTableMCTrackInformation(
+    fFuncTableMCTrackInformation(
       theTrack.mcParticle().pdgCode(),
       theTrack.mcParticle().px(),
       theTrack.mcParticle().py(),
@@ -318,14 +318,13 @@ struct skimmerGammaConversions {
       hasSameMother = false;
       MCTrackInformationHasEntry = true;
       theReturnReason = kNotSameMothers;
-    }
-    else {
+    } else {
       // fill Track Mc true table
       hasSameMother = true;
       MCTrackInformationHasEntry = true;
     }
 
-    if(MCTrackInformationHasEntry) {
+    if (MCTrackInformationHasEntry) {
       fillfFuncTableMCTrackInformation(theTrackPos, hasSameMother);
       lPosEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
       fillfFuncTableMCTrackInformation(theTrackNeg, hasSameMother);
@@ -335,7 +334,7 @@ struct skimmerGammaConversions {
     fIndexTableMCTrackIndex(lPosEntryInMCTrack);
     fIndexTableMCTrackIndex(lNegEntryInMCTrack);
 
-    if((theReturnReason == kNoTrackComesFromMother) || (theReturnReason == kOneTrackHasOneMother) || (theReturnReason == kNotSameMothers)) {
+    if ((theReturnReason == kNoTrackComesFromMother) || (theReturnReason == kOneTrackHasOneMother) || (theReturnReason == kNotSameMothers)) {
       return static_cast<eV0Confirmation>(theReturnReason);
     }
 
