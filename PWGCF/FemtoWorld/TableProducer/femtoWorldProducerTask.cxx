@@ -781,9 +781,9 @@ struct femtoWorldProducerTask {
           }
         }
 
-        float phiPx = p1.px() + p2.px();
-        float phiPy = p1.py() + p2.py();
-        float phiPz = p1.pz() + p2.pz();
+        // float phiPx = p1.px() + p2.px();
+        // float phiPy = p1.py() + p2.py();
+        // float phiPz = p1.pz() + p2.pz();
 
         TLorentzVector part1Vec;
         TLorentzVector part2Vec;
