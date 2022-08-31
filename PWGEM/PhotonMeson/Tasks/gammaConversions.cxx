@@ -508,7 +508,7 @@ struct GammaConversions {
     TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
     TVector3 lConvPointRecalc(theV0.recalculatedVtxX(), theV0.recalculatedVtxY(), theV0.recalculatedVtxZ());
 
-    fillTH2(theContainer, "hPtRes", theMcPhoton.pt(),theV0.pt() - theMcPhoton.pt());
+    fillTH2(theContainer, "hPtRes", theMcPhoton.pt(), theV0.pt() - theMcPhoton.pt());
     fillTH1(theContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
     fillTH1(theContainer, "hPhiRes", theV0.phi() - theMcPhoton.phi());
     fillTH2(theContainer, "hConvPointXYResVsXY", lConvPointTrue.Perp(), theV0.v0radius() - lConvPointTrue.Perp());
