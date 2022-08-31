@@ -49,12 +49,15 @@ enum ParticleType {
   kTrack,           //! Track
   kV0,              //! V0
   kV0Child,         //! Child track of a V0
+  kPhi,             // PhiCandidate type
+  kPhiChild,        // PhiCandidate type
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
+
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Phi", "PhiChild", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -123,6 +126,7 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 
 } // namespace femtoworldparticle
+
 DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   o2::soa::Index<>,
                   femtoworldparticle::FemtoWorldCollisionId,
@@ -185,6 +189,36 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
 using FemtoWorldParticle = FemtoWorldParticles::iterator;
+/*
+/// FemtoWorldPhiCandidates
+namespace femtoworldphicandidate
+{
+
+//DECLARE_SOA_COLUMN(Pt, pt, float);                    //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Px, px, float);                    //! p_x (GeV/c)
+DECLARE_SOA_COLUMN(Py, py, float);                    //! p_y (GeV/c)
+DECLARE_SOA_COLUMN(Pz, pz, float);                    //! p_z (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);                 //! Phi
+
+
+
+} // namespace femtoworldphicandidates
+
+DECLARE_SOA_TABLE(FemtoWorldPhiCandidates, "AOD", "FEMTOWORLDPHIC",
+                  o2::soa::Index<>,
+                  //femtoworldparticle::FemtoWorldCollisionId,
+                  femtoworldphicandidate::Px,
+                  femtoworldphicandidate::Py,
+                  femtoworldphicandidate::Pz,
+                 //femtoworldphicandidate::Pt,
+                  femtoworldphicandidate::Eta,
+                  femtoworldphicandidate::Phi)
+
+
+                  ;
+using FemtoWorldPhiCandidate = FemtoWorldPhiCandidates::iterator;
+*/
 /*
 DECLARE_SOA_TABLE(FemtoWorldDebugParticles, "AOD", "FEMTOWORLDDEBUGPARTS",
                   femtoworldparticle::Sign,
