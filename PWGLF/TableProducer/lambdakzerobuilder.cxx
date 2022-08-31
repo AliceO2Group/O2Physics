@@ -191,7 +191,7 @@ struct lambdakzeroBuilder {
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = grpo->getNominalL3Field();
-        LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", run3grp_timestamp, d_bz);
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
         d_bz = d_bz_input;
       }
