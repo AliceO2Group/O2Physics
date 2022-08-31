@@ -107,7 +107,6 @@ struct skimmerGammaConversions {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
-  bool hasMCParticle = false;
 
   void init(InitContext const&)
   {
@@ -165,16 +164,6 @@ struct skimmerGammaConversions {
       theTrack.tpcNSigmaEl(),
       theTrack.tpcNSigmaPi(),
       theTrack.tpcSignal());
-  }
-
-  void fillMCTrackTable(int const& theTableEntry)
-  {
-    if(hasMCParticle) {
-      fIndexTableMCTrackIndex(theTableEntry);
-    }
-    else {
-      fIndexTableMCTrackIndex(-1);
-    }
   }
 
   template <typename TV0>
@@ -259,13 +248,9 @@ struct skimmerGammaConversions {
         auto lTrackPos = lV0.template posTrack_as<tracksAndTPCInfoMC>(); // positive daughter
         auto lTrackNeg = lV0.template negTrack_as<tracksAndTPCInfoMC>(); // negative daughter
 
-        int lPosEntryInMCTrack = -1;
-        int lNegEntryInMCTrack = -1;
         eV0Confirmation lV0Status = isTrueV0(lV0,
                                              lTrackPos,
-                                             lTrackNeg,
-                                             lPosEntryInMCTrack,
-                                             lNegEntryInMCTrack);
+                                             lTrackNeg);
 
         fRegistry.get<TH1>(HIST("hV0Confirmation"))->Fill(lV0Status);
 
@@ -273,9 +258,7 @@ struct skimmerGammaConversions {
         Vtx_recalculation(lTrackPos, lTrackNeg, recalculatedVtx);
 
         fillTrackTable(lV0, lTrackPos, true);
-        fillMCTrackTable(lPosEntryInMCTrack);
         fillTrackTable(lV0, lTrackNeg, false);
-        fillMCTrackTable(lNegEntryInMCTrack);
         fillV0RecalculatedTable(lV0, recalculatedVtx);
       }
     }
@@ -285,9 +268,7 @@ struct skimmerGammaConversions {
   template <typename TV0, typename TTRACK>
   eV0Confirmation isTrueV0(TV0 const& theV0,
                            TTRACK const& theTrackPos,
-                           TTRACK const& theTrackNeg,
-                           int& lPosEntryInMCTrack,
-                           int& lNegEntryInMCTrack)
+                           TTRACK const& theTrackNeg)
   {
     auto getMothersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lMothersIndeces{};
@@ -313,39 +294,49 @@ struct skimmerGammaConversions {
     std::vector<int> lMothersIndecesPos = getMothersIndeces(lMcPos);
     std::vector<int> lMothersIndecesNeg = getMothersIndeces(lMcNeg);
 
+    int theReturnReason = -1;
+    bool hasSameMother = false;
+    bool MCTrackInformationHasEntry = false;
+
+    int lPosEntryInMCTrack = -1;
+    int lNegEntryInMCTrack = -1;
+
     // none of tracks has a mother, has been accounted for in fMotherSizesHisto
     if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 0) {
-      hasMCParticle = false;
-
-      return kNoTrackComesFromMother;
+      theReturnReason = kNoTrackComesFromMother;
     }
 
     // exactly one track has one mother
     if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 1) {
-      hasMCParticle = false;
-
-      return kOneTrackHasOneMother;
+      theReturnReason = kOneTrackHasOneMother;
     }
 
     // we know now both tracks have at least one mother
     // check if it is the same
     if (lMothersIndecesPos[0] != lMothersIndecesNeg[0]) {
       // fill Track Mc true table
-      hasMCParticle = true;
-      fillfFuncTableMCTrackInformation(theTrackPos, false);
-      lPosEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
-      fillfFuncTableMCTrackInformation(theTrackNeg, false);
-      lNegEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
-
-      return kNotSameMothers;
+      hasSameMother = false;
+      MCTrackInformationHasEntry = true;
+      theReturnReason = kNotSameMothers;
     }
     else {
       // fill Track Mc true table
-      hasMCParticle = true;
-      fillfFuncTableMCTrackInformation(theTrackPos, true);
+      hasSameMother = true;
+      MCTrackInformationHasEntry = true;
+    }
+
+    if(MCTrackInformationHasEntry) {
+      fillfFuncTableMCTrackInformation(theTrackPos, hasSameMother);
       lPosEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
-      fillfFuncTableMCTrackInformation(theTrackNeg, true);
+      fillfFuncTableMCTrackInformation(theTrackNeg, hasSameMother);
       lNegEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
+    }
+
+    fIndexTableMCTrackIndex(lPosEntryInMCTrack);
+    fIndexTableMCTrackIndex(lNegEntryInMCTrack);
+
+    if((theReturnReason == kNoTrackComesFromMother) || (theReturnReason == kOneTrackHasOneMother) || (theReturnReason == kNotSameMothers)) {
+      return static_cast<eV0Confirmation>(theReturnReason);
     }
 
     // both tracks have the same first mother
