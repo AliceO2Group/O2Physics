@@ -42,7 +42,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   ConfigParamSpec hfjetMode = {
     "hfjetMode",
     VariantType::String,
-    "",
+    "data",
     {"HF jet finder mode."},
   };
   workflowOptions.push_back(hfjetMode);
