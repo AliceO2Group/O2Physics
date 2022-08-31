@@ -55,6 +55,7 @@ struct HfTaskFlow {
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", "false", "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", "true", "Flag to run on Run 3 data"};
+  Configurable<bool> processMC{"processMC", "false", "Flag to run on MC"};
 
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
@@ -207,8 +208,10 @@ struct HfTaskFlow {
       //  Run 2: trigger selection for data case
       if (fillHistograms)
         registry.fill(HIST("hEventCounter"), 1);
-      if (!collision.alias()[kINT7]) {
-        return false;
+      if (!processMC) {
+        if (!collision.alias()[kINT7]) {
+          return false;
+        }
       }
       //  Run 2: further offline selection
       if (fillHistograms)
@@ -440,7 +443,7 @@ struct HfTaskFlow {
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
 
-      const auto multiplicity = tracks1.size();
+      const auto multiplicity = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
       const auto vz = collision1.posZ();
 
       if constexpr (std::is_same_v<hfCandidates, TTracksTrig>) {
@@ -530,6 +533,7 @@ struct HfTaskFlow {
   void processMixedTPCTPChh(aodCollisions& collisions,
                             aodTracks& tracks)
   {
+    //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
@@ -547,13 +551,14 @@ struct HfTaskFlow {
                              aodTracks& tracks,
                              hfCandidates& candidates)
   {
-    auto getCandsSize = [&candidates](aodCollisions::iterator const& col) {
-      auto associatedCands = candidates.sliceByCached(o2::aod::track::collisionId, col.globalIndex()); // it's cached, so slicing/grouping happens only once
-      auto size = associatedCands.size();
+    //  we want to group collisions based on charged-track multiplicity
+    auto getTracksSize = [&tracks](aodCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex());
+      auto size = associatedTracks.size();
       return size;
     };
 
-    mixCollisions(collisions, candidates, tracks, getCandsSize, mixedHF);
+    mixCollisions(collisions, candidates, tracks, getTracksSize, mixedHF);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedHFHadrons, "Process mixed-event correlations for HF-h case", true);
 };
