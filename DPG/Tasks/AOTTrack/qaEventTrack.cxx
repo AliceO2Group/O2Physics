@@ -34,6 +34,8 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
+#include "string"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -106,6 +108,8 @@ struct qaEventTrack {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perRecoCollision = aod::track::collisionId;
 
+  // constexpr char* strAllFilteredTracks = "KineUnmatchTracks";
+  // constexpr char* strAllUnfilteredTracks = "KineUnmatchUnfilteredTracks";
   void init(InitContext const&)
   {
     if (!doprocessData && !doprocessMC && !doprocessDataIU && !doprocessDataIUFiltered) {
@@ -173,6 +177,7 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/pt", "#it{p}_{T}", kTH1D, {axisPt});
     histos.add("Tracks/Kine/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/Kine/phi", "#varphi", kTH1D, {axisPhi});
+    histos.add("Tracks/Kine/etavsphi", "#eta vs #varphi", kTH2F, {axisEta, axisPhi});
     histos.add("Tracks/Kine/etavspt", "#eta vs #it{p}_{T}", kTH2F, {axisPt, axisEta});
     histos.add("Tracks/Kine/phivspt", "#varphi vs #it{p}_{T}", kTH2F, {axisPt, axisPhi});
     if (doprocessMC) {
@@ -183,16 +188,28 @@ struct qaEventTrack {
     histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution;#sigma{#it{p}}/#it{p}_{T};#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
     histos.add("Tracks/Kine/relativeResoPtMean", "mean relative #it{p}_{T} resolution;#LT#sigma{#it{p}}/#it{p}_{T}#GT;#it{p}_{T}", kTProfile, {{axisPt}});
 
-    // count tracks matched to a collision
-    auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Track - collision matching", kTH1F, {{4, 0.5, 4.5, ""}});
+    // count filtered tracks matched to a collision
+    auto h1 = histos.add<TH1>("Tracks/KineUnmatchTracks/trackCollMatch", "Filtered track - collision matching", kTH1F, {{5, 0.5, 5.5, ""}});
     h1->GetXaxis()->SetBinLabel(h1->FindBin(1), "all tracks");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(2), "tracks matched to coll.");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(3), "tracks unmatched");
     h1->GetXaxis()->SetBinLabel(h1->FindBin(4), "(MC) fake tracks");
-    // kine histograms for tracks not matched to collisions
+    h1->GetXaxis()->SetBinLabel(h1->FindBin(5), "is track ambiguous");
+    // kine histograms for filtered tracks not matched to collisions
     histos.add("Tracks/KineUnmatchTracks/pt", "#it{p}_{T}", kTH1D, {axisPt});
     histos.add("Tracks/KineUnmatchTracks/eta", "#eta", kTH1D, {axisEta});
     histos.add("Tracks/KineUnmatchTracks/phi", "#varphi", kTH1D, {axisPhi});
+    // count unfiltered tracks matched to a collision
+    auto h1Unfiltered = histos.add<TH1>("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch", "Unfiltered track - collision matching", kTH1F, {{5, 0.5, 5.5, ""}});
+    h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(1), "all tracks");
+    h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(2), "tracks matched to coll.");
+    h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(3), "tracks unmatched");
+    h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(4), "(MC) fake tracks");
+    h1Unfiltered->GetXaxis()->SetBinLabel(h1Unfiltered->FindBin(5), "is track ambiguous");
+    // kine histograms for filtered tracks not matched to collisions
+    histos.add("Tracks/KineUnmatchUnfilteredTracks/pt", "#it{p}_{T}", kTH1D, {axisPt});
+    histos.add("Tracks/KineUnmatchUnfilteredTracks/eta", "#eta", kTH1D, {axisEta});
+    histos.add("Tracks/KineUnmatchUnfilteredTracks/phi", "#varphi", kTH1D, {axisPhi});
 
     /// check correct track-to-vertex matching (MC)
     if (doprocessMC) {
@@ -431,18 +448,20 @@ struct qaEventTrack {
   }
 
   // General functions to fill data and MC histograms
-  template <bool IS_MC, typename T>
-  void fillRecoHistogramsAllTracks(const T& tracks);
+  template <bool IS_MC, bool FILL_FILTERED, typename T>
+  void fillRecoHistogramsAllTracks(const T& tracks, const aod::AmbiguousTracks& tracksAmbiguous);
   template <bool IS_MC, typename C, typename T, typename T_UNF>
   void fillRecoHistogramsGroupedTracks(const C& collision, const T& tracks, const T_UNF& tracksUnfiltered);
 
   // Process function for data
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   // using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
-  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
+  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered, aod::AmbiguousTracks const& ambitracks)
   {
-    /// work with all tracks
-    fillRecoHistogramsAllTracks<false>(tracks);
+    /// work with all filtered tracks
+    fillRecoHistogramsAllTracks<false, true>(tracks, ambitracks);
+    /// work with all unfiltered tracks
+    fillRecoHistogramsAllTracks<false, false>(tracksUnfiltered, ambitracks);
     /// work with collision grouping
     for (auto const& collision : collisions) {
       const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
@@ -541,11 +560,14 @@ struct qaEventTrack {
   // Process function for MC
   using CollisionTableMC = soa::Join<CollisionTableData, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
-  void processMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::FullTracks const& tracksUnfiltered,
+  void processMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, soa::Join<aod::FullTracks, aod::McTrackLabels> const& tracksUnfiltered,
+                 aod::AmbiguousTracks const& ambitracks,
                  aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
-    /// work with all tracks
-    fillRecoHistogramsAllTracks<true>(tracks);
+    /// work with all filtered tracks
+    fillRecoHistogramsAllTracks<true, true>(tracks, ambitracks);
+    /// work with all unfiltered tracks
+    fillRecoHistogramsAllTracks<true, false>(tracksUnfiltered, ambitracks);
     /// work with collision grouping
     for (auto const& collision : collisions) {
       const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
@@ -642,27 +664,66 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
  * Fill reco level histograms.
  */
 //**************************************************************************************************
-template <bool IS_MC, typename T>
-void qaEventTrack::fillRecoHistogramsAllTracks(const T& tracks)
+template <bool IS_MC, bool FILL_FILTERED, typename T>
+void qaEventTrack::fillRecoHistogramsAllTracks(const T& tracks, const aod::AmbiguousTracks& tracksAmbiguous)
 {
+
+  /// look at ambiguous tracks
+  std::vector<int> ambTrackGlobIndices{};
+  for (auto& trackAmbiguous : tracksAmbiguous) {
+    ambTrackGlobIndices.push_back(trackAmbiguous.globalIndex());
+  }
+
   for (const auto& track : tracks) {
     /// all tracks
-    histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 1.f);
+    if constexpr (FILL_FILTERED) {
+      histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 1.f);
+    } else {
+      histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 1.f);
+    }
+    /// look if the current track was flagged as ambiguous
+    auto iter = std::find(ambTrackGlobIndices.begin(), ambTrackGlobIndices.end(), track.globalIndex());
+    if (iter != ambTrackGlobIndices.end()) {
+      if constexpr (FILL_FILTERED) {
+        histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 5.f);
+      } else {
+        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 5.f);
+      }
+    }
+
     if (track.has_collision()) {
       /// tracks assigned to a collision
-      histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 2.f);
+      if constexpr (FILL_FILTERED) {
+        histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 2.f);
+      } else {
+        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 2.f);
+      }
     } else {
       /// tracks not assigned to any reconsructed collision
-      histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 3.f);
+      if constexpr (FILL_FILTERED) {
+        histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 3.f);
+      } else {
+        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 3.f);
+      }
       if constexpr (IS_MC) {
         if (!track.has_mcParticle()) {
           /// fake track
-          histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 4.f);
+          if constexpr (FILL_FILTERED) {
+            histos.fill(HIST("Tracks/KineUnmatchTracks/trackCollMatch"), 4.f);
+          } else {
+            histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/trackCollMatch"), 4.f);
+          }
         }
       }
-      histos.fill(HIST("Tracks/KineUnmatchTracks/pt"), track.pt());
-      histos.fill(HIST("Tracks/KineUnmatchTracks/eta"), track.eta());
-      histos.fill(HIST("Tracks/KineUnmatchTracks/phi"), track.phi());
+      if constexpr (FILL_FILTERED) {
+        histos.fill(HIST("Tracks/KineUnmatchTracks/pt"), track.pt());
+        histos.fill(HIST("Tracks/KineUnmatchTracks/eta"), track.eta());
+        histos.fill(HIST("Tracks/KineUnmatchTracks/phi"), track.phi());
+      } else {
+        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/pt"), track.pt());
+        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/eta"), track.eta());
+        histos.fill(HIST("Tracks/KineUnmatchUnfilteredTracks/phi"), track.phi());
+      }
     }
   }
 }
@@ -877,6 +938,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
     histos.fill(HIST("Tracks/Kine/eta"), track.eta());
     histos.fill(HIST("Tracks/Kine/phi"), track.phi());
+    histos.fill(HIST("Tracks/Kine/etavsphi"), track.eta(), track.phi());
     histos.fill(HIST("Tracks/Kine/etavspt"), track.pt(), track.eta());
     histos.fill(HIST("Tracks/Kine/phivspt"), track.pt(), track.phi());
     histos.fill(HIST("Tracks/Kine/relativeResoPt"), track.pt(), track.pt() * std::sqrt(track.c1Pt21Pt2()));
