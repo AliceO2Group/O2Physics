@@ -733,8 +733,8 @@ struct GammaConversions {
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt());
     fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.z()); // as long as z recalculation is not fixed use this
-    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py(), theV0.pz()), theV0.pfracpos());
-    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py(), theV0.pz()), theV0.pfracneg());
+    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracpos());
+    fillTH2(theContainer, "hpeDivpGamma", RecoDecay::sqrtSumOfSquares(theV0.px(), theV0.py()), theV0.pfracneg());
   }
 
   // This is simular to fillV0Histograms, but since the recalculatedR/Z only occur in Rec and MCVal a seperate fill function is needed
