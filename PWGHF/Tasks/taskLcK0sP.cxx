@@ -13,11 +13,11 @@
 /// \brief Lc -> K0S+p analysis task
 ///
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
+///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 ///
 /// based on taskD0.cxx, taskLc.cxx
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-
 #include "Framework/HistogramRegistry.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "PWGHF/DataModel/HFCandidateSelectionTables.h"
@@ -65,8 +65,7 @@ struct TaskLcK0sP {
 
   Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLc || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbar);
 
-  // -----------------------------------------------------------------------------
-  void processData(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate>> const& candidates)
+  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate>> const& candidates)
   {
     // Printf("Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
@@ -94,7 +93,6 @@ struct TaskLcK0sP {
     }
   }
 
-  // -----------------------------------------------------------------------------
   void processMC(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate, aod::HfCandCascadeMCRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMCGen> const& particlesMC,
                  aod::BigTracksMC const& tracks)
@@ -137,12 +135,9 @@ struct TaskLcK0sP {
   PROCESS_SWITCH(TaskLcK0sP, processMC, "Process MC data", false);
 };
 
-// -----------------------------------------------------------------------------
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<TaskLcK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
   };
 }
-
-// -----------------------------------------------------------------------------
