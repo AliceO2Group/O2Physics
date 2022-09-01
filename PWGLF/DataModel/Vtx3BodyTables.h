@@ -31,7 +31,7 @@ DECLARE_SOA_COLUMN(Y, y, float);         //! decay position Y
 DECLARE_SOA_COLUMN(Z, z, float);         //! decay position Z
 
 // Saved from finding: DCAs
-//DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! DCA between  daughters
+DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! DCA between  daughters
 DECLARE_SOA_COLUMN(DCATrack0ToPV, dcatrack0topv, float);         //! DCA prong0 to PV
 DECLARE_SOA_COLUMN(DCATrack1ToPV, dcatrack1topv, float);         //! DCA prong1 to PV
 DECLARE_SOA_COLUMN(DCATrack2ToPV, dcatrack2topv, float);         //! DCA prong2 to PV
@@ -132,7 +132,7 @@ DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDAT
                        vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,
                        vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,
                        vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,
-                       //vtx3body::DCAVtxDaughters,
+                       vtx3body::DCAVtxDaughters,
                        vtx3body::DCATrack0ToPV, vtx3body::DCATrack1ToPV, vtx3body::DCATrack2ToPV,
 
                        // Dynamic columns

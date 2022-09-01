@@ -62,7 +62,7 @@ struct hypertriton3bodybuilder{
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
 
   // Configurables
-  Configurable<double> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
+  Configurable<int> d_UseAbsDCA{"d_UseAbsDCA", kTRUE, "Use Abs DCAs"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
   // Selection criteria
@@ -74,10 +74,10 @@ struct hypertriton3bodybuilder{
   Configurable<float> MaxTgl2V0 = {"MaxTgl2V0", 2. * 2., ""};///< maximum tgLambda of V0
   float maxDCAXYToMeanVertex3bodyV0 = 0.5;///< max DCA of V0 from beam line (mean vertex) for 3body V0 candidates
   Configurable<float> MaxDCAXY2ToMeanVertex3bodyV0 = {"MaxDCAXY2ToMeanVertex3bodyV0", 0.5*0.5, ""};
-  float minCosPAXYMeanVertex3bodyV0 = 0.8;///< min cos of PA to beam line (mean vertex) in tr. plane for 3body V0 cand.
+  float minCosPAXYMeanVertex3bodyV0 = 0.7;///< min cos of PA to beam line (mean vertex) in tr. plane for 3body V0 cand.
   float minCosPA3body = 0.7; // min cos of PA to PV for 3body V0
 
-  float maxRDiffV03body = 0.2; ///< Maximum difference between V0 and 3body radii
+  float maxRDiffV03body = 3; ///< Maximum difference between V0 and 3body radii
   float MaxR2Diff3bodyV0 = maxRDiffV03body*maxRDiffV03body;
 
   float minPt3Body = 0.01;  // minimum pT of 3body V0
@@ -133,8 +133,18 @@ struct hypertriton3bodybuilder{
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
 
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "hasSV");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "IfSameCollision");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "hasSV");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "VtxR");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "TrackR");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "DiffRR");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(7, "IfPropragated");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(8, "VtxPt");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(9, "tgLambda");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(10, "CosPA");
   }
+
   float getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
@@ -208,7 +218,7 @@ struct hypertriton3bodybuilder{
         if (r2v0 < MinR2ToMeanVertex) {
           continue;
         }
-        registry.fill(HIST("hV0Counter"), 3.5);
+        registry.fill(HIST("hVtx3BodyCounter"), 3.5);
 
       float Track0minR =  RecoDecay::sqrtSumOfSquares(t0.x(), t0.y()), Track1minR =  RecoDecay::sqrtSumOfSquares(t1.x(), t1.y()), Track2minR = RecoDecay::sqrtSumOfSquares(t2.x(), t2.y());
       float rv0 = std::sqrt(r2v0), drv0P = rv0 - Track0minR, drv0N = rv0 - Track1minR, drv0Bach = rv0 - Track2minR;
@@ -216,7 +226,7 @@ struct hypertriton3bodybuilder{
           drv0N > causalityRTolerance || drv0N < -maxV0ToProngsRDiff ||
           drv0Bach > causalityRTolerance || drv0Bach < -maxV0ToProngsRDiff) {
         LOG(debug) << "RejCausality " << drv0P << " " << drv0N;
-        continue;
+        //continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), 4.5);
 
@@ -266,7 +276,9 @@ struct hypertriton3bodybuilder{
       vtx3bodydata( 
           t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), 
           vertexXYZ[0], vertexXYZ[1], vertexXYZ[2], 
-          t0.px(), t0.py(), t0.pz(), t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(),
+          //t0.px(), t0.py(), t0.pz(), t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(),
+          p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
+          fitter3body.getChi2AtPCACandidate(),
           t0.dcaXY(), t1.dcaXY(), t2.dcaXY()
           );
 

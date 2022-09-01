@@ -66,7 +66,7 @@ struct hypertriton3bodyQa {
         {"hDCATrack0ToPV", "hDCAPosToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
         {"hDCATrack1ToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 10.0f, 10.0f, "cm"}}}},
         {"hDCATrack2ToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, 10.0f, 10.0f, "cm"}}}},
-        //{"hDCAVtxDau", "hDCAVtxDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
+        {"hDCAVtxDau", "hDCAVtxDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
         {"hVtxPt", "hVtxPt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
         {"hTrack0Pt", "hTrack0Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
         {"hTrack1Pt", "hTrack1Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
@@ -89,7 +89,7 @@ struct hypertriton3bodyQa {
       registry.fill(HIST("hDCATrack0ToPV"), vtx.dcatrack0topv());
       registry.fill(HIST("hDCATrack1ToPV"), vtx.dcatrack1topv());
       registry.fill(HIST("hDCATrack2ToPV"), vtx.dcatrack2topv());
-      //registry.fill(HIST("hDCAVtxDau"), vtx.dcaVtxdaughters());
+      registry.fill(HIST("hDCAVtxDau"), vtx.dcaVtxdaughters());
       registry.fill(HIST("hVtxPt"), vtx.pt());
       registry.fill(HIST("hTrack0Pt"), vtx.track0pt());
       registry.fill(HIST("hTrack1Pt"), vtx.track1pt());
@@ -197,10 +197,10 @@ struct hypertriton3bodyAnalysis {
         continue;
       }
       registry.fill(HIST("hSelectedCandidatesCounter"), 4.5);
-      /*if (vtx.dcaV0daughters() > dcavtxdau){
+      if (vtx.dcaVtxdaughters() > dcavtxdau){
         continue;
       }
-      registry.fill(HIST("hSelectedCandidatesCounter"), 5.5);*/
+      registry.fill(HIST("hSelectedCandidatesCounter"), 5.5);
 
       /*registry.fill(HIST("hNSigmaPion"), vtx.track0_as<MyTracks>().tpcNSigmaPi());
       registry.fill(HIST("hNSigmaPion"), vtx.track1_as<MyTracks>().tpcNSigmaPi());
