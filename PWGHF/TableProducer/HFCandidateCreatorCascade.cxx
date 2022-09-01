@@ -12,9 +12,11 @@
 /// \file HFCandidateCreatorCascade.cxx
 /// \brief Reconstruction of heavy-flavour cascade decay candidates
 ///
+/// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
+///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
 #include "Common/Core/trackUtilities.h"
@@ -39,7 +41,6 @@ using MyBigTracks = aod::BigTracks;
 #define MY_DEBUG_MSG(condition, cmd)
 #endif
 
-// -----------------------------------------------------------------------------
 /// Reconstruction of heavy-flavour cascade decay candidates
 struct HFCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
@@ -204,7 +205,6 @@ struct HFCandidateCreatorCascade {
   }
 };
 
-// -----------------------------------------------------------------------------
 /// Performs MC matching.
 struct HFCandidateCreatorCascadeMC {
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
@@ -218,7 +218,6 @@ struct HFCandidateCreatorCascadeMC {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  // -----------------------------------------------------------------------------
   void processMC(aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
@@ -295,12 +294,9 @@ struct HFCandidateCreatorCascadeMC {
   PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processMC, "Process MC data", false);
 };
 
-// -----------------------------------------------------------------------------
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HFCandidateCreatorCascade>(cfgc, TaskName{"hf-cand-creator-cascade"}),
     adaptAnalysisTask<HFCandidateCreatorCascadeMC>(cfgc, TaskName{"hf-cand-creator-cascade-mc"})};
 }
-
-// -----------------------------------------------------------------------------
