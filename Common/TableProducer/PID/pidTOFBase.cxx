@@ -220,14 +220,18 @@ struct tofEventTime {
       int nGoodTracksForTOF = 0;
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
+      float errDiamond = diamond * 33.356409f;
 
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         if constexpr (removeTOFEvTimeBias) {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
         }
         uint8_t flags = 0;
-        if (erret > 199.f) {
+        if (erret < errDiamond) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
+        } else {
+          et = 0;
+          erret = errDiamond;
         }
         tableFlags(flags);
         tableEvTime(et, erret, evTimeTOF.mEventTimeMultiplicity);
@@ -277,6 +281,9 @@ struct tofEventTime {
       float eventTime = 0.f;
       float sumOfWeights = 0.f;
       float weight = 0.f;
+      float errDiamond = diamond * 33.356409f;
+      float weightDiamond = 1. / (errDiamond * errDiamond);
+
       for (auto const& trk : tracksInCollision) { // Loop on Tracks
         // Reset the flag
         flags = 0;
@@ -288,7 +295,7 @@ struct tofEventTime {
         if constexpr (removeTOFEvTimeBias) {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
         }
-        if (t0TOF[1] < 199.f) {
+        if (t0TOF[1] < errDiamond) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
           weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -309,7 +316,13 @@ struct tofEventTime {
           sumOfWeights += weight;
         }
 
-        tableFlags(flags);
+        if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
+          eventTime = 0;
+          sumOfWeights = weightDiamond;
+          tableFlags(0);
+        } else {
+          tableFlags(flags);
+        }
         tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), evTimeTOF.mEventTimeMultiplicity);
       }
     }
