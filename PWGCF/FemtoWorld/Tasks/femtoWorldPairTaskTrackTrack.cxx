@@ -13,7 +13,7 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
-// zmiana
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
