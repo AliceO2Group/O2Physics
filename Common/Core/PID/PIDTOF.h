@@ -56,7 +56,7 @@ class Beta
 
   /// Gets the beta for the track of interest
   /// \param track Track of interest
-  static float GetBeta(const TrackType& track) { return track.isEvTimeDefined() ? GetBeta(track, track.tofEvTime()) : defaultReturnValue; }
+  static float GetBeta(const TrackType& track) { return GetBeta(track, track.tofEvTime()); }
 
   /// Computes the expected uncertainty on the beta measurement
   /// \param length Length in cm of the track
@@ -67,7 +67,7 @@ class Beta
 
   /// Gets the expected uncertainty on the beta measurement of the track of interest
   /// \param track Track of interest
-  float GetExpectedSigma(const TrackType& track) const { return track.isEvTimeDefined() ? GetExpectedSigma(track.length(), track.tofSignal(), track.tofEvTime(), mExpectedResolution) : defaultReturnValue; }
+  float GetExpectedSigma(const TrackType& track) const { return GetExpectedSigma(track.length(), track.tofSignal(), track.tofEvTime(), mExpectedResolution); }
 
   /// Gets the expected beta for a given mass hypothesis (no energy loss taken into account)
   /// \param momentum momentum in GeV/c of the track
@@ -187,12 +187,12 @@ class ExpTimes
   /// Gets the expected resolution of the t-texp-t0
   /// \param response Detector response with parameters
   /// \param track Track of interest
-  static float GetExpectedSigma(const DetectorResponse& response, const TrackType& track) { return track.isEvTimeDefined() ? GetExpectedSigma(response, track, track.tofSignal(), track.tofEvTime()) : defaultReturnValue; }
+  static float GetExpectedSigma(const DetectorResponse& response, const TrackType& track) { return GetExpectedSigma(response, track, track.tofSignal(), track.tofEvTime()); }
 
   /// Gets the expected resolution of the t-texp-t0
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetExpectedSigma(const TOFResoParams& parameters, const TrackType& track) { return track.isEvTimeDefined() ? GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTime()) : defaultReturnValue; }
+  static float GetExpectedSigma(const TOFResoParams& parameters, const TrackType& track) { return GetExpectedSigma(parameters, track, track.tofSignal(), track.tofEvTime()); }
 
   /// Gets the expected resolution of the time measurement, uses the expected time and no event time resolution
   /// \param response Detector response with parameters
@@ -214,7 +214,7 @@ class ExpTimes
   /// Gets the number of sigmas with respect the expected time
   /// \param response Detector response with parameters
   /// \param track Track of interest
-  static float GetSeparation(const DetectorResponse& response, const TrackType& track) { return track.isEvTimeDefined() ? GetSeparation(response, track, track.tofEvTime(), track.tofEvTimeErr()) : defaultReturnValue; }
+  static float GetSeparation(const DetectorResponse& response, const TrackType& track) { return GetSeparation(response, track, track.tofEvTime(), track.tofEvTimeErr()); }
 
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
@@ -226,7 +226,7 @@ class ExpTimes
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetSeparation(const TOFResoParams& parameters, const TrackType& track) { return track.isEvTimeDefined() ? GetSeparation(parameters, track, track.tofEvTime(), track.tofEvTimeErr()) : defaultReturnValue; }
+  static float GetSeparation(const TOFResoParams& parameters, const TrackType& track) { return GetSeparation(parameters, track, track.tofEvTime(), track.tofEvTimeErr()); }
 
   /// Gets the expected resolution of the measurement from the track time and from the collision time, explicitly passed as argument
   /// \param response Detector response with parameters
@@ -237,7 +237,7 @@ class ExpTimes
   /// Gets the expected resolution of the measurement from the track time
   /// \param response Detector response with parameters
   /// \param track Track of interest
-  static float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& track) { return track.isEvTimeDefined() ? GetExpectedSigmaFromTrackTime(response, track, track.tofEvTimeErr()) : defaultReturnValue; }
+  static float GetExpectedSigmaFromTrackTime(const DetectorResponse& response, const TrackType& track) { return GetExpectedSigmaFromTrackTime(response, track, track.tofEvTimeErr()); }
 
   /// Gets the number of sigmas with respect the expected time from the track time
   /// \param response Detector response with parameters
@@ -249,7 +249,7 @@ class ExpTimes
   /// Gets the number of sigmas with respect the expected time from the track time
   /// \param response Detector response with parameters
   /// \param track Track of interest
-  static float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& track) { return track.isEvTimeDefined() ? GetSeparationFromTrackTime(response, track, track.tofEvTime(), track.tofEvTimeErr()) : defaultReturnValue; }
+  static float GetSeparationFromTrackTime(const DetectorResponse& response, const TrackType& track) { return GetSeparationFromTrackTime(response, track, track.tofEvTime(), track.tofEvTimeErr()); }
 };
 
 /// \brief Class to convert the trackTime to the tofSignal used for PID
