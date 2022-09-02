@@ -129,26 +129,26 @@ class FemtoWorldDetaDphiStar
     } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
       /// Track-V0 combination
       // check if provided particles are in agreement with the class instantiation
-     /* 
-      if (part1.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtoworldparticle::ParticleType::kV0) {
-        LOG(fatal) << "FemtoWorldDetaDphiStar: passed arguments don't agree with FemtoWorldDetaDphiStar instantiation! Please provide kTrack,kV0 candidates.";
-        return false;
-      }
+      /*
+       if (part1.partType() != o2::aod::femtoworldparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtoworldparticle::ParticleType::kV0) {
+         LOG(fatal) << "FemtoWorldDetaDphiStar: passed arguments don't agree with FemtoWorldDetaDphiStar instantiation! Please provide kTrack,kV0 candidates.";
+         return false;
+       }
 
-      bool pass = false;
-      for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
-        auto daughter = particles.begin() + indexOfDaughter;
-        auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = AveragePhiStar(part1, *daughter, i);
-        histdetadpi[i][0]->Fill(deta, dphiAvg);
-        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          pass = true;
-        } else {
-          histdetadpi[i][1]->Fill(deta, dphiAvg);
-        }
-      }
-      */
+       bool pass = false;
+       for (int i = 0; i < 2; i++) {
+         auto indexOfDaughter = part2.index() - 2 + i;
+         auto daughter = particles.begin() + indexOfDaughter;
+         auto deta = part1.eta() - daughter.eta();
+         auto dphiAvg = AveragePhiStar(part1, *daughter, i);
+         histdetadpi[i][0]->Fill(deta, dphiAvg);
+         if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+           pass = true;
+         } else {
+           histdetadpi[i][1]->Fill(deta, dphiAvg);
+         }
+       }
+       */
       return true;
     } else {
       LOG(fatal) << "FemtoWorldPairCleaner: Combination of objects not defined - quitting!";

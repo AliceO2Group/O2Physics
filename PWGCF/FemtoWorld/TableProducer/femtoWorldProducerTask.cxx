@@ -482,6 +482,7 @@ struct femtoWorldProducerTask {
         auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, v0, postrack, negtrack);
 
         if ((cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
+          // LOGF(info, "track.pt() = %f \n ", v0.pt());
           int postrackID = v0.posTrackId();
           int rowInPrimaryTrackTablePos = -1;
           rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -710,46 +711,39 @@ struct femtoWorldProducerTask {
         }
       }
     }
-  }
-  PROCESS_SWITCH(femtoWorldProducerTask, processProd, "Produce Femto tables", true);
-  void processPhi(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
-  {
-    // First particle
-    Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-    Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
-    Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
-    Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
-    Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
-    Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
-    Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
-    Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
-    Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
-    Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
-    Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
-
-    // Second particle
-    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
-    Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
-    Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
-    Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
-    Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
-    Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
-    Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
-    Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
-    Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
-    Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
-    Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
-
-    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
-    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-
     if (ConfStorePhi) {
+      // First particle
+      Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+      Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
+      Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
+      Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
+      Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
+      Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
+      Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
+      Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
+      Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
+      Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
+      Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
+
+      // Second particle
+      Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+      Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
+      Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
+      Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
+      Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
+      Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
+      Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
+      Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
+      Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
+      Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
+      Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
 
       for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
         if (p1.globalIndex() == p2.globalIndex()) {
           continue;
         }
         if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
+          // LOGF(info, "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", p1.pt());
           continue;
         }
         if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
@@ -761,44 +755,51 @@ struct femtoWorldProducerTask {
         if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
           continue;
         }
-        if ((p1.p() > (float)0.45)) {
+        if ((p1.p() > 0.45f)) {
           if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
             continue;
           }
 
-        } else if ((p1.p() <= (float)0.45)) {
+        } else if ((p1.p() <= 0.45f)) {
           if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
             continue;
           }
         }
-        if ((p2.p() > (float)0.45)) {
+        if ((p2.p() > 0.45f)) {
           if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
             continue;
           }
 
-        } else if ((p2.p() <= (float)0.45)) {
+        } else if ((p2.p() <= 0.45f)) {
           if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa()))) {
             continue;
           }
         }
-
-        // float phiPx = p1.px() + p2.px();
-        // float phiPy = p1.py() + p2.py();
-        // float phiPz = p1.pz() + p2.pz();
+        /*else if (p1.pt() == NAN){
+         continue;
+       }*/
+        // LOGF(info, "p1.pt() = %f \n p1.p() = %f \n", p1.pt(), p1.p());
+        // LOGF(info, "p2.pt() = %f \n p2.p() = %f \n", p2.pt(), p2.p());
+        //  float phiPx = p1.px() + p2.px();
+        //  float phiPy = p1.py() + p2.py();
+        //  float phiPz = p1.pz() + p2.pz();
 
         TLorentzVector part1Vec;
         TLorentzVector part2Vec;
         float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
         float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
-        TLorentzVector sumVec(part1Vec);
-        sumVec += part2Vec;
 
         part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
         part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
 
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+
         float phiEta = sumVec.Eta();
         float phiPhi = sumVec.Phi();
         float phiPt = sumVec.Pt();
+
+        // LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
 
         PhiCuts.fillQA<aod::femtoworldparticle::ParticleType::kPhi, aod::femtoworldparticle::ParticleType::kPhiChild>(col, p1, p1, p2); ///\todo fill QA also for daughters
         auto cutContainerV0 = PhiCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, p1, p2);
@@ -809,7 +810,7 @@ struct femtoWorldProducerTask {
           childIDs[0] = rowInPrimaryTrackTablePos;
           childIDs[1] = 0;
           // Printing info of first daughter (Kaon)
-          LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
+          // LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
           outputParts(outputCollision.lastIndex(),
                       p1.pt(),
                       p1.eta(),
@@ -859,6 +860,7 @@ struct femtoWorldProducerTask {
           rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
           childIDs[0] = 0;
           childIDs[1] = rowInPrimaryTrackTableNeg;
+          // LOGF(info, "SECOND DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p2.pt(), p2.eta(), p2.phi());
           outputParts(outputCollision.lastIndex(),
                       p2.pt(),
                       p2.eta(),
@@ -952,7 +954,259 @@ struct femtoWorldProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(femtoWorldProducerTask, processPhi, "Produce Phi candidates tables", true);
+  PROCESS_SWITCH(femtoWorldProducerTask, processProd, "Produce Femto tables", true);
+  void processPhi(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+  {
+    /*
+    // First particle
+    Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+    Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
+    Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
+    Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
+    Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
+    Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
+    Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
+    Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
+    Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
+    Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
+    Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
+
+    // Second particle
+    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+    Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
+    Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
+    Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
+    Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
+    Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
+    Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
+    Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
+    Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
+    Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
+    Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
+
+    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    if (ConfStorePhi) {
+
+      for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+        LOGF(info, "p1.pt() = %f \n p1.p() = %f \n", p1.pt(), p1.p());
+        LOGF(info, "p2.pt() = %f \n p2.p() = %f \n", p2.pt(), p2.p());
+        if (p1.globalIndex() == p2.globalIndex()) {
+          continue;
+        }
+        if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
+          //LOGF(info, "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", p1.pt());
+          continue;
+        }
+        if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
+          continue;
+        }
+        if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) {
+          continue;
+        }
+        if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
+          continue;
+        }
+        if ((p1.p() > 0.45f)) {
+          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
+            continue;
+          }
+
+        } else if ((p1.p() <= 0.45f)) {
+          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
+            continue;
+          }
+        }
+        if ((p2.p() > 0.45f)) {
+          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
+            continue;
+          }
+
+        } else if ((p2.p() <= 0.45f)) {
+          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa()))) {
+            continue;
+          }
+        } else if (p1.pt() == NAN){
+          continue;
+        
+       // LOGF(info, "p1.pt() = %f \n p1.p() = %f \n", p1.pt(), p1.p());
+         //LOGF(info, "p2.pt() = %f \n p2.p() = %f \n", p2.pt(), p2.p());
+        // float phiPx = p1.px() + p2.px();
+        // float phiPy = p1.py() + p2.py();
+        // float phiPz = p1.pz() + p2.pz();
+
+        TLorentzVector part1Vec;
+        TLorentzVector part2Vec;
+        float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
+        float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+
+        part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
+
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+
+        float phiEta = sumVec.Eta();
+        float phiPhi = sumVec.Phi();
+        float phiPt = sumVec.Pt();
+
+        //LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
+
+        PhiCuts.fillQA<aod::femtoworldparticle::ParticleType::kPhi, aod::femtoworldparticle::ParticleType::kPhiChild>(col, p1, p1, p2); ///\todo fill QA also for daughters
+        auto cutContainerV0 = PhiCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, p1, p2);
+        if (true) { // temporary true value, we are doing simpler version first
+          int postrackID = p1.globalIndex();
+          int rowInPrimaryTrackTablePos = -1;
+          rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
+          childIDs[0] = rowInPrimaryTrackTablePos;
+          childIDs[1] = 0;
+          // Printing info of first daughter (Kaon)
+          //LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
+          outputParts(outputCollision.lastIndex(),
+                      p1.pt(),
+                      p1.eta(),
+                      p1.phi(),
+                      aod::femtoworldparticle::ParticleType::kPhiChild,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts),
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID),
+                      0.,
+                      childIDs,
+                      0,
+                      0,
+                      p1.sign(),
+                      p1.beta(),
+                      p1.itsChi2NCl(),
+                      p1.tpcChi2NCl(),
+                      p1.tpcNSigmaKa(),
+                      p1.tofNSigmaKa(),
+                      (uint8_t)p1.tpcNClsFound(),
+                      p1.tpcNClsFindable(),
+                      (uint8_t)p1.tpcNClsCrossedRows(),
+                      p1.tpcNClsShared(),
+                      p1.tpcInnerParam(),
+                      p1.itsNCls(),
+                      p1.itsNClsInnerBarrel(),
+                      p1.dcaXY(),
+                      p1.dcaZ(),
+                      p1.tpcSignal(),
+                      p1.tpcNSigmaStoreEl(),
+                      p1.tpcNSigmaStorePi(),
+                      p1.tpcNSigmaStoreKa(),
+                      p1.tpcNSigmaStorePr(),
+                      p1.tpcNSigmaStoreDe(),
+                      p1.tofNSigmaStoreEl(),
+                      p1.tofNSigmaStorePi(),
+                      p1.tofNSigmaStoreKa(),
+                      p1.tofNSigmaStorePr(),
+                      p1.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+          const int rowOfPosTrack = outputParts.lastIndex();
+          int negtrackID = p2.globalIndex();
+          int rowInPrimaryTrackTableNeg = -1;
+          rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+          childIDs[0] = 0;
+          childIDs[1] = rowInPrimaryTrackTableNeg;
+          //LOGF(info, "SECOND DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p2.pt(), p2.eta(), p2.phi());
+          outputParts(outputCollision.lastIndex(),
+                      p2.pt(),
+                      p2.eta(),
+                      p2.phi(),
+                      aod::femtoworldparticle::ParticleType::kPhiChild,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts),
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID),
+                      0.,
+                      childIDs,
+                      0,
+                      0,
+                      p2.sign(),
+                      p2.beta(),
+                      p2.itsChi2NCl(),
+                      p2.tpcChi2NCl(),
+                      p2.tpcNSigmaKa(),
+                      p2.tofNSigmaKa(),
+                      (uint8_t)p2.tpcNClsFound(),
+                      p2.tpcNClsFindable(),
+                      (uint8_t)p2.tpcNClsCrossedRows(),
+                      p2.tpcNClsShared(),
+                      p2.tpcInnerParam(),
+                      p2.itsNCls(),
+                      p2.itsNClsInnerBarrel(),
+                      p2.dcaXY(),
+                      p2.dcaZ(),
+                      p2.tpcSignal(),
+                      p2.tpcNSigmaStoreEl(),
+                      p2.tpcNSigmaStorePi(),
+                      p2.tpcNSigmaStoreKa(),
+                      p2.tpcNSigmaStorePr(),
+                      p2.tpcNSigmaStoreDe(),
+                      p2.tofNSigmaStoreEl(),
+                      p2.tofNSigmaStorePi(),
+                      p2.tofNSigmaStoreKa(),
+                      p2.tofNSigmaStorePr(),
+                      p2.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+
+          const int rowOfNegTrack = outputParts.lastIndex();
+          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          outputParts(outputCollision.lastIndex(),
+                      phiPt,
+                      phiEta,
+                      phiPhi,
+                      aod::femtoworldparticle::ParticleType::kPhi,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
+                      0,
+                      0, // p1.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                      indexChildID,
+                      0, // v0.mLambda(),
+                      0, // v0.mAntiLambda(), // nowa część
+                      p1.sign(),
+                      p1.beta(),
+                      p1.itsChi2NCl(),
+                      p1.tpcChi2NCl(),
+                      p1.tpcNSigmaKa(),
+                      p1.tofNSigmaKa(),
+                      (uint8_t)p1.tpcNClsFound(),
+                      0, // p1.tpcNClsFindable(),
+                      0, //(uint8_t)p1.tpcNClsCrossedRows(),
+                      p1.tpcNClsShared(),
+                      p1.tpcInnerParam(),
+                      p1.itsNCls(),
+                      p1.itsNClsInnerBarrel(),
+                      0, // p1.dcaXY(),
+                      0, // p1.dcaZ(),
+                      p1.tpcSignal(),
+                      p1.tpcNSigmaStoreEl(),
+                      p1.tpcNSigmaStorePi(),
+                      p1.tpcNSigmaStoreKa(),
+                      p1.tpcNSigmaStorePr(),
+                      p1.tpcNSigmaStoreDe(),
+                      p1.tofNSigmaStoreEl(),
+                      p1.tofNSigmaStorePi(),
+                      p1.tofNSigmaStoreKa(),
+                      p1.tofNSigmaStorePr(),
+                      p1.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+        }
+      }
+    }
+  */}
+    PROCESS_SWITCH(femtoWorldProducerTask, processPhi, "Produce Phi candidates tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
