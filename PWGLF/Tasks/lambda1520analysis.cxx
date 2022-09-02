@@ -14,7 +14,7 @@
 /// \file lambda1520analysis.cxx
 /// \brief Reconstruction of track-track decay resonance candidates
 ///
-/// \author Hirak Koley <hirak.kumar.koley@cern.ch>
+/// \author Hirak Kumar Koley <hirak.kumar.koley@cern.ch>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
