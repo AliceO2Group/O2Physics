@@ -112,8 +112,12 @@ struct qaEventTrack {
   // constexpr char* strAllUnfilteredTracks = "KineUnmatchUnfilteredTracks";
   void init(InitContext const&)
   {
-    if (!doprocessData && !doprocessMC && !doprocessDataIU && !doprocessDataIUFiltered) {
+    if (!doprocessData && !doprocessMC && !doprocessDataIU && !doprocessDataIUFiltered && !doprocessRun2ConvertedData && !doprocessRun2ConvertedMC) {
       LOGF(info, "No enabled QA, all histograms are disabled");
+      return;
+    }
+    if (((doprocessData || doprocessMC) && (doprocessRun2ConvertedData || doprocessRun2ConvertedMC))) {
+      LOGF(info, "Mixing process functions for Run 2 and Run 3 data, returning...");
       return;
     }
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
@@ -471,6 +475,18 @@ struct qaEventTrack {
   }
   PROCESS_SWITCH(qaEventTrack, processData, "process data", false);
 
+  // Process function for Run2 converted data
+  void processRun2ConvertedData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::FullTracks const& tracksUnfiltered)
+  {
+    /// work with collision grouping
+    for (auto const& collision : collisions) {
+      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
+      fillRecoHistogramsGroupedTracks<false>(collision, tracksColl, tracksUnfilteredColl);
+    }
+  }
+  PROCESS_SWITCH(qaEventTrack, processRun2ConvertedData, "process for run 2 converted data", false);
+
   // Process function for IU vs DCA track comparison
   void processDataIU(CollisionTableData::iterator const& collision,
                      aod::FullTracks const& tracksUnfiltered,
@@ -646,6 +662,19 @@ struct qaEventTrack {
     }
   }
   PROCESS_SWITCH(qaEventTrack, processMC, "process mc", true); // FIXME: would like to disable this by default and swich on via --processMC but currently this crashes -> ask experts
+
+  /// process for run 2 converted MC
+  void processRun2ConvertedMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, soa::Join<aod::FullTracks, aod::McTrackLabels> const& tracksUnfiltered,
+                              aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  {
+    /// work with collision grouping
+    for (auto const& collision : collisions) {
+      const auto& tracksColl = tracks.sliceBy(perRecoCollision, collision.globalIndex());
+      const auto& tracksUnfilteredColl = tracksUnfiltered.sliceBy(perRecoCollision, collision.globalIndex());
+      fillRecoHistogramsGroupedTracks<true>(collision, tracksColl, tracksUnfilteredColl);
+    }
+  }
+  PROCESS_SWITCH(qaEventTrack, processRun2ConvertedMC, "process for run 2 converted mc", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
