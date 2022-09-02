@@ -37,13 +37,13 @@ using namespace o2::soa;
 
 namespace
 {
-static constexpr int nPart = 2;
-static constexpr int nCuts = 5;
-static const std::vector<std::string> partNames{"PartOne", "PartTwo"};
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-static const float cutsTable[nPart][nCuts]{
-  {4.05f, 1.f, 3.f, 3.f, 100.f},
-  {4.05f, 1.f, 5.f, 5.f, 100.f}};
+static constexpr int nPart = 2;                                                                         // number of particle types (for us it will be proton and phi)
+static constexpr int nCuts = 5;                                                                         // number of cuts
+static const std::vector<std::string> partNames{"PartOne", "PartTwo"};                                  // names of the rows
+static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"}; // names of the columns
+static const float cutsTable[nPart][nCuts]{                                                             // cuts table [rows = particles][columns = types of cuts]
+                                           {4.05f, 1.f, 3.f, 3.f, 100.f},
+                                           {4.05f, 1.f, 5.f, 5.f, 100.f}};
 
 static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
@@ -72,10 +72,10 @@ struct femtoWorldPairTaskTrackPhi {
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
 
   /// Partition for particle 2
-  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kV0));
+  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhi));
 
   /// Histogramming for particle 2
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kV0, 2> trackHistoPartTwo;
+  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 2> trackHistoPartTwo;
 
   /// Histogramming for Event
   FemtoWorldEventHisto eventHisto;
@@ -98,8 +98,8 @@ struct femtoWorldPairTaskTrackPhi {
 
   FemtoWorldContainer<femtoWorldContainer::EventType::same, femtoWorldContainer::Observable::kstar> sameEventCont;
   FemtoWorldContainer<femtoWorldContainer::EventType::mixed, femtoWorldContainer::Observable::kstar> mixedEventCont;
-  FemtoWorldPairCleaner<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kV0> pairCleaner;
-  FemtoWorldDetaDphiStar<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kV0> pairCloseRejection;
+  FemtoWorldPairCleaner<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kPhi> pairCleaner;
+  FemtoWorldDetaDphiStar<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kPhi> pairCloseRejection;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};

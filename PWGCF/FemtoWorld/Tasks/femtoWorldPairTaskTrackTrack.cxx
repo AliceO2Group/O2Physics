@@ -191,7 +191,6 @@ struct femtoWorldPairTaskTrackTrack {
   // PID
   bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
   {
-    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
     if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
       return true;
     if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaK) < 1.0)
@@ -204,7 +203,6 @@ struct femtoWorldPairTaskTrackTrack {
 
   bool IsKaonTOFNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
   {
-    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
     if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
       return true;
     if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaK) < 1.5)
@@ -281,7 +279,6 @@ struct femtoWorldPairTaskTrackTrack {
                     phiEta,
                     phiPhi);
         tmpIDtrack.push_back(p1.globalIndex());
-        std::cout<< "phi przeszło" << std::endl;
         //Partition<aod::FemtoWorldPhiCandidates> Phiparts = (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);
         //sameEventCont.setPair(p1, phi multCol);
       }
