@@ -379,8 +379,8 @@ struct tofPidCollisionTimeQa {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} GeV/#it{c}"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} GeV/#it{c}"};
     if (logAxis) {
-      pAxis.makeLogaritmic();
-      ptAxis.makeLogaritmic();
+      pAxis.makeLogarithmic();
+      ptAxis.makeLogarithmic();
     }
     const AxisSpec collisionAxis{6000, -0.5f, 6000.f - .5f, "Collision index % 6000"};
     const AxisSpec massAxis{1000, 0, 3, "TOF mass (GeV/#it{c}^{2})"};

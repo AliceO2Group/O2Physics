@@ -41,6 +41,7 @@ struct MultiplicityTableTaskIndexed {
 
   //Configurable
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+  Configurable<int> doDummyZeq{"doDummyZeq", 0, "if 1: do dummy Z vertex Eq (will make non-eq equal to eq)"};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -153,8 +154,9 @@ struct MultiplicityTableTaskIndexed {
 
     /* check the previous run number */
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
-    if (doVertexZeq > 0) {
+    if (doVertexZeq > 0 && doDummyZeq < 1) {
       if (bc.runNumber() != mRunNumber) {
+        mRunNumber = bc.runNumber(); //mark this run as at least tried
         lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
         if (lCalibObjects) {
           hVtxZFV0A = (TProfile*)lCalibObjects->FindObject("hVtxZFV0A");
@@ -163,7 +165,6 @@ struct MultiplicityTableTaskIndexed {
           hVtxZFDDA = (TProfile*)lCalibObjects->FindObject("hVtxZFDDA");
           hVtxZFDDC = (TProfile*)lCalibObjects->FindObject("hVtxZFDDC");
           hVtxZNTracks = (TProfile*)lCalibObjects->FindObject("hVtxZNTracksPV");
-          mRunNumber = bc.runNumber();
           lCalibLoaded = true;
           //Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -207,6 +208,14 @@ struct MultiplicityTableTaskIndexed {
       multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
       multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
       multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
+    }
+    if (doDummyZeq) {
+      multZeqFV0A = multFV0A;
+      multZeqFT0A = multFT0A;
+      multZeqFT0C = multFT0C;
+      multZeqFDDA = multFDDA;
+      multZeqFDDC = multFDDC;
+      multZeqNContribs = multNContribs;
     }
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);

@@ -220,9 +220,9 @@ struct ALICE3pidTOFTaskQA {
     AxisSpec pAxis{nBinsP, minP, maxP, "#it{p} (GeV/#it{c})"};
     AxisSpec pExpAxis{nBinsP, minP, maxP, "#it{p}_{Exp. TOF} (GeV/#it{c})"};
     if (logAxis) {
-      ptAxis.makeLogaritmic();
-      pAxis.makeLogaritmic();
-      pExpAxis.makeLogaritmic();
+      ptAxis.makeLogarithmic();
+      pAxis.makeLogarithmic();
+      pExpAxis.makeLogarithmic();
     }
 
     // Event properties

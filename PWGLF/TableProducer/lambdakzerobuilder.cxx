@@ -39,7 +39,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -72,6 +72,9 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, a
 using FullTracksExtMC = soa::Join<FullTracksExt, aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullHe>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullHe>;
 using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+
+// in case requested
+using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 //#define MY_DEBUG
 #ifdef MY_DEBUG
@@ -107,6 +110,7 @@ struct lambdakzeroBuilder {
   float d_bz;
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   // for debugging
 #ifdef MY_DEBUG
@@ -137,8 +141,11 @@ struct lambdakzeroBuilder {
   Configurable<float> v0radius{"v0radius", 5.0, "v0radius"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -154,33 +161,14 @@ struct lambdakzeroBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>("GLO/Config/GeometryAligned");
-      /* it seems this is needed at this level for the material LUT to work properly */
-      /* but what happens if the run changes while doing the processing?             */
-      constexpr long run3grp_timestamp = (1619781650000 + 1619781529000) / 2;
-
-      o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-      o2::parameters::GRPMagField* grpmag = 0x0;
-      if (!grpo) {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-        if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-        }
-      }
-      if (grpo) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-      } else {
-        o2::base::Propagator::initFieldFromGRP(grpmag);
-      }
-      o2::base::Propagator::Instance()->setMatLUT(lut);
+      ccdb->get<TGeoManager>(geoPath);
     }
 
     registry.get<TH1>(HIST("hV0CutCounter"))->GetXaxis()->SetBinLabel(1, "Readin");
@@ -197,48 +185,40 @@ struct lambdakzeroBuilder {
       LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
     }
   }
-
-  float getMagneticField(uint64_t timestamp)
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    if (mRunNumber == bc.runNumber()) {
+      return;
     }
-    float output = grpo->getNominalL3Field();
-    return output;
-  }
+    auto run3grp_timestamp = bc.timestamp();
 
-  void CheckAndUpdate(Int_t lRunNumber, uint64_t lTimeStamp)
-  {
-    if (lRunNumber != mRunNumber) {
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!grpo) {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+    }
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
       if (d_bz_input < -990) {
         // Fetch magnetic field from ccdb for current collision
-        d_bz = getMagneticField(lTimeStamp);
+        d_bz = grpo->getNominalL3Field();
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
         d_bz = d_bz_input;
       }
-      mRunNumber = lRunNumber;
+    } else {
+      o2::base::Propagator::initFieldFromGRP(grpmag);
     }
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+    mRunNumber = bc.runNumber();
   }
 
-  void processRun2(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&
-#ifdef MY_DEBUG
-      ,
-      aod::McParticles const& particlesMC
-#endif
-      )
+  template <class TCascTracksTo>
+  void buildLambdaKZeroTable(aod::Collision const& collision, aod::V0s const& V0s, Bool_t lRun3 = kTRUE)
   {
-
-    /* check the previous run number */
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
-
     // Define o2 fitter, 2-prong
     o2::vertexing::DCAFitterN<2> fitter;
     fitter.setBz(d_bz);
@@ -255,9 +235,12 @@ struct lambdakzeroBuilder {
     for (auto& V0 : V0s) {
 
       // Track preselection part
+      auto posTrackCast = V0.posTrack_as<TCascTracksTo>();
+      auto negTrackCast = V0.negTrack_as<TCascTracksTo>();
+
 #ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracks>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
+      auto labelPos = posTrackCast.mcParticleId();
+      auto labelNeg = negTrackCast.mcParticleId();
       bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
@@ -267,12 +250,12 @@ struct lambdakzeroBuilder {
       registry.fill(HIST("hV0CutCounter"), 0.5);
 
       if (isRun2) {
-        if (!(V0.posTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
+        if (!(posTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
           v0dataLink(-1);
           continue; // TPC refit
         }
-        if (!(V0.negTrack_as<MyTracks>().trackType() & o2::aod::track::TPCrefit)) {
+        if (!(negTrackCast.trackType() & o2::aod::track::TPCrefit) && !lRun3) {
           MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
           v0dataLink(-1);
           continue; // TPC refit
@@ -280,14 +263,13 @@ struct lambdakzeroBuilder {
       }
       // Passes TPC refit
       registry.fill(HIST("hV0Criteria"), 1.5);
-
-      if (V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
+      if (posTrackCast.tpcNClsCrossedRows() < mincrossedrows) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << posTrackCast.tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
         continue;
       }
-      if (V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracks>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
+      if (negTrackCast.tpcNClsCrossedRows() < mincrossedrows) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << negTrackCast.tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
         v0dataLink(-1);
         continue;
       }
@@ -295,14 +277,13 @@ struct lambdakzeroBuilder {
       registry.fill(HIST("hV0CutCounter"), 1.5);
       registry.fill(HIST("hV0Criteria"), 2.5);
 
-
-      /*if (fabs(V0.posTrack_as<MyTracks>().dcaXY()) < dcapostopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+      /*if (fabs(posTrackCast.dcaXY()) < dcapostopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << posTrackCast.dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
         continue;
       }
-      if (fabs(V0.negTrack_as<MyTracks>().dcaXY()) < dcanegtopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracks>().dcaXY() << " , cut at " << dcanegtopv);
+      if (fabs(negTrackCast.dcaXY()) < dcanegtopv) {
+        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << negTrackCast.dcaXY() << " , cut at " << dcanegtopv);
         v0dataLink(-1);
         continue;
       }
@@ -316,18 +297,18 @@ struct lambdakzeroBuilder {
       std::array<float, 3> pvec1 = {0.};
 
 #ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracks>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracks>().mcParticleId();
+      auto labelPos = posTrackCast.mcParticleId();
+      auto labelNeg = negTrackCast.mcParticleId();
       bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
 #endif
 
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "labelPos = " << labelPos << ", labelNeg = " << labelNeg);
 
-      auto pTrack = getTrackParCov(V0.posTrack_as<MyTracks>());
-      auto nTrack = getTrackParCov(V0.negTrack_as<MyTracks>());
+      auto pTrack = getTrackParCov(posTrackCast);
+      auto nTrack = getTrackParCov(negTrackCast);
 
       // Require collision-ID
-      if (V0.posTrack_as<MyTracks>().collisionId() != V0.negTrack_as<MyTracks>().collisionId() && rejDiffCollTracks) {
+      if (posTrackCast.collisionId() != negTrackCast.collisionId() && rejDiffCollTracks) {
         v0dataLink(-1);
         continue;
       }
@@ -435,248 +416,124 @@ struct lambdakzeroBuilder {
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
 
       v0data(
-          V0.posTrackId(),
-          V0.negTrackId(),
-          V0.collisionId(),
-          V0.globalIndex(),
-          fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-          pos[0], pos[1], pos[2],
-          pvec0[0], pvec0[1], pvec0[2],
-          pvec1[0], pvec1[1], pvec1[2],
-          fitter.getChi2AtPCACandidate(),
-          V0.posTrack_as<MyTracks>().dcaXY(),
-          V0.negTrack_as<MyTracks>().dcaXY());
+        V0.posTrackId(),
+        V0.negTrackId(),
+        V0.collisionId(),
+        V0.globalIndex(),
+        fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
+        pos[0], pos[1], pos[2],
+        pvec0[0], pvec0[1], pvec0[2],
+        pvec1[0], pvec1[1], pvec1[2],
+        fitter.getChi2AtPCACandidate(),
+        posTrackCast.dcaXY(),
+        negTrackCast.dcaXY());
       v0dataLink(v0data.lastIndex());
     }
   }
-  PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 multiplicity tables", true);
 
-  void processRun3(aod::Collision const& collision, aod::V0s const& V0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&
+  void processRun2(aod::Collision const& collision, aod::V0s const& V0s, MyTracks const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
       ,
       aod::McParticles const& particlesMC
 #endif
       )
   {
-
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    CheckAndUpdate(bc.runNumber(), bc.timestamp());
+    initCCDB(bc);
 
-    // Define o2 fitter, 2-prong
-    o2::vertexing::DCAFitterN<2> fitter;
-    fitter.setBz(d_bz);
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true); // use d_UseAbsDCA once we want to use the weighted DCA
+    // do v0s, typecase correctly into tracks (Run 2 use case)
+    buildLambdaKZeroTable<MyTracks>(collision, V0s, kFALSE);
+  }
+  PROCESS_SWITCH(lambdakzeroBuilder, processRun2, "Produce Run 2 V0 tables", true);
 
-    registry.fill(HIST("hEventCounter"), 0.5);
-
-    for (auto& V0 : V0s) {
-
-      // Track preselection part
+  void processRun3(aod::Collision const& collision, aod::V0s const& V0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const&
 #ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracksIU>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracksIU>().mcParticleId();
-      bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
+                   ,
+                   aod::McParticles const& particlesMC
 #endif
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "V0 builder: found K0S from Lc, posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
+  )
+  {
+    /* check the previous run number */
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+// do v0s, typecase correctly into tracksIU (Run 3 use case)
+    buildLambdaKZeroTable<MyTracksIU>(collision, V0s, kTRUE);
+  }
+  PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", false);
+};
 
-      // value 0.5: any considered V0
-      registry.fill(HIST("hV0Criteria"), 0.5);
-      registry.fill(HIST("hV0CutCounter"), 0.5);
+struct lambdakzeroLabelBuilder {
 
-      if (isRun2) {
-        if (!(V0.posTrack_as<MyTracksIU>().trackType() & o2::aod::track::TPCrefit)) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has no TPC refit");
-          v0dataLink(-1);
-          continue; // TPC refit
+  Produces<aod::McV0Labels> v0labels;
+
+  // for bookkeeping purposes: how many V0s come from same mother etc
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hK0Short", "hK0Short", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hLambda", "hLambda", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+      {"hAntiLambda", "hAntiLambda", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
+    },
+  };
+
+  void init(InitContext const&) {}
+
+  void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function - should not be required in the future
+  }
+  PROCESS_SWITCH(lambdakzeroLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
+
+  void processBuildLabels(aod::Collisions::iterator const& collision, aod::V0Datas const& v0table, LabeledTracks const&, aod::McParticles const& particlesMC)
+  {
+    for (auto& v0 : v0table) {
+
+      int lLabel = -1;
+      int lPDG = -1;
+      float lPt = -1;
+      float lFillVal = 0.5f; // all considered V0s
+
+      auto lNegTrack = v0.negTrack_as<LabeledTracks>();
+      auto lPosTrack = v0.posTrack_as<LabeledTracks>();
+
+      // Association check
+      // There might be smarter ways of doing this in the future
+      if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
+        auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
+        auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
+        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
+
+          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
+            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
+              if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
+                lLabel = lNegMother.globalIndex();
+                lPt = lNegMother.pt();
+                lPDG = lNegMother.pdgCode();
+                lFillVal = 1.5f; // v0s with the same mother
+              }
+            }
+          }
         }
-        if (!(V0.negTrack_as<MyTracksIU>().trackType() & o2::aod::track::TPCrefit)) {
-          MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has no TPC refit");
-          v0dataLink(-1);
-          continue; // TPC refit
-        }
-      }
-      // Passes TPC refit
-      registry.fill(HIST("hV0Criteria"), 1.5);
-      if (V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has " << V0.posTrack_as<MyTracksIU>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
-        v0dataLink(-1);
-        continue;
-      }
-      if (V0.negTrack_as<MyTracksIU>().tpcNClsCrossedRows() < mincrossedrows) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has " << V0.negTrack_as<MyTracksIU>().tpcNClsCrossedRows() << " crossed rows, cut at " << mincrossedrows);
-        v0dataLink(-1);
-        continue;
-      }
-      // passes crossed rows
-      registry.fill(HIST("hV0Criteria"), 2.5);
-      registry.fill(HIST("hV0CutCounter"), 1.5);
+      } // end association check
+      registry.fill(HIST("hLabelCounter"), lFillVal);
 
-      /*if (fabs(V0.posTrack_as<MyTracksIU>().dcaXY()) < dcapostopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack " << labelPos << " has dcaXY " << V0.posTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcanegtopv);
-        v0dataLink(-1);
-        continue;
-      }
-      if (fabs(V0.negTrack_as<MyTracksIU>().dcaXY()) < dcanegtopv) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "negTrack " << labelNeg << " has dcaXY " << V0.negTrack_as<MyTracksIU>().dcaXY() << " , cut at " << dcanegtopv);
-        v0dataLink(-1);
-        continue;
-      }
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "Filling good indices: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);*/
-      // passes DCAxy
-      registry.fill(HIST("hV0Criteria"), 3.5);
+      // Intended for cross-checks only
+      // N.B. no rapidity cut!
+      if (lPDG == 310)
+        registry.fill(HIST("hK0Short"), lPt);
+      if (lPDG == 3122)
+        registry.fill(HIST("hLambda"), lPt);
+      if (lPDG == -3122)
+        registry.fill(HIST("hAntiLambda"), lPt);
 
-      // Candidate building part
-      std::array<float, 3> pos = {0.};
-      std::array<float, 3> pvec0 = {0.};
-      std::array<float, 3> pvec1 = {0.};
-
-#ifdef MY_DEBUG
-      auto labelPos = V0.posTrack_as<MyTracksIU>().mcParticleId();
-      auto labelNeg = V0.negTrack_as<MyTracksIU>().mcParticleId();
-      bool isK0SfromLc = isK0SfromLcFunc(labelPos, labelNeg, v_labelK0Spos, v_labelK0Sneg);
-#endif
-
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "labelPos = " << labelPos << ", labelNeg = " << labelNeg);
-
-      auto pTrack = getTrackParCov(V0.posTrack_as<MyTracksIU>());
-      auto nTrack = getTrackParCov(V0.negTrack_as<MyTracksIU>());
-
-      // Require collision-ID
-      if (V0.posTrack_as<MyTracksIU>().collisionId() != V0.negTrack_as<MyTracksIU>().collisionId() && rejDiffCollTracks) {
-        v0dataLink(-1);
-        continue;
-      }
-
-      // passes diff coll check
-      registry.fill(HIST("hV0Criteria"), 4.5);
-      registry.fill(HIST("hV0CutCounter"), 2.5);
-
-      // Act on copies for minimization
-      auto pTrackCopy = o2::track::TrackParCov(pTrack);
-      auto nTrackCopy = o2::track::TrackParCov(nTrack);
-
-      //---/---/---/
-      // Move close to minima
-      int nCand = fitter.process(pTrackCopy, nTrackCopy);
-      if (nCand == 0) {
-        v0dataLink(-1);
-        continue;
-      }
-
-      // passes V0 fitter minimization successfully
-      registry.fill(HIST("hV0Criteria"), 5.5);
-
-      double finalXpos = fitter.getTrack(0).getX();
-      double finalXneg = fitter.getTrack(1).getX();
-
-      // Rotate to desired alpha
-      pTrack.rotateParam(fitter.getTrack(0).getAlpha());
-      nTrack.rotateParam(fitter.getTrack(1).getAlpha());
-
-      // Retry closer to minimum with material corrections
-      o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-      if (useMatCorrType == 1)
-        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-      if (useMatCorrType == 2)
-        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
-      o2::base::Propagator::Instance()->propagateToX(pTrack, finalXpos, d_bz, maxSnp, maxStep, matCorr);
-      o2::base::Propagator::Instance()->propagateToX(nTrack, finalXneg, d_bz, maxSnp, maxStep, matCorr);
-
-      nCand = fitter.process(pTrack, nTrack);
-      if (nCand == 0) {
-        v0dataLink(-1);
-        continue;
-      }
-
-      // Passes step 2 of V0 fitter
-      registry.fill(HIST("hV0Criteria"), 6.5);
-      registry.fill(HIST("hV0CutCounter"), 3.5);
-
-      pTrack.getPxPyPzGlo(pvec0);
-      nTrack.getPxPyPzGlo(pvec1);
-
-      // PID doesn't work well, modified the StoredV0Datas Table to make invariant mass correct temporarily, need to fix
-      /*uint32_t pTrackPID = V0.posTrack_as<MyTracks>().pidForTracking();
-        uint32_t nTrackPID = V0.negTrack_as<MyTracks>().pidForTracking();
-        int pTrackCharge = o2::track::pid_constants::sCharges[pTrackPID];
-        int nTrackCharge = o2::track::pid_constants::sCharges[nTrackPID];*/
-      int pTrackCharge = 1, nTrackCharge = 1;
-      if (TMath::Abs( GetTPCNSigmaHe3(2*V0.posTrack_as<MyTracksIU>().p(), V0.posTrack_as<MyTracksIU>().tpcSignal()) ) < 5){
-        pTrackCharge = 2;
-      } 
-      if (TMath::Abs( GetTPCNSigmaHe3(2*V0.negTrack_as<MyTracksIU>().p(), V0.negTrack_as<MyTracksIU>().tpcSignal()) ) < 5){
-        nTrackCharge = 2;
-      } 
-      for (int i=0; i<3; i++){
-        pvec0[i] = pvec0[i] * pTrackCharge;
-        pvec1[i] = pvec1[i] * nTrackCharge;
-      }
-
-      const auto& vtx = fitter.getPCACandidate();
-      for (int i = 0; i < 3; i++) {
-        pos[i] = vtx[i];
-      }
-
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 0: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-
-      // Apply selections so a skimmed table is created only
-      if (fitter.getChi2AtPCACandidate() > dcav0dau) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to dca cut");
-        v0dataLink(-1);
-        continue;
-      }
-
-      // Passes DCA between daughters check
-      registry.fill(HIST("hV0Criteria"), 7.5);
-      registry.fill(HIST("hV0CutCounter"), 4.5);
-
-      auto V0CosinePA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
-      if (V0CosinePA < v0cospa) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to CPA cut");
-        v0dataLink(-1);
-        continue;
-      }
-
-      // Passes CosPA check
-      registry.fill(HIST("hV0Criteria"), 8.5);
-      registry.fill(HIST("hV0CutCounter"), 5.5);
-
-      auto V0radius = RecoDecay::sqrtSumOfSquares(pos[0], pos[1]); // probably find better name to differentiate the cut from the variable
-      /*if (V0radius < v0radius) {
-        MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "posTrack --> " << labelPos << ", negTrack --> " << labelNeg << " will be skipped due to radius cut");
-        v0dataLink(-1);
-        continue;
-      }*/
-
-      // Passes radius check
-      registry.fill(HIST("hV0Criteria"), 9.5);
-
-      MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "in builder 1, keeping K0S candidate: posTrack --> " << labelPos << ", negTrack --> " << labelNeg);
-
-      v0data(
-          V0.posTrackId(),
-          V0.negTrackId(),
-          V0.collisionId(),
-          V0.globalIndex(),
-          fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-          pos[0], pos[1], pos[2],
-          pvec0[0], pvec0[1], pvec0[2],
-          pvec1[0], pvec1[1], pvec1[2],
-          fitter.getChi2AtPCACandidate(),
-          V0.posTrack_as<MyTracksIU>().dcaXY(),
-          V0.negTrack_as<MyTracksIU>().dcaXY());
-      v0dataLink(v0data.lastIndex());
+      // Construct label table (note: this will be joinable with V0Datas)
+      v0labels(
+        lLabel);
     }
   }
-  PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 multiplicity tables", false);
+  PROCESS_SWITCH(lambdakzeroLabelBuilder, processBuildLabels, "Produce MC label tables", false);
 };
 
 /// Extends the v0data table with expression columns
@@ -689,5 +546,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
-      adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
+    adaptAnalysisTask<lambdakzeroLabelBuilder>(cfgc),
+    adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }

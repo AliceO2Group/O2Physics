@@ -7,7 +7,7 @@
     "start-value-enumeration": "0",
     "end-value-enumeration": "-1",
     "step-value-enumeration": "1",
-    "aod-file": "pippo6.root"
+    "aod-file": "AO2D.root"
   },
   "internal-dpl-aod-index-builder": "",
   "internal-dpl-aod-spawner": "",
@@ -69,14 +69,14 @@
   "c-f-tutorial-task1": "",
   "c-f-tutorial-task2": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3"
   },
   "c-f-tutorial-task3": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3",
@@ -84,7 +84,7 @@
   },
   "c-f-tutorial-task4": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3",
@@ -92,7 +92,7 @@
   },
   "c-f-tutorial-task5": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3",
@@ -127,7 +127,8 @@
       ]
     },
     "processSame": "true",
-    "processMixed": "true"
+    "processMixed": "true",
+    "processMixedEventInterface": "true"
   },
   "internal-dpl-aod-global-analysis-file-sink": "",
   "internal-dpl-aod-writer": ""

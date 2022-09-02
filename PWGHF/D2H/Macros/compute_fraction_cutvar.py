@@ -26,7 +26,7 @@ def main(config):
 
     ROOT.gROOT.SetBatch(True)
 
-    with open(config) as fil:
+    with open(config, encoding="utf8") as fil:
         cfg = json.load(fil)
 
     hist_rawy, hist_effp, hist_effnp = ([] for _ in range(3))
@@ -62,7 +62,6 @@ def main(config):
         color=ROOT.kRed + 1,
         fillstyle=0,
         markerstyle=ROOT.kFullCircle,
-        linewidth=2,
     )
     set_object_style(
         hist_corry_nonprompt,

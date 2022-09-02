@@ -31,6 +31,10 @@ struct gammaConversionsTruthOnlyMc {
 
   Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
   Configurable<float> fEtaMax{"fEtaMax", 0.8, "aMaximum photon eta"};
+  Configurable<float> fV0RMin{"fV0RMin", 0., "minimum conversion radius of the V0s"};
+  Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
+  Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
+  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fEtaMax))), "The slope for the line cut"};
 
   HistogramRegistry registry{
     "registry",
@@ -76,7 +80,7 @@ struct gammaConversionsTruthOnlyMc {
     registry.fill(HIST("hGammaConvertedXY_MCTrue"), theMcConvGamma.conversionX(), theMcConvGamma.conversionY());
     registry.fill(HIST("hGammaConvertedZP_MCTrue"), theMcConvGamma.conversionZ(), theMcConvGamma.p());
 
-    if (lConversionRadius > 5. && lConversionRadius < 180.) {
+    if (lConversionRadius > fV0RMin && lConversionRadius < fV0RMax) {
       registry.fill(HIST("hGammaConvertedP_Rsel_MCTrue"), theMcConvGamma.p());
       registry.fill(HIST("hGammaConvertedPt_Rsel_MCTrue"), theMcConvGamma.pt());
     }
@@ -92,6 +96,10 @@ struct gammaConversionsTruthOnlyMc {
 
     if (std::abs(theMcGamma.eta()) > fEtaMax) {
       // fill histo
+      return false;
+    }
+
+    if (TMath::Abs(theMcGamma.conversionZ()) < LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
       return false;
     }
     return true;

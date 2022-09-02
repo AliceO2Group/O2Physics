@@ -115,7 +115,7 @@ void MixingHandler::Init()
   for (auto v : fVariableLimits) {
     size *= (v.GetSize() - 1);
   }
-
+  (void)size;
   fIsInitialized = kTRUE;
 }
 
