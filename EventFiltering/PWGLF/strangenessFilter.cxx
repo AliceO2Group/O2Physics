@@ -71,11 +71,11 @@ struct strangenessFilter {
   Configurable<float> dcamesontopv{"dcamesontopv", 0.04, "DCA Meson To PV"};
   Configurable<float> dcabaryontopv{"dcabaryontopv", 0.03, "DCA Baryon To PV"};
   Configurable<float> dcabachtopv{"dcabachtopv", 0.04, "DCA Bach To PV"};
-  Configurable<float> dcav0topv{"dcav0topv", 1.2, "DCA V0 To PV"};
+  Configurable<float> dcav0topv{"dcav0topv", 0.06, "DCA V0 To PV"};
   Configurable<float> v0radius{"v0radius", 1.2, "V0 Radius"};
-  Configurable<float> v0radiusupperlimit{"v0radiusupperlimit", 34, "V0 Radius Upper Limit"};
+  Configurable<float> v0radiusupperlimit{"v0radiusupperlimit", 1000, "V0 Radius Upper Limit"};
   Configurable<float> cascradius{"cascradius", 0.6, "cascradius"};
-  Configurable<float> cascradiusupperlimit{"cascradiusupperlimit", 34, "Casc Radius Upper Limit"};
+  Configurable<float> cascradiusupperlimit{"cascradiusupperlimit", 1000, "Casc Radius Upper Limit"};
   Configurable<float> rapidity{"rapidity", 2, "rapidity"};
   Configurable<float> eta{"eta", 2, "Eta"};
   Configurable<float> minpt{"minpt", 0.5, "minpt"};
@@ -94,7 +94,7 @@ struct strangenessFilter {
   Configurable<bool> globaltrk{"globaltrk", 1, "Apply global track selection"};
 
   // Selections criteria for tracks
-  Configurable<float> hEta{"hEta", 0.8f, "Eta range for trigger particles"};
+  Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
   Configurable<float> hMinPt{"hMinPt", 1.0f, "Min pt for trigger particles"};
 
   void init(o2::framework::InitContext&)
@@ -309,7 +309,7 @@ struct strangenessFilter {
         };
         QAHistos.fill(HIST("hTOFnsigmaPrBefSel"), posdau.tofNSigmaPr());
         QAHistos.fill(HIST("hTOFnsigmaV0PiBefSel"), negdau.tofNSigmaPi());
-        if (
+        if ( // bachelor to be fixed
           (TMath::Abs(posdau.tofNSigmaPr()) > nsigmatof) &&
           (TMath::Abs(negdau.tofNSigmaPi()) > nsigmatof) &&
           (TMath::Abs(bachelor.tofNSigmaPi()) > nsigmatof)) {
@@ -319,9 +319,6 @@ struct strangenessFilter {
         QAHistos.fill(HIST("hTOFnsigmaV0PiAfterSel"), negdau.tofNSigmaPi());
       }
       // these selection differ for Xi and Omegas:
-      if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
-        continue;
-      };
       if (TMath::Abs(posdau.eta()) > etadau) {
         continue;
       };
@@ -356,18 +353,21 @@ struct strangenessFilter {
         continue;
       };
 
-      isXi = (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
+      isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+             (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
              (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
              (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
              (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isXiYN = (casc.cascradius() > 24.39) &&
+      isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+               (casc.cascradius() > 24.39) &&
                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isOmega = (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
+      isOmega = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+                (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
                 (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
@@ -395,9 +395,8 @@ struct strangenessFilter {
         xicounter++;
 
         // Plot for estimates
-        for (auto track : tracks) { // start loop over tracks
-          triggcounterForEstimates++;
-        } // end loop over tracks
+        if (tracks.size() > 0)
+          triggcounterForEstimates = 1;
         if (triggcounterForEstimates)
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
@@ -615,9 +614,7 @@ struct strangenessFilter {
         QAHistos.fill(HIST("hTOFnsigmaBachPiAfterSel"), bachelor.tofNSigmaPi());
       }
       // this selection differes for Xi and Omegas:
-      if (TMath::Abs(bachelor.tpcNSigmaPi()) > nsigmatpc) {
-        continue;
-      };
+
       hCandidate->Fill(7.5);
       if (TMath::Abs(posdau.eta()) > etadau) {
         continue;
@@ -676,18 +673,21 @@ struct strangenessFilter {
         }
       }
 
-      isXi = (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
+      isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+             (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
              (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
              (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
              (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
              (xiproperlifetime < properlifetimefactor * ctauxi) &&
              (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isXiYN = (casc.cascradius() > 24.39) &&
+      isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+               (casc.cascradius() > 24.39) &&
                (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < ximasswindow) &&
                (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) > omegarej) &&
                (xiproperlifetime < properlifetimefactor * ctauxi) &&
                (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isOmega = (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
+      isOmega = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpc) &&
+                (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa) &&
                 (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
                 (TMath::Abs(casc.mOmega() - RecoDecay::getMassPDG(3334)) < omegamasswindow) &&
                 (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) > xirej) &&
