@@ -126,7 +126,7 @@ struct AnalysisQvector {
 
   // define global variables for generic framework
   GFW* fGFW = new GFW();
-  std::vector<GFW::CorrConfig> corrconfigs;
+  //std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
 
   // Initialize CCDB, efficiencies and acceptances from CCDB, histograms, GFW, FlowContainer
@@ -190,11 +190,11 @@ struct AnalysisQvector {
     fGFW->AddRegion("refP", 7, pows, fConfigEtaLimit, fConfigCutEta, 1, 1);
     fGFW->AddRegion("full", 7, powsFull, -fConfigCutEta, fConfigCutEta, 1, 2);
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
+    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
   }
 
   // TODO: make available the flowcontainer output (add a dictionary somewhere...)
