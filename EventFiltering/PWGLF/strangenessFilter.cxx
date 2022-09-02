@@ -716,10 +716,9 @@ struct strangenessFilter {
         xicounter++;
 
         // Plot for estimates
-        for (auto track : tracks) { // start loop over tracks
+        if (tracks.size() > 0)
           triggcounterForEstimates++;
-        } // end loop over tracks
-        if (triggcounterForEstimates)
+        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - RecoDecay::getMassPDG(3312)) < 0.01))
           hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
         // End plot for estimates
       }
