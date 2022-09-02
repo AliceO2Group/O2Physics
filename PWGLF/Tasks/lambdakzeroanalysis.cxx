@@ -125,7 +125,6 @@ struct lambdakzeroAnalysis {
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
 
-
     if (doprocessRun3 && doprocessRun2) {
       LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
     }
@@ -161,7 +160,7 @@ struct lambdakzeroAnalysis {
       return;
     }
     registry.fill(HIST("hEventSelection"), 1.5);
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) {//10cm
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hEventSelection"), 2.5);
@@ -219,7 +218,7 @@ struct lambdakzeroAnalysis {
       return;
     }
     registry.fill(HIST("hEventSelection"), 1.5);
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) {//10cm
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hEventSelection"), 2.5);

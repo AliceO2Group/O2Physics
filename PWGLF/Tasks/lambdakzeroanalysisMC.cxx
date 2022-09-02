@@ -467,7 +467,6 @@ struct lambdakzeroParticleCountMc {
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
     registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
-
   }
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 0.5, "rapidity cut MC count"};
@@ -492,7 +491,7 @@ struct lambdakzeroParticleCountMc {
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    registry.fill(HIST("hEventSelection"), 1.5); //hSelAndRecoMcCollCounter
+    registry.fill(HIST("hEventSelection"), 1.5);                  // hSelAndRecoMcCollCounter
     if (event_posZ_selection && abs(mcCollision.posZ()) > 10.f) { // 10cm
       return;
     }
