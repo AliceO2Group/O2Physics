@@ -210,8 +210,8 @@ struct LFNucleiBATask {
     }
 
     //  Bethe-Bloch TPC distribution and Beta vs pT TOF distribution
-    histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "-dE/dX vs p/Z; p/Z (GeV/c); -dE/dx (a.u.)", HistType::kTH2F, {{1000, -5.f, 5.f}, {81000, 0.0, 1E3}});
-    histos.add<TH2>("tracks/h2TOFbetaVsP", "#beta (TOF) vs p/Z; p/Z (GeV/c); #beta", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
+    histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/|Z|; #it{p}/|Z| (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{1000, -5.f, 5.f}, {81000, 0.0, 1E3}});
+    histos.add<TH2>("tracks/h2TOFbetaVsP", "#TOF beta vs #it{p}/|Z|; #it{p}/|Z| (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{1000, -5.f, 5.f}, {1200, 0.0, 1.2}});
 
     //  NSigmasTPC histograms
     histos.add<TH2>("tracks/pion/h2PionVspTNSigmaTPC", "NSigmaTPC(pi) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {400, -10, 10.}});
