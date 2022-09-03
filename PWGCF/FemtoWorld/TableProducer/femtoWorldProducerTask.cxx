@@ -17,8 +17,11 @@
 #include "PWGCF/FemtoWorld/Core/FemtoWorldCollisionSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
 #include "PWGCF/FemtoWorld/Core/FemtoWorldV0Selection.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldPhiSelection.h"
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldPairCleaner.h"
 
+#include "TLorentzVector.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -78,7 +81,8 @@ struct femtoWorldProducerTask {
 
   Produces<aod::FemtoWorldCollisions> outputCollision;
   Produces<aod::FemtoWorldParticles> outputParts;
-  // Produces<aod::FemtoWorldDebugParticles> outputDebugParts;
+  // Produces<aod::FemtoWorldPhiCandidates> outputPhiCan;
+  //  Produces<aod::FemtoWorldDebugParticles> outputDebugParts;
 
   Configurable<bool> ConfDebugOutput{"ConfDebugOutput", true, "Debug output"};
 
@@ -97,6 +101,7 @@ struct femtoWorldProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
 
   Configurable<bool> ConfStoreV0{"ConfStoreV0", true, "True: store V0 table"};
+  Configurable<bool> ConfStorePhi{"ConfStorePhi", true, "True: store Phi table"};
   // just sanity check to make sure in case there are problems in convertion or MC production it does not affect results
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<bool> ConfRejectITSHitandTOFMissing{"ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
@@ -120,7 +125,7 @@ struct femtoWorldProducerTask {
   FemtoWorldV0Selection v0Cuts;
   TrackSelection* o2PhysicsTrackSelection;
   /// \todo Labeled array (see Track-Track task)
-
+  /// V0
   Configurable<std::vector<float>> ConfV0Sign{FemtoWorldV0Selection::getSelectionName(femtoWorldV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoWorldV0Selection::getSelectionHelper(femtoWorldV0Selection::kV0Sign, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{FemtoWorldV0Selection::getSelectionName(femtoWorldV0Selection::kpTV0Min, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoWorldV0Selection::getSelectionHelper(femtoWorldV0Selection::kpTV0Min, "V0 selection: ")};
   Configurable<std::vector<float>> ConfDCAV0DaughMax{FemtoWorldV0Selection::getSelectionName(femtoWorldV0Selection::kDCAV0DaughMax, "ConfV0"), std::vector<float>{1.2f, 1.5f}, FemtoWorldV0Selection::getSelectionHelper(femtoWorldV0Selection::kDCAV0DaughMax, "V0 selection: ")};
@@ -144,6 +149,33 @@ struct femtoWorldProducerTask {
   Configurable<bool> ConfRejectKaons{"ConfRejectKaons", false, "Switch to reject kaons"};
   Configurable<float> ConfInvKaonMassLowLimit{"ConfInvKaonMassLowLimit", 0.48, "Lower limit of the V0 invariant mass for Kaon rejection"};
   Configurable<float> ConfInvKaonMassUpLimit{"ConfInvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
+
+  // PHI Candidates
+  FemtoWorldPhiSelection PhiCuts;
+  Configurable<std::vector<float>> ConfPhiSign{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kPhiSign, "ConfPhi"), std::vector<float>{-1, 1}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kPhiSign, "Phi selection: ")};
+  Configurable<std::vector<float>> ConfPhiPtMin{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kpTPhiMin, "ConfPhi"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kpTPhiMin, "Phi selection: ")};
+  // Configurable<std::vector<float>> ConfDCAPhiDaughMax{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kDCAPhiDaughMax, "ConfPhi"), std::vector<float>{1.2f, 1.5f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kDCAPhiDaughMax, "Phi selection: ")};
+  // Configurable<std::vector<float>> ConfCPAPhiMin{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kCPAPhiMin, "ConfPhi"), std::vector<float>{0.99f, 0.995f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kCPAPhiMin, "Phi selection: ")};
+
+  // Configurable<std::vector<float>> PhiTranRadPhiMin{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kTranRadPhiMin, "ConfPhi"), std::vector<float>{0.2f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kTranRadPhiMin, "Phi selection: ")};
+  // Configurable<std::vector<float>> PhiTranRadPhiMax{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kTranRadPhiMax, "ConfPhi"), std::vector<float>{100.f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kTranRadPhiMax, "Phi selection: ")};
+  // Configurable<std::vector<float>> PhiDecVtxMax{FemtoWorldPhiSelection::getSelectionName(femtoWorldPhiSelection::kDecVtxMax, "ConfPhi"), std::vector<float>{100.f}, FemtoWorldPhiSelection::getSelectionHelper(femtoWorldPhiSelection::kDecVtxMax, "Phi selection: ")};
+
+  Configurable<std::vector<float>> ConfPhiDaughCharge{"ConfPhiDaughCharge", std::vector<float>{-1, 1}, "Phi Daugh sel: Charge"};
+  Configurable<std::vector<float>> ConfPhiDaughEta{"ConfPhiDaughEta", std::vector<float>{0.8f}, "Phi Daugh sel: max eta"};
+  Configurable<std::vector<float>> ConfPhiDaughTPCnclsMin{"ConfPhiDaughTPCnclsMin", std::vector<float>{80.f, 70.f, 60.f}, "Phi Daugh sel: Min. nCls TPC"};
+  Configurable<std::vector<float>> ConfPhiDaughDCAMin{"ConfPhiDaughDCAMin", std::vector<float>{0.05f, 0.06f}, "Phi Daugh sel:  Max. DCA Daugh to PV (cm)"};
+  Configurable<std::vector<float>> ConfPhiDaughPIDnSigmaMax{"ConfPhiDaughPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Phi Daugh sel: Max. PID nSigma TPC"};
+
+  Configurable<std::vector<int>> ConfPhiDaughTPIDspecies{"ConfPhiDaughTPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "Phi Daugh sel: Particles species for PID"};
+
+  Configurable<float> ConfInvMassLowLimitPhi{"ConfInvMassLowLimitPhi", 1.05, "Lower limit of the Phi invariant mass"};
+  Configurable<float> ConfInvMassUpLimitPhi{"ConfInvMassUpLimitPhi", 1.30, "Upper limit of the Phi invariant mass"};
+
+  Configurable<bool> ConfRejectKaonsPhi{"ConfRejectKaonsPhi", false, "Switch to reject kaons"};
+  Configurable<float> ConfInvKaonMassLowLimitPhi{"ConfInvKaonMassLowLimitPhi", 0.48, "Lower limit of the Phi invariant mass for Kaon rejection"};
+  Configurable<float> ConfInvKaonMassUpLimitPhi{"ConfInvKaonMassUpLimitPhi", 0.515, "Upper limit of the Phi invariant mass for Kaon rejection"};
+  // Configurable<std::vector<float>> ConfPhiSign{FemtoWorldV0Selection::getSelectionName(femtoWorldV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoWorldV0Selection::getSelectionHelper(femtoWorldV0Selection::kV0Sign, "V0 selection: ")};
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
@@ -211,6 +243,50 @@ struct femtoWorldProducerTask {
       }
     }
 
+    if (ConfStorePhi) {
+      PhiCuts.init<aod::femtoworldparticle::ParticleType::kPhi, aod::femtoworldparticle::ParticleType::kPhiChild, aod::femtoworldparticle::cutContainerType>(&qaRegistry);
+      if (ConfRejectKaonsPhi) {
+        //! PhiCuts.setKaonInvMassLimits(ConfInvKaonMassLowLimitPhi, ConfInvKaonMassUpLimitPhi);
+      }
+      if (ConfRejectITSHitandTOFMissing) {
+        o2PhysicsTrackSelection = new TrackSelection(getGlobalTrackSelection());
+        o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
+      }
+    }
+
+    /*if (ConfStorePhi) {
+
+      //PhiCuts.setSelection(ConfPhiSign, femtoWorldPhiSelection::kPhiSign, femtoWorldSelection::kEqual);
+      //!PhiCuts.setSelection(ConfPhiPtMin, femtoWorldPhiSelection::kpTPhiMin, femtoWorldSelection::kLowerLimit);
+      //PhiCuts.setSelection(ConfDCAPhiDaughMax, femtoWorldPhiSelection::kDCAPhiDaughMax, femtoWorldSelection::kUpperLimit);
+      //PhiCuts.setSelection(ConfCPAPhiMin, femtoWorldPhiSelection::kCPAPhiMin, femtoWorldSelection::kLowerLimit);
+
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kPosTrackPhi, ConfPhiDaughCharge, femtoWorldTrackSelection::kSign, femtoWorldSelection::kEqual);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kPosTrackPhi, ConfPhiDaughEta, femtoWorldTrackSelection::kEtaMax, femtoWorldSelection::kAbsUpperLimit);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kPosTrackPhi, ConfPhiDaughTPCnclsMin, femtoWorldTrackSelection::kTPCnClsMin, femtoWorldSelection::kLowerLimit);
+      //PhiCuts.setChildCuts(femtoWorldPhiSelection::kPosTrack, ConfPhiDaughDCAMin, femtoWorldTrackSelection::kDCAMin, femtoWorldSelection::kAbsLowerLimit);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kPosTrackPhi, ConfPhiDaughPIDnSigmaMax, femtoWorldTrackSelection::kPIDnSigmaMax, femtoWorldSelection::kAbsUpperLimit);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kNegTrackPhi, ConfPhiDaughCharge, femtoWorldTrackSelection::kSign, femtoWorldSelection::kEqual);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kNegTrackPhi, ConfPhiDaughEta, femtoWorldTrackSelection::kEtaMax, femtoWorldSelection::kAbsUpperLimit);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kNegTrackPhi, ConfPhiDaughTPCnclsMin, femtoWorldTrackSelection::kTPCnClsMin, femtoWorldSelection::kLowerLimit);
+      //PhiCuts.setChildCuts(femtoWorldPhiSelection::kNegTrack, ConfPhiDaughDCAMin, femtoWorldTrackSelection::kDCAMin, femtoWorldSelection::kAbsLowerLimit);
+      //!PhiCuts.setChildCuts(femtoWorldPhiSelection::kNegTrackPhi, ConfPhiDaughPIDnSigmaMax, femtoWorldTrackSelection::kPIDnSigmaMax, femtoWorldSelection::kAbsUpperLimit);
+      //!PhiCuts.setChildPIDSpecies(femtoWorldPhiSelection::kPosTrackPhi, ConfPhiDaughTPIDspecies);
+      //!PhiCuts.setChildPIDSpecies(femtoWorldPhiSelection::kNegTrackPhi, ConfPhiDaughTPIDspecies);
+      PhiCuts.init<aod::femtoworldparticle::ParticleType::kPhi, aod::femtoworldparticle::ParticleType::kPhiChild, aod::femtoworldparticle::cutContainerType>(&qaRegistry);
+      //!PhiCuts.setInvMassLimits(ConfInvMassLowLimitPhi, ConfInvMassUpLimitPhi);
+      //!PhiCuts.setChildRejectNotPropagatedTracks(femtoWorldPhiSelection::kPosTrackPhi, ConfRejectNotPropagatedTracks);
+      //!PhiCuts.setChildRejectNotPropagatedTracks(femtoWorldPhiSelection::kNegTrackPhi, ConfRejectNotPropagatedTracks);
+
+      if (ConfRejectKaonsPhi) {
+        //!PhiCuts.setKaonInvMassLimits(ConfInvKaonMassLowLimitPhi, ConfInvKaonMassUpLimitPhi);
+      }
+      if (ConfRejectITSHitandTOFMissing) {
+        o2PhysicsTrackSelection = new TrackSelection(getGlobalTrackSelection());
+        o2PhysicsTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2, 3});
+      }
+    }*/
+
     mRunNumber = 0;
     mMagField = 0.0;
     /// Initializing CCDB
@@ -220,6 +296,32 @@ struct femtoWorldProducerTask {
 
     long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+  }
+
+  // PID
+  bool IsKaonTPCdEdxNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
+  {
+    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
+    if (mom < 0.4 && TMath::Abs(nsigmaK) < 2.0)
+      return true;
+    if (mom >= 0.4 && mom < 0.5 && TMath::Abs(nsigmaK) < 1.0)
+      return true;
+    if (mom > 0.5 && TMath::Abs(nsigmaK) < 3.0)
+      return true;
+
+    return false;
+  }
+
+  bool IsKaonTOFNSigma(float mom, float nsigmaK) // true if accepted, false if rejected
+  {
+    //  cout<<" AliFemtoKKTrackCut::IsKaonTPCdEdxNSigma "<<mom<<" "<<nsigmaK<<endl;
+    if (mom >= 0.45 && mom < 0.8 && TMath::Abs(nsigmaK) < 2.0)
+      return true;
+    if (mom >= 0.8 && mom < 1.0 && TMath::Abs(nsigmaK) < 1.5)
+      return true;
+    if (mom > 1.0 && TMath::Abs(nsigmaK) < 1.0)
+      return true;
+    return false;
   }
 
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
@@ -239,8 +341,8 @@ struct femtoWorldProducerTask {
     return output;
   }
 
-  void process(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
-               o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
+  void processProd(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks,
+                   o2::aod::V0Datas const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
@@ -327,6 +429,7 @@ struct femtoWorldProducerTask {
                   -999.,
                   -999.);
       tmpIDtrack.push_back(track.globalIndex());
+
       /*if (ConfDebugOutput) {
           outputDebugParts(track.sign(),
                            (uint8_t)track.tpcNClsFound(),
@@ -357,159 +460,497 @@ struct femtoWorldProducerTask {
                            -999.);
         }*/
     }
-    /*
-        if (ConfStoreV0) {
-          for (auto& v0 : fullV0s) {
-            auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
-            auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
-            // const auto dcaXYpos = postrack.dcaXY();
-            // const auto dcaZpos = postrack.dcaZ();
-            // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
-            v0Cuts.fillLambdaQA(col, v0, postrack, negtrack);
 
-            if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
-              continue;
-            }
+    if (ConfStoreV0) {
+      for (auto& v0 : fullV0s) {
+        auto postrack = v0.posTrack_as<aod::FemtoFullTracks>();
+        auto negtrack = v0.negTrack_as<aod::FemtoFullTracks>(); ///\tocheck funnily enough if we apply the filter the sign of Pos and Neg track is always negative
+        // const auto dcaXYpos = postrack.dcaXY();
+        // const auto dcaZpos = postrack.dcaZ();
+        // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
+        v0Cuts.fillLambdaQA(col, v0, postrack, negtrack);
 
-            if (ConfRejectITSHitandTOFMissing) {
-              // Uncomment only when TOF timing is solved
-              // bool itsHit = o2PhysicsTrackSelection->IsSelected(postrack, TrackSelection::TrackCuts::kITSHits);
-              // bool itsHit = o2PhysicsTrackSelection->IsSelected(negtrack, TrackSelection::TrackCuts::kITSHits);
-            }
+        if (!v0Cuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
+          continue;
+        }
 
-            v0Cuts.fillQA<aod::femtoworldparticle::ParticleType::kV0, aod::femtoworldparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
-            auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, v0, postrack, negtrack);
+        if (ConfRejectITSHitandTOFMissing) {
+          // Uncomment only when TOF timing is solved
+          // bool itsHit = o2PhysicsTrackSelection->IsSelected(postrack, TrackSelection::TrackCuts::kITSHits);
+          // bool itsHit = o2PhysicsTrackSelection->IsSelected(negtrack, TrackSelection::TrackCuts::kITSHits);
+        }
 
-            if ((cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
-              int postrackID = v0.posTrackId();
-              int rowInPrimaryTrackTablePos = -1;
-              rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
-              childIDs[0] = rowInPrimaryTrackTablePos;
-              childIDs[1] = 0;
-              outputParts(outputCollision.lastIndex(), v0.positivept(), v0.positiveeta(), v0.positivephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID), 0., childIDs, 0, 0);
-              const int rowOfPosTrack = outputParts.lastIndex();
-              int negtrackID = v0.negTrackId();
-              int rowInPrimaryTrackTableNeg = -1;
-              rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
-              childIDs[0] = 0;
-              childIDs[1] = rowInPrimaryTrackTableNeg;
-              outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
-              const int rowOfNegTrack = outputParts.lastIndex();
-              int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
-              outputParts(outputCollision.lastIndex(),v0.pt(), v0.eta(), v0.phi(), aod::femtoworldparticle::ParticleType::kV0, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda(),postrack.sign(),
-                                 (uint8_t)postrack.tpcNClsFound(),
-                                 postrack.tpcNClsFindable(),
-                                 (uint8_t)postrack.tpcNClsCrossedRows(),
-                                 postrack.tpcNClsShared(),
-                                 postrack.tpcInnerParam(),
-                                 postrack.itsNCls(),
-                                 postrack.itsNClsInnerBarrel(),
-                                 postrack.dcaXY(),
-                                 postrack.dcaZ(),
-                                 postrack.tpcSignal(),
-                                 postrack.tpcNSigmaStoreEl(),
-                                 postrack.tpcNSigmaStorePi(),
-                                 postrack.tpcNSigmaStoreKa(),
-                                 postrack.tpcNSigmaStorePr(),
-                                 postrack.tpcNSigmaStoreDe(),
-                                 postrack.tofNSigmaStoreEl(),
-                                 postrack.tofNSigmaStorePi(),
-                                 postrack.tofNSigmaStoreKa(),
-                                 postrack.tofNSigmaStorePr(),
-                                 postrack.tofNSigmaStoreDe(),
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.);
-              if (ConfDebugOutput) {
-                outputDebugParts(postrack.sign(),
-                                 (uint8_t)postrack.tpcNClsFound(),
-                                 postrack.tpcNClsFindable(),
-                                 (uint8_t)postrack.tpcNClsCrossedRows(),
-                                 postrack.tpcNClsShared(),
-                                 postrack.tpcInnerParam(),
-                                 postrack.itsNCls(),
-                                 postrack.itsNClsInnerBarrel(),
-                                 postrack.dcaXY(),
-                                 postrack.dcaZ(),
-                                 postrack.tpcSignal(),
-                                 postrack.tpcNSigmaStoreEl(),
-                                 postrack.tpcNSigmaStorePi(),
-                                 postrack.tpcNSigmaStoreKa(),
-                                 postrack.tpcNSigmaStorePr(),
-                                 postrack.tpcNSigmaStoreDe(),
-                                 postrack.tofNSigmaStoreEl(),
-                                 postrack.tofNSigmaStorePi(),
-                                 postrack.tofNSigmaStoreKa(),
-                                 postrack.tofNSigmaStorePr(),
-                                 postrack.tofNSigmaStoreDe(),
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.); // QA for positive daughter
-                outputDebugParts(negtrack.sign(),
-                                 (uint8_t)negtrack.tpcNClsFound(),
-                                 negtrack.tpcNClsFindable(),
-                                 (uint8_t)negtrack.tpcNClsCrossedRows(),
-                                 negtrack.tpcNClsShared(),
-                                 negtrack.tpcInnerParam(),
-                                 negtrack.itsNCls(),
-                                 negtrack.itsNClsInnerBarrel(),
-                                 negtrack.dcaXY(),
-                                 negtrack.dcaZ(),
-                                 negtrack.tpcSignal(),
-                                 negtrack.tpcNSigmaStoreEl(),
-                                 negtrack.tpcNSigmaStorePi(),
-                                 negtrack.tpcNSigmaStoreKa(),
-                                 negtrack.tpcNSigmaStorePr(),
-                                 negtrack.tpcNSigmaStoreDe(),
-                                 negtrack.tofNSigmaStoreEl(),
-                                 negtrack.tofNSigmaStorePi(),
-                                 negtrack.tofNSigmaStoreKa(),
-                                 negtrack.tofNSigmaStorePr(),
-                                 negtrack.tofNSigmaStoreDe(),
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.); // QA for negative daughter
-                outputDebugParts(-999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 -999.,
-                                 v0.dcaV0daughters(),
-                                 v0.v0radius(),
-                                 v0.x(),
-                                 v0.y(),
-                                 v0.z(),
-                                 v0.mK0Short()); // QA for V0
-              }
-            }
-          }
-        }*/
+        v0Cuts.fillQA<aod::femtoworldparticle::ParticleType::kV0, aod::femtoworldparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
+        auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, v0, postrack, negtrack);
+
+        if ((cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
+          int postrackID = v0.posTrackId();
+          int rowInPrimaryTrackTablePos = -1;
+          rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
+          childIDs[0] = rowInPrimaryTrackTablePos;
+          childIDs[1] = 0;
+          outputParts(outputCollision.lastIndex(),
+                      v0.positivept(),
+                      v0.positiveeta(),
+                      v0.positivephi(),
+                      aod::femtoworldparticle::ParticleType::kV0Child,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts),
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID),
+                      0.,
+                      childIDs,
+                      0,
+                      0,
+                      postrack.sign(),
+                      postrack.beta(),
+                      postrack.itsChi2NCl(),
+                      postrack.tpcChi2NCl(),
+                      postrack.tpcNSigmaKa(),
+                      postrack.tofNSigmaKa(),
+                      (uint8_t)postrack.tpcNClsFound(),
+                      postrack.tpcNClsFindable(),
+                      (uint8_t)postrack.tpcNClsCrossedRows(),
+                      postrack.tpcNClsShared(),
+                      postrack.tpcInnerParam(),
+                      postrack.itsNCls(),
+                      postrack.itsNClsInnerBarrel(),
+                      postrack.dcaXY(),
+                      postrack.dcaZ(),
+                      postrack.tpcSignal(),
+                      postrack.tpcNSigmaStoreEl(),
+                      postrack.tpcNSigmaStorePi(),
+                      postrack.tpcNSigmaStoreKa(),
+                      postrack.tpcNSigmaStorePr(),
+                      postrack.tpcNSigmaStoreDe(),
+                      postrack.tofNSigmaStoreEl(),
+                      postrack.tofNSigmaStorePi(),
+                      postrack.tofNSigmaStoreKa(),
+                      postrack.tofNSigmaStorePr(),
+                      postrack.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+          const int rowOfPosTrack = outputParts.lastIndex();
+          int negtrackID = v0.negTrackId();
+          int rowInPrimaryTrackTableNeg = -1;
+          rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+          childIDs[0] = 0;
+          childIDs[1] = rowInPrimaryTrackTableNeg;
+          outputParts(outputCollision.lastIndex(),
+                      v0.negativept(),
+                      v0.negativeeta(),
+                      v0.negativephi(),
+                      aod::femtoworldparticle::ParticleType::kV0Child,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts),
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID),
+                      0.,
+                      childIDs,
+                      0,
+                      0,
+                      negtrack.sign(),
+                      negtrack.beta(),
+                      negtrack.itsChi2NCl(),
+                      negtrack.tpcChi2NCl(),
+                      negtrack.tpcNSigmaKa(),
+                      negtrack.tofNSigmaKa(),
+                      (uint8_t)negtrack.tpcNClsFound(),
+                      negtrack.tpcNClsFindable(),
+                      (uint8_t)negtrack.tpcNClsCrossedRows(),
+                      negtrack.tpcNClsShared(),
+                      negtrack.tpcInnerParam(),
+                      negtrack.itsNCls(),
+                      negtrack.itsNClsInnerBarrel(),
+                      negtrack.dcaXY(),
+                      negtrack.dcaZ(),
+                      negtrack.tpcSignal(),
+                      negtrack.tpcNSigmaStoreEl(),
+                      negtrack.tpcNSigmaStorePi(),
+                      negtrack.tpcNSigmaStoreKa(),
+                      negtrack.tpcNSigmaStorePr(),
+                      negtrack.tpcNSigmaStoreDe(),
+                      negtrack.tofNSigmaStoreEl(),
+                      negtrack.tofNSigmaStorePi(),
+                      negtrack.tofNSigmaStoreKa(),
+                      negtrack.tofNSigmaStorePr(),
+                      negtrack.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+          const int rowOfNegTrack = outputParts.lastIndex();
+          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          outputParts(outputCollision.lastIndex(),
+                      v0.pt(),
+                      v0.eta(),
+                      v0.phi(),
+                      aod::femtoworldparticle::ParticleType::kV0,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
+                      0,
+                      v0.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                      indexChildID,
+                      v0.mLambda(),
+                      v0.mAntiLambda(), // nowa część
+                      postrack.sign(),
+                      postrack.beta(),
+                      postrack.itsChi2NCl(),
+                      postrack.tpcChi2NCl(),
+                      postrack.tpcNSigmaKa(),
+                      postrack.tofNSigmaKa(),
+                      (uint8_t)postrack.tpcNClsFound(),
+                      postrack.tpcNClsFindable(),
+                      (uint8_t)postrack.tpcNClsCrossedRows(),
+                      postrack.tpcNClsShared(),
+                      postrack.tpcInnerParam(),
+                      postrack.itsNCls(),
+                      postrack.itsNClsInnerBarrel(),
+                      postrack.dcaXY(),
+                      postrack.dcaZ(),
+                      postrack.tpcSignal(),
+                      postrack.tpcNSigmaStoreEl(),
+                      postrack.tpcNSigmaStorePi(),
+                      postrack.tpcNSigmaStoreKa(),
+                      postrack.tpcNSigmaStorePr(),
+                      postrack.tpcNSigmaStoreDe(),
+                      postrack.tofNSigmaStoreEl(),
+                      postrack.tofNSigmaStorePi(),
+                      postrack.tofNSigmaStoreKa(),
+                      postrack.tofNSigmaStorePr(),
+                      postrack.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+          /* if (ConfDebugOutput) {
+             outputDebugParts(postrack.sign(),
+                              (uint8_t)postrack.tpcNClsFound(),
+                              postrack.tpcNClsFindable(),
+                              (uint8_t)postrack.tpcNClsCrossedRows(),
+                              postrack.tpcNClsShared(),
+                              postrack.tpcInnerParam(),
+                              postrack.itsNCls(),
+                              postrack.itsNClsInnerBarrel(),
+                              postrack.dcaXY(),
+                              postrack.dcaZ(),
+                              postrack.tpcSignal(),
+                              postrack.tpcNSigmaStoreEl(),
+                              postrack.tpcNSigmaStorePi(),
+                              postrack.tpcNSigmaStoreKa(),
+                              postrack.tpcNSigmaStorePr(),
+                              postrack.tpcNSigmaStoreDe(),
+                              postrack.tofNSigmaStoreEl(),
+                              postrack.tofNSigmaStorePi(),
+                              postrack.tofNSigmaStoreKa(),
+                              postrack.tofNSigmaStorePr(),
+                              postrack.tofNSigmaStoreDe(),
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.); // QA for positive daughter
+             outputDebugParts(negtrack.sign(),
+                              (uint8_t)negtrack.tpcNClsFound(),
+                              negtrack.tpcNClsFindable(),
+                              (uint8_t)negtrack.tpcNClsCrossedRows(),
+                              negtrack.tpcNClsShared(),
+                              negtrack.tpcInnerParam(),
+                              negtrack.itsNCls(),
+                              negtrack.itsNClsInnerBarrel(),
+                              negtrack.dcaXY(),
+                              negtrack.dcaZ(),
+                              negtrack.tpcSignal(),
+                              negtrack.tpcNSigmaStoreEl(),
+                              negtrack.tpcNSigmaStorePi(),
+                              negtrack.tpcNSigmaStoreKa(),
+                              negtrack.tpcNSigmaStorePr(),
+                              negtrack.tpcNSigmaStoreDe(),
+                              negtrack.tofNSigmaStoreEl(),
+                              negtrack.tofNSigmaStorePi(),
+                              negtrack.tofNSigmaStoreKa(),
+                              negtrack.tofNSigmaStorePr(),
+                              negtrack.tofNSigmaStoreDe(),
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.); // QA for negative daughter
+             outputDebugParts(-999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              -999.,
+                              v0.dcaV0daughters(),
+                              v0.v0radius(),
+                              v0.x(),
+                              v0.y(),
+                              v0.z(),
+                              v0.mK0Short()); // QA for V0
+           }*/
+        }
+      }
+    }
   }
+  PROCESS_SWITCH(femtoWorldProducerTask, processProd, "Produce Femto tables", true);
+  void processPhi(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks) /// \todo with FilteredFullV0s
+  {
+    // First particle
+    Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+    Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
+    Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
+    Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
+    Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
+    Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
+    Configurable<float> cfgDcaZPart1{"cfgDcaZPart1", 3.2, "Value for DCA_Z for the first particle"};
+    Configurable<int> cfgTpcClPart1{"cfgTpcClPart1", 88, "Number of tpc clasters for the first particle"};             // min number of found TPC clusters
+    Configurable<int> cfgTpcCrosRoPart1{"cfgTpcCrosRoPart1", 70, "Number of tpc crossed rows for the first particle"}; // min number of crossed rows
+    Configurable<float> cfgChi2TpcPart1{"cfgChi2TpcPart1", 4.0, "Chi2 / cluster for the TPC track segment for the first particle"};
+    Configurable<float> cfgChi2ItsPart1{"cfgChi2ItsPart1", 36.0, "Chi2 / cluster for the ITS track segment for the first particle"};
+
+    // Second particle
+    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+    Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
+    Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
+    Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
+    Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
+    Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
+    Configurable<float> cfgDcaZPart2{"cfgDcaZPart2", 3.2, "Value for DCA_Z for the second particle"};
+    Configurable<int> cfgTpcClPart2{"cfgTpcClPart2", 88, "Number of tpc clasters for the second particle"};             // min number of found TPC clusters
+    Configurable<int> cfgTpcCrosRoPart2{"cfgTpcCrosRoPart2", 70, "Number of tpc crossed rows for the second particle"}; // min number of crossed rows
+    Configurable<float> cfgChi2TpcPart2{"cfgChi2TpcPart2", 4.0, "Chi2 / cluster for the TPC track segment for the second particle"};
+    Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
+
+    int childIDs[2] = {0, 0};    // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack; // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+
+    if (ConfStorePhi) {
+
+      for (auto& [p1, p2] : combinations(tracks, tracks)) {
+        if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
+          continue;
+        }
+        if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
+          continue;
+        }
+        if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) {
+          continue;
+        }
+        if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
+          continue;
+        }
+        if ((p1.p() > (float)0.45)) {
+          if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
+            continue;
+          }
+
+        } else if ((p1.p() <= (float)0.45)) {
+          if (!(IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa()))) {
+            continue;
+          }
+        }
+        if ((p2.p() > (float)0.45)) {
+          if (!((IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa())) && (IsKaonTOFNSigma(p2.p(), p2.tofNSigmaKa())))) {
+            continue;
+          }
+
+        } else if ((p2.p() <= (float)0.45)) {
+          if (!(IsKaonTPCdEdxNSigma(p2.p(), p2.tpcNSigmaKa()))) {
+            continue;
+          }
+        }
+
+        // float phiPx = p1.px() + p2.px();
+        // float phiPy = p1.py() + p2.py();
+        // float phiPz = p1.pz() + p2.pz();
+
+        TLorentzVector part1Vec;
+        TLorentzVector part2Vec;
+        float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
+        float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass();
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+
+        part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
+
+        float phiEta = sumVec.Eta();
+        float phiPhi = sumVec.Phi();
+        float phiPt = sumVec.Pt();
+
+        PhiCuts.fillQA<aod::femtoworldparticle::ParticleType::kPhi, aod::femtoworldparticle::ParticleType::kPhiChild>(col, p1, p1, p2); ///\todo fill QA also for daughters
+        auto cutContainerV0 = PhiCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(col, p1, p2);
+        if ((cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts) > 0) && (cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
+          int postrackID = p1.globalIndex();
+          int rowInPrimaryTrackTablePos = -1;
+          rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
+          childIDs[0] = rowInPrimaryTrackTablePos;
+          childIDs[1] = 0;
+          outputParts(outputCollision.lastIndex(),
+                      p1.pt(),
+                      p1.eta(),
+                      p1.phi(),
+                      aod::femtoworldparticle::ParticleType::kV0Child,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts),
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID),
+                      0.,
+                      childIDs,
+                      0,
+                      0,
+                      p1.sign(),
+                      p1.beta(),
+                      p1.itsChi2NCl(),
+                      p1.tpcChi2NCl(),
+                      p1.tpcNSigmaKa(),
+                      p1.tofNSigmaKa(),
+                      (uint8_t)p1.tpcNClsFound(),
+                      p1.tpcNClsFindable(),
+                      (uint8_t)p1.tpcNClsCrossedRows(),
+                      p1.tpcNClsShared(),
+                      p1.tpcInnerParam(),
+                      p1.itsNCls(),
+                      p1.itsNClsInnerBarrel(),
+                      p1.dcaXY(),
+                      p1.dcaZ(),
+                      p1.tpcSignal(),
+                      p1.tpcNSigmaStoreEl(),
+                      p1.tpcNSigmaStorePi(),
+                      p1.tpcNSigmaStoreKa(),
+                      p1.tpcNSigmaStorePr(),
+                      p1.tpcNSigmaStoreDe(),
+                      p1.tofNSigmaStoreEl(),
+                      p1.tofNSigmaStorePi(),
+                      p1.tofNSigmaStoreKa(),
+                      p1.tofNSigmaStorePr(),
+                      p1.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+          const int rowOfPosTrack = outputParts.lastIndex();
+          int negtrackID = p2.globalIndex();
+          int rowInPrimaryTrackTableNeg = -1;
+          rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+          childIDs[0] = 0;
+          childIDs[1] = rowInPrimaryTrackTableNeg;
+          outputParts(outputCollision.lastIndex(),
+                      p2.pt(),
+                      p2.eta(),
+                      p2.phi(),
+                      aod::femtoworldparticle::ParticleType::kV0Child,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts),
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID),
+                      0.,
+                      childIDs,
+                      0,
+                      0,
+                      p2.sign(),
+                      p2.beta(),
+                      p2.itsChi2NCl(),
+                      p2.tpcChi2NCl(),
+                      p2.tpcNSigmaKa(),
+                      p2.tofNSigmaKa(),
+                      (uint8_t)p2.tpcNClsFound(),
+                      p2.tpcNClsFindable(),
+                      (uint8_t)p2.tpcNClsCrossedRows(),
+                      p2.tpcNClsShared(),
+                      p2.tpcInnerParam(),
+                      p2.itsNCls(),
+                      p2.itsNClsInnerBarrel(),
+                      p2.dcaXY(),
+                      p2.dcaZ(),
+                      p2.tpcSignal(),
+                      p2.tpcNSigmaStoreEl(),
+                      p2.tpcNSigmaStorePi(),
+                      p2.tpcNSigmaStoreKa(),
+                      p2.tpcNSigmaStorePr(),
+                      p2.tpcNSigmaStoreDe(),
+                      p2.tofNSigmaStoreEl(),
+                      p2.tofNSigmaStorePi(),
+                      p2.tofNSigmaStoreKa(),
+                      p2.tofNSigmaStorePr(),
+                      p2.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+
+          const int rowOfNegTrack = outputParts.lastIndex();
+          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          outputParts(outputCollision.lastIndex(),
+                      phiPt,
+                      phiEta,
+                      phiPhi,
+                      aod::femtoworldparticle::ParticleType::kV0,
+                      cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
+                      0,
+                      0, // p1.v0cosPA(col.posX(), col.posY(), col.posZ()),
+                      indexChildID,
+                      0, // v0.mLambda(),
+                      0, // v0.mAntiLambda(), // nowa część
+                      p1.sign(),
+                      p1.beta(),
+                      p1.itsChi2NCl(),
+                      p1.tpcChi2NCl(),
+                      p1.tpcNSigmaKa(),
+                      p1.tofNSigmaKa(),
+                      (uint8_t)p1.tpcNClsFound(),
+                      0, // p1.tpcNClsFindable(),
+                      0, //(uint8_t)p1.tpcNClsCrossedRows(),
+                      p1.tpcNClsShared(),
+                      p1.tpcInnerParam(),
+                      p1.itsNCls(),
+                      p1.itsNClsInnerBarrel(),
+                      0, // p1.dcaXY(),
+                      0, // p1.dcaZ(),
+                      p1.tpcSignal(),
+                      p1.tpcNSigmaStoreEl(),
+                      p1.tpcNSigmaStorePi(),
+                      p1.tpcNSigmaStoreKa(),
+                      p1.tpcNSigmaStorePr(),
+                      p1.tpcNSigmaStoreDe(),
+                      p1.tofNSigmaStoreEl(),
+                      p1.tofNSigmaStorePi(),
+                      p1.tofNSigmaStoreKa(),
+                      p1.tofNSigmaStorePr(),
+                      p1.tofNSigmaStoreDe(),
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.,
+                      -999.);
+        }
+        // std::cout<< "phi przeszło" << std::endl;
+      }
+    }
+  }
+  PROCESS_SWITCH(femtoWorldProducerTask, processPhi, "Produce Phi candidates tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

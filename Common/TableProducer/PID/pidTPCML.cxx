@@ -80,6 +80,53 @@ Network::Network(std::string path,
 
 } // Network::Network(std::string, bool)
 
+Network::Network(std::string path,
+                 unsigned long start,
+                 unsigned long end,
+                 bool enableOptimization = true)
+{
+
+  /*
+  Constructor: Creating a class instance from a file and enabling optimizations with the boolean option.
+  - Input:
+    -- path:                std::string   ; Local path to the model file;
+    -- start:               unsigned long ; Timestamp validity of model (start)
+    -- pathAlien:           unsigned long ; Timestamp validity of model (end)
+    -- enableOptimization:  bool          ; enabling optimizations for the loaded model in the session options;
+  */
+
+  LOG(info) << "--- Neural Network for the TPC PID response correction ---";
+
+  mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-neural-network");
+  if (enableOptimization) {
+    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+  }
+
+  mSession.reset(new Ort::Experimental::Session{*mEnv, path, sessionOptions});
+
+  mInputNames = mSession->GetInputNames();
+  mInputShapes = mSession->GetInputShapes();
+  mOutputNames = mSession->GetOutputNames();
+  mOutputShapes = mSession->GetOutputShapes();
+
+  LOG(info) << "Input Nodes:";
+  for (size_t i = 0; i < mInputNames.size(); i++) {
+    LOG(info) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);
+  }
+
+  LOG(info) << "Output Nodes:";
+  for (size_t i = 0; i < mOutputNames.size(); i++) {
+    LOG(info) << "\t" << mOutputNames[i] << " : " << printShape(mOutputShapes[i]);
+  }
+
+  valid_from = start;
+  valid_until = end;
+  LOG(info) << "Range of validity: Valid-From: " << valid_from << " Valid-Until: " << valid_until;
+
+  LOG(info) << "--- Network initialized! ---";
+
+} // Network::Network(std::string, unsigned long, unsigned long, bool)
+
 Network& Network::operator=(Network& inst)
 {
 
@@ -99,35 +146,14 @@ Network& Network::operator=(Network& inst)
   mOutputNames = inst.mOutputNames;
   mOutputShapes = inst.mOutputShapes;
 
+  valid_from = inst.valid_from;
+  valid_until = inst.valid_until;
+
   LOG(debug) << "Network copied!";
 
   return *this;
 
 } // Network& Network::operator=(const Network &)
-
-template <typename C, typename T>
-std::array<float, 6> Network::createInputFromTrack(const C& collision_it, const T& track, const uint8_t id) const
-{
-
-  /*
-  Function: Creating a std::vector<float> from a track with the variables that the network has been trained on
-  - Input:
-    -- collisions_it    const C&            ;   An iterator of a collisions table of the form: soa::Join<aod::Collisions, aod::Mults>::iterator const& collision
-    -- track:           const T&            ;   A track, typically from soa::Join<...> tables or of their iterators;
-    -- id:              uint8_t             ;   The id of a particle used for the mass assignment with o2::track::pid_constants::sMasses[id];
-  - Output:
-    -- inputValues:     std::vector<float>  ;   A std::vector<float> with the input variables for the network;
-  */
-
-  const float p = track.tpcInnerParam();
-  const float tgl = track.tgl();
-  const float signed1Pt = track.signed1Pt();
-  const float mass = o2::track::pid_constants::sMasses[id];
-  const float multTPC = collision_it.multTPC() / 11000.;
-  const float ncl = std::sqrt(nClNorm / track.tpcNClsFound());
-
-  return {p, tgl, signed1Pt, mass, multTPC, ncl};
-}
 
 std::vector<Ort::Value> Network::createTensor(std::array<float, 6> input) const
 {

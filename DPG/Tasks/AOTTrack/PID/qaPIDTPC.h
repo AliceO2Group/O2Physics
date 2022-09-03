@@ -122,14 +122,14 @@ struct tpcPidQa {
     if (!doprocess##particleId && !doprocessFull##particleId && !doprocessFullWithTOF##particleId) { \
       return;                                                                                        \
     }                                                                                                \
-    if (!doprocess##particleId) {                                                                    \
+    if (doprocess##particleId) {                                                                     \
       enabledProcesses++;                                                                            \
     }                                                                                                \
-    if (!doprocessFull##particleId) {                                                                \
+    if (doprocessFull##particleId) {                                                                 \
       enableFullHistos = true;                                                                       \
       enabledProcesses++;                                                                            \
     }                                                                                                \
-    if (!doprocessFullWithTOF##particleId) {                                                         \
+    if (doprocessFullWithTOF##particleId) {                                                          \
       enableFullHistos = true;                                                                       \
       enableTOFHistos = true;                                                                        \
       enabledProcesses++;                                                                            \

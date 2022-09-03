@@ -20,6 +20,12 @@
 //
 // **************************
 
+// *****revision history*****:
+//
+// added recalculation of the conversion point on 08.07.22 by Nikita Philip Tatsch (tatsch@physi.uni-heidelberg.de)
+//
+// **************************
+
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
@@ -48,8 +54,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi>;
-using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
+using tracksAndTPCInfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi>;
+using tracksAndTPCInfoMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::McTrackLabels>;
 
 struct skimmerGammaConversions {
 
@@ -95,6 +101,9 @@ struct skimmerGammaConversions {
   Produces<aod::V0DaughterTracks> fFuncTableV0DaughterTracks;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
   Produces<aod::V0Recalculated> fFuncTableV0Recalculated;
+  Produces<aod::V0DaughterMcParticles> fFuncTableMCTrackInformation;
+  Produces<aod::MCParticleIndex> fIndexTableMCTrackIndex;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
@@ -161,10 +170,20 @@ struct skimmerGammaConversions {
   void fillV0RecalculatedTable(TV0 const& theV0, float* recalculatedVtx)
   {
     fFuncTableV0Recalculated(
-      theV0.v0Id(),
       recalculatedVtx[0],
       recalculatedVtx[1],
       recalculatedVtx[2]);
+  }
+
+  template <typename TTRACK>
+  void fillfFuncTableMCTrackInformation(TTRACK theTrack, bool sameMother)
+  {
+    fFuncTableMCTrackInformation(
+      theTrack.mcParticle().pdgCode(),
+      theTrack.mcParticle().px(),
+      theTrack.mcParticle().py(),
+      theTrack.mcParticle().pz(),
+      sameMother);
   }
 
   // ============================ FUNCTION DEFINITIONS ====================================================
@@ -275,20 +294,48 @@ struct skimmerGammaConversions {
     std::vector<int> lMothersIndecesPos = getMothersIndeces(lMcPos);
     std::vector<int> lMothersIndecesNeg = getMothersIndeces(lMcNeg);
 
+    int theReturnReason = -1;
+    bool hasSameMother = false;
+    bool MCTrackInformationHasEntry = false;
+
+    int lPosEntryInMCTrack = -1;
+    int lNegEntryInMCTrack = -1;
+
     // none of tracks has a mother, has been accounted for in fMotherSizesHisto
     if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 0) {
-      return kNoTrackComesFromMother;
+      theReturnReason = kNoTrackComesFromMother;
     }
 
     // exactly one track has one mother
     if ((lMothersIndecesPos.size() + lMothersIndecesNeg.size()) == 1) {
-      return kOneTrackHasOneMother;
+      theReturnReason = kOneTrackHasOneMother;
     }
 
     // we know now both tracks have at least one mother
     // check if it is the same
     if (lMothersIndecesPos[0] != lMothersIndecesNeg[0]) {
-      return kNotSameMothers;
+      // fill Track Mc true table
+      hasSameMother = false;
+      MCTrackInformationHasEntry = true;
+      theReturnReason = kNotSameMothers;
+    } else {
+      // fill Track Mc true table
+      hasSameMother = true;
+      MCTrackInformationHasEntry = true;
+    }
+
+    if (MCTrackInformationHasEntry) {
+      fillfFuncTableMCTrackInformation(theTrackPos, hasSameMother);
+      lPosEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
+      fillfFuncTableMCTrackInformation(theTrackNeg, hasSameMother);
+      lNegEntryInMCTrack = fFuncTableMCTrackInformation.lastIndex();
+    }
+
+    fIndexTableMCTrackIndex(lPosEntryInMCTrack);
+    fIndexTableMCTrackIndex(lNegEntryInMCTrack);
+
+    if ((theReturnReason == kNoTrackComesFromMother) || (theReturnReason == kOneTrackHasOneMother) || (theReturnReason == kNotSameMothers)) {
+      return static_cast<eV0Confirmation>(theReturnReason);
     }
 
     // both tracks have the same first mother
@@ -318,7 +365,8 @@ struct skimmerGammaConversions {
         lDaughters.size(),
         lMcMother.eta(), lMcMother.phi(), lMcMother.p(), lMcMother.pt(), lMcMother.y(),
         lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
-        lV0Radius);
+        lV0Radius,
+        -1, -1);
       break; // because we only want to look at the first mother. If there are more it will show up in fMotherSizesHisto
     }
     return kGoodMcMother;
@@ -333,8 +381,9 @@ struct skimmerGammaConversions {
 
     //*******************************************************
 
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); //first get an object that stores Track information (positive)
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); //first get an object that stores Track information (negative)
+    // o2::track::TrackParametrization<TrackPrecision> = TrackPar, I use the full version to have control over the data type
+    o2::track::TrackParametrization<TrackPrecision> trackPosInformation = getTrackPar(lTrackPos); //first get an object that stores Track information (positive)
+    o2::track::TrackParametrization<TrackPrecision> trackNegInformation = getTrackPar(lTrackNeg); //first get an object that stores Track information (negative)
 
     o2::track::TrackAuxPar helixPos(trackPosInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
     o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); //This object is a decendant of a CircleXY and stores cirlce information with respect to the magentic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -343,13 +392,13 @@ struct skimmerGammaConversions {
     conversionPosition[1] = (helixPos.yC * helixNeg.rC + helixNeg.yC * helixPos.rC) / (helixPos.rC + helixNeg.rC); //If this calculation doesn't work check if the rotateZ function, because the "documentation" says I get global coordinates but maybe i don't.
 
     //I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParCov(trackPosInformation);
-    o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParCov(trackNegInformation);
+    o2::track::TrackParametrization<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrization<TrackPrecision>(trackPosInformation);
+    o2::track::TrackParametrization<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrization<TrackPrecision>(trackNegInformation);
 
     //I think this calculation gets the closest point on the track to the conversion point
     //This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
     Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
-    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixPos.yC), (conversionPosition[0] - helixPos.xC));
+    Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(conversionPosition[1] - helixNeg.yC), (conversionPosition[0] - helixNeg.xC));
 
     Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
     Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);

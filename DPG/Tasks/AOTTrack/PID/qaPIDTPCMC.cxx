@@ -18,6 +18,7 @@
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
 #include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
@@ -60,6 +61,7 @@ struct pidTPCTaskQA {
   static constexpr std::string_view hnsigmaMCprm[Np] = {"nsigmaMCprm/El", "nsigmaMCprm/Mu", "nsigmaMCprm/Pi",
                                                         "nsigmaMCprm/Ka", "nsigmaMCprm/Pr", "nsigmaMCprm/De",
                                                         "nsigmaMCprm/Tr", "nsigmaMCprm/He", "nsigmaMCprm/Al"};
+
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
   static constexpr int PDGs[Np] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -124,15 +126,10 @@ struct pidTPCTaskQA {
     histos.add("tracks/eta", "", kTH1F, {etaAxis});
     histos.add("tracks/length", "", kTH1F, {lengthAxis});
 
-    addParticleHistos<0>();
-    addParticleHistos<1>();
-    addParticleHistos<2>();
-    addParticleHistos<3>();
-    addParticleHistos<4>();
-    addParticleHistos<5>();
-    addParticleHistos<6>();
-    addParticleHistos<7>();
-    addParticleHistos<8>();
+    static_for<0, 8>([&](auto i) {
+      addParticleHistos<i>();
+    });
+
     histos.add("event/tpcsignal", "All", HistType::kTH2F, {pAxis, signalAxis});
     histos.add("event/tpcsignalMC", pT[pid_type], HistType::kTH2F, {pAxis, signalAxis});
     if (checkPrimaries) {
@@ -144,14 +141,17 @@ struct pidTPCTaskQA {
   }
 
   template <uint8_t pidIndex, typename T>
-  void fillNsigma(const T& track, const float& nsigma)
+  void fillNsigmaForPdg(const T& track, const float& nsigma)
   {
-    const auto particle = track.mcParticle();
+    if (!track.has_mcParticle()) {
+      return;
+    }
+    const auto& particle = track.mcParticle();
     if (abs(particle.pdgCode()) == PDGs[pidIndex]) {
 
       histos.fill(HIST(hnsigmaMC[pidIndex]), track.pt(), nsigma);
-      // Selecting primaries
-      if (particle.isPhysicalPrimary()) {
+
+      if (particle.isPhysicalPrimary()) { // Selecting primaries
         histos.fill(HIST(hnsigmaMCprm[pidIndex]), track.pt(), nsigma);
       } else {
         histos.fill(HIST(hnsigmaMCsec[pidIndex]), track.pt(), nsigma);
@@ -200,7 +200,10 @@ struct pidTPCTaskQA {
         // Fill for all
         histos.fill(HIST(hnsigma[pid_type]), t.pt(), nsigma);
         histos.fill(HIST("event/tpcsignal"), t.p(), t.tpcSignal());
-        const auto particle = t.mcParticle();
+        if (!t.has_mcParticle()) {
+          continue;
+        }
+        const auto& particle = t.mcParticle();
         if (particle.isPhysicalPrimary()) { // Selecting primaries
           histos.fill(HIST(hnsigmaprm[pid_type]), t.pt(), nsigma);
           histos.fill(HIST("event/tpcsignalPrm"), t.p(), t.tpcSignal());
@@ -217,15 +220,9 @@ struct pidTPCTaskQA {
           }
         }
         // Fill with PDG codes
-        fillNsigma<0>(t, nsigma);
-        fillNsigma<1>(t, nsigma);
-        fillNsigma<2>(t, nsigma);
-        fillNsigma<3>(t, nsigma);
-        fillNsigma<4>(t, nsigma);
-        fillNsigma<5>(t, nsigma);
-        fillNsigma<6>(t, nsigma);
-        fillNsigma<7>(t, nsigma);
-        fillNsigma<8>(t, nsigma);
+        static_for<0, 8>([&](auto i) {
+          fillNsigmaForPdg<i>(t, nsigma);
+        });
       }
       histos.fill(HIST("event/vertexz"), collision.posZ());
     }
