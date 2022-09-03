@@ -223,11 +223,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "QuadDCAabsXY", "", false, 100, -0.0, 1.0, VarManager::kQuadDCAabsXY);
 
   } else if (groupStr.Contains("pair_barrel")) {
-    hm->AddHistogram(histClass, "Mass", "", false, 125, 0.0, 5.0, VarManager::kMass);
+    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 125, 0.0, 5.0, VarManager::kMass, 100, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 125, -2.0, 2.0, VarManager::kEta, 100, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 100, 0.0, 20.0, VarManager::kMass);
     hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
+    hm->AddHistogram(histClass, "OpeningAngle", "", false, 500, 0.0, 3.14, VarManager::kPairOpeningAngle); 
     if (subGroupStr.Contains("vertexing-barrel")) {
       hm->AddHistogram(histClass, "Lxy", "", false, 200, 0.0, 20.0, VarManager::kVertexingLxy);
       hm->AddHistogram(histClass, "Lxyz", "", false, 200, 0.0, 20.0, VarManager::kVertexingLxyz);

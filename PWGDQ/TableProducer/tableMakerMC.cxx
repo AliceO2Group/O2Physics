@@ -386,9 +386,9 @@ struct TableMakerMC {
             continue;
           }
 
-          if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
-            if(!track.dalitzBits()) continue;
-          }
+          //if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
+          //  if(!track.dalitzBits()) continue;
+          //}
 
           // store filtering information
           if (track.isGlobalTrack()) {
@@ -420,7 +420,9 @@ struct TableMakerMC {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
+		    // if (trackFilteringTag & (uint8_t(1) << j+15)) { // selected by dalitz (cuts must correspond)
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+		    // }
                   }
                   j++;
                 }

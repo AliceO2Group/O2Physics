@@ -77,7 +77,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDPrKaPiRej"));
     return cut;
   }
-
+  
   if (!nameStr.compare("DalitzCut1SPDfirst")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine"));
     cut->AddCut(GetAnalysisCut("SPDfirst"));
@@ -889,7 +889,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairDalitz")) {
-    cut->AddCut(VarManager::kMass, 0.0, 0.15);
+    cut->AddCut(VarManager::kMass, 0.0, 0.135);
     return cut;
   }
 

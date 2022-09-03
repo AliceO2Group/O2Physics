@@ -14,7 +14,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/PID/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
@@ -31,7 +31,7 @@ using namespace o2::aod;
 using namespace o2::soa;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtra, aod::TracksExtended, aod::TrackSelection,
+using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullMu,
                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
                                 aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullMu,
@@ -50,7 +50,7 @@ constexpr static uint32_t gkReducedTrackFillMapWithCov = VarManager::ObjTypes::R
 
 
 struct dalitzSelection {
-
+  Preslice<FullTracksExt> perCollision = aod::track::collisionId;
   Produces<o2::aod::DalitzBits> dalitzbits;
 
   //Configurables
@@ -235,6 +235,7 @@ struct dalitzSelection {
        	  int iP = 0;
       	  for (auto cutP = fPairCuts.begin(); cutP != fPairCuts.end(); cutP++, iP++) {
             if ((*cutP).IsSelected(VarManager::fgValues)) {
+
               // tag the tracks and fill hists
               int bitNo = fTrackCuts.size()*iP+iT;
               fHistMan->FillHistClass(Form("Pair_%s_%s", (*cutT).GetName(), (*cutP).GetName()), VarManager::fgValues);   
@@ -265,37 +266,28 @@ struct dalitzSelection {
    
   }
 
-  void processFullTracks(MyEvents::iterator const& collision, FullTracksExt const& tracks)
+  void processFullTracks(MyEvents const& collisions, FullTracksExt const& tracks)
   {
     if(fTrackCuts.size()==0 || fPairCuts.size()==0 ) {
       std::cout<<"WARNING: YOU NEED A TRACK AND A PAIR CUT"<<std::endl;
       return;
     }   
 
-    if(collision.globalIndex()==0) { //entering new timeframe
-      dalitzmap.clear();
-      NFilledTracks = 0;
-    }
-    runDalitzSelection<gkEventFillMap,gkTrackFillMapWithCov,false>(collision,tracks);
+    dalitzmap.clear();
 
-    //Fill dalitz bits even if the event is not selected
+    for (auto& collision : collisions) {
+      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+      runDalitzSelection<gkEventFillMap,gkTrackFillMapWithCov,false>(collision,groupedTracks);
+    }
+    
+    //Fill dalitz bits
     for (auto& track : tracks) {
-      if(track.globalIndex()<NFilledTracks) {
-        std::cout<<"WARNING: something is wrong with track indices"<<std::endl;
-      }
-      
-      for(int i = NFilledTracks; i<track.globalIndex();i++) {
-        dalitzbits(dalitzmap[i]); //we fill bits for tracks missing in loop over collisions because they are not assigned to any collisions
-      }
-      
-      NFilledTracks = track.globalIndex();
       dalitzbits(dalitzmap[track.globalIndex()]);
-      NFilledTracks++;
     } 
   }
   
-  
-/* void processReducedTracksWithCov(MyReducedEvents::iterator const& event, BarrelReducedTracksWithCov const& tracks)
+  /*
+ void processReducedTracksWithCov(MyReducedEvents::iterator const& event, BarrelReducedTracksWithCov const& tracks)
   {
     if(fTrackCuts.size()==0 || fPairCuts.size()==0 ) {
       std::cout<<"WARNING: YOU NEED A TRACK AND A PAIR CUT"<<std::endl;
@@ -305,7 +297,7 @@ struct dalitzSelection {
     
     runDalitzSelection<gkReducedEventFillMapWithCov,gkReducedTrackFillMapWithCov,true>(event,tracks);
     for (auto& track : tracks) {
-      dalitzbits(dalitzmap[track.globalIndex()]);counter++;
+      dalitzbits(dalitzmap[track.globalIndex()]);
     }
     
   }
@@ -319,7 +311,7 @@ struct dalitzSelection {
     runDalitzSelection<gkReducedEventFillMapWithCov,gkReducedTrackFillMap,true>(event,tracks);
     
     for (auto& track : tracks) {
-      dalitzbits(dalitzmap[track.globalIndex()]);counter++;
+      dalitzbits(dalitzmap[track.globalIndex()]);
     }
   }*/
 
