@@ -21,6 +21,7 @@
 #include <TString.h>
 #include <Math/Vector4D.h>
 #include "Math/Vector3D.h"
+#include <TVector3.h>
 #include "Math/GenVector/Boost.h"
 #include <TRandom.h>
 
@@ -288,9 +289,9 @@ class VarManager : public TObject
     kVertexingProcCode,
     kVertexingChi2PCA,
     kCosThetaHE,
+    kPairOpeningAngle,
     kQuadDCAabsXY,
     kQuadDCAsigXY,
-    kNPairVariables,
     kCosPointingAngle,
     kImpParXYJpsi,
     kImpParXYK,
@@ -300,6 +301,7 @@ class VarManager : public TObject
     kU3Q3,
     kCos2DeltaPhi,
     kCos3DeltaPhi,
+    kNPairVariables,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -881,6 +883,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+
+  TVector3 vec1(v1.Px(), v1.Py(), v1.Pz());
+  TVector3 vec2(v2.Px(), v2.Py(), v2.Pz());
+  values[kPairOpeningAngle] = vec1.Angle(vec2);
+  
   // CosTheta Helicity calculation
   ROOT::Math::Boost boostv12{v12.BoostToCM()};
   ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};

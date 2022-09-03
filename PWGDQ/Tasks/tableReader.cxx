@@ -194,8 +194,6 @@ struct AnalysisTrackSelection {
   // NOTE: For now, the candidate electron cuts must be provided first, then followed by any other needed selections
   Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  Configurable<bool> fRejectConv{"fRejectConv", false, "If true, reject tracks from gamma conversions in material"};
-  Configurable<bool> fRejectDalitz{"fRejectDalitz", false, "If true, reject tracks from Dalitz decays"};
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fTrackCuts;
@@ -221,12 +219,6 @@ struct AnalysisTrackSelection {
       TString histDirNames = "TrackBarrel_BeforeCuts;";
       for (auto& cut : fTrackCuts) {
         histDirNames += Form("TrackBarrel_%s;", cut.GetName());
-      }
-
-      if(fRejectConv) {
-        for (auto& cut : fTrackCuts) {
-          histDirNames += Form("TrackBarrel_%s_rejectConv;", cut.GetName());
-        }
       }
 
       DefineHistograms(fHistMan, histDirNames.Data()); // define all histograms
@@ -261,14 +253,8 @@ struct AnalysisTrackSelection {
           filterMap |= (uint32_t(1) << iCut);
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
-            if (fRejectConv && !(track.filteringFlags() & BIT(2))) {
-              fHistMan->FillHistClass(Form("TrackBarrel_%s_rejectConv", (*cut).GetName()), VarManager::fgValues);
-            }
           }
         }
-      }
-      if (fRejectConv && (track.filteringFlags() & BIT(2))) {
-        filterMap = uint32_t(0);
       }
       trackSel(static_cast<int>(filterMap));
     } // end loop over tracks
@@ -706,7 +692,7 @@ struct AnalysisSameEventPairing {
                   Form("%s_%s_%s", fTrackHistNames[icut][2].Data(), dalitzTrackCuts->At(dalitzTCut)->GetName(), dalitzPairCuts->At(dalitzPCut)->GetName())}; 
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackHistNames.push_back(names);
-                // Histograms order is: TrackCuts, TrackCuts+rejectConv, TrackCuts+dalitzcut1, TrackCuts+rejectConv+dalitzcut1,  TrackCuts+dalitzcut2 ...         
+                // Histograms order is: AllTrackCuts, AllTrackCuts+rejectConv, AllTrackCuts+dalitzcut1, AllTrackCuts+rejectConv+dalitzcut1,  AllTrackCuts+dalitzcut2 ...         
               }
             } // end loop dalitz track cuts
           }// end loop dalitz pair cuts
@@ -836,7 +822,7 @@ struct AnalysisSameEventPairing {
             }
           }
           // additional histograms with prefiltering
-          if constexpr (TPairType == pairTypeEE && prefilter) {
+          if constexpr ((TPairType == pairTypeEE) && prefilter) {
             //TrackCut_rejectConv histograms
             if(fRejectConv && !(t1.filteringFlags() & BIT(2)) && !(t2.filteringFlags() & BIT(2))){
               if (t1.sign() * t2.sign() < 0) {
@@ -851,9 +837,9 @@ struct AnalysisSameEventPairing {
             } //end if reject conv
             // Dalitz cuts
             if(fRejectDalitz) {
-              uint64_t twoTracksDalitzFilter = t1.dalitzBits() | t2.dalitzBits();
+              uint32_t twoTracksDalitzFilter = t1.dalitzBits() | t2.dalitzBits();
               for (int dalitzCut = 0; dalitzCut < nDalitzCuts; dalitzCut++) {
-                if ((uint64_t(1) << dalitzCut) & !twoTracksDalitzFilter) {
+                if (!((uint32_t(1) << dalitzCut) & twoTracksDalitzFilter)) {
                   //TrackCut_DalitzCuts histograms
                   if (t1.sign() * t2.sign() < 0) {
                     fHistMan->FillHistClass(histNames[(1+fRejectConv)*nTrackCuts*(1+dalitzCut)+icut][0].Data(), VarManager::fgValues);
