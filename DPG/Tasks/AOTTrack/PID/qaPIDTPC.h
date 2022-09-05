@@ -155,10 +155,10 @@ struct tpcPidQa {
     // NSigma
     const char* axisTitle = Form("N_{#sigma}^{TPC}(%s)", pT[id]);
     const AxisSpec nSigmaAxis{nBinsNSigma, minNSigma, maxNSigma, axisTitle};
-    histos.add(hnsigma[id].data(), axisTitle, kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigmapt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmapospt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmanegpt[id].data(), axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigma[id], axisTitle, kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmapt[id], axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmapospt[id], axisTitle, kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegpt[id], axisTitle, kTH2F, {ptAxis, nSigmaAxis});
 
     if (!enableFullHistos) { // Enabling only NSigma for tiny tables
       return;
@@ -166,34 +166,34 @@ struct tpcPidQa {
 
     // Exp signal
     const AxisSpec expAxis{1000, 0, 1000, Form("d#it{E}/d#it{x}_(%s) A.U.", pT[id])};
-    histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
+    histos.add(hexpected[id], "", kTH2F, {pAxis, expAxis});
 
     // Signal - Expected signal
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
-    histos.add(hexpected_diff[id].data(), "", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptpos[id].data(), "Positive", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptneg[id].data(), "Negative", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diff[id], "", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptpos[id], "Positive", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptneg[id], "Negative", kTH2F, {pAxis, deltaAxis});
 
     // Exp Sigma
     const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
-    histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
+    histos.add(hexpsigma[id], "", kTH2F, {pAxis, expSigmaAxis});
 
     if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
       return;
     }
 
-    histos.add(hexpectedWithTOF[id].data(), "With TOF", kTH2F, {pAxis, expAxis});
-    histos.add(hexpected_diffWithTOF[id].data(), "With TOF", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptposWithTOF[id].data(), "With TOF Positive", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptnegWithTOF[id].data(), "With TOF Negative", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpsigmaWithTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
-    histos.add(hnsigmaWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
-    histos.add(hnsigmaptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaposptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmanegptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hexpectedWithTOF[id], "With TOF", kTH2F, {pAxis, expAxis});
+    histos.add(hexpected_diffWithTOF[id], "With TOF", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptposWithTOF[id], "With TOF Positive", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptnegWithTOF[id], "With TOF Negative", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpsigmaWithTOF[id], "With TOF", kTH2F, {pAxis, expSigmaAxis});
+    histos.add(hnsigmaWithTOF[id], Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
+    histos.add(hnsigmaptWithTOF[id], Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmaposptWithTOF[id], Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hnsigmanegptWithTOF[id], Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
 
     const AxisSpec dedxAxis{1000, 0, 1000, "d#it{E}/d#it{x} A.U."};
-    histos.add(hsignalWithTOF[id].data(), "With TOF", kTH2F, {pAxis, dedxAxis});
+    histos.add(hsignalWithTOF[id], "With TOF", kTH2F, {pAxis, dedxAxis});
   }
 
   void init(o2::framework::InitContext&)

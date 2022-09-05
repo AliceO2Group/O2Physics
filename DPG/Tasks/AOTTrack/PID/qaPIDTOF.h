@@ -117,11 +117,11 @@ struct tofPidQa {
 
     auto addHistogram = [&](const auto& name, const auto& title, const auto& xAxis, const auto& yAxis) {
       if (!enableEvTimeSplitting) {
-        histos.add(name.data(), title, kTH2F, {xAxis, yAxis});
+        histos.add(name, title, kTH2F, {xAxis, yAxis});
         return;
       }
       const AxisSpec nEvTimeTypeAxis{4, 0.5, 4.5, "Event Time used"};
-      auto histo = histos.add<TH3>(name.data(), title, kTH3F, {xAxis, yAxis, nEvTimeTypeAxis});
+      auto histo = histos.add<TH3>(name, title, kTH3F, {xAxis, yAxis, nEvTimeTypeAxis});
       histo->GetZaxis()->SetBinLabel(1, "No Ev. Time");
       histo->GetZaxis()->SetBinLabel(2, "TOF");
       histo->GetZaxis()->SetBinLabel(3, "FT0");
@@ -142,7 +142,7 @@ struct tofPidQa {
 
     // Exp signal
     const AxisSpec expAxis{1000, 0, 2e6, Form("t_{exp}(%s) (ps)", pT[id])};
-    histos.add(hexpected[id].data(), "", kTH2F, {pAxis, expAxis});
+    histos.add(hexpected[id], "", kTH2F, {pAxis, expAxis});
 
     // Signal - Expected signal
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("t-t_{ev}-t_{exp}(%s) (ps)", pT[id])};
@@ -150,7 +150,7 @@ struct tofPidQa {
 
     // Exp Sigma
     const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TOF}(%s) (ps)", pT[id])};
-    histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
+    histos.add(hexpsigma[id], "", kTH2F, {pAxis, expSigmaAxis});
   }
 
   void init(o2::framework::InitContext&)
