@@ -725,6 +725,8 @@ struct femtoWorldProducerTask {
       Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
       Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.14, "Lower limit for Pt for the first particle"};
       Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
+      Configurable<float> cfgPLowPart1{"cfgPLowPart1", 0.14, "Lower limit for P for the first particle"};
+      Configurable<float> cfgPHighPart1{"cfgPHighPart1", 1.5, "Higher limit for P for the first particle"};
       Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
       Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
       Configurable<float> cfgDcaXYPart1{"cfgDcaXYPart1", 2.4, "Value for DCA_XY for the first particle"};
@@ -738,6 +740,8 @@ struct femtoWorldProducerTask {
       Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
       Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
       Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 1.5, "Higher limit for Pt for the second particle"};
+      Configurable<float> cfgPLowPart2{"cfgPLowPart2", 0.14, "Lower limit for P for the second particle"};
+      Configurable<float> cfgPHighPart2{"cfgPHighPart2", 1.5, "Higher limit for P for the second particle"};
       Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
       Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
       Configurable<float> cfgDcaXYPart2{"cfgDcaXYPart2", 2.4, "Value for DCA_XY for the second particle"};
@@ -748,16 +752,26 @@ struct femtoWorldProducerTask {
       Configurable<float> cfgChi2ItsPart2{"cfgChi2ItsPart2", 36.0, "Chi2 / cluster for the ITS track segment for the second particle"};
 
       for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+        // LOGF(info, "p1.type = %u \n p2.type = %u \n", p1.trackType(), p2.trackType());
+        if ((p1.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet) || (p2.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet)) {
+          continue;
+        }
         if (p1.globalIndex() == p2.globalIndex()) {
           continue;
         }
         if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
           continue;
         }
+        if ((p1.p() < cfgPLowPart1) || (p1.p() > cfgPHighPart1)) {
+          continue;
+        }
         if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
           continue;
         }
         if ((p2.pt() < cfgPtLowPart2) || (p2.pt() > cfgPtHighPart2)) {
+          continue;
+        }
+        if ((p2.p() < cfgPLowPart2) || (p2.p() > cfgPHighPart2)) {
           continue;
         }
         if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
@@ -806,6 +820,7 @@ struct femtoWorldProducerTask {
         float phiEta = sumVec.Eta();
         float phiPhi = sumVec.Phi();
         float phiPt = sumVec.Pt();
+        float phiP = sumVec.P();
 
         // LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
 
@@ -823,6 +838,7 @@ struct femtoWorldProducerTask {
                       p1.pt(),
                       p1.eta(),
                       p1.phi(),
+                      p1.p(),
                       aod::femtoworldparticle::ParticleType::kPhiChild,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts),
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID),
@@ -873,6 +889,7 @@ struct femtoWorldProducerTask {
                       p2.pt(),
                       p2.eta(),
                       p2.phi(),
+                      p2.p(),
                       aod::femtoworldparticle::ParticleType::kPhiChild,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts),
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID),
@@ -919,6 +936,7 @@ struct femtoWorldProducerTask {
                       phiPt,
                       phiEta,
                       phiPhi,
+                      phiP,
                       aod::femtoworldparticle::ParticleType::kPhi,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                       0,

@@ -98,11 +98,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Compute the momentum in z in GeV/c
                            [](float pt, float eta) -> float {
                              return pt * std::sinh(eta);
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
-                           [](float pt, float eta) -> float {
-                             return pt * std::cosh(eta);
-                           });
-// debug variables
+// DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
+//                            [](float pt, float eta) -> float {
+//                              return pt * std::cosh(eta);
+//                            });
+//  debug variables
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
 DECLARE_SOA_COLUMN(Beta, beta, float);                                                   //! TOF Beta signal
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);                                       //! Chi2 / cluster for the ITS track segment
@@ -133,6 +133,7 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::Pt,
                   femtoworldparticle::Eta,
                   femtoworldparticle::Phi,
+                  track::P,
                   femtoworldparticle::PartType,
                   femtoworldparticle::Cut,
                   femtoworldparticle::PIDCut,
@@ -144,7 +145,7 @@ DECLARE_SOA_TABLE(FemtoWorldParticles, "AOD", "FEMTOWORLDPARTS",
                   femtoworldparticle::Px<femtoworldparticle::Pt, femtoworldparticle::Phi>,
                   femtoworldparticle::Py<femtoworldparticle::Pt, femtoworldparticle::Phi>,
                   femtoworldparticle::Pz<femtoworldparticle::Pt, femtoworldparticle::Eta>,
-                  femtoworldparticle::P<femtoworldparticle::Pt, femtoworldparticle::Eta>, // tu koniec poprzedniej wersji
+                  // femtoworldparticle::P<femtoworldparticle::Pt, femtoworldparticle::Eta>, // tu koniec poprzedniej wersji
                   femtoworldparticle::Sign,
                   pidtofbeta::Beta,
                   femtoworldparticle::ITSChi2NCl,

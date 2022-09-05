@@ -42,8 +42,8 @@ static constexpr int nCuts = 5;                                                 
 static const std::vector<std::string> partNames{"PartOne", "PartTwo"};                                  // names of the rows
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"}; // names of the columns
 static const float cutsTable[nPart][nCuts]{                                                             // cuts table [rows = particles][columns = types of cuts]
-                                           {4.05f, 1.f, 3.f, 3.f, 100.f},
-                                           {4.05f, 1.f, 5.f, 5.f, 100.f}};
+                                           {1.5f, 1.f, 3.f, 3.f, 100.f},
+                                           {1.5f, 1.f, 5.f, 5.f, 100.f}};
 
 static const std::vector<float> kNsigma = {3.5f, 3.f, 2.5f};
 
@@ -75,7 +75,7 @@ struct femtoWorldPairTaskTrackPhi {
   Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhi));
 
   /// Histogramming for particle 2
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 2> trackHistoPartTwo;
+  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 3> trackHistoPartTwo;
 
   /// Histogramming for Event
   FemtoWorldEventHisto eventHisto;
@@ -128,7 +128,6 @@ struct femtoWorldPairTaskTrackPhi {
                         o2::aod::FemtoWorldParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
-
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex());
     const int multCol = col.multV0M();
@@ -141,16 +140,20 @@ struct femtoWorldPairTaskTrackPhi {
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
+      LOGF(info, "TEST ================================================================= \n");
       trackHistoPartOne.fillQA(part);
     }
     for (auto& part : groupPartsTwo) {
+
       trackHistoPartTwo.fillQA(part);
     }
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+      /*
       if (p1.p() > cfgCutTable->get("PartOne", "MaxP") || p1.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
         continue;
       }
+
       if (!isFullPIDSelected(p1.pidcut(), p1.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
       }
@@ -160,11 +163,12 @@ struct femtoWorldPairTaskTrackPhi {
           continue;
         }
       }
-
+      */
       // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+      /*if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
-      }
+      }*/
+
       sameEventCont.setPair(p1, p2, multCol);
     }
   }
