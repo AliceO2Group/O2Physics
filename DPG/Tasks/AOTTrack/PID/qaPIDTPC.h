@@ -171,8 +171,8 @@ struct tpcPidQa {
     // Signal - Expected signal
     const AxisSpec deltaAxis{nBinsDelta, minDelta, maxDelta, Form("d#it{E}/d#it{x} - d#it{E}/d#it{x}(%s)", pT[id])};
     histos.add(hexpected_diff[id].data(), "", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptpos[id].data(), "Positive", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptneg[id].data(), "Negative", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptpos[id].data(), "Positive", kTH2F, {ptAxis, deltaAxis});
+    histos.add(hexpected_diffptneg[id].data(), "Negative", kTH2F, {ptAxis, deltaAxis});
 
     // Exp Sigma
     const AxisSpec expSigmaAxis{nBinsExpSigma, minExpSigma, maxExpSigma, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
@@ -184,8 +184,8 @@ struct tpcPidQa {
 
     histos.add(hexpectedWithTOF[id].data(), "With TOF", kTH2F, {pAxis, expAxis});
     histos.add(hexpected_diffWithTOF[id].data(), "With TOF", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptposWithTOF[id].data(), "With TOF Positive", kTH2F, {pAxis, deltaAxis});
-    histos.add(hexpected_diffptnegWithTOF[id].data(), "With TOF Negative", kTH2F, {pAxis, deltaAxis});
+    histos.add(hexpected_diffptposWithTOF[id].data(), "With TOF Positive", kTH2F, {ptAxis, deltaAxis});
+    histos.add(hexpected_diffptnegWithTOF[id].data(), "With TOF Negative", kTH2F, {ptAxis, deltaAxis});
     histos.add(hexpsigmaWithTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigmaWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
     histos.add(hnsigmaptWithTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {ptAxis, nSigmaAxis});
