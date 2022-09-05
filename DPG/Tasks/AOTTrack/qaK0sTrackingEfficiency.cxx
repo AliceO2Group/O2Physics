@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+///
+/// \file   qaK0sTrackingEfficiency.cxx
+/// \author Alessandro Balbino <alessandro.balbino@cern.ch>
+/// \brief  Task to perform tag and probe analysis of the efficiency
+///
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -106,6 +112,15 @@ struct qaK0sTrackingEfficiency {
         registry.fill(HIST("Test/h_posITSHitMap"), posITSHitMap);
         registry.fill(HIST("h5_RpTmassITSHitMap"), v0.v0radius(), v0.pt(), v0.mK0Short(), negITSHitMap, posITSHitMap);
       }
+    }
+  }
+
+  void processSelection(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                        aod::V0Datas const& fullV0s, aod::FullTracks const& tracks)
+  {
+    registry.fill(HIST("h_EventCounter"), 0.);
+    if (eventSelection && !collision.sel8()) {
+      return;
     }
   }
 };
