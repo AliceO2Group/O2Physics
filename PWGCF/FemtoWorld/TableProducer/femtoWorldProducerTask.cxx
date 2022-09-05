@@ -39,6 +39,9 @@
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
 
+// for comparison because of the NaN
+#include <math.h>
+
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
 using namespace o2::framework;
@@ -56,6 +59,12 @@ using FemtoFullTracks = soa::Join<aod::FullTracks,
                                   aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
                                   aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                   aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFbeta>;
+using FemtoPhiTracks = soa::Join<aod::FullTracks,
+                                 aod::TracksDCA, aod::TOFSignal,
+                                 aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
+                                 aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe,
+                                 aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+                                 aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFbeta>;
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s> to be used when we add v0Filter
 } // namespace o2::aod
 
@@ -382,7 +391,7 @@ struct femtoWorldProducerTask {
       }
       trackCuts.fillQA<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(track);
+      // auto cutContainer = trackCuts.getCutContainer<aod::femtoworldparticle::cutContainerType>(track);
 
       // now the table is filled
       /*outputParts(outputCollision.lastIndex(),
@@ -531,7 +540,7 @@ struct femtoWorldProducerTask {
                        -999.,
                        -999.,
                        -999.);*/
-          const int rowOfPosTrack = outputParts.lastIndex();
+          // const int rowOfPosTrack = outputParts.lastIndex();
           int negtrackID = v0.negTrackId();
           int rowInPrimaryTrackTableNeg = -1;
           rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
@@ -580,8 +589,8 @@ struct femtoWorldProducerTask {
                        -999.,
                        -999.,
                        -999.);*/
-          const int rowOfNegTrack = outputParts.lastIndex();
-          int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
+          // const int rowOfNegTrack = outputParts.lastIndex();
+          // int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
           /*outputParts(outputCollision.lastIndex(),
                       v0.pt(),
                       v0.eta(),
@@ -743,7 +752,6 @@ struct femtoWorldProducerTask {
           continue;
         }
         if ((p1.pt() < cfgPtLowPart1) || (p1.pt() > cfgPtHighPart1)) {
-          // LOGF(info, "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", p1.pt());
           continue;
         }
         if ((p1.eta() < cfgEtaLowPart1) || (p1.eta() > cfgEtaHighPart1)) {
@@ -755,7 +763,7 @@ struct femtoWorldProducerTask {
         if ((p2.eta() < cfgEtaLowPart2) || (p2.eta() > cfgEtaHighPart2)) {
           continue;
         }
-        if ((p1.p() > 0.45f)) {
+        if /*((p1.p() > 0.45f))*/ (isgreater(p1.p(), 0.45f)) {
           if (!((IsKaonTPCdEdxNSigma(p1.p(), p1.tpcNSigmaKa())) && (IsKaonTOFNSigma(p1.p(), p1.tofNSigmaKa())))) {
             continue;
           }
