@@ -29,6 +29,16 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
+
+using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a
 // track with ITS this is the innermost (or second innermost) ITS layer. For a
@@ -61,12 +71,28 @@ DECLARE_SOA_COLUMN(PStatic, ps, float);
 DECLARE_SOA_COLUMN(EtaStatic, etas, float);
 DECLARE_SOA_COLUMN(PhiStatic, phis, float);
 } // namespace track
+namespace fwdtrack
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(BestCollision, bestCollision, int32_t, Collisions, "");
+DECLARE_SOA_COLUMN(BestDCAXY, bestDCAXY, float);
+DECLARE_SOA_COLUMN(PtStatic, pts, float);
+DECLARE_SOA_COLUMN(PStatic, ps, float);
+DECLARE_SOA_COLUMN(EtaStatic, etas, float);
+DECLARE_SOA_COLUMN(PhiStatic, phis, float);
+} // namespace fwdtrack
 DECLARE_SOA_TABLE(BestCollisions, "AOD", "BESTCOLL",
                   aod::track::BestCollisionId, aod::track::BestDCAXY,
                   aod::track::BestDCAZ, track::X, track::Alpha, track::Y,
                   track::Z, track::Snp, track::Tgl, track::Signed1Pt,
                   track::PtStatic, track::PStatic, track::EtaStatic,
                   track::PhiStatic);
+
+DECLARE_SOA_TABLE(BestCollisionsFwd, "AOD", "BESTCOLLFWD",
+                  aod::fwdtrack::BestCollisionId, aod::fwdtrack::BestDCAXY,
+                  fwdtrack::X, fwdtrack::Y,
+                  fwdtrack::Z, fwdtrack::Tgl, fwdtrack::Signed1Pt,
+                  fwdtrack::PtStatic, fwdtrack::PStatic, fwdtrack::EtaStatic,
+                  fwdtrack::PhiStatic); // Snp does not exist
 namespace indices
 {
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
@@ -133,8 +159,6 @@ struct AmbiguousTrackPropagation {
     runNumber = bc.runNumber();
   }
 
-  Preslice<aod::AmbiguousTracks> perTrack = aod::ambiguous::trackId;
-
   void process(soa::Join<aod::Tracks, aod::TracksExtra> const&,
                aod::Collisions const&, ExtBCs const& bcs,
                aod::AmbiguousTracks const& atracks)
@@ -148,8 +172,8 @@ struct AmbiguousTrackPropagation {
     float bestDCA[2];
 
     for (auto& atrack : atracks) {
-      dcaInfo[0] = 999;
-      dcaInfo[1] = 999;
+      dcaInfo[0] = 999; // DCAxy
+      dcaInfo[1] = 999; // DCAz
       bestDCA[0] = 999;
       bestDCA[1] = 999;
 
@@ -185,6 +209,91 @@ struct AmbiguousTrackPropagation {
   }
 };
 
+struct AmbiguousTrackPropagationFwd {
+  Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
+
+  using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedMulti>;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  int runNumber = -1;
+
+  o2::parameters::GRPMagField* grpmag = nullptr;
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
+  float Bz = 0;
+
+  void initCCDB(ExtBCs::iterator const& bc)
+  {
+    if (runNumber == bc.runNumber()) {
+      return;
+    }
+    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current()
+              << " A for run " << bc.runNumber()
+              << " from its GRPMagField CCDB object";
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    runNumber = bc.runNumber();
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
+    Bz = field->getBz(centerMFT);
+    printf("--------Bz = %f\n", Bz);
+  }
+
+  void process(aod::MFTTracks const&,
+               aod::Collisions const&, ExtBCs const& bcs,
+               aod::AmbiguousMFTTracks const& atracks)
+  {
+    printf("--------Bz = %f\n", Bz);
+    if (bcs.size() == 0) {
+      return;
+    }
+
+    // Only on DCAxy
+    float dcaInfo;
+    float bestDCA;
+
+    for (auto& atrack : atracks) {
+      dcaInfo = 999; // DCAxy
+      bestDCA = 999;
+
+      auto track = atrack.mfttrack();
+      auto bestCol = track.has_collision() ? track.collisionId() : -1;
+
+      std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
+      SMatrix55 tcovs(v1.begin(), v1.end());
+      SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+      o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
+
+      auto compatibleBCs = atrack.bc_as<ExtBCs>();
+      for (auto& bc : compatibleBCs) {
+        if (!bc.has_collisions()) {
+          continue;
+        }
+        auto collisions = bc.collisions();
+        for (auto const& collision : collisions) {
+          // temporary: for now just the linear propagation since the magnetic field was 0
+          trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
+
+          const auto dcaX(trackPar.getX() - collision.posX());
+          const auto dcaY(trackPar.getY() - collision.posY());
+          auto dcaInfo = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+          if ((dcaInfo < bestDCA)) {
+            bestCol = collision.globalIndex();
+            bestDCA = dcaInfo;
+          }
+        }
+      }
+
+      fwdtracksBestCollisions(
+        bestCol, dcaInfo, trackPar.getX(),
+        trackPar.getY(), trackPar.getZ(),
+        trackPar.getTgl(), trackPar.getInvQPt(), trackPar.getPt(),
+        trackPar.getP(), trackPar.getEta(), trackPar.getPhi());
+    }
+  }
+};
+
 //****************************************************************************************
 /**
  * Workflow definition.
@@ -193,6 +302,7 @@ struct AmbiguousTrackPropagation {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc),
+                        adaptAnalysisTask<AmbiguousTrackPropagationFwd>(cfgc),
                         adaptAnalysisTask<MultiCollisionAssociation>(cfgc)};
   return workflow;
 }
