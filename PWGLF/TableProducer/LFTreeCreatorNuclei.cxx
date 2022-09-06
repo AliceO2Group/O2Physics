@@ -109,6 +109,7 @@ struct LfTreeCreatorNuclei {
         track.tpcNSigmaDe(), track.tpcNSigmaHe(),
         track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
         track.tofNSigmaDe(), track.tofNSigmaHe(),
+        track.tpcExpSignalDiffPr(), track.tpcExpSignalDiffDe(),
         track.hasTOF(),
         track.tpcInnerParam(),
         track.tpcSignal(),
