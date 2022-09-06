@@ -209,6 +209,9 @@ struct CFFilterTwoN {
       registry.add("fPtLambdaAfterSel", "Transverse momentum of Lambdas which passed selections", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fPtAntiLambdaAfterSel", "Transverse momentum of AntidLambdas which passed selections", HistType::kTH1F, {{1000, 0, 10}});
 
+      registry.add("fMinvLambda", "Invariant mass of lambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
+      registry.add("fMinvAntiLambda", "Invariant mass of antilambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
+
       closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
     }
 
@@ -276,13 +279,6 @@ struct CFFilterTwoN {
         Ndeuteron++;
       }
     }
-    if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
-      // select lambdas
-      for (auto lambda : partsL) {
-        registry.fill(HIST("fPtLambdaAfterSel"), lambda.pt());
-        Nlambda++;
-      }
-    }
 
     for (auto antipd : partsAntiPD) {
       registry.fill(HIST("fPtAntiBeforeSel"), antipd.pt());
@@ -312,10 +308,17 @@ struct CFFilterTwoN {
     }
 
     if (KstarTrigger.value == 1 || KstarTrigger.value == 11) {
+      // select lambdas
+      for (auto lambda : partsL) {
+        registry.fill(HIST("fPtLambdaAfterSel"), lambda.pt());
+        registry.fill(HIST("fMinvLambda"), lambda.mLambda());
+        Nlambda++;
+      }
       for (auto antilambda : partsAntiL) {
         // select antilambdas
         registry.fill(HIST("fPtAntiLambdaAfterSel"), antilambda.pt());
-        Nlambda++;
+        registry.fill(HIST("fMinvAntiLambda"), antilambda.mAntiLambda());
+        Nantilambda++;
       }
     }
 
@@ -459,7 +462,7 @@ struct CFFilterTwoN {
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
-          kStar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
+          kStar = FemtoDreamMath::getkstar(p1, mMassDeuteron, p2, mMassLambda);
           // check if kstar is below threshold
           if (kStar < confKstarTriggerLimit.value) {
             lowKstarPairs[1]++;
@@ -476,7 +479,7 @@ struct CFFilterTwoN {
           if (closePairRejectionTV0.isClosePair(p1, p2, partsFemto, magneticField)) {
             continue;
           }
-          auto kstar = FemtoDreamMath::getkstar(p1, mMassLambda, p2, mMassDeuteron);
+          auto kstar = FemtoDreamMath::getkstar(p1, mMassDeuteron, p2, mMassLambda);
           // check if kstar is below threshold
           if (kStar < confKstarTriggerLimit.value) {
             lowKstarPairs[1]++;
