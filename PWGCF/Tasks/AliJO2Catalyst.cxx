@@ -98,9 +98,9 @@ public:
 
 	//void process(aod::Collision const& collision, aod::Tracks const& tracks){
 	//void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TOFSignal> const& tracks){
-	void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks){
+	void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection> const& tracks){
 		Double_t cent[3] = {
-			collision.centV0M(),
+			collision.centRun2V0M(),
 			collision.centRun2CL0(),
 			collision.centRun2CL1()
 		};
