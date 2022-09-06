@@ -472,8 +472,8 @@ struct ValidationRecLevel {
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
         uint64_t mostProbableBC2 = collision2.bc().globalBC();
         if (mostProbableBC2 == mostProbableBC) {
-          float radColl1 = std::sqrt(collision.posX()*collision.posX() + collision.posY()*collision.posY());
-          float radColl2 = std::sqrt(collision2.posX()*collision2.posX() + collision2.posY()*collision2.posY());
+          float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
+          float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
           int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
           auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex());
           for (auto& trackColl1 : tracksColl1) {
