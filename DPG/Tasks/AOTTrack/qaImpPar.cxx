@@ -62,7 +62,7 @@ struct QaImpactPar {
   // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<bool> useTriggerkINT7{"useTriggerkINT7", false, "Use kINT7 trigger"};
   Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0A & T0C) event selection"};
-  Configurable<bool> useIsGlobalTrackFilter{"useIsGlobalTrackFilter", true, "Use or not 'isGlobalTrack' filter"};
+  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
   // Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum track pt [GeV/c]"};
@@ -111,7 +111,12 @@ struct QaImpactPar {
   Filter collisionNumContribPV = (minPVcontrib <= o2::aod::collision::numContrib) && (o2::aod::collision::numContrib < maxPVcontrib);
   // Global tracks
   // with Run 3 Reco/MC enable '--isRun3 1' option
-  Filter globalTrackFilter = (useIsGlobalTrackFilter.node() == false) || (requireGlobalTrackInFilter()); /// filterbit 4 track selections + tight DCA cuts
+  Filter trackFilter = (trackSelection.node() == 0) ||
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) || /// filterbit 4 track selections + tight DCA cuts
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 

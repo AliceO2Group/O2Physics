@@ -13,9 +13,11 @@
 /// \brief Lc -> K0S+p analysis task
 ///
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
+///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 ///
 /// based on taskD0.cxx, taskLc.cxx
 
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
@@ -26,19 +28,12 @@ using namespace o2::framework;
 using namespace o2::aod::hf_cand_casc;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
-
 /// LcK0sp analysis task
 struct TaskLcK0sP {
   HistogramRegistry registry{
     "registry",
-    {{"hMass", "cascade candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.0f, 5.0f}}}},
+    {// data
+     {"hMass", "cascade candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.0f, 5.0f}}}},
      {"hPtCand", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
      {"hPtBach", "cascade candidates;bachelor #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
      {"hPtV0", "cascade candidates;v0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
@@ -49,14 +44,31 @@ struct TaskLcK0sP {
      {"hEta", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{100, -2.0f, 2.0f}}}},
      {"hSelectionStatus", "cascade candidates;selection status;entries", {HistType::kTH1F, {{5, -0.5f, 4.5f}}}}}};
 
-  Configurable<int> selectionFlagLcK0sp{"selectionFlagLcK0sp", 1, "Selection Flag for LcK0sp"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLcbar{"selectionFlagLcbar", 1, "Selection Flag for Lcbar"};
   Configurable<double> cutEtaCandMax{"cutEtaCandMax", -1., "max. cand. pseudorapidity"};
 
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcK0sp);
+  void init(InitContext& context)
+  {
+    // add MC histograms
+    if (context.mOptions.get<bool>("processMC")) {
+      registry.add("hPtRecSig", "cascade candidates (MC);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hPtRecBg", "cascade candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hPtGen", "cascade (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hPtGenSig", "cascade candidates (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+      registry.add("hCPARecSig", "cascade candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+      registry.add("hCPARecBg", "cascade candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+      registry.add("hEtaRecSig", "cascade candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
+      registry.add("hEtaRecBg", "cascade candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
+      registry.add("hEtaGen", "MC particles (MC);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}});
+    }
+  }
+
+  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLc || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbar);
 
   void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate>> const& candidates)
   {
-    //Printf("Candidates: %d", candidates.size());
+    // Printf("Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
       /*
       // no such selection for LcK0sp for now - it is the only cascade
@@ -65,7 +77,7 @@ struct TaskLcK0sP {
       }
       */
       if (cutEtaCandMax >= 0. && std::abs(candidate.eta()) > cutEtaCandMax) {
-        //Printf("Candidate: eta rejection: %g", candidate.eta());
+        // Printf("Candidate: eta rejection: %g", candidate.eta());
         continue;
       }
 
@@ -81,36 +93,16 @@ struct TaskLcK0sP {
       registry.fill(HIST("hSelectionStatus"), candidate.isSelLcK0sP());
     }
   }
-};
 
-/// Fills MC histograms.
-struct TaskLcK0SpMC {
-  HistogramRegistry registry{
-    "registry",
-    {{"hPtRecSig", "cascade candidates (MC);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtRecBg", "cascade candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtGen", "cascade (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hPtGenSig", "cascade candidates (MC);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-     {"hCPARecSig", "cascade candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hCPARecBg", "cascade candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hEtaRecSig", "cascade candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaRecBg", "cascade candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaGen", "MC particles (MC);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
-
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
-  Configurable<int> selectionFlagLcbar{"selectionFlagLcbar", 1, "Selection Flag for Lcbar"};
-  Configurable<double> cutEtaCandMax{"cutEtaCandMax", -1., "max. cand. pseudorapidity"};
-
-  Filter filterSelectCandidates = (aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLc || aod::hf_selcandidate_lc_k0sp::isSelLcK0sP >= selectionFlagLcbar);
-
-  void process(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate, aod::HfCandCascadeMCRec>> const& candidates,
-               soa::Join<aod::McParticles, aod::HfCandCascadeMCGen> const& particlesMC, aod::BigTracksMC const& tracks)
+  void processMC(soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HFSelLcK0sPCandidate, aod::HfCandCascadeMCRec>> const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandCascadeMCGen> const& particlesMC,
+                 aod::BigTracksMC const& tracks)
   {
     // MC rec.
-    //Printf("MC Candidates: %d", candidates.size());
+    // Printf("MC Candidates: %d", candidates.size());
     for (auto& candidate : candidates) {
       if (cutEtaCandMax >= 0. && std::abs(candidate.eta()) > cutEtaCandMax) {
-        //Printf("MC Rec.: eta rejection: %g", candidate.eta());
+        // Printf("MC Rec.: eta rejection: %g", candidate.eta());
         continue;
       }
       if (std::abs(candidate.flagMCMatchRec()) == 1) {
@@ -128,10 +120,10 @@ struct TaskLcK0SpMC {
       }
     }
     // MC gen.
-    //Printf("MC Particles: %d", particlesMC.size());
+    // Printf("MC Particles: %d", particlesMC.size());
     for (auto& particle : particlesMC) {
       if (cutEtaCandMax >= 0. && std::abs(particle.eta()) > cutEtaCandMax) {
-        //Printf("MC Gen.: eta rejection: %g", particle.eta());
+        // Printf("MC Gen.: eta rejection: %g", particle.eta());
         continue;
       }
       if (std::abs(particle.flagMCMatchGen()) == 1) {
@@ -140,15 +132,13 @@ struct TaskLcK0SpMC {
       }
     }
   }
+
+  PROCESS_SWITCH(TaskLcK0sP, processMC, "Process MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
-    adaptAnalysisTask<TaskLcK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<TaskLcK0SpMC>(cfgc, TaskName{"hf-task-lc-tok0sP-mc"}));
-  }
-  return workflow;
+  return WorkflowSpec{
+    adaptAnalysisTask<TaskLcK0sP>(cfgc, TaskName{"hf-task-lc-tok0sP"}),
+  };
 }

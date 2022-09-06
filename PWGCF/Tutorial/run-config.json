@@ -69,14 +69,14 @@
   "c-f-tutorial-task1": "",
   "c-f-tutorial-task2": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3"
   },
   "c-f-tutorial-task3": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3",
@@ -84,7 +84,7 @@
   },
   "c-f-tutorial-task4": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3",
@@ -92,7 +92,7 @@
   },
   "c-f-tutorial-task5": {
     "ConfZvtxCut": "10",
-    "ConfEtaCut": "0.800000012",
+    "ConfEtaCut": "0.8",
     "ConfMaxPtCut": "3",
     "ConfMinPtCut": "0.5",
     "ConfMinNSigmaTPCCut": "3",

@@ -47,6 +47,28 @@ DECLARE_SOA_TABLE(V0DaughterTracks, "AOD", "V0TRACKS",
                   pidtpc::TPCNSigmaPi,
                   track::TPCSignal);
 
+namespace MCTracksTrue
+{
+DECLARE_SOA_COLUMN(SameMother, sameMother, bool); // Do the tracks have the same mother particle?
+} // namespace MCTracksTrue
+
+DECLARE_SOA_TABLE(V0DaughterMcParticles, "AOD", "MCTRACKTRUE",
+                  mcparticle::PdgCode,
+                  mcparticle::Px,
+                  mcparticle::Py,
+                  mcparticle::Pz,
+                  MCTracksTrue::SameMother);
+
+// Index table to associate V0DaughterTracks to the corresponding V0MCDaughterParticles if an entrie exists. This table contains an index column which contains the corresponding row number or -1, if there is no corresponding V0MCDaughterParticles
+// This table is one column that is joinable with V0DaughterTracks as far as i understand
+namespace MCParticleTrueIndex
+{
+DECLARE_SOA_INDEX_COLUMN(V0DaughterMcParticle, v0DaughterMcParticle);
+} // namespace MCParticleTrueIndex
+
+//DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
+DECLARE_SOA_TABLE(MCParticleIndex, "AOD", "MCPARTICLEINDEX", MCParticleTrueIndex::V0DaughterMcParticleId);
+
 namespace gammarecalculated
 {
 DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
@@ -56,8 +78,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float
 } // namespace gammarecalculated
 
 DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
-                  o2::soa::Index<>,
-                  v0data::V0Id,
                   gammarecalculated::RecalculatedVtxX,
                   gammarecalculated::RecalculatedVtxY,
                   gammarecalculated::RecalculatedVtxZ,
@@ -65,11 +85,18 @@ DECLARE_SOA_TABLE(V0Recalculated, "AOD", "V0RECALCULATED",
 
 namespace gammamctrue
 {
+DECLARE_SOA_COLUMN(P, p, float); //! Absolute momentum in GeV/c
+} // namespace gammamctrue
+
+DECLARE_SOA_TABLE(McDaughterTrue, "AOD", "MCDAUTRUE",
+                  gammamctrue::P);
+
+namespace gammamctrue
+{
 DECLARE_SOA_COLUMN(Gamma, gamma, int64_t);       //! Used as reference for the daughters
 DECLARE_SOA_COLUMN(NDaughters, nDaughters, int); //! Number of daughters
 DECLARE_SOA_COLUMN(Eta, eta, float);             //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);             //! Angle phi in rad
-DECLARE_SOA_COLUMN(P, p, float);                 //! Absolute momentum in GeV/c
 DECLARE_SOA_COLUMN(Pt, pt, float);               //! Transversal momentum in GeV/c
 DECLARE_SOA_COLUMN(Y, y, float);                 //! Rapidity
 
@@ -77,6 +104,9 @@ DECLARE_SOA_COLUMN(ConversionX, conversionX, float); //! x of conversion point i
 DECLARE_SOA_COLUMN(ConversionY, conversionY, float); //! y of conversion point in cm
 DECLARE_SOA_COLUMN(ConversionZ, conversionZ, float); //! z of conversion point in cm
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);       //! 2d radius of conversion point
+//DECLARE_SOA_INDEX_COLUMN(McDaughterTrue, mcDaughterTrue);
+DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueOne, mcDaughterTrueOne, int, McDaughterTrue, "_One"); // this is a reference that points to the entry in the McDaughterTrues table
+DECLARE_SOA_INDEX_COLUMN_FULL(McDaughterTrueTwo, mcDaughterTrueTwo, int, McDaughterTrue, "_Two"); // this is a reference that points to the entry in the McDaughterTrues table
 } // namespace gammamctrue
 
 DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
@@ -92,6 +122,10 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
                   gammamctrue::Eta, gammamctrue::Phi, gammamctrue::P, gammamctrue::Pt, gammamctrue::Y,
                   gammamctrue::ConversionX, gammamctrue::ConversionY, gammamctrue::ConversionZ,
                   gammamctrue::V0Radius,
+
+                  // Index columns
+                  gammamctrue::McDaughterTrueOneId,
+                  gammamctrue::McDaughterTrueTwoId,
 
                   // Dynamic columns
                   mcparticle::ProducedByGenerator<mcparticle::Flags>,

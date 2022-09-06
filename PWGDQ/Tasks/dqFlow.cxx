@@ -84,8 +84,8 @@ struct AnalysisQvector {
   Produces<ReducedEventsQvector> eventQvector;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
-  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
+  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
 
   // Configurable<float> fConfigVtxCut{"cfgVtxCut", 12.0, "Z vertex cut"};
