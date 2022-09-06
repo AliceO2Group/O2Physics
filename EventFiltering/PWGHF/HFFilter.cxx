@@ -619,7 +619,7 @@ struct HfFilter { // Main struct for HF triggers
         retValue |= BIT(0);
       }
     }
-    if (TESTBIT(isSelected, 0)) {
+    if (TESTBIT(isSelected, 1)) {
       auto invMassDsToPiKK = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massK, massK});
       if (activateQA) {
         hMassVsPtC[kDs]->Fill(ptD, invMassDsToPiKK);
@@ -1023,7 +1023,7 @@ struct HfFilter { // Main struct for HF triggers
         float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassB0, deltaMassBs, deltaMassLb, deltaMassXib};
         if (track.signed1Pt() * sign3Prong < 0 && isSelectedTrackForBeauty(track, kBeauty4Prong) == kRegular) {
           for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty]; ++iHypo) {
-            if (isBeautyTagged[iHypo] && (iHypo > 0 && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1)))) {
+            if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
               auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
               if (std::abs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
                 keepEvent[kBeauty] = true;
