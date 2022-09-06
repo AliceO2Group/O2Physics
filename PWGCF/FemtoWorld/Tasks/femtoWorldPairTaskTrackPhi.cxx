@@ -134,17 +134,18 @@ struct femtoWorldPairTaskTrackPhi {
     eventHisto.fillQA(col);
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
+      /*
       if (part.p() > cfgCutTable->get("PartOne", "MaxP") || part.pt() > cfgCutTable->get("PartOne", "MaxPt")) {
         continue;
       }
       if (!isFullPIDSelected(part.pidcut(), part.p(), cfgCutTable->get("PartOne", "PIDthr"), vPIDPartOne, cfgNspecies, kNsigma, cfgCutTable->get("PartOne", "nSigmaTPC"), cfgCutTable->get("PartOne", "nSigmaTPCTOF"))) {
         continue;
-      }
-      LOGF(info, "TEST ================================================================= \n");
+      }*/
+      LOGF(info, "TEST ==============================TRACKONEFILL=================================== \n");
       trackHistoPartOne.fillQA(part);
     }
     for (auto& part : groupPartsTwo) {
-
+      //LOGF(info, "TEST ==============================TRACKPHIFILL=================================== \n");
       trackHistoPartTwo.fillQA(part);
     }
     /// Now build the combinations

@@ -797,15 +797,7 @@ struct femtoWorldProducerTask {
             continue;
           }
         }
-        /*else if (p1.pt() == NAN){
-         continue;
-       }*/
-        // LOGF(info, "p1.pt() = %f \n p1.p() = %f \n", p1.pt(), p1.p());
-        // LOGF(info, "p2.pt() = %f \n p2.p() = %f \n", p2.pt(), p2.p());
-        //  float phiPx = p1.px() + p2.px();
-        //  float phiPy = p1.py() + p2.py();
-        //  float phiPz = p1.pz() + p2.pz();
-
+       
         TLorentzVector part1Vec;
         TLorentzVector part2Vec;
         float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass();
@@ -821,6 +813,7 @@ struct femtoWorldProducerTask {
         float phiPhi = sumVec.Phi();
         float phiPt = sumVec.Pt();
         float phiP = sumVec.P();
+        float phiM = sumVec.M();
 
         // LOGF(info, "FIRST DAUGHTER: \n pT = %f \n eta = %f \n phi = %f", p1.pt(), p1.eta(), p1.phi());
 
@@ -839,6 +832,7 @@ struct femtoWorldProducerTask {
                       p1.eta(),
                       p1.phi(),
                       p1.p(),
+                      mMassOne,
                       aod::femtoworldparticle::ParticleType::kPhiChild,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosCuts),
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kPosPID),
@@ -890,6 +884,7 @@ struct femtoWorldProducerTask {
                       p2.eta(),
                       p2.phi(),
                       p2.p(),
+                      mMassTwo,
                       aod::femtoworldparticle::ParticleType::kPhiChild,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts),
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID),
@@ -937,6 +932,7 @@ struct femtoWorldProducerTask {
                       phiEta,
                       phiPhi,
                       phiP,
+                      phiM,
                       aod::femtoworldparticle::ParticleType::kPhi,
                       cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                       0,
