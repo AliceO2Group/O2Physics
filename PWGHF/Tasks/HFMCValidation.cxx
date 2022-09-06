@@ -368,6 +368,8 @@ struct ValidationRecLevel {
   AxisSpec axisDecision{2, -0.5, 1.5};
   AxisSpec axisITShits{8, -0.5, 7.5};
   AxisSpec axisMult{200, 0., 200.};
+  AxisSpec axisR{100, 0., 0.5};
+  AxisSpec axisSmallNum{20, -0.5, 19.5};
 
   HistogramRegistry registry{
     "registry",
@@ -379,7 +381,7 @@ struct ValidationRecLevel {
      {"histAmbiguousTrackNumBC", "Number of BCs associated to an ambiguous track;number of BCs;entries", {HistType::kTH1F, {{100, 0., 100.}}}},
      {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
      {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
-     {"histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;contributors with beauty collision 1;contributors with beauty collision 2", {HistType::kTHnSparseF, {axisMult, axisMult, axisDecision, axisDecision}}}}};
+     {"histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
 
   /// RMS calculation
   /// \param vec  vector of values to compute RMS
@@ -449,6 +451,7 @@ struct ValidationRecLevel {
   using mcCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
+  Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
 
   void process(HfCandProng2WithMCRec const& cand2Prongs, HfCandProng3WithMCRec const& cand3Prongs, TracksWithSel const& tracks, aod::McParticles const& particlesMC, mcCollisionWithHFSignalInfo const& mcCollisions, CollisionsWithMCLabels const& collisions, aod::BCs const&)
   {
@@ -469,29 +472,30 @@ struct ValidationRecLevel {
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
         uint64_t mostProbableBC2 = collision2.bc().globalBC();
         if (mostProbableBC2 == mostProbableBC) {
-          bool isColl1WithBeauty = false, isColl2WithBeauty = false;
-          for (auto& trackColl1 : tracksGlobalWoDCAColl1) {
+          float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
+          float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
+          int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
+          auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex());
+          for (auto& trackColl1 : tracksColl1) {
             if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
               auto particleColl1 = trackColl1.mcParticle();
               auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl1, true);
               if (origin == RecoDecay::NonPrompt) {
-                isColl1WithBeauty = true;
-                break;
+                nFromBeautyColl1++;
               }
             }
           }
-          auto tracksGlobalWoDCAColl2 = tracksFilteredGlobalTrackWoDCA->sliceByCached(aod::track::collisionId, collision2.globalIndex());
-          for (auto& trackColl2 : tracksGlobalWoDCAColl2) {
+          auto tracksColl2 = tracksInAcc->sliceByCached(aod::track::collisionId, collision2.globalIndex());
+          for (auto& trackColl2 : tracksColl2) {
             if (trackColl2.has_mcParticle() && trackColl2.isPVContributor()) {
               auto particleColl2 = trackColl2.mcParticle();
               auto origin = RecoDecay::getCharmHadronOrigin(particlesMC, particleColl2, true);
               if (origin == RecoDecay::NonPrompt) {
-                isColl2WithBeauty = true;
-                break;
+                nFromBeautyColl2++;
               }
             }
           }
-          registry.fill(HIST("histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), isColl1WithBeauty, isColl2WithBeauty);
+          registry.fill(HIST("histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), radColl1, radColl2, nFromBeautyColl1, nFromBeautyColl2);
           break;
         }
       }
