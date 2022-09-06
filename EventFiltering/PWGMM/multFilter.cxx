@@ -444,7 +444,7 @@ struct multFilter {
     // option 1
     const int nEta1 = 5; // FDDC + MFTparc + FT0C + FV0 (rings 1-4) + FDDA
     // float weigthsEta1[nEta1] = {0.0117997, 1.66515, 0.0569502, 0.00548221, 0.0037175};// values for pilot run, 900 GeV
-    float weigthsEta1[nEta1] = {0.000710054, 1.94347, 0.04924, 0.00451969, 0.00215551};
+    float weigthsEta1[nEta1] = {0.0824071, 0.464187, 0.0490638, 0.00348809, 0.00360993};
     float ampl1[nEta1] = {0, 0, 0, 0, 0};
     ampl1[0] = sumAmpFDDC;
     ampl1[1] = multMFTTrackParc;
@@ -458,7 +458,7 @@ struct multFilter {
     // option 2
     const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
     // float weigthsEta2[nEta2] = {0.0117997, 1.05258, 0.00548221, 0.0037175};// values for pilot run, 900 GeV
-    float weigthsEta2[nEta2] = {0.000710054, 1.27606, 0.00451969, 0.00215551};
+    float weigthsEta2[nEta2] = {0.0824071, 0.246551, 0.00348809, 0.00360993};
     float ampl2[nEta2] = {0, 0, 0, 0};
     ampl2[0] = sumAmpFDDC;
     ampl2[1] = multMFTTrack;
@@ -471,7 +471,7 @@ struct multFilter {
     // option 3
     const int nEta3 = 2; // MFT + FV0
     // float weigthsEta3[nEta3] = {1.05258, 0.00535717};// values for pilot run, 900 GeV
-    float weigthsEta3[nEta3] = {1.27606, 0.00437892};
+    float weigthsEta3[nEta3] = {0.246551, 0.00353962};
     float ampl3[nEta3] = {0, 0};
     ampl3[0] = multMFTTrack;
     ampl3[1] = sumAmpFV0;
@@ -482,7 +482,7 @@ struct multFilter {
     // option 4
     const int nEta4 = 2; // MFT + FT0A
     // float weigthsEta4[nEta4] = {1.05258, 0.014552069};// values for pilot run, 900 GeV
-    float weigthsEta4[nEta4] = {0.00437892, 0.0097735442};
+    float weigthsEta4[nEta4] = {0.246551, 0.010958415};
     float ampl4[nEta4] = {0, 0};
     ampl4[0] = multMFTTrack;
     ampl4[1] = sumAmpFT0A;
@@ -493,7 +493,7 @@ struct multFilter {
     // option 5
     const int nEta5 = 2; // FT0C + FT0A
     // float weigthsEta5[nEta5] = {0.0569502, 0.014552069};// values for pilot run, 900 GeV
-    float weigthsEta5[nEta5] = {0.04924, 0.0097735442};
+    float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
     float ampl5[nEta5] = {0, 0};
     ampl5[0] = sumAmpFT0C;
     ampl5[1] = sumAmpFT0A;
@@ -504,7 +504,7 @@ struct multFilter {
     // option 6
     const int nEta6 = 2; //  FT0C + FV0
     // float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
-    float weigthsEta6[nEta6] = {0.04924, 0.00437892};
+    float weigthsEta6[nEta6] = {0.0490638, 0.00353962};
     float ampl6[nEta6] = {0, 0};
     ampl6[0] = sumAmpFT0C;
     ampl6[1] = sumAmpFV0;
