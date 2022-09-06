@@ -80,7 +80,8 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
                             fInvMassUpLimit(1.3),
                             fRejectKaon(false),
                             fInvMassKaonLowLimit(0.48),
-                            fInvMassKaonUpLimit(0.515){};
+                            fInvMassKaonUpLimit(0.515),
+                            nSigmaPIDOffsetTPC(0.){};
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* registry);
@@ -180,12 +181,26 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
     fInvMassKaonUpLimit = upLimit;
   }
 
+  void setnSigmaPIDOffsetTPC(float offsetTPC)
+  {
+    nSigmaPIDOffsetTPC = offsetTPC;
+  }
+
   void setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
       PosDaughTrack.setRejectNotPropagatedTracks(reject);
     } else if (child == femtoDreamV0Selection::kNegTrack) {
       NegDaughTrack.setRejectNotPropagatedTracks(reject);
+    }
+  }
+
+  void setChildnSigmaPIDOffset(femtoDreamV0Selection::ChildTrackType child, float offsetTPC, float offsetTOF)
+  {
+    if (child == femtoDreamV0Selection::kPosTrack) {
+      PosDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+    } else if (child == femtoDreamV0Selection::kNegTrack) {
+      NegDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     }
   }
 
@@ -211,6 +226,8 @@ class FemtoDreamV0Selection : public FemtoDreamObjectSelection<float, femtoDream
   bool fRejectKaon;
   float fInvMassKaonLowLimit;
   float fInvMassKaonUpLimit;
+
+  float nSigmaPIDOffsetTPC;
 
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
@@ -377,7 +394,7 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   // v0
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg) < nSigmaPIDMax and abs(nSigmaPiPos) < nSigmaPIDMax) and !(abs(nSigmaPrPos) < nSigmaPIDMax and abs(nSigmaPiNeg) < nSigmaPIDMax)) {
+  if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax and abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) and !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax and abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
     return false;
   }
 
@@ -456,16 +473,16 @@ std::array<cutContainerType, 5> FemtoDreamV0Selection::getCutContainer(C const& 
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   // check the mass and the PID of daughters
-  if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
+  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
     sign = -1.;
-  } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
+  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
   }
   // if it happens that none of these are true, ignore the invariant mass
   else {
-    if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) {
+    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = -1.;
-    } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {
+    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = 1.;
     }
   }
