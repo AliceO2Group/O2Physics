@@ -12,9 +12,6 @@
 // task for charged particle pt spectra vs multiplicity analysis with 2d unfolding for run3+
 // mimics https://github.com/alisw/AliPhysics/blob/master/PWGLF/SPECTRA/ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTask.cxx
 
-// run for data as: o2-analysis-timestamp | o2-analysis-event-selection | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_data.root
-// run for mc as: o2-analysis-timestamp --isRun2MC | o2-analysis-event-selection --isMC | o2-analysis-trackextension | o2-analysis-trackselection | o2-analysis-lf-spectra-charged --aod-file AO2D_mc.root --isMC
-
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -37,25 +34,23 @@ struct chargedSpectra {
   HistogramRegistry histos;
   Service<TDatabasePDG> pdg;
 
-  // TODO: can we derive this from config context resp from meta data in the file to avoid having to specify this option?
-  Configurable<bool> isMC{"isMC", false, "option to flag mc"};
-  Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
-
   // task settings that can be steered via hyperloop
-  Configurable<uint32_t> maxMultMeas{"measMult", 100, "max measured multiplicity."};
-  Configurable<uint32_t> maxMultTrue{"measTrue", 100, "max true multiplicity."};
+  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
+  Configurable<uint32_t> maxMultMeas{"maxMultMeas", 100, "max measured multiplicity"};
+  Configurable<uint32_t> maxMultTrue{"maxMultTrue", 100, "max true multiplicity"};
+  Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
+  Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
+  Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
 
-  // TODO: better use 2d configurables here
-  Configurable<float> etaCut{"etaCut", 0.8f, "Eta cut."};
-  Configurable<float> ptMinCut{"ptMinCut", 0.15f, "Pt min cut."};
-  Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "Pt max cut."};
+  Configurable<bool> normINELGT0{"normINELGT0", false, "normalize INEL>0 according to MC"};
 
   // helper struct to store transient properties
   struct varContainer {
-    uint32_t multMeas{0};
-    uint32_t multTrue{0};
+    uint32_t multMeas{0u};
+    uint32_t multTrue{0u};
     bool isAcceptedEvent{false};
     bool isAcceptedEventMC{false};
+    bool isINELGT0EventMC{false};
     bool isChargedPrimary{false};
   };
   varContainer vars;
@@ -89,6 +84,7 @@ struct chargedSpectra {
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>;
   using ParticleTableMC = aod::McParticles;
+  Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
   PROCESS_SWITCH(chargedSpectra, processMC, "process mc", true);
 
@@ -138,7 +134,7 @@ void chargedSpectra::init(InitContext const&)
   histos.add("multDist_evt_meas", "", kTH1D, {multMeasAxis});               // measured event distribution (contains contamination from events not in specified class or with wrong vertex position)
   histos.add("multPtSpec_trk_meas", "", kTH2D, {multMeasAxis, ptMeasAxis}); // measured tracks (contains contamination from secondary particles, particles smeared into acceptance and tracks originating from background events as defined above )
 
-  if (isMC) {
+  if (doprocessMC) {
 
     const AxisSpec ptTrueAxis{ptBinEdges, "#it{p}_{T} (GeV/c)", "pt_true"};
 
@@ -202,7 +198,7 @@ void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision
     vars.isAcceptedEvent = false;
   } else {
     for (auto& collision : collisions) {
-      auto curTracks = tracks.sliceBy(aod::track::collisionId, collision.globalIndex());
+      auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       initEvent(collision, curTracks);
       processMeas<true>(collision, curTracks);
       break; // for now look only at first collision...
@@ -225,6 +221,10 @@ bool chargedSpectra::initParticle(const P& particle)
     return false;
   }
   vars.isChargedPrimary = particle.isPhysicalPrimary();
+
+  // event class is INEL>0 in case it has a charged particle in abs(eta) < 1
+  vars.isINELGT0EventMC = vars.isINELGT0EventMC || (vars.isChargedPrimary && (std::abs(particle.eta()) < 1.));
+
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
@@ -248,13 +248,9 @@ bool chargedSpectra::initTrack(const T& track)
   if (track.pt() <= ptMinCut || track.pt() >= ptMaxCut) {
     return false;
   }
-  // TODO: with Filters we could skip this in data, but not in MC (maybe add IS_MC template paramter so we can skip it in data via if constexpr)
-  if (!track.isGlobalTrack() || (isRun3 && track.trackType() != o2::aod::track::Track)) {
+  if (!track.isGlobalTrackWoPtEta()) {
     return false;
-    // MEMO: current version of the track selection cuts too harshly (to be studied why) and therefore many events have multMeas==0
-    // as temporary workaround to look at unselected tracks use the commented out condition instead
   }
-
   return true;
 }
 
@@ -276,7 +272,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
   vars.isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < 10.f) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || isMC) ? true : collision.alias()[kINT7]) {
+      if ((isRun3 || doprocessMC) ? true : collision.alias()[kINT7]) {
         vars.isAcceptedEvent = true;
       }
     }
@@ -291,6 +287,7 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
 template <typename C, typename P>
 void chargedSpectra::initEventMC(const C& collision, const P& particles)
 {
+  vars.isINELGT0EventMC = false; // will be set to true in case a charged particle within eta +-1 is found
   vars.multTrue = 0;
   for (auto& particle : particles) {
     if (!initParticle(particle) || !vars.isChargedPrimary) {
@@ -298,8 +295,8 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
     }
     ++vars.multTrue;
   }
-  // TODO: also determine event class and check if true z vtx positin is good
-  vars.isAcceptedEventMC = ((std::abs(collision.posZ()) < 10.f) && (vars.multTrue > 0));
+  bool isGoodEventClass = (normINELGT0) ? vars.isINELGT0EventMC : (vars.multTrue > 0);
+  vars.isAcceptedEventMC = isGoodEventClass && (std::abs(collision.posZ()) < 10.f);
 }
 
 //**************************************************************************************************

@@ -34,24 +34,18 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include "DataFormatsParameters/GRPObject.h"
-
-#include <cmath>
 #include <string>
-
 #include <bitset>
 
 namespace
 {
 
-static constexpr int nTriplets{4};
-
 enum CFTriggers {
   kPPP = 0,
   kPPL,
   kPLL,
-  kLLL
+  kLLL,
+  kNTriggers
 };
 
 enum kDetector {
@@ -91,6 +85,7 @@ struct CFFilter {
 
   Configurable<std::vector<float>> confQ3TriggerLimit{"Q3TriggerLimitC", std::vector<float>{0.6f, 0.6f, 0.6f, 0.6f}, "Q3 limit for selection"};
   Configurable<int> Q3Trigger{"Q3Trigger", 0, "Choice which trigger to run"};
+  Configurable<bool> performCPR{"performCPR", true, "Perform or not the close pair rejection"};
   Configurable<float> ldeltaPhiMax{"ldeltaPhiMax", 0.010, "Max limit of delta phi"};
   Configurable<float> ldeltaEtaMax{"ldeltaEtaMax", 0.010, "Max limit of delta eta"};
 
@@ -103,14 +98,12 @@ struct CFFilter {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-
   // FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTT; Currently not used, will be needed later
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTV;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> closePairRejectionTT;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> closePairRejectionTV0;
 
-  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, float nSigma, kDetector iDet = kDetector::kTPC)
+  bool isPIDSelected(aod::femtodreamparticle::cutContainerType const& pidcut, std::vector<int> const& vSpecies, kDetector iDet = kDetector::kTPC)
   {
     bool pidSelection = true;
     for (auto iSpecies : vSpecies) {
@@ -129,10 +122,10 @@ struct CFFilter {
     auto vSpecies = std::vector<int>{0};
     if (momentum < pidThresh) {
       /// TPC PID only
-      pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPC);
+      pidSelection = isPIDSelected(pidCut, vSpecies, kDetector::kTPC);
     } else {
       /// TPC + TOF PID
-      pidSelection = isPIDSelected(pidCut, vSpecies, 3.5, kDetector::kTPCTOF);
+      pidSelection = isPIDSelected(pidCut, vSpecies, kDetector::kTPCTOF);
     }
     return pidSelection;
   };
@@ -144,7 +137,8 @@ struct CFFilter {
     closePairRejectionTT.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
     closePairRejectionTV0.init(&registry, &registryQA, ldeltaPhiMax, ldeltaEtaMax, plotPerRadii);
     registry.add("fProcessedEvents", "CF - event filtered;;events", HistType::kTH1F, {{6, -0.5, 5.5}});
-    std::array<std::string, 6> eventTitles = {"all", "rejected", "p-p-p", "p-p-L", "p-L-L", "L-L-L"};
+    // dont use hardcoded 6
+    std::array<std::string, kNTriggers + 2> eventTitles = {"all", "rejected", "p-p-p", "p-p-L", "p-L-L", "L-L-L"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
@@ -153,7 +147,7 @@ struct CFFilter {
     registry.add("fZvtxBefore", "Zvtx of all processed events", HistType::kTH1F, {{1000, -15, 15}});
     registry.add("fZvtxAfter", "Zvtx of events which passed ppp trigger", HistType::kTH1F, {{1000, -15, 15}});
 
-    if (Q3Trigger == 0 || Q3Trigger == 11) {
+    if (Q3Trigger == 0 || Q3Trigger == 11 || Q3Trigger == 1111) {
       registry.add("fSameEventPartPPP", "CF - same event ppp distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPP", "CF - same event ppp distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
 
@@ -162,38 +156,23 @@ struct CFFilter {
       registry.add("fPtBeforeAntiPPP", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fPtAfterAntiPPP", "Transverse momentum  of processed antitracks passed selection", HistType::kTH1F, {{1000, 0, 10}});
     }
-    if (Q3Trigger == 1 || Q3Trigger == 11) {
+    if (Q3Trigger == 1 || Q3Trigger == 11 || Q3Trigger == 1111) {
       registry.add("fSameEventPartPPL", "CF - same event ppL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
       registry.add("fSameEventAntiPartPPL", "CF - same event ppL distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
 
       registry.add("fPtPPL", "Transverse momentum of all processed tracks", HistType::kTH1F, {{1000, 0, 10}});
       registry.add("fPtAntiPPL", "Transverse momentum of all processed antitracks", HistType::kTH1F, {{1000, 0, 10}});
+      registry.add("fMinvLambda", "Invariant mass of lambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
+      registry.add("fMinvAntiLambda", "Invariant mass of antilambdas ", HistType::kTH1F, {{1000, 0.7, 1.5}});
     }
-
-    /// Initializing CCDB
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
-  }
-
-  /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
-  float getMagneticFieldTesla(uint64_t timestamp)
-  {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    if (Q3Trigger == 2 || Q3Trigger == 1111) {
+      registry.add("fSameEventPartPLL", "CF - same event pLL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
+      registry.add("fSameEventAntiPartPLL", "CF - same event pLL distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
     }
-    float output = 0.1 * (grpo->getNominalL3Field());
-    return output;
+    if (Q3Trigger == 3 || Q3Trigger == 1111) {
+      registry.add("fSameEventPartLLL", "CF - same event LLL distribution for particles;;events", HistType::kTH1F, {{8000, 0, 8}});
+      registry.add("fSameEventAntiPartLLL", "CF - same event LLL distribution for antiparticles;;events", HistType::kTH1F, {{8000, 0, 8}});
+    }
   }
 
   float mMassProton = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
@@ -205,61 +184,58 @@ struct CFFilter {
     auto partsLambda0 = partsLambda0Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsProton1 = partsProton1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto partsLambda1 = partsLambda1Part->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
-    auto tmstamp = col.timestamp();
-    auto mafneticField = getMagneticFieldTesla(tmstamp);
+
+    auto magneticField = col.magField();
+
     registry.get<TH1>(HIST("fProcessedEvents"))->Fill(0);
     registry.get<TH1>(HIST("fMultiplicityBefore"))->Fill(col.multV0M());
     registry.get<TH1>(HIST("fZvtxBefore"))->Fill(col.posZ());
 
-    for (auto p1pt : partsProton0) {
-      registry.get<TH1>(HIST("fPtBeforePPP"))->Fill(p1pt.pt());
-    }
-
     int prot = 0;
     int antiprot = 0;
-
     for (auto p1pt : partsProton0) {
+      registry.get<TH1>(HIST("fPtBeforePPP"))->Fill(p1pt.pt());
       if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p())) {
         registry.get<TH1>(HIST("fPtAfterPPP"))->Fill(p1pt.pt());
         prot++;
       }
     }
-
     for (auto p1pt : partsProton1) {
       registry.get<TH1>(HIST("fPtBeforeAntiPPP"))->Fill(p1pt.pt());
-    }
-
-    for (auto p1pt : partsProton1) {
       if (isFullPIDSelectedProton(p1pt.pidcut(), p1pt.p())) {
         registry.get<TH1>(HIST("fPtAfterAntiPPP"))->Fill(p1pt.pt());
         antiprot++;
       }
     }
 
-    bool keepEvent[nTriplets]{false};
-    int lowQ3Triplets[2] = {0, 0};
+    bool keepEvent[kNTriggers] = {false, false, false, false};
+    int lowQ3Triplets[kNTriggers] = {0, 0, 0, 0};
 
     if (partsFemto.size() != 0) {
       registry.get<TH1>(HIST("fMultiplicityAfter"))->Fill(col.multV0M());
       registry.get<TH1>(HIST("fZvtxAfter"))->Fill(col.posZ());
       auto Q3TriggerLimit = (std::vector<float>)confQ3TriggerLimit;
+      // __________________________________________________________________________________________________________
       // TRIGGER FOR PPP TRIPLETS
-      if (Q3Trigger == 0 || Q3Trigger == 11) {
-        if (partsProton0.size() >= 3) {
+      if (Q3Trigger == 0 || Q3Trigger == 1111 || Q3Trigger == 11) {
+        if (prot >= 3) {
+          // test default combinations options
           for (auto& [p1, p2, p3] : combinations(partsProton0, partsProton0, partsProton0)) {
             if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
               continue;
             }
             // Think if pair cleaning is needed in current framework
             // Run close pair rejection
-            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
-              continue;
-            }
-            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
-              continue;
-            }
-            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
-              continue;
+            if (performCPR) {
+              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
+                continue;
+              }
+              if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, magneticField)) {
+                continue;
+              }
+              if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, magneticField)) {
+                continue;
+              }
             }
             auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
             registry.get<TH1>(HIST("fSameEventPartPPP"))->Fill(Q3);
@@ -269,28 +245,31 @@ struct CFFilter {
           }
         } // end if
 
-        // if (lowQ3Triplets[0] == 0) // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
-        if (partsProton1.size() >= 3) {
-          for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
+        if (lowQ3Triplets[0] == 0) { // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
+          if (antiprot >= 3) {
+            for (auto& [p1, p2, p3] : combinations(partsProton1, partsProton1, partsProton1)) {
 
-            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
-              continue;
-            }
-            // Think if pair cleaning is needed in current framework
-            // Run close pair rejection
-            if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, mafneticField)) {
-              continue;
-            }
-            if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, mafneticField)) {
-              continue;
-            }
-            if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, mafneticField)) {
-              continue;
-            }
-            auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
-            registry.get<TH1>(HIST("fSameEventAntiPartPPP"))->Fill(Q3);
-            if (Q3 < Q3TriggerLimit.at(0)) {
-              lowQ3Triplets[0]++;
+              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p()) || !isFullPIDSelectedProton(p3.pidcut(), p3.p())) {
+                continue;
+              }
+              // Think if pair cleaning is needed in current framework
+              // Run close pair rejection
+              if (performCPR) {
+                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
+                  continue;
+                }
+                if (closePairRejectionTT.isClosePair(p1, p3, partsFemto, magneticField)) {
+                  continue;
+                }
+                if (closePairRejectionTT.isClosePair(p2, p3, partsFemto, magneticField)) {
+                  continue;
+                }
+              }
+              auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, p3, mMassProton);
+              registry.get<TH1>(HIST("fSameEventAntiPartPPP"))->Fill(Q3);
+              if (Q3 < Q3TriggerLimit.at(0)) {
+                lowQ3Triplets[0]++;
+              }
             }
           }
         } // end if
@@ -298,10 +277,11 @@ struct CFFilter {
       }
       // __________________________________________________________________________________________________________
       // TRIGGER FOR PPL TRIPLETS
-      if (Q3Trigger == 1 || Q3Trigger == 11) {
-        if (partsLambda0.size() >= 1 && partsProton0.size() >= 2) {
+      if (Q3Trigger == 1 || Q3Trigger == 1111 || Q3Trigger == 11) {
+        if (partsLambda0.size() >= 1 && prot >= 2) {
           for (auto& partLambda : partsLambda0) {
             registry.get<TH1>(HIST("fPtPPL"))->Fill(partLambda.pt());
+            registry.get<TH1>(HIST("fMinvLambda"))->Fill(partLambda.mLambda());
             if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
               continue;
             }
@@ -309,14 +289,16 @@ struct CFFilter {
               if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
                 continue;
               }
-              if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
-                continue;
-              }
-              if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
-                continue;
-              }
-              if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
-                continue;
+              if (performCPR) {
+                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
+                  continue;
+                }
+                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, magneticField)) {
+                  continue;
+                }
+                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, magneticField)) {
+                  continue;
+                }
               }
               auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
               registry.get<TH1>(HIST("fSameEventPartPPL"))->Fill(Q3);
@@ -328,9 +310,10 @@ struct CFFilter {
         } // end if
 
         if (lowQ3Triplets[1] == 0) { // if at least one triplet found in particles, no need to check antiparticles
-          if (partsLambda1.size() >= 1 && partsProton1.size() >= 2) {
+          if (partsLambda1.size() >= 1 && antiprot >= 2) {
             for (auto& partLambda : partsLambda1) {
               registry.get<TH1>(HIST("fPtAntiPPL"))->Fill(partLambda.pt());
+              registry.get<TH1>(HIST("fMinvAntiLambda"))->Fill(partLambda.mAntiLambda());
               if (!pairCleanerTV.isCleanPair(partLambda, partLambda, partsFemto)) {
                 continue;
               }
@@ -338,14 +321,16 @@ struct CFFilter {
                 if (!isFullPIDSelectedProton(p1.pidcut(), p1.p()) || !isFullPIDSelectedProton(p2.pidcut(), p2.p())) {
                   continue;
                 }
-                if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, getMagneticFieldTesla(tmstamp))) {
-                  continue;
-                }
-                if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
-                  continue;
-                }
-                if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, getMagneticFieldTesla(tmstamp))) {
-                  continue;
+                if (performCPR) {
+                  if (closePairRejectionTT.isClosePair(p1, p2, partsFemto, magneticField)) {
+                    continue;
+                  }
+                  if (closePairRejectionTV0.isClosePair(p1, partLambda, partsFemto, magneticField)) {
+                    continue;
+                  }
+                  if (closePairRejectionTV0.isClosePair(p2, partLambda, partsFemto, magneticField)) {
+                    continue;
+                  }
                 }
                 auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, p2, mMassProton, partLambda, mMassLambda);
                 registry.get<TH1>(HIST("fSameEventAntiPartPPL"))->Fill(Q3);
@@ -357,6 +342,133 @@ struct CFFilter {
           } // end if
         }
       }
+
+      // __________________________________________________________________________________________________________
+      // TRIGGER FOR PLL TRIPLETS
+      if (Q3Trigger == 2 || Q3Trigger == 1111) {
+        if (partsLambda0.size() >= 2 && prot >= 1) {
+          for (auto& p1 : partsProton0) {
+            if (!isFullPIDSelectedProton(p1.pidcut(), p1.p())) {
+              continue;
+            }
+            for (auto& [partLambda1, partLambda2] : combinations(partsLambda0, partsLambda0)) {
+              // maybe implement L1-L2 no shared tracks
+              if (!pairCleanerTV.isCleanPair(partLambda1, partLambda1, partsFemto)) {
+                continue;
+              }
+              if (!pairCleanerTV.isCleanPair(partLambda2, partLambda2, partsFemto)) {
+                continue;
+              }
+
+              if (performCPR) {
+                if (closePairRejectionTV0.isClosePair(p1, partLambda1, partsFemto, magneticField)) {
+                  continue;
+                }
+                if (closePairRejectionTV0.isClosePair(p1, partLambda2, partsFemto, magneticField)) {
+                  continue;
+                }
+                // maybe implement L-L cpr
+              }
+              auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, partLambda1, mMassLambda, partLambda2, mMassLambda);
+              registry.get<TH1>(HIST("fSameEventPartPLL"))->Fill(Q3);
+              if (Q3 < Q3TriggerLimit.at(2)) {
+                lowQ3Triplets[2]++;
+              }
+            }
+          }
+        } // end if
+
+        if (lowQ3Triplets[1] == 0) { // if at least one triplet found in particles, no need to check antiparticles
+          if (partsLambda1.size() >= 2 && antiprot >= 1) {
+            for (auto& p1 : partsProton1) {
+              if (!isFullPIDSelectedProton(p1.pidcut(), p1.p())) {
+                continue;
+              }
+              for (auto& [partLambda1, partLambda2] : combinations(partsLambda1, partsLambda1)) {
+                // maybe implement L1-L2 no shared tracks
+                if (!pairCleanerTV.isCleanPair(partLambda1, partLambda1, partsFemto)) {
+                  continue;
+                }
+                if (!pairCleanerTV.isCleanPair(partLambda2, partLambda2, partsFemto)) {
+                  continue;
+                }
+
+                if (performCPR) {
+                  if (closePairRejectionTV0.isClosePair(p1, partLambda1, partsFemto, magneticField)) {
+                    continue;
+                  }
+                  if (closePairRejectionTV0.isClosePair(p1, partLambda2, partsFemto, magneticField)) {
+                    continue;
+                  }
+                  // maybe implement L-L cpr
+                }
+                auto Q3 = FemtoDreamMath::getQ3(p1, mMassProton, partLambda1, mMassLambda, partLambda2, mMassLambda);
+                registry.get<TH1>(HIST("fSameEventAntiPartPLL"))->Fill(Q3);
+                if (Q3 < Q3TriggerLimit.at(2)) {
+                  lowQ3Triplets[2]++;
+                }
+              }
+            }
+          } // end if
+        }
+      }
+
+      // __________________________________________________________________________________________________________
+      // TRIGGER FOR LLL TRIPLETS
+      if (Q3Trigger == 3 || Q3Trigger == 1111) {
+        if (partsLambda0.size() >= 3) {
+          // test default combinations options
+          for (auto& [partLambda1, partLambda2, partLambda3] : combinations(partsLambda0, partsLambda0, partsLambda0)) {
+            if (!pairCleanerTV.isCleanPair(partLambda1, partLambda1, partsFemto)) {
+              continue;
+            }
+            if (!pairCleanerTV.isCleanPair(partLambda2, partLambda2, partsFemto)) {
+              continue;
+            }
+            if (!pairCleanerTV.isCleanPair(partLambda3, partLambda3, partsFemto)) {
+              continue;
+            }
+            // Run close pair rejection
+            if (performCPR) {
+              // check close pair rejection for L-L
+            }
+            auto Q3 = FemtoDreamMath::getQ3(partLambda1, mMassLambda, partLambda2, mMassLambda, partLambda3, mMassLambda);
+            registry.get<TH1>(HIST("fSameEventPartLLL"))->Fill(Q3);
+            if (Q3 < Q3TriggerLimit.at(3)) {
+              lowQ3Triplets[3]++;
+            }
+          }
+        } // end if
+
+        if (lowQ3Triplets[0] == 0) { // Use this in final version only, for testing comment { // if at least one triplet found in particles, no need to check antiparticles
+
+          if (partsLambda1.size() >= 3) {
+            // test default combinations options
+            for (auto& [partLambda1, partLambda2, partLambda3] : combinations(partsLambda1, partsLambda1, partsLambda1)) {
+              if (!pairCleanerTV.isCleanPair(partLambda1, partLambda1, partsFemto)) {
+                continue;
+              }
+              if (!pairCleanerTV.isCleanPair(partLambda2, partLambda2, partsFemto)) {
+                continue;
+              }
+              if (!pairCleanerTV.isCleanPair(partLambda3, partLambda3, partsFemto)) {
+                continue;
+              }
+              // Run close pair rejection
+              if (performCPR) {
+                // check close pair rejection for L-L
+              }
+              auto Q3 = FemtoDreamMath::getQ3(partLambda1, mMassLambda, partLambda2, mMassLambda, partLambda3, mMassLambda);
+              registry.get<TH1>(HIST("fSameEventAntiPartLLL"))->Fill(Q3);
+              if (Q3 < Q3TriggerLimit.at(3)) {
+                lowQ3Triplets[3]++;
+              }
+            }
+          }
+
+        } // end if
+        //}
+      }
     }
 
     if (lowQ3Triplets[0] > 0) {
@@ -367,12 +479,20 @@ struct CFFilter {
       keepEvent[kPPL] = true;
     }
 
+    if (lowQ3Triplets[2] > 0) {
+      keepEvent[kPLL] = true;
+    }
+
+    if (lowQ3Triplets[3] > 0) {
+      keepEvent[kLLL] = true;
+    }
+
     tags(keepEvent[kPPP], keepEvent[kPPL], keepEvent[kPLL], keepEvent[kLLL]);
 
     if (!keepEvent[kPPP] && !keepEvent[kPPL] && !keepEvent[kPLL] && !keepEvent[kLLL]) {
       registry.get<TH1>(HIST("fProcessedEvents"))->Fill(1);
     } else {
-      for (int iTrigger{0}; iTrigger < nTriplets; iTrigger++) {
+      for (int iTrigger{0}; iTrigger < kNTriggers; iTrigger++) {
         if (keepEvent[iTrigger]) {
           registry.get<TH1>(HIST("fProcessedEvents"))->Fill(iTrigger + 2);
         }

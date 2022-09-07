@@ -19,8 +19,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
-#include <CCDB/BasicCCDBManager.h>
-#include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "FemtoDreamParticleHisto.h"
@@ -94,7 +92,7 @@ struct femtoDreamPairTaskTrackTrack {
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  BinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
 
   ConfigurableAxis CfgkstarBins{"CfgkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis CfgkTBins{"CfgkTBins", {150, 0., 9.}, "binning kT"};
@@ -111,8 +109,6 @@ struct femtoDreamPairTaskTrackTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
   {
@@ -136,14 +132,6 @@ struct femtoDreamPairTaskTrackTrack {
 
     vPIDPartOne = ConfPIDPartOne;
     vPIDPartTwo = ConfPIDPartTwo;
-
-    /// Initializing CCDB
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -153,8 +141,7 @@ struct femtoDreamPairTaskTrackTrack {
   {
     MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
 
-    const auto& tmstamp = col.timestamp();
-    const auto& magFieldTesla = getMagneticFieldTesla(tmstamp, ccdb);
+    const auto& magFieldTesla = col.magField();
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, col.globalIndex());
@@ -220,11 +207,8 @@ struct femtoDreamPairTaskTrackTrack {
       auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision1.globalIndex());
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::femtoDreamCollisionId, collision2.globalIndex());
 
-      const auto& tmstamp1 = collision1.timestamp();
-      const auto& magFieldTesla1 = getMagneticFieldTesla(tmstamp1, ccdb);
-
-      const auto& tmstamp2 = collision2.timestamp();
-      const auto& magFieldTesla2 = getMagneticFieldTesla(tmstamp2, ccdb);
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
 
       if (magFieldTesla1 != magFieldTesla2) {
         continue;

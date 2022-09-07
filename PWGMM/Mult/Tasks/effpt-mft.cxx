@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-AxisSpec PtAxis = {1001, -0.005, 10.005};
+//AxisSpec PtAxis = {1001, -0.005, 10.005};
 
 using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -38,6 +38,8 @@ struct EffPtMFT {
   Service<TDatabasePDG> pdg;
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  ConfigurableAxis PtAxis{"PtAxis", {1001, -0.0005, 1.0005}, "pt axis for histograms"};
+  Configurable<float> zMax{"zMax", 5., "value for Zvtx cut"};
 
   HistogramRegistry registry{
     "registry",
@@ -63,7 +65,7 @@ struct EffPtMFT {
   {
     if (!useEvSel || (useEvSel && collision.sel8())) {
 
-      if ((collision.posZ() < 5) && (collision.posZ() > -5)) {
+      if ((collision.posZ() < zMax) && (collision.posZ() > -zMax)) {
         for (auto& track : tracks) {
 
           registry.fill(HIST("TracksPtEta"), track.pt(), track.eta());
@@ -87,7 +89,7 @@ struct EffPtMFT {
       }
     }
 
-    if ((mcCollision.posZ() < 5) && (mcCollision.posZ() > -5)) {
+    if ((mcCollision.posZ() < zMax) && (mcCollision.posZ() > -zMax)) {
       for (auto& particle : particles) {
         auto p = pdg->GetParticle(particle.pdgCode());
         auto charge = 0;
@@ -115,7 +117,7 @@ struct EffPtMFT {
     //In the MFT the measurement of pT is not precise, so we access it by using the particle's pT instead
 
     if (collision.has_mcCollision()) {
-      if ((collision.mcCollision().posZ() < 5) && (collision.mcCollision().posZ() > -5)) {
+      if ((collision.mcCollision().posZ() < zMax) && (collision.mcCollision().posZ() > -zMax)) {
         if (!useEvSel || (useEvSel && collision.sel8())) {
 
           for (auto& track : tracks) {

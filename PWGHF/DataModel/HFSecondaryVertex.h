@@ -23,7 +23,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "PWGHF/Core/HFSelectorCuts.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2::analysis;
@@ -290,10 +290,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(Ct, ct, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz, double m) -> float { return RecoDecay::ct(array{px, py, pz}, RecoDecay::distance(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}), m); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(array{xVtxP, yVtxP, zVtxP}, array{xVtxS, yVtxS, zVtxS}, array{px, py, pz}); });
-
-// mapping of origin type
-enum OriginType { Prompt = 1,
-                  NonPrompt };
 } // namespace hf_cand
 
 // specific 2-prong decay properties
@@ -1023,6 +1019,25 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
                   aod::hf_correlation_ddbar::MD,
                   aod::hf_correlation_ddbar::MDbar,
                   aod::hf_correlation_ddbar::SignalStatus);
+
+// definition of columns and tables for Dplus-Hadron correlation pairs
+namespace hf_correlation_dplushadron
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(PtD, ptD, float);
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);
+DECLARE_SOA_COLUMN(MD, mD, float);
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
+} // namespace hf_correlation_dplushadron
+DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR",
+                  aod::hf_correlation_dplushadron::DeltaPhi,
+                  aod::hf_correlation_dplushadron::DeltaEta,
+                  aod::hf_correlation_dplushadron::PtD,
+                  aod::hf_correlation_dplushadron::PtHadron);
+DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO",
+                  aod::hf_correlation_dplushadron::MD,
+                  aod::hf_correlation_dplushadron::SignalStatus);
 
 // specific Xicc candidate properties
 namespace hf_cand_xicc

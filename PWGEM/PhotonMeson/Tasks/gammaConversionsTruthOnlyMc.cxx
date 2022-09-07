@@ -31,6 +31,10 @@ struct gammaConversionsTruthOnlyMc {
 
   Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
   Configurable<float> fEtaMax{"fEtaMax", 0.8, "aMaximum photon eta"};
+  Configurable<float> fV0RMin{"fV0RMin", 0., "minimum conversion radius of the V0s"};
+  Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
+  Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
+  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fEtaMax))), "The slope for the line cut"};
 
   HistogramRegistry registry{
     "registry",
@@ -44,7 +48,7 @@ struct gammaConversionsTruthOnlyMc {
 
       {"hGammaConvertedP_Rsel_MCTrue", "hGammaConvertedP_Rsel_MCTrue;p (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
       {"hGammaConvertedPt_Rsel_MCTrue", "hGammaConvertedPt_Rsel_MCTrue;p_T (GeV/c);counts", {HistType::kTH1F, {gAxis_pT}}},
-      {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue;conversion radius (cm);counts", {HistType::kTH1F, {{1600, 0.f, 500.f}}}},
+      {"hGammaConvertedR_MCTrue", "hGammaConvertedR_MCTrue;conversion radius (cm);counts", {HistType::kTH1F, {{2000, 0.f, 500.f}}}},
 
       {"hGammaConvertedEtaP_MCTrue", "hGammaConvertedEtaP_MCTrue;#eta;p (GeV/c)", {HistType::kTH2F, {gAxis_eta2d, gAxis_pT2d}}},
       {"hGammaConvertedEtaR_MCTrue", "hGammaConvertedEtaR_MCTrue;#eta;conversion radius (cm)", {HistType::kTH2F, {gAxis_eta2d, gAxis_r2d}}},
@@ -54,6 +58,7 @@ struct gammaConversionsTruthOnlyMc {
       {"hGammaConvertedRPt_MCTrue", "hGammaConvertedRPt_MCTrue;conversion radius (cm);p_T (GeV/c)", {HistType::kTH2F, {gAxis_r2d, gAxis_pT2d}}},
       {"hGammaConvertedXY_MCTrue", "hGammaConvertedXY_MCTrue;conversion x (cm);conversion y (cm)", {HistType::kTH2F, {gAxis_z2d, gAxis_z2d}}},
       {"hGammaConvertedZP_MCTrue", "hGammaConvertedZP_MCTrue;conversion z (cm);p (GeV/c)", {HistType::kTH2F, {gAxis_z2d, gAxis_pT2d}}},
+      {"hGammaConvertedpeDivpGamma", "hpeDivpGamma;p (GeV/c);p_{e}/p_{#gamma};counts", {HistType::kTH2F, {gAxis_pT, {220, 0.f, 1.1f}}}},
 
       // debugging histograms
       {"hNDaughters_MCTrue", "hNDaughters_MCTrue;nDaughters;counts", {HistType::kTH1F, {{50, 0.f, 50.f}}}},
@@ -76,9 +81,20 @@ struct gammaConversionsTruthOnlyMc {
     registry.fill(HIST("hGammaConvertedXY_MCTrue"), theMcConvGamma.conversionX(), theMcConvGamma.conversionY());
     registry.fill(HIST("hGammaConvertedZP_MCTrue"), theMcConvGamma.conversionZ(), theMcConvGamma.p());
 
-    if (lConversionRadius > 5. && lConversionRadius < 180.) {
+    if (lConversionRadius > fV0RMin && lConversionRadius < fV0RMax) {
       registry.fill(HIST("hGammaConvertedP_Rsel_MCTrue"), theMcConvGamma.p());
       registry.fill(HIST("hGammaConvertedPt_Rsel_MCTrue"), theMcConvGamma.pt());
+    }
+  }
+  template <typename MCGAMMA, typename MCDAUONE, typename MCDAUTWO>
+  void fillAsymmetryHistograms(MCGAMMA const& theMcConvGamma, MCDAUONE const theFirstDaughter, MCDAUTWO theSecondDaughter)
+  {
+    float lConversionRadius = theMcConvGamma.v0Radius();
+    float lGammaMomentum = theMcConvGamma.p();
+
+    if (lConversionRadius > fV0RMin && lConversionRadius < fV0RMax) {
+      registry.fill(HIST("hGammaConvertedpeDivpGamma"), lGammaMomentum, theFirstDaughter.p() / lGammaMomentum);
+      registry.fill(HIST("hGammaConvertedpeDivpGamma"), lGammaMomentum, theSecondDaughter.p() / lGammaMomentum);
     }
   }
 
@@ -94,6 +110,10 @@ struct gammaConversionsTruthOnlyMc {
       // fill histo
       return false;
     }
+
+    if (TMath::Abs(theMcGamma.conversionZ()) > LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
+      return false;
+    }
     return true;
   }
 
@@ -101,7 +121,8 @@ struct gammaConversionsTruthOnlyMc {
   void process(aod::McCollision const& theMcCollision,
                soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                           aod::Collisions>> const& theCollisions,
-               aod::McGammasTrue const& theMcGammas)
+               aod::McGammasTrue const& theMcGammas,
+               aod::McDaughterTrue const& theMcDaughters)
   {
     registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
     if (theCollisions.size() == 0) {
@@ -127,6 +148,13 @@ struct gammaConversionsTruthOnlyMc {
       if (lNDaughters == 2) {
 
         fillConversionHistograms(lMcGamma);
+
+        if (lMcGamma.has_mcDaughterTrueOne() && lMcGamma.has_mcDaughterTrueTwo()) {
+          auto lMcDaughterOne = lMcGamma.mcDaughterTrueOne();
+          auto lMcDaughterTwo = lMcGamma.mcDaughterTrueTwo();
+
+          fillAsymmetryHistograms(lMcGamma, lMcDaughterOne, lMcDaughterTwo);
+        }
       }
     }
   }

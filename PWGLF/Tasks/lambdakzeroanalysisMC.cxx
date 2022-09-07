@@ -29,7 +29,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -56,7 +56,7 @@ using std::array;
 using MyTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCPr>;
 
 struct lambdakzeroQa {
-  //Basic checks
+  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -69,6 +69,8 @@ struct lambdakzeroQa {
       {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {{1000, -10.0f, 10.0f, "cm"}}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
       {"hArmenterosPreAnalyserCuts", "hArmenterosPreAnalyserCuts", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
+
+      {"hCollisionZ", "hCollisionZ", {HistType::kTH1F, {{3000, -30.0f, 30.0f, "cm"}}}},
     },
   };
 
@@ -84,6 +86,7 @@ struct lambdakzeroQa {
 
   void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
+    registry.fill(HIST("hCollisionZ"), collision.posZ());
     for (auto& v0 : fullV0s) {
       registry.fill(HIST("hMassK0Short"), v0.mK0Short());
       registry.fill(HIST("hMassLambda"), v0.mLambda());
@@ -109,7 +112,6 @@ struct lambdakzeroQa {
       }
       for (auto& particleMotherOfNeg : mcnegtrack.mothers_as<aod::McParticles>()) {
         for (auto& particleMotherOfPos : mcpostrack.mothers_as<aod::McParticles>()) {
-          // LOGF(info, "MotherNeg = %d, MotherPos = %d", particleMotherOfNeg.pdgCode(), particleMotherOfPos.pdgCode());
           if (particleMotherOfNeg.isPhysicalPrimary() && particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310) {
             registry.fill(HIST("hMassK0ShortMCportion"), v0.mK0Short());
             registry.fill(HIST("hPtDiffK0ShortMCportion"), particleMotherOfNeg.pt());
@@ -125,21 +127,18 @@ struct lambdakzeroAnalysisMc {
   HistogramRegistry registry{
     "registry",
     {
-      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
-      {"h3dMassK0Short_MC_truePt", "h3dMassK0Short_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassK0Short_MC_truePt", "h3dMassK0Short_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassLambda_MC_truePt", "h3dMassLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassAntiLambda_MC_truePt", "h3dMassAntiLambda_MC_truePt", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
-      {"MCmomID_Lambda", "MCmomID_Lambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
-      {"MCmomID_AntiLambda", "MCmomID_AntiLambda", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
-      {"MCmomID_K0Short", "MCmomID_K0Short", {HistType::kTH1I, {{4000000, 0, 4000000}}}},
       {"V0loopFiltersCounts", "V0loopFiltersCounts", {HistType::kTH1F, {{11, 0.0f, 11.0f}}}},
 
       {"hLambdaFeedDownMatrix", "hLambdaFeedDownMatrix", {HistType::kTH2F, {{200, 0.0f, 10.0f, "#it{p}_{T}^{#Lambda} (GeV/c)"}, {200, 0.0f, 10.0f, "#it{p}_{T}^{#Omega-} (GeV/c)"}}}},
       {"hAntiLambdaFeedDownMatrix", "hAntiLambdaFeedDownMatrix", {HistType::kTH2F, {{200, 0.0f, 10.0f, "#it{p}_{T}^{#bar{#Lambda}} (GeV/c)"}, {200, 0.0f, 10.0f, "#it{p}_{T}^{#Omega+} (GeV/c)"}}}},
 
-      {"hSelectedEventCounter", "hSelectedEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{1, 0.0f, 3.0f}}}},
 
       {"hArmenterosPostAnalyserCuts", "hArmenterosPostAnalyserCuts", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
       {"hArmenterosPostAnalyserCuts_MC", "hArmenterosPostAnalyserCuts_MC", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
@@ -149,11 +148,12 @@ struct lambdakzeroAnalysisMc {
 
   ConfigurableAxis dcaBinning{"dca-binning", {200, 0.0f, 1.0f}, ""};
   ConfigurableAxis ptBinning{"pt-binning", {200, 0.0f, 10.0f}, ""};
-  ConfigurableAxis massK0Shortbinning{"K0S-mass-binning", {200, 0.450f, 0.550f}, ""};
+  ConfigurableAxis massK0Shortbinning{"K0S-mass-binning", {400, 0.400f, 0.600f}, ""};
   ConfigurableAxis massLambdabinning{"Lambda-mass-binning", {200, 1.015f, 1.215f}, ""};
 
   void init(InitContext const&)
   {
+
     AxisSpec dcaAxis = {dcaBinning, "DCA (cm)"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
     AxisSpec massAxisK0Short = {massK0Shortbinning, "Inv. Mass (GeV/c^{2})"};
@@ -174,10 +174,21 @@ struct lambdakzeroAnalysisMc {
     registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(8, "K0S Rapidity");
     registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(9, "K0S lifetime cut");
     registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(10, "K0S Armenteros cut");
+
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+
+    if (doprocessRun3 && doprocessRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!doprocessRun3 && !doprocessRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
   }
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -187,9 +198,8 @@ struct lambdakzeroAnalysisMc {
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
-
-  Configurable<bool> hasItsTest{"hasItsTest", false, "hasItsTest"};
+  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -199,10 +209,17 @@ struct lambdakzeroAnalysisMc {
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
-    if (eventSelection && !collision.sel8()) {
+    registry.fill(HIST("hEventSelection"), 0.5);
+
+    if (event_sel8_selection && !collision.sel8()) {
       return;
     }
-    registry.fill(HIST("hSelectedEventCounter"), 0.5);
+    registry.fill(HIST("hEventSelection"), 1.5);
+
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    registry.fill(HIST("hEventSelection"), 2.5);
 
     for (auto& v0 : fullV0s) {
       //   FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
@@ -215,6 +232,7 @@ struct lambdakzeroAnalysisMc {
         if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle()) {
           continue;
         }
+
         auto mcnegtrack = reconegtrack.mcParticle_as<aod::McParticles>();
         auto mcpostrack = recopostrack.mcParticle_as<aod::McParticles>();
 
@@ -223,8 +241,8 @@ struct lambdakzeroAnalysisMc {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
             registry.fill(HIST("V0loopFiltersCounts"), 4.5);
 
-            //Lambda
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
+            // Lambda
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
               registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               // registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());
@@ -240,7 +258,7 @@ struct lambdakzeroAnalysisMc {
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
                       auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
-                      if (particleGrandMotherOfNeg.pdgCode() == 3312) {
+                      if (particleGrandMotherOfNeg.pdgCode() == 3312 || particleGrandMotherOfNeg.pdgCode() == 3322) {
                         registry.fill(HIST("hLambdaFeedDownMatrix"), particleMotherOfNeg.pt(), particleGrandMotherOfNeg.pt());
                       }
                     }
@@ -257,7 +275,7 @@ struct lambdakzeroAnalysisMc {
             }
 
             // AntiLambda
-            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
+            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePr<3 for pt>0.7GeV; and no cut on K0S
               registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               // registry.fill(HIST("h3dMassLambda"), collision.centV0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
@@ -273,7 +291,7 @@ struct lambdakzeroAnalysisMc {
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
                       auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
-                      if (particleGrandMotherOfNeg.pdgCode() == -3312) {
+                      if (particleGrandMotherOfNeg.pdgCode() == -3312 || particleGrandMotherOfNeg.pdgCode() == -3322) {
                         registry.fill(HIST("hAntiLambdaFeedDownMatrix"), particleMotherOfNeg.pt(), particleGrandMotherOfNeg.pt());
                       }
                     }
@@ -328,7 +346,12 @@ struct lambdakzeroAnalysisMc {
     if (!collision.alias()[kINT7]) {
       return;
     }
-    if (eventSelection && !collision.sel7()) {
+    if (event_sel8_selection && !collision.sel7()) {
+      return;
+    }
+    registry.fill(HIST("hSel8Counter"), 0.5);
+
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
@@ -379,9 +402,9 @@ struct lambdakzeroAnalysisMc {
           }
         }
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
-          registry.fill(HIST("V0loopFiltersCounts"), 6.5);
+          registry.fill(HIST("V0loopFiltersCounts"), 7.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
-            registry.fill(HIST("V0loopFiltersCounts"), 7.5);
+            registry.fill(HIST("V0loopFiltersCounts"), 8.5);
             registry.fill(HIST("h3dMassK0Short"), collision.centRun2V0M(), v0.pt(), v0.mK0Short());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
@@ -408,7 +431,7 @@ struct lambdakzeroAnalysisMc {
 };
 
 struct lambdakzeroParticleCountMc {
-  //Basic checks
+  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -419,9 +442,16 @@ struct lambdakzeroParticleCountMc {
       {"hLambdaCount_PtDiff", "hLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hAntiLambdaCount_PtDiff", "hAntiLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
-      {"hSelAndRecoMcCollCounter", "hSelAndRecoMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hTotalMcCollCounter", "hTotalMcCollCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
+      {"hXsiPlusCount", "hXsiPlusCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hXsiMinusCount", "hXsiMinusCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hXsi0Count", "hXsi0Count", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hAntiXsi0Count", "hAntiXsi0Count", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hXsiPlusCount_PtDiff", "hXsiPlusCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hXsiMinusCount_PtDiff", "hXsiMinusCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hXsi0Count_PtDiff", "hXsi0Count_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hAntiXsi0Count_PtDiff", "hAntiXsi0Count_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
+      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{1, 0.0f, 3.0f}}}},
     },
   };
 
@@ -433,17 +463,22 @@ struct lambdakzeroParticleCountMc {
     registry.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(2, "decaying into V0");
     registry.get<TH1>(HIST("hAntiLambdaCount"))->GetXaxis()->SetBinLabel(1, "primary AntiLambda mothers");
     registry.get<TH1>(HIST("hAntiLambdaCount"))->GetXaxis()->SetBinLabel(2, "decaying into V0");
+
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
   }
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 0.5, "rapidity cut MC count"};
-  Configurable<bool> eventSelectionMC{"eventSelectionMC", true, "event selection MC count"};
+  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection MC count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection MC count post poZ cut"};
 
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
   {
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
     for (const auto& collision : collisions) {
-      if (eventSelectionMC && !collision.sel8()) {
+      if (event_sel8_selection && !collision.sel8()) {
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
@@ -452,11 +487,15 @@ struct lambdakzeroParticleCountMc {
 
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
 
-    registry.fill(HIST("hTotalMcCollCounter"), 0.5);
+    registry.fill(HIST("hEventSelection"), 0.5);
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    registry.fill(HIST("hSelAndRecoMcCollCounter"), 0.5);
+    registry.fill(HIST("hEventSelection"), 1.5);                  // hSelAndRecoMcCollCounter
+    if (event_posZ_selection && abs(mcCollision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    registry.fill(HIST("hEventSelection"), 2.5);
 
     for (auto& mcparticle : mcParticles) {
       if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
@@ -466,33 +505,77 @@ struct lambdakzeroParticleCountMc {
           }
           if (mcparticle.pdgCode() == 310) {
             registry.fill(HIST("hK0ShortCount"), 0.5);
+            registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
             for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
               for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
                 if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -211) {
                   registry.fill(HIST("hK0ShortCount"), 1.5);
-                  registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
                 }
               }
             }
           }
           if (mcparticle.pdgCode() == 3122) {
             registry.fill(HIST("hLambdaCount"), 0.5);
+            registry.fill(HIST("hLambdaCount_PtDiff"), mcparticle.pt());
             for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
               for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
                 if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) {
                   registry.fill(HIST("hLambdaCount"), 1.5);
-                  registry.fill(HIST("hLambdaCount_PtDiff"), mcparticle.pt());
                 }
               }
             }
           }
           if (mcparticle.pdgCode() == -3122) {
             registry.fill(HIST("hAntiLambdaCount"), 0.5);
+            registry.fill(HIST("hAntiLambdaCount_PtDiff"), mcparticle.pt());
             for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
               for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
                 if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -2212) {
                   registry.fill(HIST("hAntiLambdaCount"), 1.5);
-                  registry.fill(HIST("hAntiLambdaCount_PtDiff"), mcparticle.pt());
+                }
+              }
+            }
+          }
+          if (mcparticle.pdgCode() == 3312) {
+            registry.fill(HIST("hXsiMinusCount"), 0.5);
+            registry.fill(HIST("hXsiMinusCount_PtDiff"), mcparticle.pt());
+            for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 3122) {
+                  registry.fill(HIST("hXsiMinusCount"), 1.5);
+                }
+              }
+            }
+          }
+          if (mcparticle.pdgCode() == -3312) {
+            registry.fill(HIST("hXsiPlusCount"), 0.5);
+            registry.fill(HIST("hXsiPlusCount_PtDiff"), mcparticle.pt());
+            for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -3122) {
+                  registry.fill(HIST("hXsiPlusCount"), 1.5);
+                }
+              }
+            }
+          }
+          if (mcparticle.pdgCode() == 3322) {
+            registry.fill(HIST("hXsi0Count"), 0.5);
+            registry.fill(HIST("hXsi0Count_PtDiff"), mcparticle.pt());
+            for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == 111 && mcparticleDaughter1.pdgCode() == 3122) {
+                  registry.fill(HIST("hXsi0Count"), 1.5);
+                }
+              }
+            }
+          }
+          if (mcparticle.pdgCode() == -3322) {
+            registry.fill(HIST("hAntiXsi0Count"), 0.5);
+            registry.fill(HIST("hAntiXsi0Count_PtDiff"), mcparticle.pt());
+            for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == 111 && mcparticleDaughter1.pdgCode() == -3122) {
+                  registry.fill(HIST("hAntiXsi0Count"), 1.5);
                 }
               }
             }

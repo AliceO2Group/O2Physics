@@ -102,6 +102,13 @@ struct CentralityTable {
 
   void init(InitContext& context)
   {
+    if (doprocessRun2 == false && doprocessRun3 == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessRun3 == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+
     /* Checking the tables which are requested in the workflow and enabling them */
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec device : workflows.devices) {
@@ -290,7 +297,7 @@ struct CentralityTable {
       centRun2CL1(cCL1);
     }
   }
-  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", false);
+  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
 
   using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 

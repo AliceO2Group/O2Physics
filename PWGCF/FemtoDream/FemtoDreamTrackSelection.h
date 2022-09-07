@@ -18,11 +18,15 @@
 #define ANALYSIS_TASKS_PWGCF_FEMTODREAM_FEMTODREAMTRACKSELECTION_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "FemtoDreamObjectSelection.h"
 
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 #include <cmath>
+#include <iostream>
 
 using namespace o2::framework;
 
@@ -59,7 +63,8 @@ enum TrackContainerPosition {
 class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDreamTrackSelection::TrackSel>
 {
  public:
-  FemtoDreamTrackSelection() : nPtMinSel(0),
+  FemtoDreamTrackSelection() : nRejectNotPropagatedTracks(false),
+                               nPtMinSel(0),
                                nPtMaxSel(0),
                                nEtaSel(0),
                                nTPCnMinSel(0),
@@ -82,7 +87,9 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                dcaXYMax(-9999999.),
                                dcaZMax(-9999999.),
                                dcaMin(9999999.),
-                               nSigmaPIDMax(9999999.){};
+                               nSigmaPIDMax(9999999.),
+                               nSigmaPIDOffsetTPC(0.),
+                               nSigmaPIDOffsetTOF(0.){};
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -188,7 +195,23 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
     return outString;
   }
 
+  int getSigmaPIDMax()
+  {
+    return nSigmaPIDMax;
+  }
+
+  void setRejectNotPropagatedTracks(bool reject)
+  {
+    nRejectNotPropagatedTracks = reject;
+  }
+  void setnSigmaPIDOffset(float offsetTPC, float offsetTOF)
+  {
+    nSigmaPIDOffsetTPC = offsetTPC;
+    nSigmaPIDOffsetTOF = offsetTOF;
+  }
+
  private:
+  bool nRejectNotPropagatedTracks;
   int nPtMinSel;
   int nPtMaxSel;
   int nEtaSel;
@@ -215,6 +238,8 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   float dcaZMax;
   float dcaMin;
   float nSigmaPIDMax;
+  float nSigmaPIDOffsetTPC;
+  float nSigmaPIDOffsetTOF;
   std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
   static constexpr int kNtrackSelection = 14;
   static constexpr std::string_view mSelectionNames[kNtrackSelection] = {"Sign",
@@ -367,7 +392,8 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
-  const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
+  const auto dca = track.dcaXY(); // Accordingly to FemtoDream in AliPhysics  as well as LF analysis,
+                                  // only dcaXY should be checked; NOT std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.))
   std::vector<float> pidTPC, pidTOF;
   for (auto it : mPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
@@ -410,13 +436,15 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   if (nDCAMinSel > 0 && std::abs(dca) < dcaMin) {
     return false;
   }
+  if (nRejectNotPropagatedTracks && std::abs(dca) > 1e3) {
+    return false;
+  }
+
   if (nPIDnSigmaSel > 0) {
     bool isFulfilled = false;
     for (size_t i = 0; i < pidTPC.size(); ++i) {
       auto pidTPCVal = pidTPC.at(i);
-      auto pidTOFVal = pidTOF.at(i);
-      auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
-      if (std::abs(pidTPCVal) < nSigmaPIDMax || pidComb < nSigmaPIDMax) {
+      if (std::abs(pidTPCVal - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
         isFulfilled = true;
       }
     }
@@ -459,8 +487,8 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {
       /// PID needs to be handled a bit differently since we may need more than one species
       for (size_t i = 0; i < pidTPC.size(); ++i) {
-        auto pidTPCVal = pidTPC.at(i);
-        auto pidTOFVal = pidTOF.at(i);
+        auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
+        auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         sel.checkSelectionSetBit(pidTPCVal, outputPID, counterPID);
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
         sel.checkSelectionSetBit(pidComb, outputPID, counterPID);

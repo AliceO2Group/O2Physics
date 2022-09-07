@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(QC)
+
 o2physics_add_dpl_workflow(nuclei-batask
                     SOURCES LFNucleiBATask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
@@ -74,8 +76,8 @@ o2physics_add_dpl_workflow(cascadeanalysis
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(v0cascades-qa
-                    SOURCES v0cascadesqa.cxx
+o2physics_add_dpl_workflow(cascadeanalysismc
+                    SOURCES cascadeanalysisMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
@@ -89,9 +91,17 @@ o2physics_add_dpl_workflow(id-raa
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(track-checks
-                    SOURCES trackchecks.cxx
+o2physics_add_dpl_workflow(rsnanalysis
+                    SOURCES rsnanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phianalysis
+                    SOURCES phianalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambda1520analysis
+                    SOURCES lambda1520analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

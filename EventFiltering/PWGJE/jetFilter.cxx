@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+// Author: Filip Krizek
+
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -36,26 +38,21 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> highPtObjectsNames{"HighPtTrack", "JetChHighPt"};
+static const std::vector<std::string> highPtObjectsNames{"JetChHighPt"};
 
 struct jetFilter {
-  enum { kHighPtTrack = 0,
-         kJetChHighPt,
+  enum { kJetChHighPt = 0,
          kHighPtObjects };
 
   //event selection cuts
-  Configurable<float> selectionHighPtTrack{"selectionHighPtTrack", 10., "Minimum track pT trigger threshold"};       //we want to keep all events having a track with pT above this
-  Configurable<float> selectionJetChHighPt{"selectionJetChHighPt", 40., "Minimum charged jet pT trigger threshold"}; //we want to keep all events having a charged jet with pT above this
+  Configurable<float> selectionJetChHighPt{"selectionJetChHighPt", 33., "Minimum charged jet pT trigger threshold"}; //we want to keep all events having a charged jet with pT above this
 
   Produces<aod::JetFilters> tags;
 
   //acceptance cuts
-  Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0, "Accepted z-vertex range"};
 
-  Configurable<float> cfgTrackEtaCut{"cfgTrackEtaCut", 0.9f, "Eta range for tracks"};
-  Configurable<float> cfgTrackLowPtCut{"cfgTrackLowPtCut", 0.1f, "Minimum constituent pT"};
-
-  Configurable<float> cfgJetChEtaCut{"cfgJetChEtaCut", 0.5f, "Eta range for charged jets"};
+  Configurable<float> cfgJetChEtaCut{"cfgJetChEtaCut", 0.9, "Eta range for charged jets"};
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -63,7 +60,6 @@ struct jetFilter {
   {
 
     spectra.add("fCollZpos", "collision z position", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
-    spectra.add("fTrackPtSelected", "pT of selected high pT tracks", HistType::kTH1F, {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"}});
     spectra.add("fJetChPtSelected", "pT of selected high pT charged jets", HistType::kTH1F, {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"}});
 
     auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{kHighPtObjects, -0.5, kHighPtObjects - 0.5}}))};
@@ -74,7 +70,6 @@ struct jetFilter {
 
   //declare filters on tracks and charged jets
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVertexCut;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrackEtaCut) && (requireGlobalTrackInFilter()) && (aod::track::pt > cfgTrackLowPtCut);
   Filter jetChFilter = (nabs(aod::jet::eta) < cfgJetChEtaCut);
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -85,15 +80,6 @@ struct jetFilter {
     bool keepEvent[kHighPtObjects]{false};
     //
     spectra.fill(HIST("fCollZpos"), collision.posZ());
-
-    //Check whether there is a high pT track
-    for (auto& track : tracks) { // start loop over tracks
-      if (track.pt() >= selectionHighPtTrack) {
-        spectra.fill(HIST("fTrackPtSelected"), track.pt()); //track pT which passed the cut
-        keepEvent[kHighPtTrack] = true;
-        break;
-      }
-    }
 
     //Check whether there is a high pT charged jet
     for (auto& jet : jets) { // start loop over charged jets
@@ -110,7 +96,7 @@ struct jetFilter {
         spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
-    tags(keepEvent[0], keepEvent[1]);
+    tags(collision, keepEvent[kJetChHighPt]);
   }
 };
 

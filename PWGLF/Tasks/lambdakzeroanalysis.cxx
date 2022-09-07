@@ -28,7 +28,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/StrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -55,7 +55,7 @@ using std::array;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr>;
 
 struct lambdakzeroQa {
-  //Basic checks
+  // Basic checks
   HistogramRegistry registry{
     "registry",
     {
@@ -99,11 +99,12 @@ struct lambdakzeroAnalysis {
   HistogramRegistry registry{
     "registry",
     {
-      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
       {"h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"}}}},
-      {"hSelectedEventCounter", "hSelectedEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
       {"hArmenterosPostAnalyserCuts", "hArmenterosPostAnalyserCuts", {HistType::kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}}}},
+      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
+      {"V0loopFiltersCounts", "V0loopFiltersCounts", {HistType::kTH1F, {{11, 0.0f, 11.0f}}}},
     },
   };
 
@@ -114,16 +115,36 @@ struct lambdakzeroAnalysis {
   {
     AxisSpec dcaAxis = {dcaBinning, "DCA (cm)"};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
-    AxisSpec massAxisK0Short = {200, 0.450f, 0.550f, "Inv. Mass (GeV/c^{2})"};
+    AxisSpec massAxisK0Short = {400, 0.400f, 0.60f, "Inv. Mass (GeV/c^{2})"};
     AxisSpec massAxisLambda = {200, 1.015f, 1.215f, "Inv. Mass (GeV/c^{2})"};
 
     registry.add("h3dMassK0ShortDca", "h3dMassK0ShortDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisK0Short}});
     registry.add("h3dMassLambdaDca", "h3dMassLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
     registry.add("h3dMassAntiLambdaDca", "h3dMassAntiLambdaDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisLambda}});
+
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(1, "V0 Candidates");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(2, "V0Radius and CosPA");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(4, "Lambda Rapidity");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(5, "Lambda lifetime cut");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(6, "Lambda TPC PID cut");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(8, "K0S Rapidity");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(9, "K0S lifetime cut");
+    registry.get<TH1>(HIST("V0loopFiltersCounts"))->GetXaxis()->SetBinLabel(10, "K0S Armenteros cut");
+
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+
+    if (doprocessRun3 && doprocessRun2) {
+      LOGF(fatal, "processRun3 and processRun2 are both set to true; try again with only one of them set to true");
+    }
+    if (!doprocessRun3 && !doprocessRun2) {
+      LOGF(fatal, "processRun3 nor processRun2 are both set to false; try again with only one of them set to false");
+    }
   }
 
-  //Selection criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; //double -> N.B. dcos(x)/dx = 0 at x=0)
+  // Selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.995, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -133,7 +154,8 @@ struct lambdakzeroAnalysis {
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> boolArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{25., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -143,20 +165,30 @@ struct lambdakzeroAnalysis {
   // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s) //for now CentV0M info is not available for run 3 pp
   void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, MyTracks const& tracks)
   {
-    if (eventSelection && !collision.sel8()) {
+    registry.fill(HIST("hEventSelection"), 0.5);
+    if (event_sel8_selection && !collision.sel8()) {
       return;
     }
-    registry.fill(HIST("hSelectedEventCounter"), 0.5);
+    registry.fill(HIST("hEventSelection"), 1.5);
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    registry.fill(HIST("hEventSelection"), 2.5);
 
     for (auto& v0 : fullV0s) {
-      //FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
+      // FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
+      registry.fill(HIST("V0loopFiltersCounts"), 0.5);
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("V0loopFiltersCounts"), 1.5);
         if (TMath::Abs(v0.yLambda()) < rapidity) {
+          registry.fill(HIST("V0loopFiltersCounts"), 3.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
+            registry.fill(HIST("V0loopFiltersCounts"), 4.5);
 
             // Lambda
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
-              registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());            //collision.centV0M() instead of 0. once available
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+              registry.fill(HIST("V0loopFiltersCounts"), 5.5);
+              registry.fill(HIST("h3dMassLambda"), 0., v0.pt(), v0.mLambda());            // collision.centV0M() instead of 0. once available
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {
                 registry.fill(HIST("h3dMassLambdaDca"), v0.dcaV0daughters(), v0.pt(), v0.mLambda());
@@ -164,7 +196,8 @@ struct lambdakzeroAnalysis {
             }
 
             // AntiLambda
-            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+              registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               registry.fill(HIST("h3dMassAntiLambda"), 0., v0.pt(), v0.mAntiLambda());
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {
@@ -174,10 +207,13 @@ struct lambdakzeroAnalysis {
           }
         }
 
-        //K0Short
+        // K0Short
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
+          registry.fill(HIST("V0loopFiltersCounts"), 7.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
+            registry.fill(HIST("V0loopFiltersCounts"), 8.5);
             if ((v0.qtarm() > paramArmenterosCut * TMath::Abs(v0.alpha())) || !boolArmenterosCut) {
+              registry.fill(HIST("V0loopFiltersCounts"), 9.5);
               registry.fill(HIST("h3dMassK0Short"), 0., v0.pt(), v0.mK0Short());
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {
@@ -193,22 +229,32 @@ struct lambdakzeroAnalysis {
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, MyTracks const& tracks)
   {
+    registry.fill(HIST("hEventSelection"), 0.5);
     if (!collision.alias()[kINT7]) {
       return;
     }
-    if (eventSelection && !collision.sel7()) {
+    if (event_sel8_selection && !collision.sel7()) {
       return;
     }
-    registry.fill(HIST("hSelectedEventCounter"), 0.5);
+    registry.fill(HIST("hEventSelection"), 1.5);
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    registry.fill(HIST("hEventSelection"), 2.5);
 
     for (auto& v0 : fullV0s) {
-      //FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
+      // FIXME: could not find out how to filter cosPA and radius variables (dynamic columns)
+      registry.fill(HIST("V0loopFiltersCounts"), 0.5);
       if (v0.v0radius() > v0radius && v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("V0loopFiltersCounts"), 1.5);
         if (TMath::Abs(v0.yLambda()) < rapidity) {
+          registry.fill(HIST("V0loopFiltersCounts"), 3.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kLambda0) < lifetimecut->get("lifetimecutLambda")) {
+            registry.fill(HIST("V0loopFiltersCounts"), 4.5);
 
             // Lambda
-            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+            if (TMath::Abs(v0.posTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+              registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               registry.fill(HIST("h3dMassLambda"), collision.centRun2V0M(), v0.pt(), v0.mLambda());
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {
@@ -217,7 +263,8 @@ struct lambdakzeroAnalysis {
             }
 
             // AntiLambda
-            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { //previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+            if (TMath::Abs(v0.negTrack_as<MyTracks>().tpcNSigmaPr()) < TpcPidNsigmaCut) { // previous 900Gev pp analysis had nSigma< 5 for pt<0.7Gev and tpcNSigmaStorePi<3 for pt>0.7GeV; and no cut on K0S
+              registry.fill(HIST("V0loopFiltersCounts"), 5.5);
               registry.fill(HIST("h3dMassAntiLambda"), collision.centRun2V0M(), v0.pt(), v0.mAntiLambda());
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {
@@ -227,10 +274,13 @@ struct lambdakzeroAnalysis {
           }
         }
 
-        //K0Short
+        // K0Short
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
+          registry.fill(HIST("V0loopFiltersCounts"), 7.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
+            registry.fill(HIST("V0loopFiltersCounts"), 8.5);
             if ((v0.qtarm() > paramArmenterosCut * v0.alpha()) || !boolArmenterosCut) {
+              registry.fill(HIST("V0loopFiltersCounts"), 9.5);
               registry.fill(HIST("h3dMassK0Short"), collision.centRun2V0M(), v0.pt(), v0.mK0Short());
               registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
               if (saveDcaHist == 1) {

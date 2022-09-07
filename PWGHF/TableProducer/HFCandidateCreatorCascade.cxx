@@ -12,7 +12,10 @@
 /// \file HFCandidateCreatorCascade.cxx
 /// \brief Reconstruction of heavy-flavour cascade decay candidates
 ///
+/// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
+///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "DetectorsVertexing/DCAFitterN.h"
 #include "PWGHF/DataModel/HFSecondaryVertex.h"
@@ -24,14 +27,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::hf_cand_prong2;
-
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
-
-#include "Framework/runDataProcessing.h"
 
 //#define MY_DEBUG
 
@@ -57,6 +52,7 @@ struct HFCandidateCreatorCascade {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> doValPlots{"doValPlots", true, "do validation plots"};
+  Configurable<bool> silenceV0DataWarning{"silenceV0DataWarning", false, "do not print a warning for not found V0s and silently skip them"};
 
   // for debugging
 #ifdef MY_DEBUG
@@ -65,7 +61,7 @@ struct HFCandidateCreatorCascade {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  OutputObj<TH1F> hmass2{TH1F("hmass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
@@ -106,7 +102,9 @@ struct HFCandidateCreatorCascade {
         continue;
       }
       if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) {
-        LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        if (!silenceV0DataWarning) {
+          LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        }
         continue;
       }
       LOGF(debug, "V0Data ID: %d", casc.v0_as<aod::V0sLinked>().v0DataId());
@@ -143,7 +141,7 @@ struct HFCandidateCreatorCascade {
         //}
         continue;
       } else {
-        //LOG(info) << "Vertexing succeeded for Lc candidate";
+        // LOG(info) << "Vertexing succeeded for Lc candidate";
       }
 
       const auto& secondaryVertex = df.getPCACandidate();
@@ -189,7 +187,7 @@ struct HFCandidateCreatorCascade {
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.index0Id(), casc.v0Id(),
                        v0.x(), v0.y(), v0.z(),
-                       //v0.posTrack(), v0.negTrack(), // why this was not fine?
+                       // v0.posTrack(), v0.negTrack(), // why this was not fine?
                        trackV0DaughPos.globalIndex(), trackV0DaughNeg.globalIndex(),
                        v0.pxpos(), v0.pypos(), v0.pzpos(),
                        v0.pxneg(), v0.pyneg(), v0.pzneg(),
@@ -201,24 +199,18 @@ struct HFCandidateCreatorCascade {
       if (doValPlots) {
         // calculate invariant masses
         mass2K0sP = RecoDecay::m(array{pVecBach, pVecV0}, array{massP, massK0s});
-        hmass2->Fill(mass2K0sP);
+        hMass2->Fill(mass2K0sP);
       }
     }
   }
 };
 
-/// Extends the base table with expression columns.
-struct HFCandidateCreatorCascadeExpressions {
-  Spawns<aod::HfCandCascExt> rowCandidateCasc;
-  void init(InitContext const&) {}
-};
-
-//___________________________________________________________________________________________
-
 /// Performs MC matching.
 struct HFCandidateCreatorCascadeMC {
   Produces<aod::HfCandCascadeMCRec> rowMCMatchRec;
   Produces<aod::HfCandCascadeMCGen> rowMCMatchGen;
+
+  Spawns<aod::HfCandCascExt> rowCandidateCasc;
 
 #ifdef MY_DEBUG
   Configurable<std::vector<int>> indexK0Spos{"indexK0Spos", {729, 2866, 4754, 5457, 6891, 7824, 9243, 9810}, "indices of K0S positive daughters, for debug"};
@@ -226,9 +218,8 @@ struct HFCandidateCreatorCascadeMC {
   Configurable<std::vector<int>> indexProton{"indexProton", {717, 2810, 4393, 5442, 6769, 7793, 9002, 9789}, "indices of protons, for debug"};
 #endif
 
-  void process(aod::HfCandCascade const& candidates,
-               aod::BigTracksMC const& tracks,
-               aod::McParticles const& particlesMC)
+  void processMC(aod::BigTracksMC const& tracks,
+                 aod::McParticles const& particlesMC)
   {
     int8_t sign = 0;
     std::vector<int> arrDaughLcIndex;
@@ -236,7 +227,8 @@ struct HFCandidateCreatorCascadeMC {
     std::array<int, 3> arrDaughLcPDGRef = {2212, 211, -211};
 
     // Match reconstructed candidates.
-    for (auto& candidate : candidates) {
+    rowCandidateCasc->bindExternalIndices(&tracks);
+    for (auto& candidate : *rowCandidateCasc) {
 
       const auto& bach = candidate.index0_as<aod::BigTracksMC>();
       const auto& trackV0DaughPos = candidate.posTrack_as<aod::BigTracksMC>();
@@ -258,7 +250,7 @@ struct HFCandidateCreatorCascadeMC {
 #endif
       MY_DEBUG_MSG(isK0SfromLc, LOG(info) << "correct K0S in the Lc daughters: posTrack --> " << indexV0DaughPos << ", negTrack --> " << indexV0DaughNeg);
 
-      //if (isLc) {
+      // if (isLc) {
       RecoDecay::getMatchedMCRec(particlesMC, arrayDaughtersV0, kK0Short, array{+kPiPlus, -kPiPlus}, true, &sign, 1); // does it matter the "acceptAntiParticle" in the K0s case? In principle, there is no anti-K0s
 
       if (sign != 0) { // we have already positively checked the K0s
@@ -298,18 +290,13 @@ struct HFCandidateCreatorCascadeMC {
       rowMCMatchGen(sign);
     }
   }
-};
 
-//____________________________________________________________________
+  PROCESS_SWITCH(HFCandidateCreatorCascadeMC, processMC, "Process MC data", false);
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  return WorkflowSpec{
     adaptAnalysisTask<HFCandidateCreatorCascade>(cfgc, TaskName{"hf-cand-creator-cascade"}),
-    adaptAnalysisTask<HFCandidateCreatorCascadeExpressions>(cfgc, TaskName{"hf-cand-creator-cascade-expressions"})};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HFCandidateCreatorCascadeMC>(cfgc, TaskName{"hf-cand-creator-cascade-mc"}));
-  }
-  return workflow;
+    adaptAnalysisTask<HFCandidateCreatorCascadeMC>(cfgc, TaskName{"hf-cand-creator-cascade-mc"})};
 }

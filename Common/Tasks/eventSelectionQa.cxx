@@ -118,12 +118,12 @@ struct EventSelectionQaTask {
     histos.add("hTimeFDAacc", "Accepted events;FDA time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeFDCacc", "Accepted events;FDC time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeZACacc", "Accepted events; ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {{100, -5, 5}, {100, -5, 5}});
-    histos.add("hSPDClsVsTklCol", "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
+    histos.add("hSPDClsVsTklCol", "All events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {200, 0., isLowFlux ? 1000. : 20000.}});
     histos.add("hV0C012vsTklCol", "All events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
     histos.add("hV0MOnVsOfCol", "All events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
     histos.add("hSPDOnVsOfCol", "All events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
     histos.add("hV0C3vs012Col", "All events;V0C012 multiplicity;V0C3 multiplicity", kTH2F, {{200, 0., 800.}, {300, 0., 300.}});
-    histos.add("hSPDClsVsTklAcc", "Accepted events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {100, 0., isLowFlux ? 100. : 20000.}});
+    histos.add("hSPDClsVsTklAcc", "Accepted events;n tracklets;n clusters", kTH2F, {{200, 0., isLowFlux ? 200. : 6000.}, {200, 0., isLowFlux ? 1000. : 20000.}});
     histos.add("hV0C012vsTklAcc", "Accepted events;n tracklets;V0C012 multiplicity", kTH2F, {{150, 0., 150.}, {150, 0., 600.}});
     histos.add("hV0MOnVsOfAcc", "Accepted events;Offline V0M;Online V0M", kTH2F, {{200, 0., isLowFlux ? 1000. : 50000.}, {400, 0., isLowFlux ? 8000. : 40000.}});
     histos.add("hSPDOnVsOfAcc", "Accepted events;Offline FOR;Online FOR", kTH2F, {{300, 0., isLowFlux ? 300. : 1200.}, {300, 0., isLowFlux ? 300. : 1200.}});
@@ -227,6 +227,7 @@ struct EventSelectionQaTask {
     aod::FT0s const& ft0s,
     aod::FDDs const& fdds)
   {
+    bool isINT1period = 0;
     if (!applySelection) {
       auto first_bc = bcs.iteratorAt(0);
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", first_bc.timestamp());
@@ -234,6 +235,7 @@ struct EventSelectionQaTask {
       for (int i = 0; i < kNsel; i++) {
         histos.get<TH1>(HIST("hSelMask"))->SetBinContent(i + 1, applySelection[i]);
       }
+      isINT1period = first_bc.runNumber() <= 136377 || (first_bc.runNumber() >= 144871 && first_bc.runNumber() <= 159582);
     }
 
     // bc-based event selection qa
@@ -245,19 +247,24 @@ struct EventSelectionQaTask {
 
     // collision-based event selection qa
     for (auto& col : cols) {
+      auto selection = col.selection();
+      bool sel1 = selection[kIsINT1] & selection[kNoBGV0A] & selection[kNoBGV0C] & selection[kNoTPCLaserWarmUp] & selection[kNoTPCHVdip];
+
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
         if (!col.alias()[iAlias]) {
           continue;
         }
         histos.fill(HIST("hColCounterAll"), iAlias, 1);
-        if (!col.sel7()) {
-          continue;
+        if ((!isINT1period && col.sel7()) || (isINT1period && sel1)) {
+          histos.fill(HIST("hColCounterAcc"), iAlias, 1);
         }
-        histos.fill(HIST("hColCounterAcc"), iAlias, 1);
       }
 
+      bool mb = isMC;
+      mb |= !isINT1period && col.alias()[kINT7];
+      mb |= isINT1period && col.alias()[kINT1];
       // further checks just on minimum bias triggers
-      if (!isMC && !col.alias()[kINT7]) {
+      if (!mb) {
         continue;
       }
       for (int i = 0; i < kNsel; i++) {
@@ -310,23 +317,27 @@ struct EventSelectionQaTask {
       int spdClusters = col.spdClusters();
 
       float multT0A = 0;
-      for (auto amplitude : bc.ft0().amplitudeA()) {
-        multT0A += amplitude;
-      }
       float multT0C = 0;
-      for (auto amplitude : bc.ft0().amplitudeC()) {
-        multT0C += amplitude;
-      }
       float multFDA = 0;
-      for (auto amplitude : bc.fdd().chargeA()) {
-        multFDA += amplitude;
-      }
       float multFDC = 0;
-      for (auto amplitude : bc.fdd().chargeC()) {
-        multFDC += amplitude;
+      if (bc.has_ft0()) {
+        for (auto amplitude : bc.ft0().amplitudeA()) {
+          multT0A += amplitude;
+        }
+        for (auto amplitude : bc.ft0().amplitudeC()) {
+          multT0C += amplitude;
+        }
       }
-      float multZNA = bc.zdc().energyCommonZNA();
-      float multZNC = bc.zdc().energyCommonZNC();
+      if (bc.has_fdd()) {
+        for (auto amplitude : bc.fdd().chargeA()) {
+          multFDA += amplitude;
+        }
+        for (auto amplitude : bc.fdd().chargeC()) {
+          multFDC += amplitude;
+        }
+      }
+      float multZNA = bc.has_zdc() ? bc.zdc().energyCommonZNA() : 0;
+      float multZNC = bc.has_zdc() ? bc.zdc().energyCommonZNC() : 0;
 
       histos.fill(HIST("hMultV0Mcol"), multV0M);
       histos.fill(HIST("hMultV0Acol"), multV0A);
@@ -354,7 +365,10 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hV0C012vsTklCol"), nTracklets, multRingV0C012);
 
       // filling plots for accepted events
-      if (!col.sel7()) {
+      bool accepted = 0;
+      accepted |= !isINT1period & col.sel7();
+      accepted |= isINT1period & sel1;
+      if (!accepted) {
         continue;
       }
 
@@ -385,6 +399,8 @@ struct EventSelectionQaTask {
     }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun2, "Process Run2 event selection QA", true);
+
+  Preslice<aod::FullTracks> perCollision = aod::track::collisionId;
 
   void processRun3(
     soa::Join<aod::Collisions, aod::EvSels> const& cols,
@@ -576,7 +592,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hOrbitCol"), orbit);
       histos.fill(HIST("hBcCol"), localBC);
 
-      auto tracksGrouped = tracks.sliceBy(aod::track::collisionId, col.globalIndex());
+      auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nTPCtracks = 0;
       int nTOFtracks = 0;
       for (auto& track : tracksGrouped) {

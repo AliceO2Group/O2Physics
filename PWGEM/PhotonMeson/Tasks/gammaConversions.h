@@ -41,6 +41,7 @@ enum class ePhotonCuts {
   kArmenteros,
   kPsiPair,
   kCosinePA,
+  kRZLine,
   kV0Out
 };
 
@@ -55,6 +56,22 @@ enum class eV0McValidation {
   kOutsideMCEtaAcc,
   kMcValidatedPhotonOut, // meaning the V0 comes from a true, primary, mc photon that has a true |eta| < fTruePhotonEtaMax.
   kMcValAfterRecCuts     // the kMcValidatedPhotonOut which also pass reconstruction cuts.
+};
+
+enum class eV0Decays {
+  ee1,         // Electron - Positron with same mother (true V0)
+  ee2,         // Electron - Positron with different mother
+  epi,         // Electron/Positron - Pion
+  ek,          // Electron/Positron - Kaon
+  ep,          // Electron/Positron - Proton/Antiproton
+  emu,         // Electron/Positron - Muon
+  pipi,        // Pion - Pion
+  pik,         // Pion - Kaon
+  pip,         // Pion - Proton/Antiproton
+  pimu,        // Pion - Muon
+  pKmu,        // Proton/Antiproton - Kaon/Muon
+  other,       // other
+  nomcparticle // no mc particle was found for this track
 };
 
 enum eBeforeAfterRecCuts { kBeforeRecCuts,
