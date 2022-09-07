@@ -261,22 +261,22 @@ void upload_event_selection_params()
     metadata["period"] = "Default Run 3";
     n++;
     par[n] = new EventSelectionParams();
-    par[n]->fV0ABBlower = -3.0; // ns
-    par[n]->fV0ABBupper = +2.0; // ns
-    par[n]->fV0ABGlower =  2.0; // ns
-    par[n]->fV0ABGupper =  5.0; // ns
-    par[n]->fFDABBlower = -3.0; // ns
-    par[n]->fFDABBupper = +3.0; // ns
-    par[n]->fFDABGlower = 10.0; // ns
-    par[n]->fFDABGupper = 13.0; // ns
-    par[n]->fFDCBBlower = -3.0; // ns
-    par[n]->fFDCBBupper = +3.0; // ns
-    par[n]->fFDCBGlower =-10.0; // ns
-    par[n]->fFDCBGupper = -3.0; // ns
-    par[n]->fT0ABBlower = -1.0; // ns
-    par[n]->fT0ABBupper = +1.0; // ns
-    par[n]->fT0CBBlower = -1.0; // ns
-    par[n]->fT0CBBupper = +1.0; // ns
+    par[n]->fV0ABBlower = -3.0;  // ns
+    par[n]->fV0ABBupper = +2.0;  // ns
+    par[n]->fV0ABGlower = 2.0;   // ns
+    par[n]->fV0ABGupper = 5.0;   // ns
+    par[n]->fFDABBlower = -3.0;  // ns
+    par[n]->fFDABBupper = +3.0;  // ns
+    par[n]->fFDABGlower = 10.0;  // ns
+    par[n]->fFDABGupper = 13.0;  // ns
+    par[n]->fFDCBBlower = -3.0;  // ns
+    par[n]->fFDCBBupper = +3.0;  // ns
+    par[n]->fFDCBGlower = -10.0; // ns
+    par[n]->fFDCBGupper = -3.0;  // ns
+    par[n]->fT0ABBlower = -1.0;  // ns
+    par[n]->fT0ABBupper = +1.0;  // ns
+    par[n]->fT0CBBlower = -1.0;  // ns
+    par[n]->fT0CBBupper = +1.0;  // ns
 
     ccdb.storeAsTFileAny(par[n], "EventSelection/EventSelectionParams", metadata, sorRun3, eorRun3);
   }
