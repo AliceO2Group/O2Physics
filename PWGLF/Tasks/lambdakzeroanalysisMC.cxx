@@ -402,9 +402,9 @@ struct lambdakzeroAnalysisMc {
           }
         }
         if (TMath::Abs(v0.yK0Short()) < rapidity) {
-          registry.fill(HIST("V0loopFiltersCounts"), 6.5);
+          registry.fill(HIST("V0loopFiltersCounts"), 7.5);
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * RecoDecay::getMassPDG(kK0Short) < lifetimecut->get("lifetimecutK0S")) {
-            registry.fill(HIST("V0loopFiltersCounts"), 7.5);
+            registry.fill(HIST("V0loopFiltersCounts"), 8.5);
             registry.fill(HIST("h3dMassK0Short"), collision.centRun2V0M(), v0.pt(), v0.mK0Short());
             registry.fill(HIST("hArmenterosPostAnalyserCuts"), v0.alpha(), v0.qtarm());
 
