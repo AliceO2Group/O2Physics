@@ -235,7 +235,7 @@ struct HfCorrelatorD0D0bar {
 
   PROCESS_SWITCH(HfCorrelatorD0D0bar, processData, "Process data", false);
 
-  /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied) 
+  /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   Partition<soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec>> selectedD0candidatesMC = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   void processMcRec(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksDCA>& tracks, soa::Join<aod::HfCandProng2, aod::HFSelD0Candidate, aod::HfCandProng2MCRec> const& candidates)
@@ -438,7 +438,7 @@ struct HfCorrelatorD0D0bar {
             if (std::abs(particle1.eta()) < etaCut && std::abs(particle2.eta()) < etaCut && particle1.pt() > ptCut && particle2.pt() > ptCut) { // fill with D and Dbar acceptance checks
               registry.fill(HIST("hDDbarVsEtaCut"), etaCut - epsilon, ptCut + epsilon);
             }
-            if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
+            if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
               for (auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
@@ -479,7 +479,7 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       int partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
-      //check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
+      // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }

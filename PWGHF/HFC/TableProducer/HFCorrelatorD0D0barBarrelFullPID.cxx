@@ -438,7 +438,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
             if (std::abs(particle1.eta()) < etaCut && std::abs(particle2.eta()) < etaCut && particle1.pt() > ptCut && particle2.pt() > ptCut) { // fill with D and Dbar acceptance checks
               registry.fill(HIST("hDDbarVsEtaCut"), etaCut - epsilon, ptCut + epsilon);
             }
-            if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
+            if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
               for (auto& dau : particle1.daughters_as<MCParticlesPlus>()) {
@@ -479,7 +479,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         continue;
       }
       int partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
-      //check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
+      // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }

@@ -422,7 +422,7 @@ struct HfCorrelatorDplusDminus {
             if (std::abs(particle1.eta()) < etaCut && std::abs(particle2.eta()) < etaCut && particle1.pt() > ptCut && particle2.pt() > ptCut) {
               registry.fill(HIST("hDDbarVsEtaCut"), etaCut - epsilon, ptCut + epsilon);
             }
-            if (rightDecayChannels) { //fill with D and Dbar daughter particls acceptance checks
+            if (rightDecayChannels) { // fill with D and Dbar daughter particls acceptance checks
               bool candidate1DauInAcc = true;
               bool candidate2DauInAcc = true;
               for (auto& dau : particle1.daughters_as<MCParticlesPlus3Prong>()) {
@@ -463,7 +463,7 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       int partMothPDG = particle1.mothers_as<MCParticlesPlus2Prong>().front().pdgCode();
-      //check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
+      // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }
@@ -498,7 +498,7 @@ struct HfCorrelatorDplusDminus {
         if (cutPtCandMin >= 0. && particle2.pt() < cutPtCandMin) {
           continue;
         }
-        //check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it
+        // check whether mothers of quark cbar (from associated loop) are still '-4' particles - in that case the cbar quark comes from its own fragmentation, skip it
         if (particle2.mothers_as<MCParticlesPlus2Prong>().front().pdgCode() == PDG_t::kCharmBar) {
           continue;
         }
