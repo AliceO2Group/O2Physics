@@ -33,6 +33,7 @@ using namespace o2::framework::expressions;
 struct skimmerGammaConversionsTruthOnlyMc {
 
   Produces<aod::McGammasTrue> fFuncTableMcGammas;
+  Produces<aod::McDaughterTrue> fFuncTableMcDaughter;
 
   HistogramRegistry registry{
     "registry",
@@ -69,6 +70,8 @@ struct skimmerGammaConversionsTruthOnlyMc {
         float lDaughter0Vy = -1.;
         float lDaughter0Vz = -1.;
         float lV0Radius = -1.;
+        int lastIndex0 = -1;
+        int lastIndex1 = -1;
 
         if (lMcParticle.has_daughters()) {
           auto lDaughters = lMcParticle.daughters_as<aod::McParticles>();
@@ -78,6 +81,14 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lDaughter0Vy = lDaughter0.vy();
           lDaughter0Vz = lDaughter0.vz();
           lV0Radius = sqrt(pow(lDaughter0Vx, 2) + pow(lDaughter0Vy, 2));
+
+          if (lNDaughters == 2) {
+            auto lDaughter1 = lDaughters.iteratorAt(1);
+            fFuncTableMcDaughter(lDaughter0.p());
+            lastIndex0 = fFuncTableMcDaughter.lastIndex();
+            fFuncTableMcDaughter(lDaughter1.p());
+            lastIndex1 = fFuncTableMcDaughter.lastIndex();
+          }
         }
         fFuncTableMcGammas(
           lMcParticle.mcCollisionId(),
@@ -89,7 +100,8 @@ struct skimmerGammaConversionsTruthOnlyMc {
           lNDaughters,
           lMcParticle.eta(), lMcParticle.phi(), lMcParticle.p(), lMcParticle.pt(), lMcParticle.y(),
           lDaughter0Vx, lDaughter0Vy, lDaughter0Vz,
-          lV0Radius);
+          lV0Radius,
+          lastIndex0, lastIndex1);
       }
     }
   }

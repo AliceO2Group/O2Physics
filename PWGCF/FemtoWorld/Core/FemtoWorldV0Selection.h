@@ -96,6 +96,10 @@ class FemtoWorldV0Selection : public FemtoWorldObjectSelection<float, femtoWorld
   template <typename cutContainerType, typename C, typename V, typename T>
   std::array<cutContainerType, 5> getCutContainer(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
+  // for getting colision of the phi candidate
+  // template <typename cutContainerTypePhi, typename C, typename V, typename T>
+  // std::array<cutContainerTypePhi, 5> getCutContainerPhi(C const& col, V const& v0, T const& posTrack, T const& negTrack);
+
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename C, typename V, typename T>
   void fillQA(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
