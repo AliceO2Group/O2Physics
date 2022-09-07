@@ -44,10 +44,11 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 
 struct PidONNXModel {
  public:
-  PidONNXModel(const std::string& scalingParamsFile, int pid = 211, bool useTOF = false)
+  // path is local or CCDB
+  PidONNXModel(const std::string& localPath, const std::string& ccdbPath, const bool useCCDB, o2::ccdb::CcdbApi ccdbApi, const uint64_t timestamp, const int pid, const bool useTOF, const bool useTRD)
   {
     std::string modelFile;
-    loadInputFiles(scalingParamsFile, useTOF, pid, modelFile);
+    loadInputFiles(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pid, useTOF, useTRD, modelFile);
 
     Ort::SessionOptions sessionOptions;
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
@@ -105,38 +106,60 @@ struct PidONNXModel {
   }
 
  private:
-  void loadInputFiles(const std::string& scalingParamsFile, bool useTOF, int pid, std::string& modelFile)
+  void getFilenamesFromPath(const std::string& path, std::string& modelFile, std::string& trainColumnsFile, std::string& scalingParamsFile)
+  {
+    std::ostringstream tmp;
+    tmp << path << "/TPC";
+    if (useTOF) {
+      tmp << "_TOF";
+    }
+    if (useTRD) {
+      tmp << "_TRD";
+    }
+    std::string modelDir = tmp.str();
+
+    tmp.str("");
+    tmp.clear();
+    tmp << modelDir << "/simple_model_" << pid << ".onnx";
+    modelFile = tmp.str();
+    tmp.str("");
+    tmp.clear();
+    tmp << modelDir << "/columns_for_training.json";
+    trainColumnsFile = tmp.str();
+    tmp.str("");
+    tmp.clear();
+    tmp << modelDir << "/scaling_params.json";
+    scalingParamsFile = tmp.str();
+  }
+
+  void loadInputFiles(const std::string& localPath, const std::string& ccdbPath, const bool useCCDB, o2::ccdb::CcdbApi ccdbApi, const uint64_t timestamp, const int pid, const bool useTOF, const bool useTRD, std::string& modelFile)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
 
-    char* mlmodelsDir = getenv("MLMODELS_ROOT");
-    if (mlmodelsDir == NULL) {
-      LOG(fatal) << "Path to ML models undefined, did you load MLModels environment?";
+    if (!useTOF && useTRD) {
+      LOG(warning) << "TRD specified for PID but TOF not! Not using TRD";
     }
 
-    std::string modelSubdir = useTOF ? "All" : "TPC";
-    std::ostringstream tmp;
-    tmp << mlmodelsDir << "/models/PID_ML/";
-    tmp << modelSubdir << "/simple_model_" << pid << ".onnx";
-    modelFile = tmp.str();
-    tmp.str("");
-    tmp.clear();
-    tmp << mlmodelsDir << "/models/PID_ML/";
-    tmp << modelSubdir << "/columns_for_training.json";
-    std::string trainColumnsFile = tmp.str();
-    tmp.str("");
-    tmp.clear();
-    tmp << mlmodelsDir << "/models/PID_ML/";
-    tmp << scalingParamsFile;
-    std::string scalingParamsFilePath = tmp.str();
+    std::string localTrainColumnsFile, localScalingParamsFile;
+    getFilenamesFromPath(localPath, modelFile, localTrainColumnsFile, localScalingParamsFile);
 
-    if (readJsonFile(trainColumnsFile, trainColumnsDoc)) {
+    if (useCCDB) {
+      std::string ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile;
+      getFilenamesFromPath(ccdbPath, ccdbModelFile, ccdbTrainColumnsFile, ccdbScalingParamsFile);
+      LOG(info) << "Fetching network for timestamp: " << timestamp;
+      std::map<std::string, std::string> metadata;
+      ccdbApi.retrieveBlob(ccdbModelFile, ".", metadata, timestamp, false, modelFile);
+      ccdbApi.retrieveBlob(ccdbTrainColumnsFile, ".", metadata, timestamp, false, localTrainColumnsFile);
+      ccdbApi.retrieveBlob(ccdbScalingParamsFile, ".", metadata, timestamp, false, localScalingParamsFile);
+    }
+
+    if (readJsonFile(localTrainColumnsFile, trainColumnsDoc)) {
       for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
         mTrainColumns.emplace_back(param.GetString());
       }
     }
-    if (readJsonFile(scalingParamsFilePath, scalingParamsDoc)) {
+    if (readJsonFile(localScalingParamsFile, scalingParamsDoc)) {
       for (auto& param : scalingParamsDoc["data"].GetArray()) {
         mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
       }
