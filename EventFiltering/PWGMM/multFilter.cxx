@@ -93,11 +93,11 @@ struct multFilter {
 
   void init(o2::framework::InitContext&)
   {
-    int nBinsEst[17] = {100, 400, 400, 400, 500, 200, 102, 102, 102, 102, 400, 100, 102, 102, 200, 102, 150};
+    int nBinsEst[17] = {100, 500, 500, 500, 500, 500, 102, 102, 102, 102, 400, 500, 102, 102, 500, 102, 150};
     float lowEdgeEst[17] = {-0.5, -0.5, -0.5, -0.5, -0.5, -0.5,
                             -0.01, -0.01, -0.01, -0.01, -0.5, -0.5, -0.01, -0.01, -0.5, -0.01, .0};
-    float upEdgeEst[17] = {99.5, 399.5, 399.5, 399.5, 39999.5, 199.5,
-                           1.01, 1.01, 1.01, 1.01, 399.5, 99.5, 1.01, 1.01, 199.5, 1.01, 150.0};
+    float upEdgeEst[17] = {99.5, 1499.5, 1499.5, 999.5, 49999.5, 199.5,
+                           1.01, 1.01, 1.01, 1.01, 399.5, 499.5, 1.01, 1.01, 499.5, 1.01, 150.0};
 
     // QA event level
     multiplicity.add("fCollZpos", "Vtx_z", HistType::kTH1F, {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -411,6 +411,12 @@ struct multFilter {
       }
     }
     float flatenicity_glob = GetFlatenicity(RhoLattice2, nCells2);
+    bool isOK_estimator1 = false;
+    bool isOK_estimator2 = false;
+    bool isOK_estimator3 = false;
+    bool isOK_estimator4 = false;
+    bool isOK_estimator5 = false;
+    bool isOK_estimator6 = false;
 
     float combined_estimator1 = 0;
     float combined_estimator2 = 0;
@@ -451,9 +457,13 @@ struct multFilter {
     ampl1[2] = sumAmpFT0C;
     ampl1[3] = sumAmpFV01to4Ch;
     ampl1[4] = sumAmpFDDA;
-
-    for (int i_1 = 0; i_1 < nEta1; ++i_1) {
-      combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
+    if (sumAmpFDDC > 0 && multMFTTrack > 0 && sumAmpFT0C > 0 && sumAmpFV0 > 0 && sumAmpFDDA > 0) {
+      isOK_estimator1 = true;
+    }
+    if (isOK_estimator1) {
+      for (int i_1 = 0; i_1 < nEta1; ++i_1) {
+        combined_estimator1 += ampl1[i_1] * weigthsEta1[i_1];
+      }
     }
     // option 2
     const int nEta2 = 4; // FDDC + MFT + FV0 (rings 1-4) + FDDA
@@ -464,10 +474,14 @@ struct multFilter {
     ampl2[1] = multMFTTrack;
     ampl2[2] = sumAmpFV01to4Ch;
     ampl2[3] = sumAmpFDDA;
-    for (int i_2 = 0; i_2 < nEta2; ++i_2) {
-      combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
+    if (sumAmpFDDC > 0 && multMFTTrack > 0 && sumAmpFV0 > 0 && sumAmpFDDA > 0) {
+      isOK_estimator2 = true;
     }
-
+    if (isOK_estimator2) {
+      for (int i_2 = 0; i_2 < nEta2; ++i_2) {
+        combined_estimator2 += ampl2[i_2] * weigthsEta2[i_2];
+      }
+    }
     // option 3
     const int nEta3 = 2; // MFT + FV0
     // float weigthsEta3[nEta3] = {1.05258, 0.00535717};// values for pilot run, 900 GeV
@@ -475,8 +489,13 @@ struct multFilter {
     float ampl3[nEta3] = {0, 0};
     ampl3[0] = multMFTTrack;
     ampl3[1] = sumAmpFV0;
-    for (int i_3 = 0; i_3 < nEta3; ++i_3) {
-      combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
+    if (multMFTTrack > 0 && sumAmpFV0 > 0) {
+      isOK_estimator3 = true;
+    }
+    if (isOK_estimator3) {
+      for (int i_3 = 0; i_3 < nEta3; ++i_3) {
+        combined_estimator3 += ampl3[i_3] * weigthsEta3[i_3];
+      }
     }
 
     // option 4
@@ -486,10 +505,14 @@ struct multFilter {
     float ampl4[nEta4] = {0, 0};
     ampl4[0] = multMFTTrack;
     ampl4[1] = sumAmpFT0A;
-    for (int i_4 = 0; i_4 < nEta4; ++i_4) {
-      combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
+    if (multMFTTrack > 0 && sumAmpFT0A > 0) {
+      isOK_estimator4 = true;
     }
-
+    if (isOK_estimator4) {
+      for (int i_4 = 0; i_4 < nEta4; ++i_4) {
+        combined_estimator4 += ampl4[i_4] * weigthsEta4[i_4];
+      }
+    }
     // option 5
     const int nEta5 = 2; // FT0C + FT0A
     // float weigthsEta5[nEta5] = {0.0569502, 0.014552069};// values for pilot run, 900 GeV
@@ -497,10 +520,14 @@ struct multFilter {
     float ampl5[nEta5] = {0, 0};
     ampl5[0] = sumAmpFT0C;
     ampl5[1] = sumAmpFT0A;
-    for (int i_5 = 0; i_5 < nEta5; ++i_5) {
-      combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+    if (sumAmpFT0C > 0 && sumAmpFT0A > 0) {
+      isOK_estimator5 = true;
     }
-
+    if (isOK_estimator5) {
+      for (int i_5 = 0; i_5 < nEta5; ++i_5) {
+        combined_estimator5 += ampl5[i_5] * weigthsEta5[i_5];
+      }
+    }
     // option 6
     const int nEta6 = 2; //  FT0C + FV0
     // float weigthsEta6[nEta6] = {0.0569502, 0.00535717};
@@ -508,10 +535,14 @@ struct multFilter {
     float ampl6[nEta6] = {0, 0};
     ampl6[0] = sumAmpFT0C;
     ampl6[1] = sumAmpFV0;
-    for (int i_6 = 0; i_6 < nEta6; ++i_6) {
-      combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+    if (sumAmpFT0C > 0 && sumAmpFV0 > 0) {
+      isOK_estimator6 = true;
     }
-
+    if (isOK_estimator6) {
+      for (int i_6 = 0; i_6 < nEta6; ++i_6) {
+        combined_estimator6 += ampl6[i_6] * weigthsEta6[i_6];
+      }
+    }
     float flatenicity_mft_glob = (flatenicity_mft + flatenicity_glob) / 2.0;
     float flatenicity_mft_fv0 = (flatenicity_mft + flatenicity_fv0) / 2.0;
     float flatenicity_mft_glob_fv0 =
